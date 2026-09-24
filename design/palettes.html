@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>工作台配色候选 · 磨砂玻璃</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI Variable Text","Segoe UI","Microsoft YaHei UI",sans-serif;background:#e8ebee;padding:28px;color:#122436}
+h1{font-size:20px;letter-spacing:-.02em;margin-bottom:4px}
+.sub{font-size:13px;color:#5a6b7c;margin-bottom:22px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;max-width:1560px;margin:0 auto}
+.card{border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(20,35,50,.14);border:1px solid rgba(255,255,255,.6)}
+.cap{display:flex;align-items:center;gap:8px;padding:10px 14px;font-size:13px;font-weight:700}
+.cap small{font-weight:500;color:#5a6b7c;margin-left:auto}
+.sw{display:inline-flex;gap:3px}
+.sw i{width:14px;height:14px;border-radius:4px;display:block}
+
+/* ===== 主题作用域:每套一个完整角色色系统 ===== */
+.t-perig{
+  --bg:radial-gradient(55% 45% at 15% 5%,rgba(255,255,255,.85) 0%,transparent 65%),radial-gradient(55% 50% at 88% 96%,rgba(126,140,212,.55) 0%,transparent 100%),linear-gradient(160deg,#f1f3fd 0%,#dfe4f8 45%,#c5cfef 100%);
+  --glass:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,255,255,.74));
+  --gline:rgba(255,255,255,.92);--hair:rgba(30,45,90,.09);
+  --ink:#1a2438;--ink2:#414f6b;--ink3:#566584;
+  --acc:#2b78b5;--accd:#20619e;--accsoft:rgba(43,120,181,.1);
+}
+.t-skyblue{
+  --bg:radial-gradient(48% 42% at 12% 6%,rgba(56,189,248,.42) 0%,transparent 100%),radial-gradient(52% 46% at 90% 96%,rgba(14,165,233,.32) 0%,transparent 100%),linear-gradient(150deg,#d9eefb 0%,#d2ebfa 55%,#d8eefb 100%);
+  --glass:linear-gradient(180deg,rgba(255,255,255,.76),rgba(255,255,255,.48));
+  --gline:rgba(255,255,255,.8);--hair:rgba(20,70,110,.08);
+  --ink:#10283a;--ink2:#386284;--ink3:#4a7492;
+  --acc:#0e7cb5;--accd:#0c6a9e;--accsoft:rgba(14,124,181,.11);
+}
+.t-jdaysky{
+  --bg:radial-gradient(48% 42% at 12% 6%,rgba(100,195,245,.34) 0%,transparent 100%),radial-gradient(52% 46% at 90% 96%,rgba(80,180,235,.24) 0%,transparent 100%),linear-gradient(150deg,#e8f5fc 0%,#e2f2fb 55%,#e6f4fc 100%);
+  --glass:linear-gradient(180deg,rgba(255,255,255,.78),rgba(255,255,255,.5));
+  --gline:rgba(255,255,255,.82);--hair:rgba(20,70,110,.08);
+  --ink:#10283a;--ink2:#386284;--ink3:#4a7492;
+  --acc:#0e7cb5;--accd:#0c6a9e;--accsoft:rgba(14,124,181,.11);
+}
+.t-peri{
+  --bg:linear-gradient(180deg,#e3e8f8 0%,#dfe4f6 60%,#dde3f5 100%);
+  --glass:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,255,255,.74));
+  --gline:rgba(255,255,255,.92);--hair:rgba(30,45,90,.09);
+  --ink:#1a2438;--ink2:#414f6b;--ink3:#566584;
+  --acc:#2b78b5;--accd:#20619e;--accsoft:rgba(43,120,181,.1);
+}
+.t-sky{
+  --bg:radial-gradient(48% 42% at 12% 6%,rgba(140,190,235,.44) 0%,transparent 100%),radial-gradient(52% 46% at 90% 96%,rgba(150,190,230,.34) 0%,transparent 100%),linear-gradient(150deg,#f0f6fa,#eff4f8 55%,#f1f5f7);
+  --glass:linear-gradient(180deg,rgba(255,255,255,.72),rgba(255,255,255,.46));
+  --gline:rgba(255,255,255,.75);--hair:rgba(20,40,60,.08);
+  --ink:#122436;--ink2:#3a5872;--ink3:#4a6379;
+  --acc:#2b78b5;--accd:#20619e;--accsoft:rgba(43,120,181,.12);
+}
+.t-celadon{
+  --bg:radial-gradient(48% 42% at 12% 6%,rgba(118,196,172,.5) 0%,transparent 100%),radial-gradient(52% 46% at 90% 96%,rgba(96,178,158,.36) 0%,transparent 100%),linear-gradient(150deg,#edf4f1,#ecf3f0 55%,#eff4f1);
+  --glass:linear-gradient(180deg,rgba(255,255,255,.74),rgba(255,255,255,.46));
+  --gline:rgba(255,255,255,.78);--hair:rgba(24,54,44,.08);
+  --ink:#142a24;--ink2:#35564b;--ink3:#4c6b60;
+  --acc:#0f7a66;--accd:#0b6152;--accsoft:rgba(15,122,102,.11);
+}
+.t-sand{
+  --bg:radial-gradient(48% 42% at 12% 6%,rgba(240,192,132,.5) 0%,transparent 100%),radial-gradient(52% 46% at 90% 96%,rgba(233,172,118,.36) 0%,transparent 100%),linear-gradient(150deg,#f7f1e8,#f5eee3 55%,#f6efe5);
+  --glass:linear-gradient(180deg,rgba(255,255,255,.74),rgba(255,255,255,.48));
+  --gline:rgba(255,255,255,.8);--hair:rgba(96,72,48,.09);
+  --ink:#2b2118;--ink2:#5c4b3a;--ink3:#6f5d49;
+  --acc:#b25c22;--accd:#92491a;--accsoft:rgba(178,92,34,.12);
+}
+.t-azure{
+  --bg:radial-gradient(48% 42% at 12% 6%,rgba(140,220,245,.5) 0%,transparent 100%),radial-gradient(52% 46% at 90% 96%,rgba(110,200,230,.36) 0%,transparent 100%),linear-gradient(150deg,#eef7fa,#ecf5f8 55%,#eef6f9);
+  --glass:linear-gradient(180deg,rgba(255,255,255,.76),rgba(255,255,255,.48));
+  --gline:rgba(255,255,255,.8);--hair:rgba(15,60,75,.08);
+  --ink:#0f2a33;--ink2:#2f5b68;--ink3:#3f7080;
+  --acc:#0891b2;--accd:#0e7490;--accsoft:rgba(8,145,178,.11);
+}
+.t-tech{
+  --bg:radial-gradient(48% 42% at 12% 6%,rgba(56,189,248,.22) 0%,transparent 100%),radial-gradient(52% 46% at 90% 96%,rgba(34,211,238,.15) 0%,transparent 100%),repeating-linear-gradient(0deg,rgba(125,200,255,.035) 0 1px,transparent 1px 44px),repeating-linear-gradient(90deg,rgba(125,200,255,.035) 0 1px,transparent 1px 44px),linear-gradient(150deg,#16253e,#111e33 55%,#0e1929);
+  --glass:linear-gradient(180deg,rgba(125,190,255,.12),rgba(125,190,255,.05));
+  --gline:rgba(125,205,255,.26);--hair:rgba(190,225,255,.10);
+  --ink:#eaf6ff;--ink2:#bcd7ec;--ink3:#8fb2cc;
+  --acc:#2ec5ef;--accd:#7fd8f7;--accsoft:rgba(46,197,239,.15);
+}
+.t-midnight{
+  --bg:radial-gradient(48% 42% at 12% 6%,rgba(70,130,200,.26) 0%,transparent 100%),radial-gradient(52% 46% at 90% 96%,rgba(40,90,150,.22) 0%,transparent 100%),linear-gradient(150deg,#111d2d,#0e1927 55%,#0d1723);
+  --glass:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.045));
+  --gline:rgba(255,255,255,.13);--hair:rgba(255,255,255,.08);
+  --ink:#e8f0f8;--ink2:#bccbdc;--ink3:#93a8bd;
+  --acc:#4a9ae8;--accd:#8ec7f5;--accsoft:rgba(94,177,255,.16);
+}
+.theme{height:100%;display:flex;flex-direction:column;background:var(--bg);color:var(--ink)}
+.theme .cap{background:rgba(255,255,255,.5);color:#2a3a4a}
+.t-midnight .cap{background:rgba(255,255,255,.06);color:#dbe6f0}
+
+/* ===== 迷你外壳 ===== */
+.island{margin:10px 12px 0;height:44px;flex:none;display:flex;align-items:center;gap:10px;padding:0 12px 0 14px;border-radius:999px;background:var(--glass);border:1px solid var(--gline);box-shadow:0 4px 14px rgba(10,25,40,.10)}
+.pill{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 13px;border-radius:999px;background:var(--accsoft);font-size:12px;font-weight:700;color:var(--accd)}
+.pill .bar{width:40px;height:4px;border-radius:999px;background:var(--acc);position:relative;overflow:hidden}
+.pill .bar i{position:absolute;inset:0;width:45%;background:var(--gline);border-radius:999px}
+.sp{flex:1}
+.dot-i{width:26px;height:26px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:800}
+.mini-body{flex:1;display:flex;min-height:0}
+.rail{width:44px;flex:none;display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 0;border-right:1px solid var(--gline)}
+.ring{width:26px;height:26px;border-radius:50%;border:1.7px solid var(--ink);position:relative;margin-bottom:6px}
+.ring::after{content:"";position:absolute;width:7px;height:7px;border-radius:50%;background:var(--acc);top:-1px;right:2px}
+.ri{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;color:var(--ink2);font-size:10px}
+.ri.on{background:rgba(255,255,255,.85);color:var(--acc);box-shadow:0 2px 8px rgba(10,25,40,.10);border-radius:12px}
+.t-midnight .ri.on{background:rgba(255,255,255,.10)}
+.ri.dim{opacity:.45}
+.main{flex:1;min-width:0;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.g{display:flex;align-items:flex-end;justify-content:space-between}
+.g h2{font-size:19px;letter-spacing:-.02em}
+.g small{display:block;font-size:11.5px;color:var(--ink3);margin-top:2px}
+.btn{height:28px;padding:0 12px;border-radius:9px;background:var(--acc);color:#fff;font-size:11.5px;font-weight:700;display:inline-flex;align-items:center}
+.t-tech .btn{color:#062a3a}
+.panel{background:var(--glass);border:1px solid var(--gline);border-radius:14px;padding:12px 14px;box-shadow:0 4px 14px rgba(10,25,40,.07)}
+.panel h3{font-size:12.5px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.row{display:flex;align-items:center;gap:9px;padding:7px 2px;font-size:12px}
+.row+.row{border-top:1px solid var(--hair)}
+.ck{width:15px;height:15px;border-radius:6px;border:1.4px solid var(--ink3);flex:none}
+.row.done .t{text-decoration:line-through;color:var(--ink3)}
+.t{font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--accsoft);color:var(--accd)}
+.chip.red{background:rgba(194,69,60,.13);color:#c2453c}
+.meta{font-size:10px;color:var(--ink3);display:flex;align-items:center;gap:5px;margin-top:1px}
+.tdot{width:6px;height:6px;border-radius:50%;background:var(--acc)}
+.stats{display:flex;gap:8px}
+.stat{flex:1;background:var(--glass);border:1px solid var(--gline);border-radius:12px;padding:9px 11px}
+.stat b{font-size:16px}
+.stat small{display:block;font-size:10px;color:var(--ink3);margin-top:1px}
+</style>
+</head>
+<body>
+<h1>工作台配色候选 · 磨砂玻璃(六套完整策略)</h1>
+<div class="sub">同一外壳、同一布局,六套角色色系统:背景色彩场 / 玻璃 / 文字三级 / 强调 / 语义。选中的那套将应用到真实应用(含待办面板、AI 面板、弹窗)。</div>
+<div class="grid" id="grid"></div>
+
+<script>
+const THEMES = [
+  { cls:'t-perig', name:'G+ · 长春花蓝渐变', note:'强渐变 · 左上近白右下深蓝紫,一眼可见', sw:['#f1f3fd','#c5cfef','#2b78b5'] },
+  { cls:'t-skyblue', name:'I · 天蓝 Skyblue', note:'饱和天蓝场 · 和 A+ 的近白底明显不同', sw:['#d9eefb','#0e7cb5','#10283a'] },
+  { cls:'t-jdaysky', name:'J · 淡天蓝 Pale Sky', note:'I 的淡化 · 淡淡的天蓝色', sw:['#e8f5fc','#0e7cb5','#10283a'] },
+  { cls:'t-peri', name:'G · 长春花蓝 Even', note:'参考图3式 · 均匀蓝紫底 + 纯白卡(无色晕)', sw:['#dfe4f6','#2b78b5','#1a2438'] },
+  { cls:'t-sky', name:'A+ · 晴蓝浅化', note:'✅ 已应用到应用 · 色晕流动感', sw:['#f0f6fa','#2b78b5','#122436'] },
+  { cls:'t-celadon', name:'B · 青瓷 Celadon', note:'沉静玉感 · 护眼耐看', sw:['#edf4f1','#0f7a66','#142a24'] },
+  { cls:'t-sand', name:'C · 暖砂 Warm Sand', note:'奶油暖调 · 参考图4气质', sw:['#f7f1e8','#b25c22','#2b2118'] },
+  { cls:'t-azure', name:'E · 浅晴青 Azure', note:'A 的浅化 · 蓝偏青一档', sw:['#eef7fa','#0891b2','#0f2a33'] },
+  { cls:'t-tech', name:'F · 曜蓝 Tech', note:'D 提亮版 · HUD 电青与微光网格', sw:['#16253e','#2ec5ef','#eaf6ff'] },
+  { cls:'t-midnight', name:'D · 暮蓝 Midnight', note:'深色磨砂 · 夜间质感', sw:['#111d2d','#4a9ae8','#e8f0f8'] },
+];
+
+const shell = (t) => `
+<section class="card">
+  <div class="theme ${t.cls}">
+    <div class="cap">${t.name}<span class="sw">${t.sw.map(c=>`<i style="background:${c}"></i>`).join('')}</span><small>${t.note}</small></div>
+    <div class="island">
+      <span class="pill">日程 9·23</span>
+      <span class="pill" style="background:var(--glass);color:var(--ink2)">待办 5/12</span>
+      <span class="sp"></span>
+      <span class="dot-i">O</span>
+    </div>
+    <div class="mini-body">
+      <div class="rail">
+        <span class="ring"></span>
+        <span class="ri on">首页</span>
+        <span class="ri dim">创作</span>
+        <span class="ri dim">工具</span>
+      </div>
+      <div class="main">
+        <div class="g">
+          <div><h2>早上好</h2><small>9月23日 周三 · 已完成 5 项,还有 7 项</small></div>
+          <button class="btn">+ 新增待办</button>
+        </div>
+        <div class="stats">
+          <div class="stat"><b>5</b><small>已完成</small></div>
+          <div class="stat"><b>7</b><small>待办</small></div>
+          <div class="stat"><b>1</b><small>逾期</small></div>
+        </div>
+        <div class="panel">
+          <h3>今日待办 <span class="chip">12 项</span></h3>
+          <div class="row"><span class="ck"></span><div style="flex:1;min-width:0"><div class="t">整理工作台模块需求清单</div><div class="meta"><span class="tdot"></span>工作 · 21:00 截止</div></div><span class="chip red">逾期</span></div>
+          <div class="row done"><span class="ck" style="background:var(--acc);border-color:var(--acc)"></span><div class="t">回复合作邮件</div><span class="chip">已完成</span></div>
+          <div class="row"><span class="ck"></span><div style="flex:1;min-width:0"><div class="t">阅读《设计中的设计》</div><div class="meta"><span class="tdot"></span>生活 · 今晚 21:30</div></div><span class="chip">今晚</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>`;
+
+document.getElementById('grid').innerHTML = THEMES.map(shell).join('');
+</script>
+</body>
+</html>

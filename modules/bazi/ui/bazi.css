@@ -1,0 +1,143 @@
+/* ========== 八字排盘模块样式 ==========
+   视觉权威:design/mockups/bazi-glass.html(评审通过版)。
+   组件语法(panel/phead/chip/btn 等)直接消费外壳 shell.css;
+   本文件只含八字专属结构,token 用 --bazi-* 命名空间(五行语义色,待 DESIGN.md 备案)。 */
+
+:root {
+  /* 五行语义色:信息编码而非装饰;干支大字下均满足大字对比 ≥3:1 */
+  --bazi-wx-mu: #3d8b5f;    /* 木 · 松绿 */
+  --bazi-wx-huo: #bd5b2e;   /* 火 · 陶红 */
+  --bazi-wx-tu: #9c7a26;    /* 土 · 赭金 */
+  --bazi-wx-jin: #71808f;   /* 金 · 银灰 */
+  --bazi-wx-shui: #2470b8;  /* 水 · 晴蓝 */
+  --bazi-font-ganzi: 'KaiTi', 'STKaiti', 'BiauKai', 'Microsoft YaHei', serif;
+}
+
+.bazi-cols { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; align-items: start; }
+.bazi-cols > .panel + .panel { margin-top: 16px; }
+
+/* ---- 命例条 + 排盘输入 ---- */
+.bazi-pbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.bazi-pfchips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.bazi-pfchip { display: inline-flex; align-items: center; gap: 9px; padding: 5px 12px 5px 6px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55); border: 1px solid rgba(255, 255, 255, 0.7); cursor: pointer;
+  transition: transform 0.15s var(--ease), background 0.15s var(--ease), box-shadow 0.15s var(--ease); }
+.bazi-pfchip:hover { transform: translateY(-1px); background: rgba(255, 255, 255, 0.8); }
+.bazi-pfchip.on { background: rgba(255, 255, 255, 0.94); box-shadow: var(--shadow-sm); border-color: #fff; }
+.bazi-pfchip.on .bazi-pname { color: var(--acc-deep); }
+.bazi-pav { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; color: #fff;
+  font-size: 12px; font-weight: 700; flex: none; background: linear-gradient(140deg, var(--action), var(--action-deep)); }
+.bazi-pname { font-weight: 700; font-size: 13px; }
+.bazi-pbirth { font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.bazi-pfx { width: 17px; height: 17px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-3);
+  opacity: 0; transition: opacity 0.14s var(--ease), background 0.14s var(--ease); flex: none; }
+.bazi-pfchip:hover .bazi-pfx, .bazi-pfchip.on .bazi-pfx { opacity: 1; }
+.bazi-pfx:hover { background: var(--danger-soft); color: var(--danger); }
+.bazi-pfadd { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  background: rgba(255, 255, 255, 0.55); color: var(--ink-2); border: 1px dashed rgba(18, 36, 54, 0.18);
+  transition: all 0.15s var(--ease); }
+.bazi-pfadd:hover { background: #fff; color: var(--acc-deep); border-color: var(--acc); }
+.bazi-inputs { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+
+/* ---- 命盘四柱 ---- */
+.bazi-pillars { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 2px; }
+.bazi-pcol { padding: 12px 8px 10px; text-align: center; position: relative; min-width: 0; }
+.bazi-pcol + .bazi-pcol { border-left: 1px solid var(--hairline); }
+.bazi-plabel { font-size: 11.5px; font-weight: 700; color: var(--ink-3); letter-spacing: 0.12em;
+  display: flex; align-items: center; justify-content: center; gap: 6px; }
+.bazi-mtag { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
+  background: var(--acc-soft); color: var(--acc-deep); letter-spacing: 0.04em; }
+.bazi-pss { margin-top: 12px; font-size: 12px; font-weight: 600; color: var(--ink-2); height: 18px; }
+.bazi-pgan, .bazi-pzhi { font-family: var(--bazi-font-ganzi); font-size: 40px; line-height: 1.12; font-weight: 700; }
+.bazi-pgan { margin-top: 7px; }
+.bazi-pzhi { margin-top: 2px; }
+.bazi-pssz { margin-top: 9px; font-size: 11.5px; font-weight: 600; color: var(--ink-3); height: 17px; }
+.bazi-phide { margin-top: 7px; font-size: 11.5px; color: var(--ink-3); line-height: 1.6; min-height: 37px; }
+.bazi-phide .hi { white-space: nowrap; }
+.bazi-phide b { font-weight: 600; color: var(--ink-2); }
+.bazi-nachip { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 2px 10px;
+  border-radius: 999px; background: rgba(18, 36, 54, 0.055); color: var(--ink-3); }
+.bazi-cfoot { display: flex; align-items: center; gap: 14px; padding: 11px 6px 4px; border-top: 1px solid var(--hairline);
+  margin-top: 8px; font-size: 12px; color: var(--ink-3); flex-wrap: wrap; }
+.bazi-cfoot b { color: var(--ink-2); font-weight: 700; }
+.bazi-gz { font-family: var(--bazi-font-ganzi); font-size: 14px; letter-spacing: 0.35em; color: var(--ink-2); }
+
+/* ---- 大运与流年 ---- */
+.bazi-yunstart { font-size: 12px; color: var(--ink-3); padding: 0 6px 10px; font-variant-numeric: tabular-nums; }
+.bazi-yunstart b { color: var(--ink-2); }
+.bazi-dychips { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 2px; }
+.bazi-dychip { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 13px;
+  border-radius: 12px; background: rgba(255, 255, 255, 0.55); border: 1px solid rgba(255, 255, 255, 0.7);
+  cursor: pointer; min-width: 86px; transition: transform 0.15s var(--ease), background 0.15s var(--ease), box-shadow 0.15s var(--ease); }
+.bazi-dychip:hover { transform: translateY(-1px); background: rgba(255, 255, 255, 0.8); }
+.bazi-dychip.on { background: rgba(255, 255, 255, 0.94); box-shadow: var(--shadow-sm); border-color: #fff; }
+.bazi-dz { font-family: var(--bazi-font-ganzi); font-size: 19px; font-weight: 700; }
+.bazi-dage { font-size: 11px; font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bazi-dss { font-size: 11px; color: var(--ink-3); }
+.bazi-dychip.now { background: var(--acc-soft); border-color: rgba(43, 120, 181, 0.25); }
+.bazi-dychip.now .bazi-dz, .bazi-dychip.now .bazi-dss { color: var(--acc-deep); }
+.bazi-dnow { display: none; width: 6px; height: 6px; border-radius: 50%; background: var(--acc); margin-top: 3px; }
+.bazi-dychip.now .bazi-dnow { display: block; }
+.bazi-lnwrap { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 0.24s var(--ease), opacity 0.2s var(--ease); }
+.bazi-lnwrap.open { grid-template-rows: 1fr; opacity: 1; }
+.bazi-lnclip { overflow: hidden; min-height: 0; }
+.bazi-lnrow { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 4px 6px; border-top: 1px solid var(--hairline); margin-top: 12px; }
+.bazi-lnchip { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55); border: 1px solid rgba(255, 255, 255, 0.7); font-size: 12px;
+  transition: background 0.15s var(--ease); }
+.bazi-lnchip:hover { background: rgba(255, 255, 255, 0.85); }
+.bazi-ly { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.bazi-lg { font-family: var(--bazi-font-ganzi); font-size: 14px; font-weight: 700; }
+.bazi-ls { font-size: 11.5px; color: var(--ink-3); }
+.bazi-lnchip.nowln { background: var(--acc-soft); border-color: rgba(43, 120, 181, 0.25); }
+.bazi-lnchip.nowln .bazi-ly, .bazi-lnchip.nowln .bazi-ls { color: var(--acc-deep); }
+.bazi-lnow { width: 6px; height: 6px; border-radius: 50%; background: var(--acc); flex: none; }
+
+/* ---- 五行统计 ---- */
+.bazi-wxrow { display: flex; align-items: center; gap: 10px; padding: 5px 4px; }
+.bazi-wxdot { width: 11px; height: 11px; border-radius: 4px; flex: none; }
+.bazi-wxname { width: 16px; font-weight: 700; font-size: 13px; }
+.bazi-wxnum { width: 26px; text-align: right; font-weight: 700; font-size: 12.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.bazi-wxbar { flex: 1; height: 8px; border-radius: 999px; background: rgba(18, 36, 54, 0.07); overflow: hidden; }
+.bazi-wxbar i { display: block; height: 100%; border-radius: 999px; transition: width 0.24s var(--ease); }
+.bazi-wxflag { width: 32px; text-align: center; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 0; color: var(--ink-3); }
+.bazi-wxflag.strong { background: rgba(18, 36, 54, 0.07); color: var(--ink-2); }
+.bazi-wxsum { padding: 10px 6px 2px; border-top: 1px solid var(--hairline); margin-top: 7px; font-size: 12px; color: var(--ink-3); }
+.bazi-wxsum b { color: var(--ink-2); }
+
+/* ---- 神煞 ---- */
+.bazi-ssrow { display: flex; flex-wrap: wrap; gap: 7px; padding: 2px 2px 6px; }
+.bazi-sschip { display: inline-flex; align-items: center; gap: 7px; padding: 4px 11px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6); border: 1px solid rgba(255, 255, 255, 0.75);
+  font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.bazi-sspos { font-size: 11px; font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.bazi-ssempty { font-size: 12.5px; color: var(--ink-3); padding: 4px 6px 8px; }
+
+/* ---- 笔记 ---- */
+.bazi-noteta { width: 100%; min-height: 108px; resize: vertical; border-radius: 12px; padding: 10px 13px;
+  font-size: 13px; line-height: 1.7; background: rgba(255, 255, 255, 0.65); border: 1px solid rgba(255, 255, 255, 0.85);
+  outline: none; color: var(--ink); transition: border-color 0.15s var(--ease), background 0.15s var(--ease); }
+.bazi-noteta:hover { background: rgba(255, 255, 255, 0.85); }
+.bazi-noteta:focus { border-color: var(--acc-ring); background: #fff; }
+.bazi-noteta::placeholder { color: var(--ink-3); }
+.bazi-notehint { font-size: 12px; color: var(--ink-3); padding: 7px 6px 4px; }
+
+/* ---- 空态与错误 ---- */
+.bazi-empty { border-radius: var(--r-panel); padding: 52px 24px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.bazi-empty b { font-size: 16px; }
+.bazi-empty p { font-size: 13px; color: var(--ink-3); max-width: 380px; }
+.bazi-load-error { margin-bottom: 14px; }
+.bazi-chart-error { font-size: 13px; color: var(--danger); padding: 8px 6px; }
+
+/* ---- 新建命例弹窗 ---- */
+.bazi-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
+.bazi-form-field { display: flex; flex-direction: column; gap: 6px; }
+.bazi-form-field + .bazi-form-field { margin-top: 0; }
+.bazi-form-label { font-size: 12px; font-weight: 700; color: var(--ink-2); }
+.bazi-form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+
+@media (max-width: 1180px) {
+  .bazi-cols { grid-template-columns: 1fr; }
+  .bazi-inputs { margin-left: 0; }
+}

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>个人资料 · 方案 A 设置分区</title>
+<style>
+:root {
+  --ink: #1b1d22; --ink-2: #464b54; --ink-3: #63686f;
+  --acc: #7f9dd3; --acc-deep: #4a67a3; --acc-hover: #3d5486;
+  --acc-soft: rgba(127,157,211,.16); --acc-ring: rgba(127,157,211,.4);
+  --action: #232529; --action-deep: #141519;
+  --nav-on-bg: #232529; --nav-on-fg: #ffffff; --nav-marker: #4a67a3;
+  --icon-tint: #2a2c31;
+  --danger: #b5504e; --danger-soft: rgba(197,93,90,.13);
+  --glass-hi: rgba(255,255,255,.95); --glass-lo: rgba(250,250,252,.68);
+  --glass-line: rgba(255,255,255,.9); --hairline: rgba(28,30,36,.09);
+  --shadow: 0 8px 24px rgba(35,38,48,.09), 0 2px 6px rgba(35,38,48,.04);
+  --shadow-sm: 0 3px 10px rgba(35,38,48,.07);
+  --field-base: #e9eaee; --bdg-ring: #e9eaee;
+  --field:
+    radial-gradient(46% 40% at 10% 4%, rgba(255,255,255,.8) 0%, transparent 100%),
+    radial-gradient(50% 44% at 92% 96%, rgba(203,209,226,.55) 0%, transparent 100%),
+    linear-gradient(150deg, #e9eaee 0%, #e6e8ec 55%, #e9ebef 100%);
+  --r-panel: 18px; --r-card: 14px; --r-ctl: 10px;
+  --font: 'Bahnschrift','Segoe UI Variable Text','Segoe UI','Microsoft YaHei UI','Microsoft YaHei',sans-serif;
+  --ease: cubic-bezier(.2,.7,.2,1);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body { font-family: var(--font); color: var(--ink); font-size: 14px; line-height: 1.55; background: var(--field-base); overflow: hidden; user-select: none; }
+input { font: inherit; color: inherit; }
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+::selection { background: var(--selection, rgba(127,157,211,.3)); }
+:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; border-radius: 6px; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(28,30,36,.16); border-radius: 999px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-track { background: transparent; }
+
+.win { position: relative; width: 100%; height: 100%; display: flex; overflow: hidden; background: var(--field-base); }
+.win::before { content: ''; position: absolute; inset: 0; z-index: 0; background: var(--field); }
+
+/* ---------- 图标栏 ---------- */
+.rail { position: relative; z-index: 2; width: 66px; flex: none; display: flex; flex-direction: column; align-items: center;
+  padding: 14px 0 12px; gap: 6px;
+  background: linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.45));
+  -webkit-backdrop-filter: blur(18px) saturate(1.5); backdrop-filter: blur(18px) saturate(1.5);
+  border-right: 1px solid var(--glass-line); }
+.logo { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 10px; color: var(--ink); }
+.logo svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.rnav { display: flex; flex-direction: column; gap: 6px; }
+.rmid { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; }
+.rbot { margin-top: auto; display: flex; flex-direction: column; gap: 6px; }
+.ritem { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; color: var(--ink-2);
+  transition: background .16s var(--ease), color .16s var(--ease); position: relative; }
+.ritem:hover { background: rgba(255,255,255,.65); color: var(--ink); }
+.ritem.on { background: var(--nav-on-bg); color: var(--nav-on-fg); box-shadow: var(--shadow-sm); }
+.ritem.on::before { content: ''; position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
+  width: 4px; height: 20px; border-radius: 999px; background: var(--nav-marker); }
+.ritem.dim { opacity: .5; }
+
+/* ---------- 顶栏 ---------- */
+.main { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.topbar { flex: none; height: 54px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  margin: 10px 12px 0; padding: 0 10px 0 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,.82), rgba(255,255,255,.55));
+  -webkit-backdrop-filter: blur(18px) saturate(1.5); backdrop-filter: blur(18px) saturate(1.5);
+  border: 1px solid var(--glass-line); border-radius: 999px;
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.55); }
+.tb-left { display: flex; align-items: center; gap: 10px; justify-self: start; min-width: 0; }
+.tb-center { display: flex; justify-self: center; }
+.tb-right { display: flex; align-items: center; gap: 8px; justify-self: end; }
+.sched { display: flex; align-items: center; padding: 5px 8px 5px 14px; gap: 6px; min-width: 0; border-radius: 999px;
+  background: linear-gradient(135deg, var(--glass-hi), var(--glass-lo));
+  border: 1px solid var(--glass-line); box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.55); }
+.sched-label { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; white-space: nowrap; }
+.sched-label svg { color: var(--icon-tint); }
+.sched-label .date { color: var(--ink-3); font-weight: 600; }
+.sdiv { width: 1px; height: 20px; background: var(--hairline); margin: 0 6px; flex: none; }
+.sched-track { display: flex; align-items: center; gap: 6px; overflow: hidden; min-width: 0; }
+.schip { display: flex; align-items: baseline; gap: 7px; padding: 6px 12px; border-radius: 999px;
+  background: rgba(255,255,255,.62); white-space: nowrap; }
+.schip .t { font-weight: 700; font-size: 12.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.schip .n { font-size: 12.5px; color: var(--ink-2); }
+.schip.now { background: var(--acc-soft); }
+.schip.now .t, .schip.now .n { color: var(--acc-deep); }
+.schip.now .live { width: 7px; height: 7px; border-radius: 50%; background: var(--acc); align-self: center; }
+.smore { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.62); color: var(--ink-2); flex: none; }
+.todopill { display: flex; align-items: center; gap: 9px; height: 42px; padding: 0 16px; border-radius: 999px; white-space: nowrap;
+  background: linear-gradient(135deg, var(--glass-hi), var(--glass-lo));
+  border: 1px solid var(--glass-line); box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.55); }
+.todopill svg { color: var(--icon-tint); }
+.todopill .lbl { font-weight: 700; font-size: 13px; }
+.todopill .num { font-weight: 700; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.todopill .num em { font-style: normal; color: var(--danger); font-size: 11px; vertical-align: top; margin-left: 3px; }
+.tprog { width: 64px; height: 5px; border-radius: 999px; background: rgba(28,30,36,.1); overflow: hidden; }
+.tprog i { display: block; height: 100%; width: 20%; border-radius: 999px; background: var(--acc); }
+.vdiv { width: 1px; height: 22px; background: var(--hairline); }
+.ibtn { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; color: var(--ink-2); position: relative; }
+.ibtn:hover { background: rgba(255,255,255,.7); color: var(--ink); }
+.bdg { position: absolute; top: 6px; right: 6px; min-width: 17px; height: 15px; border-radius: 999px; background: var(--danger);
+  color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; padding: 0 3px; border: 2px solid var(--bdg-ring); }
+.avatar { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 14px;
+  background: linear-gradient(140deg, var(--action), var(--action-deep));
+  border: 2px solid rgba(255,255,255,.85); box-shadow: var(--shadow-sm); }
+.wbtns { display: flex; gap: 2px; }
+.wbtn { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: var(--ink-2); }
+.wbtn.close:hover { background: var(--danger); color: #fff; }
+
+/* ---------- 二级目录 ---------- */
+.body-row { flex: 1; min-height: 0; display: flex; }
+.snav { position: relative; z-index: 2; width: 216px; flex: none; align-self: stretch; display: flex; flex-direction: column;
+  margin: 12px; padding: 14px 12px 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.62));
+  -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
+  border: 1px solid var(--glass-line); border-radius: 16px;
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.5); }
+.shead { display: flex; align-items: center; justify-content: space-between; padding: 0 8px 14px; }
+.stitle { font-size: 15px; font-weight: 700; letter-spacing: .01em; }
+.collapse { width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; color: var(--ink-3); }
+.tree { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding: 0 2px; }
+.nsub { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: var(--r-ctl);
+  color: var(--ink-2); font-weight: 500; cursor: pointer; }
+.nsub:hover { background: rgba(255,255,255,.55); color: var(--ink); }
+.nsub.on { background: rgba(255,255,255,.92); color: var(--acc-deep); box-shadow: var(--shadow-sm); font-weight: 600; }
+.ndot { width: 6px; height: 6px; border-radius: 50%; background: rgba(28,30,36,.22); flex: none; }
+.nsub.on .ndot { background: var(--acc-deep); }
+.ntag { margin-left: auto; font-size: 11px; padding: 2px 7px; border-radius: 999px;
+  background: rgba(28,30,36,.07); color: var(--ink-3); font-weight: 600; letter-spacing: .02em; }
+
+/* ---------- 设置内容区 ---------- */
+.content { flex: 1; overflow-y: auto; padding: 26px 30px 30px; }
+.page-head { display: flex; align-items: center; gap: 20px; margin-bottom: 18px; }
+.page-head h1 { font-size: 24px; font-weight: 800; letter-spacing: -.018em; }
+.page-head .sub { font-size: 13px; color: var(--ink-3); margin-top: 2px; }
+.page-head .spacer { flex: 1; }
+.set-rows { border-radius: var(--r-card); border: 1px solid var(--glass-line);
+  background: linear-gradient(135deg, rgba(255,255,255,.9), rgba(255,255,255,.66));
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.55); }
+.set-row { display: flex; align-items: center; gap: 24px; padding: 15px 20px; }
+.set-row + .set-row { border-top: 1px solid var(--hairline); }
+.set-row .txt { flex: 1; min-width: 0; }
+.set-row .txt b { display: block; font-size: 13.5px; font-weight: 620; }
+.set-row .txt span { display: block; font-size: 12.3px; color: var(--ink-3); margin-top: 3px; line-height: 1.55; overflow-wrap: anywhere; }
+.set-row .ctl { flex: none; display: flex; align-items: center; }
+.help { font-size: 12px; color: var(--ink-3); margin-top: 12px; padding-left: 4px; line-height: 1.7; }
+.set-search { display: flex; align-items: center; gap: 8px; height: 36px; width: 280px; padding: 0 14px;
+  border-radius: 999px; background: linear-gradient(135deg, var(--glass-hi), var(--glass-lo)); border: 1px solid var(--hairline); }
+.set-search svg { flex: none; color: var(--ink-3); }
+.set-search input { border: none; background: none; outline: none; width: 100%; font-size: 13px; }
+
+/* 方案 A:昵称行内编辑输入框 */
+.name-input { width: 220px; height: 34px; padding: 0 12px; border-radius: var(--r-ctl);
+  border: 1px solid var(--hairline); background: rgba(255,255,255,.85); font-size: 13px; font-weight: 550; color: var(--ink);
+  outline: none; transition: border .15s var(--ease), box-shadow .15s var(--ease); }
+.name-input:focus { border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-ring); }
+.avatar-preview { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
+  color: #fff; font-weight: 700; font-size: 13px;
+  background: linear-gradient(140deg, var(--action), var(--action-deep));
+  border: 2px solid rgba(255,255,255,.9); box-shadow: var(--shadow-sm); }
+.greet-chip { font-size: 12.5px; font-weight: 600; color: var(--ink-2); padding: 6px 12px;
+  border-radius: var(--r-ctl); background: rgba(255,255,255,.7); border: 1px solid var(--hairline); }
+.greet-chip em { font-style: normal; color: var(--acc-deep); }
+
+.mock-tag { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 60;
+  font-size: 11.5px; font-weight: 650; color: var(--ink-3); padding: 5px 14px; border-radius: 999px;
+  background: rgba(255,255,255,.85); border: 1px solid var(--hairline); box-shadow: var(--shadow-sm); }
+</style>
+</head>
+<body>
+<div class="win">
+  <aside class="rail">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.7"/><circle cx="17.15" cy="6.85" r="2.15" fill="var(--acc)"/></svg></div>
+    <nav class="rnav">
+      <button class="ritem" title="首页"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.2 12 4.4l8 6.8V19a1 1 0 0 1-1 1h-4.6v-5.2h-4.8V20H5a1 1 0 0 1-1-1Z"/></svg></button>
+    </nav>
+    <div class="rmid">
+      <button class="ritem" title="自媒体工作台"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="m10 9.5 4.5 2.5L10 14.5Z"/></svg></button>
+      <button class="ritem dim" title="游戏工作台(即将上线)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8h11a4 4 0 0 1 4 4.2l-.4 4.3a2.4 2.4 0 0 1-4.2 1.4L15 16H9l-1.9 1.9a2.4 2.4 0 0 1-4.2-1.4l-.4-4.3A4 4 0 0 1 6.5 8Z"/><path d="M8.5 11v3M7 12.5h3M15.5 11.5h.01M17.5 13.5h.01"/></svg></button>
+      <button class="ritem dim" title="个人网页(即将上线)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 9h17M7 6.8h.01M9.6 6.8h.01"/></svg></button>
+      <button class="ritem" title="小工具"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 14.2A7.6 7.6 0 0 1 9.8 4.5a7.6 7.6 0 1 0 9.7 9.7Z"/></svg></button>
+      <button class="ritem on" title="设置"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="6.2"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2.9v3.1M12 18v3.1M2.9 12H6M18 12h3.1M5.6 5.6l2.2 2.2M16.2 16.2l2.2 2.2M18.4 5.6l-2.2 2.2M7.8 16.2l-2.2 2.2"/></svg></button>
+    </div>
+    <div class="rbot">
+      <button class="ritem" title="设置"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="6.2"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2.9v3.1M12 18v3.1M2.9 12H6M18 12h3.1M5.6 5.6l2.2 2.2M16.2 16.2l2.2 2.2M18.4 5.6l-2.2 2.2M7.8 16.2l-2.2 2.2"/></svg></button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="tb-left">
+        <div class="sched">
+          <span class="sched-label"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>日程<span class="date">9月24日 · 周四</span></span>
+          <span class="sdiv"></span>
+          <div class="sched-track">
+            <button class="schip"><span class="t">09:30</span><span class="n">整理供应商配置文档</span></button>
+            <button class="schip now"><span class="live"></span><span class="t">11:00</span><span class="n">回复合作邮件</span></button>
+            <button class="schip"><span class="t">14:00</span><span class="n">八字模块评审</span></button>
+          </div>
+          <button class="smore"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg></button>
+        </div>
+      </div>
+      <div class="tb-center">
+        <button class="todopill">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="m8.5 12.2 2.4 2.4 4.8-5"/></svg>
+          <span class="lbl">待办</span><span class="num">1/5<em>逾期 1</em></span>
+          <span class="tprog"><i></i></span>
+        </button>
+      </div>
+      <div class="tb-right">
+        <button class="ibtn" title="AI 助手"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5.5 12.4 9.6a2 2 0 0 0 1.25 1.25l4.1 1.4-4.1 1.4a2 2 0 0 0-1.25 1.25L11 19l-1.4-4.1a2 2 0 0 0-1.25-1.25L4.25 12.25 8.35 10.85A2 2 0 0 0 9.6 9.6Z"/><path d="m18.3 3.4.6 1.7 1.7.6-1.7.6-.6 1.7-.6-1.7-1.7-.6 1.7-.6Z"/></svg></button>
+        <button class="ibtn" title="搜索"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-3.8-3.8"/></svg></button>
+        <button class="ibtn" title="通知"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9.8a6 6 0 1 0-12 0c0 4.2-1.8 5.8-1.8 5.8h15.6S18 14 18 9.8Z"/><path d="M10.2 19a2 2 0 0 0 3.6 0"/></svg><span class="bdg">2</span></button>
+        <span class="vdiv"></span>
+        <button class="ibtn" title="设置"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="6.2"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2.9v3.1M12 18v3.1M2.9 12H6M18 12h3.1M5.6 5.6l2.2 2.2M16.2 16.2l2.2 2.2M18.4 5.6l-2.2 2.2M7.8 16.2l-2.2 2.2"/></svg></button>
+        <div class="avatar" title="Ono">O</div>
+        <span class="vdiv"></span>
+        <div class="wbtns">
+          <button class="wbtn" title="最小化"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+          <button class="wbtn" title="最大化"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="5" width="14" height="14" rx="2"/></svg></button>
+          <button class="wbtn close" title="关闭"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+      </div>
+    </header>
+
+    <div class="body-row">
+      <aside class="snav">
+        <div class="shead">
+          <span class="stitle">设置</span>
+          <button class="collapse"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M9.5 4.5v15M14.5 10l-2 2 2 2"/></svg></button>
+        </div>
+        <nav class="tree">
+          <a class="nsub on"><span class="ndot"></span>个人资料</a>
+          <a class="nsub"><span class="ndot"></span>通用</a>
+          <a class="nsub"><span class="ndot"></span>外观</a>
+          <a class="nsub"><span class="ndot"></span>AI 助手</a>
+          <a class="nsub"><span class="ndot"></span>待办与数据</a>
+          <a class="nsub"><span class="ndot"></span>通知</a>
+          <a class="nsub"><span class="ndot"></span>关于</a>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <div class="page-head">
+          <div>
+            <h1>个人资料</h1>
+            <div class="sub">这里的称呼与头像只用于界面展示,存在本机</div>
+          </div>
+          <span class="spacer"></span>
+          <div class="set-search">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-3.8-3.8"/></svg>
+            <input placeholder="搜索当前页设置">
+          </div>
+        </div>
+        <div class="set-rows">
+          <div class="set-row">
+            <div class="txt"><b>昵称</b><span>首页问候与头像取首字显示</span></div>
+            <div class="ctl"><input class="name-input" value="Ono" aria-label="昵称" /></div>
+          </div>
+          <div class="set-row">
+            <div class="txt"><b>头像</b><span>自动取昵称首字,近黑底白字,暂不支持自定义图片</span></div>
+            <div class="ctl"><span class="avatar-preview">O</span></div>
+          </div>
+          <div class="set-row">
+            <div class="txt"><b>问候预览</b><span>首页顶部将这样称呼你</span></div>
+            <div class="ctl"><span class="greet-chip">早上好,<em>Ono</em></span></div>
+          </div>
+        </div>
+        <p class="help">资料保存在本机应用数据(userData/app-settings.json),不与任何账户或 To-Do-List 同步。</p>
+      </main>
+    </div>
+  </div>
+</div>
+<div class="mock-tag">个人资料 · 方案 A 设置分区</div>
+</body>
+</html>

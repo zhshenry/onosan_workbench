@@ -1,0 +1,15 @@
+node_modules/
+dist/
+dist-electron/
+release/
+test-results/
+design/_edge_tmp*/
+.claude/
+.zcode/
+*.log
+*.db
+*.db-shm
+*.db-wal
+*.tsbuildinfo
+.env*
+!.env.example

@@ -1,0 +1,49 @@
+{
+  "name": "onosan-workbench",
+  "productName": "Ono Workbench",
+  "version": "0.1.0",
+  "description": "个人工作台 — 待办/日程、文档中心、内置浏览器与可生长的工作台模块",
+  "type": "module",
+  "main": "dist-electron/main.cjs",
+  "private": true,
+  "scripts": {
+    "dev": "node tooling/dev.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.electron.json",
+    "build": "vite build && node tooling/build.mjs",
+    "verify": "npm run typecheck && npm run build",
+    "smoke": "node tooling/smoke.mjs",
+    "start": "electron .",
+    "test": "tsx --test tests/*.test.ts",
+    "postinstall": "node tooling/patch-excel.mjs"
+  },
+  "dependencies": {
+    "@deepseek-ai/libreoffice-kit": "^0.1.0",
+    "@earendil-works/pi-coding-agent": "^0.85.1",
+    "@fortune-sheet/core": "^1.0.4",
+    "@fortune-sheet/react": "^1.0.4",
+    "@phosphor-icons/react": "^2.1.10",
+    "exceljs": "^4.4.0",
+    "fast-xml-parser": "^5.11.1",
+    "fflate": "^0.8.3",
+    "lunar-javascript": "^1.7.7",
+    "papaparse": "^5.5.3",
+    "pdfjs-dist": "^6.3.289",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "typebox": "^1.3.34",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.0",
+    "@types/papaparse": "^5.5.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "electron": "^44.3.0",
+    "esbuild": "^0.28.0",
+    "tsx": "4.23.13",
+    "typescript": "~5.9.0",
+    "vite": "^8.3.0"
+  }
+}

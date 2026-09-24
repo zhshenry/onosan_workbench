@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>八字排盘 · 小工具工作台 — 方案 A · 磨砂玻璃(浅蓝)</title>
+<!--
+  高保真可交互原型 · Ono Workbench「八字排盘」模块
+  参考 DSH 插件 Veang-Workbench 的命理(FortunePanel)功能设计;视觉沿用已选定的 Sky Glass v2。
+  排盘为 lunar-javascript 真实计算(vendor/lunar.js);命例与笔记为合成示例数据,保存于本机 localStorage。
+-->
+<style>
+/* ========== Sky Glass v2 · 外壳(与 design-a-glass.html 同源) ========== */
+:root{
+  --ink:#122436;
+  --ink-2:#3a5872;
+  --ink-3:#4a6379;
+  --acc:#2470b8;
+  --acc-deep:#1d5c9a;
+  --acc-soft:rgba(36,112,184,.11);
+  --acc-ring:rgba(36,112,184,.35);
+  --danger:#c2453c; --danger-soft:rgba(194,69,60,.12);
+  --glass-hi:rgba(255,255,255,.78);
+  --glass-lo:rgba(255,255,255,.42);
+  --glass-line:rgba(255,255,255,.75);
+  --hairline:rgba(20,40,60,.08);
+  --shadow:0 10px 32px rgba(15,40,65,.13), 0 2px 8px rgba(15,40,65,.06);
+  --shadow-sm:0 4px 14px rgba(15,40,65,.10);
+  --r-panel:18px; --r-card:14px; --r-ctl:10px;
+  --font:"Bahnschrift","Segoe UI Variable Text","Segoe UI","Microsoft YaHei UI","Microsoft YaHei",sans-serif;
+  --ease:cubic-bezier(.2,.7,.2,1);
+  /* 八字模块 · 五行语义色(信息编码,非装饰;大字号下均 ≥3:1) */
+  --wx-mu:#3d8b5f;   /* 木 · 松绿 */
+  --wx-huo:#bd5b2e;  /* 火 · 陶红 */
+  --wx-tu:#9c7a26;   /* 土 · 赭金 */
+  --wx-jin:#71808f;  /* 金 · 银灰 */
+  --wx-shui:#2470b8; /* 水 · 晴蓝 */
+  --wx-soft-mu:rgba(61,139,95,.14); --wx-soft-huo:rgba(189,91,46,.13);
+  --wx-soft-tu:rgba(156,122,38,.15); --wx-soft-jin:rgba(113,128,143,.16);
+  --wx-soft-shui:rgba(36,112,184,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--font);color:var(--ink);font-size:14px;line-height:1.55;
+  background:linear-gradient(155deg,#dbe6f0 0%,#e0e9f0 45%,#e6ebf0 100%);
+  display:grid;place-items:center;padding:26px;overflow:hidden;
+}
+::selection{background:rgba(36,112,184,.22)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,textarea{font:inherit;color:inherit}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:rgba(18,36,54,.16);border-radius:999px;border:3px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(18,36,54,.28);background-clip:content-box;border:3px solid transparent}
+::-webkit-scrollbar-track{background:transparent}
+
+.win{
+  position:relative;width:min(1400px,100%);height:min(864px,100%);
+  border-radius:22px;overflow:hidden;display:flex;
+  background:#f4f8fb;
+  filter:drop-shadow(0 24px 44px rgba(15,40,65,.30)) drop-shadow(0 4px 12px rgba(15,40,65,.14));
+  border:1px solid rgba(255,255,255,.65);
+}
+.win::before{
+  content:"";position:absolute;inset:0;z-index:0;
+  background:
+    radial-gradient(48% 42% at 12% 6%,rgba(110,170,225,.52) 0%,transparent 100%),
+    radial-gradient(52% 46% at 90% 96%,rgba(120,170,220,.40) 0%,transparent 100%),
+    radial-gradient(38% 34% at 88% 8%,rgba(150,195,235,.35) 0%,transparent 100%),
+    radial-gradient(34% 30% at 30% 92%,rgba(140,185,230,.40) 0%,transparent 100%),
+    linear-gradient(150deg,#eaf1f7 0%,#e9eef4 55%,#edf1f4 100%);
+}
+.glass{
+  background:linear-gradient(135deg,var(--glass-hi),var(--glass-lo));
+  -webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);
+  border:1px solid var(--glass-line);
+  box-shadow:var(--shadow-sm),inset 0 1px 0 rgba(255,255,255,.55);
+}
+
+/* 图标栏 */
+.rail{
+  position:relative;z-index:2;width:66px;flex:none;display:flex;flex-direction:column;align-items:center;
+  padding:14px 0 12px;gap:6px;
+  background:linear-gradient(180deg,rgba(255,255,255,.60),rgba(255,255,255,.36));
+  -webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);
+  border-right:1px solid var(--glass-line);
+}
+.logo{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;margin-bottom:10px;
+  background:linear-gradient(140deg,#2a78ba,#1d5c9a);box-shadow:inset 0 1px 0 rgba(255,255,255,.35);}
+.logo svg{stroke:#eaf4fd}
+.ritem{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;color:var(--ink-2);
+  transition:background .16s var(--ease),color .16s var(--ease);position:relative}
+.ritem:hover{background:rgba(255,255,255,.65);color:var(--ink)}
+.ritem.on{background:rgba(255,255,255,.92);color:var(--acc-deep);box-shadow:var(--shadow-sm)}
+.ritem.on::before{content:"";position:absolute;left:-12px;top:50%;transform:translateY(-50%);width:4px;height:18px;border-radius:999px;background:var(--acc)}
+.ritem.dim{opacity:.5}
+.rnav{display:flex;flex-direction:column;gap:6px}
+.rsep{width:22px;height:1px;background:var(--hairline);margin:8px 0}
+.rbot{margin-top:auto;display:flex;flex-direction:column;gap:6px}
+
+/* 二级导航 */
+.snav{
+  position:relative;z-index:2;width:216px;flex:none;display:flex;flex-direction:column;
+  padding:18px 12px 14px;
+  background:linear-gradient(180deg,rgba(255,255,255,.44),rgba(255,255,255,.26));
+  -webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);
+  border-right:1px solid var(--glass-line);
+}
+.shead{display:flex;align-items:center;justify-content:space-between;padding:0 8px 14px}
+.stitle{font-size:15px;font-weight:700;letter-spacing:.01em}
+.collapse{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;color:var(--ink-3)}
+.collapse:hover{background:rgba(255,255,255,.6);color:var(--ink)}
+.tree{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:2px;padding:0 2px}
+.nsub{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--r-ctl);
+  color:var(--ink-2);font-weight:500;cursor:pointer;transition:background .15s var(--ease),color .15s var(--ease)}
+.nsub:hover{background:rgba(255,255,255,.55);color:var(--ink)}
+.nsub.on{background:rgba(255,255,255,.92);color:var(--acc-deep);box-shadow:var(--shadow-sm);font-weight:600}
+.nsub .ndot{width:6px;height:6px;border-radius:50%;background:rgba(18,36,54,.22);flex:none;transition:background .15s var(--ease)}
+.nsub.on .ndot{background:var(--acc)}
+.ntag{margin-left:auto;font-size:11px;padding:2px 7px;border-radius:999px;background:rgba(18,36,54,.07);color:var(--ink-3);font-weight:600;letter-spacing:.02em}
+.sfoot{display:flex;align-items:center;gap:8px;padding:12px 10px 0;border-top:1px solid var(--hairline);margin-top:12px;
+  font-size:12px;color:var(--ink-3)}
+.sfoot .dotok{width:7px;height:7px;border-radius:50%;background:var(--acc);box-shadow:0 0 0 3px rgba(36,112,184,.15)}
+
+/* 主区 */
+.main{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{
+  flex:none;height:62px;display:flex;align-items:center;gap:12px;padding:0 18px;
+  background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.34));
+  -webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);
+  border-bottom:1px solid var(--glass-line);
+}
+.sched{display:flex;align-items:center;padding:5px 8px 5px 14px;gap:6px;min-width:0;border-radius:999px;
+  background:linear-gradient(135deg,var(--glass-hi),var(--glass-lo));-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);
+  border:1px solid var(--glass-line);box-shadow:var(--shadow-sm),inset 0 1px 0 rgba(255,255,255,.55)}
+.sched-label{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;white-space:nowrap;color:var(--ink);padding:0 4px}
+.sched-label svg{color:#1a4f85}
+.sched-label .date{color:var(--ink-3);font-weight:600}
+.sdiv{width:1px;height:20px;background:var(--hairline);margin:0 6px;flex:none}
+.sched-track{display:flex;align-items:center;gap:6px;overflow:hidden;min-width:0}
+.schip{display:flex;align-items:baseline;gap:7px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.62);white-space:nowrap;transition:transform .16s var(--ease)}
+.schip:hover{transform:translateY(-1px)}
+.schip .t{font-weight:700;font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.schip .n{font-size:12.5px;color:var(--ink-2)}
+.schip.now{background:rgba(36,112,184,.13)}
+.schip.now .t,.schip.now .n{color:var(--acc-deep)}
+.schip.now .live{width:7px;height:7px;border-radius:50%;background:var(--acc);align-self:center}
+.smore{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.62);color:var(--ink-2);flex:none}
+.todopill{display:flex;align-items:center;gap:9px;height:42px;padding:0 16px;border-radius:999px;white-space:nowrap}
+.todopill svg{color:#1a4f85}
+.todopill .lbl{font-weight:700;font-size:13px}
+.todopill .num{font-weight:700;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tprog{width:64px;height:5px;border-radius:999px;background:rgba(18,36,54,.10);overflow:hidden}
+.tprog i{display:block;height:100%;width:42%;border-radius:999px;background:var(--acc)}
+.spacer{flex:1}
+.vdiv{width:1px;height:22px;background:var(--hairline)}
+.ibtn{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;color:var(--ink-2);position:relative;transition:background .15s var(--ease),color .15s var(--ease)}
+.ibtn:hover{background:rgba(255,255,255,.7);color:var(--ink)}
+.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:14px;
+  background:linear-gradient(140deg,#2a78ba,#1c5a94);border:2px solid rgba(255,255,255,.85);box-shadow:var(--shadow-sm);cursor:pointer}
+
+/* 内容区 */
+.content{flex:1;overflow-y:auto;padding:22px 24px 26px}
+.view{display:none}
+.view.on{display:block;animation:fadein .24s var(--ease)}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.greet{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px}
+.greet h1{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.25}
+.gsub{color:var(--ink-3);font-size:13px;margin-top:3px;font-variant-numeric:tabular-nums}
+.gsub b{color:var(--acc-deep);font-weight:700}
+.gbtns{display:flex;gap:10px;flex:none}
+.btn{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 16px;border-radius:12px;font-weight:600;font-size:13.5px;
+  transition:transform .16s var(--ease),box-shadow .16s var(--ease),background .16s var(--ease)}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:none}
+.btn-pri{background:linear-gradient(140deg,#2a78ba,var(--acc-deep));color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+.btn-pri:hover{background:linear-gradient(140deg,#2e80c4,#1f65a8);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+.btn-sec{background:rgba(255,255,255,.66);border:1px solid rgba(255,255,255,.8);box-shadow:var(--shadow-sm)}
+.btn-sec:hover{background:#fff}
+
+.cols{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;align-items:start}
+.panel{border-radius:var(--r-panel);padding:16px 18px 12px}
+.panel + .panel{margin-top:16px}
+.phead{display:flex;align-items:center;gap:10px;padding-bottom:10px}
+.ptitle{font-size:15.5px;font-weight:800;letter-spacing:-.01em}
+.pcount{font-size:12px;color:var(--ink-3);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pseg{display:flex;gap:2px;background:rgba(18,36,54,.06);border-radius:999px;padding:3px;margin-left:auto}
+.pseg button{padding:4px 12px;border-radius:999px;font-size:12px;font-weight:600;color:var(--ink-3);transition:all .15s var(--ease)}
+.pseg button.on{background:#fff;color:var(--acc-deep);box-shadow:0 2px 6px rgba(15,40,65,.12)}
+
+/* 命例条 + 排盘输入 */
+.pbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.pfchip{display:flex;align-items:center;gap:9px;padding:6px 13px 6px 7px;border-radius:999px;
+  background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.7);cursor:pointer;
+  transition:transform .15s var(--ease),background .15s var(--ease),box-shadow .15s var(--ease)}
+.pfchip:hover{transform:translateY(-1px);background:rgba(255,255,255,.8)}
+.pfchip.on{background:rgba(255,255,255,.94);box-shadow:var(--shadow-sm);border-color:#fff}
+.pfchip.on .pname{color:var(--acc-deep)}
+.pfchip .pav{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700;flex:none;
+  background:linear-gradient(140deg,#2a78ba,#1c5a94)}
+.pfchip .pname{font-weight:700;font-size:13px}
+.pfchip .pbirth{font-size:11.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.pfadd{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.55);color:var(--ink-2);
+  border:1px dashed rgba(18,36,54,.18);transition:all .15s var(--ease)}
+.pfadd:hover{background:#fff;color:var(--acc-deep);border-color:var(--acc)}
+.inputs{display:flex;align-items:center;gap:8px;margin-left:auto}
+.inp{height:34px;padding:0 12px;border-radius:var(--r-ctl);background:rgba(255,255,255,.7);
+  border:1px solid rgba(255,255,255,.85);box-shadow:inset 0 1px 2px rgba(15,40,65,.05);
+  font-size:12.5px;font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums;outline:none;
+  transition:border-color .15s var(--ease),background .15s var(--ease)}
+.inp:hover{background:#fff}
+.inp:focus{border-color:var(--acc-ring);background:#fff}
+.inputs .pseg{margin-left:0}
+
+/* 命盘四柱 */
+.pillars{display:grid;grid-template-columns:repeat(4,1fr);margin-top:2px}
+.pcol{padding:12px 8px 10px;text-align:center;position:relative;min-width:0}
+.pcol + .pcol{border-left:1px solid var(--hairline)}
+.plabel{font-size:11.5px;font-weight:700;color:var(--ink-3);letter-spacing:.12em;display:flex;align-items:center;justify-content:center;gap:6px}
+.mtag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--acc-soft);color:var(--acc-deep);letter-spacing:.04em}
+.pss{margin-top:12px;font-size:12px;font-weight:600;color:var(--ink-2);height:18px}
+.pgan,.pzhi{font-family:"KaiTi","STKaiti","BiauKai","Microsoft YaHei",serif;font-size:40px;line-height:1.12;font-weight:700}
+.pgan{margin-top:7px}
+.pzhi{margin-top:2px}
+.pssz{margin-top:9px;font-size:11.5px;font-weight:600;color:var(--ink-3);height:17px}
+.phide{margin-top:7px;font-size:11.5px;color:var(--ink-3);line-height:1.6;min-height:37px}
+.phide .hi{white-space:nowrap}
+.phide b{font-weight:600;color:var(--ink-2)}
+.pna{margin-top:8px}
+.nachip{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 10px;border-radius:999px;background:rgba(18,36,54,.055);color:var(--ink-3)}
+.cfoot{display:flex;align-items:center;gap:14px;padding:11px 6px 4px;border-top:1px solid var(--hairline);margin-top:8px;
+  font-size:12px;color:var(--ink-3);flex-wrap:wrap}
+.cfoot b{color:var(--ink-2);font-weight:700}
+.cfoot .gz{font-family:"KaiTi","STKaiti","BiauKai","Microsoft YaHei",serif;font-size:14px;letter-spacing:.35em;color:var(--ink-2)}
+
+/* 大运 */
+.yunstart{font-size:12px;color:var(--ink-3);padding:0 6px 10px;font-variant-numeric:tabular-nums}
+.yunstart b{color:var(--ink-2)}
+.dychips{display:flex;flex-wrap:wrap;gap:8px;padding:0 2px}
+.dychip{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 13px;border-radius:12px;
+  background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.7);cursor:pointer;min-width:86px;
+  transition:transform .15s var(--ease),background .15s var(--ease),box-shadow .15s var(--ease)}
+.dychip:hover{transform:translateY(-1px);background:rgba(255,255,255,.8)}
+.dychip.on{background:rgba(255,255,255,.94);box-shadow:var(--shadow-sm);border-color:#fff}
+.dychip .dz{font-family:"KaiTi","STKaiti","BiauKai","Microsoft YaHei",serif;font-size:19px;font-weight:700}
+.dychip .dage{font-size:11px;font-weight:600;color:var(--ink-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dychip .dss{font-size:11px;color:var(--ink-3)}
+.dychip.now{background:var(--acc-soft);border-color:rgba(36,112,184,.25)}
+.dychip.now .dz,.dychip.now .dss{color:var(--acc-deep)}
+.dychip .dnow{display:none;width:6px;height:6px;border-radius:50%;background:var(--acc);margin-top:3px}
+.dychip.now .dnow{display:block}
+.lnwrap{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .24s var(--ease),opacity .2s var(--ease)}
+.lnwrap.open{grid-template-rows:1fr;opacity:1}
+.lnclip{overflow:hidden;min-height:0}
+.lnrow{display:flex;flex-wrap:wrap;gap:6px;padding:12px 4px 6px;border-top:1px solid var(--hairline);margin-top:12px}
+.lnchip{display:flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;background:rgba(255,255,255,.55);
+  border:1px solid rgba(255,255,255,.7);font-size:12px;transition:background .15s var(--ease)}
+.lnchip:hover{background:rgba(255,255,255,.85)}
+.lnchip .ly{font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.lnchip .lg{font-family:"KaiTi","STKaiti","BiauKai","Microsoft YaHei",serif;font-size:14px;font-weight:700}
+.lnchip .ls{font-size:11.5px;color:var(--ink-3)}
+.lnchip.nowln{background:var(--acc-soft);border-color:rgba(36,112,184,.25)}
+.lnchip.nowln .ly,.lnchip.nowln .ls{color:var(--acc-deep)}
+.lnchip .lnow{width:6px;height:6px;border-radius:50%;background:var(--acc);flex:none}
+
+/* 五行 */
+.wxrow{display:flex;align-items:center;gap:10px;padding:5px 4px}
+.wxdot{width:11px;height:11px;border-radius:4px;flex:none}
+.wxname{width:16px;font-weight:700;font-size:13px}
+.wxnum{width:26px;text-align:right;font-weight:700;font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.wxbar{flex:1;height:8px;border-radius:999px;background:rgba(18,36,54,.07);overflow:hidden}
+.wxbar i{display:block;height:100%;border-radius:999px;transition:width .24s var(--ease)}
+.wxflag{width:32px;text-align:center;font-size:11px;font-weight:700;border-radius:999px;padding:1px 0;color:var(--ink-3)}
+.wxflag.strong{background:rgba(18,36,54,.07);color:var(--ink-2)}
+.wxsum{padding:10px 6px 2px;border-top:1px solid var(--hairline);margin-top:7px;font-size:12px;color:var(--ink-3)}
+.wxsum b{color:var(--ink-2)}
+
+/* 神煞 */
+.ssrow{display:flex;flex-wrap:wrap;gap:7px;padding:2px 2px 6px}
+.sschip{display:inline-flex;align-items:center;gap:7px;padding:4px 11px;border-radius:999px;background:rgba(255,255,255,.6);
+  border:1px solid rgba(255,255,255,.75);font-size:12px;font-weight:600;color:var(--ink-2)}
+.sschip .sspos{font-size:11px;font-weight:600;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.ssempty{font-size:12.5px;color:var(--ink-3);padding:4px 6px 8px}
+
+/* 笔记 */
+.noteta{width:100%;min-height:108px;resize:vertical;border-radius:12px;padding:10px 13px;font-size:13px;line-height:1.7;
+  background:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.85);outline:none;color:var(--ink);
+  transition:border-color .15s var(--ease),background .15s var(--ease)}
+.noteta:hover{background:rgba(255,255,255,.85)}
+.noteta:focus{border-color:var(--acc-ring);background:#fff}
+.noteta::placeholder{color:var(--ink-3)}
+.notehint{font-size:12px;color:var(--ink-3);padding:7px 6px 4px}
+
+/* toast */
+.toast{position:absolute;left:50%;bottom:26px;transform:translateX(-50%) translateY(16px);opacity:0;z-index:50;
+  padding:10px 18px;border-radius:12px;font-size:13px;font-weight:600;color:var(--ink);pointer-events:none;
+  transition:all .22s var(--ease);box-shadow:0 8px 20px rgba(15,40,65,.14)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* modal */
+.mmask{position:absolute;inset:0;z-index:40;display:none;align-items:center;justify-content:center;
+  background:rgba(18,36,54,.30);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.mmask.open{display:flex}
+.mcard{width:min(480px,92%);max-height:86%;overflow-y:auto;border-radius:var(--r-panel);padding:20px 22px 18px;
+  background:linear-gradient(135deg,rgba(255,255,255,.94),rgba(255,255,255,.86));border:1px solid var(--glass-line);
+  box-shadow:var(--shadow);animation:pop .22s var(--ease)}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.mtitle{font-size:17px;font-weight:800;letter-spacing:-.01em}
+.msub{font-size:12px;color:var(--ink-3);margin-top:2px}
+.mform{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.mfield{display:flex;flex-direction:column;gap:6px}
+.mfield.full{grid-column:1/-1}
+.mlabel{font-size:12px;font-weight:700;color:var(--ink-2)}
+.mfield .inp{width:100%}
+.mfield .pseg{margin-left:0;align-self:flex-start}
+.mbtns{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+.msec{padding:14px 2px 4px;font-size:13px;line-height:1.75;color:var(--ink-2)}
+.msec h2{font-size:13px;color:var(--ink);margin:12px 0 4px}
+.msec .demo{font-size:12px;font-weight:700;color:var(--ink-3);background:rgba(18,36,54,.06);border-radius:999px;padding:2px 9px;display:inline-block;margin-bottom:6px}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+@media (max-width:1180px){
+  .cols{grid-template-columns:1fr}
+  .inputs{margin-left:0}
+  .sched-track .schip:nth-child(n+3){display:none}
+}
+</style>
+</head>
+<body>
+<div class="win">
+
+  <!-- 图标栏 = 一级:大工作台切换(本稿聚焦「小工具」工作台) -->
+  <aside class="rail">
+    <div class="logo" title="个人工作台">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round">
+        <circle cx="11" cy="13" r="6.2"/><circle cx="19" cy="5" r="2" fill="#eaf4fd" stroke="none"/><path d="M15.5 8.5 17.4 6.6"/>
+      </svg>
+    </div>
+    <nav class="rnav">
+      <button class="ritem" data-toast="首页见 design-a-glass.html 全局方案" title="首页">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.2 12 4.4l8 6.8V19a1 1 0 0 1-1 1h-4.6v-5.2h-4.8V20H5a1 1 0 0 1-1-1Z"/></svg>
+      </button>
+      <button class="ritem" data-toast="文档中心见 design-a-glass.html 全局方案" title="文档中心">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h6.5L19 9v10.5a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1Z"/><path d="M13.5 3.5V9H19"/><path d="M9.5 13h5.5M9.5 16.5h5.5"/></svg>
+      </button>
+      <button class="ritem" data-toast="内置浏览器见 design-a-glass.html 全局方案" title="内置浏览器">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="8.2"/><ellipse cx="12" cy="12" rx="3.6" ry="8.2"/><path d="M4.4 9.4h15.2M4.4 14.6h15.2"/></svg>
+      </button>
+      <button class="ritem dim" data-toast="终端规划中" title="终端(即将上线)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="m7.5 9.5 3 2.8-3 2.8M13 15.4h4"/></svg>
+      </button>
+      <div class="rsep"></div>
+      <button class="ritem dim" data-toast="创作工坊规划中" title="创作工坊">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.3 0 2-.8 2-1.8 0-.9-.6-1.4-.6-2.2 0-1 .8-1.8 2-1.8h1.8c1.9 0 3.3-1.5 3.3-3.4C20.5 6.7 16.7 3.5 12 3.5Z"/><circle cx="8" cy="9" r="1.15" fill="currentColor" stroke="none"/><circle cx="12.5" cy="7" r="1.15" fill="currentColor" stroke="none"/><circle cx="16.5" cy="9.5" r="1.15" fill="currentColor" stroke="none"/><circle cx="7.5" cy="13.8" r="1.15" fill="currentColor" stroke="none"/></svg>
+      </button>
+      <button class="ritem on" title="小工具">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 14.2A7.6 7.6 0 0 1 9.8 4.5a7.6 7.6 0 1 0 9.7 9.7Z"/></svg>
+      </button>
+    </nav>
+    <div class="rbot">
+      <button class="ritem" data-toast="设置规划中" title="设置">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="3.1"/><path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- 二级导航 = 小工具工作台的二级目录 -->
+  <aside class="snav">
+    <div class="shead">
+      <span class="stitle">小工具</span>
+      <button class="collapse" data-toast="收起导航" title="收起导航">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M9.5 4.5v15M14.5 10l-2 2 2 2"/></svg>
+      </button>
+    </div>
+    <nav class="tree">
+      <a class="nsub on"><span class="ndot"></span>八字排盘</a>
+      <a class="nsub"><span class="ndot"></span>阅读清单<span class="ntag">规划中</span></a>
+    </nav>
+    <div class="sfoot"><span class="dotok"></span>命例保存于本机 · 不联网</div>
+  </aside>
+
+  <!-- 主区 -->
+  <div class="main">
+    <header class="topbar">
+      <div class="sched">
+        <span class="sched-label">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>
+          日程<span class="date">9月23日 · 周三</span>
+        </span>
+        <span class="sdiv"></span>
+        <div class="sched-track">
+          <button class="schip"><span class="t">09:30</span><span class="n">产品周会</span></button>
+          <button class="schip"><span class="t">14:00</span><span class="n">对齐接口 · 张工</span></button>
+          <button class="schip now"><span class="live"></span><span class="t">19:30</span><span class="n">健身 · 背腿</span></button>
+        </div>
+        <button class="smore" data-toast="更多日程" title="更多日程">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg>
+        </button>
+      </div>
+      <button class="todopill glass" data-toast="今日待办" title="今日待办">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="m8.5 12.2 2.4 2.4 4.8-5"/></svg>
+        <span class="lbl">待办</span>
+        <span class="num">5/12</span>
+        <span class="tprog"><i></i></span>
+      </button>
+      <div class="spacer"></div>
+      <button class="ibtn" data-toast="搜索" title="搜索">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-3.8-3.8"/></svg>
+      </button>
+      <button class="ibtn" data-toast="通知" title="通知">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9.8a6 6 0 1 0-12 0c0 4.2-1.8 5.8-1.8 5.8h15.6S18 14 18 9.8Z"/><path d="M10.2 19a2 2 0 0 0 3.6 0"/></svg>
+      </button>
+      <span class="vdiv"></span>
+      <button class="ibtn" data-toast="设置" title="设置">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="3.1"/><path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5"/></svg>
+      </button>
+      <div class="avatar" title="Ono">O</div>
+    </header>
+
+    <main class="content">
+      <section class="view on" id="view-bazi">
+
+        <div class="greet">
+          <div>
+            <h1>八字排盘</h1>
+            <div class="gsub">本地排盘 · 数据为<b>合成示例</b>,命例与笔记保存在本机 · 可交由 AI 内核解读</div>
+          </div>
+          <div class="gbtns">
+            <button class="btn btn-sec" id="btnNew">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              新建命例
+            </button>
+            <button class="btn btn-pri" id="btnAI">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2l1.9 4.6 4.6 1.9-4.6 1.9-1.9 4.6-1.9-4.6-4.6-1.9 4.6-1.9Z"/><path d="M19 14.5l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9Z"/></svg>
+              AI 解读
+            </button>
+          </div>
+        </div>
+
+        <!-- 命例条 + 排盘输入 -->
+        <div class="pbar">
+          <div id="profiles" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+          <button class="pfadd" id="btnAdd" title="新建命例">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+          <div class="inputs">
+            <input class="inp" type="date" id="inDate" min="1900-01-01" max="2100-12-31" title="公历生日">
+            <input class="inp" type="time" id="inTime" step="300" title="出生时间(24小时制)">
+            <div class="pseg" id="segGender">
+              <button data-g="1">男</button><button data-g="0">女</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="cols">
+          <!-- 左列:命盘 + 大运 -->
+          <div>
+            <div class="panel glass">
+              <div class="phead">
+                <span class="ptitle">命盘</span>
+                <span class="pcount" id="chartCount"></span>
+              </div>
+              <div class="pillars" id="pillars"></div>
+              <div class="cfoot" id="chartFoot"></div>
+            </div>
+
+            <div class="panel glass">
+              <div class="phead">
+                <span class="ptitle">大运</span>
+                <span class="pcount" id="dayunCount"></span>
+              </div>
+              <div class="yunstart" id="yunStart"></div>
+              <div class="dychips" id="dayunChips"></div>
+              <div class="lnwrap" id="lnWrap">
+                <div class="lnclip">
+                  <div class="lnrow" id="lnRow"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右列:五行 + 神煞 + 笔记 -->
+          <div>
+            <div class="panel glass">
+              <div class="phead">
+                <span class="ptitle">五行</span>
+                <span class="pcount">八字 8 字统计</span>
+              </div>
+              <div id="wxRows"></div>
+              <div class="wxsum" id="wxSum"></div>
+            </div>
+
+            <div class="panel glass">
+              <div class="phead">
+                <span class="ptitle">神煞</span>
+                <span class="pcount" id="ssCount"></span>
+              </div>
+              <div class="ssrow" id="ssRow"></div>
+            </div>
+
+            <div class="panel glass">
+              <div class="phead">
+                <span class="ptitle">笔记</span>
+                <span class="pcount" id="noteState"></span>
+              </div>
+              <textarea class="noteta" id="noteTa" placeholder="记下用神取舍、流年应期、大运体会……"></textarea>
+              <div class="notehint">笔记随命例保存在本机,修改后自动保存。</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 新建命例 -->
+  <div class="mmask" id="mNew">
+    <div class="mcard" role="dialog" aria-modal="true" aria-labelledby="mNewTitle">
+      <div class="mtitle" id="mNewTitle">新建命例</div>
+      <div class="msub">公历生日 + 出生时间,保存后随时切换查看</div>
+      <div class="mform">
+        <div class="mfield">
+          <span class="mlabel">姓名 / 备注</span>
+          <input class="inp" type="text" id="nfName" placeholder="如:林川" maxlength="12">
+        </div>
+        <div class="mfield">
+          <span class="mlabel">性别</span>
+          <div class="pseg" id="nfGender"><button class="on" data-g="1">男</button><button data-g="0">女</button></div>
+        </div>
+        <div class="mfield">
+          <span class="mlabel">公历生日</span>
+          <input class="inp" type="date" id="nfDate" min="1900-01-01" max="2100-12-31">
+        </div>
+        <div class="mfield">
+          <span class="mlabel">出生时间</span>
+          <input class="inp" type="time" id="nfTime" step="300" value="12:00">
+        </div>
+      </div>
+      <div class="mbtns">
+        <button class="btn btn-sec" data-close>取消</button>
+        <button class="btn btn-pri" id="nfSave">保存并排盘</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI 解读 -->
+  <div class="mmask" id="mAI">
+    <div class="mcard" role="dialog" aria-modal="true" aria-labelledby="mAITitle">
+      <div class="mtitle" id="mAITitle">AI 解读 · <span id="aiName"></span></div>
+      <div class="msub">发送命盘数据到工作台 AI 内核,在本应用的 AI 面板中生成解读</div>
+      <div class="msec">
+        <h2>将发送的命盘数据</h2>
+        <div id="aiPayload" style="font-variant-numeric:tabular-nums;color:var(--ink-3);font-size:12.5px;line-height:1.8"></div>
+        <h2>解读维度</h2>
+        <div>五行旺衰与喜用神 · 格局与性格特质 · 事业与财运倾向 · 婚姻感情 · 健康提示 · 近步大运与流年提示</div>
+        <div style="margin-top:12px"><span class="demo">示例文案 · 实际解读由工作台 AI 内核生成</span></div>
+        <div id="aiDemo" style="margin-top:4px"></div>
+      </div>
+      <div class="mbtns">
+        <button class="btn btn-sec" data-close>关闭</button>
+        <button class="btn btn-pri" id="aiSend">发送到 AI 面板</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast glass" id="toast"></div>
+</div>
+
+<script src="vendor/lunar.js"></script>
+<script>
+/* ================= 数据:命例库(localStorage,合成示例) ================= */
+const LS_KEY = 'wb-bazi-mock-profiles';
+const SAMPLES = [
+  { id:'p1', name:'林川',   gender:1, date:'1990-08-16', time:'14:30', sample:true },
+  { id:'p2', name:'沈知微', gender:0, date:'1993-02-23', time:'06:15', sample:true },
+  { id:'p3', name:'周砚',   gender:1, date:'1985-11-07', time:'22:40', sample:true },
+];
+let profiles = loadProfiles();
+let curId = localStorage.getItem('wb-bazi-mock-cur') || profiles[0].id;
+let openDy = -1;          /* 展开流年的大运序号 */
+let notes = JSON.parse(localStorage.getItem('wb-bazi-mock-notes') || '{}');
+
+function loadProfiles(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+    if(Array.isArray(saved) && saved.length) return saved;
+  }catch(e){}
+  return SAMPLES.map(p => ({...p}));
+}
+function saveProfiles(){
+  localStorage.setItem(LS_KEY, JSON.stringify(profiles));
+  localStorage.setItem('wb-bazi-mock-cur', curId);
+}
+function cur(){ return profiles.find(p => p.id === curId) || profiles[0]; }
+
+/* ================= 排盘(lunar-javascript) ================= */
+const WX_OF = {甲:'木',乙:'木',丙:'火',丁:'火',戊:'土',己:'土',庚:'金',辛:'金',壬:'水',癸:'水',
+               子:'水',丑:'土',寅:'木',卯:'木',辰:'土',巳:'火',午:'火',未:'土',申:'金',酉:'金',戌:'土',亥:'水'};
+const WX_COLOR = {木:'var(--wx-mu)',火:'var(--wx-huo)',土:'var(--wx-tu)',金:'var(--wx-jin)',水:'var(--wx-shui)'};
+const WX_SOFT  = {木:'var(--wx-soft-mu)',火:'var(--wx-soft-huo)',土:'var(--wx-soft-tu)',金:'var(--wx-soft-jin)',水:'var(--wx-soft-shui)'};
+
+function shiShen(dayGan, gan){
+  const yang = c => '甲丙戊庚壬'.includes(c);
+  const sheng = {木:'火',火:'土',土:'金',金:'水',水:'木'};
+  const ke = {木:'土',土:'水',水:'火',火:'金',金:'木'};
+  const a = WX_OF[dayGan], b = WX_OF[gan], same = yang(dayGan) === yang(gan);
+  if(a === b) return same ? '比肩' : '劫财';
+  if(sheng[a] === b) return same ? '食神' : '伤官';
+  if(ke[a] === b) return same ? '偏财' : '正财';
+  if(ke[b] === a) return same ? '七杀' : '正官';
+  return same ? '偏印' : '正印';
+}
+const HOUR_ZHI = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+function hourName(h, m){
+  const idx = Math.floor(((h + 1) % 24) / 2);
+  return HOUR_ZHI[idx] + '时';
+}
+
+function buildChart(p){
+  const [y, m, d] = p.date.split('-').map(Number);
+  const [hh, mm] = p.time.split(':').map(Number);
+  const solar = Solar.fromYmdHms(y, m, d, hh, mm, 0);
+  const lunar = solar.getLunar();
+  const ec = lunar.getEightChar();
+  const cols = ['Year','Month','Day','Time'];
+  const labels = ['年柱','月柱','日柱','时柱'];
+  const pillars = cols.map((c, i) => {
+    const gz = ec['get' + c]();
+    return {
+      label: labels[i],
+      ganZhi: String(gz),
+      gan: ec['get' + c + 'Gan'](),
+      zhi: ec['get' + c + 'Zhi'](),
+      wuXing: ec['get' + c + 'WuXing'](),
+      ssGan: ec['get' + c + 'ShiShenGan'](),
+      ssZhi: toArr(ec['get' + c + 'ShiShenZhi']()),
+      hideGan: toArr(ec['get' + c + 'HideGan']()),
+      naYin: ec['get' + c + 'NaYin'](),
+    };
+  });
+  const count = {木:0, 火:0, 土:0, 金:0, 水:0};
+  pillars.forEach(pl => { count[WX_OF[pl.gan]]++; count[WX_OF[pl.zhi]]++; });
+  let yun = null;
+  try{
+    const yy = ec.getYun(p.gender);
+    yun = {
+      startYear: yy.getStartYear(), startMonth: yy.getStartMonth(), startDay: yy.getStartDay(),
+      startSolar: yy.getStartSolar().toYmd(),
+      list: yy.getDaYun()
+        .filter(dy => dy.getGanZhi())
+        .map(dy => ({ startAge: dy.getStartAge(), endAge: dy.getEndAge(),
+                      startYear: dy.getStartYear(), endYear: dy.getEndYear(),
+                      ganZhi: dy.getGanZhi(),
+                      liuNian: dy.getLiuNian().map(ln => ({ year: ln.getYear(), ganZhi: ln.getGanZhi(), age: ln.getAge() })) })),
+    };
+  }catch(e){ yun = null; }
+  return {
+    pillars, count,
+    lunarText: String(lunar),
+    shengXiao: lunar.getYearShengXiao(),
+    dayGan: ec.getDayGan(),
+    dayWX: WX_OF[ec.getDayGan()],
+    hourName: hourName(hh, mm),
+    yun,
+  };
+}
+function toArr(v){ return Array.isArray(v) ? v : String(v).split(',').filter(Boolean); }
+
+/* 神煞(本地查表;以日干/年支/日支起) */
+const TIAN_YI   = {甲:['丑','未'],乙:['子','申'],丙:['亥','酉'],丁:['亥','酉'],戊:['丑','未'],己:['子','申'],庚:['丑','未'],辛:['午','寅'],壬:['巳','卯'],癸:['巳','卯']};
+const WEN_CHANG = {甲:'巳',乙:'午',丙:'申',丁:'酉',戊:'申',己:'酉',庚:'亥',辛:'子',壬:'寅',癸:'卯'};
+const SAN_HE = [ ['申子辰','酉','卯','辰','子'], ['寅午戌','卯','申','戌','午'], ['巳酉丑','午','亥','丑','酉'], ['亥卯未','子','巳','未','卯'] ];
+const YANG_REN = {甲:'卯',丙:'午',戊:'午',庚:'酉',壬:'子'};
+const HONG_LUAN = {子:'卯',丑:'寅',寅:'丑',卯:'子',辰:'亥',巳:'戌',午:'酉',未:'申',申:'未',酉:'午',戌:'巳',亥:'辰'};
+function groupOf(zhi){
+  for(const g of SAN_HE) if(g[0].includes(zhi)) return g;
+  return null;
+}
+function shenSha(chart){
+  const zhis = chart.pillars.map(pl => pl.zhi);
+  const out = [];
+  const push = (name, from, zhi) => {
+    const pos = chart.pillars.filter(pl => pl.zhi === zhi).map(pl => pl.label);
+    if(pos.length) out.push({ name, from, zhi, pos: pos.join('/') });
+  };
+  const dayGan = chart.dayGan;
+  (TIAN_YI[dayGan] || []).forEach(z => push('天乙贵人', '日干', z));
+  push('文昌', '日干', WEN_CHANG[dayGan]);
+  const yearZhi = zhis[0], dayZhi = zhis[2];
+  [ ['年支', yearZhi], ['日支', dayZhi] ].forEach(([from, z]) => {
+    const g = groupOf(z);
+    if(!g) return;
+    push('桃花', from, g[1]);
+    push('驿马', from, g[2]);
+    push('华盖', from, g[3]);
+    push('将星', from, g[4]);
+  });
+  const yr = YANG_REN[dayGan];
+  if(yr) push('羊刃', '日干', yr);
+  const hl = HONG_LUAN[yearZhi];
+  if(hl){
+    push('红鸾', '年支', hl);
+    const xi = HOUR_ZHI[(HOUR_ZHI.indexOf(hl) + 6) % 12];
+    push('天喜', '年支', xi);
+  }
+  return out;
+}
+
+/* ================= 渲染 ================= */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function renderProfiles(){
+  $('profiles').innerHTML = profiles.map(p => `
+    <button class="pfchip${p.id === curId ? ' on' : ''}" data-id="${p.id}">
+      <span class="pav">${esc(p.name[0] || '命')}</span>
+      <span class="pname">${esc(p.name)}</span>
+      <span class="pbirth">${p.date} · ${p.gender ? '男' : '女'}</span>
+    </button>`).join('');
+}
+
+function renderChart(chart, p){
+  $('chartCount').textContent = `公历 ${p.date} ${p.time} · 农历 ${chart.lunarText} ${chart.hourName}`;
+  $('pillars').innerHTML = chart.pillars.map((pl, i) => `
+    <div class="pcol${i === 2 ? ' day' : ''}">
+      <div class="plabel">${pl.label}${i === 2 ? '<span class="mtag">日主</span>' : ''}</div>
+      <div class="pss">${esc(pl.ssGan)}</div>
+      <div class="pgan" style="color:${WX_COLOR[WX_OF[pl.gan]]}">${pl.gan}</div>
+      <div class="pzhi" style="color:${WX_COLOR[WX_OF[pl.zhi]]}">${pl.zhi}</div>
+      <div class="pssz">${esc(pl.ssZhi[0] || '')}</div>
+      <div class="phide">${pl.hideGan.map((g, k) => `<span class="hi"><b>${g}</b>·${esc(pl.ssZhi[k] || '')}</span>`).join(' ')}</div>
+      <div class="pna"><span class="nachip">${esc(pl.naYin)}</span></div>
+    </div>`).join('');
+  $('chartFoot').innerHTML = `
+    <span>日主 <b style="color:${WX_COLOR[chart.dayWX]}">${chart.dayGan}·${chart.dayWX}</b></span>
+    <span>生肖 <b>${chart.shengXiao}</b></span>
+    <span class="gz">${chart.pillars.map(pl => pl.ganZhi).join(' ')}</span>`;
+}
+
+function renderWuXing(chart){
+  const order = ['木','火','土','金','水'];
+  const max = Math.max(...order.map(w => chart.count[w]));
+  $('wxRows').innerHTML = order.map(w => {
+    const n = chart.count[w];
+    return `
+    <div class="wxrow">
+      <span class="wxdot" style="background:${WX_COLOR[w]}"></span>
+      <span class="wxname">${w}</span>
+      <span class="wxnum">${n}</span>
+      <span class="wxbar"><i style="width:${max ? (n / max) * 100 : 0}%;background:${WX_COLOR[w]}"></i></span>
+      <span class="wxflag${n === max && n > 0 ? ' strong' : ''}">${n === max && n > 0 ? '偏旺' : n === 0 ? '缺' : ''}</span>
+    </div>`;
+  }).join('');
+  const missing = order.filter(w => chart.count[w] === 0);
+  const strongest = order.find(w => chart.count[w] === max);
+  $('wxSum').innerHTML = `<b>${strongest}</b> 偏旺 · ${missing.length ? `缺 <b>${missing.join('</b>、<b>')}</b>` : '五行不缺'} · 日主属${chart.dayWX}`;
+}
+
+function renderShenSha(chart){
+  const list = shenSha(chart);
+  $('ssCount').textContent = `${list.length} 项`;
+  $('ssRow').innerHTML = list.length
+    ? list.map(s => `<span class="sschip">${s.name}<span class="sspos">${s.from} · ${s.zhi} · ${s.pos}</span></span>`).join('')
+    : '<div class="ssempty">本命盘未检出常用神煞。</div>';
+}
+
+function renderDayun(chart, now){
+  const yun = chart.yun;
+  if(!yun){
+    $('yunStart').textContent = '起运信息暂无法计算(超出可算范围)。';
+    $('dayunChips').innerHTML = '';
+    $('dayunCount').textContent = '';
+    return;
+  }
+  $('dayunCount').textContent = `${yun.list.length} 步大运`;
+  $('yunStart').innerHTML = `出生后 <b>${yun.startYear} 年 ${yun.startMonth} 个月 ${yun.startDay} 天</b>起运 · ${yun.startSolar} 交入第一步`;
+  const idxNow = yun.list.findIndex(dy => now.getFullYear() >= dy.startYear && now.getFullYear() <= dy.endYear);
+  if(openDy < 0 || openDy >= yun.list.length) openDy = Math.max(idxNow, 0);
+  $('dayunChips').innerHTML = yun.list.map((dy, i) => `
+    <button class="dychip${i === openDy ? ' on' : ''}${i === idxNow ? ' now' : ''}" data-i="${i}">
+      <span class="dz" style="color:${WX_COLOR[WX_OF[dy.ganZhi[0]]]}">${dy.ganZhi[0]}</span><span class="dz" style="color:${WX_COLOR[WX_OF[dy.ganZhi[1]]]}">${dy.ganZhi[1]}</span>
+      <span class="dage">${dy.startAge}–${dy.endAge}岁 · ${dy.startYear}–${dy.endYear}</span>
+      <span class="dss">${shiShen(chart.dayGan, dy.ganZhi[0])}</span>
+      <span class="dnow"></span>
+    </button>`).join('');
+  renderLiunian(chart, now);
+  $('lnWrap').classList.add('open');
+}
+
+function renderLiunian(chart, now){
+  const yun = chart.yun;
+  if(!yun || openDy < 0){ $('lnRow').innerHTML = ''; return; }
+  const dy = yun.list[openDy];
+  $('lnRow').innerHTML = dy.liuNian.map(ln => {
+    const gan = ln.ganZhi[0], zhi = ln.ganZhi[1];
+    const isNow = now.getFullYear() === ln.year;
+    return `
+    <span class="lnchip${isNow ? ' nowln' : ''}">
+      ${isNow ? '<span class="lnow"></span>' : ''}
+      <span class="ly">${ln.year}</span>
+      <span class="lg"><span style="color:${WX_COLOR[WX_OF[gan]]}">${gan}</span><span style="color:${WX_COLOR[WX_OF[zhi]]}">${zhi}</span></span>
+      <span class="ls">${shiShen(chart.dayGan, gan)} · ${ln.age}岁</span>
+    </span>`;
+  }).join('');
+}
+
+let lastChart = null;
+function renderAll(){
+  const p = cur();
+  $('inDate').value = p.date;
+  $('inTime').value = p.time;
+  document.querySelectorAll('#segGender button').forEach(b => b.classList.toggle('on', String(p.gender) === b.dataset.g));
+  $('noteTa').value = notes[p.id] || '';
+  $('noteState').textContent = (notes[p.id] || '').length ? '已自动保存' : '随命例保存';
+  let chart;
+  try{
+    chart = buildChart(p);
+  }catch(e){
+    $('pillars').innerHTML = '<div class="ssempty">排盘失败:日期超出可算范围(1900–2100)。</div>';
+    return;
+  }
+  lastChart = chart;
+  const now = new Date();
+  renderChart(chart, p);
+  renderWuXing(chart);
+  renderShenSha(chart);
+  renderDayun(chart, now);
+}
+
+/* ================= 交互 ================= */
+const toast = $('toast');
+let toastTimer;
+function showToast(msg){
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-toast]');
+  if(t){ showToast(t.dataset.toast); return; }
+  const pf = e.target.closest('.pfchip');
+  if(pf){
+    curId = pf.dataset.id;
+    openDy = -1;
+    saveProfiles();
+    renderProfiles();
+    renderAll();
+    return;
+  }
+  const dy = e.target.closest('.dychip');
+  if(dy){
+    openDy = Number(dy.dataset.i);
+    document.querySelectorAll('.dychip').forEach(b => b.classList.toggle('on', b === dy));
+    renderLiunian(lastChart, new Date());
+    $('lnWrap').classList.add('open');
+    return;
+  }
+  const g = e.target.closest('#segGender button');
+  if(g){
+    cur().gender = Number(g.dataset.g);
+    saveProfiles();
+    renderProfiles();
+    renderAll();
+    return;
+  }
+  if(e.target.closest('[data-close]') || e.target.classList.contains('mmask')){
+    document.querySelectorAll('.mmask').forEach(m => m.classList.remove('open'));
+    return;
+  }
+});
+
+$('inDate').addEventListener('change', () => {
+  const p = cur();
+  if(!$('inDate').value) { renderAll(); return; }
+  p.date = $('inDate').value;
+  saveProfiles(); renderProfiles(); renderAll();
+});
+$('inTime').addEventListener('change', () => {
+  const p = cur();
+  if(!$('inTime').value) { renderAll(); return; }
+  p.time = $('inTime').value;
+  saveProfiles(); renderProfiles(); renderAll();
+});
+let noteTimer;
+$('noteTa').addEventListener('input', () => {
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(() => {
+    notes[cur().id] = $('noteTa').value;
+    localStorage.setItem('wb-bazi-mock-notes', JSON.stringify(notes));
+    $('noteState').textContent = (notes[cur().id] || '').length ? '已自动保存' : '随命例保存';
+  }, 400);
+});
+
+/* 新建命例 */
+function openModal(id){ $(id).classList.add('open'); }
+let nfGenderVal = 1;
+$('btnNew').addEventListener('click', () => {
+  $('nfName').value = '';
+  $('nfDate').value = '1995-06-01';
+  $('nfTime').value = '12:00';
+  nfGenderVal = 1;
+  document.querySelectorAll('#nfGender button').forEach(b => b.classList.toggle('on', b.dataset.g === '1'));
+  openModal('mNew');
+  $('nfName').focus();
+});
+$('btnAdd').addEventListener('click', () => $('btnNew').click());
+document.querySelectorAll('#nfGender button').forEach(b => b.addEventListener('click', () => {
+  nfGenderVal = Number(b.dataset.g);
+  document.querySelectorAll('#nfGender button').forEach(x => x.classList.toggle('on', x === b));
+}));
+$('nfSave').addEventListener('click', () => {
+  const name = $('nfName').value.trim();
+  const date = $('nfDate').value, time = $('nfTime').value;
+  if(!name){ showToast('请填写姓名或备注'); $('nfName').focus(); return; }
+  if(!date){ showToast('请选择公历生日'); $('nfDate').focus(); return; }
+  if(!time){ showToast('请选择出生时间'); $('nfTime').focus(); return; }
+  const p = { id: 'p' + Date.now(), name, gender: nfGenderVal, date, time, sample: false };
+  profiles.push(p);
+  curId = p.id;
+  openDy = -1;
+  saveProfiles();
+  document.getElementById('mNew').classList.remove('open');
+  renderProfiles();
+  renderAll();
+  showToast(`已保存「${name}」并排盘`);
+});
+
+/* AI 解读 */
+$('btnAI').addEventListener('click', () => {
+  if(!lastChart) return;
+  const p = cur(), c = lastChart;
+  $('aiName').textContent = p.name;
+  $('aiPayload').innerHTML = [
+    `公历 ${p.date} ${p.time}(${p.gender ? '男' : '女'}) · 农历 ${c.lunarText}`,
+    `四柱 ${c.pillars.map(pl => pl.ganZhi).join(' ')} · 日主 ${c.dayGan}${c.dayWX} · 生肖 ${c.shengXiao}`,
+    `五行 木${c.count.木} 火${c.count.火} 土${c.count.土} 金${c.count.金} 水${c.count.水}`,
+    c.yun ? `起运 ${c.yun.startYear}年${c.yun.startMonth}个月 · 当前大运流年已随盘附上` : '起运信息略',
+  ].join('<br>');
+  $('aiDemo').textContent = '命盘五行以土为主,日主癸水生于申月,得金相生而身不弱;喜金水相扶,忌土重克身。性格沉稳而内藏机变,宜专业技术立身;戊子大运财星透出,近年注意财务规划与脾胃调养。';
+  openModal('mAI');
+});
+$('aiSend').addEventListener('click', () => {
+  document.getElementById('mAI').classList.remove('open');
+  showToast('已发送到 AI 面板(实际版本由工作台 AI 内核接手)');
+});
+
+renderProfiles();
+renderAll();
+</script>
+</body>
+</html>
