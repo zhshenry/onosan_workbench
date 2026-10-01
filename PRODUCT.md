@@ -8,7 +8,7 @@ web(Electron 桌面壳,Windows 为主;渲染层为 Web 技术)
 
 ## Stack
 
-当前已实现:Electron + React 19 + TypeScript(strict)+ Vite(渲染层)+ esbuild(主进程)。已接入 electron-builder 的 Windows x64 NSIS 打包与 electron-updater 的 GitHub Releases 自动更新;发布流程与 To-Do-List 一致,通过 `npm run release` 构建安装包和便携包并使用 `gh release` 发布、核验五项资产,首次正式发布待执行。发布步骤见 docs/RELEASE.md。
+当前已实现:Electron + React 19 + TypeScript(strict)+ Vite(渲染层)+ esbuild(主进程)。已接入 electron-builder 的 Windows x64 NSIS 打包与 electron-updater 的 GitHub Releases 自动更新;发布流程与 To-Do-List 一致,通过 `npm run release` 构建安装包和便携包并使用 `gh release` 发布、核验五项资产。首个正式版本 [v0.1.0](https://github.com/zhshenry/onosan_workbench/releases/tag/v0.1.0) 已于 2026-10-01 发布,五项附件的服务器 SHA256、下载地址和更新元数据核验通过;真实跨版本安装升级待验收。发布步骤见 docs/RELEASE.md。
 依据:用户简报指定「EXE 可安装可更新,参考 C:\Myself\vibe_coding\To-Do-List」,该栈与参考实现一致。(推断自简报,未逐项确认)
 
 ## Users
