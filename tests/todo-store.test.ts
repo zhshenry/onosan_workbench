@@ -270,15 +270,15 @@ test('AI category plan rolls back on stale category revision', () => {
 test('today includes carried-over work without duplicating task IDs or changing deadlines', () => {
   const store = new Store(':memory:'); const old = store.create({ ...newTask('跨天事项'), plannedDate: '2026-09-10' });
   const futureTodo = store.create({ ...newTask('未来事项'), plannedDate: '2026-09-20' });
-  store.create({ ...newTask('未来日程'), kind: 'meeting', plannedDate: '2026-09-20', dueAt: '2026-09-20T09:00:00+08:00' });
+  store.create({ ...newTask('未来日程'), kind: 'meeting', plannedDate: '2026-09-20', dueAt: '2026-09-20T09:00:00+08:00', endAt: '2026-09-20T10:00:00+08:00' });
   assert.deepEqual(new Set(activeToday(store.all(), '2026-09-14').map(t => t.id)), new Set([old.id, futureTodo.id]));
   assert.equal(store.get(old.id).plannedDate, '2026-09-10'); store.close();
 });
 test('open todos stay visible before the deadline; meetings follow the event day', () => {
   const store = new Store(':memory:');
   const long = store.create({ ...newTask('长任务'), plannedDate: '2026-09-26' });
-  const meeting = store.create({ ...newTask('周会'), kind: 'meeting', plannedDate: '2026-09-26', dueAt: '2026-09-26T10:00:00+08:00' });
-  const overdue = store.create({ ...newTask('昨天的会'), kind: 'meeting', plannedDate: '2026-09-10', dueAt: '2026-09-10T10:00:00+08:00' });
+  const meeting = store.create({ ...newTask('周会'), kind: 'meeting', plannedDate: '2026-09-26', dueAt: '2026-09-26T10:00:00+08:00', endAt: '2026-09-26T11:00:00+08:00' });
+  const overdue = store.create({ ...newTask('昨天的会'), kind: 'meeting', plannedDate: '2026-09-10', dueAt: '2026-09-10T10:00:00+08:00', endAt: '2026-09-10T11:00:00+08:00' });
   const ids = new Set(activeToday(store.all(), '2026-09-20').map(t => t.id));
   assert.equal(ids.has(long.id), true);
   assert.equal(ids.has(meeting.id), false);

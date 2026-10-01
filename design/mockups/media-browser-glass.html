@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="mist">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>素材浏览器 · 自媒体工作台(讨论稿) — 个人工作台</title>
+<!--
+  高保真讨论稿 · 自媒体工作台内嵌浏览器(2026-09-28)
+  两形态:①二级目录「素材浏览器」整页(起始页/加载态/采集流) ②博客编辑内侧栏(展开/折叠)。
+  方案:docs/MEDIA-BROWSER-PLAN.md;页面内容为合成示意,实际为租约模式内嵌真实网页。
+-->
+<style>
+/* ========== 主题 token(镜像 src/shell.css 三主题) ========== */
+:root{
+  --ink:#1b1d22; --ink-2:#464b54; --ink-3:#63686f;
+  --acc:#7f9dd3; --acc-deep:#4a67a3; --acc-soft:rgba(127,157,211,.16);
+  --action:#232529; --action-deep:#141519;
+  --nav-on-bg:#232529; --nav-on-fg:#ffffff; --nav-marker:#4a67a3; --icon-tint:#2a2c31;
+  --selection:rgba(127,157,211,.3);
+  --danger:#b5504e; --danger-soft:rgba(197,93,90,.13);
+  --glass-hi:rgba(255,255,255,.95); --glass-lo:rgba(250,250,252,.68); --glass-line:rgba(255,255,255,.9);
+  --glass-surface:rgba(255,255,255,.56); --glass-filter:blur(18px) saturate(1.5);
+  --hairline:rgba(28,30,36,.09);
+  --shadow:0 8px 24px rgba(35,38,48,.09),0 2px 6px rgba(35,38,48,.04);
+  --shadow-sm:0 3px 10px rgba(35,38,48,.07);
+  --field-base:#e9eaee;
+  --field:
+    radial-gradient(46% 40% at 10% 4%,rgba(255,255,255,.80) 0%,transparent 100%),
+    radial-gradient(50% 44% at 92% 96%,rgba(203,209,226,.55) 0%,transparent 100%),
+    linear-gradient(150deg,#e9eaee 0%,#e6e8ec 55%,#e9ebef 100%);
+  --r-panel:18px; --r-card:14px; --r-ctl:10px;
+  --font:"Bahnschrift","Segoe UI Variable Text","Segoe UI","Microsoft YaHei UI","Microsoft YaHei",sans-serif;
+  --ease:cubic-bezier(.2,.7,.2,1);
+  --type-micro:10px; --type-caption:11px; --type-support:12px; --type-control:13px;
+  --type-body:14px; --type-section:16px; --type-lead:18px; --type-page:24px;
+}
+html[data-theme="cool"]{
+  --ink-2:#3d5a76; --ink-3:#54708a;
+  --glass-hi:rgba(248,251,255,.68); --glass-lo:rgba(232,241,255,.36); --glass-line:rgba(255,255,255,.55);
+  --glass-surface:rgba(255,255,255,.48); --glass-filter:blur(2px) saturate(1);
+  --hairline:rgba(34,58,91,.11);
+  --shadow:0 10px 28px rgba(36,59,91,.13),0 2px 6px rgba(36,59,91,.05);
+  --shadow-sm:0 7px 20px rgba(36,59,91,.09);
+  --field-base:#dfe6f0;
+  --field:
+    radial-gradient(46% 40% at 10% 4%,rgba(255,255,255,.6) 0%,transparent 100%),
+    radial-gradient(50% 44% at 92% 96%,rgba(168,193,228,.42) 0%,transparent 100%),
+    linear-gradient(150deg,#e7ecf3 0%,#e5eaf1 55%,#e8edf3 100%);
+}
+html[data-theme="warm"]{
+  --ink-2:#4c4744; --ink-3:#68615d;
+  --glass-hi:rgba(255,253,250,.74); --glass-lo:rgba(252,246,240,.42); --glass-line:rgba(255,255,255,.6);
+  --glass-surface:rgba(255,252,247,.50); --glass-filter:blur(2px) saturate(1);
+  --hairline:rgba(65,53,45,.1);
+  --shadow:0 9px 26px rgba(76,61,50,.1),0 2px 6px rgba(76,61,50,.04);
+  --shadow-sm:0 5px 18px rgba(76,61,50,.075);
+  --field-base:#eee8e3;
+  --field:
+    radial-gradient(46% 40% at 10% 4%,rgba(255,255,255,.7) 0%,transparent 100%),
+    radial-gradient(50% 44% at 92% 96%,rgba(224,205,186,.5) 0%,transparent 100%),
+    linear-gradient(150deg,#eee8e3 0%,#ebe4dd 55%,#efe9e3 100%);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--font);color:var(--ink);font-size:var(--type-body);line-height:1.55;
+  background:#d6d7d9;display:grid;place-items:center;padding:26px;overflow:hidden;
+}
+::selection{background:var(--selection)}
+:focus-visible{outline:2px solid var(--acc-deep);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input{font:inherit;color:inherit}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:rgba(30,34,44,.16);border-radius:999px;border:3px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(30,34,44,.28);background-clip:content-box;border:3px solid transparent}
+::-webkit-scrollbar-track{background:transparent}
+
+.stage{position:relative}
+.stage-note{position:absolute;top:-2px;left:4px;font-size:var(--type-support);font-weight:600;color:#4e5156;letter-spacing:.02em}
+.win{
+  position:relative;width:min(1400px,calc(100vw - 52px));height:min(864px,calc(100vh - 52px));
+  border-radius:22px;overflow:hidden;display:flex;
+  background:var(--field-base);
+  box-shadow:0 24px 44px rgba(30,33,40,.30),0 4px 12px rgba(30,33,40,.14);
+  border:1px solid rgba(255,255,255,.65);
+}
+.win::before{content:"";position:absolute;inset:0;z-index:0;background:var(--field)}
+
+/* ---------- 图标栏 ---------- */
+.rail{
+  position:relative;z-index:2;width:66px;flex:none;display:flex;flex-direction:column;align-items:center;
+  padding:14px 0 12px;gap:6px;
+  background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(255,255,255,.42));
+  -webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);
+  border-right:1px solid var(--glass-line);
+}
+.logo{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;margin-bottom:10px;color:var(--ink)}
+.logo-orbit{transform-origin:19px 5px;transform-box:view-box}
+.logo:hover .logo-orbit{animation:logo-dot-spin 1.2s linear infinite}
+@keyframes logo-dot-spin{to{transform:rotate(360deg)}}
+.rnav{display:flex;flex-direction:column;gap:6px}
+.rmid{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px}
+.rbot{margin-top:auto;display:flex;flex-direction:column;gap:6px}
+.ritem{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;color:var(--ink-2);
+  transition:background .16s var(--ease),color .16s var(--ease);position:relative}
+.ritem:hover{background:rgba(255,255,255,.65);color:var(--ink)}
+.ritem.on{background:var(--nav-on-bg);color:var(--nav-on-fg);box-shadow:var(--shadow-sm)}
+.ritem.on::before{content:"";position:absolute;right:-10px;top:50%;transform:translateY(-50%);
+  width:4px;height:20px;border-radius:999px;background:var(--nav-marker)}
+.ritem.dim{opacity:.5}
+
+/* ---------- 二级目录 ---------- */
+.snav{
+  position:relative;z-index:2;width:200px;flex:none;display:flex;flex-direction:column;
+  margin:12px 0 12px 12px;padding:16px 10px 12px;border-radius:16px;
+  background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,.28));
+  -webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);
+  border:1px solid var(--glass-line);box-shadow:var(--shadow-sm);
+}
+.stitle{font-size:var(--type-body);font-weight:700;padding:0 6px 12px}
+.tree{flex:1;display:flex;flex-direction:column;gap:2px}
+.nsub{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--r-ctl);
+  color:var(--ink-2);font-weight:500;cursor:pointer;transition:background .15s var(--ease),color .15s var(--ease)}
+.nsub:hover{background:rgba(255,255,255,.55);color:var(--ink)}
+.nsub.on{background:rgba(255,255,255,.92);color:var(--acc-deep);box-shadow:var(--shadow-sm);font-weight:600}
+.ndot{width:6px;height:6px;border-radius:50%;background:rgba(18,36,54,.22);flex:none}
+.nsub.on .ndot{background:var(--acc-deep)}
+.ntag{margin-left:auto;font-size:var(--type-caption);padding:2px 7px;border-radius:999px;background:rgba(30,34,44,.07);color:var(--ink-3);font-weight:600}
+.sfoot{display:flex;align-items:center;gap:8px;padding:10px 8px 0;border-top:1px solid var(--hairline);margin-top:10px;
+  font-size:var(--type-caption);color:var(--ink-3)}
+.sfoot .dotok{width:7px;height:7px;border-radius:50%;background:var(--acc-deep);box-shadow:0 0 0 3px var(--acc-soft)}
+
+/* ---------- 主区与顶栏 ---------- */
+.main{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+.topbar{
+  flex:none;height:54px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
+  margin:10px 12px 0;padding:0 10px 0 14px;border-radius:999px;
+  background:linear-gradient(180deg,rgba(255,255,255,.82),rgba(255,255,255,.55));
+  -webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);
+  border:1px solid var(--glass-line);box-shadow:var(--shadow-sm),inset 0 1px 0 rgba(255,255,255,.55);
+}
+.tb-left{display:flex;align-items:center;gap:10px;justify-self:start;min-width:0}
+.tb-center{display:flex;justify-self:center}
+.tb-right{display:flex;align-items:center;gap:8px;justify-self:end}
+.sched-track{display:flex;align-items:center;gap:6px;overflow:hidden;min-width:0}
+.sched{flex:none;display:flex;align-items:center;padding:5px 8px 5px 14px;gap:6px;min-width:0;border-radius:999px;
+  background:linear-gradient(135deg,var(--glass-hi),var(--glass-lo));
+  -webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);
+  border:1px solid var(--glass-line);box-shadow:var(--shadow-sm),inset 0 1px 0 rgba(255,255,255,.55)}
+.sched-label{display:flex;align-items:center;gap:8px;font-weight:700;font-size:var(--type-control);white-space:nowrap}
+.sched-label svg{color:var(--icon-tint)}
+.sched-label .date{color:var(--ink-3);font-weight:600}
+.sdiv{width:1px;height:20px;background:var(--hairline);margin:0 6px;flex:none}
+.schip{display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.62);white-space:nowrap}
+.schip .t{font-weight:700;font-size:var(--type-support);color:var(--ink-2);font-variant-numeric:tabular-nums}
+.schip .n{font-size:var(--type-support);color:var(--ink-2)}
+.schip.now{background:var(--acc-soft)}
+.schip.now .t,.schip.now .n{color:var(--acc-deep)}
+.schip.now .live{width:7px;height:7px;border-radius:50%;background:var(--acc-deep)}
+.todopill{display:flex;align-items:center;gap:9px;height:42px;padding:0 16px;border-radius:999px;white-space:nowrap}
+.todopill svg{color:var(--icon-tint)}
+.todopill .lbl{font-weight:700;font-size:var(--type-control)}
+.todopill .num{font-weight:700;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.vdiv{width:1px;height:22px;background:var(--hairline)}
+.ibtn{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;color:var(--ink-2);position:relative;
+  transition:background .15s var(--ease),color .15s var(--ease)}
+.ibtn:hover{background:rgba(255,255,255,.7);color:var(--ink)}
+.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:var(--type-body);
+  background:linear-gradient(140deg,var(--action),var(--action-deep));border:2px solid rgba(255,255,255,.85);box-shadow:var(--shadow-sm);cursor:pointer}
+.wbtns{display:flex;gap:2px}
+.wbtn{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:var(--ink-2)}
+.wbtn:hover{background:rgba(255,255,255,.75);color:var(--ink)}
+
+/* ---------- 内容区 ---------- */
+.content{flex:1;overflow-y:auto;padding:20px 24px 24px}
+.greet{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px}
+.greet h1{font-size:var(--type-page);font-weight:800;letter-spacing:-.02em;line-height:1.25}
+.gsub{color:var(--ink-3);font-size:var(--type-control);margin-top:3px;font-variant-numeric:tabular-nums}
+.gsub b{color:var(--acc-deep);font-weight:700}
+.gbtns{display:flex;gap:10px;flex:none}
+.btn{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 16px;border-radius:12px;font-weight:600;
+  font-size:var(--type-control);transition:transform .16s var(--ease),filter .16s var(--ease),background .16s var(--ease)}
+.btn:hover{transform:translateY(-1px)}
+.btn-pri{background:linear-gradient(140deg,var(--action),var(--action-deep));color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.28)}
+.btn-pri:hover{filter:brightness(1.15)}
+.btn-sm{height:32px;padding:0 12px;font-size:var(--type-support);border-radius:10px}
+
+/* ========== 浏览器 chrome ========== */
+.bwb{display:flex;flex-direction:column;gap:0;height:calc(100vh - 320px);min-height:480px}
+.bwb-chrome{
+  flex:none;display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:14px;margin-bottom:12px;
+  background:linear-gradient(135deg,var(--glass-hi),var(--glass-lo));
+  -webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);
+  border:1px solid var(--glass-line);box-shadow:var(--shadow-sm),inset 0 1px 0 rgba(255,255,255,.55);
+}
+.navbtn{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;color:var(--ink-2);flex:none;
+  transition:background .14s var(--ease),color .14s var(--ease)}
+.navbtn:hover{background:rgba(255,255,255,.8);color:var(--ink)}
+.navbtn:disabled{opacity:.35;cursor:default}
+.navbtn:disabled:hover{background:none;color:var(--ink-2)}
+.addr{
+  flex:1;display:flex;align-items:center;gap:8px;min-width:0;height:36px;padding:0 14px;border-radius:999px;
+  background:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.85);
+}
+.addr svg{color:var(--acc-deep);flex:none}
+.addr input{flex:1;min-width:0;border:none;background:none;outline:none;font-size:var(--type-control);font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.addr input::placeholder{color:var(--ink-3);font-weight:500}
+.capbtn{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 14px;border-radius:999px;flex:none;
+  background:linear-gradient(140deg,var(--action),var(--action-deep));color:#fff;font-size:var(--type-support);font-weight:700;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28);transition:filter .15s var(--ease)}
+.capbtn:hover{filter:brightness(1.15)}
+.capbtn.done{background:linear-gradient(140deg,#3e7d44,#2f6234)}
+
+.bwb-stage{
+  flex:1;min-height:0;border-radius:var(--r-panel);overflow:hidden;position:relative;
+  background:var(--glass-surface);
+  -webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);
+  border:1px solid var(--glass-line);box-shadow:var(--shadow-sm);
+}
+/* 起始页 */
+.startpage{
+  height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:30px;overflow-y:auto;
+  background:
+    radial-gradient(42% 48% at 16% 12%,rgba(127,157,211,.22) 0%,transparent 100%),
+    radial-gradient(38% 42% at 86% 88%,rgba(127,157,211,.14) 0%,transparent 100%);
+}
+.biglogo{width:56px;height:56px;border-radius:17px;display:grid;place-items:center;color:#fff;
+  background:linear-gradient(140deg,var(--action),var(--action-deep));box-shadow:var(--shadow-sm)}
+.slogan{font-size:var(--type-body);color:var(--ink-2);text-align:center}
+.slogan b{color:var(--ink-2)}
+.chips{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.chip-item{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:12px;
+  background:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.85);box-shadow:var(--shadow-sm);
+  font-size:var(--type-control);font-weight:600;color:var(--ink-2);
+  transition:transform .15s var(--ease),background .15s var(--ease)}
+.chip-item:hover{transform:translateY(-1px);background:#fff}
+.chip-item .pdot{width:8px;height:8px;border-radius:50%;flex:none}
+.recent{width:min(760px,92%)}
+.rlabel{display:flex;align-items:center;gap:8px;font-size:var(--type-support);font-weight:700;color:var(--ink-2);margin-bottom:8px;padding-left:4px}
+.rlabel .rmore{margin-left:auto;font-weight:600;color:var(--acc-deep)}
+.rlabel .rmore:hover{text-decoration:underline;text-underline-offset:3px}
+.capgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.capcard{border-radius:12px;overflow:hidden;background:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.85);
+  box-shadow:var(--shadow-sm);cursor:pointer;transition:transform .15s var(--ease),box-shadow .15s var(--ease)}
+.capcard:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.capthumb{aspect-ratio:16/9;display:grid;place-items:center;position:relative;
+  background:linear-gradient(140deg,rgba(127,157,211,.25),rgba(127,157,211,.08))}
+.capthumb .pdot{width:10px;height:10px;border-radius:50%;position:absolute;top:8px;right:8px}
+.capthumb .fake{width:70%;height:8px;border-radius:4px;background:rgba(30,34,44,.12);margin:4px 0}
+.capbody{padding:8px 10px 9px}
+.capbody .t{font-size:var(--type-support);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.capbody .u{font-size:var(--type-micro);color:var(--ink-3);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+/* 加载态/页面示意 */
+.pageload{height:100%;display:flex;flex-direction:column;background:rgba(255,255,255,.6)}
+.pagehead{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--hairline)}
+.pagehead .pdot{width:12px;height:12px;border-radius:50%;flex:none}
+.pagehead .pname{font-weight:700;font-size:var(--type-control)}
+.pagehead .purl{font-size:var(--type-caption);color:var(--ink-2);font-variant-numeric:tabular-nums}
+.pagebody{flex:1;padding:26px 34px;overflow:hidden;position:relative}
+.skl{border-radius:8px;background:rgba(30,34,44,.08);margin-bottom:14px;animation:skl-pulse 1.6s ease-in-out infinite}
+@keyframes skl-pulse{0%,100%{opacity:.55}50%{opacity:.9}}
+.sk-media{height:180px;border-radius:12px;background:rgba(127,157,211,.16);margin-bottom:18px}
+.pagebadge{position:absolute;top:12px;right:14px;font-size:var(--type-caption);font-weight:700;color:var(--ink-3);
+  background:rgba(30,34,44,.06);border-radius:999px;padding:2px 10px}
+
+/* ========== 侧栏形态(博客编辑) ========== */
+.copycols{display:grid;grid-template-columns:1fr 400px;gap:16px;align-items:stretch;height:calc(100vh - 320px);min-height:480px}
+.copycols.collapsed{grid-template-columns:1fr}
+.editor-ph{border-radius:var(--r-panel);padding:16px 18px;display:flex;flex-direction:column;min-width:0}
+.ed-title{height:40px;border-radius:10px;border:1px solid var(--hairline);background:rgba(255,255,255,.65);
+  display:flex;align-items:center;padding:0 14px;font-size:var(--type-body);font-weight:700;color:var(--ink-2);margin-bottom:12px}
+.ed-tools{display:flex;gap:6px;margin-bottom:12px}
+.ed-tools span{width:26px;height:26px;border-radius:7px;background:rgba(30,34,44,.06);display:grid;place-items:center;
+  font-size:var(--type-caption);color:var(--ink-3)}
+.ed-body{flex:1;border-radius:12px;border:1px solid var(--hairline);background:rgba(255,255,255,.55);padding:16px}
+.ed-body .skl{margin-bottom:12px}
+.ed-note{font-size:var(--type-caption);color:var(--ink-3);padding:10px 4px 0}
+.sidebr{display:flex;flex-direction:column;min-width:0;border-radius:var(--r-panel);overflow:hidden;
+  background:var(--glass-surface);
+  -webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);
+  border:1px solid var(--glass-line);box-shadow:var(--shadow-sm)}
+.sidebr-chrome{flex:none;display:flex;align-items:center;gap:6px;padding:7px 8px;border-bottom:1px solid var(--hairline)}
+.sidebr-chrome .addr{height:30px;padding:0 10px}
+.sidebr-stage{flex:1;min-height:0;overflow:hidden;position:relative}
+.sidebr .startpage{gap:16px;padding:18px}
+.sidebr .chips{flex-direction:column;align-items:stretch;width:100%;padding:0 6px}
+.sidebr .chip-item{justify-content:flex-start}
+.sidebr .recent{width:100%;padding:0 6px}
+.sidebr-caplist{position:absolute;inset:0;z-index:5;background:var(--glass-hi);
+  -webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);
+  display:none;flex-direction:column}
+.sidebr-caplist.open{display:flex}
+.caplist-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--hairline);
+  font-weight:700;font-size:var(--type-control)}
+.caplist-head .x{margin-left:auto;width:24px;height:24px;border-radius:8px;display:grid;place-items:center;color:var(--ink-3)}
+.caplist-head .x:hover{background:rgba(30,34,44,.07);color:var(--ink)}
+.caplist-body{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.caprow{display:flex;gap:10px;padding:8px;border-radius:10px;background:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.8)}
+.caprow .thumb{width:74px;aspect-ratio:16/10;border-radius:8px;flex:none;position:relative;
+  background:linear-gradient(140deg,rgba(127,157,211,.25),rgba(127,157,211,.08))}
+.caprow .thumb .pdot{width:7px;height:7px;border-radius:50%;position:absolute;top:5px;right:5px}
+.caprow .m{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.caprow .m .t{font-size:var(--type-support);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.caprow .m .u{font-size:var(--type-micro);color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.caprow .m .acts{margin-top:auto;display:flex;gap:6px}
+.caprow .m .acts button{font-size:var(--type-micro);font-weight:700;color:var(--acc-deep);padding:2px 8px;border-radius:7px;background:rgba(127,157,211,.12)}
+.caprow .m .acts button:hover{background:var(--acc-soft)}
+.fab-open{
+  position:absolute;top:14px;right:14px;z-index:6;display:none;align-items:center;gap:7px;height:34px;padding:0 13px;
+  border-radius:999px;background:var(--nav-on-bg);color:var(--nav-on-fg);font-size:var(--type-support);font-weight:700;
+  box-shadow:var(--shadow-sm)}
+.copycols.collapsed .fab-open{display:inline-flex}
+.copycols.collapsed .sidebr{display:none}
+.fab-close{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:999px;
+  font-size:var(--type-support);font-weight:700;color:var(--ink-2);background:rgba(255,255,255,.6);flex:none}
+.fab-close:hover{background:#fff;color:var(--ink)}
+
+/* toast + 主题切换 */
+.toast{position:absolute;left:50%;bottom:26px;transform:translateX(-50%) translateY(16px);opacity:0;z-index:50;
+  padding:10px 18px;border-radius:12px;font-size:var(--type-control);font-weight:600;color:var(--ink);pointer-events:none;
+  transition:all .22s var(--ease);box-shadow:0 8px 20px rgba(20,22,28,.16)}
+.glass{background:var(--glass-surface);-webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);
+  border:1px solid var(--glass-line);box-shadow:var(--shadow-sm),inset 0 1px 0 var(--glass-line)}
+.wbtn.close:hover{background:var(--danger);color:#fff}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.themeswitch{
+  position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:99;display:flex;align-items:center;gap:4px;
+  padding:6px;border-radius:999px;background:rgba(25,27,32,.88);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  box-shadow:0 10px 28px rgba(20,22,28,.35)}
+.themeswitch button{padding:7px 13px;border-radius:999px;font-size:var(--type-support);font-weight:600;color:#c9ccd2;
+  transition:background .15s var(--ease),color .15s var(--ease)}
+.themeswitch button:hover{color:#fff}
+.themeswitch button.on{background:#fff;color:#1b1d22}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+@media (max-width:1180px){
+  .copycols{grid-template-columns:1fr}
+  .copycols .sidebr{display:none}
+  .copycols .fab-open{display:inline-flex}
+  .capgrid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="stage-note">素材浏览器 · 自媒体工作台(讨论稿:整页 + 编辑器侧栏两形态;页面内容为合成示意)</div>
+  <div class="win">
+
+    <aside class="rail">
+      <div class="logo" title="个人工作台">
+        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+          <circle cx="12" cy="12" r="8.6"/>
+          <circle class="logo-orbit" cx="19" cy="5" r="2.1" fill="var(--acc-deep)" stroke="none"/>
+        </svg>
+      </div>
+      <nav class="rnav">
+        <button class="ritem" data-toast="首页见真实应用" title="首页">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.2 12 4.4l8 6.8V19a1 1 0 0 1-1 1h-4.6v-5.2h-4.8V20H5a1 1 0 0 1-1-1Z"/></svg>
+        </button>
+      </nav>
+      <div class="rmid">
+        <button class="ritem on" title="自媒体工作台">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="m10 9.5 4.5 2.5L10 14.5Z"/></svg>
+        </button>
+        <button class="ritem dim" data-toast="游戏工作台规划中" title="游戏工作台(即将上线)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8h11a4 4 0 0 1 4 4.2l-.4 4.3a2.4 2.4 0 0 1-4.2 1.4L15 16H9l-1.9 1.9a2.4 2.4 0 0 1-4.2-1.4l-.4-4.3A4 4 0 0 1 6.5 8Z"/><path d="M8.5 11v3M7 12.5h3M15.5 11.5h.01M17.5 13.5h.01"/></svg>
+        </button>
+        <button class="ritem dim" data-toast="网页工作台规划中" title="网页工作台(即将上线)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 9h17M7 6.8h.01M9.6 6.8h.01"/></svg>
+        </button>
+        <button class="ritem dim" data-toast="小工具见真实应用" title="小工具">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 14.2A7.6 7.6 0 0 1 9.8 4.5a7.6 7.6 0 1 0 9.7 9.7Z"/></svg>
+        </button>
+      </div>
+      <div class="rbot">
+        <button class="ritem" data-toast="设置见第六工作台" title="设置">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7.2"/><path d="M12 2.4v3.1M12 18.5v3.1M21.6 12h-3.1M5.5 12H2.4M18.8 5.2l-2.2 2.2M7.4 16.6l-2.2 2.2M18.8 18.8l-2.2-2.2M7.4 7.4 5.2 5.2"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="tb-left">
+          <div class="sched">
+            <span class="sched-label">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>
+              日程<span class="date">9月28日 · 周一</span>
+            </span>
+            <span class="sdiv"></span>
+            <div class="sched-track">
+              <button class="schip now"><span class="live"></span><span class="t">19:30</span><span class="n">健身 · 背腿</span></button>
+              <button class="schip"><span class="t">21:30</span><span class="n">阅读时间</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="tb-center">
+          <button class="todopill glass" data-toast="今日待办" title="今日待办">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="m8.5 12.2 2.4 2.4 4.8-5"/></svg>
+            <span class="lbl">待办</span>
+            <span class="num">3/9</span>
+          </button>
+        </div>
+        <div class="tb-right">
+          <button class="ibtn" data-toast="AI 助手" title="AI 助手">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l1.9 5.1a2 2 0 0 0 1.2 1.2l5.1 1.9-5.1 1.9a2 2 0 0 0-1.2 1.2L12 19.9l-1.9-5.1a2 2 0 0 0-1.2-1.2L3.8 11.7l5.1-1.9a2 2 0 0 0 1.2-1.2Z"/></svg>
+          </button>
+          <button class="ibtn" data-toast="通知" title="通知">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9.8a6 6 0 1 0-12 0c0 4.2-1.8 5.8-1.8 5.8h15.6S18 14 18 9.8Z"/><path d="M10.2 19a2 2 0 0 0 3.6 0"/></svg>
+          </button>
+          <div class="avatar" data-toast="个人资料" title="Ono">O</div>
+          <span class="vdiv"></span>
+          <div class="wbtns">
+            <button class="wbtn" data-toast="最小化" title="最小化"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+            <button class="wbtn" data-toast="最大化" title="最大化"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="5" width="14" height="14" rx="2"/></svg></button>
+            <button class="wbtn close" data-toast="关闭" title="关闭"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
+        </div>
+      </header>
+
+      <div style="flex:1;display:flex;min-height:0">
+        <aside class="snav">
+          <div class="stitle">自媒体工作台</div>
+          <nav class="tree">
+            <a class="nsub" data-view="copy"><span class="ndot"></span>博客编辑</a>
+            <a class="nsub" data-toast="图文发布见真实应用"><span class="ndot"></span>图文发布</a>
+            <a class="nsub on" data-view="browser"><span class="ndot"></span>素材浏览器</a>
+            <a class="nsub" data-toast="「选题库」规划中,敬请期待"><span class="ndot"></span>选题库<span class="ntag">规划中</span></a>
+            <a class="nsub" data-toast="「脚本撰写」规划中,敬请期待"><span class="ndot"></span>脚本撰写<span class="ntag">规划中</span></a>
+            <a class="nsub" data-toast="「封面设计」规划中,敬请期待"><span class="ndot"></span>封面设计<span class="ntag">规划中</span></a>
+          </nav>
+          <div class="sfoot"><span class="dotok"></span>media 会话 · 登录态本机保留</div>
+        </aside>
+
+        <main class="content">
+
+          <!-- ===== 整页素材浏览器 ===== -->
+          <section id="view-browser">
+            <div class="greet">
+              <div>
+                <h1>素材浏览器</h1>
+                <div class="gsub">独立会话 · 登录态本机保留 · 看到好内容点<b>采集</b>存链接与整页截图</div>
+              </div>
+              <div class="gbtns">
+                <button class="btn btn-sec" data-toast="已采集列表(实际版本:抽屉/起始页可查)">已采集 <span id="capCount">3</span></button>
+              </div>
+            </div>
+
+            <div class="bwb">
+              <div class="bwb-chrome">
+                <button class="navbtn" id="navBack" title="后退" disabled>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+                </button>
+                <button class="navbtn" title="前进" disabled>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg>
+                </button>
+                <button class="navbtn" id="navReload" title="刷新">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 3.8v3.4h-3.4"/></svg>
+                </button>
+                <div class="addr">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg>
+                  <input id="addrInput" placeholder="搜索或输入网址,回车打开(仅 http/https)">
+                </div>
+                <button class="capbtn" id="btnCapture">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                  采集到素材
+                </button>
+              </div>
+              <div class="bwb-stage" id="stage"></div>
+            </div>
+          </section>
+
+          <!-- ===== 博客编辑 + 侧栏(示意) ===== -->
+          <section id="view-copy" style="display:none">
+            <div class="greet">
+              <div>
+                <h1>博客编辑</h1>
+                <div class="gsub">左侧写作 · 右侧<b>素材浏览器侧栏</b>对照 —— 编辑器版式以真实应用为准,此处为布局示意</div>
+              </div>
+            </div>
+            <div class="copycols" id="copyCols">
+              <div class="editor-ph glass">
+                <div class="ed-title">小红书爆款笔记的三个结构套路</div>
+                <div class="ed-tools"><span>B</span><span>I</span><span>H2</span><span>·</span><span>🔗</span><span>🖼</span></div>
+                <div class="ed-body">
+                  <div class="skl" style="width:92%;height:12px"></div>
+                  <div class="skl" style="width:100%;height:12px"></div>
+                  <div class="skl" style="width:78%;height:12px"></div>
+                  <div class="skl" style="width:96%;height:12px"></div>
+                  <div class="skl" style="width:60%;height:12px"></div>
+                </div>
+                <div class="ed-note">编辑器为布局示意;侧栏浏览器与左侧共享 media 会话,登录态互通。</div>
+              </div>
+              <div class="sidebr">
+                <div class="sidebr-chrome">
+                  <button class="fab-close" id="btnCollapse" title="收起侧栏">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M14.5 4.5v15"/></svg>
+                    收起
+                  </button>
+                  <button class="navbtn" title="刷新">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 3.8v3.4h-3.4"/></svg>
+                  </button>
+                  <div class="addr">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg>
+                    <input id="sideAddr" placeholder="网址或搜索">
+                  </div>
+                  <button class="navbtn" id="sideCap" title="采集到素材">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                  </button>
+                </div>
+                <div class="sidebr-stage" id="sideStage">
+                  <div class="startpage">
+                    <div class="chips" id="sideChips"></div>
+                    <div class="recent" style="width:100%">
+                      <div class="rlabel">已采集</div>
+                      <div class="capgrid" style="grid-template-columns:1fr" id="sideCaps"></div>
+                    </div>
+                  </div>
+                  <div class="sidebr-caplist" id="sideCapList">
+                    <div class="caplist-head">
+                      已采集
+                      <button class="x" id="capListClose">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                      </button>
+                    </div>
+                    <div class="caplist-body" id="capListBody"></div>
+                  </div>
+                </div>
+              </div>
+              <button class="fab-open" id="btnExpand">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.2"/><ellipse cx="12" cy="12" rx="3.6" ry="8.2"/><path d="M4.4 9.4h15.2M4.4 14.6h15.2"/></svg>
+                浏览器
+              </button>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast glass" id="toast"></div>
+</div>
+
+<div class="themeswitch" role="tablist" aria-label="主题切换">
+  <button data-t="mist" class="on">雾灰 · 墨点</button>
+  <button data-t="cool">冷灰 · 凝霜</button>
+  <button data-t="warm">暖砂 · 柔雾</button>
+</div>
+
+<script>
+/* ================= 数据(合成示例) ================= */
+const PLATFORMS = [
+  { name: '小红书', url: 'https://www.xiaohongshu.com/explore', dot: '#e8494f' },
+  { name: 'B 站', url: 'https://www.bilibili.com', dot: '#ef7ba5' },
+  { name: '知乎', url: 'https://www.zhihu.com/hot', dot: '#4a7dc9' },
+  { name: '微博', url: 'https://weibo.com', dot: '#e0762e' },
+  { name: '抖音创作', url: 'https://creator.douyin.com', dot: '#2a2c31' },
+];
+let captures = [
+  { id: 'c1', title: '爆款笔记的开头钩子合集', url: 'xiaohongshu.com/explore/65f2a', dot: '#e8494f' },
+  { id: 'c2', title: '知识区 UP 的选题方法论', url: 'bilibili.com/video/BV1x2', dot: '#ef7ba5' },
+  { id: 'c3', title: '热榜:AI 写作工具讨论', url: 'zhihu.com/hot/4471', dot: '#4a7dc9' },
+];
+const $ = id => document.getElementById(id);
+const toast = $('toast'); let toastTimer;
+function showToast(msg){
+  toast.textContent = msg; toast.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+/* ================= 整页:起始页 / 加载态 ================= */
+let navStack = [];
+function startpageHtml(){
+  return `<div class="startpage">
+    <div class="biglogo">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.2"/><ellipse cx="12" cy="12" rx="3.6" ry="8.2"/><path d="M4.4 9.4h15.2M4.4 14.6h15.2"/></svg>
+    </div>
+    <div class="slogan">逛平台、找选题,<b>看到即采集</b> —— 链接、标题与整页截图一并存下</div>
+    <div class="chips">${PLATFORMS.map(p =>
+      `<button class="chip-item" data-url="${p.url}" data-dot="${p.dot}" data-name="${p.name}"><span class="pdot" style="background:${p.dot}"></span>${p.name}</button>`).join('')}
+    </div>
+    <div class="recent">
+      <div class="rlabel">最近采集<a class="rmore" data-toast="已采集列表(实际版本可全部查看)">查看全部</a></div>
+      <div class="capgrid" id="capGrid"></div>
+    </div>
+  </div>`;
+}
+function renderCaps(){
+  $('capGrid').innerHTML = captures.map(c => `
+    <div class="capcard" data-toast="实际版本:点击在浏览器中打开原链接">
+      <div class="capthumb"><span class="pdot" style="background:${c.dot}"></span><div style="width:70%"><div class="fake" style="width:100%"></div><div class="fake" style="width:72%;margin-bottom:0"></div></div></div>
+      <div class="capbody"><div class="t">${c.title}</div><div class="u">${c.url}</div></div>
+    </div>`).join('');
+  $('capCount').textContent = captures.length;
+}
+function navigate(name, url, dot){
+  navStack.push('start');
+  $('addrInput').value = url.replace(/^https?:\/\//, '');
+  const stage = $('stage');
+  stage.innerHTML = `<div class="pageload">
+    <div class="pagehead"><span class="pdot" style="background:${dot}"></span>
+      <span class="pname">${name}</span><span class="purl">${url.replace(/^https?:\/\//, '')}</span></div>
+    <div class="pagebody">
+      <span class="pagebadge">页面内容示意 · 实际为内嵌真实网页</span>
+      <div class="sk-media"></div>
+      <div class="skl" style="width:88%;height:13px"></div>
+      <div class="skl" style="width:100%;height:13px"></div>
+      <div class="skl" style="width:72%;height:13px"></div>
+      <div class="skl" style="width:94%;height:13px"></div>
+      <div class="skl" style="width:56%;height:13px"></div>
+    </div>
+  </div>`;
+  $('navBack').disabled = false;
+  $('navReload').title = '刷新 ' + name;
+}
+function goStart(){
+  navStack = [];
+  $('addrInput').value = '';
+  $('stage').innerHTML = startpageHtml();
+  renderCaps();
+  bindStart();
+  $('navBack').disabled = true;
+}
+function bindStart(){
+  $('stage').querySelectorAll('.chip-item').forEach(b => b.addEventListener('click', () =>
+    navigate(b.dataset.name, b.dataset.url, b.dataset.dot)));
+}
+$('navBack').addEventListener('click', () => goStart());
+$('navReload').addEventListener('click', () => {
+  if (!$('addrInput').value) return;
+  showToast('已刷新(示意)');
+});
+$('addrInput').addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const v = e.target.value.trim();
+  if (!v) return;
+  navigate('网页', /^https?:\/\//.test(v) ? v : 'https://' + v, 'var(--acc-deep)');
+});
+let captured = 0;
+$('btnCapture').addEventListener('click', () => {
+  if (!$('addrInput').value){ showToast('先打开一个页面,再采集'); return; }
+  captured++;
+  captures.unshift({ id: 'n' + captured, title: '采集:' + $('addrInput').value.split('/')[0] + ' 第 ' + captured + ' 页', url: $('addrInput').value, dot: 'var(--acc-deep)' });
+  const btn = $('btnCapture');
+  btn.classList.add('done'); btn.textContent = '已采集 ✓';
+  setTimeout(() => { btn.classList.remove('done'); btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>采集到素材'; }, 1400);
+  if (navStack.length === 0) renderCaps();
+  showToast('已采集:链接 + 标题 + 整页截图');
+});
+
+/* ================= 侧栏 ================= */
+$('sideChips').innerHTML = PLATFORMS.map(p =>
+  `<button class="chip-item" data-toast="实际版本:侧栏内直接打开 ${p.name}"><span class="pdot" style="background:${p.dot}"></span>${p.name}</button>`).join('');
+$('sideCaps').innerHTML = captures.slice(0, 2).map(c => `
+  <div class="capcard"><div class="capthumb"><span class="pdot" style="background:${c.dot}"></span></div>
+  <div class="capbody"><div class="t">${c.title}</div><div class="u">${c.url}</div></div></div>`).join('');
+$('capListBody').innerHTML = captures.map(c => `
+  <div class="caprow"><div class="thumb"><span class="pdot" style="background:${c.dot}"></span></div>
+  <div class="m"><div class="t">${c.title}</div><div class="u">${c.url}</div>
+  <div class="acts"><button data-toast="实际版本:打开原链接">打开</button><button data-toast="已复制链接(示意)">复制</button><button data-toast="实际版本:删除该采集">删除</button></div></div></div>`).join('');
+$('sideCap').addEventListener('click', () => showToast('已采集:链接 + 标题 + 整页截图'));
+$('btnCollapse').addEventListener('click', () => $('copyCols').classList.add('collapsed'));
+$('btnExpand').addEventListener('click', () => $('copyCols').classList.remove('collapsed'));
+$('sideCap').addEventListener('dblclick', () => $('sideCapList').classList.add('open'));
+$('capListClose').addEventListener('click', () => $('sideCapList').classList.remove('open'));
+
+/* ================= 二级导航视图切换 ================= */
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-toast]');
+  if (t){ showToast(t.dataset.toast); return; }
+  const v = e.target.closest('[data-view]');
+  if (v){
+    document.querySelectorAll('.nsub').forEach(n => n.classList.remove('on'));
+    v.classList.add('on');
+    document.getElementById('view-browser').style.display = v.dataset.view === 'browser' ? '' : 'none';
+    document.getElementById('view-copy').style.display = v.dataset.view === 'copy' ? '' : 'none';
+  }
+});
+
+/* ================= 主题切换 ================= */
+const THEMES = ['mist','cool','warm'];
+function setTheme(t){
+  if (!THEMES.includes(t)) return;
+  document.documentElement.dataset.theme = t;
+  document.querySelectorAll('.themeswitch button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+}
+document.querySelectorAll('.themeswitch button').forEach(b => b.addEventListener('click', () => setTheme(b.dataset.t)));
+const urlTheme = new URLSearchParams(location.search).get('theme');
+if (urlTheme) setTheme(urlTheme);
+
+goStart();
+</script>
+</body>
+</html>

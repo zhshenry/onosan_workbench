@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="mist">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 面板 · 协助对象卡方案(讨论稿) — 个人工作台</title>
+<!--
+  高保真讨论稿 · AI 助手上下文整合「协助对象卡」(2026-09-30)
+  三个状态:①跟随编辑对象 ②已固定 ③对话下拉展开。
+  方案要点:三行散落上下文(选择历史对话/当前工作区/本次协助)合为一张卡;
+  对象为主行,工作区并入对话选择器前缀;头部瘦身为标题+收起。
+-->
+<style>
+:root{
+  --ink:#1b1d22; --ink-2:#464b54; --ink-3:#63686f;
+  --acc:#7f9dd3; --acc-deep:#4a67a3; --acc-soft:rgba(127,157,211,.16);
+  --action:#232529; --action-deep:#141519;
+  --danger:#b5504e; --danger-soft:rgba(197,93,90,.13);
+  --glass-hi:rgba(255,255,255,.95); --glass-lo:rgba(250,250,252,.68); --glass-line:rgba(255,255,255,.9);
+  --glass-surface:rgba(255,255,255,.56);
+  --ai-panel-bg:linear-gradient(180deg,#ffffff,#f4f5f8);
+  --hairline:rgba(28,30,36,.09);
+  --shadow:0 8px 24px rgba(35,38,48,.09),0 2px 6px rgba(35,38,48,.04);
+  --shadow-sm:0 3px 10px rgba(35,38,48,.07);
+  --todo-line:#dde0e6; --todo-subtle:#eef0f4;
+  --field-base:#e9eaee;
+  --r-panel:18px; --r-card:14px; --r-ctl:10px;
+  --font:"Bahnschrift","Segoe UI Variable Text","Segoe UI","Microsoft YaHei UI","Microsoft YaHei",sans-serif;
+  --ease:cubic-bezier(.2,.7,.2,1);
+  --type-micro:10px; --type-caption:11px; --type-support:12px; --type-control:13px;
+  --type-body:14px; --type-section:16px; --type-lead:18px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--font);color:var(--ink);font-size:var(--type-body);line-height:1.55;
+  background:
+    radial-gradient(46% 40% at 10% 4%,rgba(255,255,255,.8) 0%,transparent 100%),
+    radial-gradient(50% 44% at 92% 96%,rgba(203,209,226,.55) 0%,transparent 100%),
+    linear-gradient(150deg,#e9eaee 0%,#e6e8ec 55%,#e9ebef 100%);
+  display:flex;flex-direction:column;align-items:center;gap:26px;padding:30px 20px;overflow:auto;
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+::selection{background:rgba(127,157,211,.3)}
+:focus-visible{outline:2px solid var(--acc-deep);outline-offset:2px;border-radius:6px}
+::-webkit-scrollbar{width:10px}
+::-webkit-scrollbar-thumb{background:rgba(30,34,44,.16);border-radius:999px;border:3px solid transparent;background-clip:content-box}
+
+.stage-note{font-size:var(--type-support);font-weight:600;color:#4e5156}
+.state-label{font-size:var(--type-support);font-weight:700;color:var(--ink-3);letter-spacing:.02em}
+
+/* ========== AI 面板(真实比例) ========== */
+.ai-panel{
+  width:420px;height:660px;display:flex;flex-direction:column;flex:none;
+  background:var(--ai-panel-bg);
+  border:1px solid var(--glass-line);border-radius:var(--r-panel);overflow:hidden;
+  box-shadow:var(--shadow-sm),0 16px 40px rgba(15,40,65,.12);
+}
+.ai-panel-head{
+  flex:none;height:44px;display:flex;align-items:center;gap:4px;padding:0 12px;
+  border-bottom:1px solid var(--hairline);
+}
+.ai-panel-title{
+  flex:none;height:28px;display:inline-flex;align-items:center;gap:3px;margin-right:auto;
+  color:var(--acc-deep);font-size:var(--type-control);font-weight:700;white-space:nowrap;
+}
+.ai-panel-title svg{color:var(--acc-deep)}
+.ai-icon-btn{
+  width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:var(--ink-2);
+  transition:background .14s var(--ease),color .14s var(--ease);
+}
+.ai-icon-btn:hover{background:rgba(30,34,44,.06);color:var(--ink)}
+
+/* ---- 协助对象卡(方案核心) ---- */
+.ai-ctxcard{
+  flex:none;margin:10px 12px 8px;padding:9px 12px 8px;border-radius:12px;
+  background:var(--glass-surface);
+  border:1px solid var(--glass-line);
+  box-shadow:var(--shadow-sm),inset 0 1px 0 var(--glass-line);
+  display:flex;flex-direction:column;gap:6px;
+}
+.ai-ctxcard.pinned{border-color:rgba(127,157,211,.45);background:linear-gradient(135deg,rgba(127,157,211,.10),rgba(255,255,255,.5))}
+/* 主行:协助对象 */
+.ai-ctx-main{display:flex;align-items:center;gap:8px;min-width:0}
+.ai-ctx-icongroup{position:relative;flex:none;width:30px;height:30px}
+.ai-ctx-modicon{
+  width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+  background:var(--acc-soft);color:var(--acc-deep);
+}
+.ai-ctx-modicon svg{width:16px;height:16px}
+.ai-ctx-body{flex:1;min-width:0}
+.ai-ctx-kicker{display:flex;align-items:center;gap:5px;font-size:var(--type-caption);font-weight:700;color:var(--ink-3);letter-spacing:.03em}
+.ai-ctx-modname{color:var(--acc-deep)}
+.ai-ctx-mode{display:inline-flex;align-items:center;gap:3px}
+.ai-ctx-mode .sep{width:3px;height:3px;border-radius:50%;background:var(--ink-3);opacity:.6}
+.ai-ctx-name{
+  font-size:var(--type-control);font-weight:700;line-height:1.35;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.ai-ctx-pin{
+  flex:none;display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 9px;border-radius:999px;
+  font-size:var(--type-caption);font-weight:700;color:var(--ink-3);
+  transition:background .14s var(--ease),color .14s var(--ease);
+}
+.ai-ctx-pin:hover{background:rgba(30,34,44,.06);color:var(--ink)}
+.ai-ctx-pin.on{background:var(--acc-soft);color:var(--acc-deep)}
+.ai-ctx-info{
+  flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:var(--ink-3);
+  position:relative;
+}
+.ai-ctx-info:hover{background:rgba(30,34,44,.06);color:var(--ink)}
+.ai-ctx-info-tip{
+  position:absolute;top:calc(100% + 6px);right:0;z-index:20;width:260px;padding:10px 12px;border-radius:10px;
+  background:var(--ink);color:rgba(255,255,255,.92);font-size:var(--type-support);line-height:1.7;font-weight:400;
+  box-shadow:0 10px 26px rgba(15,20,28,.3);
+  display:none;text-align:left;
+}
+.ai-ctx-info:hover .ai-ctx-info-tip,.ai-ctx-info:focus-visible .ai-ctx-info-tip{display:block}
+/* 次行:工作区前缀 + 对话选择器 + 新建 */
+.ai-ctx-sub{display:flex;align-items:center;gap:7px;min-width:0;padding-top:5px;border-top:1px dashed var(--hairline)}
+.ai-ctx-wschip{
+  flex:none;display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;
+  background:rgba(30,34,44,.05);color:var(--ink-3);font-size:var(--type-caption);font-weight:600;
+}
+.ai-ctx-chatbtn{
+  flex:1;min-width:0;display:flex;align-items:center;gap:6px;height:28px;padding:0 4px 0 10px;border-radius:9px;
+  transition:background .14s var(--ease);
+}
+.ai-ctx-chatbtn:hover{background:var(--todo-subtle)}
+.ai-ctx-chatbtn .lbl{flex:none;font-size:var(--type-caption);color:var(--ink-3)}
+.ai-ctx-chatbtn .val{
+  flex:1;min-width:0;font-size:var(--type-support);font-weight:600;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;
+}
+.ai-ctx-chatbtn svg{flex:none;color:var(--ink-3)}
+.ai-ctx-new{
+  flex:none;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;color:var(--acc-deep);
+  transition:background .14s var(--ease);
+}
+.ai-ctx-new:hover{background:var(--acc-soft)}
+
+/* ---- 对话下拉菜单(状态③,复用现有菜单结构) ---- */
+.ai-menu-anchor{position:relative;flex:1;min-width:0}
+.ai-menu{
+  position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:30;padding:7px;border-radius:13px;
+  background:var(--glass-hi);border:1px solid var(--glass-line);box-shadow:var(--shadow);
+}
+.ai-menu-search{
+  display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;border-radius:9px;
+  background:rgba(30,34,44,.045);color:var(--ink-3);
+}
+.ai-menu-search input{flex:1;border:none;background:none;outline:none;font-size:var(--type-support);color:var(--ink)}
+.ai-menu-filter{display:flex;align-items:center;justify-content:space-between;padding:7px 4px 5px;font-size:var(--type-caption);color:var(--ink-3)}
+.ai-menu-filter .segs{display:inline-flex;gap:2px;background:rgba(30,34,44,.06);border-radius:999px;padding:2px}
+.ai-menu-filter .segs button{padding:2px 9px;border-radius:999px;font-size:var(--type-caption);font-weight:600;color:var(--ink-3)}
+.ai-menu-filter .segs button.on{background:#fff;color:var(--acc-deep);box-shadow:0 1px 4px rgba(30,34,44,.12)}
+.ai-menu-row{
+  display:flex;align-items:center;gap:8px;width:100%;padding:7px 8px;border-radius:9px;text-align:left;
+  transition:background .13s var(--ease);
+}
+.ai-menu-row:hover{background:rgba(30,34,44,.05)}
+.ai-menu-row.on{background:var(--acc-soft)}
+.ai-menu-row .t{flex:1;min-width:0;font-size:var(--type-support);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ai-menu-row .o{flex:none;font-size:var(--type-caption);color:var(--ink-3);max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ai-menu-row .live{flex:none;font-size:var(--type-caption);font-weight:700;color:var(--acc-deep)}
+
+/* ---- 消息区(示意,结构同现状) ---- */
+.ai-messages{flex:1;min-height:0;overflow-y:auto;padding:4px 12px 10px;display:flex;flex-direction:column;gap:10px}
+.ai-msg{max-width:88%;padding:9px 12px;border-radius:13px;font-size:var(--type-control);line-height:1.65}
+.ai-msg.user{align-self:flex-end;background:var(--action);color:#fff;border-bottom-right-radius:5px}
+.ai-msg.assistant{align-self:flex-start;background:#fff;border:1px solid var(--todo-line);border-bottom-left-radius:5px}
+.ai-compose{flex:none;padding:8px 12px 12px}
+.ai-compose textarea{
+  width:100%;height:64px;resize:none;border-radius:12px;padding:9px 12px;
+  font-size:var(--type-control);line-height:1.6;color:var(--ink);
+  background:rgba(255,255,255,.85);border:1px solid var(--glass-line);outline:none;
+}
+.ai-compose-bar{display:flex;align-items:center;gap:6px;margin-top:6px}
+.ai-compose-bar .hint{font-size:var(--type-caption);color:var(--ink-3)}
+.ai-send{margin-left:auto;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:#fff;
+  background:linear-gradient(140deg,var(--action),var(--action-deep))}
+
+/* 状态标注排布 */
+.state{display:flex;flex-direction:column;gap:8px;align-items:center}
+.row{display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="stage-note">AI 面板 · 协助对象卡方案(三个状态;面板为真实 420px 比例,消息内容为示意)</div>
+
+<div class="row">
+
+  <!-- ========== 状态① 跟随编辑对象 ========== -->
+  <div class="state">
+    <span class="state-label">① 跟随编辑对象(默认)</span>
+    <div class="ai-panel">
+      <header class="ai-panel-head">
+        <span class="ai-panel-title">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 3l1.9 5.1a2 2 0 0 0 1.2 1.2l5.1 1.9-5.1 1.9a2 2 0 0 0-1.2 1.2L12 19.9l-1.9-5.1a2 2 0 0 0-1.2-1.2L3.8 11.7l5.1-1.9a2 2 0 0 0 1.2-1.2Z"/></svg>
+          AI 助手
+        </span>
+        <button class="ai-icon-btn" title="收起 AI 助手">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M14.5 4.5v15"/></svg>
+        </button>
+      </header>
+
+      <div class="ai-ctxcard">
+        <div class="ai-ctx-main">
+          <span class="ai-ctx-icongroup">
+            <span class="ai-ctx-modicon" title="博客">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h6.5L19 9v10.5a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1Z"/><path d="M13.5 3.5V9H19"/><path d="M9.5 13h5.5M9.5 16.5h5.5"/></svg>
+            </span>
+          </span>
+          <div class="ai-ctx-body">
+            <div class="ai-ctx-kicker">
+              <span class="ai-ctx-modname">博客</span>
+              <span class="ai-ctx-mode"><span class="sep"></span>跟随编辑对象</span>
+            </div>
+            <div class="ai-ctx-name" title="小红书爆款笔记的三个套路">小红书爆款笔记的三个套路</div>
+          </div>
+          <button class="ai-ctx-pin" title="固定后,浏览其他页面时仍协助这个对象">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4.5h6l-.7 5.2 3 3.3H6.7l3-3.3Z"/><path d="M12 13v6.5"/></svg>
+            固定
+          </button>
+          <button class="ai-ctx-info" aria-label="查看协助范围">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.8h.01"/></svg>
+            <span class="ai-ctx-info-tip">正在协助:博客《小红书爆款笔记的三个套路》。AI 可读取这篇博客的最新正文;写入建议需你确认后才会应用。切换到其他页面时,协助对象自动跟随。</span>
+          </button>
+        </div>
+        <div class="ai-ctx-sub">
+          <span class="ai-ctx-wschip">自媒体工作台</span>
+          <button class="ai-ctx-chatbtn" title="切换对话">
+            <span class="lbl">对话</span>
+            <span class="val">写标题草稿 · 6 条</span>
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <button class="ai-ctx-new" title="新建对话">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="ai-messages">
+        <div class="ai-msg user">帮我想 6 个标题,要有画面感,别太夸张</div>
+        <div class="ai-msg assistant">好,先给 3 个方向:①反差型「写了 40 篇才悟出的 3 个套路」;②数字型「爆款笔记开头的 3 个固定动作」;③场景型「刷到第 3 条我停下来了」。要哪个方向我继续展开,定稿后用工具提交候选。</div>
+        <div class="ai-msg user">② 继续展开</div>
+      </div>
+      <div class="ai-compose">
+        <textarea placeholder="围绕正在协助的对象继续聊聊…"></textarea>
+        <div class="ai-compose-bar">
+          <span class="hint">Enter 发送 · 写入前会先给确认卡</span>
+          <button class="ai-send" title="发送">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12h13M13 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 状态② 已固定 ========== -->
+  <div class="state">
+    <span class="state-label">② 已固定(换页仍协助此对象)</span>
+    <div class="ai-panel">
+      <header class="ai-panel-head">
+        <span class="ai-panel-title">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 3l1.9 5.1a2 2 0 0 0 1.2 1.2l5.1 1.9-5.1 1.9a2 2 0 0 0-1.2 1.2L12 19.9l-1.9-5.1a2 2 0 0 0-1.2-1.2L3.8 11.7l5.1-1.9a2 2 0 0 0 1.2-1.2Z"/></svg>
+          AI 助手
+        </span>
+        <button class="ai-icon-btn" title="收起 AI 助手">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M14.5 4.5v15"/></svg>
+        </button>
+      </header>
+
+      <div class="ai-ctxcard pinned">
+        <div class="ai-ctx-main">
+          <span class="ai-ctx-icongroup">
+            <span class="ai-ctx-modicon" title="八字命例">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.2"/><path d="M12 3.8v16.4M3.8 12h16.4M6.2 6.2l11.6 11.6M17.8 6.2 6.2 17.8"/></svg>
+            </span>
+          </span>
+          <div class="ai-ctx-body">
+            <div class="ai-ctx-kicker">
+              <span class="ai-ctx-modname">八字</span>
+              <span class="ai-ctx-mode"><span class="sep"></span>已固定</span>
+            </div>
+            <div class="ai-ctx-name" title="命例 · 林川(自己)">命例 · 林川(自己)</div>
+          </div>
+          <button class="ai-ctx-pin on" title="取消固定后,下一次发送使用当前编辑页的对象">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4.5h6l-.7 5.2 3 3.3H6.7l3-3.3Z"/><path d="M12 13v6.5"/></svg>
+            取消固定
+          </button>
+          <button class="ai-ctx-info" aria-label="查看协助范围">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.8h.01"/></svg>
+            <span class="ai-ctx-info-tip">正在协助:命例 林川(自己) · 八字盘。AI 只读盘面并给解读,不产生任何写入。已固定:即使切到其他页面,本次对话仍协助这个命例。</span>
+          </button>
+        </div>
+        <div class="ai-ctx-sub">
+          <span class="ai-ctx-wschip">小工具</span>
+          <button class="ai-ctx-chatbtn" title="切换对话">
+            <span class="lbl">对话</span>
+            <span class="val">流年要点整理 · 3 条</span>
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <button class="ai-ctx-new" title="新建对话">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="ai-messages">
+        <div class="ai-msg user">2026 丙午年对日主癸水意味着什么?</div>
+        <div class="ai-msg assistant">丙火为正财、午中丁火偏财透出,财星主事的年份……结合你当前丁亥大运(29–38 岁)看,财务与机会窗口并存,细节如下。</div>
+      </div>
+      <div class="ai-compose">
+        <textarea placeholder="围绕正在协助的对象继续聊聊…"></textarea>
+        <div class="ai-compose-bar">
+          <span class="hint">Enter 发送 · 命例解读为只读</span>
+          <button class="ai-send" title="发送">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12h13M13 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 状态③ 对话下拉展开 ========== -->
+<div class="state">
+  <span class="state-label">③ 对话下拉展开(现有搜索/工作区筛选/对象徽标都并入此处)</span>
+  <div class="ai-panel">
+    <header class="ai-panel-head">
+      <span class="ai-panel-title">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 3l1.9 5.1a2 2 0 0 0 1.2 1.2l5.1 1.9-5.1 1.9a2 2 0 0 0-1.2 1.2L12 19.9l-1.9-5.1a2 2 0 0 0-1.2-1.2L3.8 11.7l5.1-1.9a2 2 0 0 0 1.2-1.2Z"/></svg>
+        AI 助手
+      </span>
+      <button class="ai-icon-btn" title="收起 AI 助手">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M14.5 4.5v15"/></svg>
+      </button>
+    </header>
+
+    <div class="ai-ctxcard">
+      <div class="ai-ctx-main">
+        <span class="ai-ctx-icongroup">
+          <span class="ai-ctx-modicon" title="博客">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h6.5L19 9v10.5a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1Z"/><path d="M13.5 3.5V9H19"/><path d="M9.5 13h5.5M9.5 16.5h5.5"/></svg>
+          </span>
+        </span>
+        <div class="ai-ctx-body">
+          <div class="ai-ctx-kicker">
+            <span class="ai-ctx-modname">博客</span>
+            <span class="ai-ctx-mode"><span class="sep"></span>跟随编辑对象</span>
+          </div>
+          <div class="ai-ctx-name" title="小红书爆款笔记的三个套路">小红书爆款笔记的三个套路</div>
+        </div>
+        <button class="ai-ctx-pin" title="固定后,浏览其他页面时仍协助这个对象">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4.5h6l-.7 5.2 3 3.3H6.7l3-3.3Z"/><path d="M12 13v6.5"/></svg>
+          固定
+        </button>
+        <button class="ai-ctx-info" aria-label="查看协助范围">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.8h.01"/></svg>
+        </button>
+      </div>
+      <div class="ai-ctx-sub">
+        <span class="ai-ctx-wschip">自媒体工作台</span>
+        <div class="ai-menu-anchor">
+          <button class="ai-ctx-chatbtn" aria-expanded="true" title="切换对话" style="background:var(--todo-subtle)">
+            <span class="lbl">对话</span>
+            <span class="val">写标题草稿 · 6 条</span>
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(180deg)"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="ai-menu">
+            <label class="ai-menu-search">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-3.8-3.8"/></svg>
+              <input placeholder="搜索对话标题或关联对象" value="标题">
+            </label>
+            <div class="ai-menu-filter">
+              <span>找到 3 条</span>
+              <span class="segs">
+                <button class="on">本工作区</button>
+                <button>全部</button>
+              </span>
+            </div>
+            <button class="ai-menu-row on">
+              <span class="t">写标题草稿</span><span class="o">博客 · 爆款笔记套路</span><span class="live">当前</span>
+            </button>
+            <button class="ai-menu-row">
+              <span class="t">标题二轮:往数字型靠</span><span class="o">博客 · 爆款笔记套路</span>
+            </button>
+            <button class="ai-menu-row">
+              <span class="t">封面文案怎么办</span><span class="o">博客 · 爆款笔记套路</span>
+            </button>
+          </div>
+        </div>
+        <button class="ai-ctx-new" title="新建对话">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="ai-messages">
+      <div class="ai-msg user">帮我想 6 个标题,要有画面感,别太夸张</div>
+      <div class="ai-msg assistant">好,先给 3 个方向:①反差型;②数字型;③场景型。要哪个方向我继续展开。</div>
+    </div>
+    <div class="ai-compose">
+      <textarea placeholder="围绕正在协助的对象继续聊聊…"></textarea>
+      <div class="ai-compose-bar">
+        <span class="hint">Enter 发送 · 写入前会先给确认卡</span>
+        <button class="ai-send" title="发送">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12h13M13 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

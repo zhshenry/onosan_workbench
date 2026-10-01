@@ -63,7 +63,8 @@ test('设置:非法字段值丢弃,合法字段照常生效', () => {
     assert.equal(s.launchAtLogin, false);
     assert.equal(s.closeAction, 'minimize');
     assert.equal(s.language, 'zh-CN');
-    assert.equal(s.snavDefaultCollapsed, true);
+    // snavDefaultCollapsed 已被产品移除:遗留文件中的旧键按未知键丢弃
+    assert.equal('snavDefaultCollapsed' in s, false);
     assert.equal(s.uiTheme, 'mist');
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -105,7 +106,7 @@ test('设置:旧文件缺新字段自动落默认(remindersEnabled 缺省开启)
   }
 });
 
-test('设置:uiTheme 默认雾灰墨点,可切换并落盘', () => {
+test('设置:uiTheme 默认轻雾,三款可切换并落盘,旧晴蓝映射冷灰', () => {
   const dir = tempDir();
   try {
     const store = new AppSettingsStore(dir);
@@ -113,11 +114,15 @@ test('设置:uiTheme 默认雾灰墨点,可切换并落盘', () => {
     writeFileSync(join(dir, 'app-settings.json'), JSON.stringify({ launchAtLogin: true }), 'utf8');
     assert.equal(store.read().uiTheme, 'mist');
     // 合法切换持久化,新实例可读回
-    store.patch({ uiTheme: 'sunny' });
-    assert.equal(new AppSettingsStore(dir).read().uiTheme, 'sunny');
+    store.patch({ uiTheme: 'cool' });
+    assert.equal(new AppSettingsStore(dir).read().uiTheme, 'cool');
+    store.patch({ uiTheme: 'warm' });
+    assert.equal(new AppSettingsStore(dir).read().uiTheme, 'warm');
     // 非法值被丢弃
     const next = store.patch({ uiTheme: 'dark' } as Record<string, unknown>);
-    assert.equal(next.uiTheme, 'sunny');
+    assert.equal(next.uiTheme, 'warm');
+    writeFileSync(join(dir, 'app-settings.json'), JSON.stringify({ uiTheme: 'sunny' }), 'utf8');
+    assert.equal(new AppSettingsStore(dir).read().uiTheme, 'cool');
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

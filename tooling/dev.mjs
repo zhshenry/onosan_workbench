@@ -21,9 +21,9 @@ const child = spawn(electronPath, ['.'], {
   },
 });
 
-child.on('exit', () => {
+child.on('exit', (code) => {
   server.close();
-  process.exit(0);
+  process.exit(code ?? 1);
 });
 
 const forward = (signal) => {

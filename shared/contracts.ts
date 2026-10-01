@@ -14,6 +14,8 @@ export const ViewIdSchema = z.enum([
   'home',
   'bazi',
   'copy',
+  'copy-publish',
+  'media-browser',
   'settings-profile',
   'settings-general',
   'settings-appearance',
@@ -35,42 +37,41 @@ export const SETTINGS_VIEWS = {
   about: 'settings-about',
 } as const;
 
-/** 界面主题(2026-09-24 参考图配色精修:mist 雾灰墨点为默认,sunny 晴蓝 A+ 为保留主题) */
-export const UiThemeSchema = z.enum(['mist', 'sunny']);
+/** 界面主题:雾灰轻雾(默认)、冷灰凝霜、暖砂柔雾 */
+export const UiThemeSchema = z.enum(['mist', 'cool', 'warm']);
 export type UiTheme = z.infer<typeof UiThemeSchema>;
+
+export const AvatarColorSchema = z.enum(['blue', 'teal', 'violet', 'rose', 'amber']);
+export type AvatarColor = z.infer<typeof AvatarColorSchema>;
 
 /**
  * 应用设置(工作台自有,存 userData/app-settings.json;与 To-Do-List 无关)。
  * 新增字段必须给默认值并兼容旧文件(存储层逐字段恢复,旧文件缺字段自动落默认)。
  */
 export const AppSettingsSchema = z.object({
-  profile: z.object({ name: z.string().min(1).max(20) }),
+  profile: z.object({
+    name: z.string().min(1).max(20),
+    avatarColor: AvatarColorSchema.default('blue'),
+  }),
   launchAtLogin: z.boolean(),
   closeAction: z.enum(['minimize', 'exit']),
   language: z.enum(['zh-CN']),
-  snavDefaultCollapsed: z.boolean(),
   remindersEnabled: z.boolean(),
   uiTheme: UiThemeSchema,
 });
 export type AppSettings = z.infer<typeof AppSettingsSchema>;
-export type AppSettingsPatch = Partial<AppSettings>;
+export type AppSettingsPatch = Partial<Omit<AppSettings, 'profile'>> & {
+  profile?: Partial<AppSettings['profile']>;
+};
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
-  profile: { name: 'Ono' },
+  profile: { name: 'Ono', avatarColor: 'blue' },
   launchAtLogin: false,
   closeAction: 'minimize',
   language: 'zh-CN',
-  snavDefaultCollapsed: false,
   remindersEnabled: true,
   uiTheme: 'mist',
 };
-
-/** AI 待确认建议(通知中心派生数据,只读) */
-export interface AiPendingProposal {
-  chatId: string;
-  chatTitle: string;
-  count: number;
-}
 
 /** 待办共享库状态(设置 → 待办与数据,只读展示) */
 export interface TodoDbInfo {
@@ -88,3 +89,11 @@ export const AppMetaSchema = z.object({
   version: z.string(),
 });
 export type AppMeta = z.infer<typeof AppMetaSchema>;
+
+export interface UpdateStatus {
+  enabled: boolean;
+  phase: 'idle' | 'checking' | 'latest' | 'downloading' | 'ready' | 'error';
+  version: string;
+  progress: number;
+  message: string;
+}

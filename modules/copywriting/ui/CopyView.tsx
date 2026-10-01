@@ -1,21 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, Plus, Sparkle, TrashSimple, X } from '@phosphor-icons/react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Check, PaperPlaneTilt, Plus, TrashSimple } from '@phosphor-icons/react';
 import {
   copyStoreDataSchema, XHS_BODY_LIMIT, XHS_TITLE_LIMIT,
-  type CopyAiAction, type CopyDraft, type CopyStoreData,
+  type CopyDraft, type CopyStoreData,
 } from '../../../shared/copy-contracts';
+import type { CopySource } from '../../../shared/todo-contracts';
 import { errorText } from '../../todo/ui/ui';
 
 const wb = window.workbench;
 const CUR_KEY = 'wb.copy.curDraftId';
-
-type AiMode = 'humanize' | 'polish' | 'titles';
-
-const MODE_META: Record<AiMode, { label: string; hint: string }> = {
-  humanize: { label: '去 AI 味', hint: '清除 AI 腔,保留全部信息与经历' },
-  polish: { label: '润色', hint: '只顺句子删冗余,不动结构' },
-  titles: { label: '起标题', hint: '按正文内容给 6 个候选' },
-};
 
 const charCount = (text: string): number => [...text.trim()].length;
 const snippetOf = (body: string): string => [...body.replace(/#[^\s#]+/g, '').trim()].slice(0, 32).join('');
@@ -29,21 +22,30 @@ function fmtTime(iso: string): string {
     : `${d.getMonth() + 1}月${d.getDate()}日 ${hhmm}`;
 }
 
-export function CopyView({ onPending }: { onPending(message: string): void }) {
+export function CopyView({ onPending, onCurrentDraft, onSaveState, requestedDraftId, requestedSource, onSourceLocated, onGoPublish }: {
+  onPending(message: string): void;
+  /** 向外壳上报当前草稿(id/标题),供 AI 面板绑定写作会话 */
+  onCurrentDraft(draft: { id: string; title: string } | null): void;
+  onSaveState(state: { id: string | null; status: 'saved' | 'saving' | 'error' }): void;
+  requestedDraftId?: string | null;
+  requestedSource?: CopySource & { nonce: number } | null;
+  onSourceLocated(): void;
+  /** 跳转「图文发布」二级页(当前草稿经 localStorage 交接) */
+  onGoPublish(): void;
+}) {
   const [storeData, setStoreData] = useState<CopyStoreData | null>(null);
   const [loadError, setLoadError] = useState('');
   const [curId, setCurId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [savedAt, setSavedAt] = useState<string | null>(null);
-  const [aiReady, setAiReady] = useState(false);
-  const [aiBusy, setAiBusy] = useState(false);
-  const [aiResult, setAiResult] = useState<{ mode: AiMode; actions: CopyAiAction[] } | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
-
   const saveTimer = useRef<number | undefined>(undefined);
   const removeTimer = useRef<number | undefined>(undefined);
-  const pendingRef = useRef<{ id: string; title: string; body: string } | null>(null);
+  const pendingRef = useRef<{ id: string; title: string; body: string; platform: 'xiaohongshu' } | null>(null);
+  const handledRequest = useRef<string | null>(null);
+  const handledSource = useRef(0);
   // 编辑器即时值(stateRef 供防抖保存与跨事件读取,避免闭包拿到旧值)
   const stateRef = useRef({ curId, title, body });
   stateRef.current = { curId, title, body };
@@ -53,19 +55,30 @@ export function CopyView({ onPending }: { onPending(message: string): void }) {
     if (!pending) return;
     pendingRef.current = null;
     window.clearTimeout(saveTimer.current);
+    if (stateRef.current.curId === pending.id) setSaveStatus('saving');
     try {
       const next = copyStoreDataSchema.parse(await wb.copy.save(pending));
       setStoreData(next);
       const saved = next.drafts.find((d) => d.id === pending.id);
-      if (saved) setSavedAt(saved.updatedAt);
+      if (saved && stateRef.current.curId === pending.id && !pendingRef.current) {
+        setSavedAt(saved.updatedAt);
+        setSaveStatus('saved');
+        onSaveState({ id: pending.id, status: 'saved' });
+      }
     } catch (error) {
-      pendingRef.current = pending;
+      const hasNewerPending = Boolean(pendingRef.current);
+      if (!pendingRef.current) pendingRef.current = pending;
+      if (stateRef.current.curId === pending.id && !hasNewerPending) {
+        setSaveStatus('error');
+        onSaveState({ id: pending.id, status: 'error' });
+      }
       onPending(errorText(error) || '保存失败,请重试');
     }
-  }, [onPending]);
+  }, [onPending, onSaveState]);
 
   const queueSave = useCallback((id: string, nextTitle: string, nextBody: string): void => {
-    pendingRef.current = { id, title: nextTitle, body: nextBody };
+    pendingRef.current = { id, title: nextTitle, body: nextBody, platform: 'xiaohongshu' };
+    setSaveStatus('saving');
     window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => { void flushSave(); }, 600);
   }, [flushSave]);
@@ -76,32 +89,76 @@ export function CopyView({ onPending }: { onPending(message: string): void }) {
       setTitle(draft.title);
       setBody(draft.body);
       setSavedAt(draft.updatedAt);
+      setSaveStatus('saved');
       localStorage.setItem(CUR_KEY, draft.id);
     } else {
       setCurId(null);
       setTitle('');
       setBody('');
       setSavedAt(null);
+      setSaveStatus('saved');
       localStorage.removeItem(CUR_KEY);
     }
-    setAiResult(null);
     setConfirmRemove(null);
   }, []);
 
-  // 首次加载:草稿库 + AI 可用性
+  // 首次加载:草稿库(AI 可用性由 AI 面板自行处理)
   useEffect(() => {
-    const wantedId = localStorage.getItem(CUR_KEY);
+    const wantedId = requestedDraftId ?? localStorage.getItem(CUR_KEY);
     void wb.copy.list().then((raw) => {
       const data = copyStoreDataSchema.parse(raw);
       setStoreData(data);
       openDraft(data.drafts.find((d) => d.id === wantedId) ?? data.drafts[0]);
     }).catch((error: unknown) => setLoadError(errorText(error) || '草稿库读取失败,请重启应用'));
-    void wb.ai.config().then((raw) => {
-      const cfg = raw as { aiEnabled?: boolean; hasConnection?: boolean };
-      setAiReady(Boolean(cfg.aiEnabled && cfg.hasConnection));
-    }).catch(() => setAiReady(false));
-    return () => { window.clearTimeout(saveTimer.current); window.clearTimeout(removeTimer.current); };
+    return () => { if (pendingRef.current) void flushSave(); window.clearTimeout(saveTimer.current); window.clearTimeout(removeTimer.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!requestedDraftId || !storeData || handledRequest.current === requestedDraftId || curId === requestedDraftId) return;
+    const target = storeData.drafts.find(draft => draft.id === requestedDraftId);
+    if (!target) return;
+    handledRequest.current = requestedDraftId;
+    void flushSave().then(() => openDraft(target));
+  }, [requestedDraftId, storeData, curId, flushSave, openDraft]);
+
+  useEffect(() => {
+    if (!requestedSource || handledSource.current === requestedSource.nonce || curId !== requestedSource.draftId) return;
+    handledSource.current = requestedSource.nonce;
+    if (body.slice(requestedSource.start, requestedSource.end) !== requestedSource.text) {
+      onPending('引用的原文已变化，无法定位原选区');
+      onSourceLocated();
+      return;
+    }
+    requestAnimationFrame(() => {
+      const editor = document.getElementById('copy-body') as HTMLTextAreaElement | null;
+      editor?.focus();
+      editor?.setSelectionRange(requestedSource.start, requestedSource.end);
+      onSourceLocated();
+    });
+  }, [requestedSource, curId, body, onPending, onSourceLocated]);
+
+  // 向外壳上报当前草稿,供 AI 面板绑定写作会话
+  useLayoutEffect(() => {
+    onCurrentDraft(curId ? { id: curId, title } : null);
+  }, [curId, title, onCurrentDraft]);
+  useLayoutEffect(() => { onSaveState({ id: curId, status: saveStatus }); }, [curId, saveStatus, onSaveState]);
+
+  // AI 面板应用建议后主进程广播 copy:changed:以主进程版本为准刷新编辑器
+  // (应用即「用建议替换正文」;期间本地未保存的改动会被丢弃,与确认卡语义一致)
+  useEffect(() => {
+    return wb.copy.onChanged(() => {
+      pendingRef.current = null;
+      window.clearTimeout(saveTimer.current);
+      void wb.copy.list().then((raw) => {
+        const data = copyStoreDataSchema.parse(raw);
+        setStoreData(data);
+        const cur = stateRef.current.curId;
+        if (!cur) return;
+        const fresh = data.drafts.find((d) => d.id === cur);
+        if (fresh) { setTitle(fresh.title); setBody(fresh.body); setSavedAt(fresh.updatedAt); setSaveStatus('saved'); }
+      }).catch(() => undefined);
+    });
   }, []);
 
   const drafts = storeData?.drafts ?? [];
@@ -137,46 +194,11 @@ export function CopyView({ onPending }: { onPending(message: string): void }) {
     }).catch((error: unknown) => onPending(errorText(error) || '删除失败,请重试'));
   };
 
-  const runAi = (mode: AiMode): void => {
-    const id = stateRef.current.curId;
-    if (!id || aiBusy) return;
-    if (!aiReady) { onPending('请先在 AI 设置中配置并启用 AI'); return; }
-    if (mode !== 'titles' && !stateRef.current.body.trim()) { onPending('正文为空,先写点内容再优化'); return; }
-    void (async () => {
-      setAiBusy(true);
-      setAiResult(null);
-      try {
-        await flushSave(); // 确保主进程读到最新正文
-        const { actions } = await wb.copy.enhance(id, mode) as { actions: CopyAiAction[] };
-        setAiResult({ mode, actions });
-      } catch (error) {
-        onPending(errorText(error) || 'AI 优化失败,请重试');
-      } finally {
-        setAiBusy(false);
-      }
-    })();
-  };
-
-  const applyEdit = (): void => {
-    if (!curId || aiResult?.mode === 'titles') return;
-    const action = aiResult?.actions.find((a) => a.kind === 'edit');
-    if (!action || action.kind !== 'edit') return;
-    setBody(action.text);
-    queueSave(curId, stateRef.current.title, action.text);
-    setAiResult(null);
-    onPending('已应用到正文,记得核对一遍');
-  };
-
-  const applyTitle = (value: string): void => {
+  // 发布流程已独立到「图文发布」二级页;此处仅负责把当前草稿交接过去
+  const goPublish = (): void => {
     if (!curId) return;
-    setTitle(value);
-    queueSave(curId, value, stateRef.current.body);
-    setAiResult(null);
-    onPending('已应用标题');
-  };
-
-  const cancelAi = (): void => {
-    void wb.copy.cancel();
+    localStorage.setItem('wb.copy.pubDraftId', curId);
+    onGoPublish();
   };
 
   return (
@@ -184,32 +206,34 @@ export function CopyView({ onPending }: { onPending(message: string): void }) {
       {loadError && <div className="todo-load-error" role="alert">{loadError}</div>}
 
       {/* 左:草稿列表 */}
-      <section className="panel glass copy-list" aria-label="笔记列表">
+      <section className="panel glass copy-list" aria-label="博客列表">
         <div className="phead">
-          <span className="ptitle">我的笔记</span>
+          <span className="ptitle">我的博客</span>
           <span className="copy-count">{drafts.length}</span>
-          <button className="btn btn-pri btn-sm copy-new" onClick={createDraft} title="新建一篇笔记">
+          <button className="btn btn-pri btn-sm copy-new" onClick={createDraft} title="新建一篇博客">
             <Plus weight="bold" /> 新建
           </button>
         </div>
         <div className="copy-items">
           {drafts.length === 0 && (
-            <div className="copy-none">还没有笔记,点「新建」开始写第一篇心得。</div>
+            <div className="copy-none">还没有博客,点「新建」开始写第一篇心得。</div>
           )}
           {drafts.map((d) => (
-            <div
-              key={d.id}
-              className={d.id === curId ? 'copy-item on' : 'copy-item'}
-              onClick={() => { if (d.id !== stateRef.current.curId) { void flushSave().then(() => openDraft(d)); } }}
-            >
-              <div className="copy-item-main">
-                <span className="copy-item-title">{d.title || '(未命名)'}</span>
-                <span className="copy-item-snip">{snippetOf(d.body) || '空笔记'}</span>
+            <div key={d.id} className={d.id === curId ? 'copy-item on' : 'copy-item'}>
+              <button
+                type="button"
+                className="copy-item-open"
+                aria-current={d.id === curId ? 'true' : undefined}
+                title={d.title || '未命名博客'}
+                onClick={() => { if (d.id !== stateRef.current.curId) { void flushSave().then(() => openDraft(d)); } }}
+              >
+                <span className="copy-item-title">{d.title || '未命名博客'}</span>
+                <span className="copy-item-snip">{snippetOf(d.body) || '空博客'}</span>
                 <span className="copy-item-time">{fmtTime(d.updatedAt)}</span>
-              </div>
+              </button>
               <button
                 className={confirmRemove === d.id ? 'copy-del sure' : 'copy-del'}
-                title={confirmRemove === d.id ? '再点一次确认删除' : '删除笔记'}
+                title={confirmRemove === d.id ? '再点一次确认删除' : '删除博客'}
                 onClick={(e) => { e.stopPropagation(); removeDraft(d.id); }}
               >
                 {confirmRemove === d.id ? <Check weight="bold" /> : <TrashSimple />}
@@ -220,89 +244,61 @@ export function CopyView({ onPending }: { onPending(message: string): void }) {
       </section>
 
       {/* 右:编辑器 */}
-      <section className="panel glass copy-editor" aria-label="笔记编辑">
+      <section className="panel glass copy-editor" aria-label="博客编辑">
         {curDraft ? (
           <>
-            <div className="copy-titlebar">
+            <div className="copy-editor-head">
+              <div>
+                <span className="copy-eyebrow">小红书 · 草稿</span>
+                <h1>博客编辑</h1>
+              </div>
+              <div className="copy-head-actions">
+                <div className="copy-save-state" role="status">
+                  <span className={saveStatus === 'error' ? 'copy-saved error' : 'copy-saved'}>
+                    {saveStatus === 'saving' ? '保存中…' : saveStatus === 'error' ? '保存失败' : savedAt ? `已保存 ${fmtTime(savedAt)}` : '自动保存'}
+                  </span>
+                  {saveStatus === 'error' && <button type="button" className="copy-save-retry" onClick={() => { void flushSave(); }}>重试</button>}
+                </div>
+                <button type="button" className="btn btn-sec btn-sm" title="到「图文发布」页走发布流程" onClick={goPublish}>
+                  <PaperPlaneTilt /> 去发布
+                </button>
+              </div>
+            </div>
+            <div className="copy-writing">
+              <div className="copy-field-head">
+                <label htmlFor="copy-title">标题</label>
+                <span className={titleCount > XHS_TITLE_LIMIT ? 'copy-count-num over' : 'copy-count-num'} title={`小红书标题上限 ${XHS_TITLE_LIMIT} 字`}>
+                  {titleCount}/{XHS_TITLE_LIMIT}
+                </span>
+              </div>
               <input
-                className="copy-title sheet"
+                id="copy-title"
+                className="copy-title"
                 value={title}
-                placeholder="标题(发布时可再改)"
+                placeholder="给这篇博客起个标题"
                 maxLength={30}
                 onChange={(e) => { setTitle(e.target.value); queueSave(curDraft.id, e.target.value, stateRef.current.body); }}
               />
-              <span className={titleCount > XHS_TITLE_LIMIT ? 'copy-count-num over' : 'copy-count-num'} title={`小红书标题上限 ${XHS_TITLE_LIMIT} 字`}>
-                {titleCount}/{XHS_TITLE_LIMIT}
-              </span>
-            </div>
-            <textarea
-              className="copy-body sheet"
-              value={body}
-              placeholder={'把你的心得写在这里…\n\n素材不够没关系,AI 只会整理你说过的,不会替你编。'}
-              onChange={(e) => { setBody(e.target.value); queueSave(curDraft.id, stateRef.current.title, e.target.value); }}
-            />
-            <div className="copy-meta">
-              <span className={bodyCount > XHS_BODY_LIMIT ? 'copy-count-num over' : 'copy-count-num'} title={`小红书正文上限 ${XHS_BODY_LIMIT} 字`}>
-                正文 {bodyCount}/{XHS_BODY_LIMIT}
-              </span>
-              <span className="copy-saved">{savedAt ? `已保存 ${fmtTime(savedAt)}` : ''}</span>
-            </div>
-
-            <div className="copy-aibar">
-              <span className="copy-aibar-label"><Sparkle weight="fill" /> AI 优化</span>
-              {(Object.keys(MODE_META) as AiMode[]).map((mode) => (
-                <button
-                  key={mode}
-                  className="btn btn-sec btn-sm"
-                  disabled={aiBusy}
-                  title={MODE_META[mode].hint}
-                  onClick={() => runAi(mode)}
-                >
-                  {MODE_META[mode].label}
-                </button>
-              ))}
-              {aiBusy && (
-                <button className="btn btn-sec btn-sm" onClick={cancelAi}>取消</button>
-              )}
-              <span className="copy-aibar-hint">建议只做参考,应用前先读一遍</span>
-            </div>
-
-            {aiResult && (
-              <div className="copy-ai" role="region" aria-label="AI 优化建议">
-                <div className="copy-ai-head">
-                  <span className="copy-ai-title">AI {MODE_META[aiResult.mode].label}建议</span>
-                  <button className="ibtn copy-ai-close" title="放弃建议" onClick={() => setAiResult(null)}><X /></button>
-                </div>
-                {aiResult.actions.map((action, i) => action.kind === 'edit' ? (
-                  <div className="copy-ai-edit" key={i}>
-                    {action.notes.length > 0 && (
-                      <ul className="copy-ai-notes">
-                        {action.notes.map((note, j) => <li key={j}>{note}</li>)}
-                      </ul>
-                    )}
-                    <pre className="copy-ai-preview sheet">{action.text}</pre>
-                    <div className="copy-ai-foot">
-                      <button className="btn btn-pri btn-sm" onClick={applyEdit}><Check weight="bold" /> 应用到正文</button>
-                      <button className="btn btn-sec btn-sm" onClick={() => setAiResult(null)}>放弃</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="copy-ai-titles" key={i}>
-                    {action.titles.map((t, j) => (
-                      <button key={j} className="copy-title-chip" title="点击采用这个标题" onClick={() => applyTitle(t)}>{t}</button>
-                    ))}
-                    <div className="copy-ai-foot">
-                      <button className="btn btn-sec btn-sm" onClick={() => setAiResult(null)}>都不用</button>
-                    </div>
-                  </div>
-                ))}
+              <div className="copy-field-head copy-body-head">
+                <label htmlFor="copy-body">正文</label>
+                <span className={bodyCount > XHS_BODY_LIMIT ? 'copy-count-num over' : 'copy-count-num'} title={`小红书正文上限 ${XHS_BODY_LIMIT} 字`}>
+                  {bodyCount}/{XHS_BODY_LIMIT}
+                </span>
               </div>
-            )}
+              <textarea
+                id="copy-body"
+                className="copy-body"
+                value={body}
+                placeholder={'把你的心得写在这里…\n\n素材不够没关系，AI 只会整理你说过的，不会替你编。'}
+                onChange={(e) => { setBody(e.target.value); queueSave(curDraft.id, stateRef.current.title, e.target.value); }}
+              />
+            </div>
+
           </>
         ) : (
           <div className="copy-empty">
-            <p>在左边新建一篇笔记,开始写你的小红书心得。</p>
-            <button className="btn btn-pri" onClick={createDraft}><Plus weight="bold" /> 新建笔记</button>
+            <p>在左边新建一篇博客,开始写你的小红书心得。</p>
+            <button className="btn btn-pri" onClick={createDraft}><Plus weight="bold" /> 新建博客</button>
           </div>
         )}
       </section>

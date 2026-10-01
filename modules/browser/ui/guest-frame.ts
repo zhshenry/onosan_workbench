@@ -142,6 +142,43 @@ export class GuestFrame {
     } else this.navigate('reload');
   }
 
+  /** 整页截图(采集用);guest 未就绪或无已加载页面时返回 null。 */
+  async capturePage(): Promise<{ url: string; title: string; png: string; thumb: string } | null> {
+    const current = this.state;
+    if (!this.ready || this.element === undefined || current.target === undefined || current.error !== undefined) {
+      return null;
+    }
+    try {
+      const image = await this.element.capturePage();
+      const bytes = image.toPNG();
+      let binary = '';
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+      }
+      return {
+        url: current.target.url,
+        title: current.target.title,
+        png: btoa(binary),
+        thumb: image.resize({ width: 320 }).toDataURL(),
+      };
+    } catch (error) {
+      console.error('内置浏览器截图失败', error);
+      return null;
+    }
+  }
+
+  /** 在 guest 主文档执行脚本(AI 读取正文用);未就绪或执行失败返回 null。 */
+  async executeJavaScript<T>(code: string): Promise<T | null> {
+    if (!this.ready || this.element === undefined) return null;
+    try {
+      return (await this.element.executeJavaScript<T>(code, false)) ?? null;
+    } catch (error) {
+      console.error('内置浏览器脚本执行失败', error);
+      return null;
+    }
+  }
+
   /** @returns 待完成的初始化与持有的 guest 全部释放后 resolve。 */
   dispose(): Promise<void> {
     if (this.disposal !== undefined) return this.disposal;

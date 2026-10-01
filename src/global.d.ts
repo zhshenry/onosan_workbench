@@ -26,6 +26,14 @@ declare global {
         review(): Promise<string>;
         onChanged(callback: () => void): () => void;
       };
+      mediaCapture: {
+        list(): Promise<unknown>;
+        save(input: unknown): Promise<unknown>;
+        remove(id: string): Promise<unknown>;
+        setNote(id: string, note: string): Promise<unknown>;
+        onChanged(callback: (items: unknown) => void): () => void;
+        onFailed(callback: (message: string) => void): () => void;
+      };
       bazi: {
         list(): Promise<unknown>;
         saveProfile(input: unknown): Promise<unknown>;
@@ -36,12 +44,13 @@ declare global {
         list(): Promise<unknown>;
         save(input: unknown): Promise<unknown>;
         remove(id: string): Promise<unknown>;
-        enhance(draftId: string, mode: 'humanize' | 'polish' | 'titles'): Promise<unknown>;
-        cancel(): Promise<void>;
+        markXhsPublished(id: string, url: string): Promise<unknown>;
+        clearXhsPublished(id: string): Promise<unknown>;
+        onChanged(callback: () => void): () => void;
       };
       ai: {
+        openLink(url: string): Promise<void>;
         config(): Promise<unknown>;
-        pending(): Promise<import('../shared/contracts').AiPendingProposal[]>;
         setEnabled(enabled: boolean): Promise<unknown>;
         saveProvider(input: unknown): Promise<unknown>;
         removeProvider(id: string): Promise<unknown>;
@@ -49,16 +58,35 @@ declare global {
         removeModel(id: string): Promise<unknown>;
         activateModel(id: string): Promise<unknown>;
         test(input: unknown): Promise<string>;
+        saveRlcdProvider(input: unknown): Promise<unknown>;
+        removeRlcdProvider(id: string): Promise<unknown>;
+        saveRlcdModel(input: unknown): Promise<unknown>;
+        removeRlcdModel(id: string): Promise<unknown>;
+        testRlcd(input: unknown): Promise<string>;
         chatList(): Promise<unknown>;
         chatOpen(id?: string): Promise<unknown>;
-        chatNew(): Promise<unknown>;
+        chatNew(tag?: import('../shared/ai-scope').AiScope): Promise<unknown>;
+        chatRename(id: string, title: string): Promise<unknown>;
         chatRemove(id: string): Promise<unknown>;
         chatDraft(id: string, text: string): Promise<void>;
-        ask(sessionId: string, text: string): Promise<void>;
+        chatContext(id: string, scope: import('../shared/ai-scope').AiScope): Promise<unknown>;
+        ask(sessionId: string, text: string, context?: { scope?: import('../shared/ai-scope').AiScope; pageScope?: import('../shared/ai-scope').AiScope; references?: import('../shared/ai-scope').AiScope[]; baziSystem?: 'bazi' | 'ziwei' | 'astro'; copySource?: import('../shared/todo-contracts').CopySource }): Promise<void>;
         cancel(): void;
         apply(token: string, indices: number[]): Promise<unknown>;
+        undo(token: string): Promise<unknown>;
         discard(token: string): Promise<unknown>;
         onChat(callback: (chat: unknown) => void): () => void;
+        onAsk(callback: (ask: { id: string; question: string; options: { label: string; description?: string }[] }) => void): () => void;
+        answerAsk(input: { id: string; kind: 'option' | 'text' | 'skip'; value?: string }): void;
+      };
+      float: {
+        toggle(): Promise<boolean>;
+        show(): Promise<void>;
+        onVisibilityChanged(callback: (visible: boolean) => void): () => void;
+        collapse(collapsed: boolean, animate: boolean): Promise<void>;
+        tempHeight(height: number | null): void;
+        resize(height: number): void;
+        pin(): Promise<boolean>;
       };
       settings: {
         get(): Promise<import('../shared/contracts').AppSettings | null>;
@@ -75,6 +103,16 @@ declare global {
         }>;
         openUserDataDir(): Promise<void>;
         openTodoDir(): Promise<void>;
+        openExternal(url: string): Promise<void>;
+      };
+      updater: {
+        status(): Promise<import('../shared/contracts').UpdateStatus>;
+        check(): Promise<void>;
+        install(): Promise<void>;
+        onStatus(callback: (status: import('../shared/contracts').UpdateStatus) => void): () => void;
+      };
+      clipboard: {
+        write(text: string): Promise<void>;
       };
     };
   }

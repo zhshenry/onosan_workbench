@@ -10,7 +10,7 @@ const optionalString = Type.Optional(Type.String());
 const optionalNullable = Type.Optional(Type.Union([Type.String(), Type.Null()]));
 const taskParams = {
   kind: optionalString, status: optionalString, priority: optionalString, plannedDate: optionalString,
-  dueAt: optionalNullable, remindAt: optionalNullable, categoryId: optionalNullable, progress: Type.Optional(Type.Union([Type.Number(), Type.Null()])), note: optionalString,
+  dueAt: optionalNullable, endAt: optionalNullable, remindAt: optionalNullable, categoryId: optionalNullable, progress: Type.Optional(Type.Union([Type.Number(), Type.Null()])), note: optionalString,
 };
 
 export function parsePlan(text: string): AIPlan {
@@ -20,7 +20,7 @@ export function parsePlan(text: string): AIPlan {
 }
 export function taskSnapshot(tasks: Task[], categories: Category[]) {
   const context = [...tasks].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 120)
-    .map(({ id, title, kind, status, priority, plannedDate, dueAt, remindAt, categoryId, progress, note }) => ({ id, title, kind, status, priority, plannedDate, dueAt, remindAt, categoryId, progress, note: note.slice(0, 1000) }));
+    .map(({ id, title, kind, status, priority, plannedDate, dueAt, endAt, remindAt, categoryId, progress, note }) => ({ id, title, kind, status, priority, plannedDate, dueAt, endAt, remindAt, categoryId, progress, note: note.slice(0, 1000) }));
   return {
     context,
     categoryContext: categories.map(({ id, name, color }) => ({ id, name, color })),
@@ -46,7 +46,7 @@ export function requestSystemPrompt(now: Date, snapshot: ReturnType<typeof taskS
 categoryId 只能使用已有标签或本次 propose_create_category 返回的 id,不能编造。已有标签:${JSON.stringify(snapshot.categoryContext)}。
 priority 只能是 high、medium 或 low。
 存在歧义时用中文提问,不要调用修改类工具。查询、复盘和建议安排可以直接回答。未经用户明确要求不修改事项或标签。
-信息不足时先一次性问清再建议,优先列出候选选项让用户直接选(如"放进哪个标签?工作 / 生活 / 不设标签");同一问题只问一次,用户回答后立即据此生成建议,不要重复追问。以下情况必须先问:分类有歧义(存在多个标签且用户未指明)、时间表述不完整(如"明天"但未说几点且事项类型为日程,kind 为 "meeting")、指向不明("把它改掉"但本轮有多个事项)。用户明确说了"不设标签""随便"或此前对话已回答过时,不得再问。
+新增或修改日程时必须同时给出开始时间 dueAt 和结束时间 endAt,结束时间需晚于开始时间且与日程在同一天;信息不完整时先询问。信息不足时调用 ask_user 工具一次性问清(question 简短,尽量给 2-4 个候选选项让用户直接选);同一问题只问一次,用户回答后立即据此生成建议,不要重复追问。以下情况必须先问:分类有歧义(存在多个标签且用户未指明)、日程缺少开始或结束时间、指向不明("把它改掉"但本轮有多个事项)。用户明确说了"不设标签""随便"或此前对话已回答过时,不得再问。
 最近对话只是上下文,不代表建议已经应用;以最新事项数据和用户在对话中明确说明的应用或放弃状态为准。
 这是最近 ${snapshot.context.length} 条事项,不能声称覆盖未提供的数据:${JSON.stringify(snapshot.context)}`;
 }
@@ -70,13 +70,14 @@ export function planFromReply(text: string, actions: AIPlan['actions'], knownTas
 }
 
 /** 构建待办模块的一次性贡献(工具闭包持有快照与建议收集器) */
-export function buildTodoContribution(tasks: Task[], categories: Category[]): AiModuleContribution & { collect(): AIPlan['actions'] } {
+export type AskUser = (ask: { id: string; question: string; options: { label: string; description?: string }[] }) => Promise<string>;
+export function buildTodoContribution(tasks: Task[], categories: Category[], onAskUser?: AskUser): AiModuleContribution & { collect(): AIPlan['actions'] } {
   const snapshot = taskSnapshot(tasks, categories);
   const actions: AIAction[] = [];
   return {
-    toolNames: ['list_tasks', 'propose_create', 'propose_update', 'propose_remove', 'propose_create_category', 'propose_update_category', 'propose_remove_category'],
+    toolNames: ['list_tasks', 'propose_create', 'propose_update', 'propose_remove', 'propose_create_category', 'propose_update_category', 'propose_remove_category', 'ask_user'],
     labels: {
-      list_tasks: '读取事项和标签', propose_create: '生成新增事项建议', propose_update: '生成修改事项建议', propose_remove: '生成删除事项建议',
+      list_tasks: '读取事项和标签', propose_create: '生成新增事项建议', propose_update: '生成修改事项建议', propose_remove: '生成删除事项建议', ask_user: '向用户提问',
       propose_create_category: '生成新增标签建议', propose_update_category: '生成修改标签建议', propose_remove_category: '生成删除标签建议',
     },
     systemPrompt: (now: Date) => requestSystemPrompt(now, snapshot),
@@ -171,6 +172,23 @@ export function buildTodoContribution(tasks: Task[], categories: Category[]): Ai
           if (actions.length >= 20) return toolText('一次最多建议20项操作');
           actions.push({ type: 'remove_category', id: params.id });
           return toolText('已记录删除标签建议,等待用户确认后才会写入。关联事项会变为无标签。');
+        },
+      }),
+      defineTool({
+        name: 'ask_user', label: '向用户提问', description: '就当前任务的歧义向用户提问并等待回答,循环会暂停直到用户应答。仅在必要歧义时使用;鼓励给出 2-4 个候选选项,也允许只提问不给选项。',
+        parameters: Type.Object({
+          question: Type.String({ minLength: 1, maxLength: 200 }),
+          options: Type.Optional(Type.Array(Type.Object({ label: Type.String({ minLength: 1, maxLength: 30 }), description: Type.Optional(Type.String({ maxLength: 60 })) }), { minItems: 2, maxItems: 4 })),
+        }),
+        execute: async (toolCallId, params) => {
+          if (!onAskUser) return toolText('当前环境无法向用户提问,请按你的判断继续,并在结果中说明假设。');
+          const payload = params as { question: string; options?: { label: string; description?: string }[] };
+          try {
+            const answer = await onAskUser({ id: toolCallId, question: payload.question, options: payload.options ?? [] });
+            return toolText(answer);
+          } catch {
+            return toolText('用户已取消');
+          }
         },
       }),
     ],

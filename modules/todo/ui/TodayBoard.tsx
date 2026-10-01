@@ -14,11 +14,11 @@ function shiftDay(day: string, days: number) {
   return localDay(date);
 }
 
-export function TodayBoard({ tasks, today, categoryById, planView, mutating, api, mutate, setEditor, toolbar }: {
+export function TodayBoard({ tasks, today, categoryById, planView, mutating, api, mutate, setEditor, toolbar, emptyText }: {
   tasks: Task[]; today: string; categoryById: Map<string, { id: string; name: string; color: string }>;
   planView: 'rows' | 'tiles'; mutating: boolean;
   api: TaskEditorApi; mutate: Mutate;
-  setEditor: (task: Task | 'new') => void; toolbar: ReactNode;
+  setEditor: (task: Task | 'new') => void; toolbar: ReactNode; emptyText?: string;
 }) {
   const [openFolder, setOpenFolder] = useState<string | null>(null);
   const [armedId, setArmedId] = useState<string | null>(null);
@@ -61,7 +61,7 @@ export function TodayBoard({ tasks, today, categoryById, planView, mutating, api
   return <div className="today-board">
     <section className={`plan-card plan-today${todos.length ? '' : ' is-empty'}`} aria-label="待办">
       <header className="plan-card-heading"><h2>待办</h2>{toolbar}</header>
-      {todos.length ? <ul className={planView === 'tiles' ? 'plan-tiles' : 'plan-list'}>{todos.map(task => <PlanRow key={task.id} task={task} tiles={planView === 'tiles'} category={task.categoryId ? categoryById.get(task.categoryId) : undefined} current={task.id === currentId} mutating={mutating} setEditor={setEditor} armed={armedId === task.id} onCheck={() => onRowCheck(task)} onConfirm={() => confirmRow(task)} onDisarm={disarmArm} />)}</ul> : <div className="plan-empty">点击 + 添加,或让 AI 帮你安排。</div>}
+      {todos.length ? <ul className={planView === 'tiles' ? 'plan-tiles' : 'plan-list'}>{todos.map(task => <PlanRow key={task.id} task={task} tiles={planView === 'tiles'} category={task.categoryId ? categoryById.get(task.categoryId) : undefined} current={task.id === currentId} mutating={mutating} setEditor={setEditor} armed={armedId === task.id} onCheck={() => onRowCheck(task)} onConfirm={() => confirmRow(task)} onDisarm={disarmArm} />)}</ul> : <div className="plan-empty">{emptyText ?? '点击 + 添加,或让 AI 帮你安排。'}</div>}
     </section>
     <section className="plan-schedule" aria-label="日程">
       <header className="plan-card-heading"><h2>日程</h2></header>

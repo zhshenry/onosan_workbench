@@ -111,3 +111,61 @@ test('神煞:年支/日支三合局与日干查表', () => {
   assert.ok(has('天喜', '年支', '卯'));
   assert.throws(() => findShenSha('X', '午', '丑'));
 });
+
+/* ---- 紫微(iztro 真算) ---- */
+import { buildZiwei, ziweiTimeIndex } from '../modules/bazi/ziwei';
+import { buildAstro } from '../modules/bazi/astro';
+import { baziProfileInputSchema } from '../shared/bazi-contracts';
+
+test('紫微:林川 命宫在子,命主贪狼/身主火星', () => {
+  const z = buildZiwei(LIN_CHUAN);
+  assert.equal(z.soul, '贪狼');
+  assert.equal(z.body, '火星');
+  assert.ok(z.fiveElementsClass.endsWith('局'), `五行局:${z.fiveElementsClass}`);
+  assert.equal(z.palaces.length, 12);
+  const ming = z.palaces.find((p) => p.name === '命宫');
+  assert.ok(ming);
+  assert.equal(ming!.ganZhi.slice(1), '子');
+  assert.ok(ming!.decadal[0] >= 2 && ming!.decadal[0] <= 8, `大限起始:${ming!.decadal[0]}`);
+  const shen = z.palaces.find((p) => p.isBodyPalace);
+  assert.ok(shen);
+});
+
+test('紫微:庚年四化 日禄/武权/阴科/同忌 齐备', () => {
+  const z = buildZiwei(LIN_CHUAN);
+  const muts = z.palaces.flatMap((p) => p.majorStars.filter((s) => s.mutagen).map((s) => `${s.name}${s.mutagen}`));
+  for (const m of ['太阳禄', '武曲权', '太阴科', '天同忌']) {
+    assert.ok(muts.includes(m), `缺少 ${m},实际:${muts.join('、')}`);
+  }
+});
+
+test('紫微:时辰序号 23 点为晚子时', () => {
+  assert.equal(ziweiTimeIndex(23), 12);
+  assert.equal(ziweiTimeIndex(0), 0);
+  assert.equal(ziweiTimeIndex(14), 7);
+});
+
+test('占星:林川 太阳约狮子 23°(黄经 143°),土星逆行', () => {
+  const a = buildAstro(LIN_CHUAN);
+  assert.equal(a.bodies.length, 10);
+  const sun = a.bodies.find((b) => b.key === 'Sun')!;
+  assert.ok(Math.abs(sun.lon - 143.15) < 1, `太阳黄经 ${sun.lon}`);
+  const saturn = a.bodies.find((b) => b.key === 'Saturn')!;
+  assert.ok(saturn.retro, '1990-08 土星应逆行');
+});
+
+test('占星:相位非空且类型合法', () => {
+  const a = buildAstro(LIN_CHUAN);
+  assert.ok(a.aspects.length > 0);
+  for (const asp of a.aspects) {
+    assert.ok(['合', '六分', '三分', '刑', '冲'].includes(asp.type));
+    assert.ok(asp.orb >= 0 && asp.orb <= 8);
+  }
+});
+
+test('命例契约:tag 可选且最长 6 字', () => {
+  const base = { name: '测试', gender: 1, date: '1990-08-16', time: '12:00' };
+  assert.ok(baziProfileInputSchema.safeParse(base).success);
+  assert.ok(baziProfileInputSchema.safeParse({ ...base, tag: '家人' }).success);
+  assert.ok(!baziProfileInputSchema.safeParse({ ...base, tag: '七个字的标签呀' }).success);
+});

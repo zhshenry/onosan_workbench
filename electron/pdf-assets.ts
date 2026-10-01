@@ -1,7 +1,7 @@
 /**
  * PDF.js 资源协议:wb-pdf://cmaps|standard_fonts|wasm/<文件> 映射到 pdfjs-dist 的资源目录。
  * 使 CJK cMap/标准字体/wasm 解码器在 dev(http)与打包(file://)下都能本地加载,不走网络。
- * 打包发布时需把 pdfjs-dist 的这三个目录作为 extraResources 带上(打包链做时处理)。
+ * 安装包将这三个目录放在 resources/pdfjs/，开发模式仍从 node_modules 读取。
  */
 import { net, protocol } from 'electron';
 import { join } from 'node:path';

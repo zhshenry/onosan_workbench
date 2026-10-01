@@ -3,20 +3,38 @@
  * 逐行移植自 DSH apps/desktop/src/browser-guests.ts(webview 租约模式),仅改名与中文注释。
  */
 import { randomUUID } from 'node:crypto';
-import { app, session, type BrowserWindow, type Session, type WebContents } from 'electron';
-import type { BrowserLeaseId, BrowserOpenRequest, BrowserReservation } from '../shared/browser-contracts';
+import { app, BrowserWindow, Menu, session, type Session, type WebContents } from 'electron';
+import {
+  XHS_CREATOR_WORKSPACE, isXhsCreatorNavigation,
+  type BrowserLeaseId, type BrowserOpenRequest, type BrowserReservation,
+} from '../shared/browser-contracts';
 
 interface GuestLease {
   readonly owner: WebContents;
   readonly partition: string;
+  readonly workspace: string;
   attached: boolean;
   guest?: WebContents;
 }
 
-/** 存储分区独立于单个 guest 存活:进程生命周期内复用,同一 workspace 的标签共享登录态。 */
+/** 原图采集上下文:guest 内右键图片时由宿主决定抓取与落库。 */
+export interface ImageSaveContext {
+  readonly owner: WebContents;
+  readonly partition: string;
+  readonly mediaUrl: string;
+  readonly pageUrl: string;
+}
+
+/** 存储分区按 workspace 确定性命名(persist: 前缀落盘):同一 workspace 的标签共享登录态,重启保留。 */
 export class BrowserGuests {
   private readonly partitions = new Map<string, string>();
   private readonly leases = new Map<BrowserLeaseId, GuestLease>();
+  private imageSaver: ((ctx: ImageSaveContext) => void | Promise<void>) | undefined;
+
+  /** 注入原图采集实现(主进程受控抓取,不放宽下载禁令);不注入则右键菜单不出现。 */
+  setImageSaver(fn: (ctx: ImageSaveContext) => void | Promise<void>): void {
+    this.imageSaver = fn;
+  }
 
   /** @param hostUrl - 应用自身地址(开发服务器);guest 不允许请求它。 */
   constructor(private readonly hostUrl: () => string | undefined) {}
@@ -33,12 +51,15 @@ export class BrowserGuests {
     }
     let partition = this.partitions.get(workspace);
     if (partition === undefined) {
-      partition = `workbench-browser-${randomUUID()}`;
-      this.configureSession(session.fromPartition(partition));
+      // 确定性持久分区:同 workspace 重启后仍拿回同一存储(cookie/登录态保留)。
+      // 仅保留安全字符,避免 workspace 拼接出路径歧义。
+      const safe = workspace.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64) || 'default';
+      partition = `persist:wb-browser-${safe}`;
+      this.configureSession(session.fromPartition(partition), workspace);
       this.partitions.set(workspace, partition);
     }
     const lease = randomUUID();
-    this.leases.set(lease, { owner, partition, attached: false });
+    this.leases.set(lease, { owner, partition, workspace, attached: false });
     return { lease, partition };
   }
 
@@ -127,18 +148,36 @@ export class BrowserGuests {
           lease.owner === owner &&
           !owner.isDestroyed() &&
           postBody === undefined &&
-          this.allowedNavigation(url)
+          this.allowedNavigation(url, lease.workspace)
         ) {
           const request: BrowserOpenRequest = { lease: attachedLease, url: new URL(url).href };
           owner.send('browser:open-requested', request);
         }
         return { action: 'deny' };
       });
+      // 右键图片 → 弹「采集原图到素材库」菜单;抓取由注入的 imageSaver 在主进程完成。
+      guest.on('context-menu', (_event, params) => {
+        if (params.mediaType !== 'image' || this.imageSaver === undefined) return;
+        const mediaUrl = params.srcURL;
+        if (typeof mediaUrl !== 'string' || !this.allowedNavigation(mediaUrl)) return;
+        const lease = attachedLease === undefined ? undefined : this.leases.get(attachedLease);
+        if (lease === undefined || lease.guest !== guest || lease.workspace === XHS_CREATOR_WORKSPACE) return;
+        const win = BrowserWindow.fromWebContents(owner);
+        if (!win) return;
+        Menu.buildFromTemplate([{
+          label: '采集原图到素材库',
+          click: () => {
+            void this.imageSaver?.({ owner, partition: lease.partition, mediaUrl, pageUrl: params.pageURL });
+          },
+        }]).popup({ window: win });
+      });
       guest.on('will-frame-navigate', (event) => {
-        if (event.isMainFrame && !this.allowedNavigation(event.url)) event.preventDefault();
+        const lease = attachedLease === undefined ? undefined : this.leases.get(attachedLease);
+        if (event.isMainFrame && !this.allowedNavigation(event.url, lease?.workspace)) event.preventDefault();
       });
       guest.on('will-redirect', (event, url, _inPlace, mainFrame) => {
-        if (mainFrame && !this.allowedNavigation(url)) event.preventDefault();
+        const lease = attachedLease === undefined ? undefined : this.leases.get(attachedLease);
+        if (mainFrame && !this.allowedNavigation(url, lease?.workspace)) event.preventDefault();
       });
       guest.on('will-attach-webview', (event) => {
         event.preventDefault();
@@ -165,7 +204,7 @@ export class BrowserGuests {
   }
 
   /** 会话级封锁:权限/下载/非 http(s) 请求与带凭据 URL 一律拒绝。 */
-  private configureSession(browserSession: Session): void {
+  private configureSession(browserSession: Session, workspace: string): void {
     browserSession.setPermissionRequestHandler((_contents, _permission, callback) => {
       callback(false);
     });
@@ -181,15 +220,18 @@ export class BrowserGuests {
       const url = new URL(details.url);
       const network = ['http:', 'https:', 'ws:', 'wss:'].includes(url.protocol);
       callback({
-        cancel: network
-          ? url.username !== '' || url.password !== '' || this.isApplicationHost(url)
-          : !['about:', 'data:', 'blob:'].includes(url.protocol),
+        cancel: (workspace === XHS_CREATOR_WORKSPACE && details.resourceType === 'mainFrame' &&
+          !isXhsCreatorNavigation(details.url)) ||
+          (network
+            ? url.username !== '' || url.password !== '' || this.isApplicationHost(url)
+            : !['about:', 'data:', 'blob:'].includes(url.protocol)),
       });
     });
   }
 
   /** 导航白名单:仅无内嵌凭据的 http/https,且拒绝应用自身地址。 */
-  private allowedNavigation(value: string): boolean {
+  private allowedNavigation(value: string, workspace?: string): boolean {
+    if (workspace === XHS_CREATOR_WORKSPACE) return isXhsCreatorNavigation(value);
     if (!URL.canParse(value)) return false;
     const url = new URL(value);
     return (

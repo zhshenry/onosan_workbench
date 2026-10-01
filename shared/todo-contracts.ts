@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { CopyAiAction } from './copy-contracts';
 
 // Keep the dock implementation and saved preferences available for a future return,
 // while excluding the feature from the current shipping runtime and UI.
@@ -26,24 +27,43 @@ export const taskFields = z.object({
   priority: z.enum(['high', 'medium', 'low']),
   plannedDate: day,
   dueAt: instant,
+  endAt: instant.default(null),
   remindAt: instant,
   categoryId: z.string().uuid().nullable().default(null),
   progress: z.number().int().min(0).max(100).nullable().default(null),
   note: z.string().max(5000, '备注最多5000字'),
 }).strict();
 export type TaskInput = z.infer<typeof taskFields>;
-export interface Task extends TaskInput {
+export interface Task extends Omit<TaskInput, 'endAt'> {
+  /** Older shared-database records may not have an end time until normalized on read. */
+  endAt?: string | null;
   id: string; createdAt: string; updatedAt: string; completedAt: string | null;
   notifiedFor: string | null; deletedAt: string | null;
 }
-export const taskInputSchema = taskFields;
+function validateMeetingRange(task: TaskInput, ctx: z.RefinementCtx, requireRange = false) {
+  if (task.kind !== 'meeting') return;
+  if (!task.dueAt && !task.endAt && !requireRange) return;
+  if (!task.dueAt) ctx.addIssue({ code: 'custom', path: ['dueAt'], message: '请填写日程开始时间' });
+  if (!task.endAt) ctx.addIssue({ code: 'custom', path: ['endAt'], message: '请填写日程结束时间' });
+  if (!task.dueAt || !task.endAt) return;
+  const start = new Date(task.dueAt);
+  const end = new Date(task.endAt);
+  if (localDay(start) !== task.plannedDate || localDay(end) !== task.plannedDate) {
+    ctx.addIssue({ code: 'custom', path: ['endAt'], message: '日程开始和结束时间需在所选日期内' });
+  } else if (end.getTime() <= start.getTime()) {
+    ctx.addIssue({ code: 'custom', path: ['endAt'], message: '结束时间需晚于开始时间' });
+  }
+}
+export const taskInputSchema = taskFields.superRefine((task, ctx) => validateMeetingRange(task, ctx));
+const taskCreateSchema = taskFields.superRefine((task, ctx) => validateMeetingRange(task, ctx, true));
 // Creation defaults must not turn omitted patch fields into destructive nulls.
 export const taskPatchSchema = taskFields.extend({
+  endAt: taskFields.shape.endAt.removeDefault(),
   categoryId: taskFields.shape.categoryId.removeDefault(),
   progress: taskFields.shape.progress.removeDefault(),
 }).partial().strict();
 export const aiActionSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('create'), task: taskFields }).strict(),
+  z.object({ type: z.literal('create'), task: taskCreateSchema }).strict(),
   z.object({ type: z.literal('update'), id: z.string().uuid(), patch: taskPatchSchema }).strict(),
   z.object({ type: z.literal('remove'), id: z.string().uuid() }).strict(),
   z.object({ type: z.literal('create_category'), category: categoryInputSchema.extend({ id: z.string().uuid() }) }).strict(),
@@ -72,19 +92,43 @@ export const AI_PROVIDER_PRESETS: Record<AIProviderKind, { name: string; endpoin
   deepseek: { name: 'DeepSeek', endpoint: 'https://api.deepseek.com/v1', protocol: 'openai-chat' },
   custom: { name: '', endpoint: '', protocol: 'openai-chat' },
 };
+export const rlcdProviderKindSchema = z.enum(['typesafe', 'openrouter', 'custom']);
+export type RlcdProviderKind = z.infer<typeof rlcdProviderKindSchema>;
+export const RLCD_PROVIDER_PRESETS: Record<RlcdProviderKind, { name: string; endpoint: string; protocol: AIProtocol }> = {
+  typesafe: { name: 'TypeSafe', endpoint: 'https://api.typesafe.ai/v1', protocol: 'openai-chat' },
+  openrouter: { name: 'OpenRouter', endpoint: 'https://openrouter.ai/api/v1', protocol: 'openai-chat' },
+  custom: { name: '', endpoint: '', protocol: 'openai-chat' },
+};
 export interface Proposal extends AIPlan { token: string; }
+/** 文案工坊建议(写作助手模式):随会话存 chats.db,应用时写入草稿 */
+export interface CopyProposal { token: string; message: string; actions: CopyAiAction[]; original?: { title: string; body: string }; }
+export interface CopySource { draftId: string; start: number; end: number; text: string; }
 export interface AIToolEvent { id: string; name: string; label: string; status: 'running' | 'complete' | 'error' | 'interrupted'; output: string; }
 export interface ChatEntry {
   id: string; role: 'user' | 'assistant'; content: string; proposal?: Proposal;
-  actionState?: 'pending' | 'applied' | 'discarded' | 'expired' | 'revised'; streaming?: boolean;
-  tools?: AIToolEvent[]; error?: string;
+  copyProposal?: CopyProposal;
+  copyUndo?: { draftId: string; beforeTitle: string; beforeBody: string; appliedTitle: string; appliedBody: string; appliedAt: string };
+  copySource?: CopySource;
+  contextScope?: import('./ai-scope').AiScope;
+  pageScope?: import('./ai-scope').AiScope;
+  references?: import('./ai-scope').AiScope[];
+  baziSystem?: 'bazi' | 'ziwei' | 'astro';
+  actionState?: 'pending' | 'applied' | 'discarded' | 'expired' | 'revised' | 'undone'; streaming?: boolean;
+  tools?: AIToolEvent[]; thinking?: string; thinkingActive?: boolean; error?: string;
 }
-export interface ChatSession { id: string; title: string; updatedAt: string; entries: ChatEntry[]; draft: string; }
-export interface ChatSummary { id: string; title: string; updatedAt: string; }
+/** 缺省 module 为旧版待办会话；原始对象用于工作台归类，contextScope 是当前业务对象，pageScope 是明确关联的页面。 */
+export interface ChatSession { id: string; title: string; titleEdited?: boolean; updatedAt: string; entries: ChatEntry[]; draft: string; module?: 'todo' | 'copy' | 'bazi' | 'workbench'; draftId?: string; profileId?: string; viewId?: string; contextScope?: import('./ai-scope').AiScope; pageScope?: import('./ai-scope').AiScope; }
+export interface ChatSummary { id: string; title: string; updatedAt: string; module?: ChatSession['module']; draftId?: string; profileId?: string; viewId?: string; contextScope?: import('./ai-scope').AiScope; pageScope?: import('./ai-scope').AiScope; streaming?: boolean; completed?: boolean; }
 export interface AIProvider {
   id: string; kind: AIProviderKind; name: string; endpoint: string; protocol: AIProtocol; hasKey: boolean;
 }
 export interface AIModel {
+  id: string; providerId: string; name: string;
+}
+export interface RlcdProvider {
+  id: string; kind: RlcdProviderKind; name: string; endpoint: string; protocol: AIProtocol; hasKey: boolean;
+}
+export interface RlcdModel {
   id: string; providerId: string; name: string;
 }
 export interface AIProfile {
@@ -109,7 +153,7 @@ export type AssistantAnchor = { side: 'left' | 'right' | 'top' | 'bottom'; along
 // 属应用壳而非待办内核,工作台自建自己的 API(见 electron/preload.ts),因此不移植。
 // 其余内容与上游 shared/contracts.ts 保持逐行平行,便于 sync diff;基准版本见 modules/todo/SYNC.md。
 export function newTask(title = ''): TaskInput {
-  return { title, kind: 'task', status: 'todo', priority: 'medium', plannedDate: localDay(), dueAt: null, remindAt: null, categoryId: null, progress: null, note: '' };
+  return { title, kind: 'task', status: 'todo', priority: 'medium', plannedDate: localDay(), dueAt: null, endAt: null, remindAt: null, categoryId: null, progress: null, note: '' };
 }
 export function taskTime(task: Task): number { return task.dueAt ? Date.parse(task.dueAt) : Number.MAX_SAFE_INTEGER; }
 function visibleToday(task: Task, today: string): boolean {

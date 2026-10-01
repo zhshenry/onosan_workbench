@@ -81,6 +81,16 @@ export function assistantText(message: unknown): string {
   if (!Array.isArray(content)) return '';
   return content.map(part => part && typeof part === 'object' && (part as { type?: string }).type === 'text' && typeof (part as { text?: unknown }).text === 'string' ? (part as { text: string }).text : '').join('');
 }
+export function assistantThinking(message: unknown): string {
+  if (!message || typeof message !== 'object' || (message as { role?: string }).role !== 'assistant') return '';
+  const content = (message as { content?: unknown }).content;
+  if (!Array.isArray(content)) return '';
+  return content.flatMap(part => {
+    if (!part || typeof part !== 'object') return [];
+    const block = part as { type?: string; thinking?: unknown; redacted?: boolean };
+    return block.type === 'thinking' && !block.redacted && typeof block.thinking === 'string' ? [block.thinking] : [];
+  }).join('\n\n');
+}
 export function visibleReply(text: string): string | undefined {
   const trimmed = text.trim();
   if (!trimmed || trimmed.startsWith('{')) return undefined;
@@ -115,7 +125,7 @@ export function mapAiError(error: unknown, signal: AbortSignal): Error {
  * 运行一次会话:历史 + 当前输入 → 流式回复 + 工具事件 → 由 module 侧收集的 actions 组装计划。
  * actions 的收集与校验在模块工具内完成(上游同款纪律:工具只记建议,不写库)。
  */
-export async function runAgentLoop(config: { endpoint: string; model: string; protocol: AIProtocol; key: string }, text: string, history: AIConversationTurn[], signal: AbortSignal, module: AiModuleContribution, onDelta?: (text: string) => void, onTool?: (event: AIToolEvent) => void): Promise<{ reply: string }> {
+export async function runAgentLoop(config: { endpoint: string; model: string; protocol: AIProtocol; key: string }, text: string, history: AIConversationTurn[], signal: AbortSignal, module: AiModuleContribution, onDelta?: (text: string) => void, onTool?: (event: AIToolEvent) => void, onThinking?: (text: string, active: boolean) => void): Promise<{ reply: string }> {
   const endpoint = validateEndpoint(config.endpoint);
   const workspace = mkdtempSync(path.join(tmpdir(), 'workbench-pi-'));
   const settingsManager = SettingsManager.inMemory({ compaction: { enabled: false }, retry: { enabled: false } });
@@ -150,17 +160,25 @@ export async function runAgentLoop(config: { endpoint: string; model: string; pr
     })).session;
     const abort = () => { void session?.abort(); };
     signal.addEventListener('abort', abort);
+    let completedThinking = '', lastThinking = '', lastThinkingActive = false;
     const unsubscribe = session.subscribe(event => {
       if (event.type === 'tool_execution_start' || event.type === 'tool_execution_update' || event.type === 'tool_execution_end') {
         if (!module.labels[event.toolName]) return;
         const result = event.type === 'tool_execution_end' ? event.result : event.type === 'tool_execution_update' ? event.partialResult : undefined;
-        // Only tool text is visible; never forward model reasoning, request headers, or raw events.
+        // Forward visible text only; never expose signatures, request headers, or raw events.
         const output = Array.isArray(result?.content) ? result.content.filter((part: { type?: string; text?: unknown }) => part.type === 'text' && typeof part.text === 'string').map((part: { text: string }) => part.text).join('\n').slice(0, 20000) : '';
         onTool?.({ id: event.toolCallId, name: event.toolName, label: module.labels[event.toolName], status: event.type === 'tool_execution_end' ? event.isError ? 'error' : 'complete' : 'running', output });
         return;
       }
       if (event.type !== 'message_update' && event.type !== 'message_end') return;
-      if (!('message' in event)) return;
+      if (event.message.role !== 'assistant') return;
+      const thinking = [completedThinking, assistantThinking(event.message)].filter(Boolean).join('\n\n');
+      const thinkingActive = event.type === 'message_update' && (event.assistantMessageEvent.type === 'thinking_start' || event.assistantMessageEvent.type === 'thinking_delta');
+      if (thinking !== lastThinking || thinkingActive !== lastThinkingActive) {
+        onThinking?.(thinking, thinkingActive);
+        lastThinking = thinking; lastThinkingActive = thinkingActive;
+      }
+      if (event.type === 'message_end') completedThinking = thinking;
       const next = visibleReply(assistantText(event.message));
       if (next) onDelta?.(next);
     });

@@ -44,3 +44,15 @@ export const emptyBrowserFrame = (): BrowserFrameState => ({
 
 /** 缺省存储身份:同一身份的分区进程内复用,cookie/登录态跨标签共享,进程退出即消失 */
 export const DEFAULT_BROWSER_WORKSPACE = 'default';
+
+/** 创作者后台单独保留登录态,不与素材浏览器的采集会话混用。 */
+export const XHS_CREATOR_WORKSPACE = 'xhs-creator';
+export const XHS_CREATOR_HOME = 'https://creator.xiaohongshu.com/';
+
+/** 创作者会话只允许在小红书域名内完成主页面导航(含站内登录跳转)。 */
+export function isXhsCreatorNavigation(value: string): boolean {
+  if (!URL.canParse(value)) return false;
+  const url = new URL(value);
+  return url.protocol === 'https:' && !url.username && !url.password && !url.port &&
+    (url.hostname === 'xiaohongshu.com' || url.hostname.endsWith('.xiaohongshu.com'));
+}

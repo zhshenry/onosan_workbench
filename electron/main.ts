@@ -1,11 +1,17 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, Notification, powerMonitor, shell, Tray, nativeImage } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, Notification, powerMonitor, session, shell, Tray, nativeImage } from 'electron';
 import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { autoUpdater } from 'electron-updater';
+import { AppUpdates } from './updater';
 import { Store } from '../modules/todo/store';
 import { BaziStore } from '../modules/bazi/store';
+import { MediaCaptureStore } from '../modules/media-capture/store';
 import { CopyStore } from '../modules/copywriting/store';
 import { BrowserGuests } from './browser-guests';
 import { registerAiIpc } from './ai-ipc';
+import { FloatTodoWindow, registerFloatIpc } from './float-window';
+
+type FloatFactory = () => FloatTodoWindow;
 import { registerCopyIpc } from './copy-ipc';
 import { AiStore } from './ai-store';
 import { AppSettingsStore } from './app-settings';
@@ -15,6 +21,12 @@ import type { OfficeConvertErrorCode, OfficeConvertResult } from '../shared/offi
 
 const SMOKE = process.env.WORKBENCH_SMOKE === '1';
 const DEV_URL = process.env.WORKBENCH_DEV_URL ?? '';
+
+// 自动化验收使用完整隔离的数据根目录，避免触碰真实的待办共享库。
+if (process.env.WORKBENCH_TEST_DATA_DIR) {
+  mkdirSync(process.env.WORKBENCH_TEST_DATA_DIR, { recursive: true });
+  app.setPath('appData', process.env.WORKBENCH_TEST_DATA_DIR);
+}
 
 // 自定义资源协议必须在 ready 前注册(PDF.js cMap/标准字体/wasm 本地加载)
 registerPdfAssetScheme();
@@ -30,18 +42,23 @@ if (process.env.WORKBENCH_ISOLATED === '1') {
 // 工作台自身的设置、缓存一律存自己的 userData,不写此库的 settings/chats 表。
 const TODO_DB = join(app.getPath('appData'), 'To-Do-List', 'tasks.db');
 let store: Store | null = null;
+let floatTodoFactory: FloatFactory | null = null;
 let aiStore: AiStore | null = null;
 let settingsStore: AppSettingsStore | null = null;
 let browserGuests: BrowserGuests | null = null;
 let baziStore: BaziStore | null = null;
+let mediaCaptureStore: MediaCaptureStore | null = null;
 let copyStore: CopyStore | null = null;
 let officeConverter: OfficeConverter | null = null;
 let tray: Tray | null = null;
+let updates: AppUpdates | null = null;
+const updateTimers: NodeJS.Timeout[] = [];
 
 let notificationBusy = false;
 
 // 开机自启(设置页可切换;开发态注册的是 electron.exe,打包后为应用本体)
 const applyLoginItem = (enabled: boolean): void => {
+  if (process.env.WORKBENCH_TEST_DATA_DIR) return;
   try {
     app.setLoginItemSettings({ enabled });
   } catch {
@@ -50,7 +67,10 @@ const applyLoginItem = (enabled: boolean): void => {
 };
 
 if (!app.requestSingleInstanceLock()) {
-  app.quit();
+  if (DEV_URL) {
+    console.error('开发模式无法启动：已有工作台实例在运行。请从系统托盘退出旧实例后重试，或设置 WORKBENCH_ISOLATED=1 使用独立工作台配置与 AI 会话（待办数据库仍共享）。');
+    app.exit(1);
+  } else app.quit();
 } else {
   let mainWindow: BrowserWindow | null = null;
 
@@ -151,6 +171,28 @@ if (!app.requestSingleInstanceLock()) {
     }));
     ipcMain.handle('app:openUserDataDir', () => { void shell.openPath(app.getPath('userData')); });
     ipcMain.handle('app:openTodoDir', () => { void shell.openPath(dirname(TODO_DB)); });
+    const assertUpdateSender = (event: Electron.IpcMainInvokeEvent): void => {
+      if (event.sender !== mainWindow?.webContents || event.senderFrame !== mainWindow.webContents.mainFrame) {
+        throw new Error('仅工作台主窗口可操作应用更新');
+      }
+    };
+    ipcMain.handle('updater:status', event => { assertUpdateSender(event); return updates!.status(); });
+    ipcMain.handle('updater:check', event => { assertUpdateSender(event); return updates!.check(); });
+    ipcMain.handle('updater:install', event => { assertUpdateSender(event); updates!.install(); });
+    // 外链白名单:渲染层不可打开任意 URL,仅放行小红书创作者中心发布页(发布助手用)
+    ipcMain.handle('app:openExternal', (_event, url: unknown) => {
+      if (typeof url !== 'string') throw new Error('链接无效');
+      const target = new URL(url);
+      if (target.origin !== 'https://creator.xiaohongshu.com' || !target.pathname.startsWith('/publish')) {
+        throw new Error('仅允许打开小红书创作者中心发布页');
+      }
+      void shell.openExternal(target.href);
+    });
+    // 剪贴板:发布助手复制标题/正文用(经主进程,比渲染层 clipboard API 可靠)
+    ipcMain.handle('clipboard:write', (_event, text: unknown) => {
+      if (typeof text !== 'string' || [...text].length > 20000) throw new Error('剪贴板内容无效或超长');
+      clipboard.writeText(text);
+    });
 
     // 内置浏览器(租约模式;仅主窗口文档可申请)
     const assertMainWindow = (event: Electron.IpcMainInvokeEvent): void => {
@@ -259,6 +301,12 @@ if (!app.requestSingleInstanceLock()) {
     ipcMain.handle('bazi:saveProfile', (_event, input: unknown) => baziStore!.saveProfile(input));
     ipcMain.handle('bazi:removeProfile', (_event, id: string) => baziStore!.removeProfile(id));
     ipcMain.handle('bazi:saveNote', (_event, id: string, text: string) => baziStore!.saveNote(id, text));
+
+    // 素材采集(自媒体浏览器;校验在 Store 内经 Zod 执行,失败以中文错误抛回渲染层)
+    if (!mediaCaptureStore) return;
+    ipcMain.handle('media-capture:list', () => mediaCaptureStore!.list());
+    ipcMain.handle('media-capture:save', (_event, input: unknown) => mediaCaptureStore!.save(input));
+    ipcMain.handle('media-capture:remove', (_event, id: string) => mediaCaptureStore!.remove(id));
   };
 
   void app.whenReady().then(() => {
@@ -272,19 +320,63 @@ if (!app.requestSingleInstanceLock()) {
       return;
     }
     baziStore = new BaziStore(app.getPath('userData'));
+    mediaCaptureStore = new MediaCaptureStore(app.getPath('userData'));
     copyStore = new CopyStore(app.getPath('userData'));
     settingsStore = new AppSettingsStore(app.getPath('userData'));
     applyLoginItem(settingsStore.read().launchAtLogin);
     browserGuests = new BrowserGuests(() => (DEV_URL || undefined));
     officeConverter = new OfficeConverter(OFFICE_CONVERT_OPTIONS);
-    registerPdfAssetHandler(join(__dirname, '../node_modules/pdfjs-dist'));
+    registerPdfAssetHandler(app.isPackaged ? join(process.resourcesPath, 'pdfjs') : join(__dirname, '../node_modules/pdfjs-dist'));
+    const updateEnabled = app.isPackaged && !SMOKE && !process.env.WORKBENCH_TEST_DATA_DIR && existsSync(join(process.resourcesPath, 'app-update.yml'));
+    const unavailableMessage = !app.isPackaged ? '开发模式不检查更新，请安装正式安装版。'
+      : SMOKE || process.env.WORKBENCH_TEST_DATA_DIR ? '测试模式不检查自动更新。'
+      : '便携版请下载新版本并替换应用。';
+    updates = new AppUpdates(updateEnabled ? autoUpdater : null, unavailableMessage, status => {
+      mainWindow?.webContents.send('updater:status', status);
+      if (status.phase === 'ready' && Notification.isSupported()) {
+        const notification = new Notification({ title: `新版本 v${status.version} 已下载`, body: '点击重启并安装，退出应用时也会安装。' });
+        notification.on('click', () => updates?.install());
+        notification.show();
+      }
+    });
     registerIpc();
+    browserGuests.setImageSaver(async ({ owner, partition, mediaUrl, pageUrl }) => {
+      if (!mediaCaptureStore) return;
+      try {
+        const res = await session.fromPartition(partition).fetch(mediaUrl);
+        if (!res.ok) throw new Error(`原图下载失败 (HTTP ${res.status})`);
+        const type = res.headers.get('content-type') || '';
+        if (!type.startsWith('image/')) throw new Error('链接不是图片');
+        const buf = Buffer.from(await res.arrayBuffer());
+        if (buf.length > 20 * 1024 * 1024) throw new Error('图片超过 20MB 上限');
+        const img = nativeImage.createFromBuffer(buf);
+        if (img.isEmpty()) throw new Error('无法解析的图片');
+        mediaCaptureStore.save({
+          url: mediaUrl,
+          title: pageUrl,
+          png: img.toPNG().toString('base64'),
+          thumb: img.resize({ width: 320 }).toDataURL(),
+        });
+        owner.send('media-capture:changed', mediaCaptureStore.list());
+      } catch (error) {
+        const message = error instanceof Error ? error.message : '原图采集失败';
+        owner.send('media-capture:failed', message);
+      }
+    });
+    const floatTodo = new FloatTodoWindow(DEV_URL || undefined, join(__dirname, 'preload.cjs'));
+    floatTodoFactory = () => floatTodo;
+    registerFloatIpc(floatTodoFactory);
     aiStore = new AiStore(app.getPath('userData'));
-    registerAiIpc(store, aiStore);
-    registerCopyIpc(copyStore, aiStore);
+    registerAiIpc(store, aiStore, copyStore, baziStore);
+    registerCopyIpc(copyStore);
     createWindow();
-    createTray();
+    void createTray();
     startReminders();
+    if (updateEnabled) {
+      updateTimers.push(setTimeout(() => { void updates?.check(); }, 30000));
+      updateTimers.push(setInterval(() => { void updates?.check(); }, 4 * 60 * 60 * 1000));
+      updateTimers.forEach(timer => timer.unref());
+    }
     if (SMOKE) {
       setTimeout(() => {
         console.log('WORKBENCH_SMOKE_OK');
@@ -347,10 +439,12 @@ if (!app.requestSingleInstanceLock()) {
   };
 
   // ---------- 托盘 ----------
-  const createTray = (): void => {
+  const createTray = async (): Promise<void> => {
     const iconPath = join(__dirname, '../assets/tray.png');
-    if (!existsSync(iconPath)) return;
-    tray = new Tray(iconPath);
+    const icon = await app.getFileIcon(process.execPath, { size: 'large' })
+      .catch(() => nativeImage.createFromPath(iconPath));
+    if (icon.isEmpty()) return;
+    tray = new Tray(icon);
     tray.setToolTip('个人工作台 · 待办提醒运行中');
     const showApp = (): void => {
       const win = BrowserWindow.getAllWindows()[0];
@@ -362,6 +456,7 @@ if (!app.requestSingleInstanceLock()) {
     tray.setContextMenu(
       Menu.buildFromTemplate([
         { label: '打开工作台', click: showApp },
+        { label: '待办悬浮窗', click: () => floatTodoFactory?.().showOrHide() },
         { label: '打开数据目录', click: () => { void shell.openPath(dirname(TODO_DB)); } },
         { type: 'separator' },
         {
@@ -376,6 +471,7 @@ if (!app.requestSingleInstanceLock()) {
   };
 
   app.on('will-quit', () => {
+    updateTimers.forEach(timer => clearTimeout(timer));
     tray?.destroy();
     tray = null;
     void officeConverter?.dispose();
@@ -387,6 +483,8 @@ if (!app.requestSingleInstanceLock()) {
     copyStore = null;
     baziStore?.close();
     baziStore = null;
+    mediaCaptureStore?.close();
+    mediaCaptureStore = null;
     store?.close();
     store = null;
   });

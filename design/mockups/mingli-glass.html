@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="mist">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>命理 · 三盘浅雾主卡 — 个人工作台</title>
+<!--
+  高保真讨论稿 · 命理模块三主题浅雾主卡与盘面(2026-09-28)
+  八字 = lunar-javascript 真算(vendor/lunar.js);紫微/占星 = 合成示例数据(实装分别接 iztro / astronomy-engine)。
+  一套命例喂三张盘;主题 mist/cool/warm 跟随应用,盘面与五行统计共用语义色。
+-->
+<style>
+/* ========== 主题 token(镜像 src/shell.css 三主题 + 盘面扩展) ========== */
+:root{
+  --ink:#1b1d22; --ink-2:#464b54; --ink-3:#63686f;
+  --acc:#7f9dd3; --acc-deep:#4a67a3; --acc-soft:rgba(127,157,211,.16);
+  --action:#232529; --action-deep:#141519;
+  --nav-on-bg:#232529; --nav-on-fg:#ffffff; --nav-marker:#4a67a3; --icon-tint:#2a2c31;
+  --selection:rgba(127,157,211,.3);
+  --danger:#b5504e; --danger-soft:rgba(197,93,90,.13);
+  --glass-hi:rgba(255,255,255,.95); --glass-lo:rgba(250,250,252,.68); --glass-line:rgba(255,255,255,.9);
+  --glass-surface:rgba(255,255,255,.56); --glass-filter:blur(18px) saturate(1.5);
+  --todo-white:#fff;
+  --hairline:rgba(28,30,36,.09);
+  --shadow:0 8px 24px rgba(35,38,48,.09),0 2px 6px rgba(35,38,48,.04);
+  --shadow-sm:0 3px 10px rgba(35,38,48,.07);
+  --field-base:#e9eaee;
+  --field:
+    radial-gradient(46% 40% at 10% 4%,rgba(255,255,255,.80) 0%,transparent 100%),
+    radial-gradient(50% 44% at 92% 96%,rgba(203,209,226,.55) 0%,transparent 100%),
+    linear-gradient(150deg,#e9eaee 0%,#e6e8ec 55%,#e9ebef 100%);
+  --r-panel:18px; --r-card:14px; --r-ctl:10px;
+  --font:"Bahnschrift","Segoe UI Variable Text","Segoe UI","Microsoft YaHei UI","Microsoft YaHei",sans-serif;
+  --ease:cubic-bezier(.2,.7,.2,1);
+  --type-micro:10px; --type-caption:11px; --type-support:12px; --type-control:13px;
+  --type-body:14px; --type-section:16px; --type-lead:18px; --type-page:24px;
+  /* 盘面(mist · 雾灰) */
+  --pan-hi:#f1f3f6; --pan-lo:#e6eaf0;
+  --pan-line:rgba(82,106,139,.22); --pan-line-hi:rgba(255,255,255,.75);
+  --pan-shadow:rgba(45,55,70,.15);
+  --pan-ink:#2e353e; --pan-ink-2:#47515f; --pan-ink-3:#596574;
+  --pan-chip:#e4eaf3; --pan-chip-on:#e2ebf7;
+  --pan-marker:#496798;
+  --pan-sector-a:rgba(255,255,255,.22); --pan-sector-b:rgba(82,106,139,.08);
+  /* 五行 · 盘面与右侧统计共用 */
+  --wx-mu:#2f744f; --wx-huo:#a84d2d; --wx-tu:#846419; --wx-jin:#556779; --wx-shui:#1e5e9c;
+  /* 四化(盘面语义色) */
+  --hua-lu:var(--wx-mu); --hua-quan:var(--wx-tu); --hua-ke:var(--wx-shui); --hua-ji:#a5413b;
+  --pan-font-ganzi:'KaiTi','STKaiti','BiauKai','Microsoft YaHei',serif;
+  --pan-type-pillar:44px;
+}
+html[data-theme="cool"]{
+  --ink-2:#3d5a76; --ink-3:#54708a;
+  --glass-hi:rgba(248,251,255,.68); --glass-lo:rgba(232,241,255,.36); --glass-line:rgba(255,255,255,.55);
+  --glass-surface:rgba(255,255,255,.48); --glass-filter:blur(2px) saturate(1);
+  --hairline:rgba(34,58,91,.11);
+  --shadow:0 10px 28px rgba(36,59,91,.13),0 2px 6px rgba(36,59,91,.05);
+  --shadow-sm:0 7px 20px rgba(36,59,91,.09);
+  --field-base:#dfe6f0;
+  --field:
+    radial-gradient(46% 40% at 10% 4%,rgba(255,255,255,.6) 0%,transparent 100%),
+    radial-gradient(50% 44% at 92% 96%,rgba(168,193,228,.42) 0%,transparent 100%),
+    linear-gradient(150deg,#e7ecf3 0%,#e5eaf1 55%,#e8edf3 100%);
+  --wx-mu:#2b6b54; --wx-huo:#a44930; --wx-tu:#80621c; --wx-jin:#53657b; --wx-shui:#225b95;
+  --hua-ji:#9c433e;
+  --pan-hi:#eaf2fc; --pan-lo:#dce8f7;
+  --pan-line:rgba(70,110,162,.2); --pan-shadow:rgba(37,69,112,.16);
+  --pan-ink:#26384e; --pan-ink-2:#40546d; --pan-ink-3:#52667e;
+  --pan-chip:#e0ebf8; --pan-chip-on:#dce9f9; --pan-marker:#426597;
+  --pan-sector-b:rgba(70,110,162,.09);
+}
+html[data-theme="warm"]{
+  --ink-2:#4c4744; --ink-3:#68615d;
+  --glass-hi:rgba(255,253,250,.74); --glass-lo:rgba(252,246,240,.42); --glass-line:rgba(255,255,255,.6);
+  --glass-surface:rgba(255,252,247,.50); --glass-filter:blur(2px) saturate(1);
+  --todo-white:#fffdfa;
+  --hairline:rgba(65,53,45,.1);
+  --shadow:0 9px 26px rgba(76,61,50,.1),0 2px 6px rgba(76,61,50,.04);
+  --shadow-sm:0 5px 18px rgba(76,61,50,.075);
+  --field-base:#eee8e3;
+  --field:
+    radial-gradient(46% 40% at 10% 4%,rgba(255,255,255,.7) 0%,transparent 100%),
+    radial-gradient(50% 44% at 92% 96%,rgba(224,205,186,.5) 0%,transparent 100%),
+    linear-gradient(150deg,#eee8e3 0%,#ebe4dd 55%,#efe9e3 100%);
+  --wx-mu:#346a4f; --wx-huo:#a34a2c; --wx-tu:#796019; --wx-jin:#555f67; --wx-shui:#2c5f86;
+  --hua-ji:#9b3f38;
+  --pan-hi:#faf4ed; --pan-lo:#ede2d6;
+  --pan-line:rgba(117,83,52,.16); --pan-shadow:rgba(89,65,46,.12);
+  --pan-ink:#41382f; --pan-ink-2:#5a4c3e; --pan-ink-3:#6b5c4e;
+  --pan-chip:#f4eae0; --pan-chip-on:#f1e5d9; --pan-marker:#825b3f;
+  --pan-sector-b:rgba(117,83,52,.08);
+}
+:root, html[data-theme="mist"], html[data-theme="cool"], html[data-theme="warm"]{
+  /* 各主题共用盘面结构,材质与五行色由上方 token 映射。 */
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--font);color:var(--ink);font-size:var(--type-body);line-height:1.55;
+  background:#d6d7d9;display:grid;place-items:center;padding:26px;overflow:hidden;
+}
+::selection{background:var(--selection)}
+:focus-visible{outline:2px solid var(--acc-deep);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,textarea{font:inherit;color:inherit}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:rgba(30,34,44,.16);border-radius:999px;border:3px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(30,34,44,.28);background-clip:content-box;border:3px solid transparent}
+::-webkit-scrollbar-track{background:transparent}
+
+.stage{position:relative}
+.stage-note{position:absolute;top:-2px;left:4px;font-size:var(--type-support);font-weight:600;color:#4e5156;letter-spacing:.02em}
+.win{
+  position:relative;width:min(1400px,calc(100vw - 52px));height:min(864px,calc(100vh - 52px));
+  border-radius:22px;overflow:hidden;display:flex;
+  background:var(--field-base);
+  box-shadow:0 24px 44px rgba(30,33,40,.30),0 4px 12px rgba(30,33,40,.14);
+  border:1px solid rgba(255,255,255,.65);
+}
+.win::before{content:"";position:absolute;inset:0;z-index:0;background:var(--field)}
+.glass{
+  background:var(--glass-surface);
+  -webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);
+  border:1px solid var(--glass-line);
+  box-shadow:var(--shadow-sm),inset 0 1px 0 var(--glass-line);
+}
+
+/* ---------- 图标栏 ---------- */
+.rail{
+  position:relative;z-index:2;width:66px;flex:none;display:flex;flex-direction:column;align-items:center;
+  padding:14px 0 12px;gap:6px;
+  background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(255,255,255,.42));
+  -webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);
+  border-right:1px solid var(--glass-line);
+}
+.logo{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;margin-bottom:10px;color:var(--ink)}
+.logo-orbit{transform-origin:19px 5px;transform-box:view-box}
+.logo:hover .logo-orbit{animation:logo-dot-spin 1.2s linear infinite}
+@keyframes logo-dot-spin{to{transform:rotate(360deg)}}
+.rnav{display:flex;flex-direction:column;gap:6px}
+.rmid{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px}
+.rbot{margin-top:auto;display:flex;flex-direction:column;gap:6px}
+.ritem{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;color:var(--ink-2);
+  transition:background .16s var(--ease),color .16s var(--ease);position:relative}
+.ritem:hover{background:rgba(255,255,255,.65);color:var(--ink)}
+.ritem.on{background:var(--nav-on-bg);color:var(--nav-on-fg);box-shadow:var(--shadow-sm)}
+.ritem.on::before{content:"";position:absolute;right:-10px;top:50%;transform:translateY(-50%);
+  width:4px;height:20px;border-radius:999px;background:var(--nav-marker)}
+.ritem.dim{opacity:.5}
+
+/* ---------- 二级目录卡片 ---------- */
+.snav{
+  position:relative;z-index:2;width:200px;flex:none;display:flex;flex-direction:column;
+  margin:12px 0 12px 12px;padding:16px 10px 12px;border-radius:16px;
+  background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,.28));
+  -webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);
+  border:1px solid var(--glass-line);box-shadow:var(--shadow-sm);
+}
+.stitle{font-size:var(--type-body);font-weight:700;padding:0 6px 12px}
+.tree{flex:1;display:flex;flex-direction:column;gap:2px}
+.nsub{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--r-ctl);
+  color:var(--ink-2);font-weight:500;cursor:pointer;transition:background .15s var(--ease),color .15s var(--ease)}
+.nsub:hover{background:rgba(255,255,255,.55);color:var(--ink)}
+.nsub.on{background:rgba(255,255,255,.92);color:var(--acc-deep);box-shadow:var(--shadow-sm);font-weight:600}
+.ndot{width:6px;height:6px;border-radius:50%;background:rgba(18,36,54,.22);flex:none}
+.nsub.on .ndot{background:var(--acc-deep)}
+.ntag{margin-left:auto;font-size:var(--type-caption);padding:2px 7px;border-radius:999px;background:rgba(30,34,44,.07);color:var(--ink-3);font-weight:600}
+.sfoot{display:flex;align-items:center;gap:8px;padding:10px 8px 0;border-top:1px solid var(--hairline);margin-top:10px;
+  font-size:var(--type-caption);color:var(--ink-3)}
+.sfoot .dotok{width:7px;height:7px;border-radius:50%;background:var(--acc-deep);box-shadow:0 0 0 3px var(--acc-soft)}
+
+/* ---------- 主区与顶栏 ---------- */
+.main{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+.topbar{
+  flex:none;height:54px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
+  margin:10px 12px 0;padding:0 10px 0 14px;border-radius:999px;
+  background:linear-gradient(180deg,rgba(255,255,255,.82),rgba(255,255,255,.55));
+  -webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);
+  border:1px solid var(--glass-line);box-shadow:var(--shadow-sm),inset 0 1px 0 rgba(255,255,255,.55);
+}
+.tb-left{display:flex;align-items:center;gap:10px;justify-self:start;min-width:0}
+.tb-center{display:flex;justify-self:center}
+.tb-right{display:flex;align-items:center;gap:8px;justify-self:end}
+.sched{display:flex;align-items:center;padding:5px 8px 5px 14px;gap:6px;min-width:0;border-radius:999px;
+  background:linear-gradient(135deg,var(--glass-hi),var(--glass-lo));
+  -webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);
+  border:1px solid var(--glass-line);box-shadow:var(--shadow-sm),inset 0 1px 0 rgba(255,255,255,.55)}
+.sched-label{display:flex;align-items:center;gap:8px;font-weight:700;font-size:var(--type-control);white-space:nowrap}
+.sched-label svg{color:var(--icon-tint)}
+.sched-label .date{color:var(--ink-3);font-weight:600}
+.sdiv{width:1px;height:20px;background:var(--hairline);margin:0 6px;flex:none}
+.sched-track{display:flex;align-items:center;gap:6px;overflow:hidden;min-width:0}
+.schip{display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.62);white-space:nowrap}
+.schip .t{font-weight:700;font-size:var(--type-support);color:var(--ink-2);font-variant-numeric:tabular-nums}
+.schip .n{font-size:var(--type-support);color:var(--ink-2)}
+.schip.now{background:var(--acc-soft)}
+.schip.now .t,.schip.now .n{color:var(--acc-deep)}
+.schip.now .live{width:7px;height:7px;border-radius:50%;background:var(--acc-deep)}
+.todopill{display:flex;align-items:center;gap:9px;height:42px;padding:0 16px;border-radius:999px;white-space:nowrap}
+.todopill svg{color:var(--icon-tint)}
+.todopill .lbl{font-weight:700;font-size:var(--type-control)}
+.todopill .num{font-weight:700;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.todopill .num em{font-style:normal;color:var(--danger);font-size:var(--type-caption);vertical-align:top;margin-left:3px}
+.vdiv{width:1px;height:22px;background:var(--hairline)}
+.ibtn{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;color:var(--ink-2);position:relative;
+  transition:background .15s var(--ease),color .15s var(--ease)}
+.ibtn:hover{background:rgba(255,255,255,.7);color:var(--ink)}
+.ibtn .bdg{position:absolute;top:1px;right:0;min-width:15px;height:14px;border-radius:999px;background:var(--danger);
+  color:#fff;font-size:var(--type-micro);font-weight:700;display:grid;place-items:center;padding:0 3px;border:2px solid var(--field-base)}
+.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:var(--type-body);
+  background:linear-gradient(140deg,var(--action),var(--action-deep));border:2px solid rgba(255,255,255,.85);box-shadow:var(--shadow-sm);cursor:pointer}
+.wbtns{display:flex;gap:2px}
+.wbtn{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:var(--ink-2)}
+.wbtn:hover{background:rgba(255,255,255,.75);color:var(--ink)}
+.wbtn.close:hover{background:var(--danger);color:#fff}
+
+/* ---------- 内容区 ---------- */
+.content{flex:1;overflow-y:auto;padding:20px 24px 24px}
+.mingli-workspace{min-height:calc(100vh - 128px);padding:24px 28px 28px}
+.mingli-workspace .cols > div:last-child > .panel.glass{
+  background:color-mix(in srgb,var(--pan-hi) 22%,var(--todo-white))
+}
+.mingli-workspace .sschip{background:var(--todo-white);border-color:var(--hairline)}
+.mingli-workspace .noteta{
+  background:color-mix(in srgb,var(--pan-hi) 18%,var(--todo-white));border-color:var(--hairline)
+}
+.greet{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px}
+.greet h1{font-size:var(--type-page);font-weight:800;letter-spacing:-.02em;line-height:1.25}
+.gsub{color:var(--ink-3);font-size:var(--type-control);margin-top:3px;font-variant-numeric:tabular-nums}
+.gsub b{color:var(--acc-deep);font-weight:700}
+.gbtns{display:flex;gap:10px;flex:none}
+.btn{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 16px;border-radius:12px;font-weight:600;
+  font-size:var(--type-control);transition:transform .16s var(--ease),filter .16s var(--ease),background .16s var(--ease)}
+.btn:hover{transform:translateY(-1px)}
+.btn-pri{background:linear-gradient(140deg,var(--action),var(--action-deep));color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.28)}
+.btn-pri:hover{filter:brightness(1.15)}
+.btn-sec{background:rgba(255,255,255,.66);border:1px solid rgba(255,255,255,.8);box-shadow:var(--shadow-sm)}
+.btn-sec:hover{background:#fff}
+
+.cols{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;align-items:start}
+.panel{border-radius:var(--r-panel);padding:16px 18px 12px}
+.panel + .panel{margin-top:16px}
+.phead{display:flex;align-items:center;gap:10px;padding-bottom:10px}
+.ptitle{font-size:var(--type-section);font-weight:800;letter-spacing:-.01em}
+.pcount{font-size:var(--type-support);color:var(--ink-3);font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ---------- 命例下拉选择器 ---------- */
+.pbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.psel{position:relative}
+.psel-btn{display:inline-flex;align-items:center;gap:9px;height:38px;padding:4px 12px 4px 5px;border-radius:999px;
+  background:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.85);box-shadow:var(--shadow-sm);
+  cursor:pointer;transition:background .15s var(--ease)}
+.psel-btn:hover{background:#fff}
+.psel-btn .caret{color:var(--ink-3);transition:transform .16s var(--ease);flex:none}
+.psel.open .psel-btn{border-color:var(--acc-deep)}
+.psel.open .psel-btn .caret{transform:rotate(180deg)}
+.psel-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:30;min-width:250px;padding:6px;border-radius:14px;display:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.97),rgba(250,250,252,.93));
+  -webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);
+  border:1px solid var(--glass-line);box-shadow:var(--shadow)}
+.psel.open .psel-menu{display:block;animation:pop .18s var(--ease)}
+.psel-item{display:flex;align-items:center;gap:9px;width:100%;padding:7px 10px 7px 7px;border-radius:10px;text-align:left;
+  transition:background .13s var(--ease)}
+.psel-item:hover{background:rgba(30,34,44,.06)}
+.psel-item.on{background:var(--acc-soft)}
+.psel-item.on .pname{color:var(--acc-deep)}
+.psel-act{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;color:var(--ink-3);
+  opacity:.45;flex:none;transition:opacity .13s var(--ease),background .13s var(--ease),color .13s var(--ease)}
+.psel-act.edit{margin-left:auto}
+.psel-item:hover .psel-act,.psel-act:focus-visible{opacity:1}
+.psel-act.edit:hover{background:var(--acc-soft);color:var(--acc-deep)}
+.psel-act.del:hover{background:var(--danger-soft);color:var(--danger)}
+.psel-new{display:flex;align-items:center;gap:8px;width:100%;padding:9px 10px;border-radius:10px;margin-top:4px;
+  border-top:1px solid var(--hairline);font-weight:600;font-size:var(--type-control);color:var(--acc-deep)}
+.psel-new:hover{background:rgba(30,34,44,.05)}
+.pav{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:var(--type-support);font-weight:700;flex:none;
+  background:linear-gradient(140deg,var(--action),var(--action-deep))}
+.pname{font-weight:700;font-size:var(--type-control);white-space:nowrap}
+.pbirth{font-size:var(--type-support);color:var(--ink-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.psel-item .pbirth{margin-left:2px}
+.ptag{display:inline-block;font-size:var(--type-caption);font-weight:600;padding:1px 8px;border-radius:999px;
+  background:rgba(30,34,44,.07);color:var(--ink-3);vertical-align:2px;margin-left:7px;white-space:nowrap}
+.pan .ptag{background:var(--pan-chip);color:var(--pan-ink-3);border:1px solid var(--pan-line)}
+.inp{height:34px;padding:0 12px;border-radius:var(--r-ctl);background:rgba(255,255,255,.7);
+  border:1px solid rgba(255,255,255,.85);font-size:var(--type-support);font-weight:600;color:var(--ink-2);
+  font-variant-numeric:tabular-nums;outline:none}
+.inp:focus{border-color:var(--acc-ring,rgba(127,157,211,.4));background:#fff}
+.pseg{display:flex;gap:2px;background:rgba(30,34,44,.06);border-radius:999px;padding:3px}
+.pseg button{padding:4px 13px;border-radius:999px;font-size:var(--type-support);font-weight:600;color:var(--ink-3)}
+.pseg button.on{background:#fff;color:var(--acc-deep);box-shadow:0 2px 6px rgba(30,34,44,.12)}
+
+/* ---------- 系统页签 ---------- */
+.syseg{display:inline-flex;gap:4px;background:rgba(30,34,44,.06);border-radius:999px;padding:4px;margin-bottom:14px}
+.syseg button{display:inline-flex;align-items:center;gap:7px;padding:7px 18px;border-radius:999px;
+  font-size:var(--type-control);font-weight:600;color:var(--ink-3);transition:all .16s var(--ease)}
+.syseg button:hover{color:var(--ink)}
+.syseg button.on{background:var(--nav-on-bg);color:var(--nav-on-fg);box-shadow:var(--shadow-sm)}
+.syseg button .tag{font-size:var(--type-caption);font-weight:700;padding:1px 8px;border-radius:999px;
+  background:rgba(30,34,44,.08);color:var(--ink-3)}
+.syseg button.on .tag{background:rgba(255,255,255,.16);color:var(--nav-on-fg)}
+
+/* ========== 盘面(浅雾表面层) ========== */
+.pan{
+  position:relative;border-radius:var(--r-panel);overflow:hidden;
+  background:linear-gradient(168deg,var(--pan-hi),var(--pan-lo));
+  border:1px solid var(--pan-line);
+  box-shadow:0 12px 28px var(--pan-shadow),inset 0 1px 0 var(--pan-line-hi);
+  color:var(--pan-ink);
+}
+.pan-tag{position:absolute;top:14px;right:16px;font-size:var(--type-caption);font-weight:700;letter-spacing:.04em;
+  padding:2px 10px;border-radius:999px;border:1px solid var(--pan-line);color:var(--pan-ink-3)}
+#panBazi .pan-tag{top:auto;bottom:14px}
+.pan-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 20px 6px}
+.pan-who b{font-size:var(--type-lead);font-weight:800}
+.pan-who .meta{font-size:var(--type-support);color:var(--pan-ink-3);margin-top:2px;font-variant-numeric:tabular-nums}
+.pan-ringbox{display:flex;align-items:center;gap:10px;flex:none}
+.pan-ringtxt{font-size:var(--type-caption);color:var(--pan-ink-3);line-height:1.6;text-align:right;font-variant-numeric:tabular-nums}
+.pan-ringtxt b{color:var(--pan-ink);font-size:var(--type-support)}
+.pdiv{height:1px;background:var(--pan-line);margin:10px 20px 0}
+
+/* 四柱 */
+.pan-pillars{display:grid;grid-template-columns:repeat(4,1fr);padding:4px 8px 0}
+.pan-pcol{padding:12px 8px 10px;text-align:center;min-width:0}
+.pan-pcol + .pan-pcol{border-left:1px solid var(--pan-line)}
+.pan-plabel{font-size:var(--type-support);font-weight:700;color:var(--pan-ink-3);letter-spacing:.14em;
+  display:flex;align-items:center;justify-content:center;gap:6px}
+.pan-mtag{font-size:var(--type-micro);font-weight:700;padding:1px 8px;border-radius:999px;
+  background:var(--pan-chip-on);color:var(--pan-marker);letter-spacing:.06em}
+.pan-pss{margin-top:11px;font-size:var(--type-support);font-weight:600;color:var(--pan-ink-2);height:18px}
+.pan-pgan,.pan-pzhi{font-family:var(--pan-font-ganzi);font-size:var(--pan-type-pillar);line-height:1.1;font-weight:700}
+.pan-pgan{margin-top:7px}
+.pan-pzhi{margin-top:2px}
+.pan-pssz{margin-top:8px;font-size:var(--type-support);font-weight:600;color:var(--pan-ink-3);height:17px}
+.pan-phide{margin-top:6px;font-size:var(--type-support);color:var(--pan-ink-3);line-height:1.6;min-height:36px}
+.pan-phide .hi{white-space:nowrap}
+.pan-phide b{font-weight:600;color:var(--pan-ink-2)}
+.pan-nachip{display:inline-block;font-size:var(--type-support);font-weight:600;padding:2px 11px;border-radius:999px;
+  background:var(--pan-chip);color:var(--pan-ink-3)}
+.pan-foot{display:flex;align-items:center;gap:14px;padding:10px 20px 4px;border-top:1px solid var(--pan-line);
+  font-size:var(--type-support);color:var(--pan-ink-3);flex-wrap:wrap}
+.pan-foot b{color:var(--pan-ink-2);font-weight:700}
+.pan-gz{font-family:var(--pan-font-ganzi);font-size:var(--type-body);letter-spacing:.35em;color:var(--pan-ink-2)}
+
+/* 大运轴 + 流年(盘面内) */
+.pan-dy{padding:10px 16px 14px}
+.pan-dyhead{display:flex;align-items:baseline;gap:10px;padding:0 4px 9px;font-size:var(--type-support);color:var(--pan-ink-3);
+  font-variant-numeric:tabular-nums}
+.pan-dyhead b{color:var(--pan-ink-2)}
+.dychips{display:flex;flex-wrap:wrap;gap:7px}
+.dychip{display:flex;flex-direction:column;align-items:center;gap:1px;padding:7px 12px;border-radius:11px;
+  background:var(--pan-chip);border:1px solid var(--pan-line);cursor:pointer;min-width:80px;
+  transition:transform .15s var(--ease),background .15s var(--ease),border-color .15s var(--ease)}
+.dychip:hover{transform:translateY(-1px);background:var(--pan-chip-on)}
+.dychip.on{background:var(--pan-chip-on);border-color:var(--pan-marker)}
+.dz{font-family:var(--pan-font-ganzi);font-size:var(--type-lead);font-weight:700}
+.dage{font-size:var(--type-micro);font-weight:600;color:var(--pan-ink-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dss{font-size:var(--type-micro);color:var(--pan-ink-3)}
+.dychip.now{border-color:var(--pan-marker)}
+.dychip.now .dz{color:var(--pan-marker)}
+.dnow{display:none;width:5px;height:5px;border-radius:50%;background:var(--pan-marker);margin-top:3px}
+.dychip.now .dnow{display:block}
+.pan-lnwrap{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .24s var(--ease),opacity .2s var(--ease)}
+.pan-lnwrap.open{grid-template-rows:1fr;opacity:1}
+.pan-lnclip{overflow:hidden;min-height:0}
+.pan-lnrow{display:flex;flex-wrap:wrap;gap:6px;padding:11px 4px 4px;border-top:1px solid var(--pan-line);margin-top:11px}
+.lnchip{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;
+  background:var(--pan-chip);border:1px solid var(--pan-line);font-size:var(--type-support)}
+.lnchip .ly{font-weight:700;font-variant-numeric:tabular-nums;color:var(--pan-ink-2)}
+.lnchip .lg{font-family:var(--pan-font-ganzi);font-size:var(--type-body);font-weight:700}
+.lnchip .ls{font-size:var(--type-caption);color:var(--pan-ink-3)}
+.lnchip.nowln{background:var(--pan-chip-on);border-color:var(--pan-marker)}
+.lnchip.nowln .ly,.lnchip.nowln .ls{color:var(--pan-marker)}
+.lnchip .lnow{width:5px;height:5px;border-radius:50%;background:var(--pan-marker)}
+
+/* 紫微方盘 */
+.zw-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:minmax(116px,auto);gap:1px;
+  background:var(--pan-line);border:1px solid var(--pan-line);margin:12px 18px 16px}
+.zw-cell{background:transparent;padding:8px 10px;position:relative;min-width:0;overflow:hidden}
+.zw-cell.ming-center{grid-column:2/4;grid-row:2/4;background:var(--pan-chip-on);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center}
+.zw-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:var(--type-micro);color:var(--pan-ink-3);font-variant-numeric:tabular-nums}
+.zw-top .zpalace{font-weight:700;color:var(--pan-ink-2);font-size:var(--type-caption)}
+.zw-top .zbody{color:var(--pan-marker);font-weight:700}
+.zw-gz{margin-left:auto;white-space:nowrap}
+.zw-stars{margin-top:5px;font-size:var(--type-control);font-weight:700;line-height:1.55;color:var(--pan-ink)}
+.zw-stars .bright{font-size:var(--type-micro);font-weight:400;color:var(--pan-ink-3);margin-left:2px}
+.zw-fu{font-size:var(--type-support);color:var(--pan-ink-2);line-height:1.5}
+.zw-empty{margin-top:5px;font-size:var(--type-support);color:var(--pan-ink-3)}
+.zw-center .zcname{font-family:var(--pan-font-ganzi);font-size:26px;font-weight:700}
+.zw-center .zcmeta{font-size:var(--type-support);color:var(--pan-ink-3);line-height:1.7;font-variant-numeric:tabular-nums}
+.zw-center .zcju{display:flex;gap:6px;margin-top:6px}
+.zw-center .zcju span{font-size:var(--type-micro);padding:2px 9px;border-radius:999px;border:1px solid var(--pan-line);color:var(--pan-ink-2)}
+.hua{display:inline-block;font-size:var(--type-micro);font-weight:700;padding:0 5px;border-radius:5px;margin-left:4px;vertical-align:1px;border:1px solid var(--pan-line)}
+.hua.lu{color:var(--hua-lu)}
+.hua.quan{color:var(--hua-quan)}
+.hua.ke{color:var(--hua-ke)}
+.hua.ji{color:var(--hua-ji)}
+
+/* 占星轮 */
+.as-wrap{display:flex;justify-content:center;padding:10px 16px 2px}
+.as-wrap svg{display:block}
+.as-legend{display:flex;justify-content:center;gap:16px;padding:2px 16px 12px;font-size:var(--type-caption);color:var(--pan-ink-3)}
+.as-legend i{display:inline-block;width:14px;height:2px;border-radius:2px;vertical-align:3px;margin-right:5px}
+.as-phrow{display:flex;flex-wrap:wrap;gap:7px;padding:0 16px 14px}
+.as-phchip{display:inline-flex;align-items:center;gap:7px;padding:4px 11px;border-radius:999px;
+  background:var(--pan-chip);border:1px solid var(--pan-line);font-size:var(--type-support);color:var(--pan-ink-2)}
+.as-phchip i{width:8px;height:8px;border-radius:50%}
+
+/* ---------- 浅玻璃支撑面板 ---------- */
+.wxrow{display:flex;align-items:center;gap:10px;padding:5px 4px}
+.wxdot{width:11px;height:11px;border-radius:4px;flex:none}
+.wxname{width:16px;font-weight:700;font-size:var(--type-control)}
+.wxnum{width:26px;text-align:right;font-weight:700;font-size:var(--type-control);color:var(--ink-2);font-variant-numeric:tabular-nums}
+.wxbar{flex:1;height:8px;border-radius:999px;background:rgba(30,34,44,.07);overflow:hidden}
+.wxbar i{display:block;height:100%;border-radius:999px}
+.wxflag{width:32px;text-align:center;font-size:var(--type-caption);font-weight:700;border-radius:999px;padding:1px 0;color:var(--ink-3)}
+.wxflag.strong{background:rgba(30,34,44,.07);color:var(--ink-2)}
+.wxsum{padding:10px 6px 2px;border-top:1px solid var(--hairline);margin-top:7px;font-size:var(--type-support);color:var(--ink-3)}
+.wxsum b{color:var(--ink-2)}
+.ssrow{display:flex;flex-wrap:wrap;gap:7px;padding:2px 2px 6px}
+.sschip{display:inline-flex;align-items:center;gap:7px;padding:4px 11px;border-radius:999px;
+  background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.75);font-size:var(--type-support);font-weight:600;color:var(--ink-2)}
+.sspos{font-size:var(--type-caption);font-weight:600;color:var(--ink-3)}
+.astab{width:100%;border-collapse:collapse}
+.astab th{font-size:var(--type-caption);font-weight:700;color:var(--ink-3);text-align:left;padding:5px 6px;border-bottom:1px solid var(--hairline)}
+.astab td{font-size:var(--type-support);padding:6px;border-bottom:1px solid rgba(30,34,44,.05);color:var(--ink-2);font-variant-numeric:tabular-nums}
+.astab td:first-child{font-weight:600;color:var(--ink)}
+.astab .glyph{font-size:var(--type-body);width:22px}
+.astab .rx{color:var(--danger);font-weight:700}
+.hintp{font-size:var(--type-support);color:var(--ink-3);padding:8px 6px 4px;line-height:1.7}
+.hintp b{color:var(--ink-2)}
+.noteta{width:100%;min-height:104px;resize:vertical;border-radius:12px;padding:10px 13px;font-size:var(--type-control);line-height:1.7;
+  background:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.85);outline:none;color:var(--ink)}
+.noteta:focus{border-color:rgba(127,157,211,.4);background:#fff}
+.noteta::placeholder{color:var(--ink-3)}
+.notehint{font-size:var(--type-support);color:var(--ink-3);padding:7px 6px 4px}
+
+/* 弹窗与 toast */
+.mmask{position:absolute;inset:0;z-index:40;display:none;align-items:center;justify-content:center;
+  background:rgba(20,22,28,.32);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.mmask.open{display:flex}
+.mcard{width:min(460px,92%);border-radius:var(--r-panel);padding:20px 22px 18px;
+  background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(250,250,252,.9));
+  border:1px solid var(--glass-line);box-shadow:var(--shadow);animation:pop .22s var(--ease)}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.mtitle{font-size:var(--type-lead);font-weight:800}
+.msub{font-size:var(--type-support);color:var(--ink-3);margin-top:2px}
+.mform{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.mfield{display:flex;flex-direction:column;gap:6px}
+.mfield .inp{width:100%}
+.mbtns{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+.toast{position:absolute;left:50%;bottom:26px;transform:translateX(-50%) translateY(16px);opacity:0;z-index:50;
+  padding:10px 18px;border-radius:12px;font-size:var(--type-control);font-weight:600;color:var(--ink);pointer-events:none;
+  transition:all .22s var(--ease);box-shadow:0 8px 20px rgba(20,22,28,.16)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* 主题切换(演示工具) */
+.themeswitch{
+  position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:99;display:flex;align-items:center;gap:4px;
+  padding:6px;border-radius:999px;background:rgba(25,27,32,.88);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  box-shadow:0 10px 28px rgba(20,22,28,.35)}
+.themeswitch button{padding:7px 13px;border-radius:999px;font-size:var(--type-support);font-weight:600;color:#c9ccd2;
+  transition:background .15s var(--ease),color .15s var(--ease)}
+.themeswitch button:hover{color:#fff}
+.themeswitch button.on{background:#fff;color:#1b1d22}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+@media (max-width:1180px){
+  .mingli-workspace{padding:20px}
+  .cols{grid-template-columns:1fr}
+  .sched-track .schip:nth-child(n+2){display:none}
+}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="stage-note">命理 · 三盘浅雾配色(雾灰 / 冷蓝 / 暖砂)</div>
+  <div class="win">
+
+    <aside class="rail">
+      <div class="logo" title="个人工作台">
+        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+          <circle cx="12" cy="12" r="8.6"/>
+          <circle class="logo-orbit" cx="19" cy="5" r="2.1" fill="var(--acc-deep)" stroke="none"/>
+        </svg>
+      </div>
+      <nav class="rnav">
+        <button class="ritem" data-toast="首页见当前真实应用" title="首页">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.2 12 4.4l8 6.8V19a1 1 0 0 1-1 1h-4.6v-5.2h-4.8V20H5a1 1 0 0 1-1-1Z"/></svg>
+        </button>
+      </nav>
+      <div class="rmid">
+        <button class="ritem dim" data-toast="自媒体工作台规划中" title="自媒体工作台(即将上线)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="m10 9.5 4.5 2.5L10 14.5Z"/></svg>
+        </button>
+        <button class="ritem dim" data-toast="游戏工作台规划中" title="游戏工作台(即将上线)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8h11a4 4 0 0 1 4 4.2l-.4 4.3a2.4 2.4 0 0 1-4.2 1.4L15 16H9l-1.9 1.9a2.4 2.4 0 0 1-4.2-1.4l-.4-4.3A4 4 0 0 1 6.5 8Z"/><path d="M8.5 11v3M7 12.5h3M15.5 11.5h.01M17.5 13.5h.01"/></svg>
+        </button>
+        <button class="ritem dim" data-toast="个人网页规划中" title="个人网页(即将上线)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 9h17M7 6.8h.01M9.6 6.8h.01"/></svg>
+        </button>
+        <button class="ritem on" title="小工具">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 14.2A7.6 7.6 0 0 1 9.8 4.5a7.6 7.6 0 1 0 9.7 9.7Z"/></svg>
+        </button>
+      </div>
+      <div class="rbot">
+        <button class="ritem" data-toast="设置见第六工作台" title="设置">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7.2"/><path d="M12 2.4v3.1M12 18.5v3.1M21.6 12h-3.1M5.5 12H2.4M18.8 5.2l-2.2 2.2M7.4 16.6l-2.2 2.2M18.8 18.8l-2.2-2.2M7.4 7.4 5.2 5.2"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="tb-left">
+          <div class="sched">
+            <span class="sched-label">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>
+              日程<span class="date">9月26日 · 周六</span>
+            </span>
+            <span class="sdiv"></span>
+            <div class="sched-track">
+              <button class="schip now"><span class="live"></span><span class="t">19:30</span><span class="n">健身 · 背腿</span></button>
+              <button class="schip"><span class="t">21:30</span><span class="n">阅读时间</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="tb-center">
+          <button class="todopill glass" data-toast="今日待办" title="今日待办">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="m8.5 12.2 2.4 2.4 4.8-5"/></svg>
+            <span class="lbl">待办</span>
+            <span class="num">5/12<em>逾期 1</em></span>
+          </button>
+        </div>
+        <div class="tb-right">
+          <button class="ibtn" data-toast="AI 助手" title="AI 助手">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l1.9 5.1a2 2 0 0 0 1.2 1.2l5.1 1.9-5.1 1.9a2 2 0 0 0-1.2 1.2L12 19.9l-1.9-5.1a2 2 0 0 0-1.2-1.2L3.8 11.7l5.1-1.9a2 2 0 0 0 1.2-1.2Z"/></svg>
+          </button>
+          <button class="ibtn" data-toast="通知" title="通知">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9.8a6 6 0 1 0-12 0c0 4.2-1.8 5.8-1.8 5.8h15.6S18 14 18 9.8Z"/><path d="M10.2 19a2 2 0 0 0 3.6 0"/></svg>
+            <span class="bdg">3</span>
+          </button>
+          <div class="avatar" data-toast="个人资料" title="Ono">O</div>
+          <span class="vdiv"></span>
+          <div class="wbtns">
+            <button class="wbtn" data-toast="最小化" title="最小化"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+            <button class="wbtn" data-toast="最大化" title="最大化"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="5" width="14" height="14" rx="2"/></svg></button>
+            <button class="wbtn close" data-toast="关闭" title="关闭"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
+        </div>
+      </header>
+
+      <div style="flex:1;display:flex;min-height:0">
+        <aside class="snav">
+          <div class="stitle">小工具</div>
+          <nav class="tree">
+            <a class="nsub on"><span class="ndot"></span>命理</a>
+            <a class="nsub"><span class="ndot"></span>阅读清单<span class="ntag">规划中</span></a>
+          </nav>
+          <div class="sfoot"><span class="dotok"></span>命例保存于本机 · 不联网</div>
+        </aside>
+
+        <main class="content">
+          <div class="panel glass mingli-workspace">
+          <div class="greet">
+            <div>
+              <h1>命理</h1>
+              <div class="gsub">一套命例喂三张盘 · 紫微与占星为<b>合成示例</b>(实装接真算) · 命例与笔记保存在本机</div>
+            </div>
+            <div class="gbtns">
+              <button class="btn btn-sec" id="btnNew">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                新建命例
+              </button>
+              <button class="btn btn-pri" id="btnAI">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l1.9 5.1a2 2 0 0 0 1.2 1.2l5.1 1.9-5.1 1.9a2 2 0 0 0-1.2 1.2L12 19.9l-1.9-5.1a2 2 0 0 0-1.2-1.2L3.8 11.7l5.1-1.9a2 2 0 0 0 1.2-1.2Z"/></svg>
+                AI 解读
+              </button>
+            </div>
+          </div>
+
+          <div class="pbar">
+            <div class="psel" id="psel">
+              <button class="psel-btn" id="pselBtn" aria-haspopup="listbox" aria-expanded="false" title="切换命例">
+                <span class="pav" id="pselAv">林</span>
+                <span class="pname" id="pselName">林川</span>
+                <span class="ptag" id="pselTag" style="display:none"></span>
+                <span class="pbirth" id="pselBirth"></span>
+                <svg class="caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+              <div class="psel-menu" id="pselMenu">
+                <button class="psel-new" id="pselNew">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                  新建命例
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="syseg" id="syseg">
+            <button class="on" data-sys="bazi">八字<span class="tag">真算</span></button>
+            <button data-sys="ziwei">紫微斗数<span class="tag">示例</span></button>
+            <button data-sys="astro">占星<span class="tag">示例</span></button>
+          </div>
+
+          <!-- ===== 八字 ===== -->
+          <section class="sysview" id="sys-bazi">
+            <div class="cols">
+              <div>
+                <div class="pan" id="panBazi">
+                  <span class="pan-tag">四柱命盘</span>
+                  <div class="pan-head">
+                    <div class="pan-who"><b id="bzName">林川</b><div class="meta" id="bzMeta"></div></div>
+                    <div class="pan-ringbox">
+                      <svg id="bzRing" width="58" height="58" viewBox="0 0 58 58" aria-hidden="true"></svg>
+                      <div class="pan-ringtxt" id="bzRingTxt"></div>
+                    </div>
+                  </div>
+                  <div class="pdiv"></div>
+                  <div class="pan-pillars" id="bzPillars"></div>
+                  <div class="pan-foot" id="bzFoot"></div>
+                  <div class="pan-dy">
+                    <div class="pan-dyhead" id="bzDyHead"></div>
+                    <div class="dychips" id="bzDychips"></div>
+                    <div class="pan-lnwrap" id="bzLnWrap"><div class="pan-lnclip"><div class="pan-lnrow" id="bzLnRow"></div></div></div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="panel glass">
+                  <div class="phead"><span class="ptitle">五行</span><span class="pcount">八字 8 字统计</span></div>
+                  <div id="wxRows"></div>
+                  <div class="wxsum" id="wxSum"></div>
+                </div>
+                <div class="panel glass">
+                  <div class="phead"><span class="ptitle">神煞</span><span class="pcount" id="ssCount"></span></div>
+                  <div class="ssrow" id="ssRow"></div>
+                </div>
+                <div class="panel glass">
+                  <div class="phead"><span class="ptitle">笔记</span><span class="pcount" id="noteState">随命例保存</span></div>
+                  <textarea class="noteta" id="noteTa" placeholder="记下用神取舍、流年应期、大运体会……"></textarea>
+                  <div class="notehint">笔记随命例保存在本机,三张盘共用。</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== 紫微 ===== -->
+          <section class="sysview" id="sys-ziwei" style="display:none">
+            <div class="cols">
+              <div>
+                <div class="pan">
+                  <span class="pan-tag">合成示例 · 实装接 iztro 真算</span>
+                  <div class="pan-head">
+                    <div class="pan-who"><b id="zwName">林川</b><div class="meta" id="zwMeta"></div></div>
+                  </div>
+                  <div class="zw-grid" id="zwGrid"></div>
+                </div>
+              </div>
+              <div>
+                <div class="panel glass">
+                  <div class="phead"><span class="ptitle">命宫</span><span class="pcount">子 · 紫微独坐</span></div>
+                  <div class="hintp">
+                    <b>紫微(庙)</b> 坐命,左右辅弼拱照,主格局端凝、自带贵气;性格沉静而有主见,遇事宁可慢也不肯将就。
+                    命宫得<b>左辅</b>,行事多贵人;对宫贪狼(旺),外圆内方,应酬场中自有分寸。
+                  </div>
+                </div>
+                <div class="panel glass">
+                  <div class="phead"><span class="ptitle">四化</span><span class="pcount">庚年 · 日武阴同</span></div>
+                  <div class="ssrow" id="zwHua"></div>
+                  <div class="hintp">化禄入福德(寅),化权入疾厄(未),化科入田宅(卯),化忌入子女(酉)——禄随心境,权在自律。</div>
+                </div>
+                <div class="panel glass">
+                  <div class="phead"><span class="ptitle">笔记</span><span class="pcount" id="noteState2">随命例保存</span></div>
+                  <textarea class="noteta" id="noteTa2" placeholder="记下宫位体会、大限应期……"></textarea>
+                  <div class="notehint">与八字共用同一篇笔记,随命例保存。</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== 占星 ===== -->
+          <section class="sysview" id="sys-astro" style="display:none">
+            <div class="cols">
+              <div>
+                <div class="pan">
+                  <span class="pan-tag">合成示例 · 实装接 astronomy-engine 真算</span>
+                  <div class="pan-head">
+                    <div class="pan-who"><b id="asName">林川</b><div class="meta" id="asMeta"></div></div>
+                  </div>
+                  <div class="as-wrap"><svg id="asWheel" width="500" height="500" viewBox="0 0 520 520" aria-label="出生星盘"></svg></div>
+                  <div class="as-legend">
+                    <span><i style="background:var(--pan-marker)"></i>合 / 三分 / 六分</span>
+                    <span><i style="background:var(--hua-ji)"></i>刑 / 冲</span>
+                    <span>℞ 逆行</span>
+                  </div>
+                  <div class="as-phrow" id="asPhRow"></div>
+                </div>
+              </div>
+              <div>
+                <div class="panel glass">
+                  <div class="phead"><span class="ptitle">行星落座</span><span class="pcount">回归制 · 合成示例</span></div>
+                  <table class="astab" id="asTable"></table>
+                </div>
+                <div class="panel glass">
+                  <div class="phead"><span class="ptitle">笔记</span><span class="pcount" id="noteState3">随命例保存</span></div>
+                  <textarea class="noteta" id="noteTa3" placeholder="记下行星状态、行运观察……"></textarea>
+                  <div class="notehint">与八字共用同一篇笔记,随命例保存。</div>
+                </div>
+              </div>
+            </div>
+          </section>
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <div class="mmask" id="mNew">
+    <div class="mcard" role="dialog" aria-modal="true" aria-labelledby="mNewTitle">
+      <div class="mtitle" id="mNewTitle">新建命例</div>
+      <div class="msub">公历生日 + 出生时间,一套命例喂三张盘</div>
+      <div class="mform">
+        <div class="mfield"><span class="msub" style="font-weight:700;color:var(--ink-2)">姓名 / 备注</span>
+          <input class="inp" type="text" id="nfName" placeholder="如:林川" maxlength="12"></div>
+        <div class="mfield"><span class="msub" style="font-weight:700;color:var(--ink-2)">性别</span>
+          <div class="pseg" id="nfGender"><button class="on" data-g="1">男</button><button data-g="0">女</button></div></div>
+        <div class="mfield"><span class="msub" style="font-weight:700;color:var(--ink-2)">公历生日</span>
+          <input class="inp" type="date" id="nfDate" min="1900-01-01" max="2100-12-31"></div>
+        <div class="mfield"><span class="msub" style="font-weight:700;color:var(--ink-2)">出生时间</span>
+          <input class="inp" type="time" id="nfTime" step="300" value="12:00"></div>
+        <div class="mfield"><span class="msub" style="font-weight:700;color:var(--ink-2)">标签(可选)</span>
+          <input class="inp" type="text" id="nfTag" placeholder="如:自己 / 家人 / 朋友" maxlength="6"></div>
+      </div>
+      <div class="mbtns">
+        <button class="btn btn-sec" data-close>取消</button>
+        <button class="btn btn-pri" id="nfSave">保存并排盘</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast glass" id="toast"></div>
+</div>
+
+<div class="themeswitch" role="tablist" aria-label="主题切换">
+  <button data-t="mist" class="on">雾灰 · 墨点</button>
+  <button data-t="cool">冷灰 · 凝霜</button>
+  <button data-t="warm">暖砂 · 柔雾</button>
+</div>
+
+<script src="vendor/lunar.js"></script>
+<script>
+/* ================= 命例库(与 bazi-glass 同约定;localStorage) ================= */
+const LS_KEY = 'wb-bazi-mock-profiles';
+const SAMPLES = [
+  { id:'p1', name:'林川',   gender:1, date:'1990-08-16', time:'14:30', tag:'自己' },
+  { id:'p2', name:'沈知微', gender:0, date:'1993-02-23', time:'06:15', tag:'家人' },
+  { id:'p3', name:'周砚',   gender:1, date:'1985-11-07', time:'22:40', tag:'朋友' },
+];
+let profiles = (() => {
+  try { const s = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); if (Array.isArray(s) && s.length) return s; } catch(e){}
+  return SAMPLES.map(p => ({...p}));
+})();
+let curId = localStorage.getItem('wb-bazi-mock-cur') || profiles[0].id;
+let notes = JSON.parse(localStorage.getItem('wb-bazi-mock-notes') || '{}');
+let openDy = -1, curSys = 'bazi';
+const $ = id => document.getElementById(id);
+const escTag = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const cur = () => profiles.find(p => p.id === curId) || profiles[0];
+function saveProfiles(){ localStorage.setItem(LS_KEY, JSON.stringify(profiles)); localStorage.setItem('wb-bazi-mock-cur', curId); }
+
+/* ================= 排盘(lunar 真算) ================= */
+const WX_OF = {甲:'木',乙:'木',丙:'火',丁:'火',戊:'土',己:'土',庚:'金',辛:'金',壬:'水',癸:'水',
+  子:'水',丑:'土',寅:'木',卯:'木',辰:'土',巳:'火',午:'火',未:'土',申:'金',酉:'金',戌:'土',亥:'水'};
+const WX_L = {木:'var(--wx-mu)',火:'var(--wx-huo)',土:'var(--wx-tu)',金:'var(--wx-jin)',水:'var(--wx-shui)'};
+const WX = WX_L;
+const YANG = c => '甲丙戊庚壬'.includes(c);
+function shiShen(dayGan, gan){
+  const SH={木:'火',火:'土',土:'金',金:'水',水:'木'}, KE={木:'土',土:'水',水:'火',火:'金',金:'木'};
+  const a=WX_OF[dayGan], b=WX_OF[gan], same=YANG(dayGan)===YANG(gan);
+  if(a===b) return same?'比肩':'劫财';
+  if(SH[a]===b) return same?'食神':'伤官';
+  if(KE[a]===b) return same?'偏财':'正财';
+  if(KE[b]===a) return same?'七杀':'正官';
+  return same?'偏印':'正印';
+}
+const HZ = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const hourName = h => HZ[Math.floor(((h+1)%24)/2)] + '时';
+const toArr = v => Array.isArray(v) ? v : String(v).split(',').filter(Boolean);
+
+function buildChart(p){
+  const [y,m,d] = p.date.split('-').map(Number);
+  const [hh,mm] = p.time.split(':').map(Number);
+  const solar = Solar.fromYmdHms(y,m,d,hh,mm,0);
+  const lunar = solar.getLunar();
+  const ec = lunar.getEightChar();
+  const keys = ['Year','Month','Day','Time'], labels = ['年柱','月柱','日柱','时柱'];
+  const pillars = keys.map((k,i) => ({ label:labels[i], ganZhi:String(ec['get'+k]()),
+    gan:ec['get'+k+'Gan'](), zhi:ec['get'+k+'Zhi'](), ssGan:ec['get'+k+'ShiShenGan'](),
+    ssZhi:toArr(ec['get'+k+'ShiShenZhi']()), hideGan:toArr(ec['get'+k+'HideGan']()),
+    naYin:ec['get'+k+'NaYin']() }));
+  const count = {木:0,火:0,土:0,金:0,水:0};
+  pillars.forEach(pl => { count[WX_OF[pl.gan]]++; count[WX_OF[pl.zhi]]++; });
+  let yun = null;
+  try {
+    const yy = ec.getYun(p.gender);
+    yun = { startYear:yy.getStartYear(), startMonth:yy.getStartMonth(), startDay:yy.getStartDay(),
+      startSolar:yy.getStartSolar().toYmd(),
+      list: yy.getDaYun().filter(dy => dy.getGanZhi()).map(dy => ({
+        startAge:dy.getStartAge(), endAge:dy.getEndAge(), startYear:dy.getStartYear(), endYear:dy.getEndYear(),
+        ganZhi:dy.getGanZhi(), liuNian:dy.getLiuNian().map(ln => ({year:ln.getYear(), ganZhi:ln.getGanZhi(), age:ln.getAge()})) })) };
+  } catch(e){}
+  return { pillars, count, lunarText:String(lunar), shengXiao:lunar.getYearShengXiao(),
+    dayGan:ec.getDayGan(), dayWX:WX_OF[ec.getDayGan()], hourText:hourName(hh), yun };
+}
+/* 神煞查表(与实装 shared/bazi-contracts 同表) */
+const TIAN_YI={甲:['丑','未'],乙:['子','申'],丙:['亥','酉'],丁:['亥','酉'],戊:['丑','未'],己:['子','申'],庚:['丑','未'],辛:['午','寅'],壬:['巳','卯'],癸:['巳','卯']};
+const WEN_CHANG={甲:'巳',乙:'午',丙:'申',丁:'酉',戊:'申',己:'酉',庚:'亥',辛:'子',壬:'寅',癸:'卯'};
+const SAN_HE=[['申子辰','酉','寅','辰','子'],['寅午戌','卯','申','戌','午'],['巳酉丑','午','亥','丑','酉'],['亥卯未','子','巳','未','卯']];
+const YANG_REN={甲:'卯',丙:'午',戊:'午',庚:'酉',壬:'子'};
+const HONG_LUAN={子:'卯',丑:'寅',寅:'丑',卯:'子',辰:'亥',巳:'戌',午:'酉',未:'申',申:'未',酉:'午',戌:'巳',亥:'辰'};
+function shenSha(dayGan, yearZhi, dayZhi){
+  const out=[], push=(name,from,zhi)=>out.push({name,from,zhi});
+  (TIAN_YI[dayGan]||[]).forEach(z=>push('天乙贵人','日干',z));
+  push('文昌','日干',WEN_CHANG[dayGan]);
+  [['年支',yearZhi],['日支',dayZhi]].forEach(([from,z])=>{
+    const g=SAN_HE.find(g=>g[0].includes(z)); if(!g) return;
+    push('桃花',from,g[1]); push('驿马',from,g[2]); push('华盖',from,g[3]); push('将星',from,g[4]);
+  });
+  const yr=YANG_REN[dayGan]; if(yr) push('羊刃','日干',yr);
+  const hl=HONG_LUAN[yearZhi];
+  if(hl){ push('红鸾','年支',hl); push('天喜','年支',HZ[(HZ.indexOf(hl)+6)%12]); }
+  return out;
+}
+
+/* ================= 八字盘面渲染 ================= */
+let lastChart = null;
+function renderBazi(){
+  const p = cur(); if (!p) return;
+  let chart; try { chart = buildChart(p); } catch(e) { $('bzPillars').innerHTML = '<div style="padding:14px;color:var(--hua-ji);font-size:var(--type-control)">排盘失败:日期超出 1900–2100。</div>'; return; }
+  lastChart = chart;
+  $('bzName').innerHTML = escTag(p.name) + tagChip(p.tag);
+  $('bzMeta').textContent = `公历 ${p.date} ${p.time} · ${p.gender?'男':'女'} · 农历 ${chart.lunarText} ${chart.hourText}`;
+  $('bzPillars').innerHTML = chart.pillars.map((pl,i) => `
+    <div class="pan-pcol">
+      <div class="pan-plabel">${pl.label}${i===2?'<span class="pan-mtag">日主</span>':''}</div>
+      <div class="pan-pss">${pl.ssGan}</div>
+      <div class="pan-pgan" style="color:${WX[WX_OF[pl.gan]]}">${pl.gan}</div>
+      <div class="pan-pzhi" style="color:${WX[WX_OF[pl.zhi]]}">${pl.zhi}</div>
+      <div class="pan-pssz">${pl.ssZhi[0]||''}</div>
+      <div class="pan-phide">${pl.hideGan.map((g,k)=>`<span class="hi"><b>${g}</b>·${pl.ssZhi[k]||''}</span>`).join(' ')}</div>
+      <div><span class="pan-nachip">${pl.naYin}</span></div>
+    </div>`).join('');
+  $('bzFoot').innerHTML = `<span>日主 <b style="color:${WX[chart.dayWX]}">${chart.dayGan}·${chart.dayWX}</b></span>
+    <span>生肖 <b>${chart.shengXiao}</b></span><span class="pan-gz">${chart.pillars.map(pl=>pl.ganZhi).join(' ')}</span>`;
+  renderRing(chart.count);
+  renderWxPanel(chart);
+  renderShenSha(chart);
+  renderDayun(chart);
+}
+function renderRing(count){
+  const order=['木','火','土','金','水'], total=8;
+  const segs=order.map(w=>count[w]/total);
+  let acc=-90, seg='';
+  order.forEach((w,i)=>{
+    const a0=acc, a1=acc+segs[i]*360; acc=a1;
+    if(!segs[i]) return;
+    const large=a1-a0>180?1:0, r=22, cx=29, cy=29;
+    const x0=cx+r*Math.cos(a0*Math.PI/180), y0=cy+r*Math.sin(a0*Math.PI/180);
+    const x1=cx+r*Math.cos(a1*Math.PI/180), y1=cy+r*Math.sin(a1*Math.PI/180);
+    seg+=`<path d="M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}" fill="none" stroke="${WX[w]}" stroke-width="7" stroke-linecap="butt"/>`;
+  });
+  $('bzRing').innerHTML = seg + `<text x="29" y="33" text-anchor="middle" font-size="11" font-weight="700" fill="var(--pan-ink)">8字</text>`;
+  const max=Math.max(...order.map(w=>count[w]));
+  const strong=order.find(w=>count[w]===max);
+  $('bzRingTxt').innerHTML = order.map(w=>`<span style="color:${WX[w]}">●</span> ${w}${count[w]}`).join(' ') + `<br><b>${strong} 偏旺</b>`;
+}
+function renderWxPanel(chart){
+  const order=['木','火','土','金','水'];
+  const max=Math.max(...order.map(w=>chart.count[w]));
+  $('wxRows').innerHTML = order.map(w=>{
+    const n=chart.count[w];
+    return `<div class="wxrow"><span class="wxdot" style="background:${WX_L[w]}"></span><span class="wxname">${w}</span>
+      <span class="wxnum">${n}</span><span class="wxbar"><i style="width:${max?(n/max)*100:0}%;background:${WX_L[w]}"></i></span>
+      <span class="wxflag${max>0&&n===max?' strong':''}">${max>0&&n===max?'偏旺':n===0?'缺':''}</span></div>`;
+  }).join('');
+  const missing=order.filter(w=>!chart.count[w]);
+  const strongest=order.find(w=>chart.count[w]===max);
+  $('wxSum').innerHTML = `<b>${strongest}</b> 偏旺 · ${missing.length?`缺 <b>${missing.join('、')}</b>`:'五行不缺'} · 日主属${chart.dayWX}`;
+}
+function renderShenSha(chart){
+  const hits = shenSha(chart.dayGan, chart.pillars[0].zhi, chart.pillars[2].zhi)
+    .map(h => ({...h, pos: chart.pillars.filter(pl=>pl.zhi===h.zhi).map(pl=>pl.label).join('/') }))
+    .filter(h => h.pos);
+  $('ssCount').textContent = `${hits.length} 项`;
+  $('ssRow').innerHTML = hits.map(h => `<span class="sschip">${h.name}<span class="sspos">${h.from} · ${h.zhi} · ${h.pos}</span></span>`).join('')
+    || '<div class="hintp">本命盘未检出常用神煞。</div>';
+}
+function renderDayun(chart){
+  const yun=chart.yun, now=new Date().getFullYear();
+  if(!yun){ $('bzDyHead').textContent='起运信息暂无法计算,主盘不受影响。'; $('bzDychips').innerHTML=''; return; }
+  const idxNow = yun.list.findIndex(d=>now>=d.startYear&&now<=d.endYear);
+  if(openDy<0||openDy>=yun.list.length) openDy=Math.max(idxNow,0);
+  $('bzDyHead').innerHTML = `出生后 <b>${yun.startYear} 年 ${yun.startMonth} 个月</b>起运 · ${yun.startSolar} 交入第一步 · 点击大运看流年`;
+  $('bzDychips').innerHTML = yun.list.map((d,i)=>`
+    <button class="dychip${i===openDy?' on':''}${i===idxNow?' now':''}" data-i="${i}">
+      <span class="dz"><span style="color:${WX[WX_OF[d.ganZhi[0]]]}">${d.ganZhi[0]}</span><span style="color:${WX[WX_OF[d.ganZhi[1]]]}">${d.ganZhi[1]}</span></span>
+      <span class="dage">${d.startAge}–${d.endAge}岁</span><span class="dss">${shiShen(chart.dayGan,d.ganZhi[0])}</span><span class="dnow"></span>
+    </button>`).join('');
+  renderLiunian(chart);
+  $('bzLnWrap').classList.add('open');
+}
+function renderLiunian(chart){
+  if(!chart.yun||openDy<0){ $('bzLnRow').innerHTML=''; return; }
+  const now=new Date().getFullYear();
+  $('bzLnRow').innerHTML = chart.yun.list[openDy].liuNian.map(ln=>{
+    const isNow=ln.year===now;
+    return `<span class="lnchip${isNow?' nowln':''}">${isNow?'<span class="lnow"></span>':''}
+      <span class="ly">${ln.year}</span>
+      <span class="lg"><span style="color:${WX[WX_OF[ln.ganZhi[0]]]}">${ln.ganZhi[0]}</span><span style="color:${WX[WX_OF[ln.ganZhi[1]]]}">${ln.ganZhi[1]}</span></span>
+      <span class="ls">${shiShen(chart.dayGan,ln.ganZhi[0])} · ${ln.age}岁</span></span>`;
+  }).join('');
+}
+
+/* ================= 紫微方盘(合成示例) ================= */
+const ZW = [
+  { br:'巳', gz:'辛巳', palace:'交友宫', age:'74–83', stars:['天相 庙'], fu:[] },
+  { br:'午', gz:'壬午', palace:'迁移宫', age:'64–73', stars:['贪狼 旺'], fu:[] },
+  { br:'未', gz:'癸未', palace:'疾厄宫', age:'54–63', stars:['武曲 旺|quan','陀罗 陷'], fu:[] },
+  { br:'申', gz:'甲申', palace:'财帛宫', age:'44–53', stars:['廉贞 利'], fu:['禄存 庙','天马 旺'] },
+  { br:'辰', gz:'庚辰', palace:'官禄宫', age:'84–93', stars:['天府 庙'], fu:['文昌 庙'] },
+  { br:'卯', gz:'己卯', palace:'田宅宫', age:'94–103', stars:['太阴 陷|ke'], fu:['右弼'] },
+  { br:'寅', gz:'戊寅', palace:'福德宫', age:'104–113', stars:['太阳 旺|lu','巨门 庙'], fu:[], body:true },
+  { br:'丑', gz:'己丑', palace:'父母宫', age:'114–123', stars:['天梁 庙'], fu:[] },
+  { br:'子', gz:'戊子', palace:'命宫', age:'4–13', stars:['紫微 庙'], fu:['左辅 庙'] },
+  { br:'亥', gz:'丁亥', palace:'兄弟宫', age:'14–23', stars:['天机 庙'], fu:['文曲 庙'] },
+  { br:'戌', gz:'丙戌', palace:'夫妻宫', age:'24–33', stars:[], fu:[], empty:'空宫 · 借对宫日巨' },
+  { br:'酉', gz:'乙酉', palace:'子女宫', age:'34–43', stars:['天同 平|ji'], fu:['擎羊 庙'] },
+];
+const HUA_CLS = {lu:'lu',quan:'quan',ke:'ke',ji:'ji'};
+const HUA_TXT = {lu:'禄',quan:'权',ke:'科',ji:'忌'};
+function zwCell(c){
+  const stars = c.stars.length ? c.stars.map(s=>{
+    const [name,bright,hua] = s.split(' ');
+    return `${name}<span class="bright">${bright}</span>${hua?`<span class="hua ${HUA_CLS[hua]}">${HUA_TXT[hua]}</span>`:''}`;
+  }).join('<br>') : `<span class="zw-empty">${c.empty}</span>`;
+  return `<div class="zw-cell">
+    <div class="zw-top"><span class="zpalace">${c.palace}</span>${c.body?'<span class="zbody">身宫</span>':''}
+      <span class="zw-gz">${c.gz} · ${c.age}</span></div>
+    <div class="zw-stars">${stars}</div>
+    ${c.fu.length?`<div class="zw-fu">${c.fu.join('　')}</div>`:''}
+  </div>`;
+}
+function renderZiwei(){
+  const p = cur();
+  const lz = lastChart;
+  const order = ['巳','午','未','申','辰','CENTER','卯','寅','丑','子','戌','酉'];
+  $('zwGrid').innerHTML = order.map(br => br==='CENTER'
+    ? `<div class="zw-cell ming-center">
+        <div class="zcname">${p.name}</div>
+        <div class="zcmeta">公历 ${p.date} ${p.time}<br>${lz ? `农历 ${lz.lunarText} ${lz.hourText} · 生肖${lz.shengXiao}` : ''}<br>庚午年生</div>
+        <div class="zcju"><span>木三局</span><span>命主 贪狼</span><span>身主 火星</span></div>
+      </div>`
+    : zwCell(ZW.find(c=>c.br===br))).join('');
+  $('zwName').innerHTML = escTag(p.name) + tagChip(p.tag);
+  $('zwMeta').textContent = `公历 ${p.date} ${p.time} · ${p.gender?'男':'女'}`;
+  $('zwHua').innerHTML = [
+    ['太阳 化禄','福德宫 · 寅','lu'], ['武曲 化权','疾厄宫 · 未','quan'],
+    ['太阴 化科','田宅宫 · 卯','ke'], ['天同 化忌','子女宫 · 酉','ji'],
+  ].map(([t,pos,k])=>`<span class="sschip">${t}<span class="hua ${k}" style="margin-left:7px">${HUA_TXT[k]}</span><span class="sspos">${pos}</span></span>`).join('');
+}
+
+/* ================= 占星轮(合成示例,JS 生成 SVG) ================= */
+const AS_BODIES = [
+  { g:'☉', name:'太阳', lon:233.1 },
+  { g:'☽', name:'月亮', lon:338.4 },
+  { g:'☿', name:'水星', lon:162.7 },
+  { g:'♀', name:'金星', lon:207.9 },
+  { g:'♂', name:'火星', lon:58.4 },
+  { g:'♃', name:'木星', lon:119.2 },
+  { g:'♄', name:'土星', lon:291.7, rx:true },
+  { g:'♅', name:'天王', lon:288.3, rx:true },
+  { g:'♆', name:'海王', lon:289.5, rx:true },
+  { g:'♇', name:'冥王', lon:226.1 },
+];
+const SIGNS = ['白羊','金牛','双子','巨蟹','狮子','处女','天秤','天蝎','射手','摩羯','水瓶','双鱼'];
+const SIGN_GLYPHS = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+const CUSPS = [222.6,243,263,317.4,341,2,42.6,61,82,137.4,158,180];
+const AS_ASPECTS = [ [0,9,'sq',7.0], [3,6,'sq',6.1], [6,7,'cj',3.4], [6,8,'cj',7.8] ];
+const pt = (r,lon) => { const a=(180+lon)*Math.PI/180; return [260+r*Math.cos(a), 260-r*Math.sin(a)]; };
+function houseOf(lon){
+  for(let i=0;i<12;i++){
+    let a=CUSPS[i], b=CUSPS[(i+1)%12];
+    let rel=(lon-a+360)%360, span=(b-a+360)%360;
+    if(rel<span) return i+1;
+  }
+  return 12;
+}
+function renderAstro(){
+  const p = cur();
+  $('asName').innerHTML = escTag(p.name) + tagChip(p.tag);
+  $('asMeta').textContent = `公历 ${p.date} ${p.time} · ${p.gender?'男':'女'} · 回归制`;
+  let s = '';
+  for(let i=0;i<12;i++){
+    const a0=i*30, a1=a0+30;
+    const [x0,y0]=pt(244,a0), [x1,y1]=pt(244,a1), [x2,y2]=pt(206,a1), [x3,y3]=pt(206,a0);
+    s+=`<path d="M${x0} ${y0} A244 244 0 0 0 ${x1} ${y1} L${x2} ${y2} A206 206 0 0 1 ${x3} ${y3} Z"
+      fill="${i%2?'var(--pan-sector-b)':'var(--pan-sector-a)'}" stroke="var(--pan-line)" stroke-width="1"/>`;
+    const [gx,gy]=pt(225,a0+15);
+    s+=`<text x="${gx}" y="${gy+5}" text-anchor="middle" font-size="15" fill="var(--pan-ink-2)">${SIGN_GLYPHS[i]}</text>`;
+  }
+  CUSPS.forEach((c,i)=>{
+    const [x1,y1]=pt(206,c), [x2,y2]=pt(i===0||i===9?120:140,c);
+    s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--pan-line)" stroke-width="${i===0||i===9?1.6:1}"/>`;
+    const mid=(c+CUSPS[(i+1)%12]/1)/2 + ((CUSPS[(i+1)%12]-c+360)%360)/2;
+    const [nx,ny]=pt(193,mid);
+    s+=`<text x="${nx}" y="${ny+3.5}" text-anchor="middle" font-size="10" fill="var(--pan-ink-3)">${i+1}</text>`;
+  });
+  s+=`<circle cx="260" cy="260" r="120" fill="none" stroke="var(--pan-line)"/>`;
+  AS_BODIES.forEach((b,i)=>{
+    const tier = i%2===0?150:131;
+    const [x,y]=pt(tier,b.lon);
+    const deg = Math.floor(b.lon%30), min=Math.round((b.lon%1)*60);
+    s+=`<text x="${x}" y="${y+6}" text-anchor="middle" font-size="17" fill="var(--pan-ink)" font-weight="600">${b.g}</text>`;
+    s+=`<text x="${x}" y="${y+20}" text-anchor="middle" font-size="9.5" fill="var(--pan-ink-3)">${deg}°${b.rx?'℞':''}</text>`;
+    const [lx,ly]=pt(120,b.lon), [px,py]=pt(tier-9,b.lon);
+    s+=`<circle cx="${lx}" cy="${ly}" r="1.6" fill="var(--pan-marker)"/><line x1="${lx}" y1="${ly}" x2="${px}" y2="${py}" stroke="var(--pan-line)"/>`;
+  });
+  AS_ASPECTS.forEach(([i,j,k])=>{
+    const [x1,y1]=pt(120,AS_BODIES[i].lon), [x2,y2]=pt(120,AS_BODIES[j].lon);
+    const col = k==='cj'||k==='tr'||k==='sx' ? 'var(--pan-marker)' : 'var(--hua-ji)';
+    s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-opacity=".55" stroke-width="1.3"/>`;
+  });
+  const [ax,ay]=pt(96,CUSPS[0]);
+  s+=`<text x="${ax}" y="${ay+4}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--pan-marker)">ASC</text>`;
+  const [mx,my]=pt(96,CUSPS[9]);
+  s+=`<text x="${mx}" y="${my+4}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--pan-marker)">MC</text>`;
+  $('asWheel').innerHTML = s;
+  $('asTable').innerHTML = `<tr><th></th><th>行星</th><th>星座</th><th>度数</th><th>宫位</th></tr>` +
+    AS_BODIES.map(b=>{
+      const si=Math.floor(b.lon/30), deg=Math.floor(b.lon%30), min=Math.round((b.lon%1)*60);
+      return `<tr><td class="glyph">${b.g}</td><td>${b.name}</td><td>${SIGN_GLYPHS[si]} ${SIGNS[si]}</td>
+        <td>${deg}°${String(min).padStart(2,'0')}′${b.rx?' <span class="rx">℞</span>':''}</td><td>第 ${houseOf(b.lon)} 宫</td></tr>`;
+    }).join('');
+  $('asPhRow').innerHTML = [
+    ['日 ☉ – 冥 ♇','刑 7°05′','ji'], ['金 ♀ – 土 ♄','刑 6°07′','ji'],
+    ['土 ♄ – 天 ♅','合 3°24′','ha'], ['土 ♄ – 海 ♆','合 7°48′','ha'],
+  ].map(([t,v,k])=>`<span class="as-phchip"><i style="background:${k==='ji'?'var(--hua-ji)':'var(--pan-marker)'}"></i>${t}<b style="font-weight:600">${v}</b></span>`).join('');
+}
+
+/* ================= 笔记(三盘共用) ================= */
+let noteTimer;
+function loadNote(){
+  const t = notes[cur().id] || '';
+  ['noteTa','noteTa2','noteTa3'].forEach(id => { $(id).value = t; });
+  syncNoteState();
+}
+function syncNoteState(){
+  const s = (notes[cur().id]||'').trim() ? '已自动保存' : '随命例保存';
+  ['noteState','noteState2','noteState3'].forEach(id => { $(id).textContent = s; });
+}
+function onNote(text){
+  notes[cur().id] = text;
+  ['noteTa','noteTa2','noteTa3'].forEach(id => { if ($(id).value !== text) $(id).value = text; });
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(()=>{
+    localStorage.setItem('wb-bazi-mock-notes', JSON.stringify(notes));
+    syncNoteState();
+  }, 400);
+}
+
+/* ================= 命例渲染 / 交互 ================= */
+function tagChip(tag){ return tag ? `<span class="ptag">${escTag(tag)}</span>` : ''; }
+function renderProfiles(){
+  const p = cur();
+  $('pselAv').textContent = p.name.slice(0,1);
+  $('pselName').textContent = p.name;
+  $('pselTag').textContent = p.tag || '';
+  $('pselTag').style.display = p.tag ? '' : 'none';
+  $('pselBirth').textContent = `${p.date} · ${p.gender?'男':'女'}`;
+  $('pselMenu').querySelectorAll('.psel-item').forEach(n=>n.remove());
+  $('pselNew').insertAdjacentHTML('beforebegin', profiles.map(pf=>`
+    <button class="psel-item${pf.id===p.id?' on':''}" data-id="${pf.id}" role="option" aria-selected="${pf.id===p.id}">
+      <span class="pav">${pf.name.slice(0,1)}</span>
+      <span class="pname">${escTag(pf.name)}</span>${tagChip(pf.tag)}
+      <span class="pbirth">${pf.date} · ${pf.gender?'男':'女'}</span>
+      <span class="psel-act edit" data-edit="${pf.id}" role="button" aria-label="编辑 ${pf.name}" title="编辑命例"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4.5L19.5 9a2.1 2.1 0 0 0-3-3L5.5 17Z"/><path d="M13.5 7.5 16.5 10.5"/></svg></span>
+      ${profiles.length>1?`<span class="psel-act del" data-del="${pf.id}" role="button" aria-label="删除 ${pf.name}" title="删除命例"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></span>`:''}
+    </button>`).join(''));
+}
+function setPsel(open){
+  $('psel').classList.toggle('open', open);
+  $('pselBtn').setAttribute('aria-expanded', String(open));
+}
+function delProfile(id){
+  const target = profiles.find(x=>x.id===id);
+  if (!target || profiles.length<=1) return;
+  profiles = profiles.filter(x=>x.id!==id);
+  delete notes[id];
+  localStorage.setItem('wb-bazi-mock-notes', JSON.stringify(notes));
+  if (curId===id){ curId = profiles[0].id; openDy=-1; }
+  saveProfiles(); renderAll();
+  showToast(`已删除「${target.name}」,笔记一并清除`);
+}
+function renderAll(){
+  const p = cur();
+  loadNote();
+  renderProfiles();
+  renderBazi();
+  renderZiwei();
+  renderAstro();
+}
+const toast = $('toast'); let toastTimer;
+function showToast(msg){
+  toast.textContent = msg; toast.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>toast.classList.remove('show'), 2000);
+}
+document.addEventListener('click', e=>{
+  const t = e.target.closest('[data-toast]');
+  if (t){ showToast(t.dataset.toast); return; }
+  if (!e.target.closest('#psel')) setPsel(false);
+  const px = e.target.closest('.psel-act.edit');
+  if (px){ setPsel(false); openProfileModal(profiles.find(x=>x.id===px.dataset.edit)); return; }
+  const pd = e.target.closest('.psel-act.del');
+  if (pd){ delProfile(pd.dataset.del); return; }
+  const pi = e.target.closest('.psel-item');
+  if (pi){ curId = pi.dataset.id; openDy = -1; saveProfiles(); renderAll(); setPsel(false); return; }
+  if (e.target.closest('#pselNew')){ setPsel(false); openProfileModal(null); return; }
+  const dy = e.target.closest('.dychip');
+  if (dy){
+    openDy = Number(dy.dataset.i);
+    document.querySelectorAll('.dychip').forEach(b=>b.classList.toggle('on', b===dy));
+    renderLiunian(lastChart);
+    $('bzLnWrap').classList.add('open');
+    return;
+  }
+  const sy = e.target.closest('#syseg button');
+  if (sy){
+    curSys = sy.dataset.sys;
+    document.querySelectorAll('#syseg button').forEach(b=>b.classList.toggle('on', b===sy));
+    document.querySelectorAll('.sysview').forEach(v=>v.style.display = 'none');
+    $('sys-'+curSys).style.display = '';
+    return;
+  }
+  if (e.target.closest('#btnNew')){ openProfileModal(null); return; }
+  if (e.target.closest('[data-close]') || e.target.classList.contains('mmask')){
+    document.querySelectorAll('.mmask').forEach(m=>m.classList.remove('open'));
+  }
+});
+$('pselBtn').addEventListener('click', ()=>setPsel(!$('psel').classList.contains('open')));
+document.addEventListener('keydown', e=>{ if (e.key === 'Escape') setPsel(false); });
+['noteTa','noteTa2','noteTa3'].forEach(id => $(id).addEventListener('input', e=>onNote(e.target.value)));
+
+let nfGenderVal = 1;
+let editingId = null;
+function openProfileModal(profile){
+  editingId = profile ? profile.id : null;
+  $('mNewTitle').textContent = profile ? '编辑命例' : '新建命例';
+  $('nfSave').textContent = profile ? '保存' : '保存并排盘';
+  $('nfName').value = profile ? profile.name : '';
+  $('nfTag').value = profile ? (profile.tag || '') : '';
+  $('nfDate').value = profile ? profile.date : '';
+  $('nfTime').value = profile ? profile.time : '12:00';
+  nfGenderVal = profile ? profile.gender : 1;
+  document.querySelectorAll('#nfGender button').forEach(b=>b.classList.toggle('on', Number(b.dataset.g)===nfGenderVal));
+  $('mNew').classList.add('open'); $('nfName').focus();
+}
+document.querySelectorAll('#nfGender button').forEach(b=>b.addEventListener('click', ()=>{
+  nfGenderVal = Number(b.dataset.g);
+  document.querySelectorAll('#nfGender button').forEach(x=>x.classList.toggle('on', x===b));
+}));
+$('nfSave').addEventListener('click', ()=>{
+  const name = $('nfName').value.trim(), date = $('nfDate').value, time = $('nfTime').value;
+  const tag = $('nfTag').value.trim();
+  if (!name){ showToast('请填写姓名或备注'); return; }
+  if (!date){ showToast('请选择公历生日'); return; }
+  if (!time){ showToast('请选择出生时间'); return; }
+  if (editingId){
+    const p = profiles.find(x=>x.id===editingId);
+    if (p){ p.name = name; p.gender = nfGenderVal; p.date = date; p.time = time; p.tag = tag; }
+    saveProfiles(); $('mNew').classList.remove('open'); renderAll();
+    showToast(`已更新「${name}」`);
+    return;
+  }
+  profiles.push({ id:'p'+Date.now(), name, gender:nfGenderVal, date, time, tag });
+  curId = profiles[profiles.length-1].id; openDy = -1;
+  saveProfiles(); $('mNew').classList.remove('open'); renderAll();
+  showToast(`已保存「${name}」并排盘`);
+});
+$('btnAI').addEventListener('click', ()=>showToast('实际版本:命盘数据经 AI 面板生成解读'));
+
+/* 主题切换(演示) */
+const THEMES = ['mist','cool','warm'];
+function setTheme(t){
+  if (!THEMES.includes(t)) return;
+  document.documentElement.dataset.theme = t;
+  document.querySelectorAll('.themeswitch button').forEach(b=>b.classList.toggle('on', b.dataset.t===t));
+}
+document.querySelectorAll('.themeswitch button').forEach(b=>b.addEventListener('click', ()=>setTheme(b.dataset.t)));
+const urlTheme = new URLSearchParams(location.search).get('theme');
+if (urlTheme) setTheme(urlTheme);
+
+renderAll();
+</script>
+</body>
+</html>

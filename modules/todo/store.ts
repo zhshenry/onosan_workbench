@@ -2,6 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
 import type { ChatSession, ChatSummary } from '../../shared/todo-contracts';
 import { aiPlanSchema, categoryInputSchema, localDay, taskInputSchema, taskPatchSchema, type AIPlan, type Category, type Task, type TaskInput } from '../../shared/todo-contracts';
+import { meetingEndAt, scheduleStamp } from '../../shared/todo-format';
 
 export class Store {
   readonly db: DatabaseSync;
@@ -107,7 +108,7 @@ export class Store {
     return this.normalizeTask(JSON.parse(row.payload));
   }
   normalizeTask(task: Task): Task {
-    return { ...task, categoryId: task.categoryId ?? null, progress: typeof task.progress === 'number' ? task.progress : null, priority: task.priority === 'high' || task.priority === 'low' ? task.priority : 'medium' };
+    return { ...task, endAt: task.kind === 'meeting' ? task.endAt ?? meetingEndAt(task) : task.endAt ?? null, categoryId: task.categoryId ?? null, progress: typeof task.progress === 'number' ? task.progress : null, priority: task.priority === 'high' || task.priority === 'low' ? task.priority : 'medium' };
   }
   put(task: Task): Task {
     this.db.prepare('INSERT OR REPLACE INTO tasks(id,payload) VALUES (?,?)').run(task.id, JSON.stringify(task));
@@ -115,6 +116,7 @@ export class Store {
   }
   create(input: unknown): Task {
     const data = taskInputSchema.parse(input);
+    if (data.kind === 'meeting' && (!data.dueAt || !data.endAt)) throw new Error('日程需要设置开始和结束时间');
     this.assertCategory(data.categoryId);
     const now = new Date().toISOString();
     return this.put({ ...data, id: randomUUID(), createdAt: now, updatedAt: now,
@@ -125,6 +127,7 @@ export class Store {
     if (old.deletedAt) throw new Error('这条事项已删除');
     if (revision && old.updatedAt !== revision) throw new Error('事项已在其他操作中更新，请重新打开后修改');
     const next = taskInputSchema.parse({ ...this.fields(old), ...taskPatchSchema.parse(patch) });
+    if (next.kind === 'meeting' && old.kind !== 'meeting' && (!next.dueAt || !next.endAt)) throw new Error('日程需要设置开始和结束时间');
     this.assertCategory(next.categoryId);
     const now = new Date(Math.max(Date.now(), Date.parse(old.updatedAt) + 1)).toISOString();
     return this.put({ ...old, ...next, updatedAt: now,
@@ -132,8 +135,8 @@ export class Store {
       notifiedFor: next.remindAt !== old.remindAt || (old.status === 'done' && next.status !== 'done') ? null : old.notifiedFor });
   }
   fields(task: Task): TaskInput {
-    const { title, kind, status, priority, plannedDate, dueAt, remindAt, categoryId, progress, note } = task;
-    return { title, kind, status, priority, plannedDate, dueAt, remindAt, categoryId, progress, note };
+    const { title, kind, status, priority, plannedDate, dueAt, endAt, remindAt, categoryId, progress, note } = task;
+    return { title, kind, status, priority, plannedDate, dueAt, endAt: endAt ?? null, remindAt, categoryId, progress, note };
   }
   categories(): Category[] {
     return (this.db.prepare('SELECT payload FROM categories').all() as { payload: string }[])
@@ -293,7 +296,7 @@ export class Store {
     const tasks = this.all();
     const completed = tasks.filter(t => t.completedAt && localDay(new Date(t.completedAt)) === today);
     const pending = tasks.filter(t => !t.deletedAt && t.status !== 'done' && (t.kind === 'task' || t.plannedDate <= today));
-    return `# ${today} 每日复盘\n\n## 已完成 · ${completed.length} 项\n${completed.map(t => `- ${t.title}${t.note ? `\n  ${t.note}` : ''}`).join('\n') || '今天还没有完成的事项。'}\n\n## 待继续 · ${pending.length} 项\n${pending.map(t => `- ${t.title}${t.dueAt ? `（${new Date(t.dueAt).toLocaleString('zh-CN')}）` : ''}`).join('\n') || '今天的事项都已处理。'}`;
+    return `# ${today} 每日复盘\n\n## 已完成 · ${completed.length} 项\n${completed.map(t => `- ${t.title}${t.note ? `\n  ${t.note}` : ''}`).join('\n') || '今天还没有完成的事项。'}\n\n## 待继续 · ${pending.length} 项\n${pending.map(t => `- ${t.title}${t.dueAt ? `（${scheduleStamp(t)}）` : ''}`).join('\n') || '今天的事项都已处理。'}`;
   }
   close(): void { this.db.close(); }
 }

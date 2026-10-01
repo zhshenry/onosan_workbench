@@ -15,5 +15,5 @@
     "noEmit": true,
     "types": ["vite/client"]
   },
-  "include": ["src", "shared", "modules/todo/ui", "modules/browser/ui", "modules/office/ui", "modules/bazi/ui", "modules/bazi/compute.ts"]
+  "include": ["src", "shared", "modules/todo/ui", "modules/browser/ui", "modules/office/ui", "modules/bazi/ui", "modules/bazi/compute.ts", "modules/bazi/ziwei.ts", "modules/bazi/astro.ts"]
 }

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="mist">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>常驻 AI 助手 · 高保真评审稿 — Ono Workbench</title>
+  <link rel="stylesheet" href="../../src/shell.css">
+  <link rel="stylesheet" href="../../modules/bazi/ui/bazi.css">
+  <link rel="stylesheet" href="assistant-workspace.css">
+</head>
+<body class="ap-preview">
+  <div class="ap-stage">
+    <div class="ap-window" id="preview" data-open="true" data-view="copy">
+      <nav class="ap-rail" aria-label="工作台">
+        <div class="ap-logo" aria-label="Ono Workbench"><svg width="38" height="38" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="17.15" cy="6.85" r="2.15" fill="var(--acc)"/></svg></div>
+        <button class="ap-rail-btn" data-view="home" aria-label="首页" title="首页"><span data-icon="House"></span></button>
+        <div class="ap-rail-middle">
+          <button class="ap-rail-btn" data-view="copy" aria-label="博客编辑" title="博客编辑"><span data-icon="Video"></span></button>
+          <span class="ap-rail-inactive" title="游戏工作台 · 本稿未展开"><span data-icon="GameController"></span></span>
+          <span class="ap-rail-inactive" title="网页工作台 · 本稿未展开"><span data-icon="Browser"></span></span>
+          <button class="ap-rail-btn" data-view="bazi" aria-label="命理" title="命理"><span data-icon="Moon"></span></button>
+        </div>
+        <button class="ap-rail-btn" id="theme-shortcut" aria-label="切换预览主题" title="切换预览主题"><span data-icon="Palette"></span></button>
+      </nav>
+      <div class="ap-shell">
+        <header class="ap-topbar glass">
+          <span class="ap-top-brand">Ono <span>Workbench</span></span>
+          <div class="ap-island">
+            <div class="ap-island-item"><span data-icon="CalendarBlank"></span><b>9月28日 周一</b><span class="ap-island-extra">19:30 · 散步</span></div>
+            <div class="ap-island-item"><span data-icon="CheckSquare"></span><b>待办 <span class="ap-number" id="task-count">2/6</span></b><span class="ap-tiny-progress"><i></i></span></div>
+          </div>
+          <div class="ap-top-actions">
+            <button class="ap-job" id="background-job" hidden></button>
+            <button class="ap-ai-toggle" id="assistant-toggle" title="收起 AI 助手" aria-label="收起 AI 助手" aria-expanded="true" aria-controls="assistant"><span data-icon="Sparkle"></span><i id="ai-notification" hidden></i></button>
+            <span class="ap-divider"></span><span class="ap-avatar" title="Ono">O</span>
+            <span class="ap-window-chrome" aria-hidden="true">− <span>□</span> ×</span>
+          </div>
+        </header>
+        <div class="ap-workrow">
+          <div class="ap-primary">
+            <div class="ap-breadcrumb" id="breadcrumb"></div>
+            <main class="ap-main" id="main"></main>
+          </div>
+          <aside class="ap-assistant" id="assistant" aria-label="AI 助手">
+            <div class="ap-resizer" id="resizer" role="separator" tabindex="0" aria-label="调整助手宽度" aria-orientation="vertical" aria-valuemin="340" aria-valuemax="480" aria-valuenow="380"></div>
+            <header class="ap-assistant-head">
+              <span class="ap-assistant-mark" data-icon="Sparkle"></span><b>AI 助手</b>
+              <div class="ap-head-actions">
+                <button class="ap-icon-button" id="history-toggle" aria-label="查看当前对象的对话" title="历史对话" aria-expanded="false"><span data-icon="ClockCounterClockwise"></span></button>
+                <button class="ap-icon-button" id="new-chat" aria-label="新建对话" title="新建对话"><span data-icon="Plus"></span></button>
+                <button class="ap-icon-button" id="assistant-close" aria-label="收起 AI 助手" title="收起助手"><span data-icon="SidebarSimple"></span></button>
+              </div>
+            </header>
+            <div class="ap-context" id="context"></div>
+            <div class="ap-history" id="history" hidden></div>
+            <div class="ap-messages" id="messages" aria-label="对话内容"></div>
+            <div class="ap-compose-area">
+              <div class="ap-suggestions" id="suggestions"></div>
+              <form class="ap-composer" id="composer" novalidate>
+                <label class="ap-sr-only" for="message-input">发送给当前对话的 AI 助手</label>
+                <textarea id="message-input" placeholder="继续聊聊这篇文章…" rows="2" maxlength="2000"></textarea>
+                <div class="ap-compose-bottom"><button class="ap-send" id="send" type="submit" aria-label="发送消息" title="发送消息"><span data-icon="ArrowUp"></span></button></div>
+                <div class="ap-compose-hint" id="compose-hint">Enter 发送 · Shift + Enter 换行</div>
+              </form>
+              <label class="ap-model-row" for="preview-model"><span>大模型</span><select id="preview-model" aria-label="选择大模型"><option>deepseek-v4-flash</option><option>deepseek-chat</option><option>gpt-4.1</option></select></label>
+            </div>
+          </aside>
+        </div>
+      </div>
+      <div class="ap-toast" id="toast" role="status"></div>
+    </div>
+  </div>
+  <footer class="ap-reviewbar" aria-label="设计稿预览控制">
+    <span><b>常驻助手</b><span class="ap-review-version">方案 v1</span><span class="ap-review-note">交互演示 · 合成数据 · 不调用模型</span></span>
+    <div class="ap-review-controls">
+      <label>主题 <select id="theme-select"><option value="mist">雾灰 · 轻雾</option><option value="cool">冷灰 · 凝霜</option><option value="warm">暖砂 · 柔雾</option></select></label>
+      <label>窗口 <select id="size-select"><option value="auto">跟随窗口</option><option value="1280">1280 × 820</option><option value="1024">1024 × 680</option></select></label>
+      <span class="ap-layout-label" id="layout-label">并排停靠</span>
+      <button id="reset-demo">重置演示</button>
+    </div>
+  </footer>
+  <div id="announcer" class="ap-sr-only" aria-live="polite"></div>
+  <script src="assistant-icons.js"></script>
+  <script src="assistant-workspace.js"></script>
+</body>
+</html>

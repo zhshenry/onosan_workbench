@@ -5,12 +5,13 @@
  */
 import { z } from 'zod';
 
-/** 命例档案(1=男 0=女;性别影响大运顺逆) */
+/** 命例档案(1=男 0=女;性别影响大运顺逆;tag 为自填分类标签,可选) */
 export const baziProfileInputSchema = z.object({
   name: z.string().trim().min(1, '请填写姓名或备注').max(12, '姓名最多12字'),
   gender: z.union([z.literal(0), z.literal(1)], { error: '请选择性别' }),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '请填写有效的公历生日'),
   time: z.string().regex(/^\d{2}:\d{2}$/, '请填写有效的出生时间'),
+  tag: z.string().trim().max(6, '标签最多6字').optional(),
 }).strict();
 export type BaziProfileInput = z.infer<typeof baziProfileInputSchema>;
 export interface BaziProfile extends BaziProfileInput { id: string; createdAt: string; }
@@ -23,6 +24,7 @@ export const baziStoreDataSchema = z.object({
     gender: baziProfileInputSchema.shape.gender,
     date: baziProfileInputSchema.shape.date,
     time: baziProfileInputSchema.shape.time,
+    tag: baziProfileInputSchema.shape.tag,
     createdAt: z.string(),
   })),
   notes: z.record(z.string(), z.string()),

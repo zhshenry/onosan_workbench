@@ -8,42 +8,84 @@
   "private": true,
   "scripts": {
     "dev": "node tooling/dev.mjs",
+    "check:typography": "node tooling/check-typography.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.electron.json",
     "build": "vite build && node tooling/build.mjs",
-    "verify": "npm run typecheck && npm run build",
+    "verify": "npm run check:typography && npm run typecheck && npm run build",
     "smoke": "node tooling/smoke.mjs",
     "start": "electron .",
     "test": "tsx --test tests/*.test.ts",
-    "postinstall": "node tooling/patch-excel.mjs"
+    "postinstall": "node tooling/patch-excel.mjs",
+    "dist:win": "npm run dist:portable",
+    "dist:installer": "npm run verify && electron-builder --win nsis --x64 --publish never --config.electronDist=node_modules/electron/dist && powershell -NoProfile -ExecutionPolicy Bypass -File tooling/package-release.ps1 -Mode All",
+    "dist:portable": "npm run verify && electron-builder --win dir --x64 --publish never --config.electronDist=node_modules/electron/dist && powershell -NoProfile -ExecutionPolicy Bypass -File tooling/package-release.ps1 -Mode Portable",
+    "dist:all": "npm run dist:installer",
+    "release": "npm run dist:installer && node tooling/publish.mjs",
+    "release:check": "node tooling/publish.mjs --dry-run",
+    "release:verify": "node tooling/publish.mjs --verify"
   },
   "dependencies": {
     "@deepseek-ai/libreoffice-kit": "^0.1.0",
+    "astronomy-engine": "^2.1.19",
+    "dompurify": "^3.4.16",
+    "electron-updater": "6.8.9",
+    "iztro": "^2.6.1",
+    "marked": "^18.0.14",
+    "pdfjs-dist": "^6.3.289"
+  },
+  "devDependencies": {
     "@earendil-works/pi-coding-agent": "^0.85.1",
     "@fortune-sheet/core": "^1.0.4",
     "@fortune-sheet/react": "^1.0.4",
     "@phosphor-icons/react": "^2.1.10",
-    "exceljs": "^4.4.0",
-    "fast-xml-parser": "^5.11.1",
-    "fflate": "^0.8.3",
-    "lunar-javascript": "^1.7.7",
-    "papaparse": "^5.5.3",
-    "pdfjs-dist": "^6.3.289",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "typebox": "^1.3.34",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
-    "zod": "^4.6.5"
-  },
-  "devDependencies": {
     "@types/node": "^24.5.0",
     "@types/papaparse": "^5.5.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.0",
-    "electron": "^44.3.0",
+    "electron": "^44.4.4",
+    "electron-builder": "26.15.3",
     "esbuild": "^0.28.0",
+    "exceljs": "^4.4.0",
+    "fast-xml-parser": "^5.11.1",
+    "fflate": "^0.8.3",
+    "jsdom": "^30.1.1",
+    "lunar-javascript": "^1.7.7",
+    "papaparse": "^5.5.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "tsx": "4.23.13",
+    "typebox": "^1.3.34",
     "typescript": "~5.9.0",
-    "vite": "^8.3.0"
+    "vite": "^8.3.0",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+    "zod": "^4.6.5"
+  },
+  "build": {
+    "appId": "com.zhshenry.onoworkbench.app",
+    "productName": "Ono Workbench",
+    "directories": { "output": "release" },
+    "publish": { "provider": "github", "owner": "zhshenry", "repo": "onosan_workbench" },
+    "files": [
+      "dist/**", "dist-electron/**", "assets/tray.png", "package.json",
+      "!node_modules/astronomy-engine/**", "!node_modules/dompurify/**",
+      "!node_modules/iztro/**", "!node_modules/marked/**", "!node_modules/pdfjs-dist/**",
+      "!node_modules/@napi-rs/canvas*/**"
+    ],
+    "asar": false,
+    "extraResources": [
+      { "from": "node_modules/pdfjs-dist/cmaps", "to": "pdfjs/cmaps" },
+      { "from": "node_modules/pdfjs-dist/standard_fonts", "to": "pdfjs/standard_fonts" },
+      { "from": "node_modules/pdfjs-dist/wasm", "to": "pdfjs/wasm" }
+    ],
+    "win": { "target": "nsis", "signExecutable": false },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "artifactName": "Ono-Workbench-Setup-${version}-${arch}.${ext}"
   }
 }

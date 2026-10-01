@@ -10,6 +10,7 @@ import {
   copyDraftInputSchema, copyStoreDataSchema,
   type CopyDraft, type CopyDraftInput, type CopyStoreData,
 } from '../../shared/copy-contracts';
+import { parseXhsNoteUrl } from './xhs-publish';
 
 const EMPTY: CopyStoreData = { drafts: [] };
 
@@ -46,16 +47,16 @@ export class CopyStore {
     return this.data.drafts.find((d) => d.id === id);
   }
 
-  /** 新增或更新草稿(有 id 即更新;无 id 由本层生成;updatedAt 由本层维护) */
+  /** 新增或更新草稿(有 id 即更新,允许局部补丁如只改标题;无 id 由本层生成;updatedAt 由本层维护) */
   save(input: unknown): CopyStoreData {
     const { id: rawId, ...rest } = (input ?? {}) as Record<string, unknown>;
-    const fields = copyDraftInputSchema.parse(rest);
+    const patch = copyDraftInputSchema.partial().parse(rest);
     const id = typeof rawId === 'string' && rawId ? rawId : randomUUID();
     const now = new Date().toISOString();
     const existing = this.data.drafts.find((d) => d.id === id);
     const draft: CopyDraft = existing
-      ? { ...existing, ...fields, updatedAt: now }
-      : { ...fields, id, createdAt: now, updatedAt: now };
+      ? { ...existing, ...patch, updatedAt: now }
+      : { ...newCopyDraftInput(), ...patch, id, createdAt: now, updatedAt: now };
     this.data = {
       drafts: existing
         ? this.data.drafts.map((d) => (d.id === id ? draft : d))
@@ -65,8 +66,31 @@ export class CopyStore {
     return this.data;
   }
 
+  /** 人工核对作品直链后关联;发布信息变动不改正文的 updatedAt。 */
+  markXhsPublished(id: string, inputUrl: string): CopyStoreData {
+    const existing = this.get(id);
+    if (!existing) throw new Error('博客不存在或已删除');
+    const { url, remoteId } = parseXhsNoteUrl(inputUrl);
+    const draft: CopyDraft = {
+      ...existing,
+      xhsPublished: { status: 'published', source: 'manual', url, remoteId, confirmedAt: new Date().toISOString() },
+    };
+    this.data = { drafts: this.data.drafts.map((item) => item.id === id ? draft : item) };
+    this.flush();
+    return this.data;
+  }
+
+  clearXhsPublished(id: string): CopyStoreData {
+    const existing = this.get(id);
+    if (!existing) throw new Error('博客不存在或已删除');
+    const { xhsPublished: _previous, ...draft } = existing;
+    this.data = { drafts: this.data.drafts.map((item) => item.id === id ? draft : item) };
+    this.flush();
+    return this.data;
+  }
+
   remove(id: string): CopyStoreData {
-    if (!this.data.drafts.some((d) => d.id === id)) throw new Error('笔记不存在或已删除');
+    if (!this.data.drafts.some((d) => d.id === id)) throw new Error('博客不存在或已删除');
     this.data = { drafts: this.data.drafts.filter((d) => d.id !== id) };
     this.flush();
     return this.data;

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, MagnifyingGlass, X } from '@phosphor-icons/react';
 import type { Category, Task } from '../../../shared/todo-contracts';
-import { Select, errorText, timeText } from './ui';
+import { Select, errorText, scheduleTimeRange } from './ui';
 import type { TodoState } from './TaskEditor';
 
 // 移植自上游 src/TaskLibrary.tsx(行为逐行一致);api 参数化为工作台注入的操作面。
@@ -68,7 +68,7 @@ export function TaskLibrary({ tasks, categories, api, changed, edit, close }: {
           {index === 0 || visible[index - 1].plannedDate !== task.plannedDate ? <h3 className="library-date">{task.plannedDate}</h3> : null}
           <div className="library-task">
             {selecting ? <input type="checkbox" aria-label={`选择 ${task.title}`} disabled={busy} checked={selected.includes(task.id)} onChange={e => setSelected(ids => e.target.checked ? [...ids, task.id] : ids.filter(id => id !== task.id))} /> : null}
-            <button type="button" className="library-task-main" disabled={filter === 'deleted' || busy} aria-label={`编辑 ${task.title}`} onClick={() => edit(task)}><b>{task.title}</b><span><i className="plan-dot" aria-hidden style={{ backgroundColor: label?.color ?? 'var(--todo-muted)' }} />{label?.name ?? '无标签'} · {timeText(task.dueAt)}{task.status === 'doing' ? ' · 进行中' : ''}</span></button>
+            <button type="button" className="library-task-main" disabled={filter === 'deleted' || busy} aria-label={`编辑 ${task.title}`} onClick={() => edit(task)}><b>{task.title}</b><span><i className="plan-dot" aria-hidden style={{ backgroundColor: label?.color ?? 'var(--todo-muted)' }} />{label?.name ?? '无标签'} · {scheduleTimeRange(task)}{task.status === 'doing' ? ' · 进行中' : ''}</span></button>
             {filter !== 'active' && !selecting ? <button type="button" disabled={busy} aria-label={`恢复 ${task.title}`} onClick={() => void act([task])}>恢复</button> : null}
           </div>
         </li>;

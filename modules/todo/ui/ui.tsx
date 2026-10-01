@@ -2,9 +2,9 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type 
 import { createPortal } from 'react-dom';
 import { CalendarBlank, CaretDown, CaretLeft, CaretRight, Clock, Question, X } from '@phosphor-icons/react';
 import { localDay } from '../../../shared/todo-contracts';
-export type SelectOption = { value: string; label: string };
+export type SelectOption = { value: string; label: string; group?: string };
 export const HALF_HOUR_TIMES = Array.from({ length: 48 }, (_, index) => `${String(Math.floor(index / 2)).padStart(2, '0')}:${index % 2 ? '30' : '00'}`);
-export function Select({ id, value, onChange, options, className, disabled = false, 'aria-label': ariaLabel, 'aria-invalid': invalid, 'aria-describedby': describedBy }: { id?: string; value: string; onChange(value: string): void; options: SelectOption[]; className?: string; disabled?: boolean; 'aria-label'?: string; 'aria-invalid'?: boolean | 'true' | 'false'; 'aria-describedby'?: string }) {
+export function Select({ id, value, onChange, options, className, menuClassName, disabled = false, renderOption, 'aria-label': ariaLabel, 'aria-invalid': invalid, 'aria-describedby': describedBy }: { id?: string; value: string; onChange(value: string): void; options: SelectOption[]; className?: string; menuClassName?: string; disabled?: boolean; renderOption?: (option: SelectOption) => ReactNode; 'aria-label'?: string; 'aria-invalid'?: boolean | 'true' | 'false'; 'aria-describedby'?: string }) {
   const listId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
@@ -12,7 +12,14 @@ export function Select({ id, value, onChange, options, className, disabled = fal
   const [open, setOpen] = useState(false);
   const selected = Math.max(0, options.findIndex(option => option.value === value));
   const [active, setActive] = useState(selected);
-  const label = options.find(option => option.value === value)?.label ?? value;
+  const selectedOption = options.find(option => option.value === value);
+  const label = selectedOption?.label ?? value;
+  const groups: { label?: string; items: { option: SelectOption; index: number }[] }[] = [];
+  options.forEach((option, index) => {
+    const last = groups[groups.length - 1];
+    if (last && last.label === option.group) last.items.push({ option, index });
+    else groups.push({ label: option.group, items: [{ option, index }] });
+  });
   function pick(next: string) { if (!disabled) onChange(next); setOpen(false); trigger.current?.focus(); }
   useEffect(() => { if (disabled) setOpen(false); }, [disabled]);
   useLayoutEffect(() => {
@@ -20,8 +27,8 @@ export function Select({ id, value, onChange, options, className, disabled = fal
     if (!open || !list || !button) return;
     const rect = button.getBoundingClientRect();
     const boundary = list.parentElement instanceof HTMLDialogElement ? list.parentElement.getBoundingClientRect() : { top: 8, bottom: window.innerHeight - 8, left: 8, right: window.innerWidth - 8 };
-    const width = rect.width;
-    list.style.minWidth = `${width}px`;
+    list.style.minWidth = `${rect.width}px`;
+    const width = list.offsetWidth;
     const height = list.offsetHeight;
     let top = rect.bottom + 4;
     if (top + height > boundary.bottom) top = Math.max(boundary.top, rect.top - height - 4);
@@ -76,12 +83,17 @@ export function Select({ id, value, onChange, options, className, disabled = fal
     else if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); pick(options[active]?.value ?? value); }
     else if (event.key === 'Tab') setOpen(false);
   }
+  const optionElement = (option: SelectOption, index: number) => <div key={option.value} id={`${listId}-${index}`} role="option" className={`select-option${index === active ? ' is-active' : ''}`} aria-label={renderOption ? option.label : undefined} aria-selected={option.value === value} onMouseEnter={() => setActive(index)} onMouseDown={event => event.preventDefault()} onClick={() => pick(option.value)}>{renderOption ? renderOption(option) : option.label}</div>;
   return <div ref={root} className={`select${className ? ` ${className}` : ''}`}>
-    <button type="button" ref={trigger} id={id} className="select-trigger" role="combobox" aria-label={ariaLabel} aria-haspopup="listbox" aria-expanded={open} aria-controls={listId} aria-activedescendant={open ? `${listId}-${active}` : undefined} aria-invalid={invalid} aria-describedby={describedBy} disabled={disabled} onClick={() => setOpen(current => !current)} onKeyDown={onTriggerKeyDown}>
-      <span>{label}</span><CaretDown size={12} weight="bold" />
+    <button type="button" ref={trigger} id={id} className="select-trigger" role="combobox" aria-label={ariaLabel} aria-valuetext={renderOption ? label : undefined} aria-haspopup="listbox" aria-expanded={open} aria-controls={listId} aria-activedescendant={open ? `${listId}-${active}` : undefined} aria-invalid={invalid} aria-describedby={describedBy} disabled={disabled} onClick={() => setOpen(current => !current)} onKeyDown={onTriggerKeyDown}>
+      <span>{renderOption && selectedOption ? renderOption(selectedOption) : label}</span><CaretDown size={12} weight="bold" />
     </button>
-    {open ? createPortal(<div ref={menu} id={listId} className="select-menu" role="listbox" aria-label={ariaLabel}>
-      {options.map((option, index) => <div key={option.value} id={`${listId}-${index}`} role="option" className={`select-option${index === active ? ' is-active' : ''}`} aria-selected={option.value === value} onMouseEnter={() => setActive(index)} onMouseDown={event => event.preventDefault()} onClick={() => pick(option.value)}>{option.label}</div>)}
+    {open ? createPortal(<div ref={menu} id={listId} className={`select-menu${menuClassName ? ` ${menuClassName}` : ''}`} role="listbox" aria-label={ariaLabel}>
+      {groups.length === 1 && !groups[0].label ? options.map(optionElement) : groups.map((group, index) =>
+        <div key={index} className="select-group" role="group" aria-label={group.label ?? '其他'}>
+          <div className="select-group-label" aria-hidden="true">{group.label ?? '其他'}</div>
+          {group.items.map(({ option, index: optionIndex }) => optionElement(option, optionIndex))}
+        </div>)}
     </div>, trigger.current?.closest('dialog') ?? document.body) : null}
   </div>;
 }
@@ -101,7 +113,7 @@ export function Segmented({ value, onChange, options, 'aria-label': ariaLabel }:
     {options.map(option => <button key={option.value} type="button" role="radio" aria-checked={option.value === value} tabIndex={option.value === value ? 0 : -1} onClick={() => { if (option.value !== value) onChange(option.value); }}>{option.icon}{option.label}</button>)}
   </div>;
 }
-function placePopover(list: HTMLElement, button: HTMLElement) {
+function placePopover(list: HTMLElement, button: HTMLElement, direction: 'auto' | 'down' = 'auto') {
   const rect = button.getBoundingClientRect();
   const parent = list.parentElement;
   const boundary = parent instanceof HTMLDialogElement ? parent.getBoundingClientRect() : { top: 8, bottom: window.innerHeight - 8, left: 8, right: window.innerWidth - 8 };
@@ -111,10 +123,13 @@ function placePopover(list: HTMLElement, button: HTMLElement) {
   list.style.height = '';
   list.style.maxHeight = '';
   const natural = list.scrollHeight;
-  const openUp = below < natural && above > below;
-  const size = Math.min(natural, openUp ? above : below);
-  list.style.maxHeight = `${size}px`;
-  list.style.height = `${size}px`;
+  const openUp = direction === 'auto' && below < natural && above > below;
+  if (direction === 'down') list.style.maxHeight = 'none';
+  else {
+    const size = Math.min(natural, openUp ? above : below);
+    list.style.maxHeight = `${size}px`;
+    list.style.height = `${size}px`;
+  }
   list.style.top = '0px';
   list.style.left = '0px';
   const origin = list.getBoundingClientRect();
@@ -178,6 +193,7 @@ export function DatePicker({ id, value, onChange, 'aria-invalid': invalid, 'aria
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const root = useRef<HTMLDivElement>(null);
+  const needsReveal = useRef(true);
   const selected = parseIso(value);
   const today = localDay();
   const [open, setOpen] = useState(false);
@@ -196,8 +212,28 @@ export function DatePicker({ id, value, onChange, 'aria-invalid': invalid, 'aria
   }
   useLayoutEffect(() => {
     const list = menu.current; const button = trigger.current;
-    if (!open || !list || !button) return;
-    placePopover(list, button);
+    if (!open) { needsReveal.current = true; return; }
+    if (!list || !button) return;
+    if (needsReveal.current) {
+      const grid = list.querySelector<HTMLElement>('.date-grid');
+      const rows = Math.ceil((grid?.children.length ?? 42) / 7);
+      const rowHeight = grid?.querySelector<HTMLElement>('button')?.getBoundingClientRect().height ?? 26;
+      const rowGap = grid ? Number.parseFloat(getComputedStyle(grid).rowGap) || 0 : 0;
+      const height = list.scrollHeight + Math.max(0, 6 - rows) * (rowHeight + rowGap);
+      const needed = button.getBoundingClientRect().bottom + 4 + height + 8 - window.innerHeight;
+      let parent = button.parentElement;
+      while (needed > 0 && parent && parent !== document.body) {
+        const style = getComputedStyle(parent);
+        if ((style.overflowY === 'auto' || style.overflowY === 'scroll') && parent.scrollHeight > parent.clientHeight) {
+          const available = parent.scrollHeight - parent.clientHeight - parent.scrollTop;
+          parent.scrollTop += Math.min(needed, available);
+          break;
+        }
+        parent = parent.parentElement;
+      }
+      needsReveal.current = false;
+    }
+    placePopover(list, button, 'down');
     document.getElementById(`${gridId}-${cursor}`)?.focus();
   }, [open, view, cursor, gridId]);
   useEffect(() => {
@@ -220,9 +256,12 @@ export function DatePicker({ id, value, onChange, 'aria-invalid': invalid, 'aria
       else if (event.key === 'PageDown') { event.preventDefault(); setCursor(current => { const parsed = parseIso(current) ?? parseIso(today)!; const next = shiftMonth(parsed.y, parsed.m, 1); const last = new Date(next.y, next.m, 0).getDate(); const iso = toIso(next.y, next.m, Math.min(parsed.d, last)); setView({ y: next.y, m: next.m }); return iso; }); }
     }
     function dismiss() { setOpen(false); }
+    const openedAt = trigger.current?.getBoundingClientRect();
     function onScroll(event: Event) {
       const node = event.target;
       if (node instanceof Node && menu.current?.contains(node)) return;
+      const current = trigger.current?.getBoundingClientRect();
+      if (openedAt && current && Math.abs(current.top - openedAt.top) < 1 && Math.abs(current.left - openedAt.left) < 1) return;
       setOpen(false);
     }
     document.addEventListener('pointerdown', onPointerDown);
@@ -274,13 +313,14 @@ function parseTime(value: string) {
 }
 function formatTime(h: number, m: number) { return `${padDay(h)}:${padDay(m)}`; }
 function nowTime() { const d = new Date(); return formatTime(d.getHours(), d.getMinutes()); }
-export function TimePicker({ id, value, onChange, 'aria-invalid': invalid, 'aria-describedby': describedBy }: {
-  id?: string; value: string; onChange(value: string): void; 'aria-invalid'?: boolean | 'true' | 'false'; 'aria-describedby'?: string;
+export function TimePicker({ id, value, onChange, direction = 'auto', 'aria-invalid': invalid, 'aria-describedby': describedBy }: {
+  id?: string; value: string; onChange(value: string): void; direction?: 'auto' | 'down'; 'aria-invalid'?: boolean | 'true' | 'false'; 'aria-describedby'?: string;
 }) {
   const listId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const root = useRef<HTMLDivElement>(null);
+  const needsReveal = useRef(true);
   const selected = parseTime(value);
   const [open, setOpen] = useState(false);
   const [cursorH, setCursorH] = useState(selected?.h ?? new Date().getHours());
@@ -304,12 +344,33 @@ export function TimePicker({ id, value, onChange, 'aria-invalid': invalid, 'aria
   }
   useLayoutEffect(() => {
     const list = menu.current; const button = trigger.current;
-    if (!open || !list || !button) return;
-    placePopover(list, button);
+    if (!open) { needsReveal.current = true; return; }
+    if (!list || !button) return;
+    if (direction === 'down' && needsReveal.current) {
+      const needed = button.getBoundingClientRect().bottom + 4 + list.getBoundingClientRect().height + 8 - window.innerHeight;
+      let parent = button.parentElement;
+      while (needed > 0 && parent && parent !== document.body) {
+        const style = getComputedStyle(parent);
+        if ((style.overflowY === 'auto' || style.overflowY === 'scroll') && parent.scrollHeight > parent.clientHeight) {
+          const available = parent.scrollHeight - parent.clientHeight - parent.scrollTop;
+          parent.scrollTop += Math.min(needed, available);
+          break;
+        }
+        parent = parent.parentElement;
+      }
+      const column = list.querySelector<HTMLElement>('.time-col');
+      if (column) {
+        const chromeHeight = list.getBoundingClientRect().height - column.getBoundingClientRect().height;
+        const availableHeight = window.innerHeight - button.getBoundingClientRect().bottom - 12;
+        list.style.setProperty('--time-column-max-height', `${Math.floor(Math.max(112, Math.min(224, availableHeight - chromeHeight)))}px`);
+      }
+      needsReveal.current = false;
+    }
+    placePopover(list, button, direction);
     scrollChild(`${listId}-h-${cursorH}`, '.time-col');
     scrollChild(`${listId}-m-${cursorM}`, '.time-col');
     document.getElementById(`${listId}-${focusCol}-${focusCol === 'h' ? cursorH : cursorM}`)?.focus({ preventScroll: true });
-  }, [open, cursorH, cursorM, focusCol, listId]);
+  }, [open, cursorH, cursorM, focusCol, listId, direction]);
   useEffect(() => {
     if (!open) return;
     function onPointerDown(event: PointerEvent) {
@@ -332,9 +393,12 @@ export function TimePicker({ id, value, onChange, 'aria-invalid': invalid, 'aria
       }
     }
     function dismiss() { setOpen(false); }
+    const openedAt = trigger.current?.getBoundingClientRect();
     function onScroll(event: Event) {
       const node = event.target;
       if (node instanceof Node && menu.current?.contains(node)) return;
+      const current = trigger.current?.getBoundingClientRect();
+      if (openedAt && current && Math.abs(current.top - openedAt.top) < 1 && Math.abs(current.left - openedAt.left) < 1) return;
       setOpen(false);
     }
     document.addEventListener('pointerdown', onPointerDown);
@@ -357,7 +421,7 @@ export function TimePicker({ id, value, onChange, 'aria-invalid': invalid, 'aria
     <button type="button" ref={trigger} id={id} className="select-trigger" aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? listId : undefined} aria-invalid={invalid} aria-describedby={describedBy} onClick={() => show()} onKeyDown={onTriggerKeyDown}>
       <span>{selected ? formatTime(selected.h, selected.m) : '选择时间'}</span><Clock size={14} />
     </button>
-    {open ? createPortal(<div ref={menu} id={listId} className="time-menu" role="dialog" aria-label="选择时间">
+    {open ? createPortal(<div ref={menu} id={listId} className={`time-menu${direction === 'down' ? ' is-down' : ''}`} role="dialog" aria-label="选择时间">
       <div className="time-cols">
         <div className="time-col-wrap">
           <span className="time-col-label">时</span>
@@ -448,4 +512,4 @@ export function Modal({ title, children, close, dirty = false, subhead, headingE
 export function errorText(error: unknown): string {
   return (error instanceof Error ? error.message : '操作未完成，请重试').replace(/^Error invoking remote method '[^']+': (?:Error: )?/, '');
 }
-export { timeText, dateText, dateTimeText, scheduleStamp, stampLabel, isOverdue } from '../../../shared/todo-format';
+export { timeText, dateText, dateTimeText, meetingEndAt, scheduleTimeRange, scheduleStamp, stampLabel, isOverdue } from '../../../shared/todo-format';

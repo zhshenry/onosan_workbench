@@ -31,9 +31,9 @@ export const NAV: WorkbenchDef[] = [
     id: 'media',
     title: '自媒体工作台',
     subs: [
-      { label: '文案编辑', view: 'copy' },
-      { label: '选题库', pending: true },
-      { label: '脚本撰写', pending: true },
+      { label: '博客编辑', view: 'copy' },
+      { label: '图文发布', view: 'copy-publish' },
+      { label: '我的小红书', view: 'media-browser' },
       { label: '封面设计', pending: true },
     ],
   },
@@ -49,7 +49,7 @@ export const NAV: WorkbenchDef[] = [
   },
   {
     id: 'web',
-    title: '个人网页',
+    title: '网页工作台',
     pending: true,
     subs: [
       { label: '站点搭建', pending: true },
@@ -61,7 +61,7 @@ export const NAV: WorkbenchDef[] = [
     id: 'life',
     title: '小工具',
     subs: [
-      { label: '八字排盘', view: 'bazi' },
+      { label: '命理', view: 'bazi' },
       { label: '阅读清单', pending: true },
     ],
   },
@@ -91,6 +91,6 @@ export const workbenchById = (id: WorkbenchId): WorkbenchDef => {
 export const ownerOfWorkbench = (view: ViewId): WorkbenchId | undefined =>
   NAV.find((w) => w.subs.some((s) => s.view === view))?.id;
 
-/** 工作台的默认落地页(第一个已上线的子页;全未上线则回落首页) */
+/** 工作台的默认路由(第一个已上线子页;全未上线时由内容区显示规划占位页) */
 export const defaultViewOfWorkbench = (id: WorkbenchId): ViewId =>
   NAV.find((w) => w.id === id)?.subs.find((s) => s.view)?.view ?? 'home';

@@ -1,24 +1,31 @@
 import { createRoot } from 'react-dom/client';
 import { StrictMode } from 'react';
 import { App } from './App';
+import { FloatTodoApp } from './views/FloatTodo';
 import { DevBrowserView } from './views/DevBrowserView';
 import { DevOfficeView } from './views/DevOfficeView';
 import './shell.css';
 import '../modules/todo/ui/todo.css';
 import '../modules/bazi/ui/bazi.css';
 import '../modules/copywriting/ui/copy.css';
+import '../modules/browser/ui/pane.css';
 
 const root = createRoot(document.getElementById('root')!);
 
-// 开发调试路由(不进导航):#dev/<模块名>
-const devPage = location.hash.match(/^#dev\/(\w+)/)?.[1];
-if (devPage === 'browser') {
+// 悬浮待办窗:独立小窗经 ?window=float 载入同一 bundle
+if (new URLSearchParams(location.search).get('window') === 'float') {
+  root.render(
+    <StrictMode>
+      <FloatTodoApp />
+    </StrictMode>,
+  );
+} else if (location.hash.startsWith('#dev/browser')) {
   root.render(
     <StrictMode>
       <DevBrowserView />
     </StrictMode>,
   );
-} else if (devPage === 'office') {
+} else if (location.hash.startsWith('#dev/office')) {
   root.render(
     <StrictMode>
       <DevOfficeView />

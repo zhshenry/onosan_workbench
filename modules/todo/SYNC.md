@@ -44,7 +44,7 @@
 | `src/TagColorPresets.tsx` | `modules/todo/ui/TagColorPresets.tsx` | ✅ 已移植 | 原样 |
 | `src/TaskEditor.tsx` | `modules/todo/ui/TaskEditor.tsx` | ✅ 已移植 | `api: DesktopAPI` 参数化为 `TaskEditorApi`(create/update/remove/createCategory 四方法,行为一致);导出 `TodoState` |
 | `src/App.tsx` 的 TodayBoard/PlanRow | `modules/todo/ui/TodayBoard.tsx` | ✅ 已提取 | App 壳部分(窗口/迷你卡/悬浮卡)不移植;`plan-more` 复盘按钮抽为 `TodayToolbar` 的 `onReview` prop;PlanRow 的 api/mutate 收敛到父级闭包 |
-| `src/styles.css`(plan/modal/form/select 等段) | `modules/todo/ui/todo.css` | ✅ 已移植 | token 改名桥接:上游 `--paper/--ink/--accent/...` → `--todo-*`,值为工作台玻璃蓝;类名与结构保持一致,硬编码暖色换冷色;widget/dock/mini/assistant/settings 段不移植 |
+| `src/styles.css`(plan/modal/form/select 等段) | `modules/todo/ui/todo.css` | ✅ 已移植 | token 改名桥接:上游 `--paper/--ink/--accent/...` → `--todo-*`,值为工作台玻璃蓝;字号映射到外壳 `--type-*`;类名与结构保持一致,硬编码暖色换冷色;widget/dock/mini/assistant/settings 段不移植 |
 | `src/TaskLibrary.tsx`(事项库) | `modules/todo/ui/TaskLibrary.tsx` | ✅ 已移植 | `api: DesktopAPI` 参数化为 `TaskLibraryApi`(update/restore);样式段进 todo.css(library-*) |
 | `src/SettingsPanel.tsx` | — | ⏳ 后续 | 工作台将来自建设置页,待办相关项(提醒/自启)届时并入 |
 | — | `src/views/HomeView.tsx` + `App.tsx` 顶栏 | ✅ 工作台侧 | 数据消费方:轮询(5s)+ 聚焦刷新 + 本进程 `todo:changed` 广播;跨应用写入靠轮询兜底 |

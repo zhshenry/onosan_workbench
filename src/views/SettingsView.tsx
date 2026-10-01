@@ -1,8 +1,8 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import type { AppSettings, AppSettingsPatch, TodoDbInfo, UiTheme, ViewId } from '../../shared/contracts';
-import type { AIModel, AIProtocol } from '../../shared/todo-contracts';
-import { errorText } from '../../modules/todo/ui/ui';
-import type { AiConfig } from './AiPanel';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { X } from '@phosphor-icons/react';
+import type { AppSettings, AppSettingsPatch, AvatarColor, TodoDbInfo, UiTheme, UpdateStatus, ViewId } from '../../shared/contracts';
+import { errorText, IconButton, Select as TodoSelect } from '../../modules/todo/ui/ui';
+import { AiSettings } from './AiSettings';
 
 const wb = window.workbench;
 
@@ -11,7 +11,7 @@ const SECTION_META: Partial<Record<ViewId, { title: string; sub: string }>> = {
   'settings-profile': { title: '个人资料', sub: '称呼与头像,只用于界面展示,存在本机' },
   'settings-general': { title: '通用', sub: '应用行为与启动选项' },
   'settings-appearance': { title: '外观', sub: '界面主题与观感' },
-  'settings-ai': { title: 'AI 助手', sub: '供应商、模型与启用开关(工作台独立配置)' },
+  'settings-ai': { title: 'AI 助手', sub: '管理对话模型与决策模型配置' },
   'settings-data': { title: '待办与数据', sub: '与 To-Do-List 的共享库状态(只读展示)' },
   'settings-notifications': { title: '通知', sub: '提醒与系统通知' },
   'settings-about': { title: '关于', sub: '版本与数据位置' },
@@ -58,7 +58,11 @@ function useAppSettings() {
   const apply = (patch: AppSettingsPatch, sideEffect?: (next: AppSettings) => void): void => {
     if (!settings) return;
     const prev = settings;
-    setSettings({ ...settings, ...patch });
+    setSettings({
+      ...settings,
+      ...patch,
+      profile: patch.profile ? { ...settings.profile, ...patch.profile } : settings.profile,
+    });
     void wb.settings.patch(patch).then(
       (next) => sideEffect?.(next),
       (e) => {
@@ -72,9 +76,8 @@ function useAppSettings() {
 }
 
 // ---------- 通用 ----------
-function GeneralSection({ query, onSnavDefaultChange }: {
+function GeneralSection({ query }: {
   query: string;
-  onSnavDefaultChange(collapsed: boolean): void;
 }) {
   const { settings, error, apply } = useAppSettings();
 
@@ -107,18 +110,6 @@ function GeneralSection({ query, onSnavDefaultChange }: {
       desc: '界面显示语言,更多语言包规划中',
       control: <span className="set-value">简体中文</span>,
     },
-    {
-      key: 'snavDefaultCollapsed',
-      title: '二级导航默认收起',
-      desc: '进入工作台时不自动展开二级目录,点击当前工作台图标可重新展开',
-      control: (
-        <button type="button" className="toggle" role="switch" aria-checked={settings.snavDefaultCollapsed} aria-label="二级导航默认收起"
-          onClick={() => {
-            const next = !settings.snavDefaultCollapsed;
-            apply({ snavDefaultCollapsed: next }, () => onSnavDefaultChange(next));
-          }} />
-      ),
-    },
   ] : [];
 
   return (
@@ -133,12 +124,23 @@ function GeneralSection({ query, onSnavDefaultChange }: {
 }
 
 // ---------- 个人资料(方案 A:设置分区;昵称驱动首页问候与头像首字) ----------
+const AVATAR_COLOR_OPTIONS: { value: AvatarColor; label: string }[] = [
+  { value: 'blue', label: '海蓝' },
+  { value: 'teal', label: '青绿' },
+  { value: 'violet', label: '紫藤' },
+  { value: 'rose', label: '莓红' },
+  { value: 'amber', label: '琥珀' },
+];
+
 const greetWord = (d: Date): string => {
   const h = d.getHours();
   return h < 5 ? '夜深了' : h < 11 ? '早上好' : h < 14 ? '中午好' : h < 18 ? '下午好' : '晚上好';
 };
 
-function ProfileSection({ query }: { query: string }) {
+function ProfileSection({ query, onAvatarColorChange }: {
+  query: string;
+  onAvatarColorChange(color: AvatarColor): void;
+}) {
   const { settings, error, apply } = useAppSettings();
   // null = 未在编辑;编辑中草稿存这里,失焦/回车保存,空值拒存
   const [nameDraft, setNameDraft] = useState<string | null>(null);
@@ -146,11 +148,11 @@ function ProfileSection({ query }: { query: string }) {
   const initial = (name.trim()[0] ?? 'O').toUpperCase();
 
   const saveName = (): void => {
-    if (nameDraft == null) return;
+    if (nameDraft == null || !settings) return;
     const next = nameDraft.trim().slice(0, 20);
     setNameDraft(null);
     if (!next || next === name) return;
-    apply({ profile: { name: next } });
+    apply({ profile: { ...settings.profile, name: next } });
   };
 
   const rows: RowSpec[] = settings ? [
@@ -168,8 +170,21 @@ function ProfileSection({ query }: { query: string }) {
     {
       key: 'avatar',
       title: '头像',
-      desc: '自动取昵称首字,暂不支持自定义图片',
-      control: <span className="avatar-preview">{initial}</span>,
+      desc: '自动取昵称首字,可更改头像颜色',
+      control: (
+        <div className="avatar-settings-control">
+          <span className="avatar-preview" data-avatar-color={settings.profile.avatarColor}>{initial}</span>
+          <TodoSelect className="avatar-color-select" aria-label="头像颜色" value={settings.profile.avatarColor}
+            onChange={(value) => apply({ profile: { ...settings.profile, avatarColor: value as AvatarColor } }, (next) => onAvatarColorChange(next.profile.avatarColor))}
+            options={AVATAR_COLOR_OPTIONS}
+            renderOption={(option) => (
+              <span className="avatar-color-choice">
+                <span className="avatar-color-indicator" data-avatar-color={option.value} aria-hidden="true" />
+                <span>{option.label}</span>
+              </span>
+            )} />
+        </div>
+      ),
     },
     {
       key: 'greet',
@@ -189,10 +204,11 @@ function ProfileSection({ query }: { query: string }) {
   );
 }
 
-// ---------- 外观(界面主题:mist 雾灰墨点 = 默认,sunny 晴蓝 A+ = 备选) ----------
+// ---------- 外观(雾灰轻雾默认,冷灰凝霜与暖砂柔雾可选) ----------
 const THEME_OPTIONS: { value: UiTheme; label: string; desc: string; swatches: string[] }[] = [
-  { value: 'mist', label: '雾灰 · 墨点', desc: '默认 · 暖灰画布 + 墨色激活', swatches: ['#e9eaee', '#ffffff', '#7f9dd3', '#232529'] },
-  { value: 'sunny', label: '晴蓝 A+', desc: '冰蓝画布 + 晴蓝单强调色', swatches: ['#eaf1f7', '#ffffff', '#8fb6da', '#2b78b5'] },
+  { value: 'mist', label: '雾灰 · 轻雾', desc: '默认 · 中性珍珠灰', swatches: ['#e9eaee', '#f7f8fa', '#dce2e9', '#232529'] },
+  { value: 'cool', label: '冷灰 · 凝霜', desc: '冷灰蓝 · 清透分层', swatches: ['#b5c9e6', '#e5eefb', '#8ea9d1', '#232529'] },
+  { value: 'warm', label: '暖砂 · 柔雾', desc: '暖砂灰 · 乳白玻璃', swatches: ['#eee8e3', '#fffaf5', '#e8cfc4', '#232529'] },
 ];
 
 function AppearanceSection({ query, uiTheme, onUiThemeChange }: {
@@ -206,7 +222,7 @@ function AppearanceSection({ query, uiTheme, onUiThemeChange }: {
     {
       key: 'uiTheme',
       title: '界面主题',
-      desc: '全局配色方案,即时生效;布局与按钮位置不受影响',
+      desc: '全局色场与玻璃质感,即时生效;布局与按钮位置不受影响',
       control: (
         <div className="theme-pick" role="radiogroup" aria-label="界面主题">
           {THEME_OPTIONS.map((t) => (
@@ -227,7 +243,7 @@ function AppearanceSection({ query, uiTheme, onUiThemeChange }: {
     <>
       <Rows rows={rows} query={query} />
       {error && <p className="error" role="alert">{error}</p>}
-      {settings && <p className="help">主题只影响配色;玻璃材质、圆角与字体两套方案一致。当前备选主题为原「晴蓝 A+」线上版,雾灰墨点为 2026-09-24 定稿默认。</p>}
+      {settings && <p className="help">三款主题共用布局、圆角与字体;背景色场、玻璃白度和内层表面随主题切换。</p>}
       {!settings && !error && <p className="help" role="status">正在读取设置…</p>}
     </>
   );
@@ -300,116 +316,9 @@ function NotificationsSection({ query }: { query: string }) {
     <>
       <Rows rows={rows} query={query} />
       {error && <p className="error" role="alert">{error}</p>}
-      {settings && <p className="help">提醒由常驻托盘的轮询驱动,关闭后不再弹窗;更改在下一轮询周期(约 15 秒)内生效。通知中心为后续规划。</p>}
+      {settings && <p className="help">提醒由常驻托盘的轮询驱动,关闭后不再弹窗;更改在下一轮询周期(约 15 秒)内生效。</p>}
       {!settings && !error && <p className="help" role="status">正在读取设置…</p>}
     </>
-  );
-}
-
-// ---------- AI 助手(自 AiPanel 设置弹窗整体迁入,单一来源) ----------
-const PROTOCOL_OPTIONS: { value: AIProtocol; label: string }[] = [
-  { value: 'openai-chat', label: 'OpenAI Chat' },
-  { value: 'openai-responses', label: 'OpenAI Responses' },
-  { value: 'anthropic', label: 'Anthropic Messages' },
-];
-
-function AiSection({ query }: { query: string }) {
-  const [config, setConfig] = useState<AiConfig | null>(null);
-  const [name, setName] = useState('');
-  const [endpoint, setEndpoint] = useState('https://api.deepseek.com/v1');
-  const [protocol, setProtocol] = useState<AIProtocol>('openai-chat');
-  const [apiKey, setApiKey] = useState('');
-  const [modelName, setModelName] = useState('');
-  const [providerId, setProviderId] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
-
-  const reload = (): void => {
-    void wb.ai.config().then((raw) => setConfig(raw as AiConfig), (e) => setError(errorText(e)));
-  };
-  useEffect(reload, []);
-
-  useEffect(() => {
-    if (!providerId && config?.providers.length) setProviderId(config.providers[0].id);
-  }, [config?.providers, providerId]);
-
-  const run = (action: () => Promise<unknown>, done?: () => void): void => {
-    if (busy) return;
-    setBusy(true); setError(''); setNotice('');
-    void action().then(
-      () => { setBusy(false); reload(); done?.(); },
-      (e) => { setBusy(false); setError(errorText(e)); },
-    );
-  };
-
-  const enableRow: RowSpec = {
-    key: 'aiEnabled',
-    title: '启用 AI 助手',
-    desc: '工作台独立配置,与 To-Do-List 的 AI 互不影响',
-    control: (
-      <button type="button" className="toggle" role="switch" aria-checked={config?.aiEnabled ?? false} aria-label="启用 AI"
-        disabled={busy} onClick={() => run(() => wb.ai.setEnabled(!config?.aiEnabled))} />
-    ),
-  };
-
-  return (
-    <div className="settings-ai">
-      <Rows rows={[enableRow]} query={query} />
-      <h3 className="set-group-title">供应商</h3>
-      <div className="ai-provider-list">
-        {(config?.providers ?? []).map((p) => (
-          <div key={p.id} className="ai-provider-row">
-            <b>{p.name}</b>
-            <span>{PROTOCOL_OPTIONS.find((o) => o.value === p.protocol)?.label ?? p.protocol}</span>
-            <span>{p.hasKey ? '已存密钥' : '无密钥'}</span>
-            <button className="ai-remove" disabled={busy} onClick={() => run(() => wb.ai.removeProvider(p.id))}>删除</button>
-          </div>
-        ))}
-        {!config?.providers.length && <p className="field-help">还没有供应商。推荐 DeepSeek:端点 https://api.deepseek.com/v1,协议 OpenAI Chat。</p>}
-      </div>
-      <div className="ai-form-grid">
-        <input aria-label="供应商名称" placeholder="名称,如 DeepSeek" value={name} maxLength={30} onChange={(e) => setName(e.target.value)} />
-        <select aria-label="协议" value={protocol} onChange={(e) => setProtocol(e.target.value as AIProtocol)}>
-          {PROTOCOL_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-        <input aria-label="服务地址" placeholder="服务地址(https://…/v1)" value={endpoint} onChange={(e) => setEndpoint(e.target.value)} />
-        <input aria-label="API Key" type="password" placeholder="API Key(本机加密保存)" value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
-        <button className="ai-add" disabled={busy || !name.trim() || !endpoint.trim()}
-          onClick={() => run(() => wb.ai.saveProvider({ kind: 'custom', name, endpoint, protocol, apiKey: apiKey || undefined }), () => { setApiKey(''); setNotice('供应商已保存'); })}>添加供应商</button>
-      </div>
-
-      <h3 className="set-group-title">模型</h3>
-      <div className="ai-provider-list">
-        {(config?.models ?? []).map((m: AIModel) => {
-          const provider = config?.providers.find((p) => p.id === m.providerId);
-          const active = m.id === config?.activeModelId || (!config?.activeModelId && config?.models[0]?.id === m.id);
-          return (
-            <div key={m.id} className={active ? 'ai-provider-row on' : 'ai-provider-row'}>
-              <b>{m.name}</b>
-              <span>{provider?.name ?? ''}</span>
-              {active ? <span className="ai-badge">使用中</span> : <button disabled={busy} onClick={() => run(() => wb.ai.activateModel(m.id))}>启用</button>}
-              <button className="ai-remove" disabled={busy} onClick={() => run(() => wb.ai.removeModel(m.id))}>删除</button>
-            </div>
-          );
-        })}
-        {!config?.models.length && <p className="field-help">为供应商添加至少一个模型(名称或 ID,如 deepseek-chat)。</p>}
-      </div>
-      <div className="ai-form-grid">
-        <select aria-label="所属供应商" value={providerId} onChange={(e) => setProviderId(e.target.value)}>
-          {(config?.providers ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
-        <input aria-label="模型名称" placeholder="模型名称或 ID,如 deepseek-chat" value={modelName} onChange={(e) => setModelName(e.target.value)} />
-        <button className="ai-add" disabled={busy || !providerId || !modelName.trim()}
-          onClick={() => run(() => wb.ai.saveModel({ providerId, name: modelName }), () => { setModelName(''); setNotice('模型已保存'); })}>添加模型</button>
-        <button disabled={busy || !providerId || !modelName.trim()}
-          onClick={() => run(() => wb.ai.test({ providerId, model: modelName }).then((msg) => setNotice(msg)))}>测试连接</button>
-      </div>
-
-      {error && <p className="error" role="alert">{error}</p>}
-      {notice && <p className="field-help" role="status">{notice}</p>}
-      <p className="help">API Key 用系统加密(DPAPI)保存在工作台自己的目录;AI 配置与对话历史均独立于 To-Do-List,仅待办数据同库。</p>
-    </div>
   );
 }
 
@@ -423,20 +332,44 @@ interface AboutInfo {
   todoDbPath: string;
 }
 
-function AboutSection({ query, onPending }: { query: string; onPending(msg: string): void }) {
+function AboutSection({ query }: { query: string }) {
   const [info, setInfo] = useState<AboutInfo | null>(null);
+  const [update, setUpdate] = useState<UpdateStatus | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    void wb.appInfo.about().then(setInfo, (e) => setError(errorText(e)));
+    let active = true;
+    let receivedStatus = false;
+    const off = wb.updater.onStatus(status => {
+      receivedStatus = true;
+      if (active) setUpdate(status);
+    });
+    void wb.appInfo.about().then(value => { if (active) setInfo(value); }, e => { if (active) setError(errorText(e)); });
+    void wb.updater.status().then(status => {
+      if (active && !receivedStatus) setUpdate(status);
+    }, e => { if (active) setError(errorText(e)); });
+    return () => { active = false; off(); };
   }, []);
 
+  const busy = update?.phase === 'checking' || update?.phase === 'downloading';
+  const updateAction = (): void => {
+    setError('');
+    void (update?.phase === 'ready' ? wb.updater.install() : wb.updater.check())
+      .catch(e => setError(errorText(e)));
+  };
   const rows: RowSpec[] = info ? [
     {
       key: 'version',
       title: `${info.name} v${info.version}`,
       desc: `Electron ${info.electron} · Chromium ${info.chrome}`,
-      control: <button className="set-btn" onClick={() => onPending('自动更新将在后续版本提供,当前可从 GitHub Releases 获取')}>检查更新</button>,
+    },
+    {
+      key: 'update',
+      title: '应用更新',
+      desc: update?.enabled ? '自动检查并后台下载，下载完成后可重启安装；退出应用时也会安装。' : update?.message ?? '正在读取更新状态…',
+      control: <button type="button" className="set-btn" disabled={!update?.enabled || busy} aria-busy={busy} onClick={updateAction}>
+        {update?.phase === 'ready' ? '重启并安装' : update?.phase === 'checking' ? '检查中…' : update?.phase === 'downloading' ? '下载中…' : '检查更新'}
+      </button>,
     },
     {
       key: 'userData',
@@ -455,6 +388,8 @@ function AboutSection({ query, onPending }: { query: string; onPending(msg: stri
   return (
     <>
       <Rows rows={rows} query={query} />
+      {update?.enabled && <p className={update.phase === 'error' ? 'error' : 'help'} role={update.phase === 'error' ? 'alert' : 'status'}>{update.message}</p>}
+      {update?.phase === 'downloading' && <progress className="set-update-progress" aria-label="更新下载进度" value={update.progress} max={100} />}
       {error && <p className="error" role="alert">{error}</p>}
       {info && <p className="help">待办模块与上游 To-Do-List 保持零漂移,上游发版后经同步清单移植并跑一致性测试。</p>}
       {!info && !error && <p className="help" role="status">正在读取应用信息…</p>}
@@ -463,20 +398,20 @@ function AboutSection({ query, onPending }: { query: string; onPending(msg: stri
 }
 
 // ---------- 入口 ----------
-export function SettingsView({ view, onPending, onSnavDefaultChange, uiTheme, onUiThemeChange }: {
+export function SettingsView({ view, uiTheme, onUiThemeChange, onAvatarColorChange }: {
   view: ViewId;
-  onPending(msg: string): void;
-  onSnavDefaultChange(collapsed: boolean): void;
   uiTheme: UiTheme;
   onUiThemeChange(theme: UiTheme): void;
+  onAvatarColorChange(color: AvatarColor): void;
 }) {
   const [query, setQuery] = useState('');
+  const searchInput = useRef<HTMLInputElement>(null);
   // 切换分区时清空搜索,避免"看起来没内容"的错觉
   useEffect(() => setQuery(''), [view]);
   const meta = SECTION_META[view] ?? { title: '设置', sub: '' };
 
   return (
-    <div className="settings-page">
+    <div className={view === 'settings-ai' ? 'settings-page settings-ai-page' : 'settings-page'}>
       <div className="page-head">
         <div>
           <h1>{meta.title}</h1>
@@ -485,16 +420,17 @@ export function SettingsView({ view, onPending, onSnavDefaultChange, uiTheme, on
         <span className="spacer" />
         <div className="set-search">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-3.8-3.8" /></svg>
-          <input value={query} placeholder="搜索当前页设置" onChange={(e) => setQuery(e.target.value)} />
+          <input ref={searchInput} value={query} aria-label="搜索当前页设置" placeholder={view === 'settings-ai' ? '搜索供应商或模型' : '搜索当前页设置'} onChange={(e) => setQuery(e.target.value)} />
+          {query && <IconButton label="清空设置搜索" onClick={() => { setQuery(''); searchInput.current?.focus(); }}><X size={14} /></IconButton>}
         </div>
       </div>
-      {view === 'settings-profile' && <ProfileSection query={query} />}
-      {view === 'settings-general' && <GeneralSection query={query} onSnavDefaultChange={onSnavDefaultChange} />}
+      {view === 'settings-profile' && <ProfileSection query={query} onAvatarColorChange={onAvatarColorChange} />}
+      {view === 'settings-general' && <GeneralSection query={query} />}
       {view === 'settings-appearance' && <AppearanceSection query={query} uiTheme={uiTheme} onUiThemeChange={onUiThemeChange} />}
-      {view === 'settings-ai' && <AiSection query={query} />}
+      {view === 'settings-ai' && <AiSettings query={query} />}
       {view === 'settings-data' && <DataSection query={query} />}
       {view === 'settings-notifications' && <NotificationsSection query={query} />}
-      {view === 'settings-about' && <AboutSection query={query} onPending={onPending} />}
+      {view === 'settings-about' && <AboutSection query={query} />}
     </div>
   );
 }

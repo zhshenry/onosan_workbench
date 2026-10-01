@@ -5,8 +5,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { CopyStore, newCopyDraftInput } from '../modules/copywriting/store';
 import { buildCopyContribution } from '../modules/copywriting/ai';
-import { buildCopySystemPrompt, buildCopyUserMessage } from '../modules/copywriting/prompts';
-import { copyAiActionsSchema, type CopyDraft } from '../shared/copy-contracts';
+import { buildCoachSystemPrompt } from '../modules/copywriting/prompts';
+import { matchXhsPublished, parseXhsNoteUrl } from '../modules/copywriting/xhs-publish';
+import { copyAiActionsSchema, extractXhsTags, type CopyDraft } from '../shared/copy-contracts';
 
 function withStore(run: (store: CopyStore, dir: string) => void): void {
   const dir = mkdtempSync(join(tmpdir(), 'wb-copy-test-'));
@@ -55,39 +56,78 @@ test('草稿库:删除与持久化重载', () => {
     const reloaded = new CopyStore(dir);
     assert.equal(reloaded.all().drafts.length, 1);
     assert.equal(reloaded.all().drafts[0].title, '第二篇');
-    assert.throws(() => store.remove(a.id), /笔记不存在或已删除/);
+    assert.throws(() => store.remove(a.id), /博客不存在或已删除/);
   });
 });
 
-test('提示词:系统提示含模式规则与通用纪律,用户消息含正文与指令', () => {
+test('提示词:教练系统提示含追问规则、通用纪律与草稿快照', () => {
   const draft: CopyDraft = { ...newCopyDraftInput(), ...DRAFT, id: 'x', createdAt: '', updatedAt: '' };
-  const humanize = buildCopySystemPrompt(new Date(), 'humanize', draft);
-  assert.ok(humanize.includes('去 AI 味') && humanize.includes('不新增事实'));
-  assert.ok(humanize.includes('小红书') && humanize.includes('propose_edit'));
-  const titles = buildCopySystemPrompt(new Date(), 'titles', draft);
-  assert.ok(titles.includes('起标题') && titles.includes('propose_titles'));
-  const user = buildCopyUserMessage('humanize', DRAFT.body);
-  assert.ok(user.includes(DRAFT.body) && user.includes('优化'));
+  const prompt = buildCoachSystemPrompt(new Date(), draft);
+  assert.ok(prompt.includes('追问') && prompt.includes('propose_edit') && prompt.includes('propose_title'));
+  assert.ok(prompt.includes('不新增事实') && prompt.includes('小红书'));
+  assert.ok(prompt.includes(DRAFT.title) && prompt.includes(DRAFT.body));
 });
 
 type ToolCall = { name: string; execute: (id: string, params: unknown) => Promise<{ content: { text: string }[] }> };
 
-test('AI 贡献:propose_edit 收集建议并裁剪 notes,propose_titles 校验数量', async () => {
+test('AI 贡献:propose_edit 收集并裁剪 notes,propose_title 单条收集', async () => {
   const draft: CopyDraft = { ...newCopyDraftInput(), ...DRAFT, id: 'x', createdAt: '', updatedAt: '' };
-  const editContribution = buildCopyContribution('humanize', draft);
-  assert.deepEqual(editContribution.toolNames, ['propose_edit']);
-  const tools = editContribution.buildTools() as unknown as ToolCall[];
-  const proposeEdit = tools[0];
-  await proposeEdit.execute('t1', { text: '  改好的正文  ', notes: ['一', '二', '三', '四'] });
-  await proposeEdit.execute('t2', { text: '' });
-  const actions = copyAiActionsSchema.parse(editContribution.collect());
-  assert.equal(actions.length, 1);
+  const contribution = buildCopyContribution(draft);
+  assert.deepEqual(contribution.toolNames, ['propose_edit', 'propose_title']);
+  const tools = contribution.buildTools() as unknown as ToolCall[];
+  await tools[0].execute('t1', { text: '  改好的正文  ', notes: ['一', '二', '三', '四'] });
+  await tools[0].execute('t2', { text: '' });
+  await tools[1].execute('t3', { title: '  标题候选  ' });
+  const actions = copyAiActionsSchema.parse(contribution.collect());
+  assert.equal(actions.length, 2);
   assert.deepEqual(actions[0], { kind: 'edit', text: '改好的正文', notes: ['一', '二', '三'] });
+  assert.deepEqual(actions[1], { kind: 'title', title: '标题候选' });
+});
 
-  const titleContribution = buildCopyContribution('titles', draft);
-  assert.deepEqual(titleContribution.toolNames, ['propose_titles']);
-  const titleTools = titleContribution.buildTools() as unknown as ToolCall[];
-  await titleTools[0].execute('t3', { titles: ['标题一', '标题二'] });
-  const titleActions = copyAiActionsSchema.parse(titleContribution.collect());
-  assert.deepEqual(titleActions, [{ kind: 'titles', titles: ['标题一', '标题二'] }]);
+test('标签提取:去重保序,忽略空标签,单标签最长30字', () => {
+  assert.deepEqual(extractXhsTags('#读书笔记 好用 #自我提升#读书笔记'), ['读书笔记', '自我提升']);
+  assert.deepEqual(extractXhsTags('没有标签的正文'), []);
+  assert.deepEqual(extractXhsTags('# 含空格不完整 #'), []);
+  assert.equal(extractXhsTags(`#${'a'.repeat(40)}`)[0].length, 30);
+});
+
+test('已发布关联:仅接受作品直链,旧草稿可读,关联与移除均不改正文版本', () => {
+  withStore((store, dir) => {
+    const draft = store.save(DRAFT).drafts[0];
+    const unchangedAt = draft.updatedAt;
+    const url = 'https://www.xiaohongshu.com/explore/68aa11223344556677889900?xsec_token=abc';
+    assert.throws(() => store.markXhsPublished(draft.id, 'https://xiaohongshu.com.evil.test/explore/68aa11223344556677889900'));
+    assert.throws(() => store.markXhsPublished(draft.id, 'https://www.xiaohongshu.com:8443/explore/68aa11223344556677889900'));
+    assert.throws(() => store.markXhsPublished(draft.id, 'https://creator.xiaohongshu.com/publish/publish'));
+    assert.equal(store.get(draft.id)?.xhsPublished, undefined);
+    const marked = store.markXhsPublished(draft.id, url).drafts[0];
+    assert.equal(marked.updatedAt, unchangedAt);
+    assert.equal(marked.xhsPublished?.source, 'manual');
+    assert.equal(marked.xhsPublished?.remoteId, '68aa11223344556677889900');
+    assert.equal(marked.xhsPublished?.url, url);
+    assert.equal(new CopyStore(dir).get(draft.id)?.xhsPublished?.url, url);
+    assert.equal(store.save({ id: draft.id, body: '正文更新' }).drafts[0].xhsPublished?.url, url);
+    assert.equal(store.clearXhsPublished(draft.id).drafts[0].xhsPublished, undefined);
+    assert.equal(new CopyStore(dir).get(draft.id)?.xhsPublished, undefined);
+  });
+});
+
+test('已发布匹配:作品 ID 优先,同名笔记只列候选', () => {
+  const draft = {
+    title: '第一篇心得',
+    xhsPublished: {
+      status: 'published' as const, source: 'manual' as const,
+      remoteId: '68aa11223344556677889900',
+      url: 'https://www.xiaohongshu.com/explore/68aa11223344556677889900',
+      confirmedAt: new Date().toISOString(),
+    },
+  };
+  const posts = [
+    { title: '第一篇心得', url: 'https://www.xiaohongshu.com/explore/68aa11223344556677889901', remoteId: '68aa11223344556677889901' },
+    { title: '第一篇心得', url: 'https://www.xiaohongshu.com/explore/68aa11223344556677889902', remoteId: '68aa11223344556677889902' },
+    { title: '改过的平台标题', url: draft.xhsPublished.url, remoteId: draft.xhsPublished.remoteId },
+  ];
+  assert.deepEqual(matchXhsPublished(draft, posts).map((item) => item.reason), ['id', 'title', 'title']);
+  assert.equal(matchXhsPublished({ title: draft.title }, posts).length, 2);
+  assert.equal(parseXhsNoteUrl(draft.xhsPublished.url).remoteId, draft.xhsPublished.remoteId);
 });

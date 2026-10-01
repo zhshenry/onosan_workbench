@@ -1,9 +1,9 @@
 # 八字排盘模块 · 设计与实施方案
 
-> 状态:**v1 已实装**(2026-09-23 评审通过当日落地;`npm run verify` + 33 测试 + 冒烟全绿)
-> 高保真原型:[../design/mockups/bazi-glass.html](../design/mockups/bazi-glass.html)(双击浏览器打开,lunar-javascript 真实排盘)
+> 状态:**已并入命理三盘(2026-09-26)**——本方案是八字单模块阶段(2026-09-23 v1)的记录;当前模块已升级为「命理」三系统(八字/紫微/占星),视觉与功能权威见 [../design/mockups/mingli-glass.html](../design/mockups/mingli-glass.html) 与 design/README.md 对应段,现状为 56 测试全绿。本文档保留作为算法契约与功能范围的历史依据。
+> 单模块阶段高保真原型:[../design/mockups/bazi-glass.html](../design/mockups/bazi-glass.html)(已被 mingli-glass.html 替代,留作视觉演进记录)
 > 参考来源:DSH 插件 `C:\Myself\vibe_coding\dsh_plugins\Veang-Workbench` 的命理工作台(FortunePanel)
-> 日期:2026-09-23
+> 日期:2026-09-23(三盘升级 2026-09-26)
 
 ## 落地记录(与原方案的偏差/补充)
 

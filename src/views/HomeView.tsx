@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus } from '@phosphor-icons/react';
 import { activeToday, insightTarget, localDay, openToday, type Task } from '../../shared/todo-contracts';
+import { isOverdue } from '../../shared/todo-format';
 import { errorText, Modal } from '../../modules/todo/ui/ui';
 import { TaskEditor, type TaskEditorApi, type TodoState } from '../../modules/todo/ui/TaskEditor';
-import { TodayBoard, TodayToolbar, type Mutate } from '../../modules/todo/ui/TodayBoard';
+import { TodayBoard, type Mutate } from '../../modules/todo/ui/TodayBoard';
 import { TaskLibrary } from '../../modules/todo/ui/TaskLibrary';
 import {
-  IconBagua, IconCalendarPlus, IconDocs, IconGamepad, IconGlobe,
-  IconTerminal, IconVideo, IconWeb,
+  IconBagua, IconDocs, IconGamepad, IconVideo, IconWeb,
 } from '../icons';
 
 const wb = window.workbench;
@@ -26,13 +26,15 @@ const editorApi: TaskEditorApi = {
 
 const WEEKDAY_NAMES = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
-export function HomeView({ data, clock, mutate, userName, onPending, onOpenBazi }: {
+export function HomeView({ data, clock, mutate, userName, onPending, onOpenMedia, onOpenBazi, editor, setEditor, onAskAi }: {
   data: TodoState; clock: Date; mutate: Mutate; userName: string;
   onPending: (name: string) => void;
+  onOpenMedia: () => void;
   onOpenBazi: () => void;
+  editor: Task | 'new' | null;
+  setEditor: (t: Task | 'new' | null) => void;
+  onAskAi: (prompt: string) => void;
 }) {
-  const [editor, setEditor] = useState<Task | 'new' | null>(null);
-  const [planView, setPlanView] = useState<'rows' | 'tiles'>('rows');
   const [review, setReview] = useState<string | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [notice, setNotice] = useState('');
@@ -64,7 +66,7 @@ export function HomeView({ data, clock, mutate, userName, onPending, onOpenBazi 
   const openTasks = openToday(data.tasks, today);
   const doneToday = todayTasks.filter((t) => t.status === 'done').length;
   const dueReminders = todayTasks.filter((t) => t.status !== 'done' && t.remindAt && Date.parse(t.remindAt) <= clock.getTime());
-  const overdue = openTasks.filter((t) => t.dueAt && Date.parse(t.dueAt) < clock.getTime() || (!t.dueAt && t.status !== 'done' && `${t.plannedDate}T23:59:59` < new Date(clock).toISOString())).length;
+  const overdue = openTasks.filter((t) => isOverdue(t, clock.getTime())).length;
   const hour = clock.getHours();
   const greeting = hour < 5 ? '夜深了' : hour < 11 ? '早上好' : hour < 14 ? '中午好' : hour < 18 ? '下午好' : '晚上好';
 
@@ -90,7 +92,7 @@ export function HomeView({ data, clock, mutate, userName, onPending, onOpenBazi 
         <div>
           <h1>{userName.trim() ? `${greeting},${userName.trim()}` : greeting}</h1>
           <div className="gsub">
-            {clock.getMonth() + 1}月{clock.getDate()}日 {WEEKDAY_NAMES[clock.getDay()]} · 今天已完成 <b>{doneToday}</b> 项
+            今天已完成 <b>{doneToday}</b> 项
             {openTasks.length > 0 && <> ,还有 <b>{openTasks.length}</b> 项待办</>}
             {overdue > 0 && <> · <span className="bad">逾期 {overdue} 项</span></>}
             {insight && <span className="insight"> · {insight.context}</span>}
@@ -100,19 +102,21 @@ export function HomeView({ data, clock, mutate, userName, onPending, onOpenBazi 
 
       <div className="cols">
         <div className="panel glass todo-panel">
-          <div className="todo-actions">
-            <button className="btn btn-sec btn-sm" onClick={() => setLibraryOpen(v => !v)}>
-              <IconDocs size={14} />
-              事项库
-            </button>
-            <button className="btn btn-sec btn-sm" onClick={() => setEditor('new')}>
-              <IconCalendarPlus size={14} />
-              新增事项
-            </button>
-            <button className="btn btn-pri btn-sm" onClick={() => setEditor('new')}>
-              <Plus size={14} />
-              新增待办
-            </button>
+          <div className="dash-top">
+            <div className="dash-heading">
+              <h1>{clock.getMonth() + 1}月{clock.getDate()}日</h1>
+              <span>{WEEKDAY_NAMES[clock.getDay()]} · 专注当下</span>
+            </div>
+            <div className="dash-actions">
+              <button className="btn btn-sec btn-sm" onClick={() => setLibraryOpen(v => !v)}>
+                <IconDocs size={14} />
+                事项库
+              </button>
+              <button className="btn btn-pri btn-sm" onClick={() => setEditor('new')}>
+                <Plus size={14} />
+                新增
+              </button>
+            </div>
           </div>
 
           {dueReminders.length > 0 && !libraryOpen ? (
@@ -129,12 +133,12 @@ export function HomeView({ data, clock, mutate, userName, onPending, onOpenBazi 
             tasks={data.tasks}
             today={today}
             categoryById={categoryById}
-            planView={planView}
+            planView='rows'
             mutating={false}
             api={editorApi}
             mutate={mutate}
             setEditor={setEditor}
-            toolbar={<TodayToolbar planView={planView} setPlanView={setPlanView} onReview={() => { void wb.todo.review().then(setReview, () => onPending('今日复盘')); }} />}
+            toolbar={<button className='float-review' onClick={() => { void wb.todo.review().then(setReview, () => onPending('今日复盘')); }}>···</button>}
           />
           )}
         </div>
@@ -167,71 +171,42 @@ export function HomeView({ data, clock, mutate, userName, onPending, onOpenBazi 
 
           <div className="panel glass" style={{ marginTop: 16 }}>
             <div className="phead">
-              <span className="ptitle">快捷工具</span>
-            </div>
-            <div className="tools">
-              <div className="tool">
-                <span className="tlabel">
-                  <IconDocs size={15} />
-                  文档中心
-                </span>
-                <span className="hint">规划中 — Office 文档预览与编辑</span>
-              </div>
-              <div className="tool">
-                <span className="tlabel">
-                  <IconGlobe size={15} />
-                  内置浏览器
-                </span>
-                <span className="hint">规划中 — 独立会话的网页查阅</span>
-              </div>
-              <div className="tool">
-                <span className="tlabel">
-                  <IconTerminal size={15} />
-                  终端
-                </span>
-                <span className="hint">规划中 — 挂载常用 CLI 工具</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="panel glass" style={{ marginTop: 16 }}>
-            <div className="phead">
               <span className="ptitle">更多工作台</span>
-              <span className="pcount">规划中 · 图标栏支持自定义排序</span>
+              <span className="pcount">可从左侧图标栏切换工作台</span>
             </div>
             <div className="mgrid">
-              <div className="mitem" onClick={() => onPending('自媒体工作台')}>
+              <button type="button" className="mitem" onClick={onOpenMedia}>
                 <span className="mtile"><IconVideo /></span>
-                <div className="mtext">
-                  <div className="mname">自媒体工作台</div>
-                  <div className="mdesc">选题库、脚本撰写与封面工作流</div>
-                </div>
-                <span className="ntag">规划中</span>
-              </div>
-              <div className="mitem" onClick={() => onPending('个人网页')}>
-                <span className="mtile"><IconWeb /></span>
-                <div className="mtext">
-                  <div className="mname">个人网页</div>
-                  <div className="mdesc">站点搭建、预览与发布管理</div>
-                </div>
-                <span className="ntag">规划中</span>
-              </div>
-              <div className="mitem" onClick={() => onPending('游戏工作台')}>
-                <span className="mtile"><IconGamepad /></span>
-                <div className="mtext">
-                  <div className="mname">游戏工作台</div>
-                  <div className="mdesc">玩法原型、素材与版本管理</div>
-                </div>
-                <span className="ntag">规划中</span>
-              </div>
-              <div className="mitem" onClick={onOpenBazi}>
-                <span className="mtile"><IconBagua /></span>
-                <div className="mtext">
-                  <div className="mname">八字排盘</div>
-                  <div className="mdesc">命盘计算、流年与大运笔记</div>
-                </div>
+                <span className="mtext">
+                  <span className="mname">自媒体工作台</span>
+                  <span className="mdesc">博客编辑、图文发布与我的小红书</span>
+                </span>
                 <span className="ntag">已上线</span>
-              </div>
+              </button>
+              <button type="button" className="mitem" onClick={() => onPending('个人网页')}>
+                <span className="mtile"><IconWeb /></span>
+                <span className="mtext">
+                  <span className="mname">个人网页</span>
+                  <span className="mdesc">站点搭建、预览与发布管理</span>
+                </span>
+                <span className="ntag">规划中</span>
+              </button>
+              <button type="button" className="mitem" onClick={() => onPending('游戏工作台')}>
+                <span className="mtile"><IconGamepad /></span>
+                <span className="mtext">
+                  <span className="mname">游戏工作台</span>
+                  <span className="mdesc">玩法原型、素材与版本管理</span>
+                </span>
+                <span className="ntag">规划中</span>
+              </button>
+              <button type="button" className="mitem" onClick={onOpenBazi}>
+                <span className="mtile"><IconBagua /></span>
+                <span className="mtext">
+                  <span className="mname">命理</span>
+                  <span className="mdesc">八字 · 紫微斗数 · 占星</span>
+                </span>
+                <span className="ntag">已上线</span>
+              </button>
             </div>
           </div>
         </div>
@@ -254,7 +229,13 @@ export function HomeView({ data, clock, mutate, userName, onPending, onOpenBazi 
           <div className="form-body">
             <div className="sheet-card">
               <pre className="review-content">{review}</pre>
-              <p className="field-help">以上由本地事项记录生成,与 To-Do-List 同库同源。</p>
+              <p className="field-help">以上由本地事项记录生成,与 To-Do-List 同库同源。点击下方按钮,会把相关事项发送到已配置的模型进行总结。</p>
+              <button
+                className="btn btn-pri btn-sm"
+                onClick={() => { setReview(null); onAskAi('请根据今日待办、日程和进展生成简短的中文每日复盘:完成事项、未完成事项、明日建议。只返回总结,不修改任何事项。'); }}
+              >
+                在 AI 助手中总结
+              </button>
             </div>
           </div>
         </Modal>

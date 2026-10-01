@@ -78,13 +78,6 @@ export const IconSearch = (p: P) => (
   </svg>
 );
 
-export const IconBell = (p: P) => (
-  <svg {...base(p)}>
-    <path d="M18 9.8a6 6 0 1 0-12 0c0 4.2-1.8 5.8-1.8 5.8h15.6S18 14 18 9.8Z" />
-    <path d="M10.2 19a2 2 0 0 0 3.6 0" />
-  </svg>
-);
-
 export const IconPlus = (p: P) => (
   <svg {...base(p)} strokeWidth={2}>
     <path d="M12 5v14M5 12h14" />
@@ -172,13 +165,6 @@ export const IconForward = (p: P) => (
 export const IconRefresh = (p: P) => (
   <svg {...base({ size: 14, strokeWidth: 1.9, ...p })}>
     <path d="M20 12a8 8 0 1 1-2.4-5.7M20 3.8v3.4h-3.4" />
-  </svg>
-);
-
-export const IconCollapse = (p: P) => (
-  <svg {...base({ size: 16, strokeWidth: 1.7, ...p })}>
-    <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
-    <path d="M9.5 4.5v15M14.5 10l-2 2 2 2" />
   </svg>
 );
 
