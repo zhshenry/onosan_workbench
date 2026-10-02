@@ -91,7 +91,7 @@ try {
   await check('Fresh isolated task database is empty', async () => assert.equal((await state()).tasks.length, 0));
   await screenshot('initial.png');
   await check('Collapse default AI overlay through its normal toolbar control', async () => {
-    await page.getByRole('button', { name: '收起 AI 助手', exact: true }).click();
+    await page.locator('.topbar').getByRole('button', { name: '收起 AI 助手', exact: true }).click();
     await page.locator('#workbench-ai-panel').waitFor({ state: 'hidden' });
   });
   await check('Cancel empty new-task editor without creating a task', async () => {
