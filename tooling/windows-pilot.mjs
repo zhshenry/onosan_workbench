@@ -74,7 +74,8 @@ async function launch() {
   assert.equal(path.resolve(about.todoDbPath).toLowerCase(), path.join(dataRoot, 'To-Do-List', 'tasks.db').toLowerCase());
   const updater = await page.evaluate(() => window.workbench.updater.status());
   assert.equal(updater.enabled, false, 'Pilot must not contact the real update feed');
-  report.launch.push({ ...metadata, todoDbPath: about.todoDbPath, updaterEnabled: updater.enabled });
+  const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight, devicePixelRatio }));
+  report.launch.push({ ...metadata, viewport, todoDbPath: about.todoDbPath, updaterEnabled: updater.enabled });
 }
 async function doneLibrary() {
   const home = page.locator('#view-home');
@@ -89,6 +90,10 @@ try {
   await check('Launch actual installed executable with isolated data and updater disabled', launch);
   await check('Fresh isolated task database is empty', async () => assert.equal((await state()).tasks.length, 0));
   await screenshot('initial.png');
+  await check('Collapse default AI overlay through its normal toolbar control', async () => {
+    await page.getByRole('button', { name: '收起 AI 助手', exact: true }).click();
+    await page.locator('#workbench-ai-panel').waitFor({ state: 'hidden' });
+  });
   await check('Cancel empty new-task editor without creating a task', async () => {
     await page.locator('#view-home').getByRole('button', { name: '新增', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: '新增事项', exact: true });

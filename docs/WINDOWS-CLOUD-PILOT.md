@@ -8,7 +8,7 @@ The pilot lives only on `pilot/windows-cloud-acceptance-20261002` and runs on pu
 2. Windows: fresh locked dependencies, explicit locked Electron runtime install (Electron 44 no longer has an npm postinstall hook), unit tests (including Windows packaging fixtures), full verify, authentic unsigned NSIS build via electron-builder with `--publish never`.
 3. Silent `/S /currentuser` installation to a disposable directory under `RUNNER_TEMP`. Verify installer exit code, installed executable/uninstaller, package version and exact main-bundle hash.
 4. Playwright launches the **installed executable**, with no checkout entry script. Assert `app.isPackaged`, installed `process.execPath`, installed app location, isolated data paths and disabled updater.
-5. Real UI actions: cancel empty creation; create a synthetic task; edit title/note; cancel completion once; confirm completion; view the completed library; choose exit-on-close; close using the window's close button.
+5. Real UI actions: collapse the default AI panel using its toolbar control (it overlays content below the 1160 CSS-pixel breakpoint); cancel empty creation; create a synthetic task; edit title/note; cancel completion once; confirm completion; view the completed library; choose exit-on-close; close using the window's close button.
 6. Relaunch the same installed executable with the same synthetic directory. Verify the exact task ID, edited title/note, completed status and saved close setting; show the task in the completed library.
 
 Only reads/assertions use the existing preload API. No task creation/edit/completion is replaced by direct database access or mocked IPC. Playwright's Electron support is experimental: actual packaged-app launch must pass before a flow can be claimed.
