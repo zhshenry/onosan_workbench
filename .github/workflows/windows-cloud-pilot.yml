@@ -1,0 +1,94 @@
+name: Windows cloud acceptance pilot
+
+on:
+  push:
+    branches: [pilot/windows-cloud-acceptance-20261002]
+    paths:
+      - '.github/workflows/windows-cloud-pilot.yml'
+      - 'tooling/windows-pilot*'
+      - 'tooling/pilot-artifacts.mjs'
+      - 'tests/windows-pilot.test.ts'
+      - 'package*.json'
+      - 'electron/**'
+      - 'modules/**'
+      - 'src/**'
+      - 'shared/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-cloud-pilot-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+jobs:
+  linux-baseline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install locked dependencies without browser downloads or cache uploads
+        run: npm ci --no-audit --no-fund
+      - name: Unit tests
+        run: npm test
+      - name: Typography, types and production build
+        run: npm run verify
+
+  windows-installed-app:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    env:
+      # Use official upstream downloads instead of the repository's local mirror defaults.
+      ELECTRON_MIRROR: 'https://github.com/electron/electron/releases/download/'
+      ELECTRON_BUILDER_BINARIES_MIRROR: 'https://github.com/electron-userland/electron-builder-binaries/releases/download/'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install locked Windows dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Download the locked Electron Windows runtime explicitly
+        run: node node_modules/electron/install.js
+      - name: Unit tests including Windows release packaging fixture
+        run: npm test
+      - name: Typography, types and production build
+        run: npm run verify
+      - name: Build real NSIS installer without release upload or portable ZIP
+        run: node node_modules/electron-builder/cli.js --win nsis --x64 --publish never --config.electronDist=node_modules/electron/dist
+      - name: Silent current-user installation into disposable runner directory
+        shell: pwsh
+        run: ./tooling/windows-pilot-install.ps1
+      - name: Installed app UI flow and same-version persistence
+        run: npm run test:windows-pilot
+      - name: Enforce screenshot/report allowlist and 20 MB upload ceiling
+        id: evidence
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path -LiteralPath 'test-results/windows-pilot') {
+            node tooling/pilot-artifacts.mjs test-results/windows-pilot
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            'safe=true' | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          }
+      - name: Retain only small screenshots and reports for 3 days
+        if: always() && steps.evidence.outputs.safe == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-cloud-pilot-${{ github.run_id }}-${{ github.run_attempt }}
+          path: test-results/windows-pilot/*
+          if-no-files-found: error
+          retention-days: 3
+          compression-level: 6
