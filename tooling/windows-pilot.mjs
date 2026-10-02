@@ -138,8 +138,8 @@ try {
       const timer = setTimeout(() => reject(new Error('Installed process did not exit after UI close')), 20000);
       application.process().once('exit', code => { clearTimeout(timer); code === 0 ? resolve() : reject(new Error(`Exit code ${code}`)); });
     });
-    await page.locator('.wbtn.close').click();
-    await exited;
+    // Attach both rejection handlers immediately, including if clicking closes the target.
+    await Promise.all([exited, page.locator('.wbtn.close').click()]);
     application = undefined; page = undefined;
   });
   await check('Relaunch same installed executable and verify persisted task and setting', async () => {

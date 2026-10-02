@@ -1,6 +1,6 @@
 // Only bounded synthetic screenshots and reports may leave the hosted runner.
 import assert from 'node:assert/strict';
-import { lstat, readFile, readdir, realpath } from 'node:fs/promises';
+import { lstat, readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -9,9 +9,13 @@ const allowed = new Set(['initial.png', 'created.png', 'edited.png', 'completed.
 export async function inspectPilotArtifacts(directory, maxBytes = MAX_ARTIFACT_BYTES) {
   assert.ok(Number.isSafeInteger(maxBytes) && maxBytes > 0);
   const root = path.resolve(directory);
-  assert.equal((await lstat(root)).isSymbolicLink(), false, 'Artifact directory must not be a link');
-  const actualRoot = await realpath(root);
-  assert.equal(process.platform === 'win32' ? actualRoot.toLowerCase() : actualRoot, process.platform === 'win32' ? root.toLowerCase() : root, 'Artifact directory must not traverse a link');
+  // Walk actual entries rather than comparing strings: Windows TEMP may use an
+  // 8.3 alias (RUNNER~1) for the same non-linked directory. Reject links at every level.
+  for (let current = root; ; current = path.dirname(current)) {
+    const entry = await lstat(current);
+    assert.ok(entry.isDirectory() && !entry.isSymbolicLink(), 'Artifact directory must not traverse a link');
+    if (path.dirname(current) === current) break;
+  }
   const names = (await readdir(root)).sort();
   assert.ok(names.length > 0, 'No pilot evidence was produced');
   let bytes = 0;

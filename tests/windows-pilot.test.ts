@@ -44,4 +44,8 @@ test('Windows pilot refuses evidence symlinks', { skip: process.platform === 'wi
   await writeFile(path.join(directory, 'report.md'), 'synthetic');
   await symlink(path.join(directory, 'report.md'), path.join(directory, 'report.json'));
   await assert.rejects(inspectPilotArtifacts(directory), /non-regular artifact/);
+  await mkdir(path.join(directory, 'evidence', 'nested'), { recursive: true });
+  await writeFile(path.join(directory, 'evidence', 'nested', 'report.json'), '{}');
+  await symlink(path.join(directory, 'evidence'), path.join(directory, 'linked-parent'), 'dir');
+  await assert.rejects(inspectPilotArtifacts(path.join(directory, 'linked-parent', 'nested')), /must not traverse a link/);
 });
