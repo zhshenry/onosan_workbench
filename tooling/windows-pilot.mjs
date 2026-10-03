@@ -21,6 +21,10 @@ const editedTitle = `${title} edited`;
 const note = 'Synthetic acceptance fixture only. No personal data or external services.';
 const report = {
   status: 'running', commit: process.env.GITHUB_SHA, runId,
+  runAttempt: process.env.GITHUB_RUN_ATTEMPT ?? 'local',
+  event: process.env.WORKBENCH_CI_EVENT,
+  headCommit: process.env.WORKBENCH_CI_HEAD_SHA ?? process.env.GITHUB_SHA,
+  baseCommit: process.env.WORKBENCH_CI_BASE_SHA || null,
   platform: process.platform, version: install.version, installer: install,
   checks: [], screenshots: [], launch: [], errors: [],
   limitations: ['Silent NSIS installation only; no native wizard, UAC or SmartScreen assessment', 'Isolated test mode disables real auto-update and launch-at-login registration', 'Same-version relaunch only; no cross-version upgrade, Office conversion or AI/network coverage', 'Playwright Electron automation is experimental; launch is separately asserted'],
@@ -169,7 +173,7 @@ try {
   report.finishedAt = new Date().toISOString();
   await writeFile(path.join(reportDirectory, 'report.json'), JSON.stringify(report, null, 2));
   const markdown = [
-    '# Windows installed-app cloud pilot', '', `Status: ${report.status}`, `Commit: ${report.commit}`, `Run: ${runId}`, `Version: ${report.version}`, '',
+    '# Windows installed-app cloud pilot', '', `Status: ${report.status}`, `Tested commit: ${report.commit}`, `Head commit: ${report.headCommit}`, `Base commit: ${report.baseCommit ?? 'not a PR'}`, `Event: ${report.event ?? 'local'}`, `Run: ${runId}`, `Attempt: ${report.runAttempt}`, `Version: ${report.version}`, '',
     '## Evidence', ...report.checks.map(value => `- ${value.status}: ${value.name} (${value.durationMs}ms)`), '',
     '## Screenshots', ...report.screenshots.map(name => `- [${name}](${name})`), '',
     '## Coverage boundaries', ...report.limitations.map(value => `- ${value}`), '',

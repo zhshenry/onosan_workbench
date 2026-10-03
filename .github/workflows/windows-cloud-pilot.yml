@@ -1,28 +1,28 @@
 name: Windows cloud acceptance pilot
 
 on:
+  # Draft PRs run too. Branch pushes are deliberately main-only to avoid
+  # running twice for a feature branch that already has an open PR.
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
   push:
-    branches: [pilot/windows-cloud-acceptance-20261002]
-    paths:
-      - '.github/workflows/windows-cloud-pilot.yml'
-      - 'tooling/windows-pilot*'
-      - 'tooling/pilot-artifacts.mjs'
-      - 'tests/windows-pilot.test.ts'
-      - 'package*.json'
-      - 'electron/**'
-      - 'modules/**'
-      - 'src/**'
-      - 'shared/**'
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: windows-cloud-pilot-${{ github.ref }}
+  group: windows-cloud-pilot-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
   PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+  # pull_request checks out GitHub's proposed merge, not the head alone.
+  WORKBENCH_CI_EVENT: ${{ github.event_name }}
+  WORKBENCH_CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  WORKBENCH_CI_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
 
 jobs:
   linux-baseline:
@@ -73,7 +73,8 @@ jobs:
         run: ./tooling/windows-pilot-install.ps1
       - name: Installed app UI flow and same-version persistence
         run: npm run test:windows-pilot
-      - name: Enforce screenshot/report allowlist and 20 MB upload ceiling
+      # The only artifact upload in the entire run. Linux produces no artifact.
+      - name: Enforce screenshot/report allowlist and 20 MB total run ceiling
         id: evidence
         if: always()
         shell: pwsh
@@ -87,7 +88,9 @@ jobs:
         if: always() && steps.evidence.outputs.safe == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: windows-cloud-pilot-${{ github.run_id }}-${{ github.run_attempt }}
+          name: windows-cloud-pilot-${{ github.run_id }}
+          # A re-run replaces the same run's evidence instead of accumulating it.
+          overwrite: true
           path: test-results/windows-pilot/*
           if-no-files-found: error
           retention-days: 3
