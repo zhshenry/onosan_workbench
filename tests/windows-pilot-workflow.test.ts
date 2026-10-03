@@ -5,8 +5,19 @@ import test from 'node:test';
 // These are intentionally narrow source-contract checks, not a YAML parser or
 // a simulation of GitHub's event delivery. Real PR CI verifies the parsed file.
 const workflow = readFileSync(new URL('../.github/workflows/windows-cloud-pilot.yml', import.meta.url), 'utf8');
-const source = workflow.split('\n').filter(line => !line.trimStart().startsWith('#')).join('\n');
+function sourceContract(text: string) {
+  // Windows checkout normally uses CRLF; match the same config on both runners.
+  return text.replace(/\r\n?/g, '\n').split('\n').filter(line => !line.trimStart().startsWith('#')).join('\n');
+}
+const source = sourceContract(workflow);
 const triggers = source.split('\non:\n')[1]?.split('\npermissions:\n')[0];
+
+test('Windows CI source contract accepts both LF and CRLF checkout line endings', () => {
+  const lf = workflow.replace(/\r\n?/g, '\n');
+  assert.equal(sourceContract(lf), source);
+  assert.equal(sourceContract(lf.replace(/\n/g, '\r\n')), source);
+  assert.doesNotMatch(source, /\r/);
+});
 
 test('Windows CI has PR, main push and manual routes without duplicate feature pushes', () => {
   assert.equal(triggers?.trim(), [
