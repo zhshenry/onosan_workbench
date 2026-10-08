@@ -25,8 +25,9 @@ The draft adds a manual workflow, bounded PNG adapter, render/upload separation
 and mock regression tests. It has not been dispatched on Actions, has not
 rendered this real prototype, and has not uploaded or visually reviewed its
 result. Ordinary PR CI runs unit/build/Windows checks, not this manual workflow.
-No screenshot, artifact, base64 payload, cache upload, new service or secret is
-created by opening this PR.
+Opening this PR does not render or publish the candidate prototype image. The
+existing ordinary CI retains its established acceptance screenshots/reports; this
+pilot does not add an image artifact, base64 payload, cache upload, service or secret.
 
 ## Security and retention
 
