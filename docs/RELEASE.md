@@ -2,6 +2,10 @@
 
 Ono Workbench 与 To-Do-List 采用相同发布顺序：**同步版本与 CHANGELOG → 测试、提交及推送 main 和版本标签 → `npm run release` → 核验正式 Release 与下载资产**。统一通过 GitHub CLI 的 `gh release` 发布到 `zhshenry/onosan_workbench`。
 
+## OnO 审批边界（规范草稿）
+
+[OnO 工作流程](ONO-ISSUE-WORKFLOW.md) 与 [发布 issue 模板](templates/ONO-COMMENTS.md) 提议将方案、合入、发版设为三个独立关口。下列命令是已有发布操作参考，不构成执行授权；OnO 任务应通过独立 PR 合入，不能据此直接修改/推送 main。版本及 CHANGELOG 变更也须进入候选改动集合，待候选 SHA 的 main 验收及明确版本/SHA 发版批准后才创建/推送对应标签并发布。新增提交或集合变化使旧批准失效。该门禁尚待实现，本次不改变发布脚本、不合入、不发布。
+
 ## 固定发布步骤
 
 1. 同步 `package.json`、`package-lock.json` 根版本与 `packages[""].version`，在 `CHANGELOG.md` 顶部按 Keep a Changelog 格式补齐 `## [版本] - 日期` 和变更条目。可用 `npm version 新版本 --no-git-tag-version` 更新两个版本文件。首版为 `0.1.0`，实际发布状态以 [GitHub Releases](https://github.com/zhshenry/onosan_workbench/releases) 为准。
