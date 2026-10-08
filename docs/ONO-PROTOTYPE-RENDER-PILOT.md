@@ -136,3 +136,34 @@ This addresses the previous gap: generic YAML parsing and string tests did not
 validate expression-context availability. Passing actionlint still does not
 prove a real runner can launch Chromium, render the prototype, or publish it.
 The manual render/upload remains unexecuted and separately authorized.
+
+## Safe render-stage diagnostics
+
+The first real manual run at `b204258`
+([37794111646](https://github.com/zhshenry/onosan_workbench/actions/runs/37794111646))
+installed the renderer, entered its Node program and stopped before publication.
+Its generic catch suppressed the underlying error. That run does **not** establish
+whether browser launch, page readiness or PNG handling caused the failure.
+
+The diagnostic-only update logs finite start/passed stage markers for preflight,
+import, environment, browser_launch, page_load, assets, screenshot, png, output
+and cleanup. Failures report only an allowlisted stage and error code. Known
+system/timeout errors and a small set of explicit browser-launch diagnostics are
+mapped to fixed codes; unmatched errors remain OPERATION_FAILED. Raw messages,
+stacks, environment values, paths, HTML, page-console output and arbitrary
+exception properties are never serialized. Known browser text is inspected only
+to select a fixed code; it is not printed. Existing successful image hashes remain
+part of normal provenance output.
+
+Browser close is attempted after any post-launch failure. If it also fails, its
+safe cleanup code is reported while the primary failure is preserved. Cleanup
+failure after an otherwise successful capture still fails the process, so the
+publication step cannot proceed. Existing always-run temporary-file cleanup is
+unchanged. The in-process dependency adapters are for mock unit tests only; they
+cannot be selected through workflow inputs.
+
+Tests simulate each phase and hostile exception values. This update does not
+weaken the Chromium sandbox, network namespace, CSP, no-secret rendering, source
+binding or upload controls. It does not apply a guessed root-cause fix. A real
+manual diagnostic run with `post_attachment=false` requires separate approval of
+the new main SHA after merge; it has not been performed as part of this update.
