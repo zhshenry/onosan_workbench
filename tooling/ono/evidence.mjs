@@ -80,7 +80,8 @@ const https = value => {
   try { const u = new URL(value); return u.protocol === 'https:' && !u.username && !u.password; } catch { return false; }
 };
 
-export async function checkDesign({ target, ui, nonUiReason, plan, comment, images, visual }, readImage, verifyVisual = async () => false) {
+export async function checkDesign(input, readImage, verifyVisual = async () => false) {
+  const { target, ui, nonUiReason, plan, comment, images, visual } = structuredClone(input);
   targetKey(target);
   requireThat(typeof ui === 'boolean', 'UI_SCOPE_REQUIRED');
   if (!ui) {
@@ -113,7 +114,8 @@ export function visualBinding(target, plan, comment, images) {
   return hash(JSON.stringify([targetKey(target), hash(plan), hash(comment), images]));
 }
 
-export async function checkAcceptance({ target, expected, checks, artifacts }, readArtifact, verifyPersistence = async () => false, now = Date.now()) {
+export async function checkAcceptance(input, readArtifact, verifyPersistence = async () => false, now = Date.now()) {
+  const { target, expected, checks, artifacts } = structuredClone(input);
   requireThat(target.kind !== 'plan', 'ACCEPTANCE_REQUIRES_COMMIT'); targetKey(target);
   requireThat(expected?.head === target.sha && /^[a-f0-9]{40}$/.test(expected.tested) &&
     (target.kind === 'merge' ? expected.event === 'pull_request' && /^[a-f0-9]{40}$/.test(expected.base) :
@@ -156,6 +158,7 @@ export async function checkAcceptance({ target, expected, checks, artifacts }, r
  * none is implemented by accepting claims supplied in issue text.
  */
 export async function checkTaskEvidence(task, adapters) {
+  task = structuredClone(task);
   const target = task.target;
   const design = await checkDesign({ ...task.design, target: { ...target, kind: 'plan' } }, adapters.readImage, adapters.verifyVisual);
   let acceptance = null;

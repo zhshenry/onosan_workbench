@@ -51,6 +51,7 @@ export function sourceDigest(source) {
   return digest([source.id, source.url, source.author, source.createdAt, source.updatedAt, source.body]);
 }
 export async function checkApproval(source, target, ownComments, verifyHuman = async () => false, now = Date.now()) {
+  source = structuredClone(source); target = structuredClone(target); ownComments = [...ownComments];
   requireThat(source && typeof source.id === 'string' && /^[0-9]+$/.test(source.id) &&
     typeof source.author === 'string' && source.author.trim().length > 0 && source.repository === REPOSITORY &&
     source.thread === (target.kind === 'merge' ? `pr:${target.pr}` : `issue:${target.issue}`), 'APPROVAL_WRONG_THREAD');
@@ -146,6 +147,7 @@ export class WorkflowCore {
     return { before, approval, evidence };
   }
   async run(request, lease) {
+    request = structuredClone(request); lease = structuredClone(lease);
     requireThat(word(request.id) && !['__proto__', 'constructor', 'prototype'].includes(request.id), 'INVALID_OPERATION_ID');
     const checked = await this.validate(request, lease);
     const operation = this.store.guarded(lease, this.clock(), s => {

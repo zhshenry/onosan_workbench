@@ -341,3 +341,16 @@ test('evidence changes while simulation is interrupted block finalization and pr
   await assert.rejects(f.core.recover('operation1', f.lease), /EVIDENCE_CHANGED_DURING_OPERATION/);
   assert.equal(f.executor.calls, 1);
 });
+
+test('caller mutation across await cannot change checked request or attested source', async () => {
+  const f = fixture(); let release;
+  f.core.read = () => new Promise(resolve => { release = () => resolve({ ...POLICY, content, conflicts: [] }); });
+  const running = f.core.run(f.request, f.lease);
+  f.request.id = 'mutated-operation'; f.request.target.issue = 99;
+  release();
+  const result = await running; assert.equal(result.id, 'operation1'); assert.equal(result.issue, 3);
+  const t = target(), s = source(t); let resume;
+  const check = checkApproval(s, t, [], () => new Promise(resolve => { resume = () => resolve(true); }), NOW);
+  s.author = 'mutated'; t.planVersion = 'v99'; resume();
+  const approval = await check; assert.equal(approval.author, 'same-account'); assert.equal(approval.targetKey, targetKey(target()));
+});
