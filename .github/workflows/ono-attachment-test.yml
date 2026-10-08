@@ -1,0 +1,70 @@
+name: OnO native attachment test (manual only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_issue:
+        description: 'Exact existing issue approved in the main conversation (no default)'
+        required: true
+        type: string
+      approved_sha:
+        description: 'Full approved main commit SHA; must equal this run and current main'
+        required: true
+        type: string
+      approval_id:
+        description: 'Unique approval marker agreed in main conversation; reuse for recovery'
+        required: true
+        type: string
+      post_attachment:
+        description: 'Explicitly post ONE public synthetic PNG comment (requires separate approval)'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ono-native-attachment-test
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'zhshenry/onosan_workbench' && github.repository_id == '1372377655' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Reject wrong or unapproved revision before checkout
+        env:
+          APPROVED_SHA: ${{ inputs.approved_sha }}
+        run: |
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_SHA" = "$APPROVED_SHA"
+          [[ "$APPROVED_SHA" =~ ^[a-f0-9]{40}$ ]]
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+      - name: Install official pinned gh without credentials
+        timeout-minutes: 2
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ono-gh"
+          cd "$RUNNER_TEMP/ono-gh"
+          curl --fail --silent --show-error --location --connect-timeout 15 --max-time 90 --proto '=https' --tlsv1.2 \
+            https://github.com/cli/cli/releases/download/v2.102.0/gh_2.102.0_linux_amd64.tar.gz -o gh.tar.gz
+          echo 'bb766f710eef8ede859c18578c72c327597cd4c8a85b06001b1f3843c6019386  gh.tar.gz' | sha256sum --check --strict
+          tar -xzf gh.tar.gz
+          ./gh_2.102.0_linux_amd64/bin/gh --version | grep -F 'gh version 2.102.0 '
+      - name: Preflight and explicitly approved single attachment probe
+        timeout-minutes: 10
+        env:
+          GH_TOKEN: ${{ secrets.ONOSAN_GH_TOKEN }}
+          APPROVED_SHA: ${{ inputs.approved_sha }}
+          TARGET_ISSUE: ${{ inputs.target_issue }}
+          APPROVAL_ID: ${{ inputs.approval_id }}
+          POST_ATTACHMENT: ${{ inputs.post_attachment }}
+        run: node tooling/ono/attachment-test.mjs
