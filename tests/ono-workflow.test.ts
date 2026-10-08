@@ -7,7 +7,9 @@ import { POLICY, REPOSITORY, hash, readPolicy, targetKey, approvalCommand, sourc
 import { decodePng, embeddedImages, checkDesign, visualBinding, checkAcceptance, checkTaskEvidence } from '../tooling/ono/evidence.mjs';
 
 const NOW = Date.parse('2026-10-08T02:00:00Z');
-const content = readFileSync(new URL('../docs/ONO-ISSUE-WORKFLOW.md', import.meta.url), 'utf8');
+// Historical v1 bytes from POLICY.commit/path: test fixture only, never current instructions.
+// Keep the production pin unchanged until a separately reviewed runtime policy migration.
+const content = readFileSync(new URL('./fixtures/ono-policy-v1-1fbb152.txt', import.meta.url), 'utf8');
 const policyRead = async () => ({ ...POLICY, content, conflicts: [] });
 const target = () => ({ repository: REPOSITORY, issue: 3, kind: 'plan', planVersion: 'v1', planDigest: hash('fixture plan') });
 function source(t = target()) {
@@ -40,6 +42,14 @@ test('fixed repository policy is reread, CRLF-normalized, and rejects missing/re
     await assert.rejects(readPolicy(async () => patch === null ? null : ({ ...await policyRead(), ...patch })));
   }
   await assert.rejects(readPolicy(async () => { throw new Error('unreadable'); }), /unreadable/);
+});
+
+test('current human workflow revision cannot impersonate the historical runtime policy', async () => {
+  const current = readFileSync(new URL('../docs/ONO-ISSUE-WORKFLOW.md', import.meta.url), 'utf8');
+  assert.equal(POLICY.commit, '1fbb152818b02e6a7163e420dfc7725c955c3339');
+  assert.equal(hash(content.replace(/\r\n/g, '\n')), POLICY.sha256);
+  assert.notEqual(hash(current.replace(/\r\n/g, '\n')), POLICY.sha256);
+  await assert.rejects(readPolicy(async () => ({ ...POLICY, content: current, conflicts: [] })), /POLICY_CHANGED/);
 });
 
 test('all three approvals have explicit distinct targets and no default human trust', async () => {

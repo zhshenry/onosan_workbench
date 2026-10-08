@@ -2,6 +2,12 @@
 
 关联 [issue #3](https://github.com/zhshenry/onosan_workbench/issues/3)；用户在主对话已批准本次无新增服务权限/费用的实现范围，方案已落 issue 的 `[OnO]` comment。该代理评论不是未来运行器可消费的人工批准。规范基线为 [1fbb152 的工作流程](https://github.com/zhshenry/onosan_workbench/blob/1fbb152818b02e6a7163e420dfc7725c955c3339/docs/ONO-ISSUE-WORKFLOW.md)。
 
+## 文档修订与固定规范的边界
+
+当前[人工流程文档](ONO-ISSUE-WORKFLOW.md) 已提出 v1.1 修订：OnO 使用 dot 自带云电脑开发/协调，GitHub Actions Linux/Windows 测试验收；不依赖用户本地，不自行切换保存 Codex 云环境；图片采用 GitHub 原生附件，方案/comment 复用同一 URL，不额外备份。
+
+本次不修改 `core.mjs` 的 `POLICY` commit/hash，也不改生产检查逻辑。core-v1 仍只接受上述固定 v1 内容。测试读取 `tests/fixtures/ono-policy-v1-1fbb152.txt` 的历史字节，保留篡改拒绝并验证当前文档不能冒充旧 pin；该夹具仅用于旧版兼容测试，不是当前工作指令。v1.1 的 runtime pin 迁移、适配器验证与启用尚未完成，须后续单独审阅验证；此 PR 不能宣称自动运行器已就绪。
+
 ## 目标、范围和非目标
 
 为未来运行器提供可测试的失败关闭核心：固定规范读取、明确审批绑定、单次消费、状态前置条件、模拟租约与操作恢复，以及设计/验收证据检查。代码位于 [core.mjs](../tooling/ono/core.mjs)、[evidence.mjs](../tooling/ono/evidence.mjs)，回归用例位于 [ono-workflow.test.ts](../tests/ono-workflow.test.ts)。
@@ -47,7 +53,9 @@ reader 打开图片并返回完整字节，失败即拒绝；核心核对哈希�
 
 `checkAcceptance` 对 trusted `expected` 的当前 head/base/tested SHA、event、run、attempt 核验各检查结果；passed/failed/skipped/uncovered 都可表达，但必需检查只有 passed 才放行，其他状态不偷偷豁免。merge 要求 PR 合成提交上下文，release 要求候选 main push 实际 SHA。这里的“当前”必须由未来 CI reader 获取，核心不能离线发现更新的 run/attempt/base。
 
-证据仅允许 PNG、JSON、Markdown，校验真实读取字节、hash、大小和来源，聚合上限 20,000,000 bytes；关键证据需持久存储 verifier 成功，过期短期证据拒绝。UI 交付还必须包含关键实现截图及绑定验收清单的 `approved-implementation` 视觉证明。这里没有上传/保留策略执行器，也没有证明远端存储未来永不删除；3 天 artifact 规则仍由既有 CI 执行，长期保存/权限/清理/成本尚未接入。
+证据仅允许 PNG、JSON、Markdown，校验真实读取字节、hash、大小和来源，聚合上限 20,000,000 bytes；关键证据仍需 `verifyPersistence` 可信验证成功，过期短期证据拒绝。UI 交付还必须包含关键实现截图及绑定验收清单的 `approved-implementation` 视觉证明。这里没有上传/保留策略执行器，也没有证明远端存储未来永不删除；3 天 artifact 规则仍由既有 CI 执行，真实附件读取与验证适配器尚未接入。
+
+`verifyPersistence` 接口没有要求第二份副本或指定独立存储。GitHub 原生附件可以作为唯一非临时来源，方案/comment 复用同一 URL；可信适配器须核实附件来源、真实访问权限、内容 SHA256、run/attempt/SHA 绑定及其非 3 天临时 artifact 的生命周期，不能仅凭 URL 域名、`expiresAt: null` 或调用方声明返回 true，也不能承诺附件永不删除。短期 Actions artifact 仍标注到期并按原守卫处理。取消额外备份无需重写此核心或删除完整性检查；原生附件的真实适配与运行时规范迁移仍待验证。`checkAcceptance` 至少要求一项 critical 证据，UI 还要求 critical PNG；验证器缺失或失败仍默认拒绝，不用 `always true` 或新增备份来绕过。
 
 ## 验收与剩余事项
 
@@ -61,4 +69,4 @@ node --test tests/ono-workflow.test.ts
 
 开发环境完整 npm ci 被既有 SheetJS 下载地址 HTTP 403 阻断；新测试使用单独取得的锁定 marked 18.0.14 验证，未更改 package.json/package-lock。完整 Linux/Windows 结果以 PR 中最终 SHA 的云端 CI 与 `[OnO]` 交付 comment 为准。
 
-下一阶段仍须独立审阅可信人工批准入口、云端持久状态与锁、证据存储/访问、真实 reader/verifier、完整状态机及外部写入隔离；新增权限/费用另行批准。先验证隔离试点与恢复，单独确认后才能启用小时检查。main 保护、真实合入、发版继续各自审批。本次不引入 Jev。
+下一阶段仍须独立审阅可信人工批准入口、云端持久状态与锁、原生附件访问与来源验证、真实 reader/verifier、完整状态机及外部写入隔离；新增权限/费用另行批准。先验证隔离试点与恢复，单独确认后才能启用小时检查。main 保护、真实合入、发版继续各自审批。本次不引入 Jev。
