@@ -1,0 +1,110 @@
+name: OnO historical prototype render pilot (manual only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      approved_sha:
+        description: 'Full main SHA reviewed in the main conversation'
+        required: true
+        type: string
+      prototype_state:
+        description: 'Existing historical prototype only; publication selection requires main-chat approval'
+        required: true
+        type: choice
+        options: [historical-design-a-home]
+      post_attachment:
+        description: 'Publish ONE public image to the approved issue; separate main-chat approval required'
+        required: true
+        type: boolean
+        default: false
+      target_issue:
+        description: 'Exact approved existing issue, required ONLY for publication; no default'
+        required: false
+        type: string
+      approval_id:
+        description: 'Unique main-chat approval marker, required ONLY for publication'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ono-native-attachment-test
+  cancel-in-progress: false
+
+jobs:
+  render:
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'zhshenry/onosan_workbench' && github.repository_id == '1372377655' && github.ref == 'refs/heads/main' && github.actor == 'zhshenry' && github.actor_id == '54107847' && github.triggering_actor == 'zhshenry'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      APPROVED_SHA: ${{ inputs.approved_sha }}
+      PROTOTYPE_STATE: ${{ inputs.prototype_state }}
+      PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ono-render-browsers
+    steps:
+      - name: Reject unapproved revision or rerun publication
+        env:
+          POST_ATTACHMENT: ${{ inputs.post_attachment }}
+        run: |
+          set -euo pipefail
+          [[ "$APPROVED_SHA" =~ ^[a-f0-9]{40}$ ]]
+          test "$GITHUB_SHA" = "$APPROVED_SHA"
+          if [ "$POST_ATTACHMENT" = true ]; then test "$GITHUB_RUN_ATTEMPT" = 1; fi
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+      - name: Verify checkout and install isolated locked renderer without credentials
+        env:
+          npm_config_cache: ${{ runner.temp }}/ono-render-npm-cache
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$APPROVED_SHA"
+          npm ci --prefix tooling/ono/render-pilot --ignore-scripts --no-audit --no-fund
+          node tooling/ono/render-pilot/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Render with kernel network isolation and Chromium sandbox, no credentials
+        timeout-minutes: 3
+        run: |
+          set -euo pipefail
+          mkdir -m 700 "$RUNNER_TEMP/ono-render-home"
+          # A private network namespace has no external interfaces. No fallback.
+          # setpriv returns to the runner UID before starting sandboxed Chromium.
+          sudo unshare --net -- setpriv --reuid="$(id -u)" --regid="$(id -g)" --init-groups \
+            env -i PATH="$PATH" HOME="$RUNNER_TEMP/ono-render-home" \
+            RUNNER_TEMP="$RUNNER_TEMP" PLAYWRIGHT_BROWSERS_PATH="$PLAYWRIGHT_BROWSERS_PATH" \
+            GITHUB_EVENT_NAME="$GITHUB_EVENT_NAME" GITHUB_REPOSITORY="$GITHUB_REPOSITORY" \
+            GITHUB_REPOSITORY_ID="$GITHUB_REPOSITORY_ID" GITHUB_REF="$GITHUB_REF" \
+            GITHUB_ACTOR="$GITHUB_ACTOR" GITHUB_ACTOR_ID="$GITHUB_ACTOR_ID" GITHUB_TRIGGERING_ACTOR="$GITHUB_TRIGGERING_ACTOR" \
+            GITHUB_RUN_ID="$GITHUB_RUN_ID" GITHUB_RUN_ATTEMPT="$GITHUB_RUN_ATTEMPT" \
+            GITHUB_SHA="$GITHUB_SHA" APPROVED_SHA="$APPROVED_SHA" PROTOTYPE_STATE="$PROTOTYPE_STATE" \
+            node tooling/ono/render-pilot/render.mjs
+      - name: Install verified official gh only for explicitly approved publication
+        if: inputs.post_attachment == true
+        timeout-minutes: 2
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ono-gh"
+          cd "$RUNNER_TEMP/ono-gh"
+          curl --fail --silent --show-error --location --connect-timeout 15 --max-time 90 --proto '=https' --tlsv1.2 \
+            https://github.com/cli/cli/releases/download/v2.102.0/gh_2.102.0_linux_amd64.tar.gz -o gh.tar.gz
+          echo 'bb766f710eef8ede859c18578c72c327597cd4c8a85b06001b1f3843c6019386  gh.tar.gz' | sha256sum --check --strict
+          tar -xzf gh.tar.gz
+          ./gh_2.102.0_linux_amd64/bin/gh --version | grep -F 'gh version 2.102.0 '
+      - name: Publish once after separate version-bound main-chat approval
+        if: inputs.post_attachment == true
+        timeout-minutes: 5
+        env:
+          GH_TOKEN: ${{ secrets.ONOSAN_GH_TOKEN }}
+          TARGET_ISSUE: ${{ inputs.target_issue }}
+          APPROVAL_ID: ${{ inputs.approval_id }}
+          POST_ATTACHMENT: ${{ inputs.post_attachment }}
+        run: node tooling/ono/render-pilot/publish.mjs
+      - name: Remove temporary image and renderer state
+        if: always()
+        run: |
+          rm -rf -- "$RUNNER_TEMP/ono-render-output" "$RUNNER_TEMP/ono-render-home" \
+            "$RUNNER_TEMP/ono-render-browsers" "$RUNNER_TEMP/ono-render-npm-cache" "$RUNNER_TEMP/ono-gh"
