@@ -41,7 +41,6 @@ jobs:
     env:
       APPROVED_SHA: ${{ inputs.approved_sha }}
       PROTOTYPE_STATE: ${{ inputs.prototype_state }}
-      PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ono-render-browsers
     steps:
       - name: Reject unapproved revision or rerun publication
         env:
@@ -60,6 +59,7 @@ jobs:
           node-version: '24'
       - name: Verify checkout and install isolated locked renderer without credentials
         env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ono-render-browsers
           npm_config_cache: ${{ runner.temp }}/ono-render-npm-cache
         run: |
           set -euo pipefail
@@ -68,6 +68,8 @@ jobs:
           node tooling/ono/render-pilot/node_modules/playwright/cli.js install --with-deps chromium
       - name: Render with kernel network isolation and Chromium sandbox, no credentials
         timeout-minutes: 3
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ono-render-browsers
         run: |
           set -euo pipefail
           mkdir -m 700 "$RUNNER_TEMP/ono-render-home"
