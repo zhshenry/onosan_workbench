@@ -37,6 +37,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Check Actions workflow semantics and historical context regression
+        timeout-minutes: 2
+        shell: bash
+        run: |
+          set -euo pipefail
+          directory="$(mktemp -d "$RUNNER_TEMP/ono-actionlint.XXXXXX")"
+          trap 'rm -rf -- "$directory"' EXIT
+          curl --fail --silent --show-error --location --connect-timeout 15 --max-time 90 --proto '=https' --tlsv1.2 \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz -o "$directory/actionlint.tar.gz"
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $directory/actionlint.tar.gz" | sha256sum --check --strict
+          tar -xzf "$directory/actionlint.tar.gz" -C "$directory" actionlint
+          node tooling/check-workflows.mjs "$directory/actionlint"
       - name: Install locked dependencies without browser downloads or cache uploads
         run: npm ci --no-audit --no-fund
       - name: Unit tests

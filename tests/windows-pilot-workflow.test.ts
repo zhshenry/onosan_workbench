@@ -36,7 +36,8 @@ test('Windows CI keeps only read access and does not persist checkout credential
 
 test('Windows CI keeps hosted runners, bounded jobs and per-route cancellation', () => {
   assert.deepEqual(source.match(/runs-on: .+/g), ['runs-on: ubuntu-24.04', 'runs-on: windows-2022']);
-  assert.deepEqual(source.match(/timeout-minutes: .+/g), ['timeout-minutes: 15', 'timeout-minutes: 25']);
+  assert.deepEqual(source.match(/^    timeout-minutes: .+/gm), ['    timeout-minutes: 15', '    timeout-minutes: 25']);
+  assert.deepEqual(source.match(/^        timeout-minutes: .+/gm), ['        timeout-minutes: 2']);
   assert.ok(source.includes('group: windows-cloud-pilot-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}'));
   assert.ok(source.includes('cancel-in-progress: true'));
 });

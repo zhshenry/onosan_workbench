@@ -112,3 +112,27 @@ The shared concurrency group prevents simultaneous pilot upload runs; it is not
 a persistent exactly-once transaction service.
 
 No token is read locally, copied, exposed, expanded or changed by this PR.
+
+## Definition-validation correction
+
+The first merged preparation (`57ab8d0`) was rejected by GitHub before any job ran:
+line 44 referenced `runner.temp` in job-level `env`, where that context is not
+available. The corrected definition gives the identical browser path to the
+install and render steps separately; no authority or publication scope changes.
+
+Ordinary Linux PR/main CI now runs `tooling/check-workflows.mjs` before installing
+application dependencies. It downloads official actionlint **1.7.12**, validates
+the archive against the pinned SHA256
+`8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8`
+(from upstream `actionlint_1.7.12_checksums.txt`), then checks all workflow files,
+including manual-only workflows. The same executable must reject a reconstruction
+of the historical error with an expression diagnostic specifically naming the
+forbidden `runner` context. Missing binary, wrong version, validation errors or a
+non-reproduced regression fail CI. No workflow command is executed by this lint.
+Optional external shellcheck/pyflakes integrations are disabled to keep this
+check focused on Actions semantics; no Actions expression check is ignored.
+
+This addresses the previous gap: generic YAML parsing and string tests did not
+validate expression-context availability. Passing actionlint still does not
+prove a real runner can launch Chromium, render the prototype, or publish it.
+The manual render/upload remains unexecuted and separately authorized.
