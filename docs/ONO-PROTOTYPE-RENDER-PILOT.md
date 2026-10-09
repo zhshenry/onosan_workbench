@@ -167,3 +167,59 @@ weaken the Chromium sandbox, network namespace, CSP, no-secret rendering, source
 binding or upload controls. It does not apply a guessed root-cause fix. A real
 manual diagnostic run with `post_attachment=false` requires separate approval of
 the new main SHA after merge; it has not been performed as part of this update.
+
+## Guarded system Chrome candidate
+
+The no-upload diagnostic [run 37869159636](https://github.com/zhshenry/onosan_workbench/actions/runs/37869159636)
+reached browser_launch and returned BROWSER_SANDBOX_UNAVAILABLE. Preflight,
+module import and filesystem setup passed. It never loaded the prototype or
+published anything. The code combines more than one sandbox error signature;
+that result alone does not prove AppArmor or a particular kernel setting caused
+it.
+
+The candidate change adds a read-only system_chrome gate before launching any
+browser. It requires a nonroot effective renderer account, a fixed root-owned
+system Chrome executable and wrapper, ownership by the installed
+`google-chrome-stable` package, matching package/executable versions, and the
+known existing AppArmor Chrome profile/configuration plus loaded-profile state.
+Missing, unreadable or unfamiliar evidence fails closed with a finite code.
+It does not create, load or edit a profile, alter sysctl/sudoers/permissions,
+install a setuid helper, start a root browser, or fall back to no-sandbox.
+
+The accepted Chrome version is pinned to **154.0.8037.97**, listed in the exact
+[runner image 20261004.327.1 manifest](https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md)
+used by that diagnostic. A later hosted-image/browser update is not silently
+accepted. Package metadata and root-owned files are provenance evidence within
+the trusted hosted-runner model, not independent cryptographic attestation of
+all installed bytes. GitHub's [image installer](https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/scripts/build/install-google-chrome.sh)
+uses Google's official stable package source.
+
+The kernel's loaded AppArmor profile list may not be readable by the ordinary
+runner user. Only a fixed existing-sudo read of that one profile-list file is
+permitted; raw contents stay in memory and are not logged. No new privilege grant
+is configured. If that read is unavailable, the gate reports insufficient
+verification rather than inferring that an on-disk profile is loaded.
+
+Only after the gate passes does Playwright use the fixed system executable with
+`channel: chrome` and `chromiumSandbox: true`. The browser's reported version must
+also match before page creation. Network namespace, offline context, CSP, request
+blocking, no-PAT rendering, publication gates and PNG guards remain unchanged.
+The temporary manifest records the verified system-browser source/version/path,
+nonroot UID and profile name. The existing pinned Playwright installation is
+retained; downloaded bundled Chromium is not a fallback.
+
+[Chromium's official explanation](https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md)
+describes the distinction between downloaded builds and the system Chrome path
+with an existing Ubuntu profile. That makes this a candidate compatibility fix,
+not proof of the original AppArmor subcause or future runtime success.
+
+Unit tests use mocked filesystem/process/command evidence and never read local
+security configuration or start a browser. Ordinary Linux PR CI additionally runs
+only the read-only system-browser eligibility gate against its actual runner:
+account/path/package/profile checks and the fixed --product-version metadata
+query, with no Playwright launch, page, renderer, image, upload or PAT. A failed
+precondition fails that check with a finite safe code; it is never relaxed to
+make CI pass. This probe does not enter the main-only manual prototype workflow
+or prove the browser can render under its network namespace. A real
+post_attachment=false render requires separately approved post-merge main SHA;
+no upload or main-branch runtime success is claimed by this PR.

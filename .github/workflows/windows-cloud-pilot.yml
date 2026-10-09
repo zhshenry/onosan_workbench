@@ -49,6 +49,15 @@ jobs:
           echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $directory/actionlint.tar.gz" | sha256sum --check --strict
           tar -xzf "$directory/actionlint.tar.gz" -C "$directory" actionlint
           node tooling/check-workflows.mjs "$directory/actionlint"
+      - name: Read-only system Chrome eligibility (no page or renderer)
+        timeout-minutes: 1
+        run: |
+          node --input-type=module <<'NODE'
+          import { verifySystemChrome } from './tooling/ono/render-pilot/system-chrome.mjs';
+          import { runStage, formatDiagnostic } from './tooling/ono/render-pilot/diagnostics.mjs';
+          try { await runStage('system_chrome', () => verifySystemChrome()); }
+          catch (error) { console.error(formatDiagnostic(error)); process.exitCode = 1; }
+          NODE
       - name: Install locked dependencies without browser downloads or cache uploads
         run: npm ci --no-audit --no-fund
       - name: Unit tests

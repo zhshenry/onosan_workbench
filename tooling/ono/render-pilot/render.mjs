@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { normalizePng } from './png.mjs';
 import { runStage, formatDiagnostic } from './diagnostics.mjs';
+import { verifySystemChrome } from './system-chrome.mjs';
 export const CANDIDATE = 'design/mockups/design-a-glass.html';
 export const STATE = 'historical-design-a-home';
 export const sha256 = b => createHash('sha256').update(b).digest('hex');
@@ -32,11 +33,13 @@ export async function render(env = process.env, adapters = {}) {
     (adapters.createOutput ?? (path => mkdirSync(path, { recursive: true, mode: 0o700 })))(output);
     return { html, output };
   });
-  const browser = await stage('browser_launch', () => chromium.launch({ chromiumSandbox: true, env: { PATH: env.PATH, HOME: env.HOME, PLAYWRIGHT_BROWSERS_PATH: env.PLAYWRIGHT_BROWSERS_PATH } }));
+  const systemChrome = await stage('system_chrome', () => (adapters.verifyChrome ?? verifySystemChrome)(env));
+  const browser = await stage('browser_launch', () => chromium.launch({ channel: 'chrome', executablePath: systemChrome.executablePath, chromiumSandbox: true, env: { PATH: env.PATH, HOME: env.HOME, PLAYWRIGHT_BROWSERS_PATH: env.PLAYWRIGHT_BROWSERS_PATH } }));
   let failure;
   try {
     let blocked = 0, errors = 0;
     const page = await stage('page_load', async () => {
+      need(browser.version() === systemChrome.version, 'SYSTEM_CHROME_RUNTIME_VERSION_MISMATCH');
       const context = await browser.newContext({ viewport: { width: 1440, height: 1024 }, deviceScaleFactor: 1, locale: 'zh-CN', timezoneId: 'UTC', colorScheme: 'light', serviceWorkers: 'block', offline: true, acceptDownloads: false, permissions: [] });
       await context.route('**/*', route => { blocked++; return route.abort(); });
       await context.routeWebSocket('**/*', socket => { blocked++; socket.close(); });
@@ -63,7 +66,7 @@ export async function render(env = process.env, adapters = {}) {
     await stage('output', () => {
       const write = adapters.writeOutput ?? ((path, data) => writeFileSync(path, data, { mode: 0o600 }));
       write(join(output, 'prototype.png'), normalized.bytes);
-      const manifest = { source: CANDIDATE, state: STATE, sha: env.GITHUB_SHA, run: env.GITHUB_RUN_ID, attempt: env.GITHUB_RUN_ATTEMPT, sourceSha256: sha256(html), width: normalized.width, height: normalized.height, rawSha256: sha256(raw), pixelSha256: sha256(normalized.pixels), imageSha256: sha256(normalized.bytes), browser: browser.version(), visualReview: 'not-performed', purpose: 'historical-prototype-render-pilot' };
+      const manifest = { source: CANDIDATE, state: STATE, sha: env.GITHUB_SHA, run: env.GITHUB_RUN_ID, attempt: env.GITHUB_RUN_ATTEMPT, sourceSha256: sha256(html), width: normalized.width, height: normalized.height, rawSha256: sha256(raw), pixelSha256: sha256(normalized.pixels), imageSha256: sha256(normalized.bytes), browser: systemChrome.version, browserSource: 'system-google-chrome-stable', browserExecutable: systemChrome.executablePath, browserUid: systemChrome.uid, sandboxProfile: 'chrome', visualReview: 'not-performed', purpose: 'historical-prototype-render-pilot' };
       write(join(output, 'manifest.json'), JSON.stringify(manifest));
       log(`Render decoded and normalized: ${STATE}; 1440x1024; SHA256=${manifest.imageSha256}. Visual fidelity not yet reviewed.`);
     });
