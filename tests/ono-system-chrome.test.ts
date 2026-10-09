@@ -62,7 +62,6 @@ function fixture() {
     owned: `google-chrome-stable: ${executable}\ngoogle-chrome-stable: ${wrapper}\n`,
     installed: `google-chrome-stable\tinstall ok installed\t${SYSTEM_CHROME_VERSION}-1\n`,
     loaded: 'some-other-profile (enforce)\nchrome (unconfined)\n',
-    actual: `${SYSTEM_CHROME_VERSION}\n`,
   };
   const calls: Array<{ path: string; args: string[]; options: any }> = [];
   const reads: string[] = [];
@@ -100,7 +99,6 @@ function fixture() {
       if (path === '/usr/bin/dpkg-query' && args[0] === '--search') key = 'owned';
       else if (path === '/usr/bin/dpkg-query' && args[0] === '--show') key = 'installed';
       else if (path === '/usr/bin/sudo') key = 'loaded';
-      else if (path === executable) key = 'actual';
       else throw new Error('Unexpected command: tests must remain mocked');
       const result = outputs[key]; if (result instanceof Error) throw result; return result;
     },
@@ -112,6 +110,7 @@ const fails = (f: ReturnType<typeof fixture>, code: string, env = {}) => {
     assert.equal(error.message, code); assert.ok(SYSTEM_CHROME_CODES.includes(error.message));
     assert.equal(error.cause, undefined); return true;
   });
+  noChrome(f);
 };
 const noChrome = (f: ReturnType<typeof fixture>) => assert.equal(f.calls.filter(call => call.path === executable).length, 0);
 
@@ -119,12 +118,11 @@ test('verified system Chrome returns only fixed path, pinned bounded version and
   const f = fixture();
   const result = verifySystemChrome({ PATH: '/untrusted', LD_PRELOAD: 'private', HOME: '/private', OTHER_SECRET: 'private', CHROME_BIN: '/alternate' }, f.adapters);
   assert.deepEqual(result, { executablePath: executable, version: SYSTEM_CHROME_VERSION, uid: 1001, gid: 1001 });
-  assert.ok(Object.isFrozen(result)); assert.ok(Object.isFrozen(SYSTEM_CHROME_CODES));
+  assert.ok(Object.isFrozen(result)); assert.ok(Object.isFrozen(SYSTEM_CHROME_CODES)); noChrome(f);
   assert.deepEqual(f.calls.map(({ path, args }) => ({ path, args })), [
     { path: '/usr/bin/dpkg-query', args: ['--search', executable, wrapper] },
     { path: '/usr/bin/dpkg-query', args: ['--show', '--showformat=${Package}\\t${Status}\\t${Version}\\n', 'google-chrome-stable'] },
     { path: '/usr/bin/sudo', args: ['-n', '/usr/bin/cat', loaded] },
-    { path: executable, args: ['--product-version'] },
   ]);
   for (const call of f.calls) {
     assert.deepEqual(call.options.env, { PATH: '/usr/bin:/bin', LANG: 'C', LC_ALL: 'C' });
@@ -233,7 +231,7 @@ test('package status and version require one bounded installed stable package re
     const f = fixture(); f.outputs.installed = installed; fails(f, 'SYSTEM_CHROME_PACKAGE_UNVERIFIED'); assert.equal(f.calls.length, 2); noChrome(f);
   }
   const f = fixture(); f.outputs.installed = 'google-chrome-stable\tinstall ok installed\t155.0.0.1-1\n';
-  fails(f, 'SYSTEM_CHROME_VERSION_UNVERIFIED'); assert.equal(f.calls.length, 2); noChrome(f);
+  fails(f, 'SYSTEM_CHROME_PACKAGE_VERSION_MISMATCH'); assert.equal(f.calls.length, 2); noChrome(f);
 });
 
 test('existing recognized Ubuntu/AppArmor profile formats allow comments and no custom overrides', () => {
@@ -319,19 +317,18 @@ test('fixed package and loaded-profile tools must be root-owned, executable and 
   }
 });
 
-test('actual Chrome version must exactly match the package and approved pin with no arbitrary output', () => {
-  for (const value of ['', '155.0.0.1\n', `Google Chrome ${SYSTEM_CHROME_VERSION}\n`, `${SYSTEM_CHROME_VERSION}\nprivate`,
-    ` ${SYSTEM_CHROME_VERSION}\n`, `${SYSTEM_CHROME_VERSION}\0`, 'x'.repeat(129),
-  ]) {
-    const f = fixture(); f.outputs.actual = value; fails(f, 'SYSTEM_CHROME_VERSION_UNVERIFIED');
-    assert.equal(f.calls.filter(call => call.path === executable).length, 1);
+test('valid installed package versions outside the approved pin fail distinctly without executing Chrome', () => {
+  for (const version of ['153.0.8010.1', '155.0.0.1', '154.0.8037.98', '154.0.8037.96']) {
+    const f = fixture(); f.outputs.installed = `google-chrome-stable\tinstall ok installed\t${version}-1\n`;
+    fails(f, 'SYSTEM_CHROME_PACKAGE_VERSION_MISMATCH');
+    assert.deepEqual(f.calls.map(call => call.path), ['/usr/bin/dpkg-query', '/usr/bin/dpkg-query']);
   }
 });
 
 test('read and command errors are replaced with finite codes without raw messages or causes', () => {
   for (const [key, code] of [
     ['owned', 'SYSTEM_CHROME_PACKAGE_UNVERIFIED'], ['installed', 'SYSTEM_CHROME_PACKAGE_UNVERIFIED'],
-    ['loaded', 'SYSTEM_CHROME_PROFILE_UNREADABLE'], ['actual', 'SYSTEM_CHROME_VERSION_UNVERIFIED'],
+    ['loaded', 'SYSTEM_CHROME_PROFILE_UNREADABLE'],
   ]) {
     const f = fixture(); f.outputs[key] = Object.assign(new Error('private stdout stderr exception text'), { stdout: 'private', stderr: 'private' });
     fails(f, code);
@@ -400,7 +397,7 @@ test('official writable opt layout is accepted only after exact full payload ver
     return original(path, args, options);
   };
   assert.equal(verifySystemChrome({}, f.adapters).version, SYSTEM_CHROME_VERSION);
-  assert.equal(f.calls.at(-1)?.path, executable);
+  assert.equal(f.calls.at(-1)?.path, '/usr/bin/sudo'); noChrome(f);
 });
 
 test('missing, added, tampered, redirected and substituted runtime entries stop before every command', () => {

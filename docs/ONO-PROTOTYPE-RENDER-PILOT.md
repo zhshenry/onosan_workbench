@@ -180,7 +180,7 @@ it.
 The candidate change adds a read-only system_chrome gate before launching any
 browser. It requires a nonroot effective renderer account, a fixed root-owned
 system Chrome executable and wrapper, exact authenticated-source payload bytes, ownership by the installed
-`google-chrome-stable` package, matching package/executable versions, and the
+`google-chrome-stable` package, an exact package version plus verified official executable bytes, and the
 known existing AppArmor Chrome profile/configuration plus loaded-profile state.
 Missing, unreadable or unfamiliar evidence fails closed with a finite code.
 It does not create, load or edit a profile, alter sysctl/sudoers/permissions,
@@ -216,8 +216,8 @@ not proof of the original AppArmor subcause or future runtime success.
 Unit tests use mocked filesystem/process/command evidence and never read local
 security configuration or start a browser. Ordinary Linux PR CI additionally runs
 only the read-only system-browser eligibility gate against its actual runner:
-account/path/package/profile checks and the fixed --product-version metadata
-query, with no Playwright launch, page, renderer, image, upload or PAT. A failed
+account/path/package/profile checks and complete payload hashing, with no Chrome
+process, Playwright launch, page, renderer, image, upload or PAT. A failed
 precondition fails that check with a finite safe code; it is never relaxed to
 make CI pass. This probe does not enter the main-only manual prototype workflow
 or prove the browser can render under its network namespace. A real
@@ -272,3 +272,19 @@ hostile-code isolation. A stronger adversarial-local-process requirement would
 need a separately approved execution design rather than pretending repeated
 hashing removes every TOCTOU race. Browser sandbox/network restrictions remain
 mandatory and unchanged.
+
+
+### Pure-read eligibility and actual runtime version
+
+The eligibility gate does not execute Chrome, including a --product-version
+query. The official full-byte manifest plus the exact installed package-version
+pin establish its version/source input; a pin mismatch has its own
+SYSTEM_CHROME_PACKAGE_VERSION_MISMATCH code and is never waived. The previous
+combined VERSION_UNVERIFIED result does not establish whether the package pin or
+CLI query caused it, so no unsupported root-cause claim is made.
+
+Actual browser.version() remains mandatory immediately after the later authorized
+sandboxed launch and before creating a page. This separates pure-read eligibility
+from real browser execution rather than hiding a version mismatch. The only
+external commands in eligibility are fixed dpkg-query reads and the fixed existing
+sudo/cat profile-list read; there is no Chrome executable invocation or fallback.

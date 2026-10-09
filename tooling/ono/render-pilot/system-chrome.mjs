@@ -36,7 +36,7 @@ export const SYSTEM_CHROME_CODES = Object.freeze([
   'SYSTEM_CHROME_CREDENTIALS_PRESENT', 'SYSTEM_CHROME_NONROOT_REQUIRED',
   'SYSTEM_CHROME_EXECUTABLE_UNVERIFIED', 'SYSTEM_CHROME_WRAPPER_UNVERIFIED',
   'SYSTEM_CHROME_PACKAGE_UNVERIFIED', 'SYSTEM_CHROME_APPARMOR_UNVERIFIED',
-  'SYSTEM_CHROME_PROFILE_UNREADABLE', 'SYSTEM_CHROME_PROFILE_NOT_LOADED', 'SYSTEM_CHROME_VERSION_UNVERIFIED',
+  'SYSTEM_CHROME_PROFILE_UNREADABLE', 'SYSTEM_CHROME_PROFILE_NOT_LOADED', 'SYSTEM_CHROME_PACKAGE_VERSION_MISMATCH',
   'SYSTEM_CHROME_MANIFEST_UNVERIFIED', 'SYSTEM_CHROME_PAYLOAD_UNVERIFIED',
   ...EXECUTABLE_CHAIN.flatMap(({ label }) => PATH_REASONS.map(reason => `SYSTEM_CHROME_${label}_${reason}`)),
   ...BINARY_REASONS.map(reason => `SYSTEM_CHROME_BINARY_${reason}`),
@@ -226,7 +226,7 @@ export function verifySystemChrome(env = process.env, adapters = {}) {
     need(match);
     return match[1];
   });
-  checked('SYSTEM_CHROME_VERSION_UNVERIFIED', () => need(version === SYSTEM_CHROME_VERSION));
+  checked('SYSTEM_CHROME_PACKAGE_VERSION_MISMATCH', () => need(version === SYSTEM_CHROME_VERSION));
   checked('SYSTEM_CHROME_APPARMOR_UNVERIFIED', () => {
     regular(PROFILE, { maxSize: 16384 });
     const text = boundedText(io.readFileSync(PROFILE, 'utf8'), 16384);
@@ -262,10 +262,8 @@ export function verifySystemChrome(env = process.env, adapters = {}) {
   checked('SYSTEM_CHROME_PROFILE_NOT_LOADED', () => {
     need(profiles.filter(line => /^chrome(?:\s|$)/.test(line)).length === 1 && profiles.includes('chrome (unconfined)'));
   });
-  checked('SYSTEM_CHROME_VERSION_UNVERIFIED', () => {
-    // Run only after identity, package, path and sandbox-policy checks pass.
-    const actual = command(EXECUTABLE, ['--product-version'], 128);
-    need(new RegExp(`^${VERSION}\\n?$`).test(actual) && actual.trim() === version);
-  });
+  // Eligibility is pure inspection: never invoke Chrome, even for metadata.
+  // The separately authorized renderer checks browser.version() after launch,
+  // before creating any page. Here the exact payload and dpkg pin bind version.
   return Object.freeze({ executablePath: EXECUTABLE, version, uid, gid });
 }
