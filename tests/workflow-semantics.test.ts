@@ -34,3 +34,12 @@ test('ordinary Linux PR CI verifies a pinned official actionlint before executin
   assert.doesNotMatch(step, /continue-on-error|secrets\.|\|\| true/);
   assert.throws(() => checkWorkflows(undefined));
 });
+
+test('Linux runner eligibility check is read-only and does not invoke the prototype renderer', () => {
+  const ci = readFileSync('.github/workflows/windows-cloud-pilot.yml', 'utf8');
+  const probe = ci.slice(ci.indexOf('      - name: Read-only system Chrome eligibility'), ci.indexOf('      - name: Install locked dependencies'));
+  assert.match(probe, /verifySystemChrome\(\)/);
+  assert.match(probe, /runStage\('system_chrome'/);
+  assert.match(probe, /formatDiagnostic\(error\)/);
+  assert.doesNotMatch(probe, /render\.mjs|publish\.mjs|secrets\.|GH_TOKEN|chromium\.launch|upload|continue-on-error/);
+});

@@ -99,6 +99,7 @@ function harness(options: HarnessOptions = {}) {
       call('loadPlaywright');
       return { chromium: { async launch(settings: any) { call('chromium.launch'); launchOptions = settings; return browser; } } };
     },
+    verifyChrome() { call('verifyChrome'); return { executablePath: '/opt/google/chrome/chrome', version: '123.0.0.0', uid: 1001, gid: 1001 }; },
     readSource() { call('readSource'); return source; },
     createOutput(path: string, settings: any) { call('createOutput'); created.push({ path, options: settings }); },
     writeOutput(path: string, value: string | Uint8Array, settings: any) {
@@ -156,7 +157,7 @@ async function expectFailure(promise: Promise<unknown>, stage: string, code: str
 }
 
 test('diagnostic stage and code allowlists are frozen finite values', () => {
-  assert.deepEqual(STAGES, ['preflight', 'import', 'environment', 'browser_launch', 'page_load', 'assets', 'screenshot', 'png', 'output', 'cleanup']);
+  assert.deepEqual(STAGES, ['preflight', 'import', 'environment', 'system_chrome', 'browser_launch', 'page_load', 'assets', 'screenshot', 'png', 'output', 'cleanup']);
   assert.ok(Object.isFrozen(STAGES)); assert.ok(Object.isFrozen(ERROR_CODES));
   assert.equal(new Set(ERROR_CODES).size, ERROR_CODES.length);
   for (const code of ERROR_CODES) assert.match(code, /^[A-Z_]+$/);
@@ -260,7 +261,7 @@ test('successful mock render reports every stage while preserving sandbox, netwo
     `Prototype render stage=${stage}; status=start`, `Prototype render stage=${stage}; status=passed`,
   ]));
   assertSafeLogs(fake.logs);
-  assert.deepEqual(fake.launchOptions(), { chromiumSandbox: true, env: {
+  assert.deepEqual(fake.launchOptions(), { channel: 'chrome', executablePath: '/opt/google/chrome/chrome', chromiumSandbox: true, env: {
     PATH: env.PATH, HOME: env.HOME, PLAYWRIGHT_BROWSERS_PATH: env.PLAYWRIGHT_BROWSERS_PATH,
   } });
   assert.deepEqual(fake.contextOptions(), {
@@ -277,7 +278,7 @@ test('successful mock render reports every stage while preserving sandbox, netwo
   assert.deepEqual(JSON.parse(fake.written[1].value as string), {
     source: CANDIDATE, state: STATE, sha, run: env.GITHUB_RUN_ID, attempt: env.GITHUB_RUN_ATTEMPT,
     sourceSha256: digest(source), width: 1440, height: 1024, rawSha256: digest(raw), pixelSha256: digest(normalized.pixels),
-    imageSha256: digest(normalized.bytes), browser: '123.0.0.0', visualReview: 'not-performed', purpose: 'historical-prototype-render-pilot',
+    imageSha256: digest(normalized.bytes), browser: '123.0.0.0', browserSource: 'system-google-chrome-stable', browserExecutable: '/opt/google/chrome/chrome', browserUid: 1001, sandboxProfile: 'chrome', visualReview: 'not-performed', purpose: 'historical-prototype-render-pilot',
   });
   assert.equal(fake.calls.filter(name => name === 'browser.close').length, 1);
 });
@@ -310,12 +311,12 @@ for (const [patch, code] of guardFailures) {
 
 const failurePoints: [string, string][] = [
   ['loadPlaywright', 'import'], ['readSource', 'environment'], ['createOutput', 'environment'],
-  ['chromium.launch', 'browser_launch'], ['browser.newContext', 'page_load'], ['context.route', 'page_load'],
+  ['verifyChrome', 'system_chrome'], ['chromium.launch', 'browser_launch'], ['browser.newContext', 'page_load'], ['context.route', 'page_load'],
   ['context.routeWebSocket', 'page_load'], ['context.newPage', 'page_load'], ['page.on', 'page_load'],
   ['page.setContent', 'page_load'], ['page.locator:#view-home.on', 'assets'], ['locator.waitFor', 'assets'],
   ['page.locator:#tree .nsub', 'assets'], ['locator.count', 'assets'], ['page.evaluate', 'assets'],
   ['page.screenshot', 'screenshot'], ['normalizeImage', 'png'], ['writeImage', 'output'],
-  ['browser.version', 'output'], ['writeManifest', 'output'], ['browser.close', 'cleanup'],
+  ['browser.version', 'page_load'], ['writeManifest', 'output'], ['browser.close', 'cleanup'],
 ];
 for (const [failAt, stage] of failurePoints) {
   test(`render reports ${stage} when ${failAt} fails without exposing raw data`, async () => {
@@ -327,7 +328,7 @@ for (const [failAt, stage] of failurePoints) {
     assert.ok(fake.logs.includes(`Prototype render stage=${stage}; status=start`));
     assert.ok(!fake.logs.includes(`Prototype render stage=${stage}; status=passed`));
     assertSafeLogs(fake.logs);
-    assert.equal(fake.calls.filter(name => name === 'browser.close').length, ['import', 'environment', 'browser_launch'].includes(stage) ? 0 : 1);
+    assert.equal(fake.calls.filter(name => name === 'browser.close').length, ['import', 'environment', 'system_chrome', 'browser_launch'].includes(stage) ? 0 : 1);
     if (!['output', 'cleanup'].includes(stage)) assert.equal(fake.written.length, 0);
   });
 }
@@ -392,4 +393,22 @@ test('a throwing Playwright import property is sanitized inside the import stage
   const adapters = { ...fake.adapters, loadPlaywright: async () => ({ get chromium() { throw new Error(privateMarker); } }) };
   await expectFailure(render(env, adapters), 'import', 'OPERATION_FAILED');
   assert.deepEqual(fake.calls, []); assertSafeLogs(fake.logs);
+});
+
+test('system browser eligibility failure stops before launch and preserves bounded diagnostics', async () => {
+  const fake = harness();
+  fake.adapters.verifyChrome = () => { throw new Error('SYSTEM_CHROME_PROFILE_NOT_LOADED'); };
+  await expectFailure(render(env, fake.adapters), 'system_chrome', 'SYSTEM_CHROME_PROFILE_NOT_LOADED');
+  assert.ok(!fake.calls.includes('chromium.launch'));
+  assert.equal(fake.written.length, 0); assertSafeLogs(fake.logs);
+});
+
+test('launched system browser version mismatch is rejected before any page or screenshot', async () => {
+  const fake = harness();
+  fake.adapters.verifyChrome = () => ({ executablePath: '/opt/google/chrome/chrome', version: '124.0.0.0', uid: 1001, gid: 1001 });
+  await expectFailure(render(env, fake.adapters), 'page_load', 'SYSTEM_CHROME_RUNTIME_VERSION_MISMATCH');
+  assert.ok(!fake.calls.includes('browser.newContext'));
+  assert.ok(!fake.calls.includes('page.screenshot'));
+  assert.equal(fake.calls.filter(name => name === 'browser.close').length, 1);
+  assert.equal(fake.written.length, 0); assertSafeLogs(fake.logs);
 });

@@ -1,0 +1,3 @@
+
+# Keep the reviewed browser payload manifest byte-identical across checkouts.
+tooling/ono/render-pilot/chrome-154.0.8037.97-manifest.json text eol=lf
