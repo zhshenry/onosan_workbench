@@ -1,8 +1,23 @@
-# Historical prototype render/attachment pilot (draft, not activated)
+# Historical prototype render/attachment pilot
 
-This is a separate, manual-only preparation for the next attachment experiment.
+This is a separate, manual-only historical prototype experiment.
 It does not change the production policy pin or enable an issue listener, approval
 adapter, development runner, merge, release, or acceptance gate.
+
+## Current verified outcome (2026-10-09)
+
+The separately approved manual [run 37881203730](https://github.com/zhshenry/onosan_workbench/actions/runs/37881203730)
+completed successfully at main `7313fddf62f69561c492d553ca02548b7b704126`,
+attempt 1, and published the one image in [comment 6073909178](https://github.com/zhshenry/onosan_workbench/issues/7#issuecomment-6073909178).
+The [historical Design A record v1](ONO-HISTORICAL-DESIGN-A-RECORD.md) now embeds
+that exact existing native-attachment URL and binds its source/state/run/hash.
+It is not a new product proposal, approval or visual acceptance. The original
+comment still says visual review is pending; this text backfill does not change it.
+
+Assistant dispatch is **not connected**. The preparation helper below emits
+parameters only. Merging this documentation/helper does not enable automated
+rendering or uploading. Earlier preparation/diagnosis sections below describe
+their historical stage, not the status of this successful run.
 
 ## Exact candidate, not a new design
 
@@ -21,11 +36,12 @@ conversation before publishing it.
 
 ## What has and has not been exercised
 
-The draft adds a manual workflow, bounded PNG adapter, render/upload separation
-and mock regression tests. It has not been dispatched on Actions, has not
-rendered this real prototype, and has not uploaded or visually reviewed its
-result. Ordinary PR CI runs unit/build/Windows checks, not this manual workflow.
-Opening this PR does not render or publish the candidate prototype image. The
+The initial preparation added a manual workflow, bounded PNG adapter,
+render/upload separation and mock regression tests. At that stage no real
+dispatch, prototype image or upload had been exercised. The current real-run
+result is recorded above; visual acceptance is still separate.
+Ordinary PR CI runs unit/build/Windows checks, not this manual workflow.
+Opening a PR does not render or publish the candidate prototype image. The
 existing ordinary CI retains its established acceptance screenshots/reports; this
 pilot does not add an image artifact, base64 payload, cache upload, service or secret.
 
@@ -113,6 +129,90 @@ a persistent exactly-once transaction service.
 
 No token is read locally, copied, exposed, expanded or changed by this PR.
 
+## Assistant parameter preparation (not a trigger)
+
+`tooling/ono/render-pilot/prepare-dispatch.mjs` is a dependency-free text helper.
+It performs no network requests, child-process execution, credential lookup,
+image operations or GitHub writes. It returns the exact REST body for the one
+existing workflow; repository/workflow, main ref and historical state are fixed.
+No workflow, permission, secret or production core-v1 policy is changed.
+
+The assistant reads current main through the connected GitHub reader and fills
+in the approved/current SHAs. The user should not have to find and transcribe
+Actions parameters. Example using an illustrative SHA, **not permission to run**:
+
+```sh
+node tooling/ono/render-pilot/prepare-dispatch.mjs \
+  --approved-sha aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+  --current-main-sha aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+```
+
+Stdout is JSON with `ref: main` and all five input fields. `post_attachment`
+defaults to false; publication requires explicit `--publish`, `--target-issue`
+and `--approval-id`. Missing/malformed/duplicate/unknown options, shortened SHAs,
+different main SHAs and publication fields in render-only mode are rejected.
+Stderr always says preparation did not dispatch. The helper must not be placed
+in a shell pipeline that dispatches merely because parameter validation passed.
+
+The two SHA arguments and approval marker are caller-supplied audit data, not
+authenticated evidence. They cannot prove main freshness, human intent, marker
+uniqueness, single use or cancellation status. Before a future real dispatch,
+the assistant must re-read the exact active main-chat approval and current main;
+bind source/state, full SHA, mode, destination and unique marker; and check for
+withdrawal and any earlier/uncertain run. Source or destination changes require
+new approval. A generic approval of this PR does not authorize a render/upload.
+Same-account GitHub comments/reviews, branch pushes, files, labels and JSON must
+never be treated as the user's approval. Existing renderer/publication guards
+remain the execution-side backstop if main changes after preparation. This is
+not an atomic compare-and-dispatch or persistent approval-consumption service.
+
+### Missing capability and smallest future connection
+
+At the 2026-10-09 check, the available GitHub connector could read Actions and
+write repository text/PRs but exposed no workflow-dispatch operation; dot's local
+`gh auth status` was unauthenticated. The helper does not change either fact.
+No new browser login/session or authentication route was established by this PR.
+
+The smallest future path is an explicitly authorized dispatcher that can send
+the prepared JSON to the official [workflow dispatch endpoint](https://docs.github.com/en/rest/actions/workflows#create-a-workflow-dispatch-event):
+`POST /repos/zhshenry/onosan_workbench/actions/workflows/ono-prototype-render.yml/dispatches`.
+Fine-grained authentication for this API requires repository **Actions: write**;
+the identity must also satisfy this workflow's existing `zhshenry` owner actor,
+numeric actor ID and triggering-actor checks. An installation bot identity may
+not satisfy them; do not weaken those checks to make a connector work.
+
+Prefer a connector route using an already authorized matching identity if one
+becomes available. If it needs a new grant/token, expanded permission or persistent
+session, stop and obtain the separate required approval before setting it up.
+Do not reuse, read or export `ONOSAN_GH_TOKEN` for dispatch: that secret remains
+confined to the existing trusted Actions upload step. An already authorized
+owner web session is another possible route, but must actually be checked before
+claiming it is available; no browser automation or prefilled-URL trick is added.
+Until one route is verified, the status is **parameters prepared; trigger blocked**,
+not “hands-off launching complete.”
+
+### Result readback and uncertainty
+
+After a separately authorized dispatch, record its returned run identity when
+available and GET the exact run and jobs until terminal. Check workflow path,
+event, owner identity, full SHA, main branch and attempt. If the API version does
+not return a run ID, identify a unique matching new workflow_dispatch run using
+the pre-dispatch run snapshot and time; ambiguity blocks progress. Do not use a
+PR-only run reader to conclude there was no manual run. The connected generic
+GitHub reader supports `/actions/runs/{run_id}` and its jobs subresource.
+
+For publication, re-read the exact issue comment with the approval marker, match
+source/state/SHA/run/attempt and recover its one native attachment URL. Use that
+same URL in the versioned plan and comment; check real accessibility, bytes/hash
+and visual fidelity separately. Compute the final plan digest after insertion,
+then request the distinct plan/development approval. No automatic plan backfill
+writer or visual/persistence verifier is supplied here.
+
+A dispatch timeout, absent run, duplicate match or uncertain upload must be
+reconciled read-only, never retried automatically with a new marker. Missing
+comments do not prove an asset was never uploaded. Existing run-attempt/marker
+guards are bounded safeguards, not durable exactly-once or authenticity proof.
+
 ## Definition-validation correction
 
 The first merged preparation (`57ab8d0`) was rejected by GitHub before any job ran:
@@ -135,7 +235,8 @@ check focused on Actions semantics; no Actions expression check is ignored.
 This addresses the previous gap: generic YAML parsing and string tests did not
 validate expression-context availability. Passing actionlint still does not
 prove a real runner can launch Chromium, render the prototype, or publish it.
-The manual render/upload remains unexecuted and separately authorized.
+At that correction stage the manual render/upload remained unexecuted and
+required separate authorization; the later successful run is recorded above.
 
 ## Safe render-stage diagnostics
 

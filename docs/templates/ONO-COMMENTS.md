@@ -21,6 +21,8 @@ UI：<涉及/不适用及理由>
 
 UI 图片只上传为一份 GitHub 原生附件，方案正文和本 comment 使用同一个附件 URL，不额外备份。UI 图片用 `![方案版本 / 页面状态](固定图片URL)` 真正嵌入已发布的 comment，不能把图片语法留在代码块。发送后检查图片可显示；占位符、低保真线框或文字不满足要求。
 
+与方案一起标明方案版本、图片状态、完整源码 SHA、PNG SHA256、原始上传 comment 链接及 run/attempt。方案最终摘要应覆盖实际 URL 插入后的正文。参数准备、上传审计标记和同账号评论均不是人工批准；主对话批准与真实 dispatch 接通状态分别核验，见[参数准备说明](../ONO-PROTOTYPE-RENDER-PILOT.md#assistant-parameter-preparation-not-a-trigger)。
+
 ## 进度、修改与阻塞 comment（对应 issue/PR）
 
 ```text
