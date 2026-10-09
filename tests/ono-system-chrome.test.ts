@@ -110,17 +110,47 @@ test('credentials, root/effective-root, group zero, mismatched or unavailable id
   }
 });
 
-test('Chrome executable and every ancestor must be canonical protected root-owned paths', () => {
-  for (const path of [executable, '/opt/google/chrome', '/opt/google', '/opt', '/']) {
-    for (const patch of [{ uid: 1001 }, { mode: 0o100777 }, { kind: 'link' as const }, { canonical: '/untrusted' }]) {
-      const f = fixture(); Object.assign(f.entries.get(path)!, patch); fails(f, 'SYSTEM_CHROME_EXECUTABLE_UNVERIFIED');
+test('Chrome chain refusals identify only the fixed path label and exact failed predicate', () => {
+  for (const [path, label] of [[executable, 'BINARY'], ['/opt/google/chrome', 'CHROME_DIR'], ['/opt/google', 'GOOGLE'], ['/opt', 'OPT'], ['/', 'ROOT']]) {
+    for (const [patch, reason] of [
+      [{ uid: 1001 }, 'OWNER_UNVERIFIED'], [{ mode: 0o100777 }, 'WRITABLE'],
+      [{ kind: 'link' }, 'TYPE_UNVERIFIED'], [{ canonical: '/private/untrusted-path' }, 'CANONICAL_UNVERIFIED'],
+    ] as const) {
+      const f = fixture(); Object.assign(f.entries.get(path)!, patch); fails(f, `SYSTEM_CHROME_${label}_${reason}`);
       assert.equal(f.calls.length, 0);
     }
-    const f = fixture(); f.entries.delete(path); fails(f, 'SYSTEM_CHROME_EXECUTABLE_UNVERIFIED'); assert.equal(f.calls.length, 0);
+    const absent = fixture(); absent.entries.delete(path); fails(absent, `SYSTEM_CHROME_${label}_UNREADABLE`); assert.equal(absent.calls.length, 0);
+    const denied = fixture(); const original = denied.adapters.fs.realpathSync;
+    denied.adapters.fs.realpathSync = current => { if (current === path) throw new Error('private path and details'); return original(current); };
+    fails(denied, `SYSTEM_CHROME_${label}_UNREADABLE`); assert.equal(denied.calls.length, 0);
   }
-  for (const patch of [{ mode: 0o100644 }, { mode: 0o100750 }, { mode: 0o104755 }, { mode: 0o102755 }, { denied: true }]) {
-    const f = fixture(); Object.assign(f.entries.get(executable)!, patch); fails(f, 'SYSTEM_CHROME_EXECUTABLE_UNVERIFIED'); assert.equal(f.calls.length, 0);
+  for (const [patch, reason] of [
+    [{ mode: 0o100644 }, 'EXECUTABLE_UNVERIFIED'], [{ mode: 0o100750 }, 'EXECUTABLE_UNVERIFIED'],
+    [{ mode: 0o104755 }, 'PRIVILEGED'], [{ mode: 0o102755 }, 'PRIVILEGED'],
+    [{ denied: true }, 'ACCESS_UNVERIFIED'], [{ size: NaN }, 'SIZE_UNVERIFIED'],
+  ] as const) {
+    const f = fixture(); Object.assign(f.entries.get(executable)!, patch); fails(f, `SYSTEM_CHROME_BINARY_${reason}`); assert.equal(f.calls.length, 0);
   }
+});
+
+test('precise chain errors retain no raw data and arbitrary exceptions cannot forge a diagnostic', () => {
+  const f = fixture();
+  const raw = Object.assign(new Error('SYSTEM_CHROME_OPT_OWNER_UNVERIFIED'), {
+    cause: new Error('private nested error'), path: '/private/path', uid: 123456, stdout: 'private', stderr: 'private',
+  });
+  f.adapters.fs.lstatSync = () => { throw raw; };
+  fails(f, 'SYSTEM_CHROME_CHROME_DIR_UNREADABLE'); assert.equal(f.calls.length, 0);
+  assert.throws(() => verifySystemChrome({}, f.adapters), (error: Error) => {
+    assert.deepEqual(Object.keys(error), []);
+    assert.doesNotMatch(error.message, /private|123456|\//);
+    assert.notEqual(error, raw); return true;
+  });
+  const hostile = fixture();
+  hostile.adapters.fs.lstatSync = () => { throw Object.defineProperty({}, 'message', { get() { throw new Error('private getter'); } }); };
+  fails(hostile, 'SYSTEM_CHROME_CHROME_DIR_UNREADABLE'); assert.equal(hostile.calls.length, 0);
+  const proxy = fixture();
+  proxy.adapters.fs.lstatSync = () => { throw new Proxy({}, { getPrototypeOf() { throw new Error('private prototype'); } }); };
+  fails(proxy, 'SYSTEM_CHROME_CHROME_DIR_UNREADABLE'); assert.equal(proxy.calls.length, 0);
 });
 
 test('wrapper alternatives must resolve only through root-owned protected fixed package paths', () => {

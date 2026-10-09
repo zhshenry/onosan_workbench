@@ -16,16 +16,38 @@ const PACKAGE = 'google-chrome-stable';
 export const SYSTEM_CHROME_VERSION = '154.0.8037.97';
 const VERSION = '[1-9][0-9]{0,3}\\.[0-9]{1,6}\\.[0-9]{1,6}\\.[0-9]{1,6}';
 const WRAPPER_LINKS = new Set([ENTRY, '/etc/alternatives/google-chrome', '/usr/bin/google-chrome-stable']);
+// Fixed labels expose which reviewed precondition was unverifiable, never a
+// discovered path, owner/mode value, raw exception or filesystem contents.
+const EXECUTABLE_CHAIN = Object.freeze([
+  Object.freeze({ path: '/opt/google/chrome', label: 'CHROME_DIR', directory: true }),
+  Object.freeze({ path: '/opt/google', label: 'GOOGLE', directory: true }),
+  Object.freeze({ path: '/opt', label: 'OPT', directory: true }),
+  Object.freeze({ path: '/', label: 'ROOT', directory: true }),
+  Object.freeze({ path: EXECUTABLE, label: 'BINARY', directory: false }),
+]);
+const PATH_REASONS = Object.freeze(['UNREADABLE', 'TYPE_UNVERIFIED', 'OWNER_UNVERIFIED', 'WRITABLE', 'CANONICAL_UNVERIFIED']);
+const BINARY_REASONS = Object.freeze(['SIZE_UNVERIFIED', 'EXECUTABLE_UNVERIFIED', 'PRIVILEGED', 'ACCESS_UNVERIFIED']);
 export const SYSTEM_CHROME_CODES = Object.freeze([
   'SYSTEM_CHROME_CREDENTIALS_PRESENT', 'SYSTEM_CHROME_NONROOT_REQUIRED',
   'SYSTEM_CHROME_EXECUTABLE_UNVERIFIED', 'SYSTEM_CHROME_WRAPPER_UNVERIFIED',
   'SYSTEM_CHROME_PACKAGE_UNVERIFIED', 'SYSTEM_CHROME_APPARMOR_UNVERIFIED',
   'SYSTEM_CHROME_PROFILE_UNREADABLE', 'SYSTEM_CHROME_PROFILE_NOT_LOADED', 'SYSTEM_CHROME_VERSION_UNVERIFIED',
+  ...EXECUTABLE_CHAIN.flatMap(({ label }) => PATH_REASONS.map(reason => `SYSTEM_CHROME_${label}_${reason}`)),
+  ...BINARY_REASONS.map(reason => `SYSTEM_CHROME_BINARY_${reason}`),
 ]);
 const need = ok => { if (!ok) throw new Error('unverified'); };
+const diagnosticErrors = new WeakSet();
 const checked = (code, operation) => {
   try { return operation(); }
-  catch { throw new Error(code); } // Never retain or expose raw file/command errors.
+  catch (error) {
+    // Only our internal diagnostics survive an outer guard. Arbitrary I/O errors,
+    // even ones whose messages resemble a code, never supply diagnostic text.
+    // WeakSet membership never invokes hostile exception properties/prototypes.
+    if (diagnosticErrors.has(error)) throw error;
+    const diagnostic = new Error(code);
+    diagnosticErrors.add(diagnostic);
+    throw diagnostic;
+  }
 };
 const boundedText = (value, limit) => {
   need(typeof value === 'string' && Buffer.byteLength(value, 'utf8') <= limit && !value.includes('\0'));
@@ -81,7 +103,26 @@ export function verifySystemChrome(env = process.env, adapters = {}) {
       stdio: ['ignore', 'pipe', 'pipe'], env: { PATH: '/usr/bin:/bin', LANG: 'C', LC_ALL: 'C' },
     }), limit);
   };
-  checked('SYSTEM_CHROME_EXECUTABLE_UNVERIFIED', () => regular(EXECUTABLE, { executable: true }));
+  checked('SYSTEM_CHROME_EXECUTABLE_UNVERIFIED', () => {
+    // Same deep-directory-to-root, then binary order and predicates as regular().
+    // Split only the diagnostics; no ownership, permission or canonicality policy
+    // is weakened, and no metadata value is included in a failure.
+    for (const { path, label, directory } of EXECUTABLE_CHAIN) {
+      const verify = (reason, operation) => checked(`SYSTEM_CHROME_${label}_${reason}`, operation);
+      const stat = verify('UNREADABLE', () => io.lstatSync(path));
+      verify('TYPE_UNVERIFIED', () => need(directory ? stat.isDirectory() : stat.isFile()));
+      verify('OWNER_UNVERIFIED', () => need(stat.uid === 0));
+      verify('WRITABLE', () => need((stat.mode & 0o022) === 0));
+      if (!directory) verify('SIZE_UNVERIFIED', () => need(stat.size <= Infinity));
+      const canonical = verify('UNREADABLE', () => io.realpathSync(path));
+      verify('CANONICAL_UNVERIFIED', () => need(canonical === path));
+      if (!directory) {
+        verify('EXECUTABLE_UNVERIFIED', () => need((stat.mode & 0o005) === 0o005));
+        verify('PRIVILEGED', () => need((stat.mode & 0o6000) === 0));
+        verify('ACCESS_UNVERIFIED', () => io.accessSync(path, fs.constants.X_OK));
+      }
+    }
+  });
   checked('SYSTEM_CHROME_WRAPPER_UNVERIFIED', () => {
     regular(WRAPPER, { executable: true });
     let current = ENTRY;
