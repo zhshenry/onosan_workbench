@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { createHash } from 'node:crypto';
+import { constants, readFileSync } from 'node:fs';
 import { verifySystemChrome, SYSTEM_CHROME_CODES, SYSTEM_CHROME_VERSION } from '../tooling/ono/render-pilot/system-chrome.mjs';
 
 const executable = '/opt/google/chrome/chrome';
@@ -18,17 +20,38 @@ profile chrome /opt/google/chrome/chrome flags=(unconfined) {
   include if exists <local/chrome>
 }
 `;
-type Entry = { kind: 'file' | 'dir' | 'link'; uid: number; mode: number; size: number; text?: string; link?: string; canonical?: string; denied?: boolean };
+type Entry = { dev: number; ino: number; mtimeMs: number; ctimeMs: number; kind: 'file' | 'dir' | 'link'; uid: number; mode: number; size: number; text?: string; link?: string; canonical?: string; denied?: boolean };
 const missing = () => Object.assign(new Error('private filesystem contents must not escape'), { code: 'ENOENT' });
 function fixture() {
   // Every filesystem/account/command operation is mocked. These tests must never
   // execute system Chrome, sudo, package tools, or mutate host security settings.
   const entries = new Map<string, Entry>();
-  const set = (path: string, patch: Partial<Entry> = {}) => entries.set(path, { kind: 'file', uid: 0, mode: 0o100755, size: 100, ...patch });
+  let inode = 1;
+  const set = (path: string, patch: Partial<Entry> = {}) => entries.set(path, { dev: 1, ino: inode++, mtimeMs: 1, ctimeMs: 1, kind: 'file', uid: 0, mode: 0o100755, size: 100, ...patch });
   const text = (path: string, value: string) => set(path, { mode: 0o100644, text: value, size: Buffer.byteLength(value) });
   for (const path of ['/', '/opt', '/opt/google', '/opt/google/chrome', '/usr', '/usr/bin', '/etc', '/etc/alternatives', '/etc/apparmor.d', '/etc/apparmor.d/local']) set(path, { kind: 'dir', mode: 0o40755 });
   for (const path of [executable, wrapper, '/usr/bin/dpkg-query', '/usr/bin/cat']) set(path);
   set('/usr/bin/sudo', { mode: 0o104755 });
+  for (const path of ['/opt', '/opt/google', '/opt/google/chrome']) entries.get(path)!.mode = 0o40777;
+  for (const path of [executable, wrapper]) {
+    const value = `synthetic fixture bytes for ${path}`;
+    set(path, { mode: 0o100777, text: value, size: Buffer.byteLength(value) });
+  }
+  set('/opt/google/chrome/locales', { kind: 'dir', mode: 0o40777 });
+  text('/opt/google/chrome/locales/en-US.pak', 'synthetic locale bytes');
+  text('/opt/google/chrome/empty-resource', '');
+  const manifest = {
+    schema: 1, version: SYSTEM_CHROME_VERSION,
+    package: {
+      url: `https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${SYSTEM_CHROME_VERSION}-1_amd64.deb`,
+      sha256: 'a4edbe95e9b01db6c9b97d7a1323121eda18362b5620df06abac1b59bee80053',
+      version: `${SYSTEM_CHROME_VERSION}-1`, architecture: 'amd64', authentication: 'Google official HTTPS; no APT signature claim',
+    },
+    entries: [...entries].filter(([path]) => path.startsWith('/opt/google/chrome/')).map(([path, value]) => ({
+      path: path.slice('/opt/google/chrome/'.length), type: value.kind === 'dir' ? 'directory' : 'file',
+      ...(value.kind === 'file' ? { size: value.size, sha256: createHash('sha256').update(value.text!).digest('hex') } : {}),
+    })),
+  };
   for (const [path, link] of [
     ['/usr/bin/google-chrome', '/etc/alternatives/google-chrome'],
     ['/etc/alternatives/google-chrome', '/usr/bin/google-chrome-stable'],
@@ -44,13 +67,28 @@ function fixture() {
   const calls: Array<{ path: string; args: string[]; options: any }> = [];
   const reads: string[] = [];
   const entry = (path: string) => { reads.push(path); const value = entries.get(path); if (!value) throw missing(); return value; };
+  const stats = (value: Entry) => ({ ...value, isFile: () => value.kind === 'file', isDirectory: () => value.kind === 'dir', isSymbolicLink: () => value.kind === 'link' });
+  const handles = new Map<number, { value: Entry; offset: number }>(); let nextFd = 1;
   const adapters = {
+    manifest,
     process: { platform: 'linux', getuid: () => 1001, geteuid: () => 1001, getgid: () => 1001, getegid: () => 1001 },
     fs: {
       lstatSync: (path: string) => {
         const value = entry(path);
-        return { ...value, isFile: () => value.kind === 'file', isDirectory: () => value.kind === 'dir', isSymbolicLink: () => value.kind === 'link' };
+        return stats(value);
       },
+      readdirSync: (path: string) => [...entries.keys()].filter(name => name.startsWith(`${path}/`) && !name.slice(path.length + 1).includes('/')).map(name => name.slice(path.length + 1)),
+      openSync: (path: string, flags: number) => {
+        assert.equal(flags, constants.O_RDONLY | constants.O_NOFOLLOW);
+        const value = entry(path); assert.equal(value.kind, 'file'); const fd = nextFd++; handles.set(fd, { value, offset: 0 }); return fd;
+      },
+      fstatSync: (fd: number) => stats(handles.get(fd)!.value),
+      readSync: (fd: number, buffer: Buffer, offset: number, length: number, position: null) => {
+        assert.equal(position, null); assert.ok(length <= 1024 * 1024);
+        const handle = handles.get(fd)!, bytes = Buffer.from(handle.value.text!);
+        const count = bytes.copy(buffer, offset, handle.offset, Math.min(bytes.length, handle.offset + length)); handle.offset += count; return count;
+      },
+      closeSync: (fd: number) => { assert.ok(handles.delete(fd)); },
       realpathSync: (path: string) => { const value = entry(path); return value.canonical ?? (path === '/usr/bin/google-chrome' ? wrapper : path); },
       accessSync: (path: string, mode: number) => { assert.equal(mode, 1); if (entry(path).denied) throw new Error('private access failure'); },
       readlinkSync: (path: string) => entry(path).link,
@@ -67,7 +105,7 @@ function fixture() {
       const result = outputs[key]; if (result instanceof Error) throw result; return result;
     },
   };
-  return { entries, set, text, outputs, calls, reads, adapters };
+  return { entries, set, text, outputs, calls, reads, handles, manifest, adapters };
 }
 const fails = (f: ReturnType<typeof fixture>, code: string, env = {}) => {
   assert.throws(() => verifySystemChrome(env, f.adapters), (error: Error) => {
@@ -113,7 +151,7 @@ test('credentials, root/effective-root, group zero, mismatched or unavailable id
 test('Chrome chain refusals identify only the fixed path label and exact failed predicate', () => {
   for (const [path, label] of [[executable, 'BINARY'], ['/opt/google/chrome', 'CHROME_DIR'], ['/opt/google', 'GOOGLE'], ['/opt', 'OPT'], ['/', 'ROOT']]) {
     for (const [patch, reason] of [
-      [{ uid: 1001 }, 'OWNER_UNVERIFIED'], [{ mode: 0o100777 }, 'WRITABLE'],
+      [{ uid: 1001 }, 'OWNER_UNVERIFIED'],
       [{ kind: 'link' }, 'TYPE_UNVERIFIED'], [{ canonical: '/private/untrusted-path' }, 'CANONICAL_UNVERIFIED'],
     ] as const) {
       const f = fixture(); Object.assign(f.entries.get(path)!, patch); fails(f, `SYSTEM_CHROME_${label}_${reason}`);
@@ -124,6 +162,7 @@ test('Chrome chain refusals identify only the fixed path label and exact failed 
     denied.adapters.fs.realpathSync = current => { if (current === path) throw new Error('private path and details'); return original(current); };
     fails(denied, `SYSTEM_CHROME_${label}_UNREADABLE`); assert.equal(denied.calls.length, 0);
   }
+  const rootWritable = fixture(); rootWritable.entries.get('/')!.mode = 0o40777; fails(rootWritable, 'SYSTEM_CHROME_ROOT_WRITABLE');
   for (const [patch, reason] of [
     [{ mode: 0o100644 }, 'EXECUTABLE_UNVERIFIED'], [{ mode: 0o100750 }, 'EXECUTABLE_UNVERIFIED'],
     [{ mode: 0o104755 }, 'PRIVILEGED'], [{ mode: 0o102755 }, 'PRIVILEGED'],
@@ -155,7 +194,7 @@ test('precise chain errors retain no raw data and arbitrary exceptions cannot fo
 
 test('wrapper alternatives must resolve only through root-owned protected fixed package paths', () => {
   for (const path of [wrapper, '/usr/bin/google-chrome', '/etc/alternatives/google-chrome', '/usr/bin/google-chrome-stable', '/usr', '/usr/bin', '/etc', '/etc/alternatives']) {
-    const f = fixture(); Object.assign(f.entries.get(path)!, { uid: 1001 }); fails(f, 'SYSTEM_CHROME_WRAPPER_UNVERIFIED'); assert.equal(f.calls.length, 0);
+    const f = fixture(); Object.assign(f.entries.get(path)!, { uid: 1001 }); fails(f, path === wrapper ? 'SYSTEM_CHROME_PAYLOAD_UNVERIFIED' : 'SYSTEM_CHROME_WRAPPER_UNVERIFIED'); assert.equal(f.calls.length, 0);
   }
   for (const patch of [
     { kind: 'file' as const }, { link: '/tmp/chrome' }, { link: '/usr/bin/google-chrome' },
@@ -163,7 +202,7 @@ test('wrapper alternatives must resolve only through root-owned protected fixed 
   ]) {
     const f = fixture(); Object.assign(f.entries.get('/usr/bin/google-chrome')!, patch); fails(f, 'SYSTEM_CHROME_WRAPPER_UNVERIFIED'); assert.equal(f.calls.length, 0);
   }
-  for (const path of [wrapper, '/usr/bin', '/etc/alternatives']) {
+  for (const path of ['/usr/bin', '/etc/alternatives']) {
     const f = fixture(); Object.assign(f.entries.get(path)!, { mode: 0o777 }); fails(f, 'SYSTEM_CHROME_WRAPPER_UNVERIFIED');
   }
   const f = fixture(); f.entries.get('/usr/bin/google-chrome')!.link = '../bin/google-chrome-stable';
@@ -299,4 +338,115 @@ test('read and command errors are replaced with finite codes without raw message
   }
   const f = fixture(); f.adapters.fs.readFileSync = () => { throw new Error('private policy text'); };
   fails(f, 'SYSTEM_CHROME_APPARMOR_UNVERIFIED'); noChrome(f);
+});
+
+test('committed manifest has the pinned source digest and complete exact-version runtime inventory', () => {
+  const bytes = readFileSync(new URL('../tooling/ono/render-pilot/chrome-154.0.8037.97-manifest.json', import.meta.url));
+  // Scoped .gitattributes keeps this reviewed source byte-identical on Windows.
+  assert.match(readFileSync(new URL('../.gitattributes', import.meta.url), 'utf8'), /chrome-154\.0\.8037\.97-manifest\.json text eol=lf/);
+  const text = bytes.toString('utf8');
+  assert.equal(createHash('sha256').update(text).digest('hex'), 'f9dd5a61fcfd187eac5beecf9fa0e81c2b43751ad24779dea67af2fcc2bc9d9e');
+  const manifest = JSON.parse(text);
+  assert.equal(manifest.version, SYSTEM_CHROME_VERSION); assert.equal(manifest.entries.length, 263);
+  assert.equal(manifest.entries.filter((item: any) => item.type === 'file').length, 255);
+  assert.equal(manifest.entries.filter((item: any) => item.type === 'directory').length, 8);
+  assert.equal(manifest.entries.reduce((sum: number, item: any) => sum + (item.size ?? 0), 0), 456937066);
+});
+
+test('default source manifest must match its exact reviewed digest before parsing or execution', () => {
+  for (const text of ['{}', '{private malformed json', JSON.stringify(fixture().manifest), 'x'.repeat(65537)]) {
+    const f = fixture(); (f.adapters as any).manifest = undefined;
+    f.adapters.fs.readFileSync = () => text;
+    fails(f, 'SYSTEM_CHROME_MANIFEST_UNVERIFIED'); assert.equal(f.calls.length, 0);
+  }
+  const f = fixture(); (f.adapters as any).manifest = undefined;
+  f.adapters.fs.readFileSync = (path: any) => {
+    assert.ok(path instanceof URL);
+    assert.ok(path.pathname.endsWith('/chrome-154.0.8037.97-manifest.json'));
+    return readFileSync(path, 'utf8');
+  };
+  // Real committed manifest is accepted, then the intentionally tiny fake tree
+  // fails its inventory match. No host browser or host security file is touched.
+  fails(f, 'SYSTEM_CHROME_PAYLOAD_UNVERIFIED'); assert.equal(f.calls.length, 0);
+});
+
+test('manifest version, official HTTPS package binding, paths, inventory and bounds fail closed', () => {
+  const changes: Array<(m: any) => void> = [
+    m => { m.schema = 2; }, m => { m.version = 'other'; }, m => { m.package.url = 'https://untrusted/package.deb'; },
+    m => { m.package.sha256 = '0'.repeat(64); }, m => { m.package.version = 'other'; }, m => { m.package.architecture = 'arm64'; },
+    m => { m.package.authentication = 'signed by APT'; }, m => { m.entries = []; },
+    m => { m.entries.push(m.entries[0]); }, m => { m.entries[0].path = '../chrome'; },
+    m => { m.entries[0].path = '/opt/google/chrome/chrome'; }, m => { m.entries[0].path = 'locales/../chrome'; },
+    m => { m.entries[0].path = 'locales/./chrome'; }, m => { m.entries[0].path = 'private\0name'; },
+    m => { m.entries[0].path = 'x'.repeat(257); }, m => { m.entries[0].path = 'unknown-parent/chrome'; },
+    m => { m.entries[0].type = 'symlink'; }, m => { m.entries[0].size = -1; }, m => { m.entries[0].size = 1.5; },
+    m => { m.entries[0].size = 536870913; }, m => { m.entries[0].sha256 = 'private'; },
+    m => { m.entries = m.entries.filter((item: any) => item.path !== 'chrome'); },
+    m => { m.entries = m.entries.filter((item: any) => item.path !== 'locales'); },
+    m => { m.entries[0].size = 536870912; m.entries[1].size = 536870912; },
+  ];
+  for (const change of changes) {
+    const f = fixture(); change(f.manifest); fails(f, 'SYSTEM_CHROME_MANIFEST_UNVERIFIED'); assert.equal(f.calls.length, 0);
+  }
+});
+
+test('official writable opt layout is accepted only after exact full payload verification', () => {
+  const f = fixture();
+  for (const [path, item] of f.entries) if (path === '/opt' || path.startsWith('/opt/')) item.mode = item.kind === 'dir' ? 0o40777 : 0o100777;
+  const original = f.adapters.run;
+  f.adapters.run = (path, args, options) => {
+    assert.equal(f.handles.size, 0);
+    for (const resource of f.manifest.entries) assert.ok(f.reads.includes(`/opt/google/chrome/${resource.path}`));
+    return original(path, args, options);
+  };
+  assert.equal(verifySystemChrome({}, f.adapters).version, SYSTEM_CHROME_VERSION);
+  assert.equal(f.calls.at(-1)?.path, executable);
+});
+
+test('missing, added, tampered, redirected and substituted runtime entries stop before every command', () => {
+  const changes: Array<(f: ReturnType<typeof fixture>) => void> = [
+    f => { f.entries.delete('/opt/google/chrome/empty-resource'); },
+    f => { f.entries.delete('/opt/google/chrome/locales/en-US.pak'); },
+    f => { f.text('/opt/google/chrome/unreviewed.so', 'private'); },
+    f => { f.text('/opt/google/chrome/locales/new.pak', 'private'); },
+    f => { f.set('/opt/google/chrome/extra', { kind: 'dir' }); },
+    f => { f.entries.get(wrapper)!.text = f.entries.get(wrapper)!.text!.replace('synthetic', 'different'); },
+    f => { f.entries.get('/opt/google/chrome/locales/en-US.pak')!.size++; },
+    f => { f.entries.get('/opt/google/chrome/locales/en-US.pak')!.kind = 'link'; },
+    f => { f.entries.get('/opt/google/chrome/locales')!.kind = 'link'; },
+    f => { f.entries.get('/opt/google/chrome/locales')!.uid = 1001; },
+    f => { f.entries.get('/opt/google/chrome/locales/en-US.pak')!.uid = 1001; },
+    f => { f.entries.get('/opt/google/chrome/locales/en-US.pak')!.canonical = '/private/elsewhere'; },
+  ];
+  for (const change of changes) {
+    const f = fixture(); change(f); fails(f, 'SYSTEM_CHROME_PAYLOAD_UNVERIFIED'); assert.equal(f.calls.length, 0); assert.equal(f.handles.size, 0);
+  }
+});
+
+test('payload hashing streams bounded chunks and closes file descriptors', () => {
+  const f = fixture(), value = 'x'.repeat(1024 * 1024 + 17), path = '/opt/google/chrome/locales/en-US.pak';
+  f.entries.get(path)!.text = value; f.entries.get(path)!.size = Buffer.byteLength(value);
+  const item = f.manifest.entries.find(item => item.path === 'locales/en-US.pak')!;
+  item.size = Buffer.byteLength(value); item.sha256 = createHash('sha256').update(value).digest('hex');
+  const lengths: number[] = []; const original = f.adapters.fs.readSync;
+  f.adapters.fs.readSync = (...args) => { lengths.push(args[3]); return original(...args); };
+  verifySystemChrome({}, f.adapters); assert.ok(lengths.includes(1024 * 1024)); assert.ok(lengths.includes(17));
+  assert.equal(f.handles.size, 0);
+});
+
+test('short, excess, failed or concurrently changed payload reads reject without raw details', () => {
+  for (const behavior of ['short', 'excess', 'failed', 'opened-inode', 'changed-inode', 'changed-directory']) {
+    const f = fixture(), originalRead = f.adapters.fs.readSync, originalStat = f.adapters.fs.fstatSync;
+    if (behavior === 'opened-inode') f.adapters.fs.fstatSync = fd => ({ ...originalStat(fd), ino: -1 });
+    else f.adapters.fs.readSync = (...args) => {
+      if (behavior === 'short') return 0;
+      if (behavior === 'failed') throw new Error('private error /opt/untrusted-file');
+      const count = originalRead(...args);
+      if (behavior === 'excess' && count === 0) return 1;
+      if (behavior === 'changed-inode') f.handles.get(args[0])!.value.ino++;
+      if (behavior === 'changed-directory') f.entries.get('/opt/google/chrome')!.mtimeMs++;
+      return count;
+    };
+    fails(f, 'SYSTEM_CHROME_PAYLOAD_UNVERIFIED'); assert.equal(f.calls.length, 0); assert.equal(f.handles.size, 0);
+  }
 });

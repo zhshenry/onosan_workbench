@@ -179,7 +179,7 @@ it.
 
 The candidate change adds a read-only system_chrome gate before launching any
 browser. It requires a nonroot effective renderer account, a fixed root-owned
-system Chrome executable and wrapper, ownership by the installed
+system Chrome executable and wrapper, exact authenticated-source payload bytes, ownership by the installed
 `google-chrome-stable` package, matching package/executable versions, and the
 known existing AppArmor Chrome profile/configuration plus loaded-profile state.
 Missing, unreadable or unfamiliar evidence fails closed with a finite code.
@@ -189,9 +189,9 @@ install a setuid helper, start a root browser, or fall back to no-sandbox.
 The accepted Chrome version is pinned to **154.0.8037.97**, listed in the exact
 [runner image 20261004.327.1 manifest](https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md)
 used by that diagnostic. A later hosted-image/browser update is not silently
-accepted. Package metadata and root-owned files are provenance evidence within
-the trusted hosted-runner model, not independent cryptographic attestation of
-all installed bytes. GitHub's [image installer](https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/scripts/build/install-google-chrome.sh)
+accepted. Package metadata alone is not source-content attestation. The runtime payload
+now also requires exact SHA256/type/size/tree matching to the fixed manifest
+derived from Google's exact official HTTPS package, as documented below. GitHub's [image installer](https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/scripts/build/install-google-chrome.sh)
 uses Google's official stable package source.
 
 The kernel's loaded AppArmor profile list may not be readable by the ordinary
@@ -223,3 +223,52 @@ make CI pass. This probe does not enter the main-only manual prototype workflow
 or prove the browser can render under its network namespace. A real
 post_attachment=false render requires separately approved post-merge main SHA;
 no upload or main-branch runtime success is claimed by this PR.
+
+
+### Correcting the hosted /opt assumption without changing its permissions
+
+The first PR eligibility probes failed before any Chrome command because the
+Chrome directory was writable. The exact image's official
+[configure-system.sh](https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/scripts/build/configure-system.sh)
+recursively applies mode 777 to /opt. Non-writable Chrome ancestry was a new
+conservative check in this PR, not a pre-existing user security requirement; it
+was not a usable source-integrity proof for this hosted image.
+
+The corrected gate does not chmod/chown anything or silently ignore content
+integrity. Instead, it requires an exact offline match of the complete Chrome
+runtime tree to `chrome-154.0.8037.97-manifest.json`: all expected files and
+directories, file types, sizes and SHA256 hashes. Unexpected/missing entries or
+symlink replacements fail before Chrome is executed. Root ownership, canonical
+paths and executable/privileged-bit checks remain; only the known /opt writable
+mode assumption is replaced by payload verification. Existing /etc AppArmor and
+/usr tool protections remain unchanged.
+
+The manifest source is this exact Google HTTPS URL:
+https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_154.0.8037.97-1_amd64.deb
+
+- Package SHA256: `a4edbe95e9b01db6c9b97d7a1323121eda18362b5620df06abac1b59bee80053`
+- Manifest SHA256: `f9dd5a61fcfd187eac5beecf9fa0e81c2b43751ad24779dea67af2fcc2bc9d9e`
+- Runtime: 255 files and 8 directories, 456,937,066 bytes; no package symlinks in this subtree
+
+Authentication is Google's official HTTPS origin with normal TLS certificate
+verification, followed by reviewed digest pinning. It is **not** an APT signature
+chain: the current signed package index no longer lists this older exact version.
+No third-party mirror, installed runner files or runtime self-generated checksum
+is used as the expected source. The `.deb` was inspected without installation or
+execution; package bytes do not enter Git.
+
+To reproduce, download that exact URL to a temporary file with verified HTTPS,
+then run `python3 tooling/ono/render-pilot/make-chrome-manifest.py PATH_TO_DEB`.
+The script first verifies the pinned archive SHA256 and package/version/amd64
+control metadata, then streams archive contents with GNU ar and Python tarfile.
+It never extracts or runs package scripts. Its JSON stdout must byte-match the
+committed manifest. Reproduction was performed twice with the same manifest hash.
+
+This remains a trusted single-job design: reviewed source/dependencies and no
+hostile concurrent local process. Whole-payload hashing establishes bytes at
+verification time, not an immutable mount or race-free future path execution.
+GitHub-hosted runner jobs already have passwordless sudo; these checks are not
+hostile-code isolation. A stronger adversarial-local-process requirement would
+need a separately approved execution design rather than pretending repeated
+hashing removes every TOCTOU race. Browser sandbox/network restrictions remain
+mandatory and unchanged.

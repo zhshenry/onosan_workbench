@@ -1,10 +1,12 @@
 import * as fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { posix } from 'node:path';
 // The verified target is Linux even when mocked tests run on Windows.
 const { dirname, resolve } = posix;
 
 const EXECUTABLE = '/opt/google/chrome/chrome';
+const PAYLOAD_ROOT = '/opt/google/chrome';
 const WRAPPER = '/opt/google/chrome/google-chrome';
 const ENTRY = '/usr/bin/google-chrome';
 const PROFILE = '/etc/apparmor.d/chrome';
@@ -14,6 +16,9 @@ const PACKAGE = 'google-chrome-stable';
 // Reviewed runner image 20261004.327.1. Image updates require a reviewed pin change:
 // https://raw.githubusercontent.com/actions/runner-images/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md
 export const SYSTEM_CHROME_VERSION = '154.0.8037.97';
+const PACKAGE_SHA256 = 'a4edbe95e9b01db6c9b97d7a1323121eda18362b5620df06abac1b59bee80053';
+const MANIFEST_SHA256 = 'f9dd5a61fcfd187eac5beecf9fa0e81c2b43751ad24779dea67af2fcc2bc9d9e';
+const PAYLOAD_ANCESTORS = new Set(['/opt', '/opt/google', PAYLOAD_ROOT]);
 const VERSION = '[1-9][0-9]{0,3}\\.[0-9]{1,6}\\.[0-9]{1,6}\\.[0-9]{1,6}';
 const WRAPPER_LINKS = new Set([ENTRY, '/etc/alternatives/google-chrome', '/usr/bin/google-chrome-stable']);
 // Fixed labels expose which reviewed precondition was unverifiable, never a
@@ -32,6 +37,7 @@ export const SYSTEM_CHROME_CODES = Object.freeze([
   'SYSTEM_CHROME_EXECUTABLE_UNVERIFIED', 'SYSTEM_CHROME_WRAPPER_UNVERIFIED',
   'SYSTEM_CHROME_PACKAGE_UNVERIFIED', 'SYSTEM_CHROME_APPARMOR_UNVERIFIED',
   'SYSTEM_CHROME_PROFILE_UNREADABLE', 'SYSTEM_CHROME_PROFILE_NOT_LOADED', 'SYSTEM_CHROME_VERSION_UNVERIFIED',
+  'SYSTEM_CHROME_MANIFEST_UNVERIFIED', 'SYSTEM_CHROME_PAYLOAD_UNVERIFIED',
   ...EXECUTABLE_CHAIN.flatMap(({ label }) => PATH_REASONS.map(reason => `SYSTEM_CHROME_${label}_${reason}`)),
   ...BINARY_REASONS.map(reason => `SYSTEM_CHROME_BINARY_${reason}`),
 ]);
@@ -59,8 +65,14 @@ function profileLines(text) {
 }
 
 // Read-only preconditions for the trusted GitHub-hosted Ubuntu runner. Installed
-// package ownership/status, protected paths and matching versions are provenance
-// evidence, NOT cryptographic attestation of a package or the loaded policy.
+// package metadata plus a pinned full-runtime SHA256 manifest verify content
+// against the exact package obtained from Google HTTPS. This is not a signed-APT
+// claim or attestation of the machine or loaded policy. GitHub intentionally
+// makes /opt writable; never infer content integrity from those permission bits:
+// https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/scripts/build/configure-system.sh
+// The trusted single-job model excludes hostile concurrent host processes (the
+// runner already has passwordless sudo). Descriptor/stat checks detect ordinary
+// changes, but cannot eliminate TOCTOU before Playwright's later path-based exec.
 // The loaded profile list proves its name/mode, not byte equality with the file.
 // Sources: actions/runner-images installs Google's official stable .deb:
 // https://github.com/actions/runner-images/blob/main/images/ubuntu/scripts/build/install-google-chrome.sh
@@ -72,6 +84,7 @@ export function verifySystemChrome(env = process.env, adapters = {}) {
   const io = adapters.fs ?? fs;
   const account = adapters.process ?? process;
   const run = adapters.run ?? execFileSync;
+  let payloadVerified = false;
   checked('SYSTEM_CHROME_CREDENTIALS_PRESENT', () => need(!env.GH_TOKEN && !env.GITHUB_TOKEN));
   const { uid, gid } = checked('SYSTEM_CHROME_NONROOT_REQUIRED', () => {
     need(account.platform === 'linux');
@@ -82,14 +95,14 @@ export function verifySystemChrome(env = process.env, adapters = {}) {
   const directories = path => {
     for (let current = dirname(path); ; current = dirname(current)) {
       const stat = io.lstatSync(current);
-      need(stat.isDirectory() && stat.uid === 0 && (stat.mode & 0o022) === 0 && io.realpathSync(current) === current);
+      need(stat.isDirectory() && stat.uid === 0 && ((stat.mode & 0o022) === 0 || (payloadVerified && PAYLOAD_ANCESTORS.has(current))) && io.realpathSync(current) === current);
       if (current === '/') break;
     }
   };
   const regular = (path, { executable = false, maxSize = Infinity, allowSetuid = false } = {}) => {
     directories(path);
     const stat = io.lstatSync(path);
-    need(stat.isFile() && stat.uid === 0 && (stat.mode & 0o022) === 0 && stat.size <= maxSize && io.realpathSync(path) === path);
+    need(stat.isFile() && stat.uid === 0 && ((stat.mode & 0o022) === 0 || (payloadVerified && [EXECUTABLE, WRAPPER].includes(path))) && stat.size <= maxSize && io.realpathSync(path) === path);
     if (executable) {
       need((stat.mode & 0o005) === 0o005 && (stat.mode & (allowSetuid ? 0o2000 : 0o6000)) === 0);
       io.accessSync(path, fs.constants.X_OK);
@@ -104,15 +117,14 @@ export function verifySystemChrome(env = process.env, adapters = {}) {
     }), limit);
   };
   checked('SYSTEM_CHROME_EXECUTABLE_UNVERIFIED', () => {
-    // Same deep-directory-to-root, then binary order and predicates as regular().
-    // Split only the diagnostics; no ownership, permission or canonicality policy
-    // is weakened, and no metadata value is included in a failure.
+    // /opt is deliberately writable in the official image. These preliminary
+    // type/owner/path checks never suffice alone: verify all payload bytes below.
     for (const { path, label, directory } of EXECUTABLE_CHAIN) {
       const verify = (reason, operation) => checked(`SYSTEM_CHROME_${label}_${reason}`, operation);
       const stat = verify('UNREADABLE', () => io.lstatSync(path));
       verify('TYPE_UNVERIFIED', () => need(directory ? stat.isDirectory() : stat.isFile()));
       verify('OWNER_UNVERIFIED', () => need(stat.uid === 0));
-      verify('WRITABLE', () => need((stat.mode & 0o022) === 0));
+      if (path === '/') verify('WRITABLE', () => need((stat.mode & 0o022) === 0));
       if (!directory) verify('SIZE_UNVERIFIED', () => need(stat.size <= Infinity));
       const canonical = verify('UNREADABLE', () => io.realpathSync(path));
       verify('CANONICAL_UNVERIFIED', () => need(canonical === path));
@@ -122,6 +134,72 @@ export function verifySystemChrome(env = process.env, adapters = {}) {
         verify('ACCESS_UNVERIFIED', () => io.accessSync(path, fs.constants.X_OK));
       }
     }
+  });
+  const expected = checked('SYSTEM_CHROME_MANIFEST_UNVERIFIED', () => {
+    // A synthetic manifest is an in-process unit-test seam only. Production
+    // reads the fixed reviewed source file and verifies its exact byte digest.
+    let manifest = adapters.manifest;
+    if (manifest === undefined) {
+      const text = boundedText(io.readFileSync(new URL('./chrome-154.0.8037.97-manifest.json', import.meta.url), 'utf8'), 65536);
+      need(createHash('sha256').update(text).digest('hex') === MANIFEST_SHA256);
+      manifest = JSON.parse(text);
+    }
+    need(manifest?.schema === 1 && manifest.version === SYSTEM_CHROME_VERSION &&
+      manifest.package?.url === `https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${SYSTEM_CHROME_VERSION}-1_amd64.deb` &&
+      manifest.package.sha256 === PACKAGE_SHA256 && manifest.package.version === `${SYSTEM_CHROME_VERSION}-1` &&
+      manifest.package.architecture === 'amd64' && manifest.package.authentication === 'Google official HTTPS; no APT signature claim' &&
+      Array.isArray(manifest.entries) && manifest.entries.length >= 2 && manifest.entries.length <= 1024);
+    const expected = new Map(); let total = 0;
+    for (const item of manifest.entries) {
+      need(typeof item.path === 'string' && item.path.length <= 256 && /^[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)*$/.test(item.path) &&
+        item.path.split('/').every(part => !['.', '..'].includes(part)) && !expected.has(item.path));
+      need(item.type === 'directory' || (item.type === 'file' && Number.isSafeInteger(item.size) && item.size >= 0 && item.size <= 536870912 && /^[a-f0-9]{64}$/.test(item.sha256)));
+      if (item.type === 'file') total += item.size;
+      expected.set(item.path, item);
+    }
+    need(total <= 536870912 && expected.get('chrome')?.type === 'file' && expected.get('google-chrome')?.type === 'file');
+    for (const path of expected.keys()) if (dirname(path) !== '.') need(expected.get(dirname(path))?.type === 'directory');
+    return expected;
+  });
+  checked('SYSTEM_CHROME_PAYLOAD_UNVERIFIED', () => {
+    const buffer = Buffer.alloc(1024 * 1024);
+    const unchanged = (a, b) => ['dev', 'ino', 'uid', 'mode', 'size', 'mtimeMs', 'ctimeMs'].every(key => a[key] === b[key]);
+    const visit = (relative = '') => {
+      const path = relative ? `${PAYLOAD_ROOT}/${relative}` : PAYLOAD_ROOT;
+      const before = io.lstatSync(path);
+      need(before.uid === 0 && io.realpathSync(path) === path);
+      const item = relative ? expected.get(relative) : { type: 'directory' };
+      need(item);
+      if (item.type === 'directory') {
+        need(before.isDirectory());
+        const names = io.readdirSync(path);
+        const wanted = [...expected.keys()].filter(name => (dirname(name) === '.' ? '' : dirname(name)) === relative)
+          .map(name => name.slice(relative ? relative.length + 1 : 0)).sort();
+        need(Array.isArray(names) && names.every(name => typeof name === 'string') && names.length === wanted.length && names.slice().sort().every((name, index) => name === wanted[index]));
+        for (const name of wanted) visit(relative ? `${relative}/${name}` : name);
+        need(unchanged(before, io.lstatSync(path)));
+      } else {
+        // This pinned package has no symlinks. A replaced file/link or extra
+        // resource is rejected; no unreviewed runtime member is skipped.
+        need(before.isFile() && before.size === item.size);
+        const fd = io.openSync(path, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+        try {
+          const opened = io.fstatSync(fd);
+          need(opened.isFile() && unchanged(before, opened));
+          const hash = createHash('sha256'); let total = 0;
+          while (total < item.size) {
+            const length = Math.min(buffer.length, item.size - total);
+            const count = io.readSync(fd, buffer, 0, length, null);
+            need(Number.isSafeInteger(count) && count > 0 && count <= length);
+            hash.update(buffer.subarray(0, count)); total += count;
+          }
+          need(io.readSync(fd, buffer, 0, 1, null) === 0 && hash.digest('hex') === item.sha256 &&
+            unchanged(opened, io.fstatSync(fd)) && unchanged(opened, io.lstatSync(path)));
+        } finally { io.closeSync(fd); }
+      }
+    };
+    visit();
+    payloadVerified = true;
   });
   checked('SYSTEM_CHROME_WRAPPER_UNVERIFIED', () => {
     regular(WRAPPER, { executable: true });
