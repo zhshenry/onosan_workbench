@@ -1,5 +1,7 @@
 # [OnO] Issue #13：设计源与固定渲染支持 v1
 
+> 2026-10-11 后续记录：v1 已随 PR #14 合入并在 [方案评论](https://github.com/zhshenry/onosan_workbench/issues/13#issuecomment-6107824319) 展示实际图片；随后收到 [去掉输入、改成下拉直选的反馈](https://github.com/zhshenry/onosan_workbench/issues/13#issuecomment-6110434327)，未获正式方案批准。本文以下保留 v1 准备时的历史记录，当前修订见 [v2 准备记录](ONO-ISSUE-13-DESIGN-V2.md)。v1 图片不作为 v2 的图证据。
+
 状态：**设计准备 PR；不是正式 UI 方案审批或产品实现。** 这份记录不包含已生成的设计图。实际渲染、图片可访问性和视觉审阅均待完成；不能凭测试绿色进入产品开发。
 
 - 需求：[新建命例日期可按年跳转](https://github.com/zhshenry/onosan_workbench/issues/13)

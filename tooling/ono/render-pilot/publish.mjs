@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { makeRunner, validateContext, validatePreflight, REPO } from '../attachment-test.mjs';
 import { normalizePng } from './png.mjs';
 import { sha256 } from './render.mjs';
-import { getCandidate, verifySource, validatePublicationTarget } from './candidates.mjs';
+import { ISSUE13_DROPDOWN_STATE, getCandidate, verifySource, validatePublicationTarget } from './candidates.mjs';
 const need = (ok, code) => { if (!ok) throw new Error(code); };
 function regularFile(path, limit) {
   const info = lstatSync(path); need(info.isFile() && !info.isSymbolicLink() && info.size > 0 && info.size <= limit, 'OUTPUT_NOT_REGULAR_OR_BOUNDED');
@@ -41,7 +41,9 @@ export function publish(env = process.env, run = makeRunner(env)) {
     return pages.flat().filter(c => typeof c.body === 'string' && c.body.includes(marker));
   };
   preflight(); need(find().length === 0, 'MARKER_ALREADY_PRESENT');
-  const body = `[OnO] ${candidate.description}, ${candidate.width}×${candidate.height}, 1×. ${candidate.disclaimer}\n\n${marker}\nSource: ${candidate.source}\nState: ${candidate.state}\nApproved source SHA: ${ctx.sha}\nPNG SHA256: ${manifest.imageSha256}\nRun: ${ctx.run}\nAttempt: ${ctx.attempt}\nVisual review: pending. Font fallback may differ from Windows.\n\nThe plan must reuse the exact attachment URL returned in this comment; no second image upload.`;
+  const body = candidate.state === ISSUE13_DROPDOWN_STATE
+    ? `[OnO] ${candidate.description}，${candidate.width}×${candidate.height}，1×。${candidate.disclaimer}\n\n${marker}\n源文件：${candidate.source}\n固定状态：${candidate.state}\n已批准的主分支提交：${ctx.sha}\nPNG SHA256：${manifest.imageSha256}\n运行记录：${ctx.run}\n尝试次数：${ctx.attempt}\n视觉复核：待完成。字体回退效果可能与 Windows 不同。\n\n本评论仅记录原型渲染及附件，正式方案仍待视觉核验后回填。方案须复用本评论返回的同一附件地址，不得重复上传图片。\n\n请在本 Issue 回复对年份下拉样式的意见。`
+    : `[OnO] ${candidate.description}, ${candidate.width}×${candidate.height}, 1×. ${candidate.disclaimer}\n\n${marker}\nSource: ${candidate.source}\nState: ${candidate.state}\nApproved source SHA: ${ctx.sha}\nPNG SHA256: ${manifest.imageSha256}\nRun: ${ctx.run}\nAttempt: ${ctx.attempt}\nVisual review: pending. Font fallback may differ from Windows.\n\nThe plan must reuse the exact attachment URL returned in this comment; no second image upload.`;
   const bodyPath = join(directory, 'comment.txt'); writeFileSync(bodyPath, body, { mode: 0o600 });
   preflight(); need(find().length === 0, 'MARKER_APPEARED');
   checkManifest(manifest, regularFile(path, 20_000_000), env);

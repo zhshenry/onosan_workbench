@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { normalizePng } from './png.mjs';
 import { runStage, formatDiagnostic } from './diagnostics.mjs';
 import { verifySystemChrome } from './system-chrome.mjs';
-import { CANDIDATE, STATE, ISSUE13_STATE, getCandidate, verifySource } from './candidates.mjs';
+import { CANDIDATE, STATE, ISSUE13_STATE, ISSUE13_DROPDOWN_STATE, getCandidate, verifySource } from './candidates.mjs';
 export { CANDIDATE, STATE };
 export const sha256 = b => createHash('sha256').update(b).digest('hex');
 const need = (ok, code) => { if (!ok) throw new Error(code); };
@@ -45,6 +45,41 @@ export async function verifyIssue13State(page) {
   await text('#state-jumped [data-ui="view-year"]', '1990年');
   await text('#state-jumped [data-ui="view-month"]', '10月');
 }
+// v2 keeps the calendar visible while the year-only list opens over it. The
+// middle preview is browsing 1990; 2026 is still selected until an option is used.
+export async function verifyIssue13DropdownState(page) {
+  await page.locator('#issue13-review[data-ready="true"]').waitFor();
+  need(await page.locator('#issue13-review').count() === 1 &&
+    await page.locator('#issue13-review article').count() === 3, 'ISSUE_STATE_NOT_READY');
+  const text = async (selector, value) => {
+    const locator = page.locator(selector);
+    need(await locator.count() === 1 && (await locator.textContent()).trim() === value, 'ISSUE_STATE_NOT_READY');
+  };
+  for (const [state, dataState, year] of [['calendar', 'calendar-2026-10', '2026年'], ['years', 'year-dropdown-1990', '2026年'], ['jumped', 'calendar-1990-10', '1990年']]) {
+    const root = `#issue13-review article#state-${state}`;
+    const controller = page.locator(root);
+    need(await controller.count() === 1 && await controller.getAttribute('data-preview') === state &&
+      await controller.getAttribute('data-state') === dataState, 'ISSUE_STATE_NOT_READY');
+    need(await page.locator(`${root} [data-ui="calendar-view"]`).isVisible(), 'ISSUE_STATE_NOT_READY');
+    const list = page.locator(`${root} [data-ui="year-list"]`);
+    need(await list.count() === 1 && await list.getAttribute('role') === 'listbox' &&
+      await list.isVisible() === (state === 'years'), 'ISSUE_STATE_NOT_READY');
+    const trigger = page.locator(`${root} [data-ui="year-trigger"]`);
+    need(await trigger.count() === 1 && await trigger.getAttribute('role') === 'combobox' &&
+      await trigger.getAttribute('aria-expanded') === String(state === 'years'), 'ISSUE_STATE_NOT_READY');
+    await text(`${root} .date-value`, '选择日期');
+    await text(`${root} [data-ui="view-year"]`, year);
+    await text(`${root} [data-ui="view-month"]`, '10月');
+  }
+  need(await page.locator('#issue13-review [data-ui="year-input"], #issue13-review [data-ui="jump"], #issue13-review [data-ui="prev-decade"], #issue13-review [data-ui="next-decade"]').count() === 0, 'ISSUE_STATE_NOT_READY');
+  need(await page.locator('#state-years [data-ui="year-trigger"]').getAttribute('aria-activedescendant') === 'state-years-year-option-1990', 'ISSUE_STATE_NOT_READY');
+  const options = page.locator('#state-years [data-ui="year-list"] [role="option"]');
+  need(await options.count() === 201 && await options.evaluateAll(nodes => nodes.every((node, index) => {
+    const year = 1900 + index;
+    return node.getAttribute('data-ui') === `year-option-${year}` && node.id === `state-years-year-option-${year}` &&
+      node.textContent.trim() === `${year}年` && node.getAttribute('aria-selected') === String(year === 2026);
+  })), 'ISSUE_STATE_NOT_READY');
+}
 // Adapters are an in-process test seam, never read from workflow inputs or files.
 export async function render(env = process.env, adapters = {}) {
   const log = adapters.log ?? console.log;
@@ -59,7 +94,7 @@ export async function render(env = process.env, adapters = {}) {
     const bytes = (adapters.readSource ?? (() => readFileSync(resolve(candidate.source))))();
     const sourceSha256 = verifySource(candidate, bytes);
     const html = Buffer.from(bytes).toString('utf8');
-    if (candidate.state === ISSUE13_STATE) need(html.split('<head>').length === 2, 'SOURCE_CSP_REQUIRED');
+    if ([ISSUE13_STATE, ISSUE13_DROPDOWN_STATE].includes(candidate.state)) need(html.split('<head>').length === 2, 'SOURCE_CSP_REQUIRED');
     const output = join(env.RUNNER_TEMP, 'ono-render-output');
     (adapters.createOutput ?? (path => mkdirSync(path, { recursive: true, mode: 0o700 })))(output);
     return { html, sourceSha256, output };
@@ -83,6 +118,7 @@ export async function render(env = process.env, adapters = {}) {
     const checkPage = () => { need(!blocked, 'PAGE_REQUEST_BLOCKED'); need(!errors, 'PAGE_SCRIPT_ERROR'); };
     await stage('assets', async () => {
       if (candidate.state === ISSUE13_STATE) await verifyIssue13State(page);
+      else if (candidate.state === ISSUE13_DROPDOWN_STATE) await verifyIssue13DropdownState(page);
       else {
         await page.locator('#view-home.on').waitFor();
         need(await page.locator('#tree .nsub').count() === 3, 'INITIAL_STATE_NOT_READY');

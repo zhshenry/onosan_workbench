@@ -3,3 +3,6 @@
 tooling/ono/render-pilot/chrome-154.0.8037.97-manifest.json text eol=lf
 # Fixed Issue 13 design source is SHA256-bound by the candidate allowlist.
 design/mockups/issue-13-year-picker-v1.html text eol=lf
+
+# v2 keeps its own immutable source pin; v1 remains available for traceability.
+design/mockups/issue-13-year-dropdown-v2.html text eol=lf

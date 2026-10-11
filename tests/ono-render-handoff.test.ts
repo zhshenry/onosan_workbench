@@ -58,6 +58,23 @@ for (const [name, input] of [
   test(`preparation refuses ${name}`, () => assert.throws(() => prepareDispatch(input)));
 }
 
+test('year dropdown v2 preparation is nonpublishing by default and publication stays fixed to issue 13', () => {
+  const state = 'issue-13-year-dropdown-v2';
+  const draft = { ...base, prototype_state: state };
+  assert.deepEqual(prepareDispatch(draft), { ref: 'main', inputs: {
+    approved_sha: sha, prototype_state: state, post_attachment: false,
+    target_issue: '', approval_id: '',
+  } });
+  const approved = { ...draft, publish: true, target_issue: '13', approval_id: 'test-only-approval' };
+  assert.equal(prepareDispatch(approved).inputs.target_issue, '13');
+  assert.deepEqual(parseArgs(['--approved-sha', sha, '--current-main-sha', sha, '--prototype-state', state,
+    '--publish', '--target-issue', '13', '--approval-id', 'test-only-approval']), approved);
+  for (const target_issue of ['7', '42', '013', 13, undefined]) assert.throws(() => prepareDispatch({ ...approved, target_issue }));
+  for (const prototype_state of [state + ' ', state.toUpperCase(), 'design/mockups/issue-13-year-dropdown-v2.html',
+    'https://example.test/preview', '__proto__']) assert.throws(() => prepareDispatch({ ...draft, prototype_state }));
+  for (const key of ['source', 'url', 'selector', 'width', 'height', 'sourceSha256']) assert.throws(() => prepareDispatch({ ...draft, [key]: 'untrusted' }), /UNKNOWN_FIELD/);
+});
+
 test('CLI parsing preserves values and publication is opt-in', () => {
   assert.deepEqual(parseArgs(['--approved-sha', sha, '--current-main-sha', sha]), base);
   assert.deepEqual(parseArgs(['--publish', '--target-issue', '42', '--approval-id', 'test-only-approval',
@@ -98,7 +115,7 @@ test('helper stays preparation-only and matches the workflow input names', () =>
   const workflow = read(`.github/workflows/${WORKFLOW}`);
   const inputNames = [...workflow.matchAll(/^      ([a-z_]+):$/gm)].map(match => match[1]);
   assert.deepEqual(Object.keys(prepareDispatch(base).inputs), inputNames);
-  assert.match(workflow, /options: \[historical-design-a-home, issue-13-year-picker-v1\]/);
+  assert.match(workflow, /options: \[historical-design-a-home, issue-13-year-picker-v1, issue-13-year-dropdown-v2\]/);
   assert.match(workflow, /github\.event_name == 'workflow_dispatch'/);
   assert.doesNotMatch(workflow, /^  (?:issue_comment|push|repository_dispatch):/m);
 });

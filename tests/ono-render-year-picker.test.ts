@@ -4,7 +4,7 @@ import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'nod
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { JSDOM } from 'jsdom';
-import { CANDIDATES, CANDIDATE, STATE, ISSUE13_STATE, getCandidate, verifySource } from '../tooling/ono/render-pilot/candidates.mjs';
+import { CANDIDATES, CANDIDATE, STATE, ISSUE13_STATE, ISSUE13_DROPDOWN_STATE, getCandidate, verifySource } from '../tooling/ono/render-pilot/candidates.mjs';
 import { render, validateRenderContext, verifyIssue13State, sha256 } from '../tooling/ono/render-pilot/render.mjs';
 import { prepareDispatch, parseArgs } from '../tooling/ono/render-pilot/prepare-dispatch.mjs';
 import { checkManifest, publish } from '../tooling/ono/render-pilot/publish.mjs';
@@ -81,7 +81,7 @@ function harness(patch: { source?: Uint8Array; mutate?: (dom: JSDOM) => void; bl
 }
 
 test('candidate registry is an immutable exact allowlist with backward-compatible historical defaults', () => {
-  assert.deepEqual(Object.keys(CANDIDATES), [STATE, ISSUE13_STATE]);
+  assert.deepEqual(Object.keys(CANDIDATES), [STATE, ISSUE13_STATE, ISSUE13_DROPDOWN_STATE]);
   assert.equal(CANDIDATE, 'design/mockups/design-a-glass.html');
   assert.equal(STATE, 'historical-design-a-home');
   assert.ok(Object.isFrozen(CANDIDATES));

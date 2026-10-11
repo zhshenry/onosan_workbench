@@ -11,7 +11,7 @@ on:
         description: 'Fixed reviewed design state only; publication selection requires main-chat approval'
         required: true
         type: choice
-        options: [historical-design-a-home, issue-13-year-picker-v1]
+        options: [historical-design-a-home, issue-13-year-picker-v1, issue-13-year-dropdown-v2]
       post_attachment:
         description: 'Publish ONE public image to the approved issue; separate main-chat approval required'
         required: true
