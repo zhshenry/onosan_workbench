@@ -3,10 +3,11 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 export const WORKFLOW = 'ono-prototype-render.yml';
-export const STATE = 'historical-design-a-home';
+import { STATE, getCandidate, validatePublicationTarget } from './candidates.mjs';
+export { STATE };
 const need = (ok, code) => { if (!ok) throw new Error(code); };
 const isSha = value => typeof value === 'string' && /^[a-f0-9]{40}$/.test(value);
-const fields = ['approved_sha', 'current_main_sha', 'publish', 'target_issue', 'approval_id'];
+const fields = ['approved_sha', 'current_main_sha', 'publish', 'target_issue', 'approval_id', 'prototype_state'];
 
 // Both SHAs are caller-supplied statements, NOT approval/authentication evidence.
 // The assistant must independently read current main and check the exact active
@@ -18,8 +19,10 @@ export function prepareDispatch(input) {
   need(input.approved_sha === input.current_main_sha, 'MAIN_MOVED');
   need(input.publish === undefined || typeof input.publish === 'boolean', 'BOOLEAN_PUBLICATION_REQUIRED');
   const publish = input.publish ?? false;
+  const candidate = getCandidate(input.prototype_state === undefined ? STATE : input.prototype_state);
   if (publish) {
     need(typeof input.target_issue === 'string' && /^[1-9][0-9]{0,8}$/.test(input.target_issue), 'EXACT_ISSUE_REQUIRED');
+    validatePublicationTarget(candidate, input.target_issue);
     need(typeof input.approval_id === 'string' && /^[a-z0-9][a-z0-9-]{7,63}$/.test(input.approval_id), 'APPROVAL_MARKER_REQUIRED');
   } else {
     need(input.target_issue === undefined && input.approval_id === undefined, 'PUBLICATION_FIELDS_WITHOUT_PUBLICATION');
@@ -28,7 +31,7 @@ export function prepareDispatch(input) {
     ref: 'main',
     inputs: {
       approved_sha: input.approved_sha,
-      prototype_state: STATE,
+      prototype_state: candidate.state,
       post_attachment: publish,
       target_issue: publish ? input.target_issue : '',
       approval_id: publish ? input.approval_id : '',
@@ -37,11 +40,11 @@ export function prepareDispatch(input) {
 }
 
 export function parseArgs(args) {
-  need(Array.isArray(args) && args.length <= 9, 'INVALID_ARGUMENTS');
+  need(Array.isArray(args) && args.length <= 11, 'INVALID_ARGUMENTS');
   const names = new Map([
     ['--approved-sha', 'approved_sha'], ['--current-main-sha', 'current_main_sha'],
     ['--target-issue', 'target_issue'], ['--approval-id', 'approval_id'],
-    ['--publish', 'publish'],
+    ['--publish', 'publish'], ['--prototype-state', 'prototype_state'],
   ]);
   const input = {};
   for (let index = 0; index < args.length; index++) {

@@ -1,6 +1,17 @@
-# Historical prototype render/attachment pilot
+# Fixed prototype render/attachment pilot
 
-This is a separate, manual-only historical prototype experiment.
+## Issue 13 design-preparation extension
+
+The closed candidate registry also accepts `issue-13-year-picker-v1`: one fixed
+1440×1024 board containing the calendar, year input and jumped-to-1990 states.
+Its source-byte SHA256, state, dimensions, purpose and Issue 13 destination are
+code-owned. See [Issue 13 preparation record](ONO-ISSUE-13-DESIGN-RENDER.md).
+No new candidate screenshot or publication has run as part of this preparation.
+Historical Design A remains the default and its record below is unchanged.
+The security, retention and one-write publication constraints below apply to
+both candidates; descriptions of the historical page apply only to that state.
+
+This is a separate, manual-only fixed-prototype experiment.
 It does not change the production policy pin or enable an issue listener, approval
 adapter, development runner, merge, release, or acceptance gate.
 
@@ -134,7 +145,11 @@ No token is read locally, copied, exposed, expanded or changed by this PR.
 `tooling/ono/render-pilot/prepare-dispatch.mjs` is a dependency-free text helper.
 It performs no network requests, child-process execution, credential lookup,
 image operations or GitHub writes. It returns the exact REST body for the one
-existing workflow; repository/workflow, main ref and historical state are fixed.
+existing workflow; repository/workflow and main ref are fixed. State selection is a closed enum;
+the historical state remains the default. `--prototype-state
+issue-13-year-picker-v1` explicitly selects the new fixed board. Its publication
+target must be Issue 13, while nonpublishing mode still rejects target/marker
+fields. No arbitrary source path, URL, selector, dimensions or hash is accepted.
 No workflow, permission, secret or production core-v1 policy is changed.
 
 The assistant reads current main through the connected GitHub reader and fills
