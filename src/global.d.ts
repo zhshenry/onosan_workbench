@@ -34,6 +34,15 @@ declare global {
         onChanged(callback: (items: unknown) => void): () => void;
         onFailed(callback: (message: string) => void): () => void;
       };
+      reading: {
+        list(): Promise<unknown>;
+        save(input: unknown): Promise<unknown>;
+        remove(id: string): Promise<unknown>;
+        setVault(vaultPath: string): Promise<unknown>;
+        scan(vaultPath: string): Promise<unknown>;
+        aggregate(folder: string): Promise<unknown>;
+        openObsidian(vault: string, rel?: string): Promise<void>;
+      };
       bazi: {
         list(): Promise<unknown>;
         saveProfile(input: unknown): Promise<unknown>;

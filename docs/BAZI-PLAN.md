@@ -104,3 +104,10 @@ design/mockups/vendor/lunar.js  库本体(实现时改 npm 依赖 lunar-javascri
 - `npm run verify`(双 tsconfig strict)+ `npm test`(为 buildChart/shiShen/神煞查表补单测:已知生日断言干支/十神/大运边界,含 1900/2100 边界与起运失败降级)。
 - impeccable 检测器 0 anti-patterns;对比度、焦点环、reduced-motion 沿外壳既有标准。
 - 原型交互验收清单:改生日/时间/性别即重排 ✓、命例切换/新建 ✓、大运点击展开流年 ✓、当前大运流年自动识别 ✓、笔记自动保存 ✓。
+
+## 命理 AI 增强(2026-10-11 追加,已实装)
+
+- **紫微流运注入 + 查询工具**:`ziwei.ts` 新增 `buildZiweiHoroscope(profile, date)`(iztro `horoscope()`,流年/流月/流日三层,各含流命宫落位/干支/十二宫名映射/流四化);`ai.ts` 紫微上下文自动附「今日流运」,并注册命理模块第一个只读工具 `ziwei_horoscope`(AI 可查任意日期,无需把全年数据塞进上下文)。
+- **占星宫位打通**:命例契约新增可选 `place/lat/lon`(经纬度成对校验);`astro.ts` 数值法求上升点(黄道逐度扫高度过零+东半侧判定,独立复核高度=0)、天顶用恒星时公式;**整宫制**分配宫位;有出生地时 AI 上下文含 ASC/MC 与每颗行星落宫,无出生地时保持原状并在提示词中声明限制。
+- **UI**:新建/编辑命例弹框增「出生地/纬度/经度」可选三栏;AI 面板 ⓘ 说明更新。
+- 未做:Placidus 分宫制、真太阳时;城市选择器(手填经纬度)。

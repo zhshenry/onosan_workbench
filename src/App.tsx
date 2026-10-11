@@ -13,6 +13,7 @@ import { TaskEditor, type TaskEditorApi, type TodoState } from '../modules/todo/
 import { MediaBrowserView, type MediaBrowserMode } from './views/MediaBrowserView';
 import { CopyView } from '../modules/copywriting/ui/CopyView';
 import { PublishView } from '../modules/copywriting/ui/PublishView';
+import { ReadingView } from './views/ReadingView';
 import {
   IconCalendar, IconCheckSquare, IconChevronDown,
   IconGamepad, IconHome, IconMoon, IconVideo, IconWeb, LogoMark,
@@ -120,6 +121,7 @@ export function App() {
   const [copyCtx, setCopyCtx] = useState<{ id: string; title: string } | null>(null);
   const [copySaveState, setCopySaveState] = useState<{ id: string | null; status: 'saved' | 'saving' | 'error' }>({ id: null, status: 'saved' });
   const [baziCtx, setBaziCtx] = useState<{ id: string; name: string; system: 'bazi' | 'ziwei' | 'astro' } | null>(null);
+  const [readingCtx, setReadingCtx] = useState<{ id: string; title: string } | null>(null);
 
   const aiContext: AiPanelContext = curView === 'home'
     ? { scope: { module: 'todo' }, label: '待办与日程', object: TODO_AI_WORKBENCH_NAME }
@@ -127,7 +129,9 @@ export function App() {
       ? { scope: { module: 'copy', draftId: copyCtx.id }, label: '博客编辑', object: copyCtx.title || '未命名博客' }
       : curView === 'bazi' && baziCtx
         ? { scope: { module: 'bazi', profileId: baziCtx.id }, label: '命理解读', object: baziCtx.name, baziSystem: baziCtx.system }
-        : { scope: { module: 'workbench', viewId: curView }, label: '工作台助手', object: curView === 'copy' ? '尚未选择博客' : curView === 'bazi' ? '尚未选择命例' : curView === 'copy-publish' ? '图文发布' : curView === 'media-browser' ? '素材浏览器' : curView.startsWith('settings') ? '设置' : '当前页面' };
+        : curView === 'reading' && readingCtx
+          ? { scope: { module: 'reading', profileId: readingCtx.id }, label: '阅读助手', object: readingCtx.title }
+          : { scope: { module: 'workbench', viewId: curView }, label: '工作台助手', object: curView === 'copy' ? '尚未选择博客' : curView === 'bazi' ? '尚未选择命例' : curView === 'copy-publish' ? '图文发布' : curView === 'media-browser' ? '素材浏览器' : curView === 'reading' ? '阅读清单' : curView.startsWith('settings') ? '设置' : '当前页面' };
 
   useEffect(() => { localStorage.setItem('wb.ai.open', aiOpen ? '1' : '0'); }, [aiOpen]);
   useEffect(() => { localStorage.setItem('wb.ai.width', String(aiWidth)); }, [aiWidth]);
@@ -607,6 +611,8 @@ export function App() {
             <PublishView onPending={showToast} onGoEdit={() => switchView('copy')} onOpenCreator={() => { setMediaBrowserMode('creator'); switchView('media-browser'); }} />
           ) : curView === 'media-browser' ? (
             <MediaBrowserView mode={mediaBrowserMode} onModeChange={setMediaBrowserMode} onPending={showToast} onAskAI={askAI} />
+          ) : curView === 'reading' ? (
+            <ReadingView onPending={showToast} onAskAI={(prompt, bookId) => askAI(prompt, { module: 'reading', profileId: bookId })} onCurrentBook={setReadingCtx} />
           ) : curView.startsWith('settings') ? (
             <SettingsView view={curView} uiTheme={uiTheme} onUiThemeChange={applyUiTheme} onAvatarColorChange={setProfileAvatarColor} />
           ) : todo.data ? (

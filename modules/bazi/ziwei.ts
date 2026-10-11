@@ -87,3 +87,66 @@ export function buildZiwei(profile: Pick<BaziProfile, 'date' | 'time' | 'gender'
     soulBranch: String(astrolabe.earthlyBranchOfSoulPalace),
   };
 }
+
+/* ---------------- 流运(horoscope):流年/流月/流日三层 ---------------- */
+
+/** 单层流运:流X命宫落位与本命十二宫的流X宫名映射 */
+export interface ZiweiHoroscopeLayer {
+  /** 流X命宫在本命宫序(寅起 0-11)的位置 */
+  index: number;
+  /** 流X命宫天干 */
+  stem: string;
+  /** 流X命宫地支 */
+  branch: string;
+  /** 本命宫序(寅起 0-11) → 该宫在流X充当的宫名(映射[index] === '命宫') */
+  palaceNames: string[];
+  /** 流四化四星,顺序禄权科忌 */
+  mutagen: string[];
+}
+
+export interface ZiweiHoroscopeData {
+  date: string;
+  /** 流年所属的大限层 */
+  decadal: { branch: string; palaceNames: string[] } | null;
+  yearly: ZiweiHoroscopeLayer;
+  monthly: ZiweiHoroscopeLayer;
+  daily: ZiweiHoroscopeLayer;
+}
+
+function toHoroscopeLayer(layer: {
+  index: unknown; heavenlyStem: unknown; earthlyBranch: unknown; palaceNames: unknown; mutagen: unknown;
+}): ZiweiHoroscopeLayer {
+  return {
+    index: Number(layer.index),
+    stem: String(layer.heavenlyStem),
+    branch: String(layer.earthlyBranch),
+    palaceNames: (layer.palaceNames as unknown[]).map(String),
+    mutagen: (layer.mutagen as unknown[]).map(String),
+  };
+}
+
+/** 指定公历日期(YYYY-MM-DD)的紫微流年/流月/流日三层流运 */
+export function buildZiweiHoroscope(profile: Pick<BaziProfile, 'date' | 'time' | 'gender'>, date: string): ZiweiHoroscopeData {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('日期格式应为 YYYY-MM-DD');
+  const [year, month, day] = profile.date.split('-').map(Number);
+  const [hour] = profile.time.split(':').map(Number);
+  if (!Number.isInteger(year) || year < 1900 || year > 2100) {
+    throw new Error('年份需在 1900 至 2100 之间');
+  }
+  const [hy, hm, hd] = date.split('-').map(Number);
+  if (!Number.isInteger(hy) || hy < 1900 || hy > 2100) {
+    throw new Error('查询年份需在 1900 至 2100 之间');
+  }
+  if (hm < 1 || hm > 12 || hd < 1 || hd > 31) {
+    throw new Error('查询日期无效');
+  }
+  const astrolabe = astro.bySolar(`${year}-${month}-${day}`, ziweiTimeIndex(hour), profile.gender === 1 ? '男' : '女');
+  const horo = astrolabe.horoscope(`${hy}-${hm}-${hd}`);
+  return {
+    date,
+    decadal: horo.decadal ? { branch: String(horo.decadal.earthlyBranch), palaceNames: (horo.decadal.palaceNames as unknown[]).map(String) } : null,
+    yearly: toHoroscopeLayer(horo.yearly),
+    monthly: toHoroscopeLayer(horo.monthly),
+    daily: toHoroscopeLayer(horo.daily),
+  };
+}

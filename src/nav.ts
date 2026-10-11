@@ -62,7 +62,7 @@ export const NAV: WorkbenchDef[] = [
     title: '小工具',
     subs: [
       { label: '命理', view: 'bazi' },
-      { label: '阅读清单', pending: true },
+      { label: '阅读清单', view: 'reading' },
     ],
   },
   {

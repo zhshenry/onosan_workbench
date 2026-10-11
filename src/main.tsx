@@ -9,6 +9,7 @@ import '../modules/todo/ui/todo.css';
 import '../modules/bazi/ui/bazi.css';
 import '../modules/copywriting/ui/copy.css';
 import '../modules/browser/ui/pane.css';
+import '../modules/reading/ui/reading.css';
 
 const root = createRoot(document.getElementById('root')!);
 

@@ -357,3 +357,4 @@
   .bazi-workspace { padding: 20px; }
   .bazi-cols { grid-template-columns: 1fr; }
 }
+.bazi-form-wide { grid-column: 1 / -1; }

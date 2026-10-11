@@ -117,7 +117,7 @@ export interface ChatEntry {
   tools?: AIToolEvent[]; thinking?: string; thinkingActive?: boolean; error?: string;
 }
 /** 缺省 module 为旧版待办会话；原始对象用于工作台归类，contextScope 是当前业务对象，pageScope 是明确关联的页面。 */
-export interface ChatSession { id: string; title: string; titleEdited?: boolean; updatedAt: string; entries: ChatEntry[]; draft: string; module?: 'todo' | 'copy' | 'bazi' | 'workbench'; draftId?: string; profileId?: string; viewId?: string; contextScope?: import('./ai-scope').AiScope; pageScope?: import('./ai-scope').AiScope; }
+export interface ChatSession { id: string; title: string; titleEdited?: boolean; updatedAt: string; entries: ChatEntry[]; draft: string; module?: 'todo' | 'copy' | 'bazi' | 'workbench' | 'reading'; draftId?: string; profileId?: string; viewId?: string; contextScope?: import('./ai-scope').AiScope; pageScope?: import('./ai-scope').AiScope; }
 export interface ChatSummary { id: string; title: string; updatedAt: string; module?: ChatSession['module']; draftId?: string; profileId?: string; viewId?: string; contextScope?: import('./ai-scope').AiScope; pageScope?: import('./ai-scope').AiScope; streaming?: boolean; completed?: boolean; }
 export interface AIProvider {
   id: string; kind: AIProviderKind; name: string; endpoint: string; protocol: AIProtocol; hasKey: boolean;

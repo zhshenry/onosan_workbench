@@ -5,14 +5,21 @@
  */
 import { z } from 'zod';
 
-/** 命例档案(1=男 0=女;性别影响大运顺逆;tag 为自填分类标签,可选) */
-export const baziProfileInputSchema = z.object({
+/** 命例档案(1=男 0=女;性别影响大运顺逆;tag 为自填分类标签;出生地经纬度用于占星宫位,可选) */
+const baziProfileFields = z.object({
   name: z.string().trim().min(1, '请填写姓名或备注').max(12, '姓名最多12字'),
   gender: z.union([z.literal(0), z.literal(1)], { error: '请选择性别' }),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '请填写有效的公历生日'),
   time: z.string().regex(/^\d{2}:\d{2}$/, '请填写有效的出生时间'),
   tag: z.string().trim().max(6, '标签最多6字').optional(),
+  place: z.string().trim().max(30, '地点名称最多30字').optional(),
+  lat: z.number().min(-90, '纬度需在 -90 至 90 之间').max(90, '纬度需在 -90 至 90 之间').optional(),
+  lon: z.number().min(-180, '经度需在 -180 至 180 之间').max(180, '经度需在 -180 至 180 之间').optional(),
 }).strict();
+export const baziProfileInputSchema = baziProfileFields.refine(
+  data => (data.lat === undefined) === (data.lon === undefined),
+  { message: '经纬度需成对填写' },
+);
 export type BaziProfileInput = z.infer<typeof baziProfileInputSchema>;
 export interface BaziProfile extends BaziProfileInput { id: string; createdAt: string; }
 
@@ -24,7 +31,10 @@ export const baziStoreDataSchema = z.object({
     gender: baziProfileInputSchema.shape.gender,
     date: baziProfileInputSchema.shape.date,
     time: baziProfileInputSchema.shape.time,
-    tag: baziProfileInputSchema.shape.tag,
+    tag: baziProfileFields.shape.tag,
+    place: baziProfileFields.shape.place,
+    lat: baziProfileFields.shape.lat,
+    lon: baziProfileFields.shape.lon,
     createdAt: z.string(),
   })),
   notes: z.record(z.string(), z.string()),

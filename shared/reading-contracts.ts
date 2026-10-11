@@ -1,0 +1,106 @@
+/**
+ * 阅读清单契约:书目条目/状态/进度/评分/标签 + Obsidian 关联。
+ * 库(笔记内容)的权威源在 Obsidian;工作台只读关联,绝不写用户库。
+ */
+import { z } from 'zod';
+
+export const READING_STATUSES = ['wish', 'reading', 'done', 'paused'] as const;
+export type ReadingStatus = (typeof READING_STATUSES)[number];
+export const READING_STATUS_LABEL: Record<ReadingStatus, string> = {
+  wish: '想读', reading: '在读', done: '已读', paused: '搁置',
+};
+
+/** 单本书条目(工作台侧;关联库的书还带 link) */
+export const bookEntrySchema = z.object({
+  id: z.string().min(1),
+  title: z.string().trim().min(1, '请填写书名').max(60, '书名最多60字'),
+  author: z.string().trim().max(40, '作者最多40字').optional(),
+  status: z.enum(READING_STATUSES),
+  progressPct: z.number().int().min(0).max(100).optional(),
+  chapterCurrent: z.number().int().min(0).max(9999).optional(),
+  chapterTotal: z.number().int().min(0).max(9999).optional(),
+  rating: z.number().int().min(1).max(5).optional(),
+  comment: z.string().trim().max(300, '短评最多300字').optional(),
+  tags: z.array(z.string().trim().min(1).max(12)).max(8, '标签最多8个').default([]),
+  /** Obsidian 关联:库名(vault 文件夹名)+ 库内书文件夹(相对路径) */
+  link: z.object({
+    vault: z.string().min(1).max(120),
+    folder: z.string().min(1).max(200),
+  }).optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+}).strict();
+export type BookEntry = z.infer<typeof bookEntrySchema>;
+
+/** 持久化结构(userData/reading-books.json):库路径 + 书单 */
+export const readingStoreDataSchema = z.object({
+  vaultPath: z.string().nullable(),
+  books: z.array(bookEntrySchema),
+}).strict();
+export type ReadingStoreData = z.infer<typeof readingStoreDataSchema>;
+
+const bookEntryFields = bookEntrySchema; // 完整对象(无 refine),供派生
+const chapterPairRefine = (data: { chapterCurrent?: number; chapterTotal?: number }) =>
+  (data.chapterCurrent === undefined) === (data.chapterTotal === undefined);
+export const bookCreateSchema = bookEntryFields.omit({ id: true, createdAt: true, updatedAt: true }).refine(chapterPairRefine, { message: '章节进度需成对填写' });
+export const bookPatchSchema = bookEntryFields.omit({ id: true, createdAt: true, updatedAt: true }).partial().refine(chapterPairRefine, { message: '章节进度需成对填写' });
+export const bookInputSchema = bookCreateSchema;
+export type BookInput = z.infer<typeof bookCreateSchema>;
+
+/** 库内书笔记的 frontmatter 子集(解析自笔记头部) */
+export interface NoteMeta {
+  /** 库内相对路径(含 .md) */
+  rel: string;
+  title: string;
+  status: string;
+  updated: string;
+  draft: boolean;
+}
+
+/** 笔记规范页里声明的章节规模,如「全书 17 章」 */
+export function parseTotalChapters(text: string): number | null {
+  const match = /全书\s*(\d{1,3})\s*章/.exec(text);
+  return match ? Number(match[1]) : null;
+}
+
+/**
+ * 极简 frontmatter 子集解析(零依赖):取笔记头部 --- 块,
+ * 支持 key: value 与 tags 块(「  - x」列表或行内 [a, b])。
+ */
+export function parseFrontmatter(text: string): { title?: string; status?: string; tags: string[]; created?: string; updated?: string } {
+  const out: { title?: string; status?: string; tags: string[]; created?: string; updated?: string } = { tags: [] };
+  if (!text.startsWith('---')) return out;
+  const end = text.indexOf('\n---', 3);
+  if (end < 0) return out;
+  const block = text.slice(4, end).split('\n');
+  let inTags = false;
+  for (const raw of block) {
+    const line = raw.replace(/\t/g, ' ');
+    if (/^tags:\s*\[.*\]\s*$/.test(line)) {
+      out.tags = line.slice(line.indexOf('[') + 1, line.lastIndexOf(']')).split(',').map(t => t.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+      inTags = false;
+      continue;
+    }
+    if (/^tags:\s*$/.test(line)) { inTags = true; continue; }
+    if (inTags) {
+      const item = /^ {2,}-\s*(.+)$/.exec(line);
+      if (item) { out.tags.push(item[1].trim()); continue; }
+      if (line.trim() !== '') inTags = false;
+      continue;
+    }
+    const kv = /^([A-Za-z_]+):\s*(.*)$/.exec(line);
+    if (!kv) continue;
+    const key = kv[1];
+    const value = kv[2].trim().replace(/^['"]|['"]$/g, '');
+    if (key === 'title' && value) out.title = value;
+    else if (key === 'status' && value) out.status = value;
+    else if (key === 'created' && value) out.created = value;
+    else if (key === 'updated' && value) out.updated = value;
+  }
+  return out;
+}
+
+/** 笔记成熟度:status 含「成型/定稿/完稿」视为成型,否则草稿 */
+export function isShaped(status: string): boolean {
+  return /成型|定稿|完稿/.test(status);
+}

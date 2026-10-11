@@ -15,7 +15,8 @@ const wb = window.workbench;
 /** ⓘ 悬浮说明:每个工作台一段固定文案,不拼接 */
 const SCOPE_TIPS: Record<string, string> = {
   copy: 'AI 能看到这篇博客的正文;它建议的修改,你确认后才会写入。',
-  bazi: 'AI 能看到当前命例的命盘(八字 / 紫微 / 占星),只做解读,不会改任何数据。',
+  bazi: 'AI 能看到当前命例的命盘(八字 / 紫微 / 占星);紫微含今日流年、流月、流日,可查询任意日期的流运。只做解读,不会改任何数据。',
+  reading: 'AI 能看到这本书的书目、你的短评与关联库的笔记列表;笔记正文按需只读读取,不会改你的库。',
   todo: 'AI 可以查看和整理你的待办与日程;任何修改都会先征求你同意。',
 };
 const SCOPE_TIP_DEFAULT = 'AI 在这里只回答一般问题,不会读取你的文件内容。';
@@ -456,6 +457,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
     const recent = chats.find(chat => aiScopeKey(chatContextScope(chat)) === key);
     if (scope.module === 'copy') return { scope, label: objectNames[key] ? '博客编辑' : '博客历史', object: objectNames[key] ?? recent?.title ?? '未命名博客' };
     if (scope.module === 'bazi') return { scope, label: objectNames[key] ? '命理解读' : '命理历史', object: objectNames[key] ?? recent?.title ?? '未命名命例', baziSystem: 'bazi' };
+    if (scope.module === 'reading') return { scope, label: objectNames[key] ? '阅读助手' : '阅读历史', object: objectNames[key] ?? recent?.title ?? '未关联书目' };
     if (scope.module === 'workbench' && scope.viewId.startsWith('workspace:')) return { scope, label: '工作台助手', object: NAV.find(workbench => workbench.id === workbenchForScope(scope))?.title ?? '当前工作台' };
     return { scope, label: '工作台助手', object: NAV.flatMap(workbench => workbench.subs).find(sub => sub.view === scope.viewId)?.label ?? scope.viewId };
   };

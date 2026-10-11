@@ -80,6 +80,9 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
   const [fDate, setFDate] = useState('');
   const [fTime, setFTime] = useState('');
   const [fTag, setFTag] = useState('');
+  const [fPlace, setFPlace] = useState('');
+  const [fLat, setFLat] = useState('');
+  const [fLon, setFLon] = useState('');
   const pselRef = useRef<HTMLDivElement>(null);
   const noteTimer = useRef<number | undefined>(undefined);
   const loadedOnce = useRef(false);
@@ -205,6 +208,9 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
     setFDate(target ? target.date : '');
     setFTime(target ? target.time : '');
     setFTag(target ? target.tag ?? '' : '');
+    setFPlace(target ? target.place ?? '' : '');
+    setFLat(target && target.lat !== undefined ? String(target.lat) : '');
+    setFLon(target && target.lon !== undefined ? String(target.lon) : '');
     setModalOpen(true);
   };
   const saveModal = (): void => {
@@ -212,6 +218,13 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
     const date = fDate;
     const time = fTime;
     const tag = fTag.trim();
+    const place = fPlace.trim();
+    const lat = fLat.trim() === '' ? undefined : Number(fLat);
+    const lon = fLon.trim() === '' ? undefined : Number(fLon);
+    if ((lat !== undefined) !== (lon !== undefined)) { onPending('经纬度需成对填写'); return; }
+    if (lat !== undefined && (Number.isNaN(lat) || lat < -90 || lat > 90)) { onPending('纬度需在 -90 至 90 之间'); return; }
+    if (lon !== undefined && (Number.isNaN(lon) || lon < -180 || lon > 180)) { onPending('经度需在 -180 至 180 之间'); return; }
+    const birth = { place: place || undefined, lat, lon };
     if (!name) { onPending('请填写姓名或备注'); return; }
     if (!date) { onPending('请选择公历生日'); return; }
     const year = Number(date.slice(0, 4));
@@ -223,11 +236,11 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
     if (editingId) {
       const target = profiles.find((p) => p.id === editingId);
       if (!target) { onPending('命例不存在或已删除'); return; }
-      run(wb.bazi.saveProfile({ ...target, name, gender: Number(fGender), date, time, tag: tag || undefined }), `已更新「${name}」`);
+      run(wb.bazi.saveProfile({ ...target, name, gender: Number(fGender), date, time, tag: tag || undefined, place: birth.place, lat: birth.lat, lon: birth.lon }), `已更新「${name}」`);
     } else {
       const id = crypto.randomUUID();
       run(
-        wb.bazi.saveProfile({ id, name, gender: Number(fGender), date, time, tag: tag || undefined }),
+        wb.bazi.saveProfile({ id, name, gender: Number(fGender), date, time, tag: tag || undefined, place: birth.place, lat: birth.lat, lon: birth.lon }),
         `已保存「${name}」并排盘`,
       );
       switchProfile(id);
@@ -521,6 +534,18 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
               <div className="bazi-form-field">
                 <span className="bazi-form-label">标签(可选)</span>
                 <input aria-label="标签" placeholder="如:自己 / 家人 / 朋友" maxLength={6} value={fTag} onChange={(e) => setFTag(e.target.value)} />
+              </div>
+              <div className="bazi-form-field bazi-form-wide">
+                <span className="bazi-form-label">出生地(可选,用于占星宫位)</span>
+                <input aria-label="出生地名称" placeholder="如:上海" maxLength={30} value={fPlace} onChange={(e) => setFPlace(e.target.value)} />
+              </div>
+              <div className="bazi-form-field">
+                <span className="bazi-form-label">纬度(可选)</span>
+                <input aria-label="纬度" placeholder="如:31.2304" inputMode="decimal" value={fLat} onChange={(e) => setFLat(e.target.value)} />
+              </div>
+              <div className="bazi-form-field">
+                <span className="bazi-form-label">经度(可选)</span>
+                <input aria-label="经度" placeholder="如:121.4737" inputMode="decimal" value={fLon} onChange={(e) => setFLon(e.target.value)} />
               </div>
             </div>
             <div className="bazi-form-actions">

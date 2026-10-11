@@ -32,6 +32,17 @@ const todo = {
   },
 };
 
+// 阅读清单:书单与 Obsidian 读书库只读关联
+const reading = {
+  list: (): Promise<unknown> => ipcRenderer.invoke('reading:list'),
+  save: (input: unknown): Promise<unknown> => ipcRenderer.invoke('reading:save', input),
+  remove: (id: string): Promise<unknown> => ipcRenderer.invoke('reading:remove', id),
+  setVault: (vaultPath: string): Promise<unknown> => ipcRenderer.invoke('reading:setVault', vaultPath),
+  scan: (vaultPath: string): Promise<unknown> => ipcRenderer.invoke('reading:scan', vaultPath),
+  aggregate: (folder: string): Promise<unknown> => ipcRenderer.invoke('reading:aggregate', folder),
+  openObsidian: (vault: string, rel?: string): Promise<void> => ipcRenderer.invoke('reading:openObsidian', vault, rel),
+};
+
 const ai = {
   openLink: (url: string): Promise<void> => ipcRenderer.invoke('ai:openLink', url),
   config: (): Promise<unknown> => ipcRenderer.invoke('ai:config'),
@@ -215,6 +226,7 @@ const api = {
     };
   },
   todo,
+  reading,
   float,
   bazi,
   copy,

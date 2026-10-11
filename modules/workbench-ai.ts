@@ -11,6 +11,7 @@ const pageNames: Record<string, string> = {
 export function describeAiScope(scope: AiScope): string {
   if (scope.module === 'copy') return `博客草稿（ID ${scope.draftId}）`;
   if (scope.module === 'bazi') return `命例（ID ${scope.profileId}）`;
+  if (scope.module === 'reading') return `书目（ID ${scope.profileId}）`;
   if (scope.module === 'todo') return '待办与日程';
   if (scope.viewId.startsWith('workspace:')) {
     const workbench = workbenchForScope(scope);

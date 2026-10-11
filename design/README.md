@@ -21,6 +21,13 @@
 - 下方评审条可选 mist / cool / warm 与 1280×820 / 1024×680。主题、字阶、背景和盘面颜色直接复用项目样式与素材。
 - 本稿为独立交互预览。合成内容与回复仅在预览内存中演示，刷新复原；不连接模型、不读写真实数据。HTML 依赖同目录配套 CSS / JS 和仓库内的主题文件，应在仓库中打开。
 
+## 模块设计稿 · 阅读清单(讨论稿,待评审)
+
+文件:[mockups/reading-glass.html](mockups/reading-glass.html) · 预览图:[mockups/_shots/](mockups/_shots/) 下 `reading-glass / reading-ai.png` · 方案:[../docs/READING-PLAN.md](../docs/READING-PLAN.md)
+
+- 2026-10-11 讨论稿:小工具工作台「阅读清单」完整形态——左侧书架(在读/想读/已读/搁置分组,书名首字磁贴) + 右侧详情卡(状态切换/进度滑杆/评分短评/标签/**Obsidian 只读关联**:库与文件夹、笔记数与成熟度、章节笔记树点开即 obsidian:// 跳转) + **AI 协助**(串联概念总结/出自测题/结合短评聊书,只读笔记不改库)
+- 数据示例取自用户真实读书库(读书笔记:DMBOK 56 篇 / 置身事内欢迎页);三主题底部切换器可验配适
+
 ## ✅ 选定 · 方案 A · 磨砂玻璃(Sky Glass,浅蓝 v2)
 
 文件:[mockups/design-a-glass.html](mockups/design-a-glass.html) · 预览图:[mockups/_shots/a.png](mockups/_shots/a.png)

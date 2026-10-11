@@ -18,6 +18,8 @@ import { runAgentLoop, testConnection, validateEndpoint, type AiModuleContributi
 import { buildTodoContribution, planFromReply } from '../modules/todo/ai-tools';
 import { buildCopyContribution } from '../modules/copywriting/ai';
 import { buildBaziContribution } from '../modules/bazi/ai';
+import { buildReadingContribution } from '../modules/reading/ai';
+import type { ReadingStore } from '../modules/reading/store';
 import { buildWorkbenchContribution, describeAiScope, withWorkbenchContext } from '../modules/workbench-ai';
 import { aiScopeKey, chatContextScope, chatScope, sameAiWorkbench, type AiScope } from '../shared/ai-scope';
 
@@ -62,7 +64,7 @@ function todoChanged(): void {
   for (const win of BrowserWindow.getAllWindows()) win.webContents.send('todo:changed');
 }
 
-export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: BaziStore): void {
+export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: BaziStore, reading: ReadingStore): void {
   const configSummary = () => {
     const config = ai.readConfig();
     const providers: AIProvider[] = config.providers.map(({ id, kind, name, endpoint, protocol, apiKey }) => ({ id, kind, name, endpoint, protocol, hasKey: Boolean(apiKey) }));
@@ -293,6 +295,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     z.object({ module: z.literal('todo') }).strict(),
     z.object({ module: z.literal('copy'), draftId: z.string().min(1) }).strict(),
     z.object({ module: z.literal('bazi'), profileId: z.string().min(1) }).strict(),
+    z.object({ module: z.literal('reading'), profileId: z.string().min(1) }).strict(),
     z.object({ module: z.literal('workbench'), viewId: z.string().min(1) }).strict(),
   ]);
   ipcMain.handle('ai:chat:new', (_event, tag: unknown) => {
@@ -338,6 +341,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
       references: z.array(z.union([
         z.object({ module: z.literal('copy'), draftId: z.string().min(1) }).strict(),
         z.object({ module: z.literal('bazi'), profileId: z.string().min(1) }).strict(),
+        z.object({ module: z.literal('reading'), profileId: z.string().min(1) }).strict(),
       ])).max(8, '每次最多添加8个参考对象').optional(),
     }).strict().parse(turnContext ?? {});
     const selectedSystem = context.baziSystem ?? 'bazi';
@@ -372,6 +376,12 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     const copyContribution = draft ? buildCopyContribution(draft) : null;
     let contribution: AiModuleContribution = scope.module === 'bazi' && profile
       ? buildBaziContribution(profile, selectedSystem, baziData?.notes[profile.id] ?? '')
+      : scope.module === 'reading' ? (() => {
+        const bookData = reading.all();
+        const book = bookData.books.find(item => item.id === (scope as { profileId: string }).profileId);
+        if (!book) throw new Error('这条对话绑定的书目不存在或已删除');
+        return buildReadingContribution(book, bookData.vaultPath);
+      })()
       : scope.module === 'workbench' ? buildWorkbenchContribution(scope.viewId)
       : copyContribution ?? todoContribution!;
     const turnNow = new Date();
@@ -396,6 +406,10 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
             else if (reference.scope.module === 'copy') {
               const article = copy.get(reference.scope.draftId);
               text = article ? `参考博客 ID：${article.id}；标题：${article.title}；正文共 ${[...article.body].length} 字符，提供前10000字符。\n${[...article.body].slice(0, 10000).join('')}` : '参考博客已删除，无法读取。';
+            } else if (reference.scope.module === 'reading') {
+              const profileId = reference.scope.profileId;
+              const target = reading.all().books.find(item => item.id === profileId);
+              text = target ? buildReadingContribution(target, reading.all().vaultPath).systemPrompt(new Date()) : '参考书目已删除，无法读取。';
             } else {
               const data = bazi.all();
               const profileId = reference.scope.profileId;

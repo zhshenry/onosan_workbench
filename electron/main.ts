@@ -6,6 +6,8 @@ import { AppUpdates } from './updater';
 import { Store } from '../modules/todo/store';
 import { BaziStore } from '../modules/bazi/store';
 import { MediaCaptureStore } from '../modules/media-capture/store';
+import { ReadingStore } from '../modules/reading/store';
+import { aggregateBook, scanBooks } from '../modules/reading/obsidian';
 import { CopyStore } from '../modules/copywriting/store';
 import { BrowserGuests } from './browser-guests';
 import { registerAiIpc } from './ai-ipc';
@@ -48,6 +50,7 @@ let settingsStore: AppSettingsStore | null = null;
 let browserGuests: BrowserGuests | null = null;
 let baziStore: BaziStore | null = null;
 let mediaCaptureStore: MediaCaptureStore | null = null;
+let readingStore: ReadingStore | null = null;
 let copyStore: CopyStore | null = null;
 let officeConverter: OfficeConverter | null = null;
 let tray: Tray | null = null;
@@ -307,6 +310,29 @@ if (!app.requestSingleInstanceLock()) {
     ipcMain.handle('media-capture:list', () => mediaCaptureStore!.list());
     ipcMain.handle('media-capture:save', (_event, input: unknown) => mediaCaptureStore!.save(input));
     ipcMain.handle('media-capture:remove', (_event, id: string) => mediaCaptureStore!.remove(id));
+
+    // 阅读清单(书单与 Obsidian 读书库只读关联)
+    if (!readingStore) return;
+    ipcMain.handle('reading:list', () => readingStore!.all());
+    ipcMain.handle('reading:save', (_event, input: unknown) => readingStore!.save(input));
+    ipcMain.handle('reading:remove', (_event, id: string) => readingStore!.remove(id));
+    ipcMain.handle('reading:setVault', (_event, vaultPath: unknown) => readingStore!.setVaultPath(vaultPath));
+    ipcMain.handle('reading:scan', (_event, vaultPath: unknown) => {
+      if (typeof vaultPath !== 'string' || !vaultPath) throw new Error('请先填写读书笔记库路径');
+      return scanBooks(vaultPath);
+    });
+    ipcMain.handle('reading:aggregate', (_event, folder: unknown) => {
+      const vault = readingStore!.all().vaultPath;
+      if (!vault) throw new Error('请先配置读书笔记库路径');
+      if (typeof folder !== 'string' || !folder) throw new Error('书文件夹无效');
+      return aggregateBook(vault, folder);
+    });
+    ipcMain.handle('reading:openObsidian', (_event, vault: unknown, rel: unknown) => {
+      if (typeof vault !== 'string' || !vault) throw new Error('读书笔记库未配置');
+      const file = typeof rel === 'string' && rel ? rel.replace(/\.md$/i, '') : '';
+      const url = 'obsidian://open?vault=' + encodeURIComponent(vault) + (file ? '&file=' + encodeURIComponent(file) : '');
+      return shell.openExternal(url);
+    });
   };
 
   void app.whenReady().then(() => {
@@ -321,6 +347,7 @@ if (!app.requestSingleInstanceLock()) {
     }
     baziStore = new BaziStore(app.getPath('userData'));
     mediaCaptureStore = new MediaCaptureStore(app.getPath('userData'));
+    readingStore = new ReadingStore(app.getPath('userData'));
     copyStore = new CopyStore(app.getPath('userData'));
     settingsStore = new AppSettingsStore(app.getPath('userData'));
     applyLoginItem(settingsStore.read().launchAtLogin);
@@ -367,7 +394,7 @@ if (!app.requestSingleInstanceLock()) {
     floatTodoFactory = () => floatTodo;
     registerFloatIpc(floatTodoFactory);
     aiStore = new AiStore(app.getPath('userData'));
-    registerAiIpc(store, aiStore, copyStore, baziStore);
+    registerAiIpc(store, aiStore, copyStore, baziStore, readingStore);
     registerCopyIpc(copyStore);
     createWindow();
     void createTray();
@@ -485,6 +512,8 @@ if (!app.requestSingleInstanceLock()) {
     baziStore = null;
     mediaCaptureStore?.close();
     mediaCaptureStore = null;
+    readingStore?.close();
+    readingStore = null;
     store?.close();
     store = null;
   });

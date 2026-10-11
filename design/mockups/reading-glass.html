@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="mist">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阅读清单 · 小工具工作台(讨论稿) — 个人工作台</title>
+<!--
+  高保真讨论稿 · 阅读清单模块(2026-10-11,方案 docs/READING-PLAN.md 已定稿)
+  数据为合成示例,基于用户真实读书库(读书笔记/DMBOK 56篇笔记、置身事内仅欢迎页)结构设计。
+-->
+<style>
+/* ========== 主题 token(镜像 src/shell.css mist) ========== */
+:root{
+  --ink:#1b1d22; --ink-2:#464b54; --ink-3:#63686f;
+  --acc:#7f9dd3; --acc-deep:#4a67a3; --acc-soft:rgba(127,157,211,.16);
+  --action:#232529; --action-deep:#141519;
+  --selection:rgba(127,157,211,.3);
+  --danger:#b5504e; --danger-soft:rgba(197,93,90,.13);
+  --glass-hi:rgba(255,255,255,.95); --glass-lo:rgba(250,250,252,.68); --glass-line:rgba(255,255,255,.9);
+  --glass-surface:rgba(255,255,255,.56); --glass-filter:blur(18px) saturate(1.5);
+  --hairline:rgba(28,30,36,.09);
+  --shadow:0 8px 24px rgba(35,38,48,.09),0 2px 6px rgba(35,38,48,.04);
+  --shadow-sm:0 3px 10px rgba(35,38,48,.07);
+  --field-base:#e9eaee;
+  --field:
+    radial-gradient(46% 40% at 10% 4%,rgba(255,255,255,.8) 0%,transparent 100%),
+    radial-gradient(50% 44% at 92% 96%,rgba(203,209,226,.55) 0%,transparent 100%),
+    linear-gradient(150deg,#e9eaee 0%,#e6e8ec 55%,#e9ebef 100%);
+  --r-panel:18px; --r-card:14px; --r-ctl:10px;
+  --font:"Bahnschrift","Segoe UI Variable Text","Segoe UI","Microsoft YaHei UI","Microsoft YaHei",sans-serif;
+  --ease:cubic-bezier(.2,.7,.2,1);
+  --type-micro:10px; --type-caption:11px; --type-support:12px; --type-control:13px;
+  --type-body:14px; --type-section:16px; --type-lead:18px; --type-page:24px;
+  /* 阅读模块语义色(信息编码,同命理五行先例) */
+  --rd-reading:#4a67a3;  --rd-reading-soft:rgba(74,103,163,.13);
+  --rd-wish:#6f5f9e;     --rd-wish-soft:rgba(154,140,194,.14);
+  --rd-done:#3e7d44;     --rd-done-soft:rgba(62,125,68,.13);
+  --rd-paused:#8a8f96;   --rd-paused-soft:rgba(138,143,150,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--font);color:var(--ink);font-size:var(--type-body);line-height:1.55;
+  background:#d6d7d9;display:grid;place-items:center;padding:26px;overflow:hidden;
+}
+::selection{background:var(--selection)}
+:focus-visible{outline:2px solid var(--acc-deep);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:rgba(30,34,44,.16);border-radius:999px;border:3px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-track{background:transparent}
+
+.win{
+  position:relative;width:min(1400px,100%);height:min(864px,100%);
+  border-radius:22px;overflow:hidden;display:flex;
+  background:var(--field-base);
+  box-shadow:0 24px 44px rgba(30,33,40,.30),0 4px 12px rgba(30,33,40,.14);
+  border:1px solid rgba(255,255,255,.65);
+}
+.win::before{content:"";position:absolute;inset:0;z-index:0;background:var(--field)}
+
+/* ---------- 图标栏 / 二级目录(真实外壳复刻) ---------- */
+.rail{position:relative;z-index:2;width:66px;flex:none;display:flex;flex-direction:column;align-items:center;
+  padding:14px 0 12px;gap:6px;
+  background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(255,255,255,.42));
+  -webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);
+  border-right:1px solid var(--glass-line)}
+.logo{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;margin-bottom:10px;color:var(--ink)}
+.rnav{display:flex;flex-direction:column;gap:6px}
+.rmid{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px}
+.rbot{margin-top:auto;display:flex;flex-direction:column;gap:6px}
+.ritem{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;color:var(--ink-2);
+  transition:background .16s var(--ease),color .16s var(--ease);position:relative}
+.ritem:hover{background:rgba(255,255,255,.65);color:var(--ink)}
+.ritem.on{background:var(--nav-on-bg,#232529);color:var(--nav-on-fg,#fff);box-shadow:var(--shadow-sm)}
+.ritem.dim{opacity:.5}
+.snav{position:relative;z-index:2;width:200px;flex:none;display:flex;flex-direction:column;
+  margin:12px 0 12px 12px;padding:16px 10px 12px;border-radius:16px;
+  background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,.28));
+  -webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);
+  border:1px solid var(--glass-line);box-shadow:var(--shadow-sm)}
+.stitle{font-size:var(--type-body);font-weight:700;padding:0 6px 12px}
+.tree{flex:1;display:flex;flex-direction:column;gap:2px}
+.nsub{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--r-ctl);
+  color:var(--ink-2);font-weight:500;cursor:pointer}
+.nsub.on{background:rgba(255,255,255,.92);color:var(--acc-deep);box-shadow:var(--shadow-sm);font-weight:600}
+.ndot{width:6px;height:6px;border-radius:50%;background:rgba(18,36,54,.22);flex:none}
+.nsub.on .ndot{background:var(--acc-deep)}
+.sfoot{display:flex;align-items:center;gap:8px;padding:10px 8px 0;border-top:1px solid var(--hairline);margin-top:10px;
+  font-size:var(--type-caption);color:var(--ink-3)}
+.sfoot .dotok{width:7px;height:7px;border-radius:50%;background:var(--acc-deep);box-shadow:0 0 0 3px var(--acc-soft)}
+.main{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+.topbar{flex:none;height:54px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
+  margin:10px 12px 0;padding:0 10px 0 14px;border-radius:999px;
+  background:linear-gradient(180deg,rgba(255,255,255,.82),rgba(255,255,255,.55));
+  -webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);
+  border:1px solid var(--glass-line);box-shadow:var(--shadow-sm)}
+.tb-left{display:flex;align-items:center;gap:10px;justify-self:start;min-width:0}
+.sched{flex:none;display:flex;align-items:center;padding:5px 8px 5px 14px;gap:6px;min-width:0;border-radius:999px;
+  background:linear-gradient(135deg,var(--glass-hi),var(--glass-lo));
+  border:1px solid var(--glass-line);box-shadow:var(--shadow-sm)}
+.sched-label{display:flex;align-items:center;gap:8px;font-weight:700;font-size:var(--type-control);white-space:nowrap}
+.sched-label svg{color:var(--icon-tint,#2a2c31)}
+.sched-label .date{color:var(--ink-3);font-weight:600}
+.sdiv{width:1px;height:20px;background:var(--hairline);margin:0 6px;flex:none}
+.schip{display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.62);white-space:nowrap}
+.schip .t{font-weight:700;font-size:var(--type-support);color:var(--ink-2);font-variant-numeric:tabular-nums}
+.schip .n{font-size:var(--type-support);color:var(--ink-2)}
+.schip.now{background:var(--acc-soft)}
+.schip.now .t,.schip.now .n{color:var(--acc-deep)}
+.schip.now .live{width:7px;height:7px;border-radius:50%;background:var(--acc-deep)}
+.todopill{display:flex;align-items:center;gap:9px;height:42px;padding:0 16px;border-radius:999px;white-space:nowrap}
+.todopill svg{color:var(--icon-tint,#2a2c31)}
+.todopill .lbl{font-weight:700;font-size:var(--type-control)}
+.todopill .num{font-weight:700;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tb-right{display:flex;align-items:center;gap:8px;justify-self:end}
+.ibtn{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;color:var(--ink-2);
+  transition:background .15s var(--ease),color .15s var(--ease)}
+.ibtn:hover{background:rgba(255,255,255,.7);color:var(--ink)}
+.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;
+  background:linear-gradient(140deg,var(--action),var(--action-deep));border:2px solid rgba(255,255,255,.85);box-shadow:var(--shadow-sm)}
+.wbtns{display:flex;gap:2px}
+.wbtn{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:var(--ink-2)}
+.wbtn:hover{background:rgba(255,255,255,.75);color:var(--ink)}
+.content{flex:1;overflow-y:auto;padding:20px 24px 24px}
+.greet{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px}
+.greet h1{font-size:var(--type-page);font-weight:800;letter-spacing:-.02em;line-height:1.25}
+.gsub{color:var(--ink-3);font-size:var(--type-control);margin-top:3px;font-variant-numeric:tabular-nums}
+.gsub b{color:var(--acc-deep);font-weight:700}
+.gbtns{display:flex;gap:10px;flex:none}
+.btn{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 16px;border-radius:12px;font-weight:600;
+  font-size:var(--type-control);transition:transform .16s var(--ease),filter .16s var(--ease)}
+.btn:hover{transform:translateY(-1px)}
+.btn-pri{background:linear-gradient(140deg,var(--action),var(--action-deep));color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.28)}
+.btn-pri:hover{filter:brightness(1.15)}
+.btn-sec{background:rgba(255,255,255,.66);border:1px solid rgba(255,255,255,.8);box-shadow:var(--shadow-sm)}
+.btn-sec:hover{background:#fff}
+.btn-sm{height:32px;padding:0 12px;font-size:var(--type-support);border-radius:10px}
+
+/* ========== 阅读清单主区 ========== */
+.rd-cols{display:grid;grid-template-columns:1.35fr 1fr;gap:16px;align-items:start}
+
+/* 书架分组 */
+.shelf + .shelf{margin-top:16px}
+.shelf-head{display:flex;align-items:center;gap:8px;padding:0 4px 8px}
+.shelf-badge{font-size:var(--type-caption);font-weight:700;padding:2px 10px;border-radius:999px}
+.shelf-badge.reading{background:var(--rd-reading-soft);color:var(--rd-reading)}
+.shelf-badge.wish{background:var(--rd-wish-soft);color:var(--rd-wish)}
+.shelf-badge.done{background:var(--rd-done-soft);color:var(--rd-done)}
+.shelf-badge.paused{background:var(--rd-paused-soft);color:var(--rd-paused)}
+.shelf-count{font-size:var(--type-support);color:var(--ink-3);font-weight:600}
+.bookcard{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--r-card);cursor:pointer;
+  background:var(--glass-surface);border:1px solid var(--glass-line);box-shadow:var(--shadow-sm);
+  transition:transform .15s var(--ease),box-shadow .15s var(--ease)}
+.bookcard + .bookcard{margin-top:8px}
+.bookcard:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
+.bookcard.on{border-color:var(--acc-deep);background:rgba(255,255,255,.85)}
+.cover{width:44px;height:60px;border-radius:8px;flex:none;display:grid;place-items:center;
+  color:#fff;font-weight:800;font-size:var(--type-section);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),var(--shadow-sm)}
+.bookcard.on .cover{outline:2px solid rgba(255,255,255,.55);outline-offset:-4px}
+.b-main{flex:1;min-width:0}
+.b-title{font-weight:700;font-size:var(--type-control);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.b-meta{display:flex;align-items:center;gap:8px;font-size:var(--type-caption);color:var(--ink-3);margin-top:2px}
+.b-tags{display:flex;gap:5px;margin-top:4px;flex-wrap:wrap}
+.b-tag{font-size:var(--type-caption);font-weight:600;color:var(--ink-3);background:rgba(30,34,44,.05);
+  border-radius:999px;padding:1px 8px}
+.b-link{display:inline-flex;align-items:center;gap:4px;font-size:var(--type-caption);font-weight:600;
+  color:var(--rd-reading);background:var(--rd-reading-soft);border-radius:999px;padding:1px 8px}
+.b-side{flex:none;text-align:right;display:flex;flex-direction:column;gap:3px;align-items:flex-end}
+.b-progress{font-size:var(--type-support);font-weight:700;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.b-progbar{width:72px;height:5px;border-radius:999px;background:rgba(30,34,44,.08);overflow:hidden}
+.b-progbar i{display:block;height:100%;border-radius:999px;background:var(--rd-reading)}
+.b-recent{font-size:var(--type-caption);color:var(--ink-3)}
+.stars{color:#c99a2e;font-size:var(--type-support);letter-spacing:1px}
+.empty-note{font-size:var(--type-support);color:var(--ink-3);padding:8px 6px 2px}
+
+/* 详情卡 */
+.detail{position:sticky;top:0}
+.d-head{display:flex;align-items:flex-start;gap:14px;padding-bottom:12px}
+.d-cover{width:64px;height:88px;border-radius:10px;flex:none;display:grid;place-items:center;color:#fff;
+  font-weight:800;font-size:var(--type-lead);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),var(--shadow-sm)}
+.d-t{flex:1;min-width:0}
+.d-title{font-size:var(--type-lead);font-weight:800;letter-spacing:-.01em}
+.d-author{font-size:var(--type-support);color:var(--ink-3);margin-top:2px}
+.d-state{margin-top:8px}
+.pseg{display:inline-flex;gap:2px;background:rgba(30,34,44,.06);border-radius:999px;padding:3px}
+.pseg button{padding:3px 11px;border-radius:999px;font-size:var(--type-caption);font-weight:600;color:var(--ink-3)}
+.pseg button.on{background:#fff;color:var(--acc-deep);box-shadow:0 2px 6px rgba(30,34,44,.12)}
+.d-sec{border-top:1px solid var(--hairline);padding-top:10px;margin-top:10px}
+.d-label{font-size:var(--type-caption);font-weight:700;color:var(--ink-3);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.d-label .val{margin-left:auto;color:var(--ink-2)}
+.d-note-count{display:flex;align-items:center;gap:10px;font-size:var(--type-support);color:var(--ink-2)}
+.d-note-count b{font-variant-numeric:tabular-nums}
+.minibars{display:flex;gap:3px;align-items:flex-end;height:22px;flex:none}
+.minibars i{width:8px;border-radius:3px;background:var(--rd-reading-soft)}
+.minibars i.full{background:var(--rd-reading)}
+.progress-row{display:flex;align-items:center;gap:10px}
+.progress-row input[type=range]{flex:1;accent-color:var(--rd-reading)}
+.progress-row .pct{width:64px;text-align:right;font-weight:700;font-size:var(--type-control);font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.rate-row{display:flex;align-items:center;gap:10px}
+.rate-row .stars-btn{font-size:var(--type-lead);letter-spacing:3px;color:#c99a2e;line-height:1}
+.rate-row .stars-btn .off{color:rgba(30,34,44,.18)}
+.shortcut{width:100%;min-height:56px;resize:none;border-radius:10px;padding:8px 11px;font-size:var(--type-control);
+  line-height:1.6;color:var(--ink);background:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.85);outline:none}
+.shortcut:focus{border-color:rgba(127,157,211,.4);background:#fff}
+.tagrow{display:flex;gap:6px;flex-wrap:wrap}
+.tagrow .b-tag{cursor:pointer}
+.tagrow .b-tag.on{background:var(--acc-soft);color:var(--acc-deep)}
+.tagrow .b-tag.add{border:1px dashed rgba(30,34,44,.25)}
+/* Obsidian 关联区 */
+.linkbox{display:flex;flex-direction:column;gap:8px}
+.linkrow{display:flex;align-items:center;gap:9px;font-size:var(--type-support);color:var(--ink-2)}
+.linkrow svg{color:var(--rd-reading);flex:none}
+.linkrow .k{color:var(--ink-3);flex:none}
+.linkrow .v{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.linkrow .open{margin-left:auto;flex:none;font-size:var(--type-caption);font-weight:700;color:var(--acc-deep);
+  padding:3px 10px;border-radius:8px;background:rgba(255,255,255,.6)}
+.linkrow .open:hover{background:#fff}
+.chapters{display:flex;flex-direction:column;gap:2px;max-height:180px;overflow-y:auto}
+.chapter{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:5px 8px;border-radius:8px;
+  font-size:var(--type-support);color:var(--ink-2);transition:background .13s var(--ease)}
+.chapter:hover{background:rgba(255,255,255,.7)}
+.chapter .cn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chapter .cm{flex:none;font-size:var(--type-caption);color:var(--ink-3)}
+.chapter .dot{width:6px;height:6px;border-radius:50%;flex:none}
+.chapter .dot.draft{background:rgba(30,34,44,.2)}
+.chapter .dot.shaped{background:var(--rd-done)}
+.maturity{display:flex;align-items:center;gap:6px;font-size:var(--type-caption);color:var(--ink-3)}
+.maturity i{display:inline-block;width:9px;height:9px;border-radius:3px}
+/* AI 区 */
+.ai-card{display:flex;flex-direction:column;gap:8px}
+.ai-row{display:flex;gap:7px;flex-wrap:wrap}
+.ai-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:var(--type-support);
+  font-weight:600;color:var(--acc-deep);background:var(--acc-soft);transition:transform .14s var(--ease),filter .14s var(--ease)}
+.ai-chip:hover{transform:translateY(-1px);filter:brightness(1.05)}
+.ai-chip svg{flex:none}
+.ai-hint{font-size:var(--type-caption);color:var(--ink-3);line-height:1.6}
+.ai-hint b{color:var(--ink-2)}
+.phead{display:flex;align-items:center;gap:10px;padding-bottom:10px}
+.ptitle{font-size:var(--type-section);font-weight:800;letter-spacing:-.01em}
+.pcount{font-size:var(--type-support);color:var(--ink-3);font-weight:600;font-variant-numeric:tabular-nums}
+.panel{border-radius:var(--r-panel);padding:16px 18px 12px}
+.panel + .panel{margin-top:16px}
+.toast{position:absolute;left:50%;bottom:26px;transform:translateX(-50%) translateY(16px);opacity:0;z-index:50;
+  padding:10px 18px;border-radius:12px;font-size:var(--type-control);font-weight:600;color:var(--ink);pointer-events:none;
+  transition:all .22s var(--ease);box-shadow:0 8px 20px rgba(20,22,28,.16)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.themeswitch{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:99;display:flex;align-items:center;gap:4px;
+  padding:6px;border-radius:999px;background:rgba(25,27,32,.88);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  box-shadow:0 10px 28px rgba(20,22,28,.35)}
+.themeswitch button{padding:7px 13px;border-radius:999px;font-size:var(--type-support);font-weight:600;color:#c9ccd2}
+.themeswitch button:hover{color:#fff}
+.themeswitch button.on{background:#fff;color:#1b1d22}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+@media (max-width:1180px){.rd-cols{grid-template-columns:1fr}.detail{position:static}}
+</style>
+</head>
+<body>
+<div class="win">
+  <aside class="rail">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+        <circle cx="12" cy="12" r="8.6"/><circle cx="19" cy="5" r="2.1" fill="var(--acc-deep)" stroke="none"/>
+      </svg>
+    </div>
+    <nav class="rnav">
+      <button class="ritem" title="首页"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.2 12 4.4l8 6.8V19a1 1 0 0 1-1 1h-4.6v-5.2h-4.8V20H5a1 1 0 0 1-1-1Z"/></svg></button>
+    </nav>
+    <div class="rmid">
+      <button class="ritem dim" title="自媒体工作台(即将上线)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="m10 9.5 4.5 2.5L10 14.5Z"/></svg></button>
+      <button class="ritem dim" title="游戏工作台(即将上线)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8h11a4 4 0 0 1 4 4.2l-.4 4.3a2.4 2.4 0 0 1-4.2 1.4L15 16H9l-1.9 1.9a2.4 2.4 0 0 1-4.2-1.4l-.4-4.3A4 4 0 0 1 6.5 8Z"/><path d="M8.5 11v3M7 12.5h3M15.5 11.5h.01M17.5 13.5h.01"/></svg></button>
+      <button class="ritem dim" title="网页工作台(即将上线)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 9h17M7 6.8h.01M9.6 6.8h.01"/></svg></button>
+      <button class="ritem on" title="小工具"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 14.2A7.6 7.6 0 0 1 9.8 4.5a7.6 7.6 0 1 0 9.7 9.7Z"/></svg></button>
+    </div>
+    <div class="rbot">
+      <button class="ritem" title="设置"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7.2"/><path d="M12 2.4v3.1M12 18.5v3.1M21.6 12h-3.1M5.5 12H2.4M18.8 5.2l-2.2 2.2M7.4 16.6l-2.2 2.2M18.8 18.8l-2.2-2.2M7.4 7.4 5.2 5.2"/></svg></button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="tb-left">
+        <div class="sched">
+          <span class="sched-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>
+            日程<span class="date">10月11日 · 周日</span>
+          </span>
+          <span class="sdiv"></span>
+          <div class="sched-track" style="display:flex;align-items:center;gap:6px;overflow:hidden">
+            <button class="schip now"><span class="live"></span><span class="t">19:30</span><span class="n">阅读 · DMBOK</span></button>
+            <button class="schip"><span class="t">21:30</span><span class="n">整理笔记</span></button>
+          </div>
+        </div>
+      </div>
+      <button class="todopill glass" style="justify-self:center" title="今日待办">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="m8.5 12.2 2.4 2.4 4.8-5"/></svg>
+        <span class="lbl">待办</span><span class="num">2/6</span>
+      </button>
+      <div class="tb-right">
+        <button class="ibtn" title="AI 助手" style="color:var(--ai-accent,#c26b32)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l1.9 5.1a2 2 0 0 0 1.2 1.2l5.1 1.9-5.1 1.9a2 2 0 0 0-1.2 1.2L12 19.9l-1.9-5.1a2 2 0 0 0-1.2-1.2L3.8 11.7l5.1-1.9a2 2 0 0 0 1.2-1.2Z"/></svg>
+        </button>
+        <button class="ibtn" title="通知"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9.8a6 6 0 1 0-12 0c0 4.2-1.8 5.8-1.8 5.8h15.6S18 14 18 9.8Z"/><path d="M10.2 19a2 2 0 0 0 3.6 0"/></svg></button>
+        <div class="avatar" title="Ono">O</div>
+        <span class="vdiv" style="width:1px;height:22px;background:var(--hairline)"></span>
+        <div class="wbtns">
+          <button class="wbtn" title="最小化"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+          <button class="wbtn" title="最大化"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="5" width="14" height="14" rx="2"/></svg></button>
+          <button class="wbtn" title="关闭"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+      </div>
+    </header>
+
+    <div style="flex:1;display:flex;min-height:0">
+      <aside class="snav">
+        <div class="stitle">小工具</div>
+        <nav class="tree">
+          <a class="nsub"><span class="ndot"></span>命理</a>
+          <a class="nsub on"><span class="ndot"></span>阅读清单</a>
+        </nav>
+        <div class="sfoot"><span class="dotok"></span>关联读书笔记库 · 只读</div>
+      </aside>
+
+      <main class="content">
+        <div class="greet">
+          <div>
+            <h1>阅读清单</h1>
+            <div class="gsub">4 本书 · 在读 <b>2</b> · 关联库「读书笔记」共 <b>57</b> 篇笔记 · <b>只读</b>不改动你的库</div>
+          </div>
+          <div class="gbtns">
+            <button class="btn btn-sec" id="btnRescan">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 3.8v3.4h-3.4"/></svg>
+              重新扫描
+            </button>
+            <button class="btn btn-pri" id="btnNew">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              添加书目
+            </button>
+          </div>
+        </div>
+
+        <div class="rd-cols">
+          <!-- ===== 左:书架 ===== -->
+          <div>
+            <div class="shelf">
+              <div class="shelf-head"><span class="shelf-badge reading">在读</span><span class="shelf-count">2 本</span></div>
+              <div class="bookcard on" id="cardDMBOK">
+                <span class="cover" style="background:linear-gradient(140deg,#4a67a3,#31517e)">D</span>
+                <div class="b-main">
+                  <div class="b-title">DAMA 数据管理知识体系指南(修订版)</div>
+                  <div class="b-meta"><span>DAMA International</span><span>·</span><span>考试教材</span></div>
+                  <div class="b-tags"><span class="b-link">库 · 56 篇</span><span class="b-tag">技术</span><span class="b-tag">考试</span></div>
+                </div>
+                <div class="b-side">
+                  <span class="b-progress">第 6 章 / 17</span>
+                  <span class="b-progbar"><i style="width:35%"></i></span>
+                  <span class="b-recent">昨天更新笔记</span>
+                </div>
+              </div>
+              <div class="bookcard">
+                <span class="cover" style="background:linear-gradient(140deg,#7d6ba0,#5d4c80)">置身</span>
+                <div class="b-main">
+                  <div class="b-title">置身事内:中国政府与经济发展</div>
+                  <div class="b-meta"><span>兰小欢</span><span>·</span><span>上海人民出版社</span></div>
+                  <div class="b-tags"><span class="b-tag">经济</span></div>
+                </div>
+                <div class="b-side">
+                  <span class="b-progress">32%</span>
+                  <span class="b-progbar"><i style="width:32%;background:var(--rd-reading)"></i></span>
+                  <span class="b-recent">3 天前打开</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="shelf">
+              <div class="shelf-head"><span class="shelf-badge wish">想读</span><span class="shelf-count">1 本</span></div>
+              <div class="bookcard">
+                <span class="cover" style="background:linear-gradient(140deg,#6f5f9e,#7a6ca2)">设</span>
+                <div class="b-main">
+                  <div class="b-title">设计中的设计</div>
+                  <div class="b-meta"><span>原研哉</span><span>·</span><span>山东人民出版社</span></div>
+                  <div class="b-tags"><span class="b-tag">设计</span></div>
+                </div>
+                <div class="b-side"><span class="b-recent">待开始</span></div>
+              </div>
+            </div>
+
+            <div class="shelf">
+              <div class="shelf-head"><span class="shelf-badge done">已读</span><span class="shelf-count">1 本</span></div>
+              <div class="bookcard">
+                <span class="cover" style="background:linear-gradient(140deg,#3e7d44,#2f6234)">数</span>
+                <div class="b-main">
+                  <div class="b-title">数据要素:全球经济社会发展的新动力</div>
+                  <div class="b-meta"><span>2025 年 8 月读完</span></div>
+                  <div class="b-tags"><span class="b-tag">技术</span></div>
+                </div>
+                <div class="b-side"><span class="stars">★★★★☆</span></div>
+              </div>
+            </div>
+
+            <div class="shelf">
+              <div class="shelf-head"><span class="shelf-badge paused">搁置</span><span class="shelf-count">0 本</span></div>
+              <div class="empty-note">暂时没有搁置的书。</div>
+            </div>
+          </div>
+
+          <!-- ===== 右:详情卡 ===== -->
+          <div class="detail">
+            <div class="panel glass">
+              <div class="phead"><span class="ptitle">书籍详情</span><span class="pcount">关联库内文件夹:DMBOK</span></div>
+              <div class="d-head">
+                <span class="d-cover" style="background:linear-gradient(140deg,#4a67a3,#31517e)">D</span>
+                <div class="d-t">
+                  <div class="d-title">DAMA 数据管理知识体系指南(修订版)</div>
+                  <div class="d-author">DAMA International · 机械工业出版社 · 478 页</div>
+                  <div class="d-state">
+                    <div class="pseg" role="radiogroup" aria-label="阅读状态">
+                      <button>想读</button><button class="on">在读</button><button>已读</button><button>搁置</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-sec">
+                <div class="d-label">进度<span class="val">第 6 章 / 17 章 · 35%</span></div>
+                <div class="progress-row">
+                  <input type="range" min="0" max="100" value="35" aria-label="阅读进度">
+                  <span class="pct">35%</span>
+                </div>
+              </div>
+
+              <div class="d-sec">
+                <div class="d-label">评分与短评</div>
+                <div class="rate-row"><span class="stars-btn">★★★★<span class="off">★</span></span><span class="hintp" style="color:var(--ink-3);font-size:var(--type-caption)">还没写短评</span></div>
+              </div>
+
+              <div class="d-sec">
+                <div class="d-label">标签</div>
+                <div class="tagrow">
+                  <span class="b-tag on">技术</span><span class="b-tag on">考试</span><span class="b-tag">数据治理</span><span class="b-tag add">+ 添加</span>
+                </div>
+              </div>
+
+              <div class="d-sec">
+                <div class="d-label">Obsidian 关联<span class="val">只读 · 不改动你的库</span></div>
+                <div class="linkbox">
+                  <div class="linkrow">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+                    <span class="k">库</span><span class="v">读书笔记</span>
+                    <button class="open">在 Obsidian 打开</button>
+                  </div>
+                  <div class="linkrow">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-8L9.6 4.6A1 1 0 0 0 8.8 4H4a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1Z"/></svg>
+                    <span class="k">文件夹</span><span class="v">DMBOK/</span>
+                  </div>
+                  <div class="d-note-count">
+                    <span><b>56</b> 篇笔记</span>
+                    <span class="maturity"><i class="dot shaped" style="width:9px;height:9px;border-radius:3px;background:var(--rd-done)"></i>成型 31</span>
+                    <span class="maturity"><i style="width:9px;height:9px;border-radius:3px;background:rgba(30,34,44,.2)"></i>草稿 25</span>
+                  </div>
+                  <div class="minibars" aria-hidden="true">
+                    <i style="height:60%" class="full"></i><i style="height:80%" class="full"></i><i style="height:40%"></i><i style="height:100%" class="full"></i><i style="height:30%"></i><i style="height:70%" class="full"></i><i style="height:90%" class="full"></i>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-sec">
+                <div class="d-label">章节笔记<span class="val">点开在 Obsidian 中编辑</span></div>
+                <div class="chapters">
+                  <button class="chapter"><span class="dot shaped"></span><span class="cn">01-数据管理 / 数据管理</span><span class="cm">10-10 更新</span></button>
+                  <button class="chapter"><span class="dot shaped"></span><span class="cn">01-数据管理 / 概念 / DIKW 金字塔</span><span class="cm">10-10</span></button>
+                  <button class="chapter"><span class="dot draft"></span><span class="cn">05-数据建模和设计 / 概念 / 三层数据模型</span><span class="cm">10-09</span></button>
+                  <button class="chapter"><span class="dot draft"></span><span class="cn">06-数据存储和运营 / 概念 / 数据架构类型</span><span class="cm">10-09</span></button>
+                  <button class="chapter"><span class="dot shaped"></span><span class="cn">00-规范 / 笔记规范(书信息:ISBN 9787111778639)</span><span class="cm">10-10</span></button>
+                </div>
+              </div>
+
+              <div class="d-sec ai-card">
+                <div class="d-label">AI 协助<span class="val">只读笔记,不改库</span></div>
+                <div class="ai-row">
+                  <button class="ai-chip">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l1.9 5.1a2 2 0 0 0 1.2 1.2l5.1 1.9-5.1 1.9a2 2 0 0 0-1.2 1.2L12 19.9l-1.9-5.1a2 2 0 0 0-1.2-1.2L3.8 11.7l5.1-1.9a2 2 0 0 0 1.2-1.2Z"/></svg>
+                    串联概念总结
+                  </button>
+                  <button class="ai-chip">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l1.9 5.1a2 2 0 0 0 1.2 1.2l5.1 1.9-5.1 1.9a2 2 0 0 0-1.2 1.2L12 19.9l-1.9-5.1a2 2 0 0 0-1.2-1.2L3.8 11.7l5.1-1.9a2 2 0 0 0 1.2-1.2Z"/></svg>
+                    出 10 道自测题
+                  </button>
+                  <button class="ai-chip">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l1.9 5.1a2 2 0 0 0 1.2 1.2l5.1 1.9-5.1 1.9a2 2 0 0 0-1.2 1.2L12 19.9l-1.9-5.1a2 2 0 0 0-1.2-1.2L3.8 11.7l5.1-1.9a2 2 0 0 0 1.2-1.2Z"/></svg>
+                    结合短评聊这本书
+                  </button>
+                </div>
+                <div class="ai-hint">AI 只读取<b>规范页摘要与最近笔记</b>,正文需要时按篇取用(只读);解读在右侧 AI 面板进行。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div class="toast glass" id="toast" style="position:fixed"></div>
+
+  <div class="themeswitch" role="tablist" aria-label="主题切换">
+    <button data-t="mist" class="on">雾灰 · 墨点</button>
+    <button data-t="cool">冷灰 · 凝霜</button>
+    <button data-t="warm">暖砂 · 柔雾</button>
+  </div>
+
+<script>
+const toast = document.getElementById('toast'); let tt;
+function showToast(msg){ toast.textContent = msg; toast.classList.add('show'); clearTimeout(tt); tt = setTimeout(()=>toast.classList.remove('show'), 2200); }
+document.addEventListener('click', e=>{
+  if (e.target.closest('.chapter') || e.target.closest('.linkrow .open')){ showToast('实际版本:经 obsidian:// 协议在 Obsidian 中打开'); return; }
+  if (e.target.closest('.ai-chip')){ showToast('实际版本:打开 AI 面板,按所选角度生成解读'); return; }
+  if (e.target.closest('.bookcard:not(.on)')){ document.querySelectorAll('.bookcard').forEach(b=>b.classList.remove('on')); e.target.closest('.bookcard').classList.add('on'); return; }
+  if (e.target.closest('#btnRescan')){ showToast('重新扫描读书笔记库(实际版本:发现新书夹会提示导入)'); return; }
+  if (e.target.closest('#btnNew')){ showToast('添加书目(实际版本:弹框填写书名/作者/状态,可稍后关联库内文件夹)'); return; }
+  const seg = e.target.closest('.pseg button');
+  if (seg){ seg.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on')); seg.classList.add('on'); return; }
+});
+const THEMES = ['mist','cool','warm'];
+function setTheme(t){ if (!THEMES.includes(t)) return; document.documentElement.dataset.theme = t;
+  document.querySelectorAll('.themeswitch button').forEach(b=>b.classList.toggle('on', b.dataset.t===t)); }
+document.querySelectorAll('.themeswitch button').forEach(b=>b.addEventListener('click', ()=>setTheme(b.dataset.t)));
+const urlTheme = new URLSearchParams(location.search).get('theme');
+if (urlTheme) setTheme(urlTheme);
+</script>
+</body>
+</html>

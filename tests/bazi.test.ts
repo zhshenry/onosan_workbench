@@ -169,3 +169,58 @@ test('命例契约:tag 可选且最长 6 字', () => {
   assert.ok(baziProfileInputSchema.safeParse({ ...base, tag: '家人' }).success);
   assert.ok(!baziProfileInputSchema.safeParse({ ...base, tag: '七个字的标签呀' }).success);
 });
+
+/* ---- 紫微流运(horoscope) ---- */
+import { ziweiHoroscopeText } from '../modules/bazi/ai';
+import { buildZiweiHoroscope } from '../modules/bazi/ziwei';
+import { buildAstro as buildAstroFull } from '../modules/bazi/astro';
+
+test('紫微流运:林川 2026-10-01 → 流年丙午,三层同构', () => {
+  const horo = buildZiweiHoroscope(LIN_CHUAN, '2026-10-01');
+  assert.equal(horo.yearly.stem, '丙');
+  assert.equal(horo.yearly.branch, '午');
+  assert.equal(horo.yearly.palaceNames.length, 12);
+  assert.equal(horo.yearly.palaceNames[horo.yearly.index], '命宫');
+  assert.equal(horo.yearly.mutagen.length, 4);
+  assert.ok(horo.monthly && horo.daily, '流月流日层应存在');
+  assert.notDeepEqual([horo.yearly.index, horo.monthly.index, horo.daily.index], [0, 0, 0]);
+  const text = ziweiHoroscopeText(LIN_CHUAN, '2026-10-01');
+  assert.match(text, /流年\(丙午\)/);
+  assert.match(text, /流四化：天同化禄/);
+  assert.match(text, /流命宫落本命/);
+});
+
+test('紫微流运:非法日期被拒', () => {
+  assert.throws(() => buildZiweiHoroscope(LIN_CHUAN, '2026-13-01'), /日期无效/);
+  assert.throws(() => buildZiweiHoroscope(LIN_CHUAN, '1800-01-01'), /1900 至 2100/);
+});
+
+/* ---- 占星宫位(整宫制,出生地) ---- */
+const SHANGHAI = { place: '上海', lat: 31.2304, lon: 121.4737 };
+
+test('占星:上海命例获得上升/天顶与整宫制宫位', () => {
+  const chart = buildAstroFull({ ...LIN_CHUAN, ...SHANGHAI });
+  assert.ok(chart.asc !== undefined && chart.mc !== undefined);
+  assert.ok(chart.asc! >= 0 && chart.asc! < 360);
+  for (const body of chart.bodies) {
+    assert.ok(body.house !== undefined && body.house >= 1 && body.house <= 12, `${body.name} 宫位缺失`);
+  }
+  // 整宫制:上升点所在星座必为第 1 宫
+  const ascSign = Math.floor(chart.asc! / 30);
+  const ascBody = chart.bodies.find((b) => Math.floor(b.lon / 30) === ascSign);
+  if (ascBody) assert.equal(ascBody.house, 1);
+});
+
+test('占星:无出生地则无宫位数据(向后兼容)', () => {
+  const chart = buildAstro({ ...LIN_CHUAN });
+  assert.equal(chart.asc, undefined);
+  assert.equal(chart.bodies[0].house, undefined);
+});
+
+test('命例契约:出生地经纬度成对校验', () => {
+  const base = { name: '测试', gender: 1, date: '1990-08-16', time: '12:00' };
+  assert.ok(baziProfileInputSchema.safeParse({ ...base, place: '上海', lat: 31.23, lon: 121.47 }).success);
+  assert.ok(!baziProfileInputSchema.safeParse({ ...base, lat: 31.23 }).success);
+  assert.ok(!baziProfileInputSchema.safeParse({ ...base, lon: 121.47 }).success);
+  assert.ok(!baziProfileInputSchema.safeParse({ ...base, lat: 95, lon: 121 }).success);
+});
