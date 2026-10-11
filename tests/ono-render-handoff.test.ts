@@ -93,12 +93,12 @@ test('CLI refusal has no payload and never echoes arguments', () => {
 test('helper stays preparation-only and matches the workflow input names', () => {
   const source = read('tooling/ono/render-pilot/prepare-dispatch.mjs');
   const imports = [...source.matchAll(/^import .* from '([^']+)';$/gm)].map(match => match[1]);
-  assert.deepEqual(imports, ['node:path', 'node:url']);
+  assert.deepEqual(imports, ['node:path', 'node:url', './candidates.mjs']);
   assert.doesNotMatch(source, /process\.env|\bfetch\s*\(|child_process|https?:\/\//);
   const workflow = read(`.github/workflows/${WORKFLOW}`);
   const inputNames = [...workflow.matchAll(/^      ([a-z_]+):$/gm)].map(match => match[1]);
   assert.deepEqual(Object.keys(prepareDispatch(base).inputs), inputNames);
-  assert.match(workflow, /options: \[historical-design-a-home\]/);
+  assert.match(workflow, /options: \[historical-design-a-home, issue-13-year-picker-v1\]/);
   assert.match(workflow, /github\.event_name == 'workflow_dispatch'/);
   assert.doesNotMatch(workflow, /^  (?:issue_comment|push|repository_dispatch):/m);
 });

@@ -1,4 +1,4 @@
-name: OnO historical prototype render pilot (manual only)
+name: OnO fixed-state prototype render pilot (manual only)
 
 on:
   workflow_dispatch:
@@ -8,10 +8,10 @@ on:
         required: true
         type: string
       prototype_state:
-        description: 'Existing historical prototype only; publication selection requires main-chat approval'
+        description: 'Fixed reviewed design state only; publication selection requires main-chat approval'
         required: true
         type: choice
-        options: [historical-design-a-home]
+        options: [historical-design-a-home, issue-13-year-picker-v1]
       post_attachment:
         description: 'Publish ONE public image to the approved issue; separate main-chat approval required'
         required: true

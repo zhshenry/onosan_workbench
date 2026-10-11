@@ -1,3 +1,5 @@
 
 # Keep the reviewed browser payload manifest byte-identical across checkouts.
 tooling/ono/render-pilot/chrome-154.0.8037.97-manifest.json text eol=lf
+# Fixed Issue 13 design source is SHA256-bound by the candidate allowlist.
+design/mockups/issue-13-year-picker-v1.html text eol=lf
