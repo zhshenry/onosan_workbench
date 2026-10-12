@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 110,
+  "revision": 111,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -208,7 +208,8 @@
         "failure": "mist1024x680 zoom1.25 .smore被todopill拦截",
         "artifactId": 11761855596,
         "artifactSha256": "c4b4190494830ec0d8ebc1a181ce74f0c4ef750d51a8b77d0c4608297583ee2c",
-        "expiresAt": "2026-10-15T16:59:46Z"
+        "expiresAt": "2026-10-15T16:59:46Z",
+        "temporaryEvidenceCleanedAt": "2026-10-12T17:11:21.281Z"
       }
     },
     "25": {
@@ -1617,6 +1618,23 @@
       "createdAt": "2026-10-12T16:59:01Z",
       "commentId": 6128811148,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6128811148"
+    },
+    "issue24-fix-overlap-publish": {
+      "kind": "update-implementation",
+      "status": "intent",
+      "target": "ono/issue-24-topbar-dates",
+      "expectedHead": "ef76cd47db128222f88f5d9f6201dd8325a62213",
+      "patchSha256": "68285bd783d58f4dac66023ecf83131ac81a5614b98efe87f50322e99aa03b3f",
+      "files": [
+        "UX-CONTRACT.md",
+        "src/shell.css",
+        "tests/topbar-dates.test.ts",
+        "tests/topbar-dates-pilot.test.ts",
+        "tests/windows-pilot.test.ts",
+        "tooling/topbar-dates-pilot.mjs",
+        "tooling/windows-pilot.mjs"
+      ],
+      "createdAt": "2026-10-12T17:11:21.281Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
