@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 20,
+  "revision": 21,
   "currentRun": {
     "owner": "ono-root-group-v2-20261012T1007Z",
     "startedAt": "2026-10-12T10:07:13.782Z",
@@ -179,6 +179,26 @@
       "createdAt": "2026-10-12T09:54:37.659Z",
       "draft": false,
       "updatedAt": "2026-10-12T09:55:00.136Z"
+    },
+    "group-v2-image-17": {
+      "kind": "native-image-upload",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
+      "memberIssue": 17,
+      "planVersion": "v2",
+      "imageSha256": "20da271020e08c4de0fc921acaf43319e9f2ac66a71508b0b9aea04262da9bee",
+      "purpose": "公开展示17+18组方案修订高保真",
+      "createdAt": "2026-10-12T10:10:28.685Z"
+    },
+    "group-v2-image-18": {
+      "kind": "native-image-upload",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
+      "memberIssue": 18,
+      "planVersion": "v2",
+      "imageSha256": "2a97b50cd956b874173a50370ba2387eefaf34f96a8b65cc8e93e02d5e0ca3a7",
+      "purpose": "公开展示17+18组方案修订高保真",
+      "createdAt": "2026-10-12T10:10:28.685Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
