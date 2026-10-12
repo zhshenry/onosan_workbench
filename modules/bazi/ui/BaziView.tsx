@@ -236,7 +236,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
     if (editingId) {
       const target = profiles.find((p) => p.id === editingId);
       if (!target) { onPending('命例不存在或已删除'); return; }
-      run(wb.bazi.saveProfile({ ...target, name, gender: Number(fGender), date, time, tag: tag || undefined, place: birth.place, lat: birth.lat, lon: birth.lon }), `已更新「${name}」`);
+      run(wb.bazi.saveProfile({ id: target.id, name, gender: Number(fGender), date, time, tag: tag || undefined, place: birth.place, lat: birth.lat, lon: birth.lon }), `已更新「${name}」`);
     } else {
       const id = crypto.randomUUID();
       run(
@@ -524,7 +524,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
               </div>
               <div className="bazi-form-field">
                 <span className="bazi-form-label">公历生日</span>
-                <DatePicker value={fDate} onChange={setFDate} />
+                <DatePicker value={fDate} onChange={setFDate} yearRange={{ min: BAZI_MIN_YEAR, max: BAZI_MAX_YEAR }} />
               </div>
               <div className="bazi-form-field">
                 <span className="bazi-form-label">出生时间</span>

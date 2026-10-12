@@ -5,6 +5,7 @@ import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { _electron as electron } from 'playwright';
 import { inspectPilotArtifacts } from './pilot-artifacts.mjs';
+import { runYearDropdownPilot, verifyUnboundedDatePicker, verifyYearDropdownRelaunch } from './year-dropdown-pilot.mjs';
 
 assert.equal(process.platform, 'win32', 'Run the acceptance pilot on standard Windows hosted CI');
 const executablePath = process.env.WORKBENCH_PILOT_EXE;
@@ -90,6 +91,7 @@ async function doneLibrary() {
   return library;
 }
 let taskId;
+let birthdayFixture;
 try {
   await check('Launch actual installed executable with isolated data and updater disabled', launch);
   await check('Fresh isolated task database is empty', async () => assert.equal((await state()).tasks.length, 0));
@@ -121,6 +123,7 @@ try {
     const dialog = page.getByRole('dialog', { name: '编辑事项', exact: true });
     await dialog.getByRole('textbox', { name: '待办名称', exact: true }).fill(editedTitle);
     await dialog.getByRole('textbox', { name: '备注 / 进展', exact: true }).fill(note);
+    await verifyUnboundedDatePicker(page);
     await dialog.getByRole('button', { name: '保存待办', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });
     const task = await waitTask(editedTitle, 'todo');
@@ -138,6 +141,7 @@ try {
     await doneLibrary();
   });
   await screenshot('completed.png');
+  birthdayFixture = await runYearDropdownPilot({ application, page, check, screenshot, runId, report });
   await check('Choose exit-on-close in settings and quit through the window close button', async () => {
     await page.locator('.rail [data-workbench="settings"]').click();
     await page.locator('.tree').getByRole('button', { name: '通用', exact: true }).click();
@@ -161,6 +165,7 @@ try {
     assert.ok((await stat(path.join(dataRoot, 'To-Do-List', 'tasks.db'))).size > 0);
   });
   await screenshot('relaunched.png');
+  await verifyYearDropdownRelaunch({ page, check, screenshot, fixture: birthdayFixture });
   await check('No renderer page errors during the core flow', async () => assert.deepEqual(report.errors, []));
   report.status = 'passed';
 } catch (error) {

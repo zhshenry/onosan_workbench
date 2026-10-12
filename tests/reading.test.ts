@@ -68,13 +68,37 @@ test('书籍聚合:笔记清单/成熟度/章节/规范页总章数', () => {
   rmSync(vault, { recursive: true, force: true });
 });
 
-test('笔记读取:路径穿越与应用自身目录被拒', () => {
+test('笔记读取:路径穿越与绝对路径被拒,缺失笔记仍报不存在', t => {
   const vault = makeVault();
+  t.after(() => rmSync(vault, { recursive: true, force: true }));
   assert.match(readNote(vault, 'DMBOK/01-数据管理/DIKW.md'), /草稿内容/);
   assert.throws(() => readNote(vault, '../其他库/秘密.md'), /越出|无效/);
   assert.throws(() => readNote(vault, 'C:/Windows/system32/config.sys'), /无效/);
   assert.throws(() => readNote(vault, 'DMBOK/不存在.md'), /不存在/);
-  rmSync(vault, { recursive: true, force: true });
+});
+
+test('只接受库内相对路径:POSIX与Windows绝对路径在任意宿主均先被拒绝', t => {
+  const vault = makeVault();
+  t.after(() => rmSync(vault, { recursive: true, force: true }));
+  for (const rel of [
+    '/etc/passwd',
+    'C:/Windows/system32/config.sys',
+    'C:\\Windows\\system32\\config.sys',
+    '\\\\server\\share\\secret.md',
+    '\\\\?\\C:\\Windows\\system32\\config.sys',
+    '//server/share/secret.md',
+    '\\Windows\\system32\\config.sys',
+  ]) {
+    assert.throws(() => readNote(vault, rel), /^Error: 笔记路径无效$/, `readNote: ${rel}`);
+    assert.throws(() => aggregateBook(vault, rel), /^Error: 笔记路径无效$/, `aggregateBook: ${rel}`);
+  }
+  assert.match(readNote(vault, path.join('DMBOK', '01-数据管理', 'DIKW.md')), /草稿内容/);
+  assert.equal(aggregateBook(vault, 'DMBOK').noteCount, 3);
+  assert.throws(() => aggregateBook(vault, '不存在的书'), /库内未找到该书的文件夹/);
+  for (const rel of ['..\\秘密.md', 'DMBOK\\..\\..\\秘密.md', 'DMBOK/../../秘密.md', 'DMBOK/..\\..\\秘密.md']) {
+    assert.throws(() => readNote(vault, rel), /^Error: 笔记路径无效$/);
+    assert.throws(() => aggregateBook(vault, rel), /^Error: 笔记路径无效$/);
+  }
 });
 
 /* ---- 存储回路 ---- */
