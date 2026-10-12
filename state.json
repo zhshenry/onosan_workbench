@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 128,
+  "revision": 129,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -264,7 +264,7 @@
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "stage": "ci-running",
+      "stage": "ci-fix",
       "type": [
         "ui",
         "interaction"
@@ -272,7 +272,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T16:48:00Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "真实Windows验收、实测图、必要回归修复；不得沿用24结果，不合入",
+      "nextAction": "修复重启验收中历史标题和消息正文重名导致的选择器歧义，不放宽实际快照断言；再跑完整Windows",
       "groupId": "workbench-context-26",
       "groupIssueNumbers": [
         26
@@ -301,7 +301,16 @@
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/39",
       "implementationBaseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "ciRunId": 38286044872,
-      "ciConclusion": "in_progress"
+      "ciConclusion": "failure",
+      "lastCi": {
+        "runId": 38286044872,
+        "headSha": "c3c3911f31aa664a86d058ad7ad462c3b481ca32",
+        "installed": "45通过/46尝试，最终检查未执行",
+        "failure": "getByText精确提示文字匹配历史列表标题及消息气泡2项，strict mode violation",
+        "artifactId": 11764190735,
+        "artifactSha256": "e70d939d470c656571aeb9754f0ddff37773a9c1b84127a6941d963ddd1d2a91",
+        "expiresAt": "2026-10-15T17:48:36Z"
+      }
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
