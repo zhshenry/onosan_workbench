@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 2,
+  "revision": 3,
   "currentRun": null,
   "tasks": {},
   "ownCommentIds": [
@@ -18,8 +18,10 @@
     "retire-pr20-close": {
       "kind": "close-pr-without-merge",
       "target": "https://github.com/zhshenry/onosan_workbench/pull/20",
-      "status": "prepared",
-      "createdAt": "2026-10-12T09:25:46.625Z"
+      "status": "succeeded",
+      "createdAt": "2026-10-12T09:25:46.625Z",
+      "merged": false,
+      "updatedAt": "2026-10-12T09:26:38.025Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
