@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 18,
-  "currentRun": {
-    "owner": "ono-root-pr21-merge-20261012T0954Z",
-    "startedAt": "2026-10-12T09:54:26.281Z",
-    "target": "PR21",
-    "stage": "verifying-main"
-  },
+  "revision": 19,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -149,7 +144,10 @@
       "merged": true,
       "mergeSha": "94938ee1cc94a652d3b9fdc4c7ef3e75d74e298f",
       "updatedAt": "2026-10-12T09:55:20.392Z",
-      "nextAction": "验证真实 main CI"
+      "nextAction": "completed",
+      "mainCiRun": 38232981028,
+      "mainCiConclusion": "success",
+      "verifiedAt": "2026-10-12T10:00:50.682Z"
     },
     "pr21-ready-b426820": {
       "kind": "mark-ready",
@@ -170,8 +168,8 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-20261012T0933Z",
-    "finishedAt": "2026-10-12T09:44:21Z",
-    "result": "#17/#18高保真方案已发布并核显示，等待各自批准；产品未实施。独立精简PR21仍验收中。"
+    "owner": "ono-root-pr21-merge-20261012T0954Z",
+    "finishedAt": "2026-10-12T10:00:50.682Z",
+    "result": "PR21准确版本已合入，真实main CI成功；17/18方案待批准"
   }
 }
