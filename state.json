@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 32,
+  "revision": 33,
   "currentRun": {
     "owner": "ono-root-ai-cards-20261012T1036Z",
     "startedAt": "2026-10-12T10:37:06.478Z",
@@ -310,6 +310,118 @@
       "commentId": 6122575647,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6122575647",
       "updatedAt": "2026-10-12T10:37:56.382Z"
+    },
+    "cleanup-branch-docs/ono-issue-workflow-v1": {
+      "kind": "delete-merged-branch",
+      "status": "intent",
+      "branch": "docs/ono-issue-workflow-v1",
+      "expectedHeadSha": "67528706e5baacf56ebfa363b1f6838cc13d5845",
+      "reason": "已合入main且head为main祖先，用户明确要求清理没用的远端分支",
+      "createdAt": "2026-10-12T10:51:35.581Z"
+    },
+    "cleanup-branch-ono/docs-cloud-native-attachments-v1-1": {
+      "kind": "delete-merged-branch",
+      "status": "intent",
+      "branch": "ono/docs-cloud-native-attachments-v1-1",
+      "expectedHeadSha": "3b2b4b176327c9676ec36cb249aafe7939a29c7c",
+      "reason": "已合入main且head为main祖先，用户明确要求清理没用的远端分支",
+      "createdAt": "2026-10-12T10:51:35.581Z"
+    },
+    "cleanup-branch-ono/fix-render-workflow-context": {
+      "kind": "delete-merged-branch",
+      "status": "intent",
+      "branch": "ono/fix-render-workflow-context",
+      "expectedHeadSha": "4f7165accf09961c164cdc4776c4f9db62591529",
+      "reason": "已合入main且head为main祖先，用户明确要求清理没用的远端分支",
+      "createdAt": "2026-10-12T10:51:35.581Z"
+    },
+    "cleanup-branch-ono/group-related-issues": {
+      "kind": "delete-merged-branch",
+      "status": "intent",
+      "branch": "ono/group-related-issues",
+      "expectedHeadSha": "0b8e2b32b1ea9c051fa60d556ca7279ac0b04672",
+      "reason": "已合入main且head为main祖先，用户明确要求清理没用的远端分支",
+      "createdAt": "2026-10-12T10:51:35.581Z"
+    },
+    "cleanup-branch-ono/guarded-system-chrome": {
+      "kind": "delete-merged-branch",
+      "status": "intent",
+      "branch": "ono/guarded-system-chrome",
+      "expectedHeadSha": "02f1133b0a3e394688b957b3303ac07e91f951ba",
+      "reason": "已合入main且head为main祖先，用户明确要求清理没用的远端分支",
+      "createdAt": "2026-10-12T10:51:35.581Z"
+    },
+    "cleanup-branch-ono/issue-13-year-dropdown": {
+      "kind": "delete-merged-branch",
+      "status": "intent",
+      "branch": "ono/issue-13-year-dropdown",
+      "expectedHeadSha": "e74922fc2aff8b03bacce6efc20f8fba8246ecd7",
+      "reason": "已合入main且head为main祖先，用户明确要求清理没用的远端分支",
+      "createdAt": "2026-10-12T10:51:35.581Z"
+    },
+    "cleanup-branch-ono/issue-13-year-picker-design-v1": {
+      "kind": "delete-merged-branch",
+      "status": "intent",
+      "branch": "ono/issue-13-year-picker-design-v1",
+      "expectedHeadSha": "80f4ead013dfa68eb47d4afa53cd27f38e0e0bef",
+      "reason": "已合入main且head为main祖先，用户明确要求清理没用的远端分支",
+      "createdAt": "2026-10-12T10:51:35.581Z"
+    },
+    "cleanup-branch-ono/native-attachment-test": {
+      "kind": "delete-merged-branch",
+      "status": "intent",
+      "branch": "ono/native-attachment-test",
+      "expectedHeadSha": "e1e70fbc774bf92e9fa09befac091cfa36112d41",
+      "reason": "已合入main且head为main祖先，用户明确要求清理没用的远端分支",
+      "createdAt": "2026-10-12T10:51:35.581Z"
+    },
+    "cleanup-branch-ono/proposal-image-handoff": {
+      "kind": "delete-merged-branch",
+      "status": "intent",
+      "branch": "ono/proposal-image-handoff",
+      "expectedHeadSha": "60f8aabd1b23549aacb4cfc69f1fbcbaf2766eac",
+      "reason": "已合入main且head为main祖先，用户明确要求清理没用的远端分支",
+      "createdAt": "2026-10-12T10:51:35.581Z"
+    },
+    "cleanup-branch-ono/prototype-render-pilot": {
+      "kind": "delete-merged-branch",
+      "status": "intent",
+      "branch": "ono/prototype-render-pilot",
+      "expectedHeadSha": "8e44a834fcf1d0a55dae9a3a5a0a81ba82b81e77",
+      "reason": "已合入main且head为main祖先，用户明确要求清理没用的远端分支",
+      "createdAt": "2026-10-12T10:51:35.581Z"
+    },
+    "cleanup-branch-ono/safe-render-diagnostics": {
+      "kind": "delete-merged-branch",
+      "status": "intent",
+      "branch": "ono/safe-render-diagnostics",
+      "expectedHeadSha": "a159b1512365e3721abaee698418521eacf247fb",
+      "reason": "已合入main且head为main祖先，用户明确要求清理没用的远端分支",
+      "createdAt": "2026-10-12T10:51:35.581Z"
+    },
+    "cleanup-branch-ono/simplify-dot-workflow": {
+      "kind": "delete-merged-branch",
+      "status": "intent",
+      "branch": "ono/simplify-dot-workflow",
+      "expectedHeadSha": "b426820c2efe92b0b50c70fa90e0c726d064d9dd",
+      "reason": "已合入main且head为main祖先，用户明确要求清理没用的远端分支",
+      "createdAt": "2026-10-12T10:51:35.581Z"
+    },
+    "cleanup-branch-ono/workflow-v12-docs": {
+      "kind": "delete-merged-branch",
+      "status": "intent",
+      "branch": "ono/workflow-v12-docs",
+      "expectedHeadSha": "29f368107d4110b43759f896af53fb32766b8978",
+      "reason": "已合入main且head为main祖先，用户明确要求清理没用的远端分支",
+      "createdAt": "2026-10-12T10:51:35.581Z"
+    },
+    "cleanup-branch-pilot/windows-cloud-acceptance-20261002": {
+      "kind": "delete-merged-branch",
+      "status": "intent",
+      "branch": "pilot/windows-cloud-acceptance-20261002",
+      "expectedHeadSha": "58162e7357533799b21fc7a72e378eb5c57909e8",
+      "reason": "已合入main且head为main祖先，用户明确要求清理没用的远端分支",
+      "createdAt": "2026-10-12T10:51:35.581Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
