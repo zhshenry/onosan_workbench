@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 79,
+  "revision": 80,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -547,7 +547,8 @@
     6126809136,
     6126814796,
     6126817506,
-    6128488842
+    6128488842,
+    6128490909
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -1351,10 +1352,12 @@
     },
     "issue26-queued-v1": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
       "body": "【OnO 自动化】#26｜方案 v1 已确认，排队实施\n\n已核对你的[回复](https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6128082959)，理解为同意本单v1视觉、工作台映射和只读引用范围。多复制的提示前缀不需要重发。\n\n当前先做已批准的 #24，随后推进本单，保持一次开发一组。本单不包含悬浮窗修订或新提的其他需求；完成后在这里提供实测和准确版本供最终合入审阅。无需再次批准v1。",
-      "createdAt": "2026-10-12T16:37:33.208Z"
+      "createdAt": "2026-10-12T16:37:57Z",
+      "commentId": 6128490909,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6128490909"
     },
     "float-v2-feedback-ack": {
       "kind": "comment",
