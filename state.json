@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 15,
+  "revision": 16,
   "currentRun": {
     "owner": "ono-root-pr21-merge-20261012T0954Z",
     "startedAt": "2026-10-12T09:54:26.281Z",
@@ -146,6 +146,13 @@
       "status": "intent",
       "approvalSource": "用户在当前对话明确批准准确版本",
       "createdAt": "2026-10-12T09:54:26.281Z"
+    },
+    "pr21-ready-b426820": {
+      "kind": "mark-ready",
+      "target": "https://github.com/zhshenry/onosan_workbench/pull/21",
+      "status": "intent",
+      "purpose": "用户批准精确版本合入的必要步骤",
+      "createdAt": "2026-10-12T09:54:37.659Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
