@@ -1,7 +1,11 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 60,
-  "currentRun": null,
+  "revision": 61,
+  "currentRun": {
+    "owner": "ono-root-ui-plans-20261012T1438Z",
+    "startedAt": "2026-10-12T14:38:55.053Z",
+    "task": "新需求24–26、28–33分类与独立高保真准备；未授权产品实施"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -154,6 +158,114 @@
       "closedAt": "2026-10-12T12:46:04Z",
       "mainCiRunId": 38250363482,
       "mainCiConclusion": "success"
+    },
+    "24": {
+      "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/24",
+      "stage": "analysis",
+      "type": [
+        "ui",
+        "interaction"
+      ],
+      "sourceAuthorId": 54107847,
+      "lastReadAt": "2026-10-12T14:38:55.053Z",
+      "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
+      "nextAction": "分析关联分组并准备独立高保真，带图方案在原Issue对齐；等待方案批准后才实施"
+    },
+    "25": {
+      "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/25",
+      "stage": "analysis",
+      "type": [
+        "ui",
+        "interaction"
+      ],
+      "sourceAuthorId": 54107847,
+      "lastReadAt": "2026-10-12T14:38:55.053Z",
+      "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
+      "nextAction": "分析关联分组并准备独立高保真，带图方案在原Issue对齐；等待方案批准后才实施"
+    },
+    "26": {
+      "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
+      "stage": "analysis",
+      "type": [
+        "ui",
+        "interaction"
+      ],
+      "sourceAuthorId": 54107847,
+      "lastReadAt": "2026-10-12T14:38:55.053Z",
+      "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
+      "nextAction": "分析关联分组并准备独立高保真，带图方案在原Issue对齐；等待方案批准后才实施"
+    },
+    "28": {
+      "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
+      "stage": "analysis",
+      "type": [
+        "ui",
+        "interaction"
+      ],
+      "sourceAuthorId": 54107847,
+      "lastReadAt": "2026-10-12T14:38:55.053Z",
+      "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
+      "nextAction": "分析关联分组并准备独立高保真，带图方案在原Issue对齐；等待方案批准后才实施"
+    },
+    "29": {
+      "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
+      "stage": "analysis",
+      "type": [
+        "ui",
+        "interaction"
+      ],
+      "sourceAuthorId": 54107847,
+      "lastReadAt": "2026-10-12T14:38:55.053Z",
+      "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
+      "nextAction": "分析关联分组并准备独立高保真，带图方案在原Issue对齐；等待方案批准后才实施"
+    },
+    "30": {
+      "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
+      "stage": "analysis",
+      "type": [
+        "ui",
+        "interaction"
+      ],
+      "sourceAuthorId": 54107847,
+      "lastReadAt": "2026-10-12T14:38:55.053Z",
+      "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
+      "nextAction": "分析关联分组并准备独立高保真，带图方案在原Issue对齐；等待方案批准后才实施"
+    },
+    "31": {
+      "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
+      "stage": "analysis",
+      "type": [
+        "ui",
+        "interaction"
+      ],
+      "sourceAuthorId": 54107847,
+      "lastReadAt": "2026-10-12T14:38:55.053Z",
+      "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
+      "nextAction": "分析关联分组并准备独立高保真，带图方案在原Issue对齐；等待方案批准后才实施"
+    },
+    "32": {
+      "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
+      "stage": "analysis",
+      "type": [
+        "ui",
+        "interaction"
+      ],
+      "sourceAuthorId": 54107847,
+      "lastReadAt": "2026-10-12T14:38:55.053Z",
+      "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
+      "nextAction": "分析关联分组并准备独立高保真，带图方案在原Issue对齐；等待方案批准后才实施"
+    },
+    "33": {
+      "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
+      "stage": "analysis",
+      "type": [
+        "ui",
+        "interaction"
+      ],
+      "sourceAuthorId": 54107847,
+      "lastReadAt": "2026-10-12T14:38:55.053Z",
+      "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
+      "nextAction": "分析关联分组并准备独立高保真，带图方案在原Issue对齐；等待方案批准后才实施"
     }
   },
   "ownCommentIds": [
