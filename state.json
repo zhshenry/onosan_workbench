@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 80,
+  "revision": 81,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -548,7 +548,8 @@
     6126814796,
     6126817506,
     6128488842,
-    6128490909
+    6128490909,
+    6128492997
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -1361,10 +1362,12 @@
     },
     "float-v2-feedback-ack": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
       "body": "【OnO 自动化】悬浮窗组｜已收到修改意见，先调整设计\n\n已汇总 #28/#29 的“收起布局太挤”，以及 #32 的“返回按钮颜色、字体保持原来，只换小图标”。我会重排宽/窄两个收起AI状态，保留原高度；返回按钮沿用原字体和颜色，仅改左箭头。\n\n其余已认可范围保留。各成员里的“同意v1”不会覆盖这些具体修改；本组先不实施，下一条补修订高保真，只请你确认有变化的部分，不让你重批未变内容。",
-      "createdAt": "2026-10-12T16:37:33.208Z"
+      "createdAt": "2026-10-12T16:38:06Z",
+      "commentId": 6128492997,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128492997"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
