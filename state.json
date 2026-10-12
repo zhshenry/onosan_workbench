@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 124,
+  "revision": 125,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -1836,7 +1836,17 @@
         "tooling/windows-pilot.mjs",
         "tooling/year-dropdown-pilot.mjs"
       ],
-      "createdAt": "2026-10-12T17:41:25.957Z"
+      "createdAt": "2026-10-12T17:41:25.957Z",
+      "treeSha": "4a83b07102dd9b63086d20306f67e798560c0c55",
+      "headSha": "c3c3911f31aa664a86d058ad7ad462c3b481ca32"
+    },
+    "issue26-draft-pr": {
+      "kind": "create-pr",
+      "status": "intent",
+      "target": "ono/issue-26-context-picker -> main",
+      "headSha": "c3c3911f31aa664a86d058ad7ad462c3b481ca32",
+      "body": "【OnO 自动化】#26｜主工作台“+ 添加上下文”方案v1实现（Draft）\n\n方案与审批在[原Issue](https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6126607129)和[用户原始批准](https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6128082959)，完成后仍在Issue看图审阅，不在本PR重复要求批准。\n\n## 实现\n- 固定左下+入口、搜索/类型状态、待办单选、copy/bazi最多8、阅读书目只读字段。\n- ID-only后端校验、必要内容冻结快照、实际传入模型和read_reference；快照随聊天保存/重启。\n- 会话/页面隔离，设置及规划页只解释无可关联内容，不读配置/密钥/浏览器网页。\n- 保留主写入对象和建议确认；后台页博客参考不授予写博客工具；阅读引用无vault/全文/附件。\n- 既有todo120条基础上下文不改，新引用路径只添加所选必要内容。不是全局selected-only改造。\n\n## 本地验证\n430项：428通过、2已有Windows包装测试在Linux跳过；npm verify通过。标准tsx包装受本地IPC限制，同测试集使用node --import tsx --test执行；UTC三项旧时区假设失败在原main复现，完整验证使用Asia/Shanghai。独立代码/边界审查未发现阻断问题。\n\n## 待执行\n本准确head的Windows全量测试/构建/NSIS安装、预期47项实装检查及实际截图。已添加孤立loopback合成传输验收，不调用外部真实模型；未运行不能写成已通过。新增5张截图、总量19MB守卫不变。现有年份重启fixture改为按姓名唯一匹配，保留ID/createdAt/日期断言，允许引用测试新增第二命例。\n\n本PR只含#26，不搭载未合入#24；两者同动App/CSS/验收脚本，合入前按最新main重新集成验证。无自动关单、合入或发版。",
+      "createdAt": "2026-10-12T17:42:25.604Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
