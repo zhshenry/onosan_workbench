@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 101,
+  "revision": 102,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -483,7 +483,7 @@
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
-      "stage": "analysis",
+      "stage": "awaiting-plan-approval",
       "type": [
         "ui",
         "investigation"
@@ -491,11 +491,20 @@
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "lastReadAt": "2026-10-12T16:36:31.562Z",
-      "nextAction": "看原图和代码核对范围；问题先解释，不把问题当删除/实施批准"
+      "nextAction": "等待当前带图v1方案批准，尚未产品实现",
+      "groupId": "settings-update-34",
+      "groupIssueNumbers": [
+        34
+      ],
+      "primaryIssue": 34,
+      "planVersion": "v1",
+      "planCommentId": 6128752017,
+      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6128752017",
+      "imageUrl": "https://github.com/user-attachments/assets/41e9e253-8a6c-4129-ab78-aab06849ae9e"
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "analysis",
+      "stage": "blocked-image-upload",
       "type": [
         "ui",
         "investigation"
@@ -503,7 +512,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "lastReadAt": "2026-10-12T16:36:31.562Z",
-      "nextAction": "看原图和代码核对范围；问题先解释，不把问题当删除/实施批准"
+      "nextAction": "附件两次明确失败，停止盲重试；完整带图方案尚未发布，无方案批准，不实施"
     },
     "36": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/36",
@@ -563,7 +572,8 @@
     6128663571,
     6128669197,
     6128687458,
-    6128693051
+    6128693051,
+    6128752017
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -1499,14 +1509,15 @@
     },
     "issue35-v1-image": {
       "kind": "upload-image",
-      "status": "retry-intent",
+      "status": "failed",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/35",
       "sha256": "49262c18cb3e1bd51411512e3d8dc2f9564f677529938e55e0b51ced1df93aa2",
       "createdAt": "2026-10-12T16:48:20.260Z",
       "failure": "GitHub composer Failed to upload; no native URL returned; PNG valid 1.5MB",
-      "checkedAt": "2026-10-12T16:53:07.243Z",
+      "checkedAt": "2026-10-12T16:55:42.188Z",
       "retry": 1,
-      "reason": "明确失败无URL；文件类型尺寸有效；刷新上传页面后只补试一次，具体故障未明"
+      "reason": "明确失败无URL；文件类型尺寸有效；刷新上传页面后只补试一次，具体故障未明",
+      "lastResult": "第二次同样Failed to upload，无URL，停止上传，不请求无图方案审批"
     },
     "issue24-publish-code": {
       "kind": "publish-code",
@@ -1543,10 +1554,19 @@
     },
     "issue34-v1-comment": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/34",
       "body": "【OnO 自动化】#34｜应用更新状态位置｜方案 v1\n\n![应用更新栏目内展示最新版本和检查状态](https://github.com/user-attachments/assets/41e9e253-8a6c-4129-ab78-aab06849ae9e)\n\n这是独立高保真设计，左边“当前已是最新版本”，右边“正在检查更新”，不是实测截图。按你的要求，状态放回“应用更新”栏目说明下方，不再挤在整张设置卡底部。\n\n范围：\n- 只调整设置页状态/进度的展示位置，现有检查更新、下载及重启安装按钮位置和逻辑不变。\n- 检查中、已是最新、下载进度、准备安装及更新失败等现有状态都在同一栏目展示，长提示自动换行；不新增更新流程。\n- 目录、共享库和应用信息读取错误各自保留，不把它们误当更新状态；底部独立提醒保留。\n\n本单单独一个实现PR，不与小红书页面保留等无关需求合包。批准后实施、测试、完整Windows构建/安装及实测图；重点验收状态切换、下载进度、错误长文、窄窗口/主题/键盘与按钮可用性，确保其他设置项目不受影响。不会为测试实际安装未获批准的新发布版本。\n基线 main 6850a4fb7acc10ac1d04468297b70ebd63cfa0a0，当前主干检查已通过。图片为独立绘图，无源码渲染SHA；SHA256 a0b7a9c77dd0d8cebc52387d0e77f14214cd15a4471a77cf6e83495dfba9637c。原生附件不入Git、不额外备份。\n\n本次确认只授权此方案实施及测试交付，最终合入另审准确版本。\n直接在这里回复：同意 #34 方案 v1",
-      "createdAt": "2026-10-12T16:54:35.016Z"
+      "createdAt": "2026-10-12T16:55:16Z",
+      "commentId": 6128752017,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6128752017"
+    },
+    "issue35-upload-blocker-comment": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/35",
+      "body": "【OnO 自动化】#35｜高保真已准备，附件上传暂时失败\n\n已完成原图与代码核查并准备独立高保真，但本次GitHub原生附件两次均明确显示“Failed to upload”，没有返回图片地址。文件格式和大小检查正常，刷新页面后只补试了一次，具体原因尚未确认。\n\n目前不把无图方案当作可审阅版本，也不启动产品修改。其他需求照常推进；这张图的上传问题先单独保留，不需要你开电脑或手动传图。\n\n本条是阻碍说明，无需批准；待图片能实际显示后，再在本Issue提交完整方案。",
+      "createdAt": "2026-10-12T16:55:42.188Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
