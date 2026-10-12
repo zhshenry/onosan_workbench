@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 88,
+  "revision": 89,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -197,7 +197,7 @@
     },
     "25": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/25",
-      "stage": "plan-revision",
+      "stage": "awaiting-plan-approval",
       "type": [
         "ui",
         "interaction"
@@ -205,7 +205,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "汇总28/29收起拥挤和32保持原字体颜色反馈，改v2高保真；其余范围保留，未启动实施",
+      "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -217,9 +217,9 @@
         33
       ],
       "primaryIssue": 28,
-      "planVersion": "group-v1",
-      "primaryPlanCommentId": 6126770999,
-      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999",
+      "planVersion": "group-v2",
+      "primaryPlanCommentId": 6128626525,
+      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525",
       "planCommentId": 6126800886,
       "memberPlanCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/25#issuecomment-6126800886",
       "imageUrl": "https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4",
@@ -267,7 +267,7 @@
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "stage": "plan-revision",
+      "stage": "awaiting-plan-approval",
       "type": [
         "ui",
         "interaction"
@@ -275,7 +275,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "汇总28/29收起拥挤和32保持原字体颜色反馈，改v2高保真；其余范围保留，未启动实施",
+      "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -287,15 +287,15 @@
         33
       ],
       "primaryIssue": 28,
-      "planVersion": "group-v1",
-      "primaryPlanCommentId": 6126770999,
-      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999",
+      "planVersion": "group-v2",
+      "primaryPlanCommentId": 6128626525,
+      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525",
       "imageDisplayVerifiedAt": "2026-10-12T14:59:40.749Z",
       "planCommentId": 6126770999,
       "imageUrls": [
-        "https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4",
-        "https://github.com/user-attachments/assets/54375109-1de8-4135-84bb-ce34279e5fad",
-        "https://github.com/user-attachments/assets/995767ea-0562-40ce-b878-04c884f95be2"
+        "https://github.com/user-attachments/assets/efcadc8c-6cfc-4314-adad-d12431670b73",
+        "https://github.com/user-attachments/assets/630377fc-2885-4649-bb69-dd15f2557efa",
+        "https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4"
       ],
       "feedbackCommentIds": [
         6128040862,
@@ -305,7 +305,7 @@
     },
     "29": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
-      "stage": "plan-revision",
+      "stage": "awaiting-plan-approval",
       "type": [
         "ui",
         "interaction"
@@ -313,7 +313,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "汇总28/29收起拥挤和32保持原字体颜色反馈，改v2高保真；其余范围保留，未启动实施",
+      "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -325,9 +325,9 @@
         33
       ],
       "primaryIssue": 28,
-      "planVersion": "group-v1",
-      "primaryPlanCommentId": 6126770999,
-      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999",
+      "planVersion": "group-v2",
+      "primaryPlanCommentId": 6128626525,
+      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525",
       "planCommentId": 6126804287,
       "memberPlanCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/29#issuecomment-6126804287",
       "imageUrl": "https://github.com/user-attachments/assets/54375109-1de8-4135-84bb-ce34279e5fad",
@@ -340,7 +340,7 @@
     },
     "30": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
-      "stage": "plan-revision",
+      "stage": "awaiting-plan-approval",
       "type": [
         "ui",
         "interaction"
@@ -348,7 +348,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "汇总28/29收起拥挤和32保持原字体颜色反馈，改v2高保真；其余范围保留，未启动实施",
+      "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -360,9 +360,9 @@
         33
       ],
       "primaryIssue": 28,
-      "planVersion": "group-v1",
-      "primaryPlanCommentId": 6126770999,
-      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999",
+      "planVersion": "group-v2",
+      "primaryPlanCommentId": 6128626525,
+      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525",
       "planCommentId": 6126806731,
       "memberPlanCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/30#issuecomment-6126806731",
       "imageUrl": "https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4",
@@ -375,7 +375,7 @@
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
-      "stage": "plan-revision",
+      "stage": "awaiting-plan-approval",
       "type": [
         "ui",
         "interaction"
@@ -383,7 +383,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "汇总28/29收起拥挤和32保持原字体颜色反馈，改v2高保真；其余范围保留，未启动实施",
+      "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -395,9 +395,9 @@
         33
       ],
       "primaryIssue": 28,
-      "planVersion": "group-v1",
-      "primaryPlanCommentId": 6126770999,
-      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999",
+      "planVersion": "group-v2",
+      "primaryPlanCommentId": 6128626525,
+      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525",
       "planCommentId": 6126809136,
       "memberPlanCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/31#issuecomment-6126809136",
       "imageUrl": "https://github.com/user-attachments/assets/995767ea-0562-40ce-b878-04c884f95be2",
@@ -410,7 +410,7 @@
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
-      "stage": "plan-revision",
+      "stage": "awaiting-plan-approval",
       "type": [
         "ui",
         "interaction"
@@ -418,7 +418,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "汇总28/29收起拥挤和32保持原字体颜色反馈，改v2高保真；其余范围保留，未启动实施",
+      "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -430,9 +430,9 @@
         33
       ],
       "primaryIssue": 28,
-      "planVersion": "group-v1",
-      "primaryPlanCommentId": 6126770999,
-      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999",
+      "planVersion": "group-v2",
+      "primaryPlanCommentId": 6128626525,
+      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525",
       "planCommentId": 6126814796,
       "memberPlanCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/32#issuecomment-6126814796",
       "imageUrl": "https://github.com/user-attachments/assets/54375109-1de8-4135-84bb-ce34279e5fad",
@@ -445,7 +445,7 @@
     },
     "33": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
-      "stage": "plan-revision",
+      "stage": "awaiting-plan-approval",
       "type": [
         "ui",
         "interaction"
@@ -453,7 +453,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "汇总28/29收起拥挤和32保持原字体颜色反馈，改v2高保真；其余范围保留，未启动实施",
+      "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -465,9 +465,9 @@
         33
       ],
       "primaryIssue": 28,
-      "planVersion": "group-v1",
-      "primaryPlanCommentId": 6126770999,
-      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999",
+      "planVersion": "group-v2",
+      "primaryPlanCommentId": 6128626525,
+      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525",
       "planCommentId": 6126817506,
       "memberPlanCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/33#issuecomment-6126817506",
       "imageUrl": "https://github.com/user-attachments/assets/995767ea-0562-40ce-b878-04c884f95be2",
@@ -1424,7 +1424,57 @@
       "body": "【OnO 自动化】悬浮窗组方案 v2｜只重排收起 AI 布局\n\n已采纳 #28/#29 的“太挤”和 #32 的“只换图标”。本组仍为 #25、#28、#29、#30、#31、#32、#33；#24、#26不在其中。\n\n![v2：宽窄两种收起AI布局](https://github.com/user-attachments/assets/efcadc8c-6cfc-4314-adad-d12431670b73)\n![v2：关联前后与模型菜单细节](https://github.com/user-attachments/assets/630377fc-2885-4649-bb69-dd15f2557efa)\n\n### 这次改动\n- 已关联事项独占一行，输入框另起一行，发送放在输入框右端；取消关联后保留这一行空间，避免内容跳动。\n- 底部左边固定“+ 关联事项”，右边固定模型按钮；关联前后模型位置和宽度不变。长事项和模型名省略时仍可查看完整内容，移除按钮保持可见。\n- 收起页“返回”沿用当前灰色、原字体字号及原悬停样式，只把小图标换成左箭头，不套用展开页蓝色加粗样式。展开页“返回首页”沿用已认可方案。\n- 为在现有176高度里留出分层空间，收起顶栏从52压缩到约40；宽/窄仍为440/330，同状态切宽不改高度，展开高度不变。这个顶栏调整也包含在本次v2确认里。\n- 模型按钮建议168、菜单196并右侧对齐，菜单不撑满窗口。最终按真实窗口可用范围约束，避免遮挡或溢出。\n\n### 不变部分与逐单验收\n沿用[完整v1范围和验收](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)，以上变更替代其中收起AI布局和#32样式：\n- #25：仅移除展开首页AI建议条，保留入口与原待办/日程操作。\n- #28：宽窄独立于展开/收起；同状态切宽高度不变，位置安全约束，当前窗口会话记忆宽度。\n- #29：展开页返回文案为“返回首页”。\n- #30：收起首页AI图标与细边框使用现有橙色。\n- #31：去掉“记录1”控件，不删除历史/必要运行状态；模型按钮和菜单按上图。\n- #32：收起返回只换左箭头，颜色和字体不变。\n- #33：关联chip、可移除反馈、固定模型位置；状态文字/图标与选中勾分开，实际修复选择事件链路。\n\n首页设计未变，复用原图：\n![v2沿用的首页设计](https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4)\n\n这些是独立高保真设计，不是运行截图；图中局部按审阅需要放大，比例不能作为实际像素测量。实际宽高、溢出、焦点、重复切换和模型位置均用实现后的真实Windows测试验证。首页窄收起图省略的截止文案仍须保留，不代表删除功能。仅本次两张新图上传，图片不入Git、不额外备份。\n新图SHA256：97ee892e637f6b30cfaf546ab06af17f86270ed5859aac2eff4e30f333f1d5e0；c6903083f1ae5813a6c13758b35f9110142de943708eda7ade52b0601d036d05。\n\n你已认可的不变范围无需重批。确认本次变化后，本组按完整v2范围统一开发、测试并提交一个Draft PR；最终合入仍另请你确认准确版本。\n只需在本Issue回复一次：同意悬浮窗组 v2 的收起布局调整",
       "createdAt": "2026-10-12T16:46:48Z",
       "commentId": 6128626525,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525",
+      "displayVerifiedAt": "2026-10-12T16:48:20.260Z"
+    },
+    "float-v2-member-25": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/25",
+      "body": "【OnO 自动化】#25｜悬浮窗组方案 v2 同步\n\n![本单对应v2高保真](https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4)\n\n本单移除展开首页AI建议条，原范围未变；原截止信息和分页保留。\n\n完整修订、两张新图及逐单验收见[主方案v2](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525)。本组仍为 #25、#28–#33；本次收起顶栏约52→40、总高度176不变，宽窄440/330，展开高度不变。图片是独立设计，局部放大并非实测像素；本单未变设计复用原图，不重复上传。\n\n无需各单重复批准；修改意见可在这里补充，只在 #28 确认变化一次：同意悬浮窗组 v2 的收起布局调整",
+      "createdAt": "2026-10-12T16:48:20.260Z"
+    },
+    "float-v2-member-29": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/29",
+      "body": "【OnO 自动化】#29｜悬浮窗组方案 v2 同步\n\n![本单对应v2高保真](https://github.com/user-attachments/assets/efcadc8c-6cfc-4314-adad-d12431670b73)\n\n采纳你说的收起布局拥挤，关联、输入与底部控件分行；展开页“返回首页”保持原方案。\n\n完整修订、两张新图及逐单验收见[主方案v2](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525)。本组仍为 #25、#28–#33；本次收起顶栏约52→40、总高度176不变，宽窄440/330，展开高度不变。图片是独立设计，局部放大并非实测像素；本单未变设计复用原图，不重复上传。\n\n无需各单重复批准；修改意见可在这里补充，只在 #28 确认变化一次：同意悬浮窗组 v2 的收起布局调整",
+      "createdAt": "2026-10-12T16:48:20.260Z"
+    },
+    "float-v2-member-30": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/30",
+      "body": "【OnO 自动化】#30｜悬浮窗组方案 v2 同步\n\n![本单对应v2高保真](https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4)\n\n本单收起首页橙色AI图标与细边框范围未变。\n\n完整修订、两张新图及逐单验收见[主方案v2](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525)。本组仍为 #25、#28–#33；本次收起顶栏约52→40、总高度176不变，宽窄440/330，展开高度不变。图片是独立设计，局部放大并非实测像素；本单未变设计复用原图，不重复上传。\n\n无需各单重复批准；修改意见可在这里补充，只在 #28 确认变化一次：同意悬浮窗组 v2 的收起布局调整",
+      "createdAt": "2026-10-12T16:48:20.260Z"
+    },
+    "float-v2-member-31": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/31",
+      "body": "【OnO 自动化】#31｜悬浮窗组方案 v2 同步\n\n![本单对应v2高保真](https://github.com/user-attachments/assets/630377fc-2885-4649-bb69-dd15f2557efa)\n\n模型按钮固定右下，关联前后不挤动；菜单贴右且略宽于按钮，移除记录计数不删历史。\n\n完整修订、两张新图及逐单验收见[主方案v2](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525)。本组仍为 #25、#28–#33；本次收起顶栏约52→40、总高度176不变，宽窄440/330，展开高度不变。图片是独立设计，局部放大并非实测像素；本单未变设计复用原图，不重复上传。\n\n无需各单重复批准；修改意见可在这里补充，只在 #28 确认变化一次：同意悬浮窗组 v2 的收起布局调整",
+      "createdAt": "2026-10-12T16:48:20.260Z"
+    },
+    "float-v2-member-32": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/32",
+      "body": "【OnO 自动化】#32｜悬浮窗组方案 v2 同步\n\n![本单对应v2高保真](https://github.com/user-attachments/assets/efcadc8c-6cfc-4314-adad-d12431670b73)\n\n采纳你的要求：返回沿用原灰色、原字体字号和悬停样式，只换左箭头；文案仍为“返回”。\n\n完整修订、两张新图及逐单验收见[主方案v2](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525)。本组仍为 #25、#28–#33；本次收起顶栏约52→40、总高度176不变，宽窄440/330，展开高度不变。图片是独立设计，局部放大并非实测像素；本单未变设计复用原图，不重复上传。\n\n无需各单重复批准；修改意见可在这里补充，只在 #28 确认变化一次：同意悬浮窗组 v2 的收起布局调整",
+      "createdAt": "2026-10-12T16:48:20.260Z"
+    },
+    "float-v2-member-33": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/33",
+      "body": "【OnO 自动化】#33｜悬浮窗组方案 v2 同步\n\n![本单对应v2高保真](https://github.com/user-attachments/assets/630377fc-2885-4649-bb69-dd15f2557efa)\n\n关联chip独占对话行，可移除；关联/取消后模型位置宽度不变，选择状态反馈要求保留。\n\n完整修订、两张新图及逐单验收见[主方案v2](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525)。本组仍为 #25、#28–#33；本次收起顶栏约52→40、总高度176不变，宽窄440/330，展开高度不变。图片是独立设计，局部放大并非实测像素；本单未变设计复用原图，不重复上传。\n\n无需各单重复批准；修改意见可在这里补充，只在 #28 确认变化一次：同意悬浮窗组 v2 的收起布局调整",
+      "createdAt": "2026-10-12T16:48:20.260Z"
+    },
+    "issue35-v1-image": {
+      "kind": "upload-image",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/35",
+      "sha256": "49262c18cb3e1bd51411512e3d8dc2f9564f677529938e55e0b51ced1df93aa2",
+      "createdAt": "2026-10-12T16:48:20.260Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
