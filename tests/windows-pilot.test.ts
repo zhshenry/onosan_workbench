@@ -159,3 +159,35 @@ test('Year-dropdown persistence assertion verifies the actual returned date, not
   assert.match(source, /assert\.equal\(profile\.date, expected/);
   assert.doesNotMatch(source, /waitForFunction\(\(\{ name, expected \}\) => window\.workbench\.bazi\.list/);
 });
+
+test('AI-card evidence extends the existing bounded allowlist without loosening its guard', async t => {
+  const { AI_CARDS_SCREENSHOTS } = await import('../tooling/ai-cards-pilot.mjs');
+  assert.equal(AI_CARDS_SCREENSHOTS.length, 6); assert.ok(Object.isFrozen(AI_CARDS_SCREENSHOTS));
+  const directory = await fixture(t);
+  for (const name of AI_CARDS_SCREENSHOTS) await writeFile(path.join(directory, name), Buffer.from('89504e470d0a1a0a', 'hex'));
+  assert.equal((await inspectPilotArtifacts(directory)).files.length, 6);
+  await assert.rejects(inspectPilotArtifacts(directory, 47), /exceed/);
+  await writeFile(path.join(directory, 'ai-cards-extra.png'), Buffer.from('89504e470d0a1a0a', 'hex'));
+  await assert.rejects(inspectPilotArtifacts(directory), /unapproved artifact/);
+});
+
+test('AI-card geometry rejects an emphasized border or overflowing old/new fields', async () => {
+  const { assertAiCardGeometry } = await import('../tooling/ai-cards-pilot.mjs');
+  const geometry = { width: 310, clientWidth: 308, scrollWidth: 308, borders: ['1px', '1px', '1px', '1px'], fieldsFit: true };
+  assertAiCardGeometry(geometry);
+  assert.throws(() => assertAiCardGeometry({ ...geometry, borders: ['1px', '1px', '1px', '4px'] }), /equally thin/);
+  assert.throws(() => assertAiCardGeometry({ ...geometry, scrollWidth: 600 }), /horizontally/);
+  assert.throws(() => assertAiCardGeometry({ ...geometry, fieldsFit: false }), /fit/);
+});
+
+test('AI acceptance uses only loopback synthetic responses and normal UI writes before real relaunch', async () => {
+  const source = await readFile(new URL('../tooling/ai-cards-pilot.mjs', import.meta.url), 'utf8');
+  const entry = await readFile(new URL('../tooling/windows-pilot.mjs', import.meta.url), 'utf8');
+  assert.ok(source.includes("server.listen(0, '127.0.0.1'"));
+  assert.ok(source.includes('http://127.0.0.1:'));
+  assert.doesNotMatch(source, /workbench\.(?:ai\.(?:apply|ask|saveProvider|saveModel)|todo\.(?:create|update|remove))\(/);
+  assert.ok(source.includes('assert.deepEqual(await state(page), before)'));
+  assert.ok(source.includes('assert.deepEqual((await state(page)).tasks.find(task => task.id === fixture.id), fixture)'));
+  assert.ok(entry.indexOf('aiCardsFixture = await runAiCardsPilot(') < entry.indexOf("await check('Choose exit-on-close"));
+  assert.ok(entry.indexOf('await verifyAiCardsRelaunch(') > entry.indexOf("await check('Relaunch same installed executable"));
+});

@@ -3,6 +3,8 @@
 // - 待办数据(tasks/categories/applyPlan)→ 共享库(与 To-Do-List 互通)
 // - 2026-09-26 写作助手:会话带 module 标签,copy 会话绑定草稿,建议(copyProposal)应用时写草稿库并广播 copy:changed。
 // 建议-确认制 pending 管理与上游一致。
+import { applyTodoProposal } from './todo-proposal';
+import { previewTodoActions } from '../shared/todo-proposal';
 import { randomUUID } from 'node:crypto';
 import { ipcMain, safeStorage, BrowserWindow, shell } from 'electron';
 import { z } from 'zod';
@@ -504,7 +506,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
         });
       } else if (todoContribution) {
         const plan = planFromReply(reply, todoContribution!.collect(), new Set(tasks.map(t => t.id)), new Set(categories.map(c => c.id)));
-        const proposal: Proposal = { ...plan, token: randomUUID() };
+        const proposal: Proposal = { ...plan, token: randomUUID(), preview: previewTodoActions(plan.actions, tasks, categories) };
         if (proposal.actions.length) {
           revisePending();
           pending.set(proposal.token, { sessionId: chat.id, plan: proposal, revisions: new Map([...tasks, ...categories].map(item => [item.id, item.updatedAt])) });
@@ -585,24 +587,12 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
       emitChatWithToken(ai, tokenText);
       return null;
     }
-    const planMessage = item.plan.message;
-    const revisionsAll = item.revisions;
-    const selected = item.plan.actions.filter((_action, index) => chosen.includes(index));
-    if (!selected.length) throw new Error('请选择要应用的操作');
-    const revisions = new Map<string, string>();
-    for (const action of selected) {
-      if (action.type === 'update' || action.type === 'remove' || action.type === 'update_category' || action.type === 'remove_category') {
-        const revision = revisionsAll.get(action.id);
-        if (revision !== undefined) revisions.set(action.id, revision);
-      }
-    }
-    // 不向上游 applyPlan 传 proposalToken:会话状态在工作台库,由下一行手动落地
-    store.applyPlan({ message: planMessage, actions: selected }, revisions);
-    pending.delete(tokenText);
-    ai.resolveChatProposal(tokenText, 'applied');
-    todoChanged();
-    emitChatWithToken(ai, tokenText);
-    return null;
+    let result;
+    try { result = applyTodoProposal(store, ai, item, chosen, () => pending.delete(tokenText)); }
+    catch (cause) { try { emitChatWithToken(ai, tokenText); } catch { /* Original failure remains visible to the caller. */ } throw cause; }
+    // Delivery/history errors after commit are not transaction failures.
+    try { todoChanged(); emitChatWithToken(ai, tokenText); } catch { /* Caller also receives the committed receipt. */ }
+    return result;
   });
   ipcMain.handle('ai:discard', (_event, token: unknown) => {
     const tokenText = z.string().uuid().parse(token);

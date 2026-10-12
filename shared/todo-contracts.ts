@@ -99,13 +99,16 @@ export const RLCD_PROVIDER_PRESETS: Record<RlcdProviderKind, { name: string; end
   openrouter: { name: 'OpenRouter', endpoint: 'https://openrouter.ai/api/v1', protocol: 'openai-chat' },
   custom: { name: '', endpoint: '', protocol: 'openai-chat' },
 };
-export interface Proposal extends AIPlan { token: string; }
+export interface Proposal extends AIPlan { token: string; preview?: import('./todo-proposal').ProposalPreview[]; }
 /** 文案工坊建议(写作助手模式):随会话存 chats.db,应用时写入草稿 */
 export interface CopyProposal { token: string; message: string; actions: CopyAiAction[]; original?: { title: string; body: string }; }
 export interface CopySource { draftId: string; start: number; end: number; text: string; }
 export interface AIToolEvent { id: string; name: string; label: string; status: 'running' | 'complete' | 'error' | 'interrupted'; output: string; }
 export interface ChatEntry {
   id: string; role: 'user' | 'assistant'; content: string; proposal?: Proposal;
+  /** Runtime-only card details; not a new cross-session history. */
+  todoReceipt?: import('./todo-proposal').ProposalReceipt;
+  todoApplyError?: string;
   copyProposal?: CopyProposal;
   copyUndo?: { draftId: string; beforeTitle: string; beforeBody: string; appliedTitle: string; appliedBody: string; appliedAt: string };
   copySource?: CopySource;

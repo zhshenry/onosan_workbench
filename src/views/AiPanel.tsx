@@ -2,12 +2,12 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CaretDown, DotsThree, GearSix, Info, MagnifyingGlass, PaperPlaneRight, Plus, PushPin, SidebarSimple, Sparkle, Stop, Trash, X } from '@phosphor-icons/react';
 import { IconCheckSquare, IconGamepad, IconHome, IconMoon, IconVideo, IconWeb } from '../icons';
-import type { AIAction, AIModel, AIProvider, ChatSession, ChatSummary, CopySource, RlcdModel, RlcdProvider } from '../../shared/todo-contracts';
+import type { AIModel, AIProvider, ChatSession, ChatSummary, CopySource, RlcdModel, RlcdProvider } from '../../shared/todo-contracts';
 import { aiScopeKey, chatContextScope, chatScope, defaultAiScopeForWorkbench, sameAiWorkbench, TODO_AI_WORKBENCH_NAME, workbenchForScope, type AiScope } from '../../shared/ai-scope';
 import type { CopyStoreData } from '../../shared/copy-contracts';
 import type { BaziStoreData } from '../../shared/bazi-contracts';
 import { errorText, Modal, Select as TodoSelect } from '../../modules/todo/ui/ui';
-import { scheduleStamp } from '../../shared/todo-format';
+import { TodoProposalCard } from './TodoProposalCard';
 import { AiResponse } from './AiResponse';
 import { NAV } from '../nav';
 
@@ -175,16 +175,6 @@ function chatSummary(chat: ChatSession): ChatSummary {
     draftId: chat.draftId, profileId: chat.profileId, viewId: chat.viewId, contextScope: chat.contextScope, pageScope: chat.pageScope,
     streaming: chat.entries.some(entry => entry.streaming), completed: !!lastReply && !lastReply.streaming && !lastReply.error };
 }
-function actionSummary(action: AIAction): { verb: string; detail: string; danger?: boolean } {
-  switch (action.type) {
-    case 'create': return { verb: action.task.kind === 'meeting' ? '新增日程' : '新增待办', detail: action.task.title + (action.task.dueAt ? ' · ' + (action.task.kind === 'meeting' ? scheduleStamp(action.task) : new Date(action.task.dueAt).toLocaleString('zh-CN')) : '') };
-    case 'update': return { verb: '修改事项', detail: Object.entries(action.patch).map(([key, value]) => key + ': ' + (value === null ? '清空' : String(value).slice(0, 40))).join(' · ') || '无字段' };
-    case 'remove': return { verb: '删除事项', detail: action.id.slice(0, 8), danger: true };
-    case 'create_category': return { verb: '新增标签', detail: action.category.name };
-    case 'update_category': return { verb: '修改标签', detail: action.id.slice(0, 8) };
-    case 'remove_category': return { verb: '删除标签', detail: action.id.slice(0, 8), danger: true };
-  }
-}
 
 export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, onActiveChatChange, onOpenSettings, onLocateCopySource, onLocateBaziDay, onQuickAsk, context, width, onWidthChange, copySaveState }: {
   open: boolean; onClose(): void; seed?: AiSeed | null; requestedChatId?: string | null; onChatLocated(): void; onOpenSettings(): void;
@@ -209,7 +199,6 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
   const [error, setError] = useState('');
   const [switchingModel, setSwitchingModel] = useState(false);
   const [modelError, setModelError] = useState('');
-  const [selected, setSelected] = useState<Record<string, number[]>>({});
   const [managing, setManaging] = useState<{ id: string; title: string } | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
   const [manageBusy, setManageBusy] = useState(false);
@@ -628,24 +617,8 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
                 {entry.role === 'assistant' && entry.baziSystem === 'bazi' && entry.content.includes('日主') && (entry.contextScope ?? chatScope(visibleCurrent)).module === 'bazi' && <button className="ai-source-chip" onClick={() => { const scope = entry.contextScope ?? chatScope(visibleCurrent); if (scope.module === 'bazi') onLocateBaziDay(scope.profileId); }}>在盘面中定位日主</button>}
                 {entry.role === 'assistant' ? <AiResponse entry={entry} /> : <div className="ai-bubble">{entry.content}</div>}
                 {entry.error && <div className="ai-error" role="alert">{entry.error}</div>}
-                {entry.proposal && entry.actionState === 'pending' && <div className="ai-proposal">
-                  <div className="ai-proposal-head">请确认以下 {entry.proposal.actions.length} 项操作</div>
-                  {entry.proposal.actions.map((action, index) => {
-                    const summary = actionSummary(action);
-                    const indices = selected[entry.proposal!.token] ?? [];
-                    return <label key={index} className={summary.danger ? 'ai-proposal-item danger' : 'ai-proposal-item'}>
-                      <input type="checkbox" checked={indices.includes(index)} onChange={event => setSelected(previous => {
-                        const before = previous[entry.proposal!.token] ?? [];
-                        return { ...previous, [entry.proposal!.token]: event.target.checked ? [...before, index] : before.filter(item => item !== index) };
-                      })} />
-                      <span className="ai-proposal-verb">{summary.verb}</span><span className="ai-proposal-detail">{summary.detail}</span>
-                    </label>;
-                  })}
-                  <div className="ai-proposal-actions">
-                    <button className="ai-apply" disabled={busy || !(selected[entry.proposal.token] ?? []).length} onClick={() => { void wb.ai.apply(entry.proposal!.token, selected[entry.proposal!.token] ?? []).then(() => setSelected(previous => ({ ...previous, [entry.proposal!.token]: [] })), e => setError(errorText(e))); }}>应用所选</button>
-                    <button className="ai-discard" onClick={() => { void wb.ai.discard(entry.proposal!.token).catch(e => setError(errorText(e))); }}>保留原内容</button>
-                  </div>
-                </div>}
+                {entry.proposal && <TodoProposalCard key={entry.proposal.token} entry={entry} busy={busy}
+                  apply={(token, indices) => wb.ai.apply(token, indices)} discard={token => wb.ai.discard(token)} />}
                 {entry.copyProposal && entry.actionState === 'pending' && <div className="ai-proposal">
                   {entry.copyProposal.actions.map((action, index) => action.kind === 'edit' ? <div key={index} className="ai-copy-edit">
                     <b className="ai-proposal-head">正文改写 · 待确认</b>
@@ -657,7 +630,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
                   {entry.copyProposal.actions.some(action => action.kind === 'title') && <div className="copy-ai-titles">{entry.copyProposal.actions.map((action, index) => action.kind === 'title' ? <button key={index} className="copy-title-chip" disabled={busy || copyWriteBlocked(entry.contextScope ?? chatScope(visibleCurrent))} title={copyWriteBlocked(entry.contextScope ?? chatScope(visibleCurrent)) ? '请先等待目标博客保存完成' : `采用为《${entry.copyProposal?.original?.title || contextForScope(entry.contextScope ?? chatScope(visibleCurrent)).object}》的标题`} onClick={() => { void wb.ai.apply(entry.copyProposal!.token, [index]).catch(e => setError(errorText(e))); }}>{action.title}</button> : null)}</div>}
                   <div className="ai-proposal-actions"><button className="ai-discard" onClick={() => { void wb.ai.discard(entry.copyProposal!.token).catch(e => setError(errorText(e))); }}>保留原内容</button></div>
                 </div>}
-                {entry.actionState && entry.actionState !== 'pending' && <div className={'ai-action-state ' + entry.actionState}>
+                {!entry.proposal && entry.actionState && entry.actionState !== 'pending' && <div className={'ai-action-state ' + entry.actionState}>
                   {({ applied: '已应用', discarded: '已保留原内容', expired: '已过期，未应用', revised: '已被后续建议替代', undone: '已撤销' } as const)[entry.actionState]}
                   {entry.actionState === 'applied' && entry.copyUndo && <button className="ai-undo" disabled={copyWriteBlocked({ module: 'copy', draftId: entry.copyUndo.draftId })} title={copyWriteBlocked({ module: 'copy', draftId: entry.copyUndo.draftId }) ? '请先等待目标博客保存完成' : undefined} onClick={() => { void wb.ai.undo(entry.copyProposal!.token).catch(e => setError(errorText(e))); }}>撤销修改</button>}
                 </div>}

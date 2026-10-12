@@ -1771,3 +1771,40 @@ html:has(.float-app) {
 .fa-mini-surface .fa-proposal-item { font-size: var(--type-caption); padding: 4px 6px; }
 .fa-mini-surface .fa-error { font-size: var(--type-micro); padding: 4px 8px; }
 .float-mini-ai { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 10px 12px 12px; }
+
+/* Todo suggestion/result card: a uniform fine border on all four sides. */
+.todo-proposal-card { width: 100%; min-width: 0; box-sizing: border-box; border: 1px solid #afc7fa; border-radius: 14px; background: #f2f7ff; padding: 14px; color: var(--ink); display: flex; flex-direction: column; gap: 12px; container-type: inline-size; }
+.todo-proposal-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.todo-proposal-header h3 { display: flex; align-items: center; gap: 7px; margin: 0; color: #234caa; font-size: var(--type-body); }
+.todo-proposal-badge { flex: none; padding: 4px 8px; border: 1px solid #c0ccdc; border-radius: 9px; font-size: var(--type-caption); background: #fff; }
+.todo-proposal-badge.pending { border-color: #efce81; color: #996000; background: #fff9ed; }
+.todo-proposal-badge.applied { border-color: #9ace9b; color: #24712a; background: #f0fbef; }
+.todo-proposal-badge.failed { color: var(--danger); }
+.todo-proposal-intro, .todo-proposal-note, .todo-proposal-warning, .todo-proposal-error, .todo-proposal-item-result { margin: 0; font-size: var(--type-support); overflow-wrap: anywhere; }
+.todo-proposal-intro, .todo-proposal-note { color: var(--ink-3); }
+.todo-proposal-operation { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.todo-proposal-operation + .todo-proposal-operation { padding-top: 12px; border-top: 1px solid #d9e3f3; }
+.todo-proposal-target { display: flex; align-items: flex-start; gap: 9px; }
+.todo-proposal-target > div { min-width: 0; }
+.todo-proposal-target strong { display: block; overflow-wrap: anywhere; white-space: pre-wrap; font-size: var(--type-body); }
+.todo-proposal-target small { display: block; color: var(--ink-3); margin-top: 3px; font-size: var(--type-caption); }
+.todo-proposal-target input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: #3867bf; cursor: pointer; }
+.todo-proposal-result-icon { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-3); }
+.todo-proposal-result-icon.applied { background: #3266ce; color: white; }
+.todo-proposal-item-result { color: #32608d; }
+.todo-proposal-field > b { display: block; font-size: var(--type-support); margin-bottom: 5px; }
+.todo-proposal-diff { display: grid; grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr); gap: 7px; align-items: stretch; }
+.todo-proposal-before, .todo-proposal-after { min-width: 0; padding: 9px; border-radius: 9px; background: #e9edf3; }
+.todo-proposal-after { background: #e4eeff; color: #244da9; }
+.todo-proposal-diff small { display: block; font-size: var(--type-caption); margin-bottom: 5px; }
+.todo-proposal-diff span:not(.todo-proposal-arrow) { display: block; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--type-support); }
+.todo-proposal-arrow { align-self: center; color: var(--ink-3); }
+.todo-proposal-warning, .todo-proposal-error { color: var(--danger); }
+.todo-proposal-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid #d9e3f3; padding-top: 12px; font-size: var(--type-caption); color: var(--ink-3); }
+.todo-proposal-buttons { display: flex; flex-wrap: wrap; gap: 7px; }
+.todo-proposal-buttons button { white-space: normal; }
+.todo-proposal-card input:focus-visible, .todo-proposal-card button:focus-visible { outline: 2px solid #3867bf; outline-offset: 3px; }
+@container (max-width: 280px) {
+  .todo-proposal-diff { grid-template-columns: minmax(0, 1fr); }
+  .todo-proposal-arrow { justify-self: center; transform: rotate(90deg); }
+}

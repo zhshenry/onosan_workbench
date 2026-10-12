@@ -24,6 +24,7 @@ export interface AiConfigFile {
 const emptyConfig = (): AiConfigFile => ({ providers: [], models: [], activeModelId: '', rlcdProviders: [], rlcdModels: [], activeRlcdModelId: '', aiEnabled: false });
 
 export class AiStore {
+  private readonly todoCards = new Map<string, Pick<ChatSession['entries'][number], 'todoReceipt' | 'todoApplyError' | 'actionState'> & { preview?: import('../shared/todo-proposal').ProposalPreview[] }>();
   readonly db: DatabaseSync;
   private readonly configPath: string;
 
@@ -73,12 +74,25 @@ export class AiStore {
   chat(id: string): ChatSession {
     const row = this.db.prepare('SELECT payload FROM chats WHERE id=?').get(id) as { payload: string } | undefined;
     if (!row) throw new Error('对话不存在,请重新选择');
-    return JSON.parse(row.payload) as ChatSession;
+    const chat = JSON.parse(row.payload) as ChatSession;
+    for (const entry of chat.entries) if (entry.proposal) {
+      const card = this.todoCards.get(entry.proposal.token);
+      if (card) { entry.proposal.preview = card.preview; entry.todoReceipt = card.todoReceipt; entry.todoApplyError = card.todoApplyError; if (card.actionState) entry.actionState = card.actionState; }
+    }
+    return chat;
   }
   saveChat(chat: ChatSession): ChatSession {
     const next = { ...chat, updatedAt: new Date().toISOString() };
-    this.db.prepare('INSERT OR REPLACE INTO chats(id,payload) VALUES (?,?)').run(next.id, JSON.stringify(next));
+    const persisted = structuredClone(next);
+    for (const entry of persisted.entries) if (entry.proposal) {
+      this.todoCards.set(entry.proposal.token, { preview: entry.proposal.preview, todoReceipt: entry.todoReceipt, todoApplyError: entry.todoApplyError, actionState: entry.actionState });
+      delete entry.proposal.preview; delete entry.todoReceipt; delete entry.todoApplyError;
+    }
+    this.db.prepare('INSERT OR REPLACE INTO chats(id,payload) VALUES (?,?)').run(next.id, JSON.stringify(persisted));
     return next;
+  }
+  rememberTodoResult(token: string, receipt: import('../shared/todo-proposal').ProposalReceipt): void {
+    this.todoCards.set(token, { ...this.todoCards.get(token), actionState: 'applied', todoReceipt: structuredClone(receipt) });
   }
   newChat(tag: AiScope = { module: 'todo' }): ChatSession {
     const chat = this.saveChat({ id: randomUUID(), title: '新对话', updatedAt: new Date().toISOString(), entries: [], draft: '', ...tag, contextScope: tag, pageScope: tag });
