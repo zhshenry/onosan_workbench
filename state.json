@@ -1,13 +1,40 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 4,
+  "revision": 5,
   "currentRun": {
     "owner": "ono-root-20261012T0933Z",
     "startedAt": "2026-10-12T09:33:43Z",
     "scope": "分析开放需求与准备高保真方案；已有精简工作独立进行，产品实施未获批准",
     "developmentIssue": null
   },
-  "tasks": {},
+  "tasks": {
+    "17": {
+      "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
+      "stage": "design-in-progress",
+      "type": [
+        "ui",
+        "interaction"
+      ],
+      "lastReadAt": "2026-10-12T09:34:34Z",
+      "baseSha": "673febb3ba2e24d17772092bc7d8956642574bee",
+      "planVersion": "v1",
+      "approval": null,
+      "nextAction": "准备并核验独立高保真，在对应Issue发布方案后等待批准；不开始产品实现"
+    },
+    "18": {
+      "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/18",
+      "stage": "design-in-progress",
+      "type": [
+        "ui",
+        "interaction"
+      ],
+      "lastReadAt": "2026-10-12T09:34:34Z",
+      "baseSha": "673febb3ba2e24d17772092bc7d8956642574bee",
+      "planVersion": "v1",
+      "approval": null,
+      "nextAction": "准备并核验独立高保真，在对应Issue发布方案后等待批准；不开始产品实现"
+    }
+  },
   "ownCommentIds": [
     6121458425
   ],
