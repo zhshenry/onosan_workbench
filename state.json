@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 133,
+  "revision": 134,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -264,7 +264,7 @@
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "stage": "evidence-review",
+      "stage": "awaiting-final-approval",
       "type": [
         "ui",
         "interaction"
@@ -272,7 +272,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T16:48:00Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "实际图已逐张查看；上传原生附件并披露基线窄首页布局，最终批准前不合入",
+      "nextAction": "核对准确head及所列窄屏首页/基础上下文边界批准；未获批准不合入关单",
       "groupId": "workbench-context-26",
       "groupIssueNumbers": [
         26
@@ -311,7 +311,16 @@
         "artifactSha256": "e70d939d470c656571aeb9754f0ddff37773a9c1b84127a6941d963ddd1d2a91",
         "expiresAt": "2026-10-15T17:48:36Z"
       },
-      "testedSha": "08dd78f6645e86be3a6105452ef534ca82696f66"
+      "testedSha": "08dd78f6645e86be3a6105452ef534ca82696f66",
+      "finalRequestCommentId": 6129851935,
+      "finalRequestUrl": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6129851935",
+      "actualImageURLs": {
+        "context-picker-cool-1024x680.png": "https://github.com/user-attachments/assets/545a86de-eb72-4932-8451-c6e0f20643c6",
+        "context-picker-mist-1024x680.png": "https://github.com/user-attachments/assets/28873631-12c2-4722-aa70-d504d81219ed",
+        "context-picker-relaunched.png": "https://github.com/user-attachments/assets/1555cc46-3466-4de2-b313-279cd2ce449b",
+        "context-picker-saved.png": "https://github.com/user-attachments/assets/9fe9bc8f-3c49-46d9-b177-8bac0d985423",
+        "context-picker-warm-1024x680.png": "https://github.com/user-attachments/assets/a7f7f146-1006-482d-9a98-71a57871d971"
+      }
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
@@ -626,7 +635,8 @@
     6129026111,
     6129172271,
     6129209014,
-    6129501941
+    6129501941,
+    6129851935
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -1891,66 +1901,73 @@
     },
     "issue26-actual-context-picker-cool-1024x680.png": {
       "kind": "upload-image",
-      "status": "uploaded",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
       "sha256": "a2a20a26e128e96e45df1049d37a13a5fb51e40efd81786de5cbbea41fbc479d",
       "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac",
       "runId": 38287586027,
       "createdAt": "2026-10-12T18:04:02.452Z",
       "url": "https://github.com/user-attachments/assets/545a86de-eb72-4932-8451-c6e0f20643c6",
-      "uploadedAt": "2026-10-12T18:06:03.459Z"
+      "uploadedAt": "2026-10-12T18:06:03.459Z",
+      "commentId": 6129851935
     },
     "issue26-actual-context-picker-mist-1024x680.png": {
       "kind": "upload-image",
-      "status": "uploaded",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
       "sha256": "39ab82b2aab43e266d1ff6727d6fb9204496b5d1dfe9adc771a41877855d935f",
       "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac",
       "runId": 38287586027,
       "createdAt": "2026-10-12T18:04:02.452Z",
       "url": "https://github.com/user-attachments/assets/28873631-12c2-4722-aa70-d504d81219ed",
-      "uploadedAt": "2026-10-12T18:06:03.459Z"
+      "uploadedAt": "2026-10-12T18:06:03.459Z",
+      "commentId": 6129851935
     },
     "issue26-actual-context-picker-relaunched.png": {
       "kind": "upload-image",
-      "status": "uploaded",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
       "sha256": "ddf525f2aaf249e67453b68093794b4b02e91742ca1a1a1e5139466aa6a99ca4",
       "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac",
       "runId": 38287586027,
       "createdAt": "2026-10-12T18:04:02.452Z",
       "url": "https://github.com/user-attachments/assets/1555cc46-3466-4de2-b313-279cd2ce449b",
-      "uploadedAt": "2026-10-12T18:06:03.459Z"
+      "uploadedAt": "2026-10-12T18:06:03.459Z",
+      "commentId": 6129851935
     },
     "issue26-actual-context-picker-saved.png": {
       "kind": "upload-image",
-      "status": "uploaded",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
       "sha256": "131e3fefbc198a5fbf9c4004fa51fd752885e518f5e5b785476f44c8cb10347a",
       "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac",
       "runId": 38287586027,
       "createdAt": "2026-10-12T18:04:02.452Z",
       "url": "https://github.com/user-attachments/assets/9fe9bc8f-3c49-46d9-b177-8bac0d985423",
-      "uploadedAt": "2026-10-12T18:06:03.459Z"
+      "uploadedAt": "2026-10-12T18:06:03.459Z",
+      "commentId": 6129851935
     },
     "issue26-actual-context-picker-warm-1024x680.png": {
       "kind": "upload-image",
-      "status": "uploaded",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
       "sha256": "9eed8e579f3232fb2316a4db8d6047bff1db818db98f45aa9acf1dea5e8e4fe0",
       "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac",
       "runId": 38287586027,
       "createdAt": "2026-10-12T18:04:02.452Z",
       "url": "https://github.com/user-attachments/assets/a7f7f146-1006-482d-9a98-71a57871d971",
-      "uploadedAt": "2026-10-12T18:06:03.459Z"
+      "uploadedAt": "2026-10-12T18:06:03.459Z",
+      "commentId": 6129851935
     },
     "issue26-final-acceptance": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
       "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac",
       "body": "【OnO 自动化】#26｜PR #39 实现与实测图，最终合入收尾待确认\n\n已完成[方案v1](https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6126607129)及你的[批准](https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6128082959)。下面是真实 Windows 安装版本截图，使用隔离合成业务数据，不是设计图。\n\n### 准确版本与结果\n- [PR #39](https://github.com/zhshenry/onosan_workbench/pull/39)：head **2f24f9577c4adb770146fde38c91c3cb2bbc6dac**（**2f24f95**）。\n- base：6850a4fb7acc10ac1d04468297b70ebd63cfa0a0。\n- [Windows验收](https://github.com/zhshenry/onosan_workbench/actions/runs/38287586027)：**431/431单测，0失败、0跳过；47/47实装检查通过**。actionlint、类型/构建、真实文件symlink与父目录junction安全反例、NSIS静默安装、证据守卫通过。\n- 实际测试PR合成merge **08dd78f6645e86be3a6105452ef534ca82696f66**，父提交即上述base/head，tree **98f655674aea95b982f89c5502969c3194e3f048** 与head一致。\n- 首轮失败是重启检查把历史标题与用户消息同时匹配；已改为精确用户气泡并补重复/缺失回归。没有放宽快照、保存或重启断言。\n\n### 本单交付\n- 左下固定 +，搜索、类型/状态、待办单选/更换/取消、可移除标签；Esc、外部关闭、焦点返回。\n- copy/bazi保留最多8项；阅读仅已记录书目字段。设置/规划页只解释无可关联内容，不读配置和密钥。媒体页可参考已有博文，不抓取网页、登录态或新增发布能力。\n- 后端校验ID与权限范围，发送时冻结必要内容快照；真实IPC/请求传输、保存读回、源内容修改后历史不变、同版本退出重启已验证。原协助对象、聊天身份与建议卡确认不变。\n- 主题mist/cool/warm、1280×820与1024×680、长标题、模型/发送位置均已检查。系统深浅偏好覆盖不代表应用新增深色主题。\n\n### 真实截图\n冷灰选择器：\n![冷灰上下文选择器实测](https://github.com/user-attachments/assets/545a86de-eb72-4932-8451-c6e0f20643c6)\n雾灰选择器：\n![雾灰上下文选择器实测](https://github.com/user-attachments/assets/28873631-12c2-4722-aa70-d504d81219ed)\n暖砂选择器：\n![暖砂上下文选择器实测](https://github.com/user-attachments/assets/a7f7f146-1006-482d-9a98-71a57871d971)\n真实发送并保存后的历史参考：\n![上下文真实发送保存实测](https://github.com/user-attachments/assets/9fe9bc8f-3c49-46d9-b177-8bac0d985423)\n同版本重启后历史快照保留，新输入不自动恢复旧引用：\n![上下文重启快照实测](https://github.com/user-attachments/assets/1555cc46-3466-4de2-b313-279cd2ce449b)\n\n以上五图已逐张查看，右侧本单控件无重叠。截图中的模型回复为孤立loopback合成响应，用于检验真实应用传输与持久化，不证明外部模型质量或服务可用。\n\n### 必须说明的边界\n1. 截图左侧首页在1024宽度下“本周概览”等挤成竖排，**未修复，不能称首页整体响应式通过**。已用6850基线源码及diff确认：窄屏改单列却保留子项固定列位置，本单未改HomeView或这些规则；未另跑基线像素对照。本次仅交付右侧上下文功能，请同时确认接受这项已知、限本单的范围边界；若希望一起修，请在这里指出，先补范围。\n2. 原方案“只把选中内容交给模型”仅适用于新增引用路径。**既有待办最新120条及分类基础上下文仍保留**，不是全局仅发送所选数据的改造。这里明确纠正，避免误解。\n3. 未覆盖真实外部模型效果、跨版本升级、安装向导/UAC/SmartScreen、真实更新和发版。未合入的#24日期功能不搭载；main变化后重新集成与验收，head改变重新请你批准。\n\n[临时验收产物](https://github.com/zhshenry/onosan_workbench/actions/runs/38287586027/artifacts/11764576260)：24文件，展开6,107,875 bytes；2026-10-16 02:01:55（UTC+08）到期。ZIP SHA256：ed93d5baa4861696e55869b9484c26c4aeb06407af7bb24e271e5ec2e62fc88e。图片只用本评论原生附件展示，不进Git、不额外备份。\n\n### 一次确认的收尾范围\n本单仅有实现PR #39，无需关闭旧辅助PR。确认后合入上述准确head → 核验实际main完整Windows单测、构建、安装、47项实装及证据 → 全部通过才关闭 **#26**。失败保留开放；符合已批准安全条件后清理该需求分支。其他Issue/PR不关闭，不发版。\n\n请在本Issue回复：**同意所列边界并合入收尾 PR #39，版本 2f24f95；通过后关闭 #26**",
-      "createdAt": "2026-10-12T18:06:03.459Z"
+      "createdAt": "2026-10-12T18:06:31Z",
+      "commentId": 6129851935,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6129851935"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
