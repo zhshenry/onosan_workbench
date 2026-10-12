@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 34,
+  "revision": 35,
   "currentRun": {
     "owner": "ono-root-ai-cards-20261012T1036Z",
     "startedAt": "2026-10-12T10:37:06.478Z",
@@ -453,23 +453,34 @@
     },
     "cleanup-branch-ono/issue-13-year-dropdown-v2": {
       "kind": "delete-retired-branch",
-      "status": "intent",
+      "status": "blocked-awaiting-explicit-approval",
       "branch": "ono/issue-13-year-dropdown-v2",
       "expectedHeadSha": "70a7790bd8c528668d903bfb54f55e07018123b7",
-      "reason": "用户明确要求清理没用分支；设计已被PR19交付替代或PR20试验已退役，不合入其独有代码",
+      "reason": "未合独有内容需要明确删除批准；未删除、未绕过安全拒绝",
       "recoveryRef": "refs/pull/16/head",
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/16",
-      "createdAt": "2026-10-12T10:53:10.122Z"
+      "createdAt": "2026-10-12T10:53:10.122Z",
+      "updatedAt": "2026-10-12T10:53:46.773Z"
     },
     "cleanup-branch-ono/read-only-stage-a": {
       "kind": "delete-retired-branch",
-      "status": "intent",
+      "status": "blocked-awaiting-explicit-approval",
       "branch": "ono/read-only-stage-a",
       "expectedHeadSha": "75f504db374f86211eac0f2f65fd1287483e89a1",
-      "reason": "用户明确要求清理没用分支；设计已被PR19交付替代或PR20试验已退役，不合入其独有代码",
+      "reason": "未合独有内容需要明确删除批准；未删除、未绕过安全拒绝",
       "recoveryRef": "refs/pull/20/head",
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/20",
-      "createdAt": "2026-10-12T10:53:10.122Z"
+      "createdAt": "2026-10-12T10:53:10.122Z",
+      "updatedAt": "2026-10-12T10:53:46.773Z"
+    },
+    "cards-v2-draft-pr": {
+      "kind": "create-draft-pr",
+      "status": "intent",
+      "branch": "ono/ai-suggestion-cards-17-18",
+      "baseSha": "ebc21504080900fa6fb1d7f6f1f237e55e6d5575",
+      "expectedTree": "b96ce54a308b7001067cf62e22d88b0f7f3abc57",
+      "scope": "已批准17/18组v2实现，14文件，真实Windows验收待Draft PR CI，不合入",
+      "createdAt": "2026-10-12T10:53:46.773Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
