@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 97,
+  "revision": 98,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -1496,10 +1496,12 @@
     },
     "issue35-v1-image": {
       "kind": "upload-image",
-      "status": "intent",
+      "status": "failed",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/35",
       "sha256": "49262c18cb3e1bd51411512e3d8dc2f9564f677529938e55e0b51ced1df93aa2",
-      "createdAt": "2026-10-12T16:48:20.260Z"
+      "createdAt": "2026-10-12T16:48:20.260Z",
+      "failure": "GitHub composer Failed to upload; no native URL returned; PNG valid 1.5MB",
+      "checkedAt": "2026-10-12T16:53:07.243Z"
     },
     "issue24-publish-code": {
       "kind": "publish-code",
@@ -1518,7 +1520,9 @@
         "tooling/pilot-artifacts.mjs"
       ],
       "patchSha256": "c3e62c44b3473d389ffa2e41ff7b02a19c06583b4ec21f0aacb53e9d58a52661",
-      "createdAt": "2026-10-12T16:52:20.374Z"
+      "createdAt": "2026-10-12T16:52:20.374Z",
+      "treeSha": "1bf0a7b7cc45fcee39d5cb42dec2da46ea7374c9",
+      "next": "create commit and branch from exact approved base"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
