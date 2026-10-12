@@ -65,7 +65,7 @@ const ai = {
     chatRemove: (id: string): Promise<unknown> => ipcRenderer.invoke('ai:chat:remove', id),
     chatDraft: (id: string, text: string): Promise<void> => ipcRenderer.invoke('ai:chat:draft', id, text),
     chatContext: (id: string, scope: import('../shared/ai-scope').AiScope): Promise<unknown> => ipcRenderer.invoke('ai:chat:context', id, scope),
-    ask: (sessionId: string, text: string, context?: { scope?: import('../shared/ai-scope').AiScope; pageScope?: import('../shared/ai-scope').AiScope; references?: import('../shared/ai-scope').AiScope[]; baziSystem?: 'bazi' | 'ziwei' | 'astro'; copySource?: import('../shared/todo-contracts').CopySource }): Promise<void> => ipcRenderer.invoke('ai:ask', sessionId, text, context),
+    ask: (sessionId: string, text: string, context?: import('../shared/ai-reference').AiTurnContext): Promise<void> => ipcRenderer.invoke('ai:ask', sessionId, text, context),
   cancel: (): void => {
     ipcRenderer.send('ai:cancel');
   },

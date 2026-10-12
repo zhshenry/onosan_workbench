@@ -9,6 +9,8 @@ import { buildBaziContribution } from '../modules/bazi/ai';
 import { buildWorkbenchContribution, withWorkbenchContext } from '../modules/workbench-ai';
 import { NAV } from '../src/nav';
 import type { BaziProfile } from '../shared/bazi-contracts';
+import { resolveAiReferences } from '../electron/ai-reference';
+import type { AiReference } from '../shared/ai-reference';
 
 test('旧对话原样保留，按工作台分组并持久化当前关联范围', () => {
   const dir = mkdtempSync(join(tmpdir(), 'wb-ai-scope-'));
@@ -176,5 +178,54 @@ test('命理上下文包含完整八字和对应笔记，以本轮日期确定�
     assert.match(second, /B 的独立笔记/);
     assert.ok(!second.includes('profile-a'));
     assert.ok(!second.includes('A 的笔记'));
+  }
+});
+
+test('参考发送快照随会话重启原样保留，兼容旧参考并保持主对象、页面和建议目标', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'wb-ai-reference-roundtrip-'));
+  let store = new AiStore(dir);
+  try {
+    const primaryScope = { module: 'copy' as const, draftId: 'primary-blog' };
+    const pageScope = { module: 'workbench' as const, viewId: 'media-browser' };
+    const reference: AiReference = { module: 'copy', draftId: 'reference-blog' };
+    const source = { id: 'reference-blog', title: '发送时标题', body: '发送时实际正文', platform: 'xiaohongshu' as const, createdAt: '2026-10-12T12:00:00.000Z', updatedAt: '2026-10-12T12:00:00.000Z' };
+    const referenceSnapshots = resolveAiReferences([reference], pageScope, primaryScope, {
+      todo: { all: () => [], categories: () => [] }, copy: { get: () => source },
+      bazi: { all: () => ({ profiles: [], notes: {} }) }, reading: { all: () => ({ books: [] }) },
+    }, { now: new Date('2026-10-12T12:00:00.000Z') });
+    const legacy = store.newChat(primaryScope);
+    legacy.entries = [{ id: 'old-user', role: 'user', content: '旧参考轮次', references: [reference] }];
+    store.saveChat(legacy);
+    const legacyBazi = store.newChat({ module: 'bazi', profileId: 'primary-profile' });
+    legacyBazi.entries = [{ id: 'old-bazi', role: 'user', content: '旧命例参考', references: [{ module: 'bazi', profileId: 'reference-profile' }] }];
+    store.saveChat(legacyBazi);
+    const chat = store.newChat(primaryScope);
+    chat.contextScope = primaryScope;
+    chat.pageScope = pageScope;
+    chat.entries = [
+      { id: 'selected-user', role: 'user', content: '参考资料改写主博客', contextScope: primaryScope, pageScope, references: [reference], referenceSnapshots },
+      { id: 'selected-reply', role: 'assistant', content: '请确认', contextScope: primaryScope, pageScope, references: [reference], referenceSnapshots, copyProposal: { token: 'pending-copy', message: '请确认', actions: [{ kind: 'edit', text: '等待确认的建议正文' }], original: { title: '主博客标题', body: '主博客原文' } }, actionState: 'pending' },
+    ];
+    store.saveChat(chat);
+    source.title = '发送后改名';
+    source.body = '发送后改文';
+    store.close();
+    store = new AiStore(dir);
+    const restored = store.chat(chat.id);
+    assert.deepEqual(restored.entries.map(entry => entry.referenceSnapshots), [referenceSnapshots, referenceSnapshots]);
+    assert.match(restored.entries[0].referenceSnapshots![0].content, /发送时实际正文/);
+    assert.ok(!restored.entries[0].referenceSnapshots![0].content.includes('发送后'));
+    assert.deepEqual(chatContextScope(restored), primaryScope);
+    assert.equal(restored.draftId, primaryScope.draftId);
+    assert.deepEqual(restored.pageScope, pageScope);
+    assert.deepEqual(restored.entries[1].copyProposal, chat.entries[1].copyProposal);
+    assert.equal(restored.entries[1].actionState, 'expired');
+    assert.deepEqual(store.chat(legacy.id).entries[0].references, [reference]);
+    assert.equal(store.chat(legacy.id).entries[0].referenceSnapshots, undefined);
+    assert.deepEqual(store.chat(legacyBazi.id).entries[0].references, [{ module: 'bazi', profileId: 'reference-profile' }]);
+    assert.equal(store.chat(legacyBazi.id).entries[0].referenceSnapshots, undefined);
+  } finally {
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
   }
 });

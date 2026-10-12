@@ -5,6 +5,7 @@ import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { _electron as electron } from 'playwright';
 import { runAiCardsPilot, verifyAiCardsRelaunch } from './ai-cards-pilot.mjs';
+import { runContextPickerPilot, verifyContextPickerRelaunch } from './context-picker-pilot.mjs';
 import { inspectPilotArtifacts } from './pilot-artifacts.mjs';
 import { runYearDropdownPilot, verifyUnboundedDatePicker, verifyYearDropdownRelaunch } from './year-dropdown-pilot.mjs';
 
@@ -29,7 +30,7 @@ const report = {
   baseCommit: process.env.WORKBENCH_CI_BASE_SHA || null,
   platform: process.platform, version: install.version, installer: install,
   checks: [], screenshots: [], launch: [], errors: [],
-  limitations: ['Silent NSIS installation only; no native wizard, UAC or SmartScreen assessment', 'Isolated test mode disables real auto-update and launch-at-login registration', 'Same-version relaunch only; no cross-version upgrade, Office conversion or external AI/network coverage (AI card flow uses synthetic loopback responses)', 'Playwright Electron automation is experimental; launch is separately asserted'],
+  limitations: ['Silent NSIS installation only; no native wizard, UAC or SmartScreen assessment', 'Isolated test mode disables real auto-update and launch-at-login registration', 'Same-version relaunch only; no cross-version upgrade, Office conversion or external AI/network coverage (AI card and reference flows use synthetic loopback responses)', 'Reference checks cover actual installed UI, IPC, selected-reference transport and persisted snapshots; model behavior is synthetic. Existing latest-120 todo/category context is unchanged.', 'App themes are mist/cool/warm; OS light/dark preference coverage does not imply a separate dark app theme.', 'Playwright Electron automation is experimental; launch is separately asserted'],
 };
 let application;
 let page;
@@ -94,6 +95,7 @@ async function doneLibrary() {
 let taskId;
 let birthdayFixture;
 let aiCardsFixture;
+let contextPickerFixture;
 try {
   await check('Launch actual installed executable with isolated data and updater disabled', launch);
   await check('Fresh isolated task database is empty', async () => assert.equal((await state()).tasks.length, 0));
@@ -145,6 +147,7 @@ try {
   await screenshot('completed.png');
   birthdayFixture = await runYearDropdownPilot({ application, page, check, screenshot, runId, report });
   aiCardsFixture = await runAiCardsPilot({ application, page, check, screenshot, runId, report });
+  contextPickerFixture = await runContextPickerPilot({ application, page, check, screenshot, runId, report, birthdayFixture });
   await check('Choose exit-on-close in settings and quit through the window close button', async () => {
     await page.locator('.rail [data-workbench="settings"]').click();
     await page.locator('.tree').getByRole('button', { name: '通用', exact: true }).click();
@@ -170,6 +173,7 @@ try {
   await screenshot('relaunched.png');
   await verifyYearDropdownRelaunch({ page, check, screenshot, fixture: birthdayFixture });
   await verifyAiCardsRelaunch({ page, check, screenshot, fixture: aiCardsFixture });
+  await verifyContextPickerRelaunch({ application, page, check, screenshot, fixture: contextPickerFixture });
   await check('No renderer page errors during the core flow', async () => assert.deepEqual(report.errors, []));
   report.status = 'passed';
 } catch (error) {

@@ -126,6 +126,10 @@ test('切换一级工作台恢复各自会话，同工作台切页保留当前�
     assert.match(dom.window.document.querySelector('.ai-apply')!.textContent!, /博文 A/);
     assert.equal(dom.window.document.querySelectorAll('.ai-reference-chip').length, 0, '主对象不能重复作为参考');
     await render({ scope: { module: 'copy', draftId: 'blog-b' }, label: '博客编辑', object: '博文 B' });
+    assert.equal(dom.window.document.querySelectorAll('.ai-reference-chip').length, 0, '页面切换后不恢复不可见的旧参考');
+    await click('.ai-add-reference');
+    await click('.ai-reference-option input');
+    await click('.ai-reference-dialog .primary');
     assert.match(dom.window.document.querySelector('.ai-reference-chip')!.textContent!, /博文 A/);
     await click('.ai-reference-chip button');
     assert.equal(dom.window.document.querySelectorAll('.ai-reference-chip').length, 0);
