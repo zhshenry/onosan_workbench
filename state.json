@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 112,
+  "revision": 113,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -162,7 +162,7 @@
     },
     "24": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/24",
-      "stage": "ci-fix",
+      "stage": "ci-running",
       "type": [
         "ui",
         "interaction"
@@ -170,7 +170,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T16:48:00Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "修复1024x680/125%下日程按钮被待办遮挡，保持断言并重新运行完整Windows",
+      "nextAction": "等待修复版Windows真实验收及实测图，不能套旧结果",
       "groupId": "topbar-date-24",
       "groupIssueNumbers": [
         24
@@ -196,9 +196,9 @@
       },
       "prNumber": 38,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/38",
-      "headSha": "ef76cd47db128222f88f5d9f6201dd8325a62213",
-      "ciRunId": 38280682735,
-      "ciConclusion": "failure",
+      "headSha": "b54528e849bec6549aec8ec78b67da3eb02e34e9",
+      "ciRunId": 38282656112,
+      "ciConclusion": "in_progress",
       "testedSha": "d78beaff8736c2424db046edbbda012383d647a0",
       "lastCi": {
         "runId": 38280682735,
@@ -1621,7 +1621,7 @@
     },
     "issue24-fix-overlap-publish": {
       "kind": "update-implementation",
-      "status": "intent",
+      "status": "succeeded",
       "target": "ono/issue-24-topbar-dates",
       "expectedHead": "ef76cd47db128222f88f5d9f6201dd8325a62213",
       "patchSha256": "68285bd783d58f4dac66023ecf83131ac81a5614b98efe87f50322e99aa03b3f",
@@ -1636,7 +1636,15 @@
       ],
       "createdAt": "2026-10-12T17:11:21.281Z",
       "treeSha": "a71b4486cedec49f3d84d286ed0d1162abb830f7",
-      "headSha": "b54528e849bec6549aec8ec78b67da3eb02e34e9"
+      "headSha": "b54528e849bec6549aec8ec78b67da3eb02e34e9",
+      "verifiedAt": "2026-10-12T17:12:53.187Z"
+    },
+    "issue24-fix-progress": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
+      "body": "【OnO 自动化】#24｜已修复首轮实测发现的布局重叠，重新验收\n\n首轮[Windows运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38280682735)单测424项、构建和真实安装通过；实装界面27项通过，第28项在1024×680、125%缩放时发现日程入口被待办遮挡，后续未执行，未当作整体通过。\n\n已修正实际布局占位，保留正常点击，增加入口命中、左右控件不重叠及AI任务可见状态检查。125%实测截图改用Electron原生完整内容区采集，避免截图工具自身裁边；没有裁剪、重绘或放宽证据体积限制。\n\n同一[PR #38](https://github.com/zhshenry/onosan_workbench/pull/38)已更新至 b54528e849bec6549aec8ec78b67da3eb02e34e9；本地431项：429通过、2项既有平台跳过，verify通过。[新Windows运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38282656112)正在检查，预计51项实装验收，以真实结果为准。\n\n仍在本单已批准范围内修复，无需你重复批准；完整通过并补齐实测图后，再请求最终合入。",
+      "createdAt": "2026-10-12T17:12:53.187Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
