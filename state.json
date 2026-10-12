@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 126,
+  "revision": 127,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -299,7 +299,9 @@
       "headSha": "c3c3911f31aa664a86d058ad7ad462c3b481ca32",
       "prNumber": 39,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/39",
-      "implementationBaseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0"
+      "implementationBaseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
+      "ciRunId": 38286044872,
+      "ciConclusion": "in_progress"
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
@@ -1854,6 +1856,13 @@
       "createdAt": "2026-10-12T17:42:53Z",
       "number": 39,
       "url": "https://github.com/zhshenry/onosan_workbench/pull/39"
+    },
+    "issue26-pr39-progress": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
+      "body": "【OnO 自动化】#26｜实现已提交 Draft PR #39，开始真实 Windows 验收\n\n[PR #39](https://github.com/zhshenry/onosan_workbench/pull/39)，当前head c3c3911f31aa664a86d058ad7ad462c3b481ca32；[Windows运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38286044872)正在执行。\n\n本地430项：428通过、2项已有Windows包装测试在Linux跳过；类型/构建检查通过。已验证新引用路径的实际请求快照、会话/页面隔离、阅读字段限制和原主对象写入边界；外部模型服务效果不以合成测试代替。\n\n接下来核对真实安装界面、保存/重启及截图，失败按本单范围修复；通过后在这里给准确版本和实测图，再请你确认最终合入。现在无需重复批准方案。",
+      "createdAt": "2026-10-12T17:43:39.550Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
