@@ -1,0 +1,16 @@
+{
+  "schema": "ono-progress-v1",
+  "revision": 0,
+  "currentRun": null,
+  "tasks": {},
+  "ownCommentIds": [],
+  "operations": {},
+  "createdAt": "2026-10-12T09:18:04.927Z",
+  "runtimeInitializedAt": "2026-10-12T09:18:04.927Z",
+  "notes": [
+    "这是人工智能助手按仓库规范执行时使用的最小进度记录，不是独立调度器或分布式锁。",
+    "仅接收初始化后明确绑定当前方案或合入请求的批准，不自动消费历史批准。",
+    "每次写入前重新读取 state.json，以当前文件 blob SHA 更新；冲突须重读协调，未知写入结果须核对后再继续。",
+    "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
+  ]
+}
