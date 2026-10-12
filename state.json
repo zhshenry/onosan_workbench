@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 130,
+  "revision": 131,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -264,7 +264,7 @@
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "stage": "ci-fix",
+      "stage": "ci-running",
       "type": [
         "ui",
         "interaction"
@@ -272,7 +272,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T16:48:00Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "修复重启验收中历史标题和消息正文重名导致的选择器歧义，不放宽实际快照断言；再跑完整Windows",
+      "nextAction": "核对修复版完整Windows安装、47项检查及实测图，通过后请求最终审批",
       "groupId": "workbench-context-26",
       "groupIssueNumbers": [
         26
@@ -296,12 +296,12 @@
         "allowedActions": "本单v1方案产品实现、测试、回归和DraftPR交付；不含合入关单",
         "sourceAssessment": "紧接唯一方案请求的明确v1肯定，虽复制请求前缀，完整语境无引用/提问/否定；独立核对自发日志排除"
       },
-      "headSha": "c3c3911f31aa664a86d058ad7ad462c3b481ca32",
+      "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac",
       "prNumber": 39,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/39",
       "implementationBaseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "ciRunId": 38286044872,
-      "ciConclusion": "failure",
+      "ciConclusion": null,
       "lastCi": {
         "runId": 38286044872,
         "headSha": "c3c3911f31aa664a86d058ad7ad462c3b481ca32",
@@ -1878,12 +1878,15 @@
     },
     "issue26-relaunch-fix": {
       "kind": "publish-code",
-      "status": "intent",
+      "status": "succeeded",
       "target": "ono/issue-26-context-picker",
       "expectedHead": "c3c3911f31aa664a86d058ad7ad462c3b481ca32",
       "summary": "仅修复重启测试精确用户气泡定位并增加回归，不改产品或放宽断言",
       "patchSha256": "b898fdb924d21c28a27ec82bb51b6401d8e1503f49ef8efa088f1fcb84afca91",
-      "createdAt": "2026-10-12T17:55:50.880Z"
+      "createdAt": "2026-10-12T17:55:50.880Z",
+      "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac",
+      "treeSha": "98f655674aea95b982f89c5502969c3194e3f048",
+      "verifiedAt": "2026-10-12T17:56:48.039Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
