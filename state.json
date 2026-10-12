@@ -1,7 +1,12 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 12,
-  "currentRun": null,
+  "revision": 13,
+  "currentRun": {
+    "owner": "ono-root-pr21-report-20261012T0948Z",
+    "startedAt": "2026-10-12T09:48:48Z",
+    "scope": "仅更新已授权精简PR21最终验收说明",
+    "developmentIssue": null
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -123,6 +128,14 @@
       "commentId": 6121730958,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/18#issuecomment-6121730958",
       "updatedAt": "2026-10-12T09:43:42Z"
+    },
+    "pr21-final-report-v1": {
+      "kind": "update-pr-body",
+      "status": "prepared",
+      "target": "https://github.com/zhshenry/onosan_workbench/pull/21",
+      "headSha": "b426820c2efe92b0b50c70fa90e0c726d064d9dd",
+      "body": "【OnO 自动化】\n\n## 范围\n\n按已确认的精简方案，将日常执行收敛为一个正式任务唤醒 dot，按规范和简短任务状态连续推进。普通需求仍是方案批准、最终准确版本合入两个关口。此 PR 为流程/CI/文档维护，无产品功能或 UI 设计改动。\n\n- 退役原型渲染、附件上传两个历史手动 Actions 入口；保留脚本及独立安全回归。过时操作说明改为简短退役记录，完整历史仍可从固定 Git 版本读取。\n- 删除无生产调用的旧模拟 core、专属测试和 policy fixture；保留独立、有界的 PNG 解码器并增加安全负例，不把历史模拟核心当作 dot 的运行依赖。\n- 将 actionlint 1.7.12 迁入真实 Windows 验收：下载官方 Windows 包、核对固定 SHA256 后执行；仍要求当前工作流通过和历史非法上下文反例被明确拒绝。\n- Windows 增加必须实际创建并拒绝的文件 symlink 和父目录 junction 用例，无跳过、无提权。仅在本 PR 准确版本的 Windows CI 证明它们通过后，接受移除重复 Linux job；不能运行则保留最小 Linux 兜底。\n- 保留真实 Electron/NSIS 构建、安装、UI/保存/同版本重启验收，以及证据白名单、总量上限、3 天保留约束。\n- 更新原流程、准备清单与模板，删除自建调度器/分布式锁/迁 pin 的硬前置；保留来源核验、唯一协调者、准确版本、条件更新和未知写入先查回执。\n\n## 验证\n\n基线：main `673febb3ba2e24d17772092bc7d8956642574bee`。准确 head：`b426820c2efe92b0b50c70fa90e0c726d064d9dd`。本次 25 文件，新增 423 行、删除 1734 行；测试数量下降来自删除已退役模拟功能及专属测试，没有跳过独立安全用例。\n\n- 本地 UTC 全量：396 tests，394 通过、0 失败、2 个既有 Windows 专属测试在 Linux 跳过。\n- `npm run verify`：排版检查、类型检查、生产构建通过。保留既有 bundle 体积提示。\n- 实际 actionlint：唯一剩余 workflow 通过，独立 9 行历史错误反例被精确拒绝；官方 Windows ZIP 的实际字节已核对 SHA256。\n- 默认云宿主 PDT 环境有 3 个既有 todo 日期测试失败，在未改基线同样复现；本 PR 不改变产品日期逻辑。UTC 全量及下列真实 Windows CI 均已通过。\n- 独立审阅完成，无阻塞发现；源码/测试全仓引用检查未留下被删除 core/API 的调用。\n- [准确版本 Windows CI run 38231597490](https://github.com/zhshenry/onosan_workbench/actions/runs/38231597490)：attempt 1，2026-10-12 09:47:11 UTC completed/success。唯一 check run 与 check suite 均 success；无额外 legacy status。\n- Windows 全量 396/396 通过，0 失败、0 跳过。日志明确记录 `Rejected a real evidence file symlink on win32` 及 `Rejected a real parent directory junction on win32`；actionlint 与精确历史反例也通过。因此本版本已满足 Linux 重复 job 的移除条件，无需权限变更或跳过补偿。\n- Windows verify、真实 NSIS 构建、静默安装、实际 UI/保存/同版本重启全部通过，`PILOT_RESULT passed checks=25/25`。\n- 实际 checkout merge SHA `a9c0a5fc0311b10a33f863bcaaa90946fff07b0b`，父提交为上述 base/head；tree `4e39955f59d990ca2cd2dc66232448753df0d41b` 与本地审阅和发布内容相同。\n- 本轮只有一个临时证据包，2,943,041 bytes，artifact `11738703038`，到期 2026-10-15 09:47:06 UTC；未另存截图、未将 PNG 入 Git。此流程维护 PR 无产品 UI 改动，不用设计图冒充运行证据。\n\n## 边界\n\n没有更改保护规则、权限、凭据、安全设置、产品功能，也不发布或合入 PR #20 的原型/新协调器。普通 main 分支摘要显示 `protected=false`、required status checks 为 off/空，规则集读取为空；管理级 protection 详情返回 403，未绕过限制或修改设置。当前 PR `mergeable_state=clean`，未见旧 `linux-baseline` 等待状态；最终合入前仍须重读，不将摘要冒充管理配置核验。\n\n目前保持 Draft，检查已完成，等待用户对上述准确 head 的最终合入批准；未合入、未发版、未删除分支。新 head 或 base 漂移须重新核验，不能套用本次旧结果。\n\n审阅后，如同意合入，请在本 PR 回复：同意合入 PR #21，版本 b426820。\n",
+      "createdAt": "2026-10-12T09:48:48Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
