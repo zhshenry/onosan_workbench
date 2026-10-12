@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 123,
+  "revision": 124,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -1806,6 +1806,37 @@
       "createdAt": "2026-10-12T17:25:21Z",
       "commentId": 6129209014,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6129209014"
+    },
+    "issue26-publish-v1": {
+      "kind": "publish-code",
+      "status": "intent",
+      "target": "ono/issue-26-context-picker",
+      "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
+      "patchSha256": "410928e4cfa9841eced020177f1a6aa79305efeacbeae1069f901b5aa44b39e9",
+      "files": [
+        "UX-CONTRACT.md",
+        "electron/ai-ipc.ts",
+        "electron/ai-reference.ts",
+        "electron/preload.ts",
+        "modules/todo/ai-tools.ts",
+        "shared/ai-reference.ts",
+        "shared/todo-contracts.ts",
+        "src/App.tsx",
+        "src/shell.css",
+        "src/views/AiPanel.tsx",
+        "src/views/AiReferencePicker.tsx",
+        "tests/ai-context-picker.test.ts",
+        "tests/ai-reference-ipc.test.ts",
+        "tests/ai-reference.test.ts",
+        "tests/ai-scope.test.ts",
+        "tests/ai-workbench-navigation.test.ts",
+        "tests/context-picker-pilot.test.ts",
+        "tooling/context-picker-pilot.mjs",
+        "tooling/pilot-artifacts.mjs",
+        "tooling/windows-pilot.mjs",
+        "tooling/year-dropdown-pilot.mjs"
+      ],
+      "createdAt": "2026-10-12T17:41:25.957Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
