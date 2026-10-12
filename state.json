@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 45,
+  "revision": 46,
   "currentRun": {
     "owner": "ono-root-pr23-closeout-20261012T1238Z",
     "startedAt": "2026-10-12T12:38:17.202Z",
@@ -671,11 +671,13 @@
     },
     "pr23-ready-bff0ff5": {
       "kind": "mark-ready",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/pull/23",
       "expectedHeadSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
       "approvalCommentId": 6123701226,
-      "createdAt": "2026-10-12T12:38:17.202Z"
+      "createdAt": "2026-10-12T12:38:17.202Z",
+      "draft": false,
+      "updatedAt": "2026-10-12T12:38:54.233Z"
     },
     "pr23-merge-bff0ff5": {
       "kind": "merge-pr",
