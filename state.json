@@ -1,16 +1,16 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 46,
+  "revision": 47,
   "currentRun": {
     "owner": "ono-root-pr23-closeout-20261012T1238Z",
     "startedAt": "2026-10-12T12:38:17.202Z",
     "groupId": "ai-suggestion-card-17-18",
-    "stage": "premerge"
+    "stage": "verifying-main"
   },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
-      "stage": "merging",
+      "stage": "postmerge-verification",
       "type": [
         "ui",
         "interaction"
@@ -32,7 +32,7 @@
         "corroboratingCommentId": 6122339723,
         "verifiedAt": "2026-10-12T10:37:06.479Z"
       },
-      "nextAction": "精确合入PR23，验证实际main全部Windows/32项实装后逐项关闭17/18",
+      "nextAction": "等待实际main完整Windows CI成功后按已批范围关17/18",
       "planCommentId": 6122171698,
       "imageUrl": "https://github.com/user-attachments/assets/93fb3681-bfa4-4257-8446-f6baf1497d17",
       "planPublishedAt": "2026-10-12T10:12:01Z",
@@ -78,11 +78,12 @@
         "relaunched": "https://github.com/user-attachments/assets/e714e2c7-6374-47ed-9536-2f3bfeba98f2"
       },
       "imagesVerifiedAt": "2026-10-12T11:06:25.608Z",
-      "temporaryEvidenceCleanedAt": "2026-10-12T11:06:25.608Z"
+      "temporaryEvidenceCleanedAt": "2026-10-12T11:06:25.608Z",
+      "mergeSha": "41dccc749f8ddeb5ab6aab7eac41537a1406e2a9"
     },
     "18": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/18",
-      "stage": "merging",
+      "stage": "postmerge-verification",
       "type": [
         "ui",
         "interaction"
@@ -104,7 +105,7 @@
         "corroboratingCommentId": 6122339723,
         "verifiedAt": "2026-10-12T10:37:06.479Z"
       },
-      "nextAction": "精确合入PR23，验证实际main全部Windows/32项实装后逐项关闭17/18",
+      "nextAction": "等待实际main完整Windows CI成功后按已批范围关17/18",
       "planCommentId": 6122190320,
       "imageUrl": "https://github.com/user-attachments/assets/9f2bcb64-a500-45fd-b64e-e96944abe866",
       "planPublishedAt": "2026-10-12T10:13:14Z",
@@ -150,7 +151,8 @@
         "relaunched": "https://github.com/user-attachments/assets/e714e2c7-6374-47ed-9536-2f3bfeba98f2"
       },
       "imagesVerifiedAt": "2026-10-12T11:06:25.608Z",
-      "temporaryEvidenceCleanedAt": "2026-10-12T11:06:25.608Z"
+      "temporaryEvidenceCleanedAt": "2026-10-12T11:06:25.608Z",
+      "mergeSha": "41dccc749f8ddeb5ab6aab7eac41537a1406e2a9"
     }
   },
   "ownCommentIds": [
@@ -681,11 +683,14 @@
     },
     "pr23-merge-bff0ff5": {
       "kind": "merge-pr",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/pull/23",
       "expectedHeadSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
       "approvalCommentId": 6123701226,
-      "createdAt": "2026-10-12T12:38:17.202Z"
+      "createdAt": "2026-10-12T12:38:17.202Z",
+      "merged": true,
+      "mergeSha": "41dccc749f8ddeb5ab6aab7eac41537a1406e2a9",
+      "updatedAt": "2026-10-12T12:39:19.363Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
