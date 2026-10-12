@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 89,
+  "revision": 90,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -220,8 +220,8 @@
       "planVersion": "group-v2",
       "primaryPlanCommentId": 6128626525,
       "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525",
-      "planCommentId": 6126800886,
-      "memberPlanCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/25#issuecomment-6126800886",
+      "planCommentId": 6128658297,
+      "memberPlanCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/25#issuecomment-6128658297",
       "imageUrl": "https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4",
       "imageDisplayVerifiedAt": "2026-10-12T14:59:40.749Z",
       "feedbackCommentIds": [
@@ -554,7 +554,8 @@
     6128492997,
     6128520395,
     6128522870,
-    6128626525
+    6128626525,
+    6128658297
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -1429,10 +1430,12 @@
     },
     "float-v2-member-25": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/25",
       "body": "【OnO 自动化】#25｜悬浮窗组方案 v2 同步\n\n![本单对应v2高保真](https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4)\n\n本单移除展开首页AI建议条，原范围未变；原截止信息和分页保留。\n\n完整修订、两张新图及逐单验收见[主方案v2](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525)。本组仍为 #25、#28–#33；本次收起顶栏约52→40、总高度176不变，宽窄440/330，展开高度不变。图片是独立设计，局部放大并非实测像素；本单未变设计复用原图，不重复上传。\n\n无需各单重复批准；修改意见可在这里补充，只在 #28 确认变化一次：同意悬浮窗组 v2 的收起布局调整",
-      "createdAt": "2026-10-12T16:48:20.260Z"
+      "createdAt": "2026-10-12T16:48:56Z",
+      "commentId": 6128658297,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/25#issuecomment-6128658297"
     },
     "float-v2-member-29": {
       "kind": "comment",
