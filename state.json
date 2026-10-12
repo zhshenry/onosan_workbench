@@ -1,11 +1,11 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 17,
+  "revision": 18,
   "currentRun": {
     "owner": "ono-root-pr21-merge-20261012T0954Z",
     "startedAt": "2026-10-12T09:54:26.281Z",
     "target": "PR21",
-    "stage": "premerge"
+    "stage": "verifying-main"
   },
   "tasks": {
     "17": {
@@ -143,9 +143,13 @@
       "kind": "merge-pr",
       "target": "https://github.com/zhshenry/onosan_workbench/pull/21",
       "expectedHeadSha": "b426820c2efe92b0b50c70fa90e0c726d064d9dd",
-      "status": "intent",
+      "status": "succeeded",
       "approvalSource": "用户在当前对话明确批准准确版本",
-      "createdAt": "2026-10-12T09:54:26.281Z"
+      "createdAt": "2026-10-12T09:54:26.281Z",
+      "merged": true,
+      "mergeSha": "94938ee1cc94a652d3b9fdc4c7ef3e75d74e298f",
+      "updatedAt": "2026-10-12T09:55:20.392Z",
+      "nextAction": "验证真实 main CI"
     },
     "pr21-ready-b426820": {
       "kind": "mark-ready",
