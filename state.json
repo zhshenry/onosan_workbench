@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 37,
+  "revision": 38,
   "currentRun": {
     "owner": "ono-root-ai-cards-20261012T1036Z",
     "startedAt": "2026-10-12T10:37:06.478Z",
@@ -498,69 +498,101 @@
     },
     "cards-real-image-pending": {
       "kind": "native-image-upload",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
       "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
       "runId": 38239284361,
       "artifactId": 11742551151,
       "imageSha256": "32a8bb24cc9031ba903f5c1f0464e8784cb40fdba57ca7e221e70e815456407d",
       "createdAt": "2026-10-12T11:01:37.613Z",
-      "purpose": "已批准17/18产品交付的脱敏合成数据真实截图，公开原生展示"
+      "purpose": "已批准17/18产品交付的脱敏合成数据真实截图，公开原生展示",
+      "assetUrl": "https://github.com/user-attachments/assets/c26f5d73-49fa-4b97-96d2-8628751a317d",
+      "attempts": 2,
+      "firstFailure": "stale file chooser backend id; no upload occurred; fresh chooser succeeded",
+      "updatedAt": "2026-10-12T11:04:19.937Z"
     },
     "cards-real-image-applied": {
       "kind": "native-image-upload",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
       "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
       "runId": 38239284361,
       "artifactId": 11742551151,
       "imageSha256": "31a044c8287bd0382fefabe9d95848d3eb1c95d61fb45c82fd59efad926d2ce7",
       "createdAt": "2026-10-12T11:01:37.613Z",
-      "purpose": "已批准17/18产品交付的脱敏合成数据真实截图，公开原生展示"
+      "purpose": "已批准17/18产品交付的脱敏合成数据真实截图，公开原生展示",
+      "assetUrl": "https://github.com/user-attachments/assets/45ed28f4-6461-436a-b668-aeb46e68e9ee",
+      "attempts": 2,
+      "firstFailure": "stale file chooser backend id; no upload occurred; fresh chooser succeeded",
+      "updatedAt": "2026-10-12T11:04:19.937Z"
     },
     "cards-real-image-partial": {
       "kind": "native-image-upload",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
       "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
       "runId": 38239284361,
       "artifactId": 11742551151,
       "imageSha256": "6195e4feaf5fd2030ec5dc48a7f6257f8d6c02434729181c46028093a9fc903f",
       "createdAt": "2026-10-12T11:01:37.613Z",
-      "purpose": "已批准17/18产品交付的脱敏合成数据真实截图，公开原生展示"
+      "purpose": "已批准17/18产品交付的脱敏合成数据真实截图，公开原生展示",
+      "assetUrl": "https://github.com/user-attachments/assets/5f564ab1-4449-42f0-b5d5-632fee28ec57",
+      "attempts": 2,
+      "firstFailure": "stale file chooser backend id; no upload occurred; fresh chooser succeeded",
+      "updatedAt": "2026-10-12T11:04:19.937Z"
     },
     "cards-real-image-failed": {
       "kind": "native-image-upload",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
       "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
       "runId": 38239284361,
       "artifactId": 11742551151,
       "imageSha256": "7b7d1e4ae1a5d1dc2ab872a08477a09feb323fd6a8b2fda33a87ba4a2e7b3e76",
       "createdAt": "2026-10-12T11:01:37.613Z",
-      "purpose": "已批准17/18产品交付的脱敏合成数据真实截图，公开原生展示"
+      "purpose": "已批准17/18产品交付的脱敏合成数据真实截图，公开原生展示",
+      "assetUrl": "https://github.com/user-attachments/assets/cc1b6af6-c7d1-4d86-b950-e6b277ffefc8",
+      "attempts": 2,
+      "firstFailure": "stale file chooser backend id; no upload occurred; fresh chooser succeeded",
+      "updatedAt": "2026-10-12T11:04:19.937Z"
     },
     "cards-real-image-narrow": {
       "kind": "native-image-upload",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
       "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
       "runId": 38239284361,
       "artifactId": 11742551151,
       "imageSha256": "a91a125c2a1f69fe8f6aeb7ef9016fa26ea9da19602e954f6efe9dfb2398004c",
       "createdAt": "2026-10-12T11:01:37.613Z",
-      "purpose": "已批准17/18产品交付的脱敏合成数据真实截图，公开原生展示"
+      "purpose": "已批准17/18产品交付的脱敏合成数据真实截图，公开原生展示",
+      "assetUrl": "https://github.com/user-attachments/assets/85b4aab8-db2e-4c09-9d19-468c1029a3bd",
+      "attempts": 2,
+      "firstFailure": "stale file chooser backend id; no upload occurred; fresh chooser succeeded",
+      "updatedAt": "2026-10-12T11:04:19.937Z"
     },
     "cards-real-image-relaunched": {
       "kind": "native-image-upload",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
       "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
       "runId": 38239284361,
       "artifactId": 11742551151,
       "imageSha256": "ca9f8783269ba127e0731132bdd262bc6ae8e8f62bc3494ac2fc822675bc9426",
       "createdAt": "2026-10-12T11:01:37.613Z",
-      "purpose": "已批准17/18产品交付的脱敏合成数据真实截图，公开原生展示"
+      "purpose": "已批准17/18产品交付的脱敏合成数据真实截图，公开原生展示",
+      "assetUrl": "https://github.com/user-attachments/assets/e714e2c7-6374-47ed-9536-2f3bfeba98f2",
+      "attempts": 2,
+      "firstFailure": "stale file chooser backend id; no upload occurred; fresh chooser succeeded",
+      "updatedAt": "2026-10-12T11:04:19.937Z"
+    },
+    "cards-final-comment17-bff0ff5": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
+      "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
+      "body": "【OnO 自动化】#17 + #18｜PR #23｜整组 v2 实现完成，待最终合入收尾批准\n\n本组成员：#17（确认前看清改动）、#18（应用后保留卡片）。依据你的[整组方案 v2 批准](https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6122337511)，共同交付 [PR #23](https://github.com/zhshenry/onosan_workbench/pull/23)。以下全部为本实现的真实 Windows 安装应用截图，使用隔离的合成测试数据；不是设计图。\n\n### #17：确认前\n![PR23 bff0ff5 实测：确认前]( https://github.com/user-attachments/assets/c26f5d73-49fa-4b97-96d2-8628751a317d )\n\n### #18：应用后\n![PR23 bff0ff5 实测：应用后保留卡片]( https://github.com/user-attachments/assets/45ed28f4-6461-436a-b668-aeb46e68e9ee )\n\n已逐图对照 v2：浅蓝独立圆角卡、四边一致细框、真实目标/中文字段/修改前后、待确认与已应用状态、结束后只读结果均落实。截图测试改的是备注，设计示例改的是截止时间，二者属于同一卡片字段展示；日期/空值/新增删除标签同时有单测覆盖。\n\n### 逐单验收\n- #17 通过：快照取自提案时真实数据，不从模型回复猜测；空值明确、中文字段/目标和危险操作摘要；逐项选择、键盘取消选择、零选禁用、保留原内容不写数据；长内容、窄面板与三种现有主题。\n- #18 通过：全选成功保留原卡与明细，结果来自主进程事务回执；部分选择准确标未选项、整枚 token 消费且不可重放；失败真实回滚先前写入，不显示成功；关闭重开面板保留运行内卡片状态。\n- 保存/重启通过：实际修改后读回同一事项 ID、业务字段与创建时间等元数据，真实退出后重新启动同一安装版本再核对。\n- 重启边界：按方案“不新增跨会话明细持久化”，新快照/逐项回执仅当前进程内保留；重新启动后既有聊天状态仍保留，无法恢复的明细明确提示“原始快照不可用”，旧建议不能再次执行。本次没有新增撤销或历史页面。\n\n<details>\n<summary>其他真实截图：部分选择、失败、窄窗口、重启</summary>\n\n部分选择成功，未选项明确“本轮未应用”：\n![PR23 bff0ff5 实测：部分选择]( https://github.com/user-attachments/assets/5f564ab1-4449-42f0-b5d5-632fee28ec57 )\n\n故意省略标签依赖触发失败；这是回滚负例通过，不是 CI 失败：\n![PR23 bff0ff5 实测：失败不假报成功]( https://github.com/user-attachments/assets/cc1b6af6-c7d1-4d86-b950-e6b277ffefc8 )\n\n窄窗口 / 长内容滚动；截图仅显示当前视窗，长字段与无横向溢出另有实际断言：\n![PR23 bff0ff5 实测：窄窗口]( https://github.com/user-attachments/assets/85b4aab8-db2e-4c09-9d19-468c1029a3bd )\n\n真实重启后旧卡只读、快照缺失明确提示：\n![PR23 bff0ff5 实测：重启边界]( https://github.com/user-attachments/assets/e714e2c7-6374-47ed-9536-2f3bfeba98f2 )\n</details>\n\n### 准确版本和测试\n- PR head：bff0ff5f949c4870ae31817739a119f82dbd3f40（短写 bff0ff5）。\n- base：ebc21504080900fa6fb1d7f6f1f237e55e6d5575。\n- 实际 tested merge：01262b1e5d27f5aab76f2840c0b12aa551f6be47；父提交与上述 base/head 一致，tree b96ce54a308b7001067cf62e22d88b0f7f3abc57。\n- [Windows CI 38239284361](https://github.com/zhshenry/onosan_workbench/actions/runs/38239284361)，attempt 1：408/408 测试通过、0失败、0跳过；verify、actionlint、真实文件 symlink/父目录 junction 安全反例、NSIS 构建和安装通过。\n- 真实安装应用验收 32/32，包括新增 AI 卡专项、保存读回与同版本重启。\n- 本地同一全量：406通过、2个既有 Windows-only 跳过；npm test 包装器因云宿主 IPC 权限报错，改由 Node tsx loader 跑同一集合，未删断言或放宽测试。\n- 六张图已逐张查看并通过原生附件上传；首次文件选择器失效，确认未产生上传后换当前选择器补试一次成功。PNG 未入 Git，不额外备份。\n- 临时 Actions 原始证据 artifact 11742551151，约4.91MB，2026-10-15 18:59:38（UTC+08）到期；本评论展示复用原生附件。未核实原生附件永久保留保证。\n\n未覆盖：安装向导/UAC/SmartScreen、跨版本升级和真实外部 AI 服务质量；本次以无凭据 loopback 固定回复驱动真实 UI/IPC/SQLite，未发送个人数据给模型。没有新增权限、费用、自动更新配置或发布。\n\n### 本次合入收尾包\n唯一关联实现 PR 为 #23；本组没有需要关闭的旧设计/试验 PR。PR #16、#20 属于其他历史工作，不在本包内。\n请求一次批准：\n1. 合入 PR #23 的上述准确 head。\n2. 验证实际 main 的完整 Windows CI、408项测试及32项安装/操作/保存/重启验收；失败停止收尾并报告。\n3. 仅全部通过且本组交付无新缺口后，分别关闭 #17 和 #18；任何单项不满足就保留开放。\n不包含发版、删除本实现分支、权限变更或范围外修复。新 head 须重新批准，base 变化重新集成验证。\n\n有意见直接回复本 Issue；同意上述整包请回复：\n同意合入收尾 PR #23，版本 bff0ff5；通过后关闭 #17、#18",
+      "createdAt": "2026-10-12T11:04:19.937Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
