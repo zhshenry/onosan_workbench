@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 147,
-  "currentRun": {
-    "owner": "ono-root-audit-20261012T2248Z",
-    "startedAt": "2026-10-12T22:48:41.787Z",
-    "currentDevelopmentGroup": null,
-    "task": "全量队列与原始审批核对"
-  },
+  "revision": 148,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -15,7 +10,7 @@
         "ui",
         "interaction"
       ],
-      "lastReadAt": "2026-10-12T21:51:52.358Z",
+      "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "94938ee1cc94a652d3b9fdc4c7ef3e75d74e298f",
       "planVersion": "group-v2",
       "approval": {
@@ -91,7 +86,7 @@
         "ui",
         "interaction"
       ],
-      "lastReadAt": "2026-10-12T21:51:52.358Z",
+      "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "94938ee1cc94a652d3b9fdc4c7ef3e75d74e298f",
       "planVersion": "group-v2",
       "approval": {
@@ -168,7 +163,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T21:51:52.358Z",
+      "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "核对当前准确head、最终包和明确畸形旧日程验收边界批准后才合入；未获批准不关单",
       "groupId": "topbar-date-24",
@@ -235,7 +230,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T21:51:52.358Z",
+      "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -270,7 +265,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T21:51:52.358Z",
+      "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "核对准确head及所列窄屏首页/基础上下文边界批准；未获批准不合入关单",
       "groupId": "workbench-context-26",
@@ -333,7 +328,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T21:51:52.358Z",
+      "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -371,7 +366,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T21:51:52.358Z",
+      "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -406,7 +401,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T21:51:52.358Z",
+      "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -441,7 +436,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T21:51:52.358Z",
+      "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -476,7 +471,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T21:51:52.358Z",
+      "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -511,7 +506,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T21:51:52.358Z",
+      "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -547,7 +542,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "lastReadAt": "2026-10-12T21:51:52.358Z",
+      "lastReadAt": "2026-10-12T22:48:32.753Z",
       "nextAction": "等待当前带图v1方案批准，尚未产品实现",
       "groupId": "settings-update-34",
       "groupIssueNumbers": [
@@ -569,7 +564,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "lastReadAt": "2026-10-12T21:51:52.358Z",
+      "lastReadAt": "2026-10-12T22:48:32.753Z",
       "nextAction": "附件两次明确失败，停止盲重试；完整带图方案尚未发布，无方案批准，不实施",
       "lastCommentId": 6128766093
     },
@@ -582,7 +577,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "lastReadAt": "2026-10-12T21:51:52.358Z",
+      "lastReadAt": "2026-10-12T22:48:32.753Z",
       "nextAction": "已解释实际用途，等待用户反馈；未改产品，不自动关单",
       "lastCommentId": 6128520395
     },
@@ -595,7 +590,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "lastReadAt": "2026-10-12T21:51:52.358Z",
+      "lastReadAt": "2026-10-12T22:48:32.753Z",
       "nextAction": "已解释实际用途，等待用户反馈；未改产品，不自动关单",
       "lastCommentId": 6128522870
     }
@@ -2007,8 +2002,8 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-audit-20261012T2152Z",
-    "finishedAt": "2026-10-12T21:52:19.423Z",
-    "result": "分页核对全部13开放ono及记录17/18原始评论、main、开放PR38/39准确head和Actions，无新需求/反馈/批准或漂移。保持待批准与已报告35附件阻碍，不重试、不重复通知；无在途写，释放。"
+    "owner": "ono-root-audit-20261012T2248Z",
+    "finishedAt": "2026-10-12T22:49:03.987Z",
+    "result": "全量分页13开放ono及记录17/18、原始评论、main、PR38/39与准确SHA Actions均无变化；无新批准。待审批与已报告35附件阻碍保持，不重试、不重复通知。无在途写，释放。"
   }
 }
