@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 22,
+  "revision": 23,
   "currentRun": {
     "owner": "ono-root-group-v2-20261012T1007Z",
     "startedAt": "2026-10-12T10:07:13.782Z",
@@ -182,23 +182,27 @@
     },
     "group-v2-image-17": {
       "kind": "native-image-upload",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
       "memberIssue": 17,
       "planVersion": "v2",
       "imageSha256": "20da271020e08c4de0fc921acaf43319e9f2ac66a71508b0b9aea04262da9bee",
       "purpose": "公开展示17+18组方案修订高保真",
-      "createdAt": "2026-10-12T10:10:28.685Z"
+      "createdAt": "2026-10-12T10:10:28.685Z",
+      "assetUrl": "https://github.com/user-attachments/assets/93fb3681-bfa4-4257-8446-f6baf1497d17",
+      "updatedAt": "2026-10-12T10:11:48.374Z"
     },
     "group-v2-image-18": {
       "kind": "native-image-upload",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
       "memberIssue": 18,
       "planVersion": "v2",
       "imageSha256": "2a97b50cd956b874173a50370ba2387eefaf34f96a8b65cc8e93e02d5e0ca3a7",
       "purpose": "公开展示17+18组方案修订高保真",
-      "createdAt": "2026-10-12T10:10:28.685Z"
+      "createdAt": "2026-10-12T10:10:28.685Z",
+      "assetUrl": "https://github.com/user-attachments/assets/9f2bcb64-a500-45fd-b64e-e96944abe866",
+      "updatedAt": "2026-10-12T10:11:48.374Z"
     },
     "group-doc-pr-v1": {
       "kind": "create-draft-pr",
@@ -207,7 +211,15 @@
       "baseSha": "94938ee1cc94a652d3b9fdc4c7ef3e75d74e298f",
       "expectedTree": "cc2d7ca9401756cb2324d8ba24afcce76a69ee7e",
       "scope": "关联需求分组规范及3模板，4文档，不合入",
-      "createdAt": "2026-10-12T10:11:09.428Z"
+      "createdAt": "2026-10-12T10:11:09.428Z",
+      "headSha": "0b8e2b32b1ea9c051fa60d556ca7279ac0b04672"
+    },
+    "group-v2-comment17": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
+      "body": "【OnO 自动化】#17 + #18｜AI 建议卡组方案 v2｜待整组方案批准\n\n已按你在两单的意见调整：去掉左侧粗强调线，四边使用一致的浅蓝细边框。#17 与 #18 合为同一交互组，共用一个实现 PR；本 Issue（#17）集中对齐方案，#18 保留对应图及逐项验收。\n\n### 高保真：确认前（#17）\n![组方案 v2：确认前，四边一致细边框](https://github.com/user-attachments/assets/93fb3681-bfa4-4257-8446-f6baf1497d17)\n\n### 高保真：应用后（#18）\n![组方案 v2：应用后保留卡片，四边一致细边框](https://github.com/user-attachments/assets/9f2bcb64-a500-45fd-b64e-e96944abe866)\n\n以上是设计稿，不是已实现或实测截图。此前两单各自 v1 由本组方案 v2 替代，尚未开始产品实现。\n\n### #17：看清改动再确认\n- 保留浅蓝背景与独立圆角卡片，与普通聊天区分；四边同样粗细，不再有左侧强调条。\n- 卡片直接显示目标事项、中文字段名及真实“修改前 → 修改后”；不裸露 dueAt 等内部标识。\n- 旧值来自生成建议时的实际数据快照，不能猜测或由 AI 聊天文本反推。未设置/清空值明确显示，日期可读。\n- 保留逐项选择；“保留原内容”不写数据，“应用所选”只执行所选项，未选任何项时禁用。\n- 新增、删除、标签操作保留可读摘要；危险操作明确提示。长标题、长备注、窄面板及多选均须可用。\n\n### #18：应用后保留结果卡\n- 原卡在原位置保留目标和变更明细，卡内标注“已应用”，完成后选择框/按钮转为只读结果，避免重复执行。\n- 全部选择成功：显示实际应用数量；部分选择成功：逐项区分已应用和未选择（本轮未应用）。原建议 token 已消费，未选项不能再次点击执行。\n- 失败时保留卡及明细，显示原因与“本次未应用”，不显示成功标签。现有事务失败全回滚，不新增部分失败续跑机制。\n- 结果必须来自真实执行回执，不从已清空的选择状态猜测；成功后不再显示“待确认后写入”。\n\n### 范围和验收\n- 一个实现 PR 同时关联 #17、#18，分别验证上述各项，不用一个总“通过”代替逐项验收。\n- 不新增撤销、历史页面或跨会话记录持久化功能，不改待办之外的其他功能入口。\n- 基线 main 94938ee1cc94a652d3b9fdc4c7ef3e75d74e298f；实施前重查基线，完成后提供当前配置的 Windows 测试、构建、实际操作/保存/重启结果及真实截图。\n- 此次只批准整组方案并进入实现；最终准确 PR/head 的合入与逐项关单另作第二次验收确认，不需要分两单重复批准。\n\n修改意见可以继续在 #17 或 #18 留下，我会汇总到这里。若同意以上两单整组方案并进入实现，请在本 Issue 回复：\n同意 #17+#18 组方案 v2",
+      "createdAt": "2026-10-12T10:11:48.375Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
