@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 82,
+  "revision": 83,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -504,7 +504,7 @@
     },
     "36": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/36",
-      "stage": "analysis",
+      "stage": "answered-awaiting-feedback",
       "type": [
         "ui",
         "investigation"
@@ -512,7 +512,8 @@
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "lastReadAt": "2026-10-12T16:36:31.562Z",
-      "nextAction": "看原图和代码核对范围；问题先解释，不把问题当删除/实施批准"
+      "nextAction": "已解释实际用途，等待用户反馈；未改产品，不自动关单",
+      "lastCommentId": 6128520395
     },
     "37": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/37",
@@ -549,7 +550,8 @@
     6126817506,
     6128488842,
     6128490909,
-    6128492997
+    6128492997,
+    6128520395
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -1371,10 +1373,12 @@
     },
     "issue36-usage-answer": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/36",
       "body": "【OnO 自动化】#36｜“找素材”目前仍有实际功能\n\n它会从小红书创作者后台切到独立的素材浏览器，提供多标签浏览、平台快捷入口、采集链接/标题/整页截图、查看和备注已采集素材，以及让 AI 总结当前网页。\n\n因此它与“我的小红书”创作者后台不是同一个入口；当前不能判断为无用按钮。这里先说明现状，没有替你删除或调整界面。\n\n源码依据：[模式切换与功能入口](https://github.com/zhshenry/onosan_workbench/blob/6850a4fb7acc10ac1d04468297b70ebd63cfa0a0/src/views/MediaBrowserView.tsx#L35-L81)。这是代码用途核对，不代表本轮实测了外部网站采集成功。\n\n此说明无需批准；如果你的目标是精简入口，可回复：我想精简“找素材”入口。",
-      "createdAt": "2026-10-12T16:39:38.472Z"
+      "createdAt": "2026-10-12T16:39:55Z",
+      "commentId": 6128520395,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/36#issuecomment-6128520395"
     },
     "issue37-linking-answer": {
       "kind": "comment",
