@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 99,
+  "revision": 100,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -1507,7 +1507,7 @@
     },
     "issue24-publish-code": {
       "kind": "publish-code",
-      "status": "intent",
+      "status": "succeeded",
       "target": "ono/issue-24-topbar-dates",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "files": [
@@ -1525,7 +1525,23 @@
       "createdAt": "2026-10-12T16:52:20.374Z",
       "treeSha": "1bf0a7b7cc45fcee39d5cb42dec2da46ea7374c9",
       "next": "create commit and branch from exact approved base",
-      "headSha": "ef76cd47db128222f88f5d9f6201dd8325a62213"
+      "headSha": "ef76cd47db128222f88f5d9f6201dd8325a62213",
+      "branch": "ono/issue-24-topbar-dates"
+    },
+    "issue24-draft-pr": {
+      "kind": "create-pr",
+      "status": "intent",
+      "target": "ono/issue-24-topbar-dates -> main",
+      "headSha": "ef76cd47db128222f88f5d9f6201dd8325a62213",
+      "body": "【OnO 自动化】#24 顶栏日期显示，方案v1实现（Draft）\n\n关联需求 #24；方案及用户审批留在 [Issue原始请求](https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6126565074) / [批准](https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6128003916)。\n\n## 改动\n待办日期、日程摘要及展开行补日期；跨日/跨年、无时间/缺失值显示；320px面板保留，标题省略有完整提示。1181–1440窗口仅隐藏冗余“今日”前缀，腾出事项日期空间。筛选、排序、存储及其他日期入口不改。\n\n## 已运行\n- 本地同测试集：424项，422通过，2项已有Windows专用测试在Linux跳过（node --import tsx --test，Asia/Shanghai）。\n- npm run verify通过；六项格式化测试在五时区通过。\n- 原始npm test入口受当前shell IPC限制；UTC的三项todo-store旧失败在未改基线复现。\n- 独立代码审查未发现新增阻断问题。\n\n## 仍需Windows真实验收\n完整test/verify、actionlint、NSIS安装、原32项+新18项实装检查、真实截图及19MB证据守卫。当前未运行，不把脚本等同验收通过。\n新测试以真实UI创建及保存/重启为主；跨日跨年等当前输入schema不支持的边界用临时只读renderer fixtures，明确不是持久化证据。\n\n已知范围外限制：非法meeting dueAt且无endAt会在既有shared逻辑先崩溃；本PR只保证本显示helper回退，不声称整条畸形记录流程通过。AI任务占用顶栏时的几何尚未专项覆盖。\n不自动关闭Issue。完整实测完成后，在#24贴图请求准确head合入收尾。",
+      "createdAt": "2026-10-12T16:54:35.016Z"
+    },
+    "issue34-v1-comment": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/34",
+      "body": "【OnO 自动化】#34｜应用更新状态位置｜方案 v1\n\n![应用更新栏目内展示最新版本和检查状态](https://github.com/user-attachments/assets/41e9e253-8a6c-4129-ab78-aab06849ae9e)\n\n这是独立高保真设计，左边“当前已是最新版本”，右边“正在检查更新”，不是实测截图。按你的要求，状态放回“应用更新”栏目说明下方，不再挤在整张设置卡底部。\n\n范围：\n- 只调整设置页状态/进度的展示位置，现有检查更新、下载及重启安装按钮位置和逻辑不变。\n- 检查中、已是最新、下载进度、准备安装及更新失败等现有状态都在同一栏目展示，长提示自动换行；不新增更新流程。\n- 目录、共享库和应用信息读取错误各自保留，不把它们误当更新状态；底部独立提醒保留。\n\n本单单独一个实现PR，不与小红书页面保留等无关需求合包。批准后实施、测试、完整Windows构建/安装及实测图；重点验收状态切换、下载进度、错误长文、窄窗口/主题/键盘与按钮可用性，确保其他设置项目不受影响。不会为测试实际安装未获批准的新发布版本。\n基线 main 6850a4fb7acc10ac1d04468297b70ebd63cfa0a0，当前主干检查已通过。图片为独立绘图，无源码渲染SHA；SHA256 a0b7a9c77dd0d8cebc52387d0e77f14214cd15a4471a77cf6e83495dfba9637c。原生附件不入Git、不额外备份。\n\n本次确认只授权此方案实施及测试交付，最终合入另审准确版本。\n直接在这里回复：同意 #34 方案 v1",
+      "createdAt": "2026-10-12T16:54:35.016Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
