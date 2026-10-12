@@ -1,25 +1,16 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 39,
-  "currentRun": {
-    "owner": "ono-root-ai-cards-20261012T1036Z",
-    "startedAt": "2026-10-12T10:37:06.478Z",
-    "groupId": "ai-suggestion-card-17-18",
-    "targetIssues": [
-      17,
-      18
-    ],
-    "stage": "uploading-real-evidence"
-  },
+  "revision": 40,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
-      "stage": "ci-verification",
+      "stage": "awaiting-merge-approval",
       "type": [
         "ui",
         "interaction"
       ],
-      "lastReadAt": "2026-10-12T10:37:06.479Z",
+      "lastReadAt": "2026-10-12T11:06:25.608Z",
       "baseSha": "94938ee1cc94a652d3b9fdc4c7ef3e75d74e298f",
       "planVersion": "group-v2",
       "approval": {
@@ -36,7 +27,7 @@
         "corroboratingCommentId": 6122339723,
         "verifiedAt": "2026-10-12T10:37:06.479Z"
       },
-      "nextAction": "完成真实Windows及UI专项，取得实际截图并在Issue最终验收；不自动合入",
+      "nextAction": "在#17核对对PR23完整bff0ff5及合后关闭17/18范围的用户原始批准，批准后精确合入、验证实际main再按范围关单",
       "planCommentId": 6122171698,
       "imageUrl": "https://github.com/user-attachments/assets/93fb3681-bfa4-4257-8446-f6baf1497d17",
       "planPublishedAt": "2026-10-12T10:12:01Z",
@@ -54,16 +45,32 @@
       "implementationBaseSha": "ebc21504080900fa6fb1d7f6f1f237e55e6d5575",
       "prNumber": 23,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/23",
-      "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40"
+      "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
+      "finalRequestCommentId": 6122991026,
+      "memberAcceptanceCommentId": 6122991026,
+      "mergeApproval": null,
+      "ciRunId": 38239284361,
+      "ciConclusion": "success",
+      "testedSha": "01262b1e5d27f5aab76f2840c0b12aa551f6be47",
+      "actualImageURLs": {
+        "pending": "https://github.com/user-attachments/assets/c26f5d73-49fa-4b97-96d2-8628751a317d",
+        "applied": "https://github.com/user-attachments/assets/45ed28f4-6461-436a-b668-aeb46e68e9ee",
+        "partial": "https://github.com/user-attachments/assets/5f564ab1-4449-42f0-b5d5-632fee28ec57",
+        "failed": "https://github.com/user-attachments/assets/cc1b6af6-c7d1-4d86-b950-e6b277ffefc8",
+        "narrow": "https://github.com/user-attachments/assets/85b4aab8-db2e-4c09-9d19-468c1029a3bd",
+        "relaunched": "https://github.com/user-attachments/assets/e714e2c7-6374-47ed-9536-2f3bfeba98f2"
+      },
+      "imagesVerifiedAt": "2026-10-12T11:06:25.608Z",
+      "temporaryEvidenceCleanedAt": "2026-10-12T11:06:25.608Z"
     },
     "18": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/18",
-      "stage": "ci-verification",
+      "stage": "awaiting-merge-approval",
       "type": [
         "ui",
         "interaction"
       ],
-      "lastReadAt": "2026-10-12T10:37:06.479Z",
+      "lastReadAt": "2026-10-12T11:06:25.608Z",
       "baseSha": "94938ee1cc94a652d3b9fdc4c7ef3e75d74e298f",
       "planVersion": "group-v2",
       "approval": {
@@ -80,7 +87,7 @@
         "corroboratingCommentId": 6122339723,
         "verifiedAt": "2026-10-12T10:37:06.479Z"
       },
-      "nextAction": "完成真实Windows及UI专项，取得实际截图并在Issue最终验收；不自动合入",
+      "nextAction": "在#17核对对PR23完整bff0ff5及合后关闭17/18范围的用户原始批准，批准后精确合入、验证实际main再按范围关单",
       "planCommentId": 6122190320,
       "imageUrl": "https://github.com/user-attachments/assets/9f2bcb64-a500-45fd-b64e-e96944abe866",
       "planPublishedAt": "2026-10-12T10:13:14Z",
@@ -98,7 +105,23 @@
       "implementationBaseSha": "ebc21504080900fa6fb1d7f6f1f237e55e6d5575",
       "prNumber": 23,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/23",
-      "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40"
+      "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
+      "finalRequestCommentId": 6122991026,
+      "memberAcceptanceCommentId": 6123000879,
+      "mergeApproval": null,
+      "ciRunId": 38239284361,
+      "ciConclusion": "success",
+      "testedSha": "01262b1e5d27f5aab76f2840c0b12aa551f6be47",
+      "actualImageURLs": {
+        "pending": "https://github.com/user-attachments/assets/c26f5d73-49fa-4b97-96d2-8628751a317d",
+        "applied": "https://github.com/user-attachments/assets/45ed28f4-6461-436a-b668-aeb46e68e9ee",
+        "partial": "https://github.com/user-attachments/assets/5f564ab1-4449-42f0-b5d5-632fee28ec57",
+        "failed": "https://github.com/user-attachments/assets/cc1b6af6-c7d1-4d86-b950-e6b277ffefc8",
+        "narrow": "https://github.com/user-attachments/assets/85b4aab8-db2e-4c09-9d19-468c1029a3bd",
+        "relaunched": "https://github.com/user-attachments/assets/e714e2c7-6374-47ed-9536-2f3bfeba98f2"
+      },
+      "imagesVerifiedAt": "2026-10-12T11:06:25.608Z",
+      "temporaryEvidenceCleanedAt": "2026-10-12T11:06:25.608Z"
     }
   },
   "ownCommentIds": [
@@ -108,7 +131,8 @@
     6122171698,
     6122190320,
     6122575647,
-    6122991026
+    6122991026,
+    6123000879
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -600,10 +624,13 @@
     },
     "cards-final-comment18-bff0ff5": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/18",
       "body": "【OnO 自动化】#17 + #18｜PR #23｜应用后卡片实测已完成\n\n![PR23 bff0ff5 实测：应用后保留卡片](https://github.com/user-attachments/assets/45ed28f4-6461-436a-b668-aeb46e68e9ee)\n\n上图为准确 head bff0ff5f949c4870ae31817739a119f82dbd3f40 的真实 Windows 安装应用截图（隔离合成数据），不是设计稿。#18 的原卡保留、卡内已应用、逐项回执、部分选择、防重复、失败回滚和运行内关闭重开均已验证；Windows408/408、安装/操作/保存重启32/32通过。\n\n重启边界：按已批准方案不新增跨会话明细持久化，重新启动后旧卡只读，无法恢复的快照明确提示不可用。\n\n完整两单验收、六张实图、准确 SHA 和合入后分别关闭 #17/#18 的条件见[主 Issue 最终验收请求](https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6122991026)。无需在两单重复批准；请只在 #17 回复一次：\n同意合入收尾 PR #23，版本 bff0ff5；通过后关闭 #17、#18",
-      "createdAt": "2026-10-12T11:04:57.376Z"
+      "createdAt": "2026-10-12T11:05:06Z",
+      "commentId": 6123000879,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/18#issuecomment-6123000879",
+      "updatedAt": "2026-10-12T11:05:06Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -615,8 +642,8 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-pr22-merge-20261012T1022Z",
-    "finishedAt": "2026-10-12T10:29:50.713Z",
-    "result": "PR22准确版本已合入，真实main CI成功；17/18组方案v2待批准"
+    "owner": "ono-root-ai-cards-20261012T1036Z",
+    "finishedAt": "2026-10-12T11:06:25.608Z",
+    "result": "17/18实现PR23 Windows408/408及实装32/32通过，真实6图原生内嵌并核验；等待最终合入收尾批准。14条旧分支已清理，2条独有退役分支待明确删除批准。"
   }
 }
