@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 6,
+  "revision": 7,
   "currentRun": {
     "owner": "ono-root-20261012T0933Z",
     "startedAt": "2026-10-12T09:33:43Z",
@@ -60,10 +60,12 @@
       "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
       "planVersion": "v1",
       "imageSha256": "24f5d3419bf12464b421380a7476fd11a6bcaf3133951e391f3a4bbc443a1d38",
-      "status": "prepared",
+      "status": "succeeded",
       "createdAt": "2026-10-12T09:38:58Z",
       "purpose": "公开展示本Issue的独立高保真方案；非产品实测截图",
-      "attempts": 0
+      "attempts": 1,
+      "assetUrl": "https://github.com/user-attachments/assets/5d1ae396-9b29-4ba4-a028-42401a9f79ce",
+      "updatedAt": "2026-10-12T09:40:12Z"
     },
     "issue18-plan-v1-image-upload": {
       "kind": "native-image-upload",
@@ -74,6 +76,16 @@
       "createdAt": "2026-10-12T09:38:58Z",
       "purpose": "公开展示本Issue的独立高保真方案；非产品实测截图",
       "attempts": 0
+    },
+    "simplify-workflow-pr-publish-v1": {
+      "kind": "create-draft-pr",
+      "status": "prepared",
+      "repository": "zhshenry/onosan_workbench",
+      "branch": "ono/simplify-dot-workflow",
+      "baseSha": "673febb3ba2e24d17772092bc7d8956642574bee",
+      "expectedTree": "4e39955f59d990ca2cd2dc66232448753df0d41b",
+      "scope": "用户批准的联合精简；25文件新增1修改18删除6；无产品功能改动；仅提交Draft PR不合并",
+      "createdAt": "2026-10-12T09:40:22Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
