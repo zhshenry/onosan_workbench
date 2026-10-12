@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 81,
+  "revision": 82,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -1368,6 +1368,20 @@
       "createdAt": "2026-10-12T16:38:06Z",
       "commentId": 6128492997,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128492997"
+    },
+    "issue36-usage-answer": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/36",
+      "body": "【OnO 自动化】#36｜“找素材”目前仍有实际功能\n\n它会从小红书创作者后台切到独立的素材浏览器，提供多标签浏览、平台快捷入口、采集链接/标题/整页截图、查看和备注已采集素材，以及让 AI 总结当前网页。\n\n因此它与“我的小红书”创作者后台不是同一个入口；当前不能判断为无用按钮。这里先说明现状，没有替你删除或调整界面。\n\n源码依据：[模式切换与功能入口](https://github.com/zhshenry/onosan_workbench/blob/6850a4fb7acc10ac1d04468297b70ebd63cfa0a0/src/views/MediaBrowserView.tsx#L35-L81)。这是代码用途核对，不代表本轮实测了外部网站采集成功。\n\n此说明无需批准；如果你的目标是精简入口，可回复：我想精简“找素材”入口。",
+      "createdAt": "2026-10-12T16:39:38.472Z"
+    },
+    "issue37-linking-answer": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/37",
+      "body": "【OnO 自动化】#37｜这里关联的是已发布的小红书作品\n\n我看了原图，红框在“图文发布 → 已发布作品”，与 AI 的关联事项不是一回事。当前需要手动操作：\n1. 先选中左侧对应的博客。\n2. 在输入框粘贴该博客对应的小红书笔记完整作品链接。\n3. 点“核对链接”。\n4. 核对后会出现“确认关联”，再点它完成保存。\n\n支持包含 /explore/作品ID 或 /discovery/item/作品ID 的完整作品直链；创作者后台首页和分享短链不支持。截图里输入框还是空的，因此仍显示“尚未关联”。仅登录小红书不会自动完成关联，目前也没有作品自动同步。\n\n成功后显示“用户手动确认”，表示你确认了这条对应关系，不代表工作台已经从小红书后台核验作品。这次只解释用法，没有修改关联或发布内容。\n\n源码依据：[核对和确认关联入口](https://github.com/zhshenry/onosan_workbench/blob/6850a4fb7acc10ac1d04468297b70ebd63cfa0a0/modules/copywriting/ui/PublishView.tsx#L247-L273)、[链接校验](https://github.com/zhshenry/onosan_workbench/blob/6850a4fb7acc10ac1d04468297b70ebd63cfa0a0/modules/copywriting/xhs-publish.ts#L3-L17)。\n\n如果按这四步仍不行，回复：核对链接后仍无法关联（附界面提示）。",
+      "createdAt": "2026-10-12T16:39:38.472Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
