@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 109,
+  "revision": 110,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -162,7 +162,7 @@
     },
     "24": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/24",
-      "stage": "ci-running",
+      "stage": "ci-fix",
       "type": [
         "ui",
         "interaction"
@@ -170,7 +170,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T16:48:00Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待Windows真实验收，修复授权内失败，取得实测图后在Issue请求准确版本合入",
+      "nextAction": "修复1024x680/125%下日程按钮被待办遮挡，保持断言并重新运行完整Windows",
       "groupId": "topbar-date-24",
       "groupIssueNumbers": [
         24
@@ -198,8 +198,18 @@
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/38",
       "headSha": "ef76cd47db128222f88f5d9f6201dd8325a62213",
       "ciRunId": 38280682735,
-      "ciConclusion": "in_progress",
-      "testedSha": "d78beaff8736c2424db046edbbda012383d647a0"
+      "ciConclusion": "failure",
+      "testedSha": "d78beaff8736c2424db046edbbda012383d647a0",
+      "lastCi": {
+        "runId": 38280682735,
+        "testedSha": "d78beaff8736c2424db046edbbda012383d647a0",
+        "unitTests": "424通过，0跳过",
+        "installed": "27通过/28尝试，后续未执行",
+        "failure": "mist1024x680 zoom1.25 .smore被todopill拦截",
+        "artifactId": 11761855596,
+        "artifactSha256": "c4b4190494830ec0d8ebc1a181ce74f0c4ef750d51a8b77d0c4608297583ee2c",
+        "expiresAt": "2026-10-15T16:59:46Z"
+      }
     },
     "25": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/25",
