@@ -1,7 +1,12 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 140,
-  "currentRun": null,
+  "revision": 141,
+  "currentRun": {
+    "owner": "ono-root-audit-20261012T2008Z",
+    "startedAt": "2026-10-12T20:08:15.202Z",
+    "currentDevelopmentGroup": null,
+    "task": "核对当前全部候选及在途单，未获新批准"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
