@@ -1,7 +1,12 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 146,
-  "currentRun": null,
+  "revision": 147,
+  "currentRun": {
+    "owner": "ono-root-audit-20261012T2248Z",
+    "startedAt": "2026-10-12T22:48:41.787Z",
+    "currentDevelopmentGroup": null,
+    "task": "全量队列与原始审批核对"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
