@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 131,
+  "revision": 132,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -264,7 +264,7 @@
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "stage": "ci-running",
+      "stage": "evidence-review",
       "type": [
         "ui",
         "interaction"
@@ -272,7 +272,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T16:48:00Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "核对修复版完整Windows安装、47项检查及实测图，通过后请求最终审批",
+      "nextAction": "实际图已逐张查看；上传原生附件并披露基线窄首页布局，最终批准前不合入",
       "groupId": "workbench-context-26",
       "groupIssueNumbers": [
         26
@@ -300,8 +300,8 @@
       "prNumber": 39,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/39",
       "implementationBaseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "ciRunId": 38286044872,
-      "ciConclusion": null,
+      "ciRunId": 38287586027,
+      "ciConclusion": "success",
       "lastCi": {
         "runId": 38286044872,
         "headSha": "c3c3911f31aa664a86d058ad7ad462c3b481ca32",
@@ -310,7 +310,8 @@
         "artifactId": 11764190735,
         "artifactSha256": "e70d939d470c656571aeb9754f0ddff37773a9c1b84127a6941d963ddd1d2a91",
         "expiresAt": "2026-10-15T17:48:36Z"
-      }
+      },
+      "testedSha": "08dd78f6645e86be3a6105452ef534ca82696f66"
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
@@ -1887,6 +1888,51 @@
       "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac",
       "treeSha": "98f655674aea95b982f89c5502969c3194e3f048",
       "verifiedAt": "2026-10-12T17:56:48.039Z"
+    },
+    "issue26-actual-context-picker-cool-1024x680.png": {
+      "kind": "upload-image",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
+      "sha256": "a2a20a26e128e96e45df1049d37a13a5fb51e40efd81786de5cbbea41fbc479d",
+      "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac",
+      "runId": 38287586027,
+      "createdAt": "2026-10-12T18:04:02.452Z"
+    },
+    "issue26-actual-context-picker-mist-1024x680.png": {
+      "kind": "upload-image",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
+      "sha256": "39ab82b2aab43e266d1ff6727d6fb9204496b5d1dfe9adc771a41877855d935f",
+      "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac",
+      "runId": 38287586027,
+      "createdAt": "2026-10-12T18:04:02.452Z"
+    },
+    "issue26-actual-context-picker-relaunched.png": {
+      "kind": "upload-image",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
+      "sha256": "ddf525f2aaf249e67453b68093794b4b02e91742ca1a1a1e5139466aa6a99ca4",
+      "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac",
+      "runId": 38287586027,
+      "createdAt": "2026-10-12T18:04:02.452Z"
+    },
+    "issue26-actual-context-picker-saved.png": {
+      "kind": "upload-image",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
+      "sha256": "131e3fefbc198a5fbf9c4004fa51fd752885e518f5e5b785476f44c8cb10347a",
+      "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac",
+      "runId": 38287586027,
+      "createdAt": "2026-10-12T18:04:02.452Z"
+    },
+    "issue26-actual-context-picker-warm-1024x680.png": {
+      "kind": "upload-image",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
+      "sha256": "9eed8e579f3232fb2316a4db8d6047bff1db818db98f45aa9acf1dea5e8e4fe0",
+      "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac",
+      "runId": 38287586027,
+      "createdAt": "2026-10-12T18:04:02.452Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
