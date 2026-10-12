@@ -1,7 +1,12 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 14,
-  "currentRun": null,
+  "revision": 15,
+  "currentRun": {
+    "owner": "ono-root-pr21-merge-20261012T0954Z",
+    "startedAt": "2026-10-12T09:54:26.281Z",
+    "target": "PR21",
+    "stage": "premerge"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -133,6 +138,14 @@
       "createdAt": "2026-10-12T09:48:48Z",
       "updatedAt": "2026-10-12T09:49:35Z",
       "runId": 38231597490
+    },
+    "pr21-merge-b426820": {
+      "kind": "merge-pr",
+      "target": "https://github.com/zhshenry/onosan_workbench/pull/21",
+      "expectedHeadSha": "b426820c2efe92b0b50c70fa90e0c726d064d9dd",
+      "status": "intent",
+      "approvalSource": "用户在当前对话明确批准准确版本",
+      "createdAt": "2026-10-12T09:54:26.281Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
