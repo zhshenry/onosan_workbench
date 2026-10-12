@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 49,
+  "revision": 50,
   "currentRun": {
     "owner": "ono-root-pr23-closeout-20261012T1238Z",
     "startedAt": "2026-10-12T12:38:17.202Z",
@@ -169,7 +169,8 @@
     6122190320,
     6122575647,
     6122991026,
-    6123000879
+    6123000879,
+    6124547994
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -727,10 +728,20 @@
     },
     "cards-closeout-comment17": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
       "body": "【OnO 自动化】#17 + #18｜PR #23 合入与收尾完成\n\n依据你的[准确版本合入收尾批准](https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6123701226)（2026-10-12 11:51:41 UTC），已合入 PR #23 的 bff0ff5f949c4870ae31817739a119f82dbd3f40。\n\n实际 main：41dccc749f8ddeb5ab6aab7eac41537a1406e2a9；tree b96ce54a308b7001067cf62e22d88b0f7f3abc57，与已验收版本一致。[合后 main 检查](https://github.com/zhshenry/onosan_workbench/actions/runs/38250363482)为 push / attempt 1，于2026-10-12 20:44:26（UTC+08）全部成功：\n- Windows 408/408，零失败、零跳过；actionlint、verify、真实 symlink/junction 安全反例通过。\n- NSIS 构建/实际安装、32/32 实装操作通过，包含两单 AI 卡专项、保存业务字段读回及真实退出重启。\n\n逐项收尾：\n- #17 可读的目标/中文字段/修改前后与四边一致细框已交付，已于20:46:00（UTC+08）关闭为 completed。\n- #18 原卡保留、卡内已应用/部分选择/失败回滚/防重复已交付，已于20:46:04（UTC+08）关闭为 completed。\n- 本组唯一实现 PR #23 已 merged；没有需要关闭的本组辅助 PR。未发版，当前实现分支保留。\n\n[六张真实截图及验收边界](https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6122991026)仍在上方原生内嵌，来源为 PR run38239284361，合后树一致；没有把这些图片改称 main 新截图。main 临时证据 artifact11747103945于2026-10-15 20:44:20（UTC+08）到期，未另行下载或备份。\n\n保留已说明的边界：新快照/逐项回执不跨进程持久化；旧卡重启只读且缺明细明确提示。真实外部 AI 服务质量、跨版本升级及 UAC/SmartScreen 未覆盖。\n\n无需再次批准；后续实测若发现问题，可在对应 Issue 反馈或重开，届时重新核对范围。",
-      "createdAt": "2026-10-12T12:46:34.006Z"
+      "createdAt": "2026-10-12T12:46:34.006Z",
+      "commentId": 6124547994,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6124547994",
+      "updatedAt": "2026-10-12T12:46:58.188Z"
+    },
+    "cards-closeout-comment18": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/18",
+      "body": "【OnO 自动化】#17 + #18｜已完成\n\n已按主 Issue 的准确版本合入收尾批准合入 PR #23；真实 main 41dccc749f8ddeb5ab6aab7eac41537a1406e2a9 的 Windows408/408与32/32实装、保存、重启检查全部通过，#18已关闭为 completed。\n\n完整结果、证据来源及边界见[主 Issue 收尾记录](https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6124547994)。未发版、未删除本实现分支。无需再次批准；有实测问题可在这里反馈或重开。",
+      "createdAt": "2026-10-12T12:46:58.188Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
