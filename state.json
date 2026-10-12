@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 5,
+  "revision": 6,
   "currentRun": {
     "owner": "ono-root-20261012T0933Z",
     "startedAt": "2026-10-12T09:33:43Z",
@@ -54,6 +54,26 @@
       "createdAt": "2026-10-12T09:25:46.625Z",
       "merged": false,
       "updatedAt": "2026-10-12T09:26:38.025Z"
+    },
+    "issue17-plan-v1-image-upload": {
+      "kind": "native-image-upload",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
+      "planVersion": "v1",
+      "imageSha256": "24f5d3419bf12464b421380a7476fd11a6bcaf3133951e391f3a4bbc443a1d38",
+      "status": "prepared",
+      "createdAt": "2026-10-12T09:38:58Z",
+      "purpose": "公开展示本Issue的独立高保真方案；非产品实测截图",
+      "attempts": 0
+    },
+    "issue18-plan-v1-image-upload": {
+      "kind": "native-image-upload",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/18",
+      "planVersion": "v1",
+      "imageSha256": "5e506a6437b9f1a61f964f61feda084f7c762418069cbee25e41d61d05fc5264",
+      "status": "prepared",
+      "createdAt": "2026-10-12T09:38:58Z",
+      "purpose": "公开展示本Issue的独立高保真方案；非产品实测截图",
+      "attempts": 0
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
