@@ -1,47 +1,69 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 19,
-  "currentRun": null,
+  "revision": 20,
+  "currentRun": {
+    "owner": "ono-root-group-v2-20261012T1007Z",
+    "startedAt": "2026-10-12T10:07:13.782Z",
+    "stage": "preparing-group-plan",
+    "targetIssues": [
+      17,
+      18
+    ]
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
-      "stage": "awaiting-plan-approval",
+      "stage": "revising-plan",
       "type": [
         "ui",
         "interaction"
       ],
-      "lastReadAt": "2026-10-12T09:34:34Z",
+      "lastReadAt": "2026-10-12T10:07:13.782Z",
       "baseSha": "673febb3ba2e24d17772092bc7d8956642574bee",
       "planVersion": "v1",
       "approval": null,
-      "nextAction": "核对用户对#17方案v1的原始评论，明确批准后进入待开发队列；不自动合入",
+      "nextAction": "根据四边一致细边框反馈生成组方案v2，发布两状态高保真后等待明确整组批准",
       "planCommentId": 6121701478,
       "imageUrl": "https://github.com/user-attachments/assets/5d1ae396-9b29-4ba4-a028-42401a9f79ce",
       "planDigest": "3b55314e92e9a345fb5a3bec479f615d8c3b312577d08e92e6c42a11bae768e8",
       "planPublishedAt": "2026-10-12T09:41:43Z",
       "imageDisplayVerifiedAt": "2026-10-12T09:42:32Z",
       "temporaryImageCleanedAt": "2026-10-12T09:44:21Z",
-      "lastNotifiedAt": "2026-10-12T09:44:21Z"
+      "lastNotifiedAt": "2026-10-12T09:44:21Z",
+      "groupId": "ai-suggestion-card-17-18",
+      "groupIssueNumbers": [
+        17,
+        18
+      ],
+      "primaryIssue": 17,
+      "feedbackCommentId": 6121844831
     },
     "18": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/18",
-      "stage": "awaiting-plan-approval",
+      "stage": "revising-plan",
       "type": [
         "ui",
         "interaction"
       ],
-      "lastReadAt": "2026-10-12T09:34:34Z",
+      "lastReadAt": "2026-10-12T10:07:13.782Z",
       "baseSha": "673febb3ba2e24d17772092bc7d8956642574bee",
       "planVersion": "v1",
       "approval": null,
-      "nextAction": "核对用户对#18方案v1的原始评论，明确批准后进入待开发队列；不自动合入",
+      "nextAction": "根据四边一致细边框反馈生成组方案v2，发布两状态高保真后等待明确整组批准",
       "planCommentId": 6121730958,
       "imageUrl": "https://github.com/user-attachments/assets/98e79b3c-310e-4f75-b33e-8997edc799fa",
       "planDigest": "758a41b2f32886226cdea4a3be18ee7c7dce74ea91c782bcb4ff522e67b213a2",
       "planPublishedAt": "2026-10-12T09:43:41Z",
       "imageDisplayVerifiedAt": "2026-10-12T09:44:12Z",
       "temporaryImageCleanedAt": "2026-10-12T09:44:21Z",
-      "lastNotifiedAt": "2026-10-12T09:44:21Z"
+      "lastNotifiedAt": "2026-10-12T09:44:21Z",
+      "groupId": "ai-suggestion-card-17-18",
+      "groupIssueNumbers": [
+        17,
+        18
+      ],
+      "primaryIssue": 17,
+      "feedbackCommentId": 6121855689
     }
   },
   "ownCommentIds": [
