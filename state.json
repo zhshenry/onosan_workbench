@@ -1,11 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 59,
-  "currentRun": {
-    "owner": "ono-root-pr27-closeout-20261012T1421Z",
-    "startedAt": "2026-10-12T14:21:56.220Z",
-    "task": "PR27准确版本合入、主干验证与规范分支清理"
-  },
+  "revision": 60,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -780,7 +776,7 @@
         "unitPassed": 408,
         "installedUiPassed": 32
       },
-      "nextAction": "待用户批准PR27准确head；未合入",
+      "nextAction": "已获批准合入；实际主干验收全过，规范分支清理完成",
       "verifiedAt": "2026-10-12T14:16:26.440Z"
     },
     "pr27-ready-77e12bc": {
@@ -811,14 +807,17 @@
     },
     "pr27-delete-merged-branch": {
       "kind": "delete-branch",
-      "status": "intent",
+      "status": "succeeded",
       "target": "refs/heads/ono/merged-branch-cleanup",
       "expectedHeadSha": "77e12bc7b5a47045072a9b264e97b0b52482842c",
       "prNumber": 27,
       "mainSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "mainCiRun": 38262423630,
       "createdAt": "2026-10-12T14:27:30.727Z",
-      "authorization": "已批准准确版本合入收尾及清理已合入需求分支"
+      "authorization": "已批准准确版本合入收尾及清理已合入需求分支",
+      "verifiedAbsentAt": "2026-10-12T14:28:47.900Z",
+      "recoveryPr": 27,
+      "recoveryCommitSha": "77e12bc7b5a47045072a9b264e97b0b52482842c"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -830,8 +829,8 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-branch-cleanup-20261012T1405Z",
-    "finishedAt": "2026-10-12T14:16:26.440Z",
-    "result": "PR23已合入需求分支删除已核验；PR27清理规范4文档CI通过，待准确版本合入批准；无在途写。"
+    "owner": "ono-root-pr27-closeout-20261012T1421Z",
+    "finishedAt": "2026-10-12T14:28:47.900Z",
+    "result": "PR27准确版本合入6850a4f；实际main408测试+32实装全过；规范分支已清理，剩main/state；无在途写。"
   }
 }
