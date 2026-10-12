@@ -1,7 +1,11 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 40,
-  "currentRun": null,
+  "revision": 41,
+  "currentRun": {
+    "owner": "ono-root-readcheck-20261012T1134Z",
+    "startedAt": "2026-10-12T11:35:04.782Z",
+    "stage": "recording-read-only-check"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
