@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 83,
+  "revision": 84,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -517,7 +517,7 @@
     },
     "37": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/37",
-      "stage": "analysis",
+      "stage": "answered-awaiting-feedback",
       "type": [
         "ui",
         "investigation"
@@ -525,7 +525,8 @@
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "lastReadAt": "2026-10-12T16:36:31.562Z",
-      "nextAction": "看原图和代码核对范围；问题先解释，不把问题当删除/实施批准"
+      "nextAction": "已解释实际用途，等待用户反馈；未改产品，不自动关单",
+      "lastCommentId": 6128522870
     }
   },
   "ownCommentIds": [
@@ -551,7 +552,8 @@
     6128488842,
     6128490909,
     6128492997,
-    6128520395
+    6128520395,
+    6128522870
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -1382,10 +1384,12 @@
     },
     "issue37-linking-answer": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/37",
       "body": "【OnO 自动化】#37｜这里关联的是已发布的小红书作品\n\n我看了原图，红框在“图文发布 → 已发布作品”，与 AI 的关联事项不是一回事。当前需要手动操作：\n1. 先选中左侧对应的博客。\n2. 在输入框粘贴该博客对应的小红书笔记完整作品链接。\n3. 点“核对链接”。\n4. 核对后会出现“确认关联”，再点它完成保存。\n\n支持包含 /explore/作品ID 或 /discovery/item/作品ID 的完整作品直链；创作者后台首页和分享短链不支持。截图里输入框还是空的，因此仍显示“尚未关联”。仅登录小红书不会自动完成关联，目前也没有作品自动同步。\n\n成功后显示“用户手动确认”，表示你确认了这条对应关系，不代表工作台已经从小红书后台核验作品。这次只解释用法，没有修改关联或发布内容。\n\n源码依据：[核对和确认关联入口](https://github.com/zhshenry/onosan_workbench/blob/6850a4fb7acc10ac1d04468297b70ebd63cfa0a0/modules/copywriting/ui/PublishView.tsx#L247-L273)、[链接校验](https://github.com/zhshenry/onosan_workbench/blob/6850a4fb7acc10ac1d04468297b70ebd63cfa0a0/modules/copywriting/xhs-publish.ts#L3-L17)。\n\n如果按这四步仍不行，回复：核对链接后仍无法关联（附界面提示）。",
-      "createdAt": "2026-10-12T16:39:38.472Z"
+      "createdAt": "2026-10-12T16:40:04Z",
+      "commentId": 6128522870,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6128522870"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
