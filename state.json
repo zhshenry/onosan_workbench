@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 8,
+  "revision": 9,
   "currentRun": {
     "owner": "ono-root-20261012T0933Z",
     "startedAt": "2026-10-12T09:33:43Z",
@@ -10,7 +10,7 @@
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
-      "stage": "design-in-progress",
+      "stage": "awaiting-plan-approval",
       "type": [
         "ui",
         "interaction"
@@ -19,7 +19,9 @@
       "baseSha": "673febb3ba2e24d17772092bc7d8956642574bee",
       "planVersion": "v1",
       "approval": null,
-      "nextAction": "准备并核验独立高保真，在对应Issue发布方案后等待批准；不开始产品实现"
+      "nextAction": "核对用户对#17方案v1的原始评论，明确批准后进入待开发队列；不自动合入",
+      "planCommentId": 6121701478,
+      "imageUrl": "https://github.com/user-attachments/assets/5d1ae396-9b29-4ba4-a028-42401a9f79ce"
     },
     "18": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/18",
@@ -36,7 +38,8 @@
     }
   },
   "ownCommentIds": [
-    6121458425
+    6121458425,
+    6121701478
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -89,10 +92,13 @@
     },
     "issue17-plan-v1-comment": {
       "kind": "comment",
-      "status": "prepared",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
       "body": "【OnO 自动化】#17｜方案 v1｜待方案批准\n\n![#17 方案 v1：AI 修改建议待确认高保真](https://github.com/user-attachments/assets/5d1ae396-9b29-4ba4-a028-42401a9f79ce)\n\n上图是独立高保真设计稿，不是已实现截图。示例沿用你提供的事项，展示待确认状态；本单尚未修改产品功能。\n\n方案\n- 将 AI 修改建议呈现为独立卡片，使用浅蓝背景和侧边强调，与普通聊天区分。\n- 卡片自己显示事项名称、中文字段名和真实“修改前 → 修改后”，不用依赖上方聊天，也不裸露 dueAt 等内部字段。\n- 保留现有逐项选择与确认后才写入；按钮为“保留原内容”“应用所选”，未选择任何项时不能应用。\n- 示例仅修改截止时间，其余字段保持不变。旧值来自提案生成时的真实数据快照，不能从 AI 回复文字猜测。\n\n验收\n1. 单看卡片即可识别目标和改动；清空值显示“未设置”，日期可读。\n2. 现有新增、删除、标签操作使用一致的可读摘要，危险操作有明确文字提示。\n3. 长标题、长备注、窄面板、多项选择及取消均可操作，不截断关键内容。\n4. 测试与最终实际截图另行提供；此阶段是设计确认。\n\n边界\n本单批准的是修改前的可读性和确认卡样式；#18 的应用后卡片保留单独审阅。不新增撤销或历史记录产品能力。\n设计来源：基于你的问题截图和 main 673febb3 的实际交互，用独立绘图生成；无需先合入辅助 PR。\n图 SHA256：24f5d3419bf12464b421380a7476fd11a6bcaf3133951e391f3a4bbc443a1d38。\n\n有意见直接在本 Issue 回复；同意这版方案并进入实现，请回复：同意 #17 方案 v1\n（这不包含最终 PR 合入；实现和测试完成后再请你验收。）",
-      "createdAt": "2026-10-12T09:41:10Z"
+      "createdAt": "2026-10-12T09:41:10Z",
+      "commentId": 6121701478,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6121701478",
+      "updatedAt": "2026-10-12T09:41:44Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
