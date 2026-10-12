@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 134,
+  "revision": 135,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -320,7 +320,8 @@
         "context-picker-relaunched.png": "https://github.com/user-attachments/assets/1555cc46-3466-4de2-b313-279cd2ce449b",
         "context-picker-saved.png": "https://github.com/user-attachments/assets/9fe9bc8f-3c49-46d9-b177-8bac0d985423",
         "context-picker-warm-1024x680.png": "https://github.com/user-attachments/assets/a7f7f146-1006-482d-9a98-71a57871d971"
-      }
+      },
+      "imagesVerifiedAt": "2026-10-12T18:07:33.897Z"
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
@@ -1909,7 +1910,8 @@
       "createdAt": "2026-10-12T18:04:02.452Z",
       "url": "https://github.com/user-attachments/assets/545a86de-eb72-4932-8451-c6e0f20643c6",
       "uploadedAt": "2026-10-12T18:06:03.459Z",
-      "commentId": 6129851935
+      "commentId": 6129851935,
+      "displayVerifiedAt": "2026-10-12T18:07:33.897Z"
     },
     "issue26-actual-context-picker-mist-1024x680.png": {
       "kind": "upload-image",
@@ -1921,7 +1923,8 @@
       "createdAt": "2026-10-12T18:04:02.452Z",
       "url": "https://github.com/user-attachments/assets/28873631-12c2-4722-aa70-d504d81219ed",
       "uploadedAt": "2026-10-12T18:06:03.459Z",
-      "commentId": 6129851935
+      "commentId": 6129851935,
+      "displayVerifiedAt": "2026-10-12T18:07:33.897Z"
     },
     "issue26-actual-context-picker-relaunched.png": {
       "kind": "upload-image",
@@ -1933,7 +1936,8 @@
       "createdAt": "2026-10-12T18:04:02.452Z",
       "url": "https://github.com/user-attachments/assets/1555cc46-3466-4de2-b313-279cd2ce449b",
       "uploadedAt": "2026-10-12T18:06:03.459Z",
-      "commentId": 6129851935
+      "commentId": 6129851935,
+      "displayVerifiedAt": "2026-10-12T18:07:33.897Z"
     },
     "issue26-actual-context-picker-saved.png": {
       "kind": "upload-image",
@@ -1945,7 +1949,8 @@
       "createdAt": "2026-10-12T18:04:02.452Z",
       "url": "https://github.com/user-attachments/assets/9fe9bc8f-3c49-46d9-b177-8bac0d985423",
       "uploadedAt": "2026-10-12T18:06:03.459Z",
-      "commentId": 6129851935
+      "commentId": 6129851935,
+      "displayVerifiedAt": "2026-10-12T18:07:33.897Z"
     },
     "issue26-actual-context-picker-warm-1024x680.png": {
       "kind": "upload-image",
@@ -1957,7 +1962,8 @@
       "createdAt": "2026-10-12T18:04:02.452Z",
       "url": "https://github.com/user-attachments/assets/a7f7f146-1006-482d-9a98-71a57871d971",
       "uploadedAt": "2026-10-12T18:06:03.459Z",
-      "commentId": 6129851935
+      "commentId": 6129851935,
+      "displayVerifiedAt": "2026-10-12T18:07:33.897Z"
     },
     "issue26-final-acceptance": {
       "kind": "comment",
@@ -1968,6 +1974,13 @@
       "createdAt": "2026-10-12T18:06:31Z",
       "commentId": 6129851935,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6129851935"
+    },
+    "issue26-pr39-final-metadata": {
+      "kind": "edit-pr-body",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/pull/39",
+      "body": "【OnO 自动化】#26 主工作台添加上下文｜实现和Windows验收完成，等待Issue最终审批\n\n完整实测图、准确版本、已知边界及合入收尾请求：https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6129851935\n\nhead 2f24f9577c4adb770146fde38c91c3cb2bbc6dac；base 6850a4fb7acc10ac1d04468297b70ebd63cfa0a0。\nWindows run38287586027成功：431/431单测、0跳过，47/47实装检查，NSIS安装、真实保存/重启、路径安全反例和证据守卫通过。实际tested merge08dd78f6645e86be3a6105452ef534ca82696f66，父提交base/head，tree98f655674aea95b982f89c5502969c3194e3f048一致。\n\n实现左下+、工作台对应只读引用、后端ID校验与冻结快照、会话/页面隔离，保留主写入对象和确认机制。重启测试定位歧义已修复并补回归。\n\n边界：既有latest120待办基础上下文仍保留；截图左侧1024首页旧网格挤压未修复，已明确请用户接受限本单范围边界；外部模型用loopback合成响应，不代表真实模型质量。#24未搭载，main变化必须重验集成。\n\n保持Draft；请在Issue审阅，未批准前不合入、不关单、不发版。",
+      "createdAt": "2026-10-12T18:07:33.897Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
