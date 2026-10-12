@@ -183,3 +183,16 @@ test('年份列表打开时底层日期悬停不抢焦点、不阻断年份键�
   assert.equal(f.doc.getElementById(activeId)?.textContent, '2001年');
   assert.deepEqual(f.changes, []);
 });
+
+test('收起年份列表时底层日期被动mouseenter不改变闰日校正后的键盘焦点', async t => {
+  const f = await fixture(t, '2000-02-29');
+  await f.click('.date-picker > button');
+  await f.pickYear(2001);
+  await act(async () => { f.get('[aria-label="2001-02-21"]').dispatchEvent(new f.dom.window.MouseEvent('mouseover', { bubbles: true })); });
+  assert.equal(f.doc.activeElement?.getAttribute('aria-label'), '2001-02-28');
+  assert.deepEqual(f.changes, []);
+  // Real pointer movement still lets the user move the date cursor deliberately.
+  await act(async () => { f.get('[aria-label="2001-02-21"]').dispatchEvent(new f.dom.window.MouseEvent('mousemove', { bubbles: true })); });
+  assert.equal(f.doc.activeElement?.getAttribute('aria-label'), '2001-02-21');
+  assert.deepEqual(f.changes, []);
+});

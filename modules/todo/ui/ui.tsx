@@ -322,7 +322,7 @@ export function DatePicker({ id, value, onChange, yearRange, 'aria-invalid': inv
       </div>
       <div className="date-weekdays">{WEEKDAYS.map(day => <span key={day}>{day}</span>)}</div>
       <div id={gridId} className="date-grid" role="grid">
-        {monthCells(view.y, view.m).map(cell => <button key={cell.iso} type="button" id={`${gridId}-${cell.iso}`} role="gridcell" aria-label={cell.iso} aria-selected={cell.iso === value} className={[cell.outside && 'is-outside', cell.iso === today && 'is-today', cell.iso === value && 'is-selected', cell.iso === cursor && 'is-active'].filter(Boolean).join(' ')} onMouseEnter={() => { if (!yearMenuIsOpen()) setCursor(cell.iso); }} onClick={() => pick(cell.iso)}>{cell.day}</button>)}
+        {monthCells(view.y, view.m).map(cell => <button key={cell.iso} type="button" id={`${gridId}-${cell.iso}`} role="gridcell" aria-label={cell.iso} aria-selected={cell.iso === value} className={[cell.outside && 'is-outside', cell.iso === today && 'is-today', cell.iso === value && 'is-selected', cell.iso === cursor && 'is-active'].filter(Boolean).join(' ')} onMouseEnter={() => { if (!yearRange) setCursor(cell.iso); }} onMouseMove={() => { if (yearRange && !yearMenuIsOpen()) setCursor(cell.iso); }} onClick={() => pick(cell.iso)}>{cell.day}</button>)}
       </div>
       <div className="date-menu-actions">
         <button type="button" onClick={() => pick('')}>清除</button>
