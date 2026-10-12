@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 135,
-  "currentRun": {
-    "owner": "ono-root-ui-execution-20261012T1636Z",
-    "startedAt": "2026-10-12T16:36:31.561Z",
-    "currentDevelopmentGroup": "workbench-context-26",
-    "task": "26已批方案实施；24等准确head最终审批；其他组待方案或附件阻碍"
-  },
+  "revision": 136,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -168,7 +163,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T16:48:00Z",
+      "lastReadAt": "2026-10-12T18:08:08.140Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "核对当前准确head、最终包和明确畸形旧日程验收边界批准后才合入；未获批准不关单",
       "groupId": "topbar-date-24",
@@ -235,7 +230,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T16:48:00Z",
+      "lastReadAt": "2026-10-12T18:08:08.140Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -270,7 +265,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T16:48:00Z",
+      "lastReadAt": "2026-10-12T18:08:08.140Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "核对准确head及所列窄屏首页/基础上下文边界批准；未获批准不合入关单",
       "groupId": "workbench-context-26",
@@ -321,7 +316,9 @@
         "context-picker-saved.png": "https://github.com/user-attachments/assets/9fe9bc8f-3c49-46d9-b177-8bac0d985423",
         "context-picker-warm-1024x680.png": "https://github.com/user-attachments/assets/a7f7f146-1006-482d-9a98-71a57871d971"
       },
-      "imagesVerifiedAt": "2026-10-12T18:07:33.897Z"
+      "imagesVerifiedAt": "2026-10-12T18:07:33.897Z",
+      "temporaryEvidenceCleanedAt": "2026-10-12T18:08:33.944Z",
+      "lastNotifiedAt": "2026-10-12T18:08:17Z"
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
@@ -331,7 +328,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T16:48:00Z",
+      "lastReadAt": "2026-10-12T18:08:08.140Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -369,7 +366,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T16:48:00Z",
+      "lastReadAt": "2026-10-12T18:08:08.140Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -404,7 +401,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T16:48:00Z",
+      "lastReadAt": "2026-10-12T18:08:08.140Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -439,7 +436,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T16:48:00Z",
+      "lastReadAt": "2026-10-12T18:08:08.140Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -474,7 +471,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T16:48:00Z",
+      "lastReadAt": "2026-10-12T18:08:08.140Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -509,7 +506,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T16:48:00Z",
+      "lastReadAt": "2026-10-12T18:08:08.140Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -545,7 +542,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "lastReadAt": "2026-10-12T16:48:00Z",
+      "lastReadAt": "2026-10-12T18:08:08.140Z",
       "nextAction": "等待当前带图v1方案批准，尚未产品实现",
       "groupId": "settings-update-34",
       "groupIssueNumbers": [
@@ -567,7 +564,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "lastReadAt": "2026-10-12T16:48:00Z",
+      "lastReadAt": "2026-10-12T18:08:08.140Z",
       "nextAction": "附件两次明确失败，停止盲重试；完整带图方案尚未发布，无方案批准，不实施",
       "lastCommentId": 6128766093
     },
@@ -580,7 +577,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "lastReadAt": "2026-10-12T16:48:00Z",
+      "lastReadAt": "2026-10-12T18:08:08.140Z",
       "nextAction": "已解释实际用途，等待用户反馈；未改产品，不自动关单",
       "lastCommentId": 6128520395
     },
@@ -593,7 +590,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "lastReadAt": "2026-10-12T16:48:00Z",
+      "lastReadAt": "2026-10-12T18:08:08.140Z",
       "nextAction": "已解释实际用途，等待用户反馈；未改产品，不自动关单",
       "lastCommentId": 6128522870
     }
@@ -1477,33 +1474,39 @@
     },
     "float-v2-image-dual": {
       "kind": "upload-image",
-      "status": "uploaded",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
       "sha256": "97ee892e637f6b30cfaf546ab06af17f86270ed5859aac2eff4e30f333f1d5e0",
       "createdAt": "2026-10-12T16:41:25.862Z",
       "url": "https://github.com/user-attachments/assets/efcadc8c-6cfc-4314-adad-d12431670b73",
       "uploadedAt": "2026-10-12T16:45:44.588Z",
-      "temporaryImageCleanedAt": "2026-10-12T16:58:07.620Z"
+      "temporaryImageCleanedAt": "2026-10-12T16:58:07.620Z",
+      "commentId": 6128626525,
+      "receiptReconciledAt": "2026-10-12T18:08:51.298Z"
     },
     "float-v2-image-detail": {
       "kind": "upload-image",
-      "status": "uploaded",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
       "sha256": "c6903083f1ae5813a6c13758b35f9110142de943708eda7ade52b0601d036d05",
       "createdAt": "2026-10-12T16:41:25.862Z",
       "url": "https://github.com/user-attachments/assets/630377fc-2885-4649-bb69-dd15f2557efa",
       "uploadedAt": "2026-10-12T16:45:44.588Z",
-      "temporaryImageCleanedAt": "2026-10-12T16:58:07.620Z"
+      "temporaryImageCleanedAt": "2026-10-12T16:58:07.620Z",
+      "commentId": 6128626525,
+      "receiptReconciledAt": "2026-10-12T18:08:51.820Z"
     },
     "issue34-v1-image": {
       "kind": "upload-image",
-      "status": "uploaded",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/34",
       "sha256": "a0b7a9c77dd0d8cebc52387d0e77f14214cd15a4471a77cf6e83495dfba9637c",
       "createdAt": "2026-10-12T16:41:25.862Z",
       "url": "https://github.com/user-attachments/assets/41e9e253-8a6c-4129-ab78-aab06849ae9e",
       "uploadedAt": "2026-10-12T16:52:20.373Z",
-      "temporaryImageCleanedAt": "2026-10-12T16:58:07.620Z"
+      "temporaryImageCleanedAt": "2026-10-12T16:58:07.620Z",
+      "commentId": 6128752017,
+      "receiptReconciledAt": "2026-10-12T18:08:52.354Z"
     },
     "float-v2-primary-comment": {
       "kind": "comment",
@@ -1911,7 +1914,8 @@
       "url": "https://github.com/user-attachments/assets/545a86de-eb72-4932-8451-c6e0f20643c6",
       "uploadedAt": "2026-10-12T18:06:03.459Z",
       "commentId": 6129851935,
-      "displayVerifiedAt": "2026-10-12T18:07:33.897Z"
+      "displayVerifiedAt": "2026-10-12T18:07:33.897Z",
+      "temporaryImageCleanedAt": "2026-10-12T18:08:33.944Z"
     },
     "issue26-actual-context-picker-mist-1024x680.png": {
       "kind": "upload-image",
@@ -1924,7 +1928,8 @@
       "url": "https://github.com/user-attachments/assets/28873631-12c2-4722-aa70-d504d81219ed",
       "uploadedAt": "2026-10-12T18:06:03.459Z",
       "commentId": 6129851935,
-      "displayVerifiedAt": "2026-10-12T18:07:33.897Z"
+      "displayVerifiedAt": "2026-10-12T18:07:33.897Z",
+      "temporaryImageCleanedAt": "2026-10-12T18:08:33.944Z"
     },
     "issue26-actual-context-picker-relaunched.png": {
       "kind": "upload-image",
@@ -1937,7 +1942,8 @@
       "url": "https://github.com/user-attachments/assets/1555cc46-3466-4de2-b313-279cd2ce449b",
       "uploadedAt": "2026-10-12T18:06:03.459Z",
       "commentId": 6129851935,
-      "displayVerifiedAt": "2026-10-12T18:07:33.897Z"
+      "displayVerifiedAt": "2026-10-12T18:07:33.897Z",
+      "temporaryImageCleanedAt": "2026-10-12T18:08:33.944Z"
     },
     "issue26-actual-context-picker-saved.png": {
       "kind": "upload-image",
@@ -1950,7 +1956,8 @@
       "url": "https://github.com/user-attachments/assets/9fe9bc8f-3c49-46d9-b177-8bac0d985423",
       "uploadedAt": "2026-10-12T18:06:03.459Z",
       "commentId": 6129851935,
-      "displayVerifiedAt": "2026-10-12T18:07:33.897Z"
+      "displayVerifiedAt": "2026-10-12T18:07:33.897Z",
+      "temporaryImageCleanedAt": "2026-10-12T18:08:33.944Z"
     },
     "issue26-actual-context-picker-warm-1024x680.png": {
       "kind": "upload-image",
@@ -1963,7 +1970,8 @@
       "url": "https://github.com/user-attachments/assets/a7f7f146-1006-482d-9a98-71a57871d971",
       "uploadedAt": "2026-10-12T18:06:03.459Z",
       "commentId": 6129851935,
-      "displayVerifiedAt": "2026-10-12T18:07:33.897Z"
+      "displayVerifiedAt": "2026-10-12T18:07:33.897Z",
+      "temporaryImageCleanedAt": "2026-10-12T18:08:33.944Z"
     },
     "issue26-final-acceptance": {
       "kind": "comment",
@@ -1977,10 +1985,12 @@
     },
     "issue26-pr39-final-metadata": {
       "kind": "edit-pr-body",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/pull/39",
       "body": "【OnO 自动化】#26 主工作台添加上下文｜实现和Windows验收完成，等待Issue最终审批\n\n完整实测图、准确版本、已知边界及合入收尾请求：https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6129851935\n\nhead 2f24f9577c4adb770146fde38c91c3cb2bbc6dac；base 6850a4fb7acc10ac1d04468297b70ebd63cfa0a0。\nWindows run38287586027成功：431/431单测、0跳过，47/47实装检查，NSIS安装、真实保存/重启、路径安全反例和证据守卫通过。实际tested merge08dd78f6645e86be3a6105452ef534ca82696f66，父提交base/head，tree98f655674aea95b982f89c5502969c3194e3f048一致。\n\n实现左下+、工作台对应只读引用、后端ID校验与冻结快照、会话/页面隔离，保留主写入对象和确认机制。重启测试定位歧义已修复并补回归。\n\n边界：既有latest120待办基础上下文仍保留；截图左侧1024首页旧网格挤压未修复，已明确请用户接受限本单范围边界；外部模型用loopback合成响应，不代表真实模型质量。#24未搭载，main变化必须重验集成。\n\n保持Draft；请在Issue审阅，未批准前不合入、不关单、不发版。",
-      "createdAt": "2026-10-12T18:07:33.897Z"
+      "createdAt": "2026-10-12T18:07:33.897Z",
+      "updatedAt": "2026-10-12T18:07:52Z",
+      "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -1992,8 +2002,8 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-ui-plans-20261012T1438Z",
-    "finishedAt": "2026-10-12T14:59:40.750Z",
-    "result": "九项新需求分为24、26、悬浮窗25/28–33三组；全部中文带图方案已发布原Issue，原生图片回读实看，临时PNG清除，无产品改动；待方案批准，无在途写。"
+    "owner": "ono-root-ui-execution-20261012T1636Z",
+    "finishedAt": "2026-10-12T18:08:52.354Z",
+    "result": "26修复测试定位后准确head Windows431/431、47/47通过；五张原生实测图和边界已交付，等待最终批准。24待最终批准；悬浮组v2及34待方案批准；35原生上传受阻不重试；36/37待反馈。全量13单无新用户评论；无在途写，释放占用。"
   }
 }
