@@ -1240,13 +1240,21 @@ kbd {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
-/* Reserve the compact track for the item date; the existing narrow layout still collapses the track. */
+/* Allocate the actual right-control width instead of guessing a centered
+   reserve. Keep the compact track for the item date. */
+@media (max-width: 1440px) {
+  .topbar { gap: 8px; }
+  .tb-middle { position: static; transform: none; flex: 0 1 auto; max-width: none; }
+}
 @media (min-width: 1181px) and (max-width: 1440px) {
-  .tb-middle { max-width: calc(100% - 520px); }
   .sched-track > .date, .sched-track > .date + .sdiv { display: none; }
 }
 @media (max-width: 1180px) {
-  .tb-middle { gap: 8px; }
+  /* The collapsed pair must keep its intrinsic width. Absolute centering with
+     the wide-screen reserve can shrink the schedule under the todo trigger. */
+  .tb-middle { position: static; transform: none; flex: none; max-width: none; gap: 8px; }
+  .tb-left { flex: none; }
+  .ipop-sched { left: 0; margin-left: 0; }
   .tb-right { gap: 5px; margin-left: auto; }
   .sched-track, .sdiv, .tprog { display: none; }
   .todopill { gap: 6px; padding: 0 10px; }

@@ -51,7 +51,22 @@ async function check(name, action) {
   }
 }
 async function screenshot(name) {
-  await page.screenshot({ path: path.join(reportDirectory, name), animations: 'disabled' });
+  if (name.startsWith('topbar-dates-') && name.endsWith('-zoom125.png')) {
+    // Playwright's Electron viewport screenshot can crop a zoomed window to its
+    // CSS viewport size. Capture the complete native surface without resampling.
+    const window = await application.browserWindow(page);
+    const frame = await window.evaluate(async win => {
+      const image = await win.webContents.capturePage();
+      return { png: image.toPNG().toString('base64'), imageSize: image.getSize(), contentSize: win.getContentSize(), zoom: win.webContents.getZoomFactor() };
+    });
+    assert.deepEqual([frame.imageSize.width, frame.imageSize.height], frame.contentSize, 'Native screenshot must cover the complete content surface');
+    const png = Buffer.from(frame.png, 'base64');
+    await writeFile(path.join(reportDirectory, name), png);
+    (report.screenshotCapture ??= []).push({ name, method: 'Electron webContents.capturePage (unmodified PNG)', imageSize: frame.imageSize,
+      contentSize: frame.contentSize, zoom: frame.zoom, pngPixels: { width: png.readUInt32BE(16), height: png.readUInt32BE(20) } });
+  } else {
+    await page.screenshot({ path: path.join(reportDirectory, name), animations: 'disabled' });
+  }
   report.screenshots.push(name);
 }
 async function state() { return page.evaluate(() => window.workbench.todo.state()); }

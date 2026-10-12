@@ -58,3 +58,20 @@ test('UTC instants remain valid even when their source day was skipped locally',
   const pad = (n: number) => String(n).padStart(2, '0');
   assert.equal(topbarTodoDate({ dueAt: input }, now), `${local.getFullYear()}-${pad(local.getMonth() + 1)}-${pad(local.getDate())} ${pad(local.getHours())}:${pad(local.getMinutes())}`);
 });
+
+test('compact topbar reserves intrinsic trigger widths instead of shrinking schedule beneath todo', () => {
+  const css = readFileSync(new URL('../src/shell.css', import.meta.url), 'utf8');
+  const compact = css.slice(css.indexOf('@media (max-width: 1180px) {'));
+  assert.match(compact, /\.tb-middle \{[^}]*position: static;[^}]*transform: none;[^}]*flex: none;[^}]*max-width: none;/);
+  assert.match(compact, /\.tb-left \{ flex: none; \}/);
+  assert.match(compact, /\.ipop-sched \{ left: 0; margin-left: 0; \}/);
+  assert.match(compact, /\.sched-track, \.sdiv, \.tprog \{ display: none; \}/);
+});
+
+test('mid-width topbar allocates real right-control space instead of a guessed center reserve', () => {
+  const css = readFileSync(new URL('../src/shell.css', import.meta.url), 'utf8');
+  const adaptive = css.slice(css.indexOf('@media (max-width: 1440px) {'));
+  assert.match(adaptive, /\.topbar \{ gap: 8px; \}/);
+  assert.match(adaptive, /\.tb-middle \{[^}]*position: static;[^}]*flex: 0 1 auto;[^}]*max-width: none;/);
+  assert.doesNotMatch(adaptive, /calc\(100% - 520px\)/);
+});

@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { TOPBAR_DATES_MATRIX, TOPBAR_DATES_SCREENSHOTS, assertTopbarDatesGeometry, topbarReadFixtures, injectTopbarReadState, restoreTopbarReadState, topbarCalendarMonthStep } from '../tooling/topbar-dates-pilot.mjs';
+import { TOPBAR_DATES_MATRIX, TOPBAR_DATES_SCREENSHOTS, TOPBAR_AI_JOB_ID, topbarAiJobEvents, assertTopbarDatesGeometry, assertTopbarControlGeometry, topbarReadFixtures, injectTopbarReadState, restoreTopbarReadState, topbarCalendarMonthStep } from '../tooling/topbar-dates-pilot.mjs';
 import { inspectPilotArtifacts, MAX_ARTIFACT_BYTES } from '../tooling/pilot-artifacts.mjs';
 import { topbarScheduleDate, topbarTodoDate } from '../src/topbar-dates';
 import { taskInputSchema, activeToday } from '../shared/todo-contracts';
@@ -185,4 +185,90 @@ test('Normal UI date selection navigates month and year boundaries before locati
   assert.throws(() => topbarCalendarMonthStep('2026年6月', '2025-12-31'), /within one calendar month/);
   assert.throws(() => topbarCalendarMonthStep('June 2026', '2026-05-31'), /recognizable/);
   assert.throws(() => topbarCalendarMonthStep('2026年13月', '2026-12-31'), /Invalid calendar month/);
+});
+
+
+const controlGeometry = () => ({
+  viewport: { x: 0, y: 0, width: 819, height: 544 },
+  topbar: { x: 80, y: 10, width: 700, height: 54 },
+  schedule: { x: 100, y: 18, width: 100, height: 38 },
+  scheduleTrigger: { x: 174, y: 24, width: 20, height: 26 },
+  todoTrigger: { x: 210, y: 18, width: 170, height: 38 },
+  right: { x: 500, y: 18, width: 200, height: 38 },
+  hitSchedule: true, hitTodo: true,
+  labels: {
+    schedule: { text: '日程', bounds: { x: 112, y: 28, width: 30, height: 18 }, complete: true },
+    todo: { text: '待办', bounds: { x: 230, y: 28, width: 30, height: 18 }, complete: true },
+    count: { text: '0/4', bounds: { x: 275, y: 28, width: 30, height: 18 }, complete: true },
+  },
+});
+
+test('Topbar controls remain disjoint, readable and hittable at the 1024/125% CSS viewport', () => {
+  assert.doesNotThrow(() => assertTopbarControlGeometry(controlGeometry()));
+  const samples: Array<[string, (value: ReturnType<typeof controlGeometry>) => void, RegExp]> = [
+    ['schedule overlaps todo', value => { value.schedule.width = 130; }, /overlapping controls/],
+    ['right toolbar overlaps todo', value => { value.right.x = 370; }, /overlapping controls/],
+    ['right toolbar overlaps schedule', value => { value.right.x = 190; }, /overlapping controls/],
+    ['schedule trigger escaped capsule', value => { value.scheduleTrigger.x = 220; }, /clipped|outside/],
+    ['todo outside topbar', value => { value.todoTrigger.y = 60; }, /clipped|outside/],
+    ['right toolbar outside topbar', value => { value.right.x = 650; }, /clipped|outside/],
+    ['topbar outside viewport', value => { value.topbar.x = 200; }, /clipped|outside/],
+    ['zero trigger width', value => { value.scheduleTrigger.width = 0; }, /empty/],
+    ['invalid trigger bounds', value => { value.todoTrigger.x = Number.NaN; }, /invalid/],
+    ['intercepted schedule click', value => { value.hitSchedule = false; }, /Schedule trigger must receive pointer hits/],
+    ['intercepted todo click', value => { value.hitTodo = false; }, /Todo trigger must receive pointer hits/],
+    ['hidden schedule title', value => { value.labels.schedule.complete = false; }, /complete readable/],
+    ['hidden todo title', value => { value.labels.todo.complete = false; }, /complete readable/],
+    ['hidden todo count', value => { value.labels.count.complete = false; }, /complete readable/],
+    ['missing schedule title', value => { value.labels.schedule.text = ''; }, /retain its title/],
+    ['missing todo title', value => { value.labels.todo.text = ''; }, /retain its title/],
+    ['missing todo count', value => { value.labels.count.text = ''; }, /remain readable/],
+    ['label escapes trigger', value => { value.labels.todo.bounds.x = 195; }, /clipped|outside/],
+  ];
+  for (const [name, modify, expected] of samples) { const value = controlGeometry(); modify(value); assert.throws(() => assertTopbarControlGeometry(value), expected, name); }
+});
+
+test('Installed pilot checks controls before real menu clicks and after every rendered synthetic state', async () => {
+  const source = await readFile(new URL('../tooling/topbar-dates-pilot.mjs', import.meta.url), 'utf8');
+  const open = source.slice(source.indexOf('async function openMenu('), source.indexOf('async function assertLabels('));
+  assert.ok(open.indexOf('await inspectTopbarControls(page, requireAiJob)') < open.indexOf("await page.locator(kind === 'todo' ? '.todopill' : '.smore').click()"));
+  const synthetic = source.slice(source.indexOf('async function syntheticRows('), source.indexOf('export async function runTopbarDatesPilot('));
+  assert.ok(synthetic.indexOf('await assertLabels(page, kind, entries, requireAiJob)') < synthetic.indexOf('return inspectTopbarControls(page, requireAiJob)'));
+  assert.match(source, /geometries\[kind\] = \{ \.\.\.await inspectGeometry\(page, kind\), controls \}/);
+  assert.doesNotMatch(source, /force:\s*true/);
+});
+
+
+test('Crowded toolbar requires the complete visible AI failure button without losing other controls', () => {
+  const crowded = () => ({ ...controlGeometry(), aiJob: {
+    text: '助手请求失败', bounds: { x: 510, y: 24, width: 100, height: 26 }, complete: true, hit: true,
+  } });
+  assert.doesNotThrow(() => assertTopbarControlGeometry(crowded(), true));
+  assert.throws(() => assertTopbarControlGeometry(controlGeometry(), true), /must remain visible/);
+  const hidden = crowded(); hidden.aiJob.bounds.width = 0;
+  assert.throws(() => assertTopbarControlGeometry(hidden, true), /empty/);
+  const outside = crowded(); outside.aiJob.bounds.x = 450;
+  assert.throws(() => assertTopbarControlGeometry(outside, true), /outside/);
+  const clipped = crowded(); clipped.aiJob.complete = false;
+  assert.throws(() => assertTopbarControlGeometry(clipped, true), /fully readable/);
+  const intercepted = crowded(); intercepted.aiJob.hit = false;
+  assert.throws(() => assertTopbarControlGeometry(intercepted, true), /pointer hits/);
+  const wrong = crowded(); wrong.aiJob.text = '助手生成中';
+  assert.throws(() => assertTopbarControlGeometry(wrong, true), /longest status label/);
+});
+
+test('Synthetic AI job uses running then failed events for one disposable identity, without provider or chat persistence', async () => {
+  const [running, failed] = topbarAiJobEvents();
+  assert.equal(running.id, TOPBAR_AI_JOB_ID); assert.equal(failed.id, running.id);
+  assert.equal(running.module, 'todo'); assert.equal(failed.module, 'todo');
+  assert.equal(running.entries[0].streaming, true); assert.equal(failed.entries[0].streaming, false);
+  assert.equal(failed.entries[0].error, 'Synthetic layout failure only.');
+  const source = await readFile(new URL('../tooling/topbar-dates-pilot.mjs', import.meta.url), 'utf8');
+  assert.match(source, /win\.webContents\.send\('ai:chat', chat\)/);
+  assert.match(source, /syntheticRows\(application, page, kind, fixtures\[kind\], true\)/);
+  assert.match(source, /syntheticRows\(application, page, 'schedule', \[entry\], true\)/);
+  assert.match(source, /assert\.deepEqual\(await chatList\(page\), beforeChats/);
+  assert.match(source, /page\.locator\('\.ai-job-btn'\)\.waitFor\(\{ state: 'hidden' \}\)/);
+  assert.match(source, /Renderer-only job ID must never persist/);
+  assert.doesNotMatch(source, /workbench\.ai\.(?:ask|apply|chatNew|chatDraft|saveProvider|saveModel)\(/);
 });

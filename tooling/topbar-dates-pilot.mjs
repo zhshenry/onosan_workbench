@@ -13,6 +13,25 @@ export const TOPBAR_DATES_MATRIX = Object.freeze([
   ['mist', '雾灰 · 轻雾'], ['cool', '冷灰 · 凝霜'], ['warm', '暖砂 · 柔雾'],
 ].flatMap(([theme, label]) => [[1280, 820], [1024, 680]].flatMap(([width, height]) => [1, 1.25].map(zoom => Object.freeze({ theme, label, width, height, zoom })))));
 const state = page => page.evaluate(() => window.workbench.todo.state());
+const chatList = page => page.evaluate(() => window.workbench.ai.chatList());
+export const TOPBAR_AI_JOB_ID = '00000000-0000-4000-8000-00000000a124';
+export function topbarAiJobEvents() {
+  const chat = { id: TOPBAR_AI_JOB_ID, title: 'CI renderer-only topbar job', module: 'todo', updatedAt: '2000-01-01T00:00:00.000Z' };
+  const entry = { id: '00000000-0000-4000-8000-00000000e124', role: 'assistant', content: 'Synthetic layout event only; no provider request.' };
+  return [
+    { ...chat, entries: [{ ...entry, streaming: true }] },
+    { ...chat, entries: [{ ...entry, streaming: false, error: 'Synthetic layout failure only.' }] },
+  ];
+}
+async function injectTopbarAiJob(application, page) {
+  const window = await application.browserWindow(page);
+  const [running, failed] = topbarAiJobEvents();
+  // Send the normal preload event to this renderer only. No chat/provider API write.
+  await window.evaluate((win, chat) => win.webContents.send('ai:chat', chat), running);
+  await page.getByRole('button', { name: '助手生成中', exact: true }).waitFor({ state: 'visible' });
+  await window.evaluate((win, chat) => win.webContents.send('ai:chat', chat), failed);
+  await page.getByRole('button', { name: '助手请求失败', exact: true }).waitFor({ state: 'visible' });
+}
 const stamp = (day, time) => new Date(`${day}T${time}:00`).toISOString();
 const dateLabel = (day, year) => day.startsWith(`${year}-`) ? day.slice(5) : day;
 const menu = (page, kind) => page.locator(kind === 'todo' ? '.ipop-todo' : '.ipop-sched');
@@ -70,6 +89,62 @@ function inside(inner, outer, description) {
     && inner.x + inner.width <= outer.x + outer.width + 1
     && inner.y + inner.height <= outer.y + outer.height + 1, `${description}: clipped or outside boundary`);
 }
+function disjoint(first, second, description) {
+  const overlapX = Math.min(first.x + first.width, second.x + second.width) - Math.max(first.x, second.x);
+  const overlapY = Math.min(first.y + first.height, second.y + second.height) - Math.max(first.y, second.y);
+  assert.ok(overlapX <= 1 || overlapY <= 1, `${description}: overlapping controls`);
+}
+export function assertTopbarControlGeometry(value, requireAiJob = false) {
+  inside(value.topbar, value.viewport, 'Topbar');
+  inside(value.schedule, value.topbar, 'Schedule capsule');
+  inside(value.scheduleTrigger, value.schedule, 'Schedule trigger');
+  inside(value.todoTrigger, value.topbar, 'Todo trigger');
+  inside(value.right, value.topbar, 'Right toolbar');
+  disjoint(value.schedule, value.todoTrigger, 'Schedule and todo');
+  disjoint(value.schedule, value.right, 'Schedule and right toolbar');
+  disjoint(value.todoTrigger, value.right, 'Todo and right toolbar');
+  disjoint(value.scheduleTrigger, value.todoTrigger, 'Schedule trigger and todo');
+  disjoint(value.scheduleTrigger, value.right, 'Schedule trigger and right toolbar');
+  assert.equal(value.hitSchedule, true, 'Schedule trigger must receive pointer hits');
+  assert.equal(value.hitTodo, true, 'Todo trigger must receive pointer hits');
+  if (requireAiJob) assert.ok(value.aiJob, 'Synthetic AI job must remain visible throughout the crowded-state checks');
+  if (value.aiJob) {
+    inside(value.aiJob.bounds, value.right, 'AI job button');
+    assert.equal(value.aiJob.text, '助手请求失败', 'AI job must show the complete longest status label');
+    assert.equal(value.aiJob.complete, true, 'AI job label must be fully readable');
+    assert.equal(value.aiJob.hit, true, 'AI job button must receive pointer hits');
+  }
+  assert.equal(value.labels.schedule.text, '日程', 'Schedule label must retain its title');
+  assert.equal(value.labels.todo.text, '待办', 'Todo label must retain its title');
+  assert.match(value.labels.count.text, /^\d+\/\d+$/, 'Todo count must remain readable');
+  for (const [name, label] of Object.entries(value.labels)) {
+    inside(label.bounds, name === 'schedule' ? value.schedule : value.todoTrigger, `${name} label`);
+    assert.equal(label.complete, true, `${name} label must show complete readable text`);
+  }
+}
+async function inspectTopbarControls(page, requireAiJob = false) {
+  const geometry = await page.locator('.topbar').evaluate(element => {
+    const rect = node => { const { x, y, width, height } = node.getBoundingClientRect(); return { x, y, width, height }; };
+    const hit = node => { const bounds = node.getBoundingClientRect(); const target = document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2); return target === node || node.contains(target); };
+    const label = node => {
+      const bounds = node.getBoundingClientRect(); const range = document.createRange(); range.selectNodeContents(node);
+      const textRects = [...range.getClientRects()].filter(text => text.width > 0 && text.height > 0);
+      return { text: node.textContent.trim(), bounds: rect(node), complete: textRects.length > 0
+        && textRects.every(text => text.left >= bounds.left - 1 && text.right <= bounds.right + 1 && text.top >= bounds.top - 1 && text.bottom <= bounds.bottom + 1) };
+    };
+    const schedule = element.querySelector('.sched'); const scheduleTrigger = element.querySelector('.smore');
+    const todo = element.querySelector('.todopill'); const aiJob = element.querySelector('.ai-job-btn');
+    return {
+      viewport: { x: 0, y: 0, width: innerWidth, height: innerHeight }, topbar: rect(element),
+      schedule: rect(schedule), scheduleTrigger: rect(scheduleTrigger), todoTrigger: rect(todo), right: rect(element.querySelector('.tb-right')),
+      hitSchedule: hit(scheduleTrigger), hitTodo: hit(todo),
+      aiJob: aiJob ? { ...label(aiJob), hit: hit(aiJob) } : null,
+      labels: { schedule: label(element.querySelector('.sched-label .lbl')), todo: label(todo.querySelector('.lbl')), count: label(todo.querySelector('.num')) },
+    };
+  });
+  assertTopbarControlGeometry(geometry, requireAiJob);
+  return geometry;
+}
 export function assertTopbarDatesGeometry(value) {
   inside(value.menu, value.viewport, 'Topbar popover');
   assert.ok(Math.abs(value.menu.width - 320) <= 1, 'Topbar popover must remain 320 CSS pixels');
@@ -122,13 +197,14 @@ async function resize(application, page, { width, height, zoom = 1 }) {
   assert.equal(await window.evaluate(win => win.webContents.getZoomFactor()), zoom);
 }
 async function dismiss(page) { await page.keyboard.press('Escape'); await page.locator('.ipop').waitFor({ state: 'hidden' }); }
-async function openMenu(page, kind) {
+async function openMenu(page, kind, requireAiJob = false) {
   if (await menu(page, kind).isVisible()) return;
+  await inspectTopbarControls(page, requireAiJob);
   await page.locator(kind === 'todo' ? '.todopill' : '.smore').click();
   await menu(page, kind).waitFor({ state: 'visible' });
 }
-async function assertLabels(page, kind, entries) {
-  await openMenu(page, kind);
+async function assertLabels(page, kind, entries, requireAiJob = false) {
+  await openMenu(page, kind, requireAiJob);
   for (const { task, expected } of entries) {
     const row = menu(page, kind).locator('.ipop-row').filter({ has: page.getByRole('button', { name: task.title, exact: true }) });
     await row.waitFor({ state: 'visible' });
@@ -227,11 +303,13 @@ export async function restoreTopbarReadState(application) {
     for (const win of BrowserWindow.getAllWindows()) win.webContents.send('todo:changed');
   });
 }
-async function syntheticRows(application, page, kind, entries) {
+async function syntheticRows(application, page, kind, entries, requireAiJob = false) {
   await dismiss(page);
   await injectTopbarReadState(application, { tasks: entries.map(entry => entry.task), categories: [] });
-  await assertLabels(page, kind, entries);
+  await assertLabels(page, kind, entries, requireAiJob);
   assert.equal(await menu(page, kind).locator('.ipop-row').count(), entries.length);
+  // Rows prove the injected read response reached React before checking controls.
+  return inspectTopbarControls(page, requireAiJob);
 }
 
 export async function runTopbarDatesPilot({ application, page, check, screenshot, runId, report }) {
@@ -287,9 +365,12 @@ export async function runTopbarDatesPilot({ application, page, check, screenshot
     await dismiss(page);
   });
   const beforeSynthetic = await state(page);
+  const beforeChats = await chatList(page);
+  assert.equal(beforeChats.some(chat => chat.id === TOPBAR_AI_JOB_ID), false, 'Synthetic job ID must not already exist');
   report.topbarDates = {
     synthetic: true, timezone: calendar.timezone, localDay: calendar.today,
     persistedUiFixtureIds: persisted.map(task => task.id), matrix: [],
+    aiJobFixture: { chatId: TOPBAR_AI_JOB_ID, label: '助手请求失败', transport: 'Synthetic ai:chat renderer events only; no provider request or chat database write.' },
     rendererReadFixtures: 'Temporary todo:state read-response injection only. Cross-day/year, absent/invalid legacy data and long-title geometry are not persisted CRUD or migration coverage.',
   };
   const fixtures = topbarReadFixtures(calendar.today);
@@ -297,8 +378,13 @@ export async function runTopbarDatesPilot({ application, page, check, screenshot
     // Settings keeps unsupported legacy data out of unrelated home-view widgets.
     await page.locator('.rail [data-workbench="settings"]').click();
     await page.locator('.tree').getByRole('button', { name: '外观', exact: true }).click();
+    await check('Topbar dates: synthetic AI status event shows crowded toolbar without provider or chat writes', async () => {
+      await injectTopbarAiJob(application, page);
+      await inspectTopbarControls(page, true);
+      assert.deepEqual(await chatList(page), beforeChats);
+    });
     await check('Topbar dates: renderer-only invalid or absent dates have sane fallbacks without persistence', async () => {
-      for (const entry of fixtures.edges) await syntheticRows(application, page, entry.task.kind === 'meeting' ? 'schedule' : 'todo', [entry]);
+      for (const entry of fixtures.edges) await syntheticRows(application, page, entry.task.kind === 'meeting' ? 'schedule' : 'todo', [entry], true);
       await dismiss(page);
     });
     for (const fixture of TOPBAR_DATES_MATRIX) {
@@ -310,8 +396,8 @@ export async function runTopbarDatesPilot({ application, page, check, screenshot
         assert.equal(await page.locator('.sched-track').isVisible(), fixture.width / fixture.zoom > 1180, 'Preserve existing narrow-window schedule collapse');
         const geometries = {};
         for (const kind of ['todo', 'schedule']) {
-          await syntheticRows(application, page, kind, fixtures[kind]);
-          geometries[kind] = await inspectGeometry(page, kind);
+          const controls = await syntheticRows(application, page, kind, fixtures[kind], true);
+          geometries[kind] = { ...await inspectGeometry(page, kind), controls };
           if (fixture.width === 1024 && fixture.zoom === 1.25) await screenshot(`topbar-dates-${fixture.theme}-${kind}-1024-zoom125.png`);
           await dismiss(page);
         }
@@ -322,7 +408,7 @@ export async function runTopbarDatesPilot({ application, page, check, screenshot
       for (const width of [1280, 1181]) {
         await resize(application, page, { width, height: 820 });
         for (const entry of fixtures.schedule) {
-          await syntheticRows(application, page, 'schedule', [entry]); await dismiss(page);
+          await syntheticRows(application, page, 'schedule', [entry], true); await dismiss(page);
           const capsule = page.locator('.schip').filter({ has: page.locator('.n', { hasText: entry.task.title }) });
           assert.equal(await capsule.locator('.t').textContent(), entry.expected);
           const visible = await capsule.locator('.t').evaluate(node => {
@@ -348,8 +434,12 @@ export async function runTopbarDatesPilot({ application, page, check, screenshot
   }
   await check('Topbar dates: restore real read handler and verify all stored tasks/categories unchanged by renderer fixtures', async () => {
     assert.deepEqual(await state(page), beforeSynthetic);
+    assert.deepEqual(await chatList(page), beforeChats, 'Synthetic AI events must not change chat storage');
     // A renderer reload must read real storage again after the temporary hook is gone.
     await page.reload(); await page.locator('.topbar').waitFor({ state: 'visible' });
+    await page.locator('.ai-job-btn').waitFor({ state: 'hidden' });
+    assert.deepEqual(await chatList(page), beforeChats);
+    assert.equal((await chatList(page)).some(chat => chat.id === TOPBAR_AI_JOB_ID), false, 'Renderer-only job ID must never persist');
     assert.deepEqual(await state(page), beforeSynthetic);
     await assertLabels(page, 'schedule', scheduleEntries); await dismiss(page);
   });

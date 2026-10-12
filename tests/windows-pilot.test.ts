@@ -191,3 +191,14 @@ test('AI acceptance uses only loopback synthetic responses and normal UI writes 
   assert.ok(entry.indexOf('aiCardsFixture = await runAiCardsPilot(') < entry.indexOf("await check('Choose exit-on-close"));
   assert.ok(entry.indexOf('await verifyAiCardsRelaunch(') > entry.indexOf("await check('Relaunch same installed executable"));
 });
+
+test('Zoomed topbar evidence captures the native full surface without resampling or widening budget', async () => {
+  const source = await readFile(new URL('../tooling/windows-pilot.mjs', import.meta.url), 'utf8');
+  assert.match(source, /name\.startsWith\('topbar-dates-'\) && name\.endsWith\('-zoom125\.png'\)/);
+  assert.match(source, /await win\.webContents\.capturePage\(\)/);
+  assert.match(source, /image\.toPNG\(\)\.toString\('base64'\)/);
+  assert.match(source, /assert\.deepEqual\(\[frame\.imageSize\.width, frame\.imageSize\.height\], frame\.contentSize/);
+  assert.match(source, /pngPixels: \{ width: png\.readUInt32BE\(16\), height: png\.readUInt32BE\(20\) \}/);
+  assert.doesNotMatch(source, /image\.resize\(|toJPEG\(/);
+  assert.equal(MAX_ARTIFACT_BYTES, 19_000_000);
+});
