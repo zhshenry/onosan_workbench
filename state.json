@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 115,
+  "revision": 116,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -1651,75 +1651,91 @@
     },
     "issue24-actual-topbar-dates-cool-schedule-1024-zoom125.png": {
       "kind": "upload-image",
-      "status": "intent",
+      "status": "uploaded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
       "sha256": "15d384a0bf728e4dea3a3effc0a82e6bc3a39a41f484cfd6658294503c086945",
       "headSha": "b54528e849bec6549aec8ec78b67da3eb02e34e9",
       "runId": 38282656112,
-      "createdAt": "2026-10-12T17:20:23.567Z"
+      "createdAt": "2026-10-12T17:20:23.567Z",
+      "url": "https://github.com/user-attachments/assets/ba55247b-7ab0-445d-a62d-3f88c1d6e1b4",
+      "uploadedAt": "2026-10-12T17:21:39.471Z"
     },
     "issue24-actual-topbar-dates-cool-todo-1024-zoom125.png": {
       "kind": "upload-image",
-      "status": "intent",
+      "status": "uploaded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
       "sha256": "621c4b50feea1f42d63da724f0772f0d9d3bb79d1ef669c66df0d34bdf7ea066",
       "headSha": "b54528e849bec6549aec8ec78b67da3eb02e34e9",
       "runId": 38282656112,
-      "createdAt": "2026-10-12T17:20:23.567Z"
+      "createdAt": "2026-10-12T17:20:23.567Z",
+      "url": "https://github.com/user-attachments/assets/0790a3d0-fc01-446e-8114-2806d3c6d327",
+      "uploadedAt": "2026-10-12T17:21:39.471Z"
     },
     "issue24-actual-topbar-dates-mist-schedule-1024-zoom125.png": {
       "kind": "upload-image",
-      "status": "intent",
+      "status": "uploaded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
       "sha256": "bed4a309c49a8bc9b87396b1b808a0e1e2bc00c218af0c4aeaf94f9c0d6b9caf",
       "headSha": "b54528e849bec6549aec8ec78b67da3eb02e34e9",
       "runId": 38282656112,
-      "createdAt": "2026-10-12T17:20:23.567Z"
+      "createdAt": "2026-10-12T17:20:23.567Z",
+      "url": "https://github.com/user-attachments/assets/76acd5ee-4bf3-43b9-82ac-ab93b16f3105",
+      "uploadedAt": "2026-10-12T17:21:39.471Z"
     },
     "issue24-actual-topbar-dates-mist-todo-1024-zoom125.png": {
       "kind": "upload-image",
-      "status": "intent",
+      "status": "uploaded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
       "sha256": "4bb40857e8dae09cc695184d839d7644b195b62475b9f3766796fefd815ac536",
       "headSha": "b54528e849bec6549aec8ec78b67da3eb02e34e9",
       "runId": 38282656112,
-      "createdAt": "2026-10-12T17:20:23.567Z"
+      "createdAt": "2026-10-12T17:20:23.567Z",
+      "url": "https://github.com/user-attachments/assets/bec8275d-4bdd-4e72-96b7-e3de8a18a285",
+      "uploadedAt": "2026-10-12T17:21:39.471Z"
     },
     "issue24-actual-topbar-dates-persisted.png": {
       "kind": "upload-image",
-      "status": "intent",
+      "status": "uploaded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
       "sha256": "136947707855dc7f18ca16d232527ec2f58ab72c55e148584e3509f314760797",
       "headSha": "b54528e849bec6549aec8ec78b67da3eb02e34e9",
       "runId": 38282656112,
-      "createdAt": "2026-10-12T17:20:23.567Z"
+      "createdAt": "2026-10-12T17:20:23.567Z",
+      "url": "https://github.com/user-attachments/assets/c1ee94bf-ad9f-4e73-826e-23278b261fd3",
+      "uploadedAt": "2026-10-12T17:21:39.471Z"
     },
     "issue24-actual-topbar-dates-relaunched.png": {
       "kind": "upload-image",
-      "status": "intent",
+      "status": "uploaded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
       "sha256": "6f456177b3a6ff3aba5fd92000b87fcea1a3330e6d26741408e468544dcb09e4",
       "headSha": "b54528e849bec6549aec8ec78b67da3eb02e34e9",
       "runId": 38282656112,
-      "createdAt": "2026-10-12T17:20:23.567Z"
+      "createdAt": "2026-10-12T17:20:23.567Z",
+      "url": "https://github.com/user-attachments/assets/c5f87d36-bf57-4bc8-89ee-b260e2bb7d73",
+      "uploadedAt": "2026-10-12T17:21:39.471Z"
     },
     "issue24-actual-topbar-dates-warm-schedule-1024-zoom125.png": {
       "kind": "upload-image",
-      "status": "intent",
+      "status": "uploaded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
       "sha256": "c70c7b20d98749dc4ae284552b738ee23c01b21319f6e17e8ca7c4a65f13ca10",
       "headSha": "b54528e849bec6549aec8ec78b67da3eb02e34e9",
       "runId": 38282656112,
-      "createdAt": "2026-10-12T17:20:23.567Z"
+      "createdAt": "2026-10-12T17:20:23.567Z",
+      "url": "https://github.com/user-attachments/assets/3997d147-2306-47ed-87e6-e342edeb05e5",
+      "uploadedAt": "2026-10-12T17:21:39.471Z"
     },
     "issue24-actual-topbar-dates-warm-todo-1024-zoom125.png": {
       "kind": "upload-image",
-      "status": "intent",
+      "status": "uploaded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
       "sha256": "aeb32ec761b6ce7027df61baf5e6bf6339adb1b548caaa57536202343ce9e6f0",
       "headSha": "b54528e849bec6549aec8ec78b67da3eb02e34e9",
       "runId": 38282656112,
-      "createdAt": "2026-10-12T17:20:23.567Z"
+      "createdAt": "2026-10-12T17:20:23.567Z",
+      "url": "https://github.com/user-attachments/assets/c2bfe1bc-bd05-4eb5-84ba-9c0fee36f8f3",
+      "uploadedAt": "2026-10-12T17:21:39.471Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
