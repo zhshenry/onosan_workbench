@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 118,
+  "revision": 119,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -1759,6 +1759,13 @@
       "createdAt": "2026-10-12T17:22:54Z",
       "commentId": 6129172271,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6129172271"
+    },
+    "issue24-pr38-final-metadata": {
+      "kind": "edit-pr-body",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/pull/38",
+      "body": "【OnO 自动化】#24 顶栏日期显示｜实现与真实Windows验收完成，等待Issue审批\n\n[完整实测图、准确版本、验收边界和最终收尾请求](https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6129172271)。请在Issue沟通和批准，不需要在本PR重复审批。\n\nhead b54528e849bec6549aec8ec78b67da3eb02e34e9；base6850a4fb7acc10ac1d04468297b70ebd63cfa0a0。\n[Windows run38282656112](https://github.com/zhshenry/onosan_workbench/actions/runs/38282656112)：431/431单测，0skip；51/51真实安装UI/持久化/重启检查，verify、actionlint、NSIS及证据守卫通过。实际tested merge0e8f7b6d7274199bd3cb78e5ed37cde2a6c761d1，父提交base/head、treea71b4486cedec49f3d84d286ed0d1162abb830f7均已核对。\n\n仅改顶栏日期显示与必要响应式适配，320面板保留，筛选排序存储不变。首轮1024/125%入口重叠已修复，补正常点击/命中/AI状态占位几何检查；125%图原生capturePage不裁剪重绘。\n\n已知边界：畸形旧日程非法dueAt且无endAt可在既有共享逻辑崩溃，未修复/未通过完整链路；跨日跨年schema不改，截图边界用只读fixtures，与真实UI保存重启证据分列。该边界已在Issue最终请求明确，未自动豁免。\n等待用户批准准确head及所列边界/关闭#24范围；不自动合入、关单或发版。",
+      "createdAt": "2026-10-12T17:23:53.987Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
