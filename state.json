@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 129,
+  "revision": 130,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -1875,6 +1875,15 @@
       "createdAt": "2026-10-12T17:44:01Z",
       "commentId": 6129501941,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6129501941"
+    },
+    "issue26-relaunch-fix": {
+      "kind": "publish-code",
+      "status": "intent",
+      "target": "ono/issue-26-context-picker",
+      "expectedHead": "c3c3911f31aa664a86d058ad7ad462c3b481ca32",
+      "summary": "仅修复重启测试精确用户气泡定位并增加回归，不改产品或放宽断言",
+      "patchSha256": "b898fdb924d21c28a27ec82bb51b6401d8e1503f49ef8efa088f1fcb84afca91",
+      "createdAt": "2026-10-12T17:55:50.880Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
