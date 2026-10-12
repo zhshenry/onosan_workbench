@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile, symlink, mkdir, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, symlink, mkdir, readFile, lstat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -40,15 +40,34 @@ test('Windows pilot refuses oversized or malformed evidence', async t => {
   await writeFile(path.join(directory, 'report.json'), 'not json');
   await assert.rejects(inspectPilotArtifacts(directory), SyntaxError);
 });
-test('Windows pilot refuses evidence symlinks', { skip: process.platform === 'win32' }, async t => {
+test('Windows pilot refuses real evidence file symlinks on every platform', async t => {
   const directory = await fixture(t);
-  await writeFile(path.join(directory, 'report.md'), 'synthetic');
-  await symlink(path.join(directory, 'report.md'), path.join(directory, 'report.json'));
-  await assert.rejects(inspectPilotArtifacts(directory), /non-regular artifact/);
-  await mkdir(path.join(directory, 'evidence', 'nested'), { recursive: true });
-  await writeFile(path.join(directory, 'evidence', 'nested', 'report.json'), '{}');
-  await symlink(path.join(directory, 'evidence'), path.join(directory, 'linked-parent'), 'dir');
-  await assert.rejects(inspectPilotArtifacts(path.join(directory, 'linked-parent', 'nested')), /must not traverse a link/);
+  const evidence = path.join(directory, 'evidence');
+  const target = path.join(directory, 'outside.json');
+  const link = path.join(evidence, 'report.json');
+  await mkdir(evidence);
+  await writeFile(target, '{"status":"outside evidence"}');
+  // A junction cannot stand in for a file symlink. Fail closed if the runner
+  // cannot create this actual file link; never skip or change its privileges.
+  await symlink(target, link, 'file');
+  assert.ok((await lstat(link)).isSymbolicLink(), 'The file fixture must be a real symbolic link');
+  await assert.rejects(inspectPilotArtifacts(evidence), /Refusing non-regular artifact: report\.json/);
+  t.diagnostic(`Rejected a real evidence file symlink on ${process.platform}`);
+});
+
+test('Windows pilot refuses evidence beneath a real linked parent directory', async t => {
+  const directory = await fixture(t);
+  const target = path.join(directory, 'evidence');
+  const link = path.join(directory, 'linked-parent');
+  await mkdir(path.join(target, 'nested'), { recursive: true });
+  await writeFile(path.join(target, 'nested', 'report.json'), '{}');
+  // Windows junctions exercise the native directory-reparse-point path without
+  // requiring Developer Mode. File symlinks have their own mandatory test above.
+  const linkType = process.platform === 'win32' ? 'junction' : 'dir';
+  await symlink(target, link, linkType);
+  assert.ok((await lstat(link)).isSymbolicLink(), 'The parent fixture must be a real link');
+  await assert.rejects(inspectPilotArtifacts(path.join(link, 'nested')), /must not traverse a link/);
+  t.diagnostic(`Rejected a real parent directory ${linkType} on ${process.platform}`);
 });
 
 test('Year-dropdown evidence has five fixed screenshot names within the existing run budget', async t => {

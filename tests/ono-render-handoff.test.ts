@@ -11,7 +11,7 @@ const publication = { ...base, publish: true, target_issue: '42', approval_id: '
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8').replace(/\r\n?/g, '\n');
 const script = fileURLToPath(new URL('../tooling/ono/render-pilot/prepare-dispatch.mjs', import.meta.url));
 
-test('default preparation emits only exact existing workflow inputs and no upload', () => {
+test('default preparation emits only exact historical workflow inputs and no upload', () => {
   assert.equal(WORKFLOW, 'ono-prototype-render.yml');
   assert.equal(STATE, 'historical-design-a-home');
   assert.deepEqual(prepareDispatch(base), { ref: 'main', inputs: {
@@ -90,17 +90,14 @@ test('CLI refusal has no payload and never echoes arguments', () => {
   assert.doesNotMatch(result.stderr, /accidental-sensitive-test-value/);
 });
 
-test('helper stays preparation-only and matches the workflow input names', () => {
+test('historical helper stays preparation-only with the exact historical input contract', () => {
   const source = read('tooling/ono/render-pilot/prepare-dispatch.mjs');
   const imports = [...source.matchAll(/^import .* from '([^']+)';$/gm)].map(match => match[1]);
   assert.deepEqual(imports, ['node:path', 'node:url', './candidates.mjs']);
   assert.doesNotMatch(source, /process\.env|\bfetch\s*\(|child_process|https?:\/\//);
-  const workflow = read(`.github/workflows/${WORKFLOW}`);
-  const inputNames = [...workflow.matchAll(/^      ([a-z_]+):$/gm)].map(match => match[1]);
-  assert.deepEqual(Object.keys(prepareDispatch(base).inputs), inputNames);
-  assert.match(workflow, /options: \[historical-design-a-home, issue-13-year-picker-v1\]/);
-  assert.match(workflow, /github\.event_name == 'workflow_dispatch'/);
-  assert.doesNotMatch(workflow, /^  (?:issue_comment|push|repository_dispatch):/m);
+  assert.deepEqual(Object.keys(prepareDispatch(base).inputs), [
+    'approved_sha', 'prototype_state', 'post_attachment', 'target_issue', 'approval_id',
+  ]);
 });
 
 test('historical record embeds the same existing native URL with explicit source and version', () => {

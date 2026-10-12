@@ -41,4 +41,4 @@ HTML/CSS 属于正常可审阅源码，可以保留在仓库。普通 CI 的 3 �
 
 后续图片或实质 UI 变化需要新版本及对应主对话批准，不能把本历史图换绑到新
 源码或当前产品方案。最终方案正文（含实际附件 URL）的摘要在正文定稿后计算，
-不把会自我改变的摘要写进它自己的正文。参见[参数准备与未接通边界](ONO-PROTOTYPE-RENDER-PILOT.md#assistant-parameter-preparation-not-a-trigger)。
+不把会自我改变的摘要写进它自己的正文。参见[历史参数准备与未接通边界](https://github.com/zhshenry/onosan_workbench/blob/673febb3ba2e24d17772092bc7d8956642574bee/docs/ONO-PROTOTYPE-RENDER-PILOT.md#assistant-parameter-preparation-not-a-trigger)。
