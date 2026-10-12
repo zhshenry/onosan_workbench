@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 100,
+  "revision": 101,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -162,7 +162,7 @@
     },
     "24": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/24",
-      "stage": "implementation",
+      "stage": "ci-running",
       "type": [
         "ui",
         "interaction"
@@ -170,7 +170,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "云电脑实施测试并提交DraftPR，等待最终准确head合入批准",
+      "nextAction": "等待Windows真实验收，修复授权内失败，取得实测图后在Issue请求准确版本合入",
       "groupId": "topbar-date-24",
       "groupIssueNumbers": [
         24
@@ -193,7 +193,10 @@
         "verifiedAt": "2026-10-12T16:36:31.561Z",
         "allowedActions": "本单v1方案产品实现、测试、回归和DraftPR交付；不含合入关单",
         "sourceAssessment": "明确绑定唯一v1方案请求"
-      }
+      },
+      "prNumber": 38,
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/38",
+      "headSha": "ef76cd47db128222f88f5d9f6201dd8325a62213"
     },
     "25": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/25",
@@ -1530,11 +1533,13 @@
     },
     "issue24-draft-pr": {
       "kind": "create-pr",
-      "status": "intent",
+      "status": "succeeded",
       "target": "ono/issue-24-topbar-dates -> main",
       "headSha": "ef76cd47db128222f88f5d9f6201dd8325a62213",
       "body": "【OnO 自动化】#24 顶栏日期显示，方案v1实现（Draft）\n\n关联需求 #24；方案及用户审批留在 [Issue原始请求](https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6126565074) / [批准](https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6128003916)。\n\n## 改动\n待办日期、日程摘要及展开行补日期；跨日/跨年、无时间/缺失值显示；320px面板保留，标题省略有完整提示。1181–1440窗口仅隐藏冗余“今日”前缀，腾出事项日期空间。筛选、排序、存储及其他日期入口不改。\n\n## 已运行\n- 本地同测试集：424项，422通过，2项已有Windows专用测试在Linux跳过（node --import tsx --test，Asia/Shanghai）。\n- npm run verify通过；六项格式化测试在五时区通过。\n- 原始npm test入口受当前shell IPC限制；UTC的三项todo-store旧失败在未改基线复现。\n- 独立代码审查未发现新增阻断问题。\n\n## 仍需Windows真实验收\n完整test/verify、actionlint、NSIS安装、原32项+新18项实装检查、真实截图及19MB证据守卫。当前未运行，不把脚本等同验收通过。\n新测试以真实UI创建及保存/重启为主；跨日跨年等当前输入schema不支持的边界用临时只读renderer fixtures，明确不是持久化证据。\n\n已知范围外限制：非法meeting dueAt且无endAt会在既有shared逻辑先崩溃；本PR只保证本显示helper回退，不声称整条畸形记录流程通过。AI任务占用顶栏时的几何尚未专项覆盖。\n不自动关闭Issue。完整实测完成后，在#24贴图请求准确head合入收尾。",
-      "createdAt": "2026-10-12T16:54:35.016Z"
+      "createdAt": "2026-10-12T16:54:45Z",
+      "number": 38,
+      "url": "https://github.com/zhshenry/onosan_workbench/pull/38"
     },
     "issue34-v1-comment": {
       "kind": "comment",
