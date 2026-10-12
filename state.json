@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 77,
+  "revision": 78,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -1338,6 +1338,27 @@
       "commentId": 6126817506,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/33#issuecomment-6126817506",
       "displayVerifiedAt": "2026-10-12T14:59:40.750Z"
+    },
+    "issue24-start-v1": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
+      "body": "【OnO 自动化】#24｜方案 v1 已确认，开始实施\n\n已核对你的[方案批准](https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6128003916)。本次只补顶栏待办/日程日期及必要显示适配，按v1处理跨日、跨年和缺失时间，不改筛选、排序或日期数据。\n\n接下来完成实现、测试和真实 Windows 验收，再在这里贴实测图并请求准确 PR/head 的最终合入。无需重复批准当前方案。",
+      "createdAt": "2026-10-12T16:37:33.208Z"
+    },
+    "issue26-queued-v1": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
+      "body": "【OnO 自动化】#26｜方案 v1 已确认，排队实施\n\n已核对你的[回复](https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6128082959)，理解为同意本单v1视觉、工作台映射和只读引用范围。多复制的提示前缀不需要重发。\n\n当前先做已批准的 #24，随后推进本单，保持一次开发一组。本单不包含悬浮窗修订或新提的其他需求；完成后在这里提供实测和准确版本供最终合入审阅。无需再次批准v1。",
+      "createdAt": "2026-10-12T16:37:33.208Z"
+    },
+    "float-v2-feedback-ack": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
+      "body": "【OnO 自动化】悬浮窗组｜已收到修改意见，先调整设计\n\n已汇总 #28/#29 的“收起布局太挤”，以及 #32 的“返回按钮颜色、字体保持原来，只换小图标”。我会重排宽/窄两个收起AI状态，保留原高度；返回按钮沿用原字体和颜色，仅改左箭头。\n\n其余已认可范围保留。各成员里的“同意v1”不会覆盖这些具体修改；本组先不实施，下一条补修订高保真，只请你确认有变化的部分，不让你重批未变内容。",
+      "createdAt": "2026-10-12T16:37:33.208Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
