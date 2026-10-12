@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 69,
+  "revision": 70,
   "currentRun": {
     "owner": "ono-root-ui-plans-20261012T1438Z",
     "startedAt": "2026-10-12T14:38:55.053Z",
@@ -204,7 +204,10 @@
       "primaryIssue": 28,
       "planVersion": "group-v1",
       "primaryPlanCommentId": 6126770999,
-      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999"
+      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999",
+      "planCommentId": 6126800886,
+      "memberPlanCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/25#issuecomment-6126800886",
+      "imageUrl": "https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4"
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
@@ -397,7 +400,8 @@
     6124556681,
     6126565074,
     6126607129,
-    6126770999
+    6126770999,
+    6126800886
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -1132,10 +1136,12 @@
     },
     "float-group-v1-member-25": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/25",
       "body": "【OnO 自动化】#25｜纳入悬浮窗组方案 v1\n\n![悬浮窗组v1：首页四态](https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4)\n\n以上为独立高保真设计预览，不是实测截图。本单范围与验收：展开首页移除“AI建议”整条区域并收回空白，保留顶栏AI入口和待办/日程操作；不删除已交付建议确认卡。\n\n本组为 #25、#28、#29、#30、#31、#32、#33，因共用同一悬浮窗且宽窄适配互相影响，统一一个方案、后续一个实现PR。完整三张图、逐单边界和验收见[主方案评论](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)；#24、#26不包含在内。\n\n图稿是审阅排版，非实际窗口尺寸。宽窄与展开/收起独立；同状态切宽只改宽度、不改高度。首页窄收起图省略的截止文案不代表删除该功能，实际仍保留截止信息和分页。方案批准前不改产品。\n\n意见可在这里补充；整组批准只需在 #28 回复一次：同意悬浮窗组方案 v1（#25、#28–#33）",
-      "createdAt": "2026-10-12T14:56:42.579Z"
+      "createdAt": "2026-10-12T14:57:24Z",
+      "commentId": 6126800886,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/25#issuecomment-6126800886"
     },
     "float-group-v1-member-29": {
       "kind": "comment",
