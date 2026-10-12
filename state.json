@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 96,
+  "revision": 97,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -1418,10 +1418,12 @@
     },
     "issue34-v1-image": {
       "kind": "upload-image",
-      "status": "intent",
+      "status": "uploaded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/34",
       "sha256": "a0b7a9c77dd0d8cebc52387d0e77f14214cd15a4471a77cf6e83495dfba9637c",
-      "createdAt": "2026-10-12T16:41:25.862Z"
+      "createdAt": "2026-10-12T16:41:25.862Z",
+      "url": "https://github.com/user-attachments/assets/41e9e253-8a6c-4129-ab78-aab06849ae9e",
+      "uploadedAt": "2026-10-12T16:52:20.373Z"
     },
     "float-v2-primary-comment": {
       "kind": "comment",
@@ -1498,6 +1500,25 @@
       "target": "https://github.com/zhshenry/onosan_workbench/issues/35",
       "sha256": "49262c18cb3e1bd51411512e3d8dc2f9564f677529938e55e0b51ced1df93aa2",
       "createdAt": "2026-10-12T16:48:20.260Z"
+    },
+    "issue24-publish-code": {
+      "kind": "publish-code",
+      "status": "intent",
+      "target": "ono/issue-24-topbar-dates",
+      "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
+      "files": [
+        "UX-CONTRACT.md",
+        "src/App.tsx",
+        "src/shell.css",
+        "src/topbar-dates.ts",
+        "tests/topbar-dates.test.ts",
+        "tests/topbar-dates-pilot.test.ts",
+        "tooling/topbar-dates-pilot.mjs",
+        "tooling/windows-pilot.mjs",
+        "tooling/pilot-artifacts.mjs"
+      ],
+      "patchSha256": "c3e62c44b3473d389ffa2e41ff7b02a19c06583b4ec21f0aacb53e9d58a52661",
+      "createdAt": "2026-10-12T16:52:20.374Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
