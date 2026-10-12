@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 117,
+  "revision": 118,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -162,7 +162,7 @@
     },
     "24": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/24",
-      "stage": "evidence-review",
+      "stage": "awaiting-final-approval",
       "type": [
         "ui",
         "interaction"
@@ -170,7 +170,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T16:48:00Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "实际图片逐图检查并原生上传，回读可见后请求准确head合入收尾",
+      "nextAction": "核对当前准确head、最终包和明确畸形旧日程验收边界批准后才合入；未获批准不关单",
       "groupId": "topbar-date-24",
       "groupIssueNumbers": [
         24
@@ -210,6 +210,18 @@
         "artifactSha256": "c4b4190494830ec0d8ebc1a181ce74f0c4ef750d51a8b77d0c4608297583ee2c",
         "expiresAt": "2026-10-15T16:59:46Z",
         "temporaryEvidenceCleanedAt": "2026-10-12T17:11:21.281Z"
+      },
+      "finalRequestCommentId": 6129172271,
+      "finalRequestUrl": "https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6129172271",
+      "actualImageURLs": {
+        "topbar-dates-cool-schedule-1024-zoom125.png": "https://github.com/user-attachments/assets/ba55247b-7ab0-445d-a62d-3f88c1d6e1b4",
+        "topbar-dates-cool-todo-1024-zoom125.png": "https://github.com/user-attachments/assets/0790a3d0-fc01-446e-8114-2806d3c6d327",
+        "topbar-dates-mist-schedule-1024-zoom125.png": "https://github.com/user-attachments/assets/76acd5ee-4bf3-43b9-82ac-ab93b16f3105",
+        "topbar-dates-mist-todo-1024-zoom125.png": "https://github.com/user-attachments/assets/bec8275d-4bdd-4e72-96b7-e3de8a18a285",
+        "topbar-dates-persisted.png": "https://github.com/user-attachments/assets/c1ee94bf-ad9f-4e73-826e-23278b261fd3",
+        "topbar-dates-relaunched.png": "https://github.com/user-attachments/assets/c5f87d36-bf57-4bc8-89ee-b260e2bb7d73",
+        "topbar-dates-warm-schedule-1024-zoom125.png": "https://github.com/user-attachments/assets/3997d147-2306-47ed-87e6-e342edeb05e5",
+        "topbar-dates-warm-todo-1024-zoom125.png": "https://github.com/user-attachments/assets/c2bfe1bc-bd05-4eb5-84ba-9c0fee36f8f3"
       }
     },
     "25": {
@@ -592,7 +604,8 @@
     6128752017,
     6128766093,
     6128811148,
-    6129026111
+    6129026111,
+    6129172271
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -1739,11 +1752,13 @@
     },
     "issue24-final-acceptance": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
       "headSha": "b54528e849bec6549aec8ec78b67da3eb02e34e9",
       "body": "【OnO 自动化】#24｜PR #38 最终合入收尾待确认\n\n已按[方案v1](https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6126565074)及你的[原始批准](https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6128003916)完成。首轮缩放重叠已修复，下面均为修复版实际Windows运行截图，不是设计图。\n\n### 准确版本与检查\n- [PR #38](https://github.com/zhshenry/onosan_workbench/pull/38)，head **b54528e849bec6549aec8ec78b67da3eb02e34e9**，简写 **b54528e**。\n- base：6850a4fb7acc10ac1d04468297b70ebd63cfa0a0。\n- [Windows真实验收](https://github.com/zhshenry/onosan_workbench/actions/runs/38282656112)：**431项单测全部通过，0跳过；51/51实装检查通过**。actionlint、类型/生产构建、NSIS安装和证据守卫通过，安装文件与构建一致。\n- 实际测试的是PR合成merge **0e8f7b6d7274199bd3cb78e5ed37cde2a6c761d1**；父提交就是上述base/head，tree a71b4486cedec49f3d84d286ed0d1162abb830f7与head一致。\n- 覆盖日期显示、完成/取消/新增回归、真实保存读回与同版本重启、三主题×两窗口×100%/125%缩放、最拥挤AI状态占位、入口正常点击/命中和不重叠。筛选、排序、存储和其他日期入口未变。\n\n### 真实新增、保存和重启\n以下两图来自正常界面创建并持久化的记录；保存后读取具体字段/身份，并重启同一安装版本再核对。\n![真实UI新增并保存后的顶栏日期](https://github.com/user-attachments/assets/c1ee94bf-ad9f-4e73-826e-23278b261fd3)\n![真实持久化记录重启后的日程日期](https://github.com/user-attachments/assets/c5f87d36-bf57-4bc8-89ee-b260e2bb7d73)\n\n### 小窗口125%缩放：边界显示实测\n以下六图来自已安装应用，使用**临时只读测试记录**展示跨年、跨日、无时间和缺日期；测试结束恢复原读取并确认真实存储未变。它们证明真实渲染和操作，不代表产品输入已经支持创建跨日日程。\n图中“助手请求失败”是合成UI状态，用于验证右侧空间，不是真实模型调用失败。\n\n雾灰：\n![雾灰待办边界日期实测](https://github.com/user-attachments/assets/bec8275d-4bdd-4e72-96b7-e3de8a18a285)\n![雾灰跨年跨日日程实测](https://github.com/user-attachments/assets/76acd5ee-4bf3-43b9-82ac-ab93b16f3105)\n冷灰：\n![冷灰待办边界日期实测](https://github.com/user-attachments/assets/0790a3d0-fc01-446e-8114-2806d3c6d327)\n![冷灰跨年跨日日程实测](https://github.com/user-attachments/assets/ba55247b-7ab0-445d-a62d-3f88c1d6e1b4)\n暖砂：\n![暖砂待办边界日期实测](https://github.com/user-attachments/assets/c2bfe1bc-bd05-4eb5-84ba-9c0fee36f8f3)\n![暖砂跨年跨日日程实测](https://github.com/user-attachments/assets/3997d147-2306-47ed-87e6-e342edeb05e5)\n\n所有图已逐张查看。125%图用Electron原生完整内容区PNG采集，1024×680，无重绘/裁剪；其余为实际应用截图。日期完整可读，标题长时省略，320逻辑像素面板保留。修复的响应式布局按实际控件宽度分配空间，避免日期及右侧按钮互相遮挡。\n[临时验收产物](https://github.com/zhshenry/onosan_workbench/actions/runs/38282656112/artifacts/11761639184)：27文件、原始8,243,878 bytes，2026-10-16 01:17:17（UTC+08）到期。图另以本评论原生附件展示，不进Git、不额外备份。ZIP SHA256：2082c0f0a25553ce43c9350dd60cbe1afcbfd340b29ac182a9c62b95ca34a9b3。\n\n### 明确验收边界与遗留问题\n- **既有畸形日程“非法开始日期且缺结束时间”的完整加载链路仍可能在共享逻辑报错，本PR未修复。** 本次显示helper对非法值有回退测试；不能据此声称该畸形记录整条流程通过。本次请求同时请你确认：接受这一明确的、仅限本单的验收缺口后交付正常数据日期显示；不把它变成今后豁免。\n- 跨日/跨年保存输入schema不改，本次只验已有/只读记录的显示；真实正常数据已单独验证保存和重启。\n- Windows为当前主干正式验收平台；Linux本地测试有2个既有平台跳过，未冒充Windows结果。外部模型、跨版本升级与发版不在本单范围。\n\n### 本次一次确认的收尾范围\n本单只有实现PR #38，没有需要关闭的旧设计/试验PR。\n确认后：合入上述准确head → 验证实际main的完整Windows测试、构建、安装、51项实装及证据检查 → 全部通过后关闭 **#24**；任何失败保持开放并报告。合格需求分支按你已批准的安全清理规范检查后删除，历史保留。其他Issue不关闭，不发版。\n\n请在本Issue回复：\n**同意所列验收边界并合入收尾 PR #38，版本 b54528e；通过后关闭 #24**",
-      "createdAt": "2026-10-12T17:22:27.225Z"
+      "createdAt": "2026-10-12T17:22:54Z",
+      "commentId": 6129172271,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6129172271"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
