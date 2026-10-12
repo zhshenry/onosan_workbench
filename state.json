@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 21,
+  "revision": 22,
   "currentRun": {
     "owner": "ono-root-group-v2-20261012T1007Z",
     "startedAt": "2026-10-12T10:07:13.782Z",
@@ -199,6 +199,15 @@
       "imageSha256": "2a97b50cd956b874173a50370ba2387eefaf34f96a8b65cc8e93e02d5e0ca3a7",
       "purpose": "公开展示17+18组方案修订高保真",
       "createdAt": "2026-10-12T10:10:28.685Z"
+    },
+    "group-doc-pr-v1": {
+      "kind": "create-draft-pr",
+      "status": "intent",
+      "branch": "ono/group-related-issues",
+      "baseSha": "94938ee1cc94a652d3b9fdc4c7ef3e75d74e298f",
+      "expectedTree": "cc2d7ca9401756cb2324d8ba24afcce76a69ee7e",
+      "scope": "关联需求分组规范及3模板，4文档，不合入",
+      "createdAt": "2026-10-12T10:11:09.428Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
