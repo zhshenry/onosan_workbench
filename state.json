@@ -1,11 +1,11 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 47,
+  "revision": 48,
   "currentRun": {
     "owner": "ono-root-pr23-closeout-20261012T1238Z",
     "startedAt": "2026-10-12T12:38:17.202Z",
     "groupId": "ai-suggestion-card-17-18",
-    "stage": "verifying-main"
+    "stage": "closing-approved-issues"
   },
   "tasks": {
     "17": {
@@ -690,7 +690,28 @@
       "createdAt": "2026-10-12T12:38:17.202Z",
       "merged": true,
       "mergeSha": "41dccc749f8ddeb5ab6aab7eac41537a1406e2a9",
-      "updatedAt": "2026-10-12T12:39:19.363Z"
+      "updatedAt": "2026-10-12T12:39:19.363Z",
+      "mainCiRun": 38250363482,
+      "mainCiConclusion": "success",
+      "verifiedAt": "2026-10-12T12:45:49.232Z"
+    },
+    "pr23-close-issue-17": {
+      "kind": "close-issue",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
+      "approvalCommentId": 6123701226,
+      "mainSha": "41dccc749f8ddeb5ab6aab7eac41537a1406e2a9",
+      "verifiedCiRun": 38250363482,
+      "createdAt": "2026-10-12T12:45:49.232Z"
+    },
+    "pr23-close-issue-18": {
+      "kind": "close-issue",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/18",
+      "approvalCommentId": 6123701226,
+      "mainSha": "41dccc749f8ddeb5ab6aab7eac41537a1406e2a9",
+      "verifiedCiRun": 38250363482,
+      "createdAt": "2026-10-12T12:45:49.232Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
