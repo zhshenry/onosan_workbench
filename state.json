@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 29,
-  "currentRun": {
-    "owner": "ono-root-pr22-merge-20261012T1022Z",
-    "startedAt": "2026-10-12T10:22:54.025Z",
-    "target": "PR22",
-    "stage": "verifying-main"
-  },
+  "revision": 30,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -263,7 +258,10 @@
       "merged": true,
       "mergeSha": "ebc21504080900fa6fb1d7f6f1f237e55e6d5575",
       "updatedAt": "2026-10-12T10:23:45.291Z",
-      "nextAction": "核验实际main CI"
+      "nextAction": "completed",
+      "mainCiRun": 38236033865,
+      "mainCiConclusion": "success",
+      "verifiedAt": "2026-10-12T10:29:50.713Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -275,8 +273,8 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-group-v2-20261012T1007Z",
-    "finishedAt": "2026-10-12T10:19:45.478Z",
-    "result": "17/18组方案v2附图完成待批准；独立规范PR22准确CI全绿待合入批准"
+    "owner": "ono-root-pr22-merge-20261012T1022Z",
+    "finishedAt": "2026-10-12T10:29:50.713Z",
+    "result": "PR22准确版本已合入，真实main CI成功；17/18组方案v2待批准"
   }
 }
