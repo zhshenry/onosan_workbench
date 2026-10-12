@@ -55,3 +55,5 @@
 依据 [Issue #13 已批准方案 v2](https://github.com/zhshenry/onosan_workbench/issues/13#issuecomment-6111054194)与[批准回复](https://github.com/zhshenry/onosan_workbench/issues/13#issuecomment-6118993667),新建与编辑命例共用同一个生日字段。年份仅为日历浏览状态,不输入年份、不增加跳转按钮,不调用存储或排盘。关闭重开恢复当前已选生日;闰日跨平年只校正浏览焦点。既有月份箭头、今天、清除、日期格式、出生时间、存储及其他日期调用维持原行为。下拉的 1900–2100 年边界复用 BaziView 既有常量,不替代既有保存校验。
 
 静态组件检查见 `tests/date-year-dropdown.test.ts`;真实 Windows 安装版交互、三主题/双尺寸及保存后同版本重启见 `tooling/year-dropdown-pilot.mjs`,由原有 Windows pilot 执行。正式验收以对应提交的 Actions 结果和运行截图为准。
+
+[保存兼容修复 v1](https://github.com/zhshenry/onosan_workbench/issues/13#issuecomment-6119459292)已获[明确批准](https://github.com/zhshenry/onosan_workbench/issues/13#issuecomment-6119530215):命例编辑仅发送 id 与可编辑字段,不把 createdAt 等存储元数据重新提交给输入 schema;现有存储层保留原创建时间、id 和笔记,不改变 schema、文件格式或算法。`tests/bazi-save-compat.test.ts` 验证真实表单提交与存储重载,Windows pilot 逐项校验实际保存日期及原创建时间。

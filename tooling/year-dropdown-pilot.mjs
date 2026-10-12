@@ -109,10 +109,18 @@ async function resize(application, page, width, height) {
   await page.waitForFunction(size => innerWidth === size.width && innerHeight === size.height, { width, height });
 }
 async function profileDate(page, name, expected) {
-  await page.waitForFunction(({ name, expected }) => window.workbench.bazi.list().then(value => value.profiles.some(profile => profile.name === name && profile.date === expected)), { name, expected });
-  const data = await store(page);
+  // Await the bridge read itself; a Promise is not evidence of a matching value.
+  const deadline = Date.now() + 15000;
+  let data = await store(page);
+  while (!data.profiles.some(profile => profile.name === name && profile.date === expected) && Date.now() < deadline) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    data = await store(page);
+  }
   assert.equal(data.profiles.length, 1, 'Synthetic fixture must never duplicate profiles');
-  return data.profiles[0];
+  const profile = data.profiles[0];
+  assert.equal(profile.name, name);
+  assert.equal(profile.date, expected, 'Read-back must match the saved birthday, not just profile count');
+  return profile;
 }
 async function inspectGeometry(page, dialog) {
   // Let normal CSS animations finish naturally. Measuring the resulting position
@@ -173,7 +181,7 @@ export async function verifyUnboundedDatePicker(page) {
 
 export async function runYearDropdownPilot({ application, page, check, screenshot, runId, report }) {
   const name = `CI闰年${String(runId).slice(-6)}`; // Synthetic and within the 12-character UI limit.
-  let id;
+  let id, createdAt;
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await resize(application, page, 1280, 820);
   await openBazi(page);
@@ -226,7 +234,9 @@ export async function runYearDropdownPilot({ application, page, check, screensho
     await page.getByRole('option', { name: '00分', exact: true }).click();
     await dialog.getByRole('button', { name: '保存并排盘', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });
-    id = (await profileDate(page, name, '2000-02-29')).id;
+    const created = await profileDate(page, name, '2000-02-29');
+    id = created.id; createdAt = created.createdAt;
+    assert.ok(Number.isFinite(Date.parse(createdAt)), 'New profile must have a valid creation time');
   });
   await check('Year picker: 2000-02-29 to 2001 corrects focus only; cancel, reopen and outside click preserve birthday', async () => {
     let dialog = await editProfile(page, name);
@@ -292,7 +302,8 @@ export async function runYearDropdownPilot({ application, page, check, screensho
       await page.locator('.rail [data-workbench="settings"]').click();
       await page.locator('.tree').getByRole('button', { name: '外观', exact: true }).click();
       await page.getByRole('radio', { name: fixture.label, exact: true }).click();
-      await page.waitForFunction(theme => window.workbench.settings.get().then(value => value.uiTheme === theme), fixture.theme);
+      await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, fixture.theme);
+      assert.equal((await page.evaluate(() => window.workbench.settings.get())).uiTheme, fixture.theme);
       await resize(application, page, fixture.width, fixture.height);
       await openBazi(page);
       const dialog = await editProfile(page, name);
@@ -330,15 +341,17 @@ export async function runYearDropdownPilot({ application, page, check, screensho
     await dialog.waitFor({ state: 'hidden' });
     const saved = await profileDate(page, name, '2001-02-28');
     assert.equal(saved.id, id); assert.equal(saved.time, '09:00');
+    assert.equal(saved.createdAt, createdAt, 'Editing must preserve the original creation time');
     await screenshot('year-dropdown-saved.png');
   });
-  return { id, name, date: '2001-02-28', time: '09:00' };
+  return { id, name, date: '2001-02-28', time: '09:00', createdAt };
 }
 
 export async function verifyYearDropdownRelaunch({ page, check, screenshot, fixture }) {
   await check('Year picker: same installed version relaunch retains saved birthday and opens at saved year/month/day', async () => {
     const saved = await profileDate(page, fixture.name, fixture.date);
     assert.equal(saved.id, fixture.id); assert.equal(saved.time, fixture.time);
+    assert.equal(saved.createdAt, fixture.createdAt, 'Relaunch must retain the original creation time');
     await openBazi(page);
     const dialog = await editProfile(page, fixture.name);
     await assertBirthday(dialog, fixture.date); await birthday(dialog).click();

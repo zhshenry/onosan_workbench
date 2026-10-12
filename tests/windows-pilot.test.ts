@@ -134,3 +134,9 @@ test('Installed-app entrypoint retains original CRUD and runs year acceptance be
   assert.match(year, /list\.scrollWidth/);
   assert.match(year, /reducedMotion: fixture\.reducedMotion/);
 });
+
+test('Year-dropdown persistence assertion verifies the actual returned date, not an async predicate object', async () => {
+  const source = await readFile(new URL('../tooling/year-dropdown-pilot.mjs', import.meta.url), 'utf8');
+  assert.match(source, /assert\.equal\(profile\.date, expected/);
+  assert.doesNotMatch(source, /waitForFunction\(\(\{ name, expected \}\) => window\.workbench\.bazi\.list/);
+});

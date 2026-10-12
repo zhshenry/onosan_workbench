@@ -236,7 +236,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
     if (editingId) {
       const target = profiles.find((p) => p.id === editingId);
       if (!target) { onPending('命例不存在或已删除'); return; }
-      run(wb.bazi.saveProfile({ ...target, name, gender: Number(fGender), date, time, tag: tag || undefined, place: birth.place, lat: birth.lat, lon: birth.lon }), `已更新「${name}」`);
+      run(wb.bazi.saveProfile({ id: target.id, name, gender: Number(fGender), date, time, tag: tag || undefined, place: birth.place, lat: birth.lat, lon: birth.lon }), `已更新「${name}」`);
     } else {
       const id = crypto.randomUUID();
       run(
