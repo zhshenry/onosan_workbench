@@ -3,9 +3,10 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { JSDOM } from 'jsdom';
 import {
   CONTEXT_PICKER_MATRIX, CONTEXT_PICKER_SCREENSHOTS, assertContextPickerGeometry,
-  assertReferenceTurn, assertSavedReferenceTurn, assertTransmittedReferenceSnapshots,
+  assertReferenceTurn, assertSavedReferenceTurn, assertTransmittedReferenceSnapshots, referencePromptBubble,
 } from '../tooling/context-picker-pilot.mjs';
 import { inspectPilotArtifacts, MAX_ARTIFACT_BYTES } from '../tooling/pilot-artifacts.mjs';
 
@@ -19,6 +20,39 @@ function chatFixture() {
   ] };
 }
 const turn = () => assertReferenceTurn(chatFixture(), 'synthetic prompt', reference, 'original synthetic note');
+
+test('Restart prompt locator requires the exact user bubble, never a matching title or assistant echo', async () => {
+  const prompt = 'CI待办参考8286044872 [a+b].*?($)\\';
+  const dom = new JSDOM('<aside id="workbench-ai-panel"><button class="ai-context-select"><strong></strong></button><div class="ai-messages"><div class="ai-msg user"><span class="ai-message-tag"></span><div class="ai-bubble" id="expected"></div></div><div class="ai-msg"><div class="ai-bubble" id="assistant"></div></div><div class="ai-msg user"><div class="ai-bubble" id="prefix"></div></div></div></aside><div class="ai-msg user"><div class="ai-bubble" id="outside"></div></div>');
+  const document = dom.window.document;
+  for (const selector of ['strong', '.ai-message-tag', '#expected', '#assistant', '#outside']) document.querySelector(selector)!.textContent = prompt;
+  document.querySelector('#prefix')!.textContent = `${prompt} extra`;
+  // DOM-backed locator double exercises the authored CSS scope and exact regex.
+  // It does not claim a Playwright/Electron runtime execution.
+  function locator(elements: Element[]): any {
+    return {
+      locator: (selector: string) => locator(elements.flatMap(element => [...element.querySelectorAll(selector)])),
+      filter: ({ hasText }: { hasText: RegExp }) => locator(elements.filter(element => hasText.test(element.textContent ?? ''))),
+      waitFor: async () => { assert.equal(elements.length, 1, 'Exactly one user bubble must match'); },
+      elements,
+    };
+  }
+  const page = { locator: (selector: string) => locator([...document.querySelectorAll(selector)]) };
+  try {
+    const selected = referencePromptBubble(page, prompt);
+    await selected.waitFor({ state: 'visible' });
+    assert.deepEqual(selected.elements.map((element: Element) => element.id), ['expected']);
+    const duplicate = document.querySelector('#expected')!.parentElement!.cloneNode(true);
+    document.querySelector('.ai-messages')!.append(duplicate);
+    await assert.rejects(referencePromptBubble(page, prompt).waitFor({ state: 'visible' }), /Exactly one user bubble/);
+    duplicate.parentNode!.removeChild(duplicate);
+    document.querySelector('#expected')!.remove();
+    await assert.rejects(referencePromptBubble(page, prompt).waitFor({ state: 'visible' }), /Exactly one user bubble/);
+    const source = await readFile(new URL('../tooling/context-picker-pilot.mjs', import.meta.url), 'utf8');
+    assert.match(source, /await referencePromptBubble\(page, fixture\.turns\[0\]\.prompt\)\.waitFor/);
+    assert.doesNotMatch(source, /panel\(page\)\.getByText\(fixture\.turns\[0\]\.prompt/);
+  } finally { dom.window.close(); }
+});
 
 test('Reference pilot checks both exact persisted entry snapshots and primary/page targets across restart', () => {
   const original = turn();

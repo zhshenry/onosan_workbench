@@ -21,6 +21,12 @@ const model = page => panel(page).getByRole('combobox', { name: '选择大模型
 const input = page => panel(page).getByRole('textbox', { name: '发送给当前对话的 AI 助手', exact: true });
 const taskState = page => page.evaluate(() => window.workbench.todo.state());
 
+/** A chat title or an assistant echo must never satisfy the restored user-message check. */
+export function referencePromptBubble(page, prompt) {
+  const exactText = new RegExp(`^${prompt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
+  return panel(page).locator('.ai-messages .ai-msg.user > .ai-bubble').filter({ hasText: exactText });
+}
+
 async function eventually(read, predicate, message) {
   const deadline = Date.now() + 15000;
   let value;
@@ -424,7 +430,7 @@ export async function verifyContextPickerRelaunch({ application, page, check, sc
     assert.ok((await page.evaluate(() => window.workbench.reading.list())).books.some(book => book.id === fixture.readingId));
     assert.ok((await page.evaluate(() => window.workbench.bazi.list())).profiles.some(profile => profile.id === fixture.primaryProfileId));
     await navigate(page, 'home', null, 'home'); await openPanel(page); await openChat(page, fixture.turns[0].title);
-    await panel(page).getByText(fixture.turns[0].prompt, { exact: true }).waitFor({ state: 'visible' });
+    await referencePromptBubble(page, fixture.turns[0].prompt).waitFor({ state: 'visible' });
     await screenshot('context-picker-relaunched.png'); await closePanel(page);
   });
 }
