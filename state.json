@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 68,
+  "revision": 69,
   "currentRun": {
     "owner": "ono-root-ui-plans-20261012T1438Z",
     "startedAt": "2026-10-12T14:38:55.053Z",
@@ -190,7 +190,21 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "分析关联分组并准备独立高保真，带图方案在原Issue对齐；等待方案批准后才实施"
+      "nextAction": "补齐成员同版本带图评论后等待#28整组方案批准",
+      "groupId": "floating-ui-25-28-33",
+      "groupIssueNumbers": [
+        25,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33
+      ],
+      "primaryIssue": 28,
+      "planVersion": "group-v1",
+      "primaryPlanCommentId": 6126770999,
+      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999"
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
@@ -223,7 +237,21 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "分析关联分组并准备独立高保真，带图方案在原Issue对齐；等待方案批准后才实施"
+      "nextAction": "补齐成员同版本带图评论后等待#28整组方案批准",
+      "groupId": "floating-ui-25-28-33",
+      "groupIssueNumbers": [
+        25,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33
+      ],
+      "primaryIssue": 28,
+      "planVersion": "group-v1",
+      "primaryPlanCommentId": 6126770999,
+      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999"
     },
     "29": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
@@ -235,7 +263,21 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "分析关联分组并准备独立高保真，带图方案在原Issue对齐；等待方案批准后才实施"
+      "nextAction": "补齐成员同版本带图评论后等待#28整组方案批准",
+      "groupId": "floating-ui-25-28-33",
+      "groupIssueNumbers": [
+        25,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33
+      ],
+      "primaryIssue": 28,
+      "planVersion": "group-v1",
+      "primaryPlanCommentId": 6126770999,
+      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999"
     },
     "30": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
@@ -247,7 +289,21 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "分析关联分组并准备独立高保真，带图方案在原Issue对齐；等待方案批准后才实施"
+      "nextAction": "补齐成员同版本带图评论后等待#28整组方案批准",
+      "groupId": "floating-ui-25-28-33",
+      "groupIssueNumbers": [
+        25,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33
+      ],
+      "primaryIssue": 28,
+      "planVersion": "group-v1",
+      "primaryPlanCommentId": 6126770999,
+      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999"
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
@@ -259,7 +315,21 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "分析关联分组并准备独立高保真，带图方案在原Issue对齐；等待方案批准后才实施"
+      "nextAction": "补齐成员同版本带图评论后等待#28整组方案批准",
+      "groupId": "floating-ui-25-28-33",
+      "groupIssueNumbers": [
+        25,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33
+      ],
+      "primaryIssue": 28,
+      "planVersion": "group-v1",
+      "primaryPlanCommentId": 6126770999,
+      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999"
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
@@ -271,7 +341,21 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "分析关联分组并准备独立高保真，带图方案在原Issue对齐；等待方案批准后才实施"
+      "nextAction": "补齐成员同版本带图评论后等待#28整组方案批准",
+      "groupId": "floating-ui-25-28-33",
+      "groupIssueNumbers": [
+        25,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33
+      ],
+      "primaryIssue": 28,
+      "planVersion": "group-v1",
+      "primaryPlanCommentId": 6126770999,
+      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999"
     },
     "33": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
@@ -283,7 +367,21 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "分析关联分组并准备独立高保真，带图方案在原Issue对齐；等待方案批准后才实施"
+      "nextAction": "补齐成员同版本带图评论后等待#28整组方案批准",
+      "groupId": "floating-ui-25-28-33",
+      "groupIssueNumbers": [
+        25,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33
+      ],
+      "primaryIssue": 28,
+      "planVersion": "group-v1",
+      "primaryPlanCommentId": 6126770999,
+      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999"
     }
   },
   "ownCommentIds": [
@@ -298,7 +396,8 @@
     6124547994,
     6124556681,
     6126565074,
-    6126607129
+    6126607129,
+    6126770999
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -1023,10 +1122,55 @@
     },
     "float-group-v1-primary-comment": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
       "body": "【OnO 自动化】主方案 #28｜悬浮窗组方案 v1｜待方案批准\n\n本组成员：#25、#28、#29、#30、#31、#32、#33。它们都修改同一个待办悬浮窗，宽度会直接影响返回、模型菜单和关联事项反馈，适合一起设计、开发和测试，最终一个实现 PR。各单保留各自验收；#24 顶栏日期、#26 主工作台入口不在本组。\n\n以下是独立高保真设计预览，不是已实现或实测图。保留原有磨砂、圆角、蓝色置顶与橙色 AI 风格。\n\n### 首页：宽窄与展开/收起独立\n![悬浮窗组v1：首页四态](https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4)\n\n### AI：关联反馈不挤压按钮\n![悬浮窗组v1：AI四态](https://github.com/user-attachments/assets/54375109-1de8-4135-84bb-ce34279e5fad)\n\n### 模型菜单及事项状态\n![悬浮窗组v1：交互细节](https://github.com/user-attachments/assets/995767ea-0562-40ce-b878-04c884f95be2)\n\n### 逐单范围和验收\n- #25：仅移除展开首页的“AI建议”整条区域并收回空白，保留显式 AI 入口、待办/日程内容及已交付的 AI 建议确认卡。\n- #28：顶栏增加独立宽窄切换。宽约440、窄约330是本版建议逻辑像素值；默认宽。首页/AI × 宽窄 × 展开/收起都适配。宽窄切换只改宽度，不改当前展开或收起状态的高度；折叠/展开继续使用原高度机制，二者不混为一个按钮。保留当前显示位置，必要时仅做屏幕工作区安全夹紧。本次窗口会话内记住选择，隐藏/显示不重置；应用重启默认宽，本版不新增跨重启偏好持久化。\n- #29：展开 AI 页“返回”改为“返回首页”。\n- #30：收起首页 AI 助手按钮的图标和细边框统一使用现有橙色 AI 色值，兼顾主题、hover与键盘焦点。\n- #31：收起 AI 页去掉“记录1”计数控件，不删除聊天记录或执行中的必要状态。模型按钮右对齐，适当加宽显示名称；菜单贴按钮右边，略宽于按钮，不再铺满窗口。图中约168/196只是排版建议，按实际字体/长名称适配并限制在窗口内；超长名称允许换行/完整提示，菜单过高滚动。展开页现有模型控件几何保持。\n- #32：收起 AI 返回按钮改为左箭头，和展开页一致，作用是返回首页，不改变宽窄或折叠态。\n- #33：选择事项后两形态立即显示可移除的关联 chip，放对话区域，不占模型按钮横向空间；“+ 关联事项”仍在原左下角，不改成挤占空间的“更换关联”。更换/取消仍从同一入口完成；关联前后模型按钮位置和宽度相同。选择器展示类型/标题、状态图标及状态文字，已完成优先于逾期；当前选择勾与事项业务状态分开。复用既有状态语义，不新增虚构业务状态。\n\n### 边界与图稿说明\n- 图为放大审阅排版，不能拿生成图片像素当实机尺寸；细节图是局部放大。同状态宽窄高度不变是必须实测的要求，不照图重设展开高度。\n- 首页窄收起示意图省略了截止时间文案；实施仍须保留截止时间与分页功能，只重排/合理省略长标题，不借收窄删除信息或操作。\n- “已关联”的反馈是本地状态提示，不为反馈额外调用模型；AI聊天示例不是本次改写建议卡样式的批准。\n- #31 的第二张原图实际上传失败；文字和现有代码已足够确定菜单宽度问题，不要求你为了启动方案补图。\n- 当前源码显示收起选择器可能受外部点击关闭逻辑影响，尚未实测确认根因；实施时先复现“选择无反馈”，修正选中事件和显示链路，不用只加静态标签掩盖。\n\n### 实施与验证\n仅在你批准本组方案后修改产品。一次开发本组，完成后提交一个 Draft PR。\n验收覆盖：每个成员以上目标；四种宽窄/收起状态的首页与 AI；空/长事项、长模型名、关联/替换/取消、状态组合；模型位置前后测量；重复切换、点击弹层、Esc/键盘焦点、屏幕边缘、主题与减少动画；实际窗口 bounds 证明切宽不意外触发自动改高。保存/读回和重启按实际涉及数据核对，原待办完成、分页、事项库、AI确认写入保持回归。\n基线 main 6850a4fb7acc10ac1d04468297b70ebd63cfa0a0，[Windows主干检查](https://github.com/zhshenry/onosan_workbench/actions/runs/38262423630)已通过；交付时运行完整测试/构建/安装并附准确实现版本实测图。\n\n图片来源：独立设计，三张已逐张查看；只用原生附件、不入Git、不另备份。\nPNG SHA256：\n- 首页：85fb15262817ee25eed8b44cf99e4bd841eac676d1a4b4fb0fd4a0ae742c2c13\n- AI：3b61ea52d77124cbd2c66ad8eca2c0e3386e905316f9ef602553c056cf4c5b5d\n- 细节：211c12b95844c30c129196bc31c407ce1aa26a40ab1a9e9969e2c963e03c0308\n\n这次只批准方案及所列实现/测试范围，不是合入或关单批准；完成后按准确 PR/head 请求一次最终合入收尾。\n意见直接在本 Issue 回复；无需七个单重复批准。同意请回复：同意悬浮窗组方案 v1（#25、#28–#33）",
-      "createdAt": "2026-10-12T14:55:24.487Z"
+      "createdAt": "2026-10-12T14:55:39Z",
+      "commentId": 6126770999,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999",
+      "displayVerifiedAt": "2026-10-12T14:56:42.579Z"
+    },
+    "float-group-v1-member-25": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/25",
+      "body": "【OnO 自动化】#25｜纳入悬浮窗组方案 v1\n\n![悬浮窗组v1：首页四态](https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4)\n\n以上为独立高保真设计预览，不是实测截图。本单范围与验收：展开首页移除“AI建议”整条区域并收回空白，保留顶栏AI入口和待办/日程操作；不删除已交付建议确认卡。\n\n本组为 #25、#28、#29、#30、#31、#32、#33，因共用同一悬浮窗且宽窄适配互相影响，统一一个方案、后续一个实现PR。完整三张图、逐单边界和验收见[主方案评论](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)；#24、#26不包含在内。\n\n图稿是审阅排版，非实际窗口尺寸。宽窄与展开/收起独立；同状态切宽只改宽度、不改高度。首页窄收起图省略的截止文案不代表删除该功能，实际仍保留截止信息和分页。方案批准前不改产品。\n\n意见可在这里补充；整组批准只需在 #28 回复一次：同意悬浮窗组方案 v1（#25、#28–#33）",
+      "createdAt": "2026-10-12T14:56:42.579Z"
+    },
+    "float-group-v1-member-29": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/29",
+      "body": "【OnO 自动化】#29｜纳入悬浮窗组方案 v1\n\n![悬浮窗组v1：AI四态](https://github.com/user-attachments/assets/54375109-1de8-4135-84bb-ce34279e5fad)\n\n以上为独立高保真设计预览，不是实测截图。本单范围与验收：展开AI页返回文案统一为“返回首页”，使用左箭头；返回只切页面，不改变宽窄或折叠态。\n\n本组为 #25、#28、#29、#30、#31、#32、#33，因共用同一悬浮窗且宽窄适配互相影响，统一一个方案、后续一个实现PR。完整三张图、逐单边界和验收见[主方案评论](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)；#24、#26不包含在内。\n\n图稿是审阅排版，非实际窗口尺寸。宽窄与展开/收起独立；同状态切宽只改宽度、不改高度。首页窄收起图省略的截止文案不代表删除该功能，实际仍保留截止信息和分页。方案批准前不改产品。\n\n意见可在这里补充；整组批准只需在 #28 回复一次：同意悬浮窗组方案 v1（#25、#28–#33）",
+      "createdAt": "2026-10-12T14:56:42.579Z"
+    },
+    "float-group-v1-member-30": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/30",
+      "body": "【OnO 自动化】#30｜纳入悬浮窗组方案 v1\n\n![悬浮窗组v1：首页四态](https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4)\n\n以上为独立高保真设计预览，不是实测截图。本单范围与验收：收起首页AI助手按钮用现有橙色AI图标和橙色细边框，保留主题、hover和键盘焦点反馈。\n\n本组为 #25、#28、#29、#30、#31、#32、#33，因共用同一悬浮窗且宽窄适配互相影响，统一一个方案、后续一个实现PR。完整三张图、逐单边界和验收见[主方案评论](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)；#24、#26不包含在内。\n\n图稿是审阅排版，非实际窗口尺寸。宽窄与展开/收起独立；同状态切宽只改宽度、不改高度。首页窄收起图省略的截止文案不代表删除该功能，实际仍保留截止信息和分页。方案批准前不改产品。\n\n意见可在这里补充；整组批准只需在 #28 回复一次：同意悬浮窗组方案 v1（#25、#28–#33）",
+      "createdAt": "2026-10-12T14:56:42.579Z"
+    },
+    "float-group-v1-member-31": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/31",
+      "body": "【OnO 自动化】#31｜纳入悬浮窗组方案 v1\n\n![悬浮窗组v1：交互细节](https://github.com/user-attachments/assets/995767ea-0562-40ce-b878-04c884f95be2)\n\n以上为独立高保真设计预览，不是实测截图。本单范围与验收：收起AI页去掉“记录1”计数控件（不删聊天/必要运行状态），模型按钮右对齐加宽，菜单略宽于按钮且锚定右边、限制在窗口内。第二张原图上传失败已确认，方案按文字与现有代码形成，无需为此先补图。\n\n本组为 #25、#28、#29、#30、#31、#32、#33，因共用同一悬浮窗且宽窄适配互相影响，统一一个方案、后续一个实现PR。完整三张图、逐单边界和验收见[主方案评论](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)；#24、#26不包含在内。\n\n图稿是审阅排版，非实际窗口尺寸。宽窄与展开/收起独立；同状态切宽只改宽度、不改高度。首页窄收起图省略的截止文案不代表删除该功能，实际仍保留截止信息和分页。方案批准前不改产品。\n\n意见可在这里补充；整组批准只需在 #28 回复一次：同意悬浮窗组方案 v1（#25、#28–#33）",
+      "createdAt": "2026-10-12T14:56:42.579Z"
+    },
+    "float-group-v1-member-32": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/32",
+      "body": "【OnO 自动化】#32｜纳入悬浮窗组方案 v1\n\n![悬浮窗组v1：AI四态](https://github.com/user-attachments/assets/54375109-1de8-4135-84bb-ce34279e5fad)\n\n以上为独立高保真设计预览，不是实测截图。本单范围与验收：收起AI页返回图标改为左箭头，和展开页一致；作用为返回首页，不是展开/折叠。\n\n本组为 #25、#28、#29、#30、#31、#32、#33，因共用同一悬浮窗且宽窄适配互相影响，统一一个方案、后续一个实现PR。完整三张图、逐单边界和验收见[主方案评论](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)；#24、#26不包含在内。\n\n图稿是审阅排版，非实际窗口尺寸。宽窄与展开/收起独立；同状态切宽只改宽度、不改高度。首页窄收起图省略的截止文案不代表删除该功能，实际仍保留截止信息和分页。方案批准前不改产品。\n\n意见可在这里补充；整组批准只需在 #28 回复一次：同意悬浮窗组方案 v1（#25、#28–#33）",
+      "createdAt": "2026-10-12T14:56:42.579Z"
+    },
+    "float-group-v1-member-33": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/33",
+      "body": "【OnO 自动化】#33｜纳入悬浮窗组方案 v1\n\n![悬浮窗组v1：交互细节](https://github.com/user-attachments/assets/995767ea-0562-40ce-b878-04c884f95be2)\n\n以上为独立高保真设计预览，不是实测截图。本单范围与验收：两形态关联后在对话区域显示可移除chip，“+ 关联事项”保持左下，模型按钮位置/宽度不被挤压。选择列表补状态图标+文字，业务状态和选中勾分开；先实测并修复选择事件/反馈链路，不能只画静态标签。\n\n本组为 #25、#28、#29、#30、#31、#32、#33，因共用同一悬浮窗且宽窄适配互相影响，统一一个方案、后续一个实现PR。完整三张图、逐单边界和验收见[主方案评论](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)；#24、#26不包含在内。\n\n图稿是审阅排版，非实际窗口尺寸。宽窄与展开/收起独立；同状态切宽只改宽度、不改高度。首页窄收起图省略的截止文案不代表删除该功能，实际仍保留截止信息和分页。方案批准前不改产品。\n\n意见可在这里补充；整组批准只需在 #28 回复一次：同意悬浮窗组方案 v1（#25、#28–#33）",
+      "createdAt": "2026-10-12T14:56:42.579Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
