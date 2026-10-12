@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 35,
+  "revision": 36,
   "currentRun": {
     "owner": "ono-root-ai-cards-20261012T1036Z",
     "startedAt": "2026-10-12T10:37:06.478Z",
@@ -9,12 +9,12 @@
       17,
       18
     ],
-    "stage": "implementation"
+    "stage": "ci-verification"
   },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
-      "stage": "implementing",
+      "stage": "ci-verification",
       "type": [
         "ui",
         "interaction"
@@ -36,7 +36,7 @@
         "corroboratingCommentId": 6122339723,
         "verifiedAt": "2026-10-12T10:37:06.479Z"
       },
-      "nextAction": "同组实现17/18、逐项测试和真实截图，完成后一个Draft PR，等待最终合入批准",
+      "nextAction": "完成真实Windows及UI专项，取得实际截图并在Issue最终验收；不自动合入",
       "planCommentId": 6122171698,
       "imageUrl": "https://github.com/user-attachments/assets/93fb3681-bfa4-4257-8446-f6baf1497d17",
       "planPublishedAt": "2026-10-12T10:12:01Z",
@@ -51,11 +51,14 @@
       "primaryIssue": 17,
       "feedbackCommentId": 6121844831,
       "primaryPlanCommentId": 6122171698,
-      "implementationBaseSha": "ebc21504080900fa6fb1d7f6f1f237e55e6d5575"
+      "implementationBaseSha": "ebc21504080900fa6fb1d7f6f1f237e55e6d5575",
+      "prNumber": 23,
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/23",
+      "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40"
     },
     "18": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/18",
-      "stage": "implementing",
+      "stage": "ci-verification",
       "type": [
         "ui",
         "interaction"
@@ -77,7 +80,7 @@
         "corroboratingCommentId": 6122339723,
         "verifiedAt": "2026-10-12T10:37:06.479Z"
       },
-      "nextAction": "同组实现17/18、逐项测试和真实截图，完成后一个Draft PR，等待最终合入批准",
+      "nextAction": "完成真实Windows及UI专项，取得实际截图并在Issue最终验收；不自动合入",
       "planCommentId": 6122190320,
       "imageUrl": "https://github.com/user-attachments/assets/9f2bcb64-a500-45fd-b64e-e96944abe866",
       "planPublishedAt": "2026-10-12T10:13:14Z",
@@ -92,7 +95,10 @@
       "primaryIssue": 17,
       "feedbackCommentId": 6121855689,
       "primaryPlanCommentId": 6122171698,
-      "implementationBaseSha": "ebc21504080900fa6fb1d7f6f1f237e55e6d5575"
+      "implementationBaseSha": "ebc21504080900fa6fb1d7f6f1f237e55e6d5575",
+      "prNumber": 23,
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/23",
+      "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40"
     }
   },
   "ownCommentIds": [
@@ -475,12 +481,16 @@
     },
     "cards-v2-draft-pr": {
       "kind": "create-draft-pr",
-      "status": "intent",
+      "status": "succeeded",
       "branch": "ono/ai-suggestion-cards-17-18",
       "baseSha": "ebc21504080900fa6fb1d7f6f1f237e55e6d5575",
       "expectedTree": "b96ce54a308b7001067cf62e22d88b0f7f3abc57",
       "scope": "已批准17/18组v2实现，14文件，真实Windows验收待Draft PR CI，不合入",
-      "createdAt": "2026-10-12T10:53:46.773Z"
+      "createdAt": "2026-10-12T10:53:46.773Z",
+      "prNumber": 23,
+      "url": "https://github.com/zhshenry/onosan_workbench/pull/23",
+      "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
+      "updatedAt": "2026-10-12T10:55:19.107Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
