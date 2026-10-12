@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { deflateSync } from 'node:zlib';
 import { normalizePng, encodeRgba } from '../tooling/ono/render-pilot/png.mjs';
+import { decodePng } from '../tooling/ono/evidence.mjs';
 import { validateRenderContext, CANDIDATE, STATE } from '../tooling/ono/render-pilot/render.mjs';
 import { checkManifest, publish } from '../tooling/ono/render-pilot/publish.mjs';
 
@@ -88,16 +89,7 @@ for (const channels of [3, 4]) for (const filter of [0, 1, 2, 3, 4]) {
   });
 }
 
-test('normalized RGB/RGBA mixed-filter fixtures pass the unchanged production evidence decoder', async t => {
-  let decodePng: (bytes: Uint8Array) => { width: number; height: number; pixelDigest: string };
-  try { ({ decodePng } = await import('../tooling/ono/evidence.mjs')); }
-  catch (error: any) {
-    // Dependency-free local review can still run the remaining tests. Normal CI must never skip this integration.
-    if (!process.env.CI && error.code === 'ERR_MODULE_NOT_FOUND' && /package 'marked'/.test(error.message)) {
-      t.skip('Local marked dependency is absent; production decoder integration must run in normal npm/CI setup.'); return;
-    }
-    throw error;
-  }
+test('normalized RGB/RGBA mixed-filter fixtures pass the retained PNG evidence decoder', () => {
   for (const channels of [3, 4]) {
     const source = fixture(channels), normalized = normalizePng(source.bytes), decoded = decodePng(normalized.bytes);
     assert.deepEqual(decoded, { width: source.width, height: source.height, pixelDigest: digest(source.rgba) });
@@ -320,19 +312,7 @@ test('changed returned comment body, malformed native URL and non-image links ar
   }
 });
 
-test('manual workflow keeps rendering token-free, network isolated, default nonpublishing and image-copy-free', () => {
-  const workflow = readFileSync('.github/workflows/ono-prototype-render.yml', 'utf8');
-  assert.match(workflow, /workflow_dispatch:/); assert.doesNotMatch(workflow, /^  (push|pull_request|pull_request_target|schedule|workflow_run):/m);
-  assert.match(workflow, /default: false/); assert.match(workflow, /sudo unshare --net -- setpriv/);
-  assert.match(workflow, /env -i PATH=/); assert.match(workflow, /persist-credentials: false/);
-  assert.match(workflow, /contents: read/); assert.doesNotMatch(workflow, /contents: write|issues: write/);
-  assert.doesNotMatch(workflow, /upload-artifact|actions\/cache|base64|pull_request\.head/);
-  assert.equal((workflow.match(/secrets\.ONOSAN_GH_TOKEN/g) ?? []).length, 1);
-  const publication = workflow.indexOf('name: Publish once');
-  assert.ok(publication > workflow.indexOf('name: Render with'));
-  assert.ok(workflow.indexOf('secrets.ONOSAN_GH_TOKEN') > publication);
-  assert.match(workflow.slice(publication), /if: inputs\.post_attachment == true/);
-  assert.match(workflow, /if: always\(\)/);
+test('historical renderer retains the Chromium sandbox and disallows downloads and service workers', () => {
   const renderer = readFileSync('tooling/ono/render-pilot/render.mjs', 'utf8');
   assert.match(renderer, /chromiumSandbox: true/); assert.doesNotMatch(renderer, /--no-sandbox/);
   assert.match(renderer, /acceptDownloads: false/); assert.match(renderer, /serviceWorkers: 'block'/);

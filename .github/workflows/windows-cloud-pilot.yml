@@ -25,46 +25,6 @@ env:
   WORKBENCH_CI_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
 
 jobs:
-  linux-baseline:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    env:
-      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - name: Check Actions workflow semantics and historical context regression
-        timeout-minutes: 2
-        shell: bash
-        run: |
-          set -euo pipefail
-          directory="$(mktemp -d "$RUNNER_TEMP/ono-actionlint.XXXXXX")"
-          trap 'rm -rf -- "$directory"' EXIT
-          curl --fail --silent --show-error --location --connect-timeout 15 --max-time 90 --proto '=https' --tlsv1.2 \
-            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz -o "$directory/actionlint.tar.gz"
-          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $directory/actionlint.tar.gz" | sha256sum --check --strict
-          tar -xzf "$directory/actionlint.tar.gz" -C "$directory" actionlint
-          node tooling/check-workflows.mjs "$directory/actionlint"
-      - name: Read-only system Chrome eligibility (no page or renderer)
-        timeout-minutes: 1
-        run: |
-          node --input-type=module <<'NODE'
-          import { verifySystemChrome } from './tooling/ono/render-pilot/system-chrome.mjs';
-          import { runStage, formatDiagnostic } from './tooling/ono/render-pilot/diagnostics.mjs';
-          try { await runStage('system_chrome', () => verifySystemChrome()); }
-          catch (error) { console.error(formatDiagnostic(error)); process.exitCode = 1; }
-          NODE
-      - name: Install locked dependencies without browser downloads or cache uploads
-        run: npm ci --no-audit --no-fund
-      - name: Unit tests
-        run: npm test
-      - name: Typography, types and production build
-        run: npm run verify
-
   windows-installed-app:
     runs-on: windows-2022
     timeout-minutes: 25
@@ -79,6 +39,28 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Check Actions workflow semantics and historical context regression
+        timeout-minutes: 2
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $directory = Join-Path $env:RUNNER_TEMP ('ono-actionlint-' + [guid]::NewGuid().ToString('N'))
+          New-Item -ItemType Directory -Path $directory | Out-Null
+          try {
+            $archive = Join-Path $directory 'actionlint.zip'
+            curl.exe --fail --silent --show-error --location --connect-timeout 15 --max-time 90 --proto '=https' --tlsv1.2 `
+              https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_windows_amd64.zip --output $archive
+            if ($LASTEXITCODE -ne 0) { throw 'actionlint download failed' }
+            $expectedHash = '6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9'
+            if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expectedHash) {
+              throw 'actionlint archive SHA256 mismatch'
+            }
+            Expand-Archive -LiteralPath $archive -DestinationPath $directory
+            node tooling/check-workflows.mjs (Join-Path $directory 'actionlint.exe')
+            if ($LASTEXITCODE -ne 0) { throw 'Workflow semantic validation failed' }
+          } finally {
+            Remove-Item -LiteralPath $directory -Recurse -Force
+          }
       - name: Install locked Windows dependencies
         run: npm ci --no-audit --no-fund
       - name: Download the locked Electron Windows runtime explicitly
@@ -94,7 +76,7 @@ jobs:
         run: ./tooling/windows-pilot-install.ps1
       - name: Installed app UI flow and same-version persistence
         run: npm run test:windows-pilot
-      # The only artifact upload in the entire run. Linux produces no artifact.
+      # The only artifact upload in the entire run.
       - name: Enforce screenshot/report allowlist and 20 MB total run ceiling
         id: evidence
         if: always()

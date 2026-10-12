@@ -1,406 +1,87 @@
-# Fixed prototype render/attachment pilot
-
-## Issue 13 design-preparation extension
-
-The closed candidate registry also accepts `issue-13-year-picker-v1`: one fixed
-1440×1024 board containing the calendar, year input and jumped-to-1990 states.
-Its source-byte SHA256, state, dimensions, purpose and Issue 13 destination are
-code-owned. See [Issue 13 preparation record](ONO-ISSUE-13-DESIGN-RENDER.md).
-No new candidate screenshot or publication has run as part of this preparation.
-Historical Design A remains the default and its record below is unchanged.
-The security, retention and one-write publication constraints below apply to
-both candidates; descriptions of the historical page apply only to that state.
-
-This is a separate, manual-only fixed-prototype experiment.
-It does not change the production policy pin or enable an issue listener, approval
-adapter, development runner, merge, release, or acceptance gate.
-
-## Current verified outcome (2026-10-09)
-
-The separately approved manual [run 37881203730](https://github.com/zhshenry/onosan_workbench/actions/runs/37881203730)
-completed successfully at main `7313fddf62f69561c492d553ca02548b7b704126`,
-attempt 1, and published the one image in [comment 6073909178](https://github.com/zhshenry/onosan_workbench/issues/7#issuecomment-6073909178).
-The [historical Design A record v1](ONO-HISTORICAL-DESIGN-A-RECORD.md) now embeds
-that exact existing native-attachment URL and binds its source/state/run/hash.
-It is not a new product proposal, approval or visual acceptance. The original
-comment still says visual review is pending; this text backfill does not change it.
-
-Assistant dispatch is **not connected**. The preparation helper below emits
-parameters only. Merging this documentation/helper does not enable automated
-rendering or uploading. Earlier preparation/diagnosis sections below describe
-their historical stage, not the status of this successful run.
-
-## Exact candidate, not a new design
-
-- Existing source: `design/mockups/design-a-glass.html`.
-- State: `historical-design-a-home`, initial home view, three sidebar items.
-- Output: 1440 × 1024 at deviceScaleFactor 1 (1,474,560 pixels).
-- This is the historical Design A prototype, not the current product design.
-  Its old dates/text are intentionally preserved. Ubuntu font fallback differs
-  from Windows; this is not a claim of current product visual acceptance.
-- The source is normal reviewable design code, not an encoded image or backup.
-
-**This changes the generation chain:** dot prepares/reviews source; Actions
-renders the final PNG. It does not transfer an ImageGen bitmap from dot to
-Actions. This alternative and the exact page/state must be accepted in the main
-conversation before publishing it.
-
-## What has and has not been exercised
-
-The initial preparation added a manual workflow, bounded PNG adapter,
-render/upload separation and mock regression tests. At that stage no real
-dispatch, prototype image or upload had been exercised. The current real-run
-result is recorded above; visual acceptance is still separate.
-Ordinary PR CI runs unit/build/Windows checks, not this manual workflow.
-Opening a PR does not render or publish the candidate prototype image. The
-existing ordinary CI retains its established acceptance screenshots/reports; this
-pilot does not add an image artifact, base64 payload, cache upload, service or secret.
-
-## Security and retention
-
-The workflow accepts only this repository, owner actor (including numeric actor
-ID), owner triggering actor, main ref, and the exact reviewed main SHA. Checkout
-credentials are not persisted. The default `post_attachment=false` installs a
-small isolated lockfile and renders/checks only; no PAT is injected and no issue
-comment is written. Both publication inputs have no default target.
-
-Install Playwright 1.63.0 from the committed integrity-locked package tree before
-rendering. Chromium runs as the runner user with its sandbox explicitly enabled,
-inside a kernel network namespace with no external interfaces. Namespace or
-sandbox failures stop the run; there is no permissive fallback. The inline-only
-candidate is loaded with setContent, restrictive CSP, offline context, service
-workers blocked, all requests/WebSockets denied, downloads disabled and no
-permissions. There is no repository HTTP server or arbitrary URL/path parameter.
-
-Install and render steps receive no PAT. The browser is closed before the
-separate dependency-free publisher step receives ONOSAN_GH_TOKEN. This remains
-one job because image transfer through Actions artifacts would create another
-image copy. **Step-scoped credentials are temporal separation, not a sandbox
-against malicious same-job source/dependencies.** Only explicitly reviewed,
-trusted main source is supported; never run a PR head or arbitrary source with
-this workflow. The network namespace does not make the checkout filesystem
-read-only. Stronger hostile-code isolation is outside this pilot.
-
-PNG bytes exist only in runner memory and a private temporary directory, removed
-by an always cleanup step. There are no image artifacts, cache actions, repository
-images or base64 logs. Normal npm download caches/browser downloads are temporary
-runner files, never uploaded. Only the explicitly approved native GitHub
-attachment persists after publication. Logs may retain its public URL, source
-identity and hashes, not image bytes. GitHub's native attachment is not a promise
-of immutable or permanent storage.
-
-## PNG and evidence boundary
-
-The adapter accepts bounded 8-bit noninterlaced RGB/RGBA PNGs, validates CRC,
-chunk order, filters and exact inflation length, expands RGB alpha to 255 and
-preserves pixels. It rejects unsupported/colour-affecting chunks rather than
-silently changing appearance. The canonical PNG is RGBA8 with only
-IHDR/IDAT/IEND and stays within the unchanged 4-million-pixel/20-MB limits.
-Regression tests compare normalized pixels with the existing production decoder.
-The manifest binds source/file digests, SHA, run/attempt, viewport, actual browser
-version, original screenshot hash, canonical PNG hash and pixel digest.
-
-The uploader revalidates the bounded regular output and exact manifest before
-one attachment call. Readability, hash correctness or size is not a high-fidelity
-review. The production `checkDesign` policy and its verifier remain unchanged;
-no verifier is replaced with `true`.
-
-## Publication and same-URL plan flow
-
-1. Review and merge the preparation only if explicitly authorized. Merging this
-   PR is not authorized by its creation. Record the resulting main SHA.
-2. Main conversation approval must specify that SHA, candidate/page/state,
-   exact target issue, a unique approval marker and public upload of this one
-   image. Source publication and image/plan/development approvals are distinct.
-   Inputs are audit bindings, not cryptographic proof of a human approval.
-3. Dispatch manually on approved main. The existing connector does not provide
-   dispatch; use only a separately available and authorized triggering route.
-4. Before upload verify current main, PAT viewer zhshenry, repository ID/write
-   access, open/unlocked issue, first attempt and absence of the approval marker.
-   Recheck immediately before the sole gh 2.102.0 `--attach` call.
-5. Read the resulting issue comment. Require the expected author, body and one
-   exact Markdown native-attachment URL. URL recovery is not yet image-access or
-   visual verification. Open the actual attachment and compare its bytes/hash.
-6. dot uses its existing authorized text-file connector to insert **that same
-   URL** into the explicitly selected plan, with a source/version-bound edit or
-   reviewable PR. No second image upload and no expansion of the runtime PAT's
-   Issues-write/Metadata-read scopes are needed. Plan writing is outside this
-   workflow. After final URL insertion calculate the final plan digest and
-   obtain the separate main-chat plan approval before development.
-7. Confirm actual embedding and accessibility in both plan and comment, then
-   perform visual review. Do not claim this pilot completes the production
-   trusted approval/persistence/visual adapters.
-
-If the upload call fails or times out, query for the marker but never retry the
-write automatically. A matching comment can aid recovery; zero matching comments
-cannot prove no orphan asset exists. Do not rerun or create a fresh dispatch after
-uncertainty until reconciliation and renewed main-conversation authorization.
-The shared concurrency group prevents simultaneous pilot upload runs; it is not
-a persistent exactly-once transaction service.
-
-No token is read locally, copied, exposed, expanded or changed by this PR.
-
-## Assistant parameter preparation (not a trigger)
-
-`tooling/ono/render-pilot/prepare-dispatch.mjs` is a dependency-free text helper.
-It performs no network requests, child-process execution, credential lookup,
-image operations or GitHub writes. It returns the exact REST body for the one
-existing workflow; repository/workflow and main ref are fixed. State selection is a closed enum;
-the historical state remains the default. `--prototype-state
-issue-13-year-picker-v1` explicitly selects the new fixed board. Its publication
-target must be Issue 13, while nonpublishing mode still rejects target/marker
-fields. No arbitrary source path, URL, selector, dimensions or hash is accepted.
-No workflow, permission, secret or production core-v1 policy is changed.
-
-The assistant reads current main through the connected GitHub reader and fills
-in the approved/current SHAs. The user should not have to find and transcribe
-Actions parameters. Example using an illustrative SHA, **not permission to run**:
-
-```sh
-node tooling/ono/render-pilot/prepare-dispatch.mjs \
-  --approved-sha aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
-  --current-main-sha aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-```
-
-Stdout is JSON with `ref: main` and all five input fields. `post_attachment`
-defaults to false; publication requires explicit `--publish`, `--target-issue`
-and `--approval-id`. Missing/malformed/duplicate/unknown options, shortened SHAs,
-different main SHAs and publication fields in render-only mode are rejected.
-Stderr always says preparation did not dispatch. The helper must not be placed
-in a shell pipeline that dispatches merely because parameter validation passed.
-
-The two SHA arguments and approval marker are caller-supplied audit data, not
-authenticated evidence. They cannot prove main freshness, human intent, marker
-uniqueness, single use or cancellation status. Before a future real dispatch,
-the assistant must re-read the exact active main-chat approval and current main;
-bind source/state, full SHA, mode, destination and unique marker; and check for
-withdrawal and any earlier/uncertain run. Source or destination changes require
-new approval. A generic approval of this PR does not authorize a render/upload.
-Same-account GitHub comments/reviews, branch pushes, files, labels and JSON must
-never be treated as the user's approval. Existing renderer/publication guards
-remain the execution-side backstop if main changes after preparation. This is
-not an atomic compare-and-dispatch or persistent approval-consumption service.
-
-### Missing capability and smallest future connection
-
-At the 2026-10-09 check, the available GitHub connector could read Actions and
-write repository text/PRs but exposed no workflow-dispatch operation; dot's local
-`gh auth status` was unauthenticated. The helper does not change either fact.
-No new browser login/session or authentication route was established by this PR.
-
-The smallest future path is an explicitly authorized dispatcher that can send
-the prepared JSON to the official [workflow dispatch endpoint](https://docs.github.com/en/rest/actions/workflows#create-a-workflow-dispatch-event):
-`POST /repos/zhshenry/onosan_workbench/actions/workflows/ono-prototype-render.yml/dispatches`.
-Fine-grained authentication for this API requires repository **Actions: write**;
-the identity must also satisfy this workflow's existing `zhshenry` owner actor,
-numeric actor ID and triggering-actor checks. An installation bot identity may
-not satisfy them; do not weaken those checks to make a connector work.
-
-Prefer a connector route using an already authorized matching identity if one
-becomes available. If it needs a new grant/token, expanded permission or persistent
-session, stop and obtain the separate required approval before setting it up.
-Do not reuse, read or export `ONOSAN_GH_TOKEN` for dispatch: that secret remains
-confined to the existing trusted Actions upload step. An already authorized
-owner web session is another possible route, but must actually be checked before
-claiming it is available; no browser automation or prefilled-URL trick is added.
-Until one route is verified, the status is **parameters prepared; trigger blocked**,
-not “hands-off launching complete.”
-
-### Result readback and uncertainty
-
-After a separately authorized dispatch, record its returned run identity when
-available and GET the exact run and jobs until terminal. Check workflow path,
-event, owner identity, full SHA, main branch and attempt. If the API version does
-not return a run ID, identify a unique matching new workflow_dispatch run using
-the pre-dispatch run snapshot and time; ambiguity blocks progress. Do not use a
-PR-only run reader to conclude there was no manual run. The connected generic
-GitHub reader supports `/actions/runs/{run_id}` and its jobs subresource.
-
-For publication, re-read the exact issue comment with the approval marker, match
-source/state/SHA/run/attempt and recover its one native attachment URL. Use that
-same URL in the versioned plan and comment; check real accessibility, bytes/hash
-and visual fidelity separately. Compute the final plan digest after insertion,
-then request the distinct plan/development approval. No automatic plan backfill
-writer or visual/persistence verifier is supplied here.
-
-A dispatch timeout, absent run, duplicate match or uncertain upload must be
-reconciled read-only, never retried automatically with a new marker. Missing
-comments do not prove an asset was never uploaded. Existing run-attempt/marker
-guards are bounded safeguards, not durable exactly-once or authenticity proof.
-
-## Definition-validation correction
-
-The first merged preparation (`57ab8d0`) was rejected by GitHub before any job ran:
-line 44 referenced `runner.temp` in job-level `env`, where that context is not
-available. The corrected definition gives the identical browser path to the
-install and render steps separately; no authority or publication scope changes.
-
-Ordinary Linux PR/main CI now runs `tooling/check-workflows.mjs` before installing
-application dependencies. It downloads official actionlint **1.7.12**, validates
-the archive against the pinned SHA256
-`8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8`
-(from upstream `actionlint_1.7.12_checksums.txt`), then checks all workflow files,
-including manual-only workflows. The same executable must reject a reconstruction
-of the historical error with an expression diagnostic specifically naming the
-forbidden `runner` context. Missing binary, wrong version, validation errors or a
-non-reproduced regression fail CI. No workflow command is executed by this lint.
-Optional external shellcheck/pyflakes integrations are disabled to keep this
-check focused on Actions semantics; no Actions expression check is ignored.
-
-This addresses the previous gap: generic YAML parsing and string tests did not
-validate expression-context availability. Passing actionlint still does not
-prove a real runner can launch Chromium, render the prototype, or publish it.
-At that correction stage the manual render/upload remained unexecuted and
-required separate authorization; the later successful run is recorded above.
-
-## Safe render-stage diagnostics
-
-The first real manual run at `b204258`
-([37794111646](https://github.com/zhshenry/onosan_workbench/actions/runs/37794111646))
-installed the renderer, entered its Node program and stopped before publication.
-Its generic catch suppressed the underlying error. That run does **not** establish
-whether browser launch, page readiness or PNG handling caused the failure.
-
-The diagnostic-only update logs finite start/passed stage markers for preflight,
-import, environment, browser_launch, page_load, assets, screenshot, png, output
-and cleanup. Failures report only an allowlisted stage and error code. Known
-system/timeout errors and a small set of explicit browser-launch diagnostics are
-mapped to fixed codes; unmatched errors remain OPERATION_FAILED. Raw messages,
-stacks, environment values, paths, HTML, page-console output and arbitrary
-exception properties are never serialized. Known browser text is inspected only
-to select a fixed code; it is not printed. Existing successful image hashes remain
-part of normal provenance output.
-
-Browser close is attempted after any post-launch failure. If it also fails, its
-safe cleanup code is reported while the primary failure is preserved. Cleanup
-failure after an otherwise successful capture still fails the process, so the
-publication step cannot proceed. Existing always-run temporary-file cleanup is
-unchanged. The in-process dependency adapters are for mock unit tests only; they
-cannot be selected through workflow inputs.
-
-Tests simulate each phase and hostile exception values. This update does not
-weaken the Chromium sandbox, network namespace, CSP, no-secret rendering, source
-binding or upload controls. It does not apply a guessed root-cause fix. A real
-manual diagnostic run with `post_attachment=false` requires separate approval of
-the new main SHA after merge; it has not been performed as part of this update.
-
-## Guarded system Chrome candidate
-
-The no-upload diagnostic [run 37869159636](https://github.com/zhshenry/onosan_workbench/actions/runs/37869159636)
-reached browser_launch and returned BROWSER_SANDBOX_UNAVAILABLE. Preflight,
-module import and filesystem setup passed. It never loaded the prototype or
-published anything. The code combines more than one sandbox error signature;
-that result alone does not prove AppArmor or a particular kernel setting caused
-it.
-
-The candidate change adds a read-only system_chrome gate before launching any
-browser. It requires a nonroot effective renderer account, a fixed root-owned
-system Chrome executable and wrapper, exact authenticated-source payload bytes, ownership by the installed
-`google-chrome-stable` package, an exact package version plus verified official executable bytes, and the
-known existing AppArmor Chrome profile/configuration plus loaded-profile state.
-Missing, unreadable or unfamiliar evidence fails closed with a finite code.
-It does not create, load or edit a profile, alter sysctl/sudoers/permissions,
-install a setuid helper, start a root browser, or fall back to no-sandbox.
-
-The accepted Chrome version is pinned to **154.0.8037.97**, listed in the exact
-[runner image 20261004.327.1 manifest](https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md)
-used by that diagnostic. A later hosted-image/browser update is not silently
-accepted. Package metadata alone is not source-content attestation. The runtime payload
-now also requires exact SHA256/type/size/tree matching to the fixed manifest
-derived from Google's exact official HTTPS package, as documented below. GitHub's [image installer](https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/scripts/build/install-google-chrome.sh)
-uses Google's official stable package source.
-
-The kernel's loaded AppArmor profile list may not be readable by the ordinary
-runner user. Only a fixed existing-sudo read of that one profile-list file is
-permitted; raw contents stay in memory and are not logged. No new privilege grant
-is configured. If that read is unavailable, the gate reports insufficient
-verification rather than inferring that an on-disk profile is loaded.
-
-Only after the gate passes does Playwright use the fixed system executable with
-`channel: chrome` and `chromiumSandbox: true`. The browser's reported version must
-also match before page creation. Network namespace, offline context, CSP, request
-blocking, no-PAT rendering, publication gates and PNG guards remain unchanged.
-The temporary manifest records the verified system-browser source/version/path,
-nonroot UID and profile name. The existing pinned Playwright installation is
-retained; downloaded bundled Chromium is not a fallback.
-
-[Chromium's official explanation](https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md)
-describes the distinction between downloaded builds and the system Chrome path
-with an existing Ubuntu profile. That makes this a candidate compatibility fix,
-not proof of the original AppArmor subcause or future runtime success.
-
-Unit tests use mocked filesystem/process/command evidence and never read local
-security configuration or start a browser. Ordinary Linux PR CI additionally runs
-only the read-only system-browser eligibility gate against its actual runner:
-account/path/package/profile checks and complete payload hashing, with no Chrome
-process, Playwright launch, page, renderer, image, upload or PAT. A failed
-precondition fails that check with a finite safe code; it is never relaxed to
-make CI pass. This probe does not enter the main-only manual prototype workflow
-or prove the browser can render under its network namespace. A real
-post_attachment=false render requires separately approved post-merge main SHA;
-no upload or main-branch runtime success is claimed by this PR.
-
-
-### Correcting the hosted /opt assumption without changing its permissions
-
-The first PR eligibility probes failed before any Chrome command because the
-Chrome directory was writable. The exact image's official
-[configure-system.sh](https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/scripts/build/configure-system.sh)
-recursively applies mode 777 to /opt. Non-writable Chrome ancestry was a new
-conservative check in this PR, not a pre-existing user security requirement; it
-was not a usable source-integrity proof for this hosted image.
-
-The corrected gate does not chmod/chown anything or silently ignore content
-integrity. Instead, it requires an exact offline match of the complete Chrome
-runtime tree to `chrome-154.0.8037.97-manifest.json`: all expected files and
-directories, file types, sizes and SHA256 hashes. Unexpected/missing entries or
-symlink replacements fail before Chrome is executed. Root ownership, canonical
-paths and executable/privileged-bit checks remain; only the known /opt writable
-mode assumption is replaced by payload verification. Existing /etc AppArmor and
-/usr tool protections remain unchanged.
-
-The manifest source is this exact Google HTTPS URL:
-https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_154.0.8037.97-1_amd64.deb
-
-- Package SHA256: `a4edbe95e9b01db6c9b97d7a1323121eda18362b5620df06abac1b59bee80053`
-- Manifest SHA256: `f9dd5a61fcfd187eac5beecf9fa0e81c2b43751ad24779dea67af2fcc2bc9d9e`
-- Runtime: 255 files and 8 directories, 456,937,066 bytes; no package symlinks in this subtree
-
-Authentication is Google's official HTTPS origin with normal TLS certificate
-verification, followed by reviewed digest pinning. It is **not** an APT signature
-chain: the current signed package index no longer lists this older exact version.
-No third-party mirror, installed runner files or runtime self-generated checksum
-is used as the expected source. The `.deb` was inspected without installation or
-execution; package bytes do not enter Git.
-
-To reproduce, download that exact URL to a temporary file with verified HTTPS,
-then run `python3 tooling/ono/render-pilot/make-chrome-manifest.py PATH_TO_DEB`.
-The script first verifies the pinned archive SHA256 and package/version/amd64
-control metadata, then streams archive contents with GNU ar and Python tarfile.
-It never extracts or runs package scripts. Its JSON stdout must byte-match the
-committed manifest. Reproduction was performed twice with the same manifest hash.
-
-This remains a trusted single-job design: reviewed source/dependencies and no
-hostile concurrent local process. Whole-payload hashing establishes bytes at
-verification time, not an immutable mount or race-free future path execution.
-GitHub-hosted runner jobs already have passwordless sudo; these checks are not
-hostile-code isolation. A stronger adversarial-local-process requirement would
-need a separately approved execution design rather than pretending repeated
-hashing removes every TOCTOU race. Browser sandbox/network restrictions remain
-mandatory and unchanged.
-
-
-### Pure-read eligibility and actual runtime version
-
-The eligibility gate does not execute Chrome, including a --product-version
-query. The official full-byte manifest plus the exact installed package-version
-pin establish its version/source input; a pin mismatch has its own
-SYSTEM_CHROME_PACKAGE_VERSION_MISMATCH code and is never waived. The previous
-combined VERSION_UNVERIFIED result does not establish whether the package pin or
-CLI query caused it, so no unsupported root-cause claim is made.
-
-Actual browser.version() remains mandatory immediately after the later authorized
-sandboxed launch and before creating a page. This separates pure-read eligibility
-from real browser execution rather than hiding a version mismatch. The only
-external commands in eligibility are fixed dpkg-query reads and the fixed existing
-sudo/cat profile-list read; there is no Chrome executable invocation or fallback.
+# Fixed prototype render/attachment pilot (retired entrypoint)
+
+Status, 2026-10-12: this simplification candidate removes
+`.github/workflows/ono-prototype-render.yml`. Source scripts, the fixed candidate
+registry and their security regression tests remain for history and review;
+there is no active pilot dispatch entrypoint in this candidate. Verify the exact
+remote commit before describing the retirement as merged. This document does not
+authorize execution, restoration, a new trigger or additional credentials.
+
+The [fixed historical document](https://github.com/zhshenry/onosan_workbench/blob/673febb3ba2e24d17772092bc7d8956642574bee/docs/ONO-PROTOTYPE-RENDER-PILOT.md)
+and [historical YAML](https://github.com/zhshenry/onosan_workbench/blob/673febb3ba2e24d17772092bc7d8956642574bee/.github/workflows/ono-prototype-render.yml)
+retain the complete preparation, dispatch, diagnosis and security history.
+Historical connector limitations and proposed future connection steps are not
+current setup instructions. Daily work follows the [Issue workflow](ONO-ISSUE-WORKFLOW.md):
+one formal task wakes dot, with one coordinator and normal approval boundaries.
+
+## Verified historical outcome (2026-10-09)
+
+The separately approved [run 37881203730](https://github.com/zhshenry/onosan_workbench/actions/runs/37881203730)
+completed at main `7313fddf62f69561c492d553ca02548b7b704126`, attempt 1,
+and published one image in [comment 6073909178](https://github.com/zhshenry/onosan_workbench/issues/7#issuecomment-6073909178).
+The [historical Design A record v1](ONO-HISTORICAL-DESIGN-A-RECORD.md)
+contains that same native-attachment URL and its source/state/run/hash.
+The original comment left visual review pending. This historical run does not
+prove current attachment availability, current CI, or product visual acceptance;
+this cleanup does not regenerate, download, upload or back up its PNG.
+
+The retained registry also contains `issue-13-year-picker-v1`, one fixed
+1440×1024 three-state board, in addition to the default
+`historical-design-a-home`. The [Issue 13 preparation record](https://github.com/zhshenry/onosan_workbench/blob/673febb3ba2e24d17772092bc7d8956642574bee/docs/ONO-ISSUE-13-DESIGN-RENDER.md)
+is a historical preparation-stage snapshot, not the final implemented proposal.
+Later #13 implementation and closeout evidence is dated separately in the
+[retrospective](ONO-AUTOMATION-READINESS.md).
+
+## Retained security regression boundaries
+
+- Source/state, path, hash, viewport and publication target are code-owned. No
+  arbitrary PR source, URL, selector or dimensions become an approved input.
+  Historical execution was restricted to the repository owner (including numeric
+  actor and triggering-actor checks), main and an exact reviewed main SHA.
+- Rendering was isolated from the PAT: nonroot sandboxed Chrome, network namespace,
+  offline context, strict CSP, blocked requests/WebSockets/downloads/service
+  workers and no permissive fallback. Trusted main source was required;
+  step-scoped credentials never claimed hostile-source isolation.
+- The retained system-Chrome gate still checks the exact official payload manifest,
+  package version, ownership and existing profile evidence. Its read-only checks
+  do not install profiles, alter permissions/sysctl/sudoers or disable the sandbox.
+  The retired Linux probe is no longer a daily CI requirement. Mock regression
+  tests remain; neither they nor old runs prove current Chrome runtime eligibility.
+- The publisher retains identity/main/issue/marker rechecks and one first-attempt
+  attachment call. A marker is audit data, not human approval. An uncertain write
+  requires readback; zero comments cannot exclude an orphan asset. No blind retry
+  or new marker is allowed to evade that uncertainty.
+- The parameter helper remains text-only: no network, credentials, child process,
+  image or GitHub write. Its output targets the retired workflow and is historical
+  data, not a usable dispatch route. Do not pipe it to an API or request new access
+  merely to revive the pilot.
+
+## PNG, evidence and retention
+
+`render-pilot/png.mjs` retains bounded RGB/RGBA normalization and malformed-PNG
+regressions. `tooling/ono/evidence.mjs` now contains only the standalone narrow
+RGBA PNG decoder used by these checks; the old core approval/acceptance APIs,
+policy pin and dedicated simulation fixtures/tests are removed. PNG parsing and
+hash agreement are not visual review or trusted approval.
+
+The retained manifest binds source/file digests, full SHA, run/attempt, viewport,
+browser version and PNG/pixel digests. Historical output existed only in memory
+and private temporary files before the single authorized native attachment.
+PNG must not enter Git, image artifacts, caches, base64 logs or extra backups.
+Native attachment durability is not guaranteed. Plans and comments reuse the
+same authorized URL and verify actual accessibility and visual content separately.
+
+## Workflow-semantic regression retained on Windows
+
+The historical job-level `runner.temp` error prevented jobs from starting.
+`tooling/check-workflows.mjs` keeps a small standalone invalid definition and
+requires actionlint to reject that exact forbidden-context expression. It does
+not restore either retired YAML or execute workflow commands.
+
+The [Windows acceptance workflow](WINDOWS-CLOUD-PILOT.md) now carries official
+actionlint 1.7.12 with the Windows archive checksum pinned. All active workflow
+files still receive schema/expression validation; the historical negative case
+must also fail as expected. Real Windows file-symlink and parent-junction rejection
+checks are a separate requirement before accepting Linux removal. Full tests,
+verify, installed-app UI/restart and evidence safeguards remain. Exact candidate
+CI must be observed; this document does not claim it already passed.

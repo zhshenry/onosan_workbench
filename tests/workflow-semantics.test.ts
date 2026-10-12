@@ -1,45 +1,31 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync } from 'node:fs';
-import { ACTIONLINT_VERSION, PILOT, recreateHistoricalContextError, checkWorkflows } from '../tooling/check-workflows.mjs';
+import { existsSync, readFileSync } from 'node:fs';
+import { ACTIONLINT_VERSION, HISTORICAL_CONTEXT_ERROR, checkWorkflows } from '../tooling/check-workflows.mjs';
 
-test('browser path is step-scoped twice and regression reconstructs the historical job-level misuse', () => {
-  const current = readFileSync(PILOT, 'utf8').replace(/\r\n?/g, '\n');
-  const job = current.slice(current.indexOf('\n    env:\n'), current.indexOf('\n    steps:\n'));
-  assert.doesNotMatch(job, /runner\.temp|PLAYWRIGHT_BROWSERS_PATH/);
-  const value = '          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ono-render-browsers\n';
-  assert.equal(current.split(value).length - 1, 2);
-  const install = current.slice(current.indexOf('      - name: Verify checkout'), current.indexOf('      - name: Render with'));
-  const render = current.slice(current.indexOf('      - name: Render with'), current.indexOf('      - name: Install verified official gh'));
-  for (const step of [install, render]) assert.ok(step.includes(value));
-  const old = recreateHistoricalContextError(current);
-  assert.equal(recreateHistoricalContextError(current.replaceAll('\n', '\r\n')), old);
-  assert.ok(old.includes('      PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ono-render-browsers\n    steps:'));
-  assert.equal(old.split(value).length - 1, 0);
-  assert.throws(() => recreateHistoricalContextError(current.replace(value, '')));
-  assert.throws(() => recreateHistoricalContextError(current.replace('      PROTOTYPE_STATE:', '      WRONG_STATE:')));
+test('historical runner-context regression is minimal and independent of retired manual entrypoints', () => {
+  assert.equal(HISTORICAL_CONTEXT_ERROR.trimEnd().split('\n').length, 9);
+  assert.match(HISTORICAL_CONTEXT_ERROR, /\n    env:\n      PLAYWRIGHT_BROWSERS_PATH: \$\{\{ runner\.temp \}\}\/browsers\n    steps:/);
+  assert.equal(HISTORICAL_CONTEXT_ERROR.match(/runner\.temp/g)?.length, 1);
+  assert.doesNotMatch(HISTORICAL_CONTEXT_ERROR, /uses:|secrets\.|render\.mjs|publish\.mjs|attachment-test\.mjs/);
+  for (const name of ['ono-attachment-test.yml', 'ono-prototype-render.yml']) {
+    assert.equal(existsSync(`.github/workflows/${name}`), false, `${name} must stay retired`);
+  }
 });
 
-test('ordinary Linux PR CI verifies a pinned official actionlint before executing semantic regression', () => {
-  const ci = readFileSync('.github/workflows/windows-cloud-pilot.yml', 'utf8');
+test('ordinary Windows PR CI verifies a pinned official actionlint before executing semantic regression', () => {
+  const ci = readFileSync('.github/workflows/windows-cloud-pilot.yml', 'utf8').replace(/\r\n?/g, '\n');
   assert.match(ci, /pull_request:/);
-  const step = ci.slice(ci.indexOf('      - name: Check Actions workflow semantics'), ci.indexOf('      - name: Install locked dependencies'));
+  const step = ci.slice(ci.indexOf('      - name: Check Actions workflow semantics'), ci.indexOf('      - name: Install locked Windows dependencies'));
   assert.equal(ACTIONLINT_VERSION, '1.7.12');
-  assert.match(step, /https:\/\/github.com\/rhysd\/actionlint\/releases\/download\/v1\.7\.12\/actionlint_1\.7\.12_linux_amd64\.tar\.gz/);
-  assert.match(step, /8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8/);
-  assert.match(step, /sha256sum --check --strict/);
-  assert.ok(step.indexOf('sha256sum') < step.indexOf('tar -xzf'));
-  assert.ok(step.indexOf('tar -xzf') < step.indexOf('node tooling/check-workflows.mjs'));
-  assert.match(step, /set -euo pipefail/);
+  assert.match(step, /https:\/\/github.com\/rhysd\/actionlint\/releases\/download\/v1\.7\.12\/actionlint_1\.7\.12_windows_amd64\.zip/);
+  assert.match(step, /6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9/);
+  assert.match(step, /Get-FileHash -LiteralPath \$archive -Algorithm SHA256/);
+  assert.ok(step.indexOf('Get-FileHash') < step.indexOf('Expand-Archive'));
+  assert.ok(step.indexOf('Expand-Archive') < step.indexOf('node tooling/check-workflows.mjs'));
+  assert.match(step, /shell: pwsh/);
+  assert.match(step, /\$ErrorActionPreference = 'Stop'/);
+  assert.match(step, /if \(\$LASTEXITCODE -ne 0\) \{ throw 'Workflow semantic validation failed' \}/);
   assert.doesNotMatch(step, /continue-on-error|secrets\.|\|\| true/);
   assert.throws(() => checkWorkflows(undefined));
-});
-
-test('Linux runner eligibility check is read-only and does not invoke the prototype renderer', () => {
-  const ci = readFileSync('.github/workflows/windows-cloud-pilot.yml', 'utf8');
-  const probe = ci.slice(ci.indexOf('      - name: Read-only system Chrome eligibility'), ci.indexOf('      - name: Install locked dependencies'));
-  assert.match(probe, /verifySystemChrome\(\)/);
-  assert.match(probe, /runStage\('system_chrome'/);
-  assert.match(probe, /formatDiagnostic\(error\)/);
-  assert.doesNotMatch(probe, /render\.mjs|publish\.mjs|secrets\.|GH_TOKEN|chromium\.launch|upload|continue-on-error/);
 });
