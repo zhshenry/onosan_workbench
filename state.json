@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 57,
+  "revision": 58,
   "currentRun": {
     "owner": "ono-root-pr27-closeout-20261012T1421Z",
     "startedAt": "2026-10-12T14:21:56.220Z",
@@ -785,7 +785,7 @@
     },
     "pr27-ready-77e12bc": {
       "kind": "mark-ready",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/pull/27",
       "expectedHeadSha": "77e12bc7b5a47045072a9b264e97b0b52482842c",
       "baseSha": "41dccc749f8ddeb5ab6aab7eac41537a1406e2a9",
@@ -794,12 +794,16 @@
     },
     "pr27-merge-77e12bc": {
       "kind": "merge-pr",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/pull/27",
       "expectedHeadSha": "77e12bc7b5a47045072a9b264e97b0b52482842c",
       "baseSha": "41dccc749f8ddeb5ab6aab7eac41537a1406e2a9",
       "authorization": "用户明确批准PR27版本77e12bc；合后验证主干，通过后按最新要求清理规范分支",
-      "createdAt": "2026-10-12T14:21:56.220Z"
+      "createdAt": "2026-10-12T14:21:56.220Z",
+      "mergeSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
+      "mainSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
+      "tree": "f3247069d452af2e54ab76702f77148546bd659e",
+      "verifiedAt": "2026-10-12T14:22:38.515Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
