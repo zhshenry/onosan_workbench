@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 94,
+  "revision": 95,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -433,8 +433,8 @@
       "planVersion": "group-v2",
       "primaryPlanCommentId": 6128626525,
       "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525",
-      "planCommentId": 6126814796,
-      "memberPlanCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/32#issuecomment-6126814796",
+      "planCommentId": 6128687458,
+      "memberPlanCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/32#issuecomment-6128687458",
       "imageUrl": "https://github.com/user-attachments/assets/54375109-1de8-4135-84bb-ce34279e5fad",
       "imageDisplayVerifiedAt": "2026-10-12T14:59:40.750Z",
       "feedbackCommentIds": [
@@ -558,7 +558,8 @@
     6128658297,
     6128660999,
     6128663571,
-    6128669197
+    6128669197,
+    6128687458
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -1469,15 +1470,17 @@
     },
     "float-v2-member-32": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/32",
       "body": "【OnO 自动化】#32｜悬浮窗组方案 v2 同步\n\n![本单对应v2高保真](https://github.com/user-attachments/assets/efcadc8c-6cfc-4314-adad-d12431670b73)\n\n采纳你的要求：返回沿用原灰色、原字体字号和悬停样式，只换左箭头；文案仍为“返回”。\n\n完整修订、两张新图及逐单验收见[主方案v2](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525)。本组仍为 #25、#28–#33；本次收起顶栏约52→40、总高度176不变，宽窄440/330，展开高度不变。图片是独立设计，局部放大并非实测像素；本单未变设计复用原图，不重复上传。\n\n无需各单重复批准；修改意见可在这里补充，只在 #28 确认变化一次：同意悬浮窗组 v2 的收起布局调整",
-      "createdAt": "2026-10-12T16:48:20.260Z",
+      "createdAt": "2026-10-12T16:50:59Z",
       "recovery": {
         "error": "MCP internal error",
         "verifiedNotPostedAt": "2026-10-12T16:50:13.531Z",
         "action": "允许一次同内容补试"
-      }
+      },
+      "commentId": 6128687458,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/32#issuecomment-6128687458"
     },
     "float-v2-member-33": {
       "kind": "comment",
