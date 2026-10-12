@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 62,
+  "revision": 63,
   "currentRun": {
     "owner": "ono-root-ui-plans-20261012T1438Z",
     "startedAt": "2026-10-12T14:38:55.053Z",
@@ -933,11 +933,20 @@
     },
     "issue24-plan-v1-image": {
       "kind": "upload-image",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
       "sha256": "46dcbe7a4d65aec75f7204f00fb1ff6e04f428d3f82d0845152827328240c79b",
       "createdAt": "2026-10-12T14:42:29.062Z",
-      "purpose": "UI方案v1独立高保真公开展示；设计预览不是实测图"
+      "purpose": "UI方案v1独立高保真公开展示；设计预览不是实测图",
+      "assetUrl": "https://github.com/user-attachments/assets/0a5b4f88-1bc3-4489-8b7a-ad2f6969ada5",
+      "updatedAt": "2026-10-12T14:44:07.943Z"
+    },
+    "issue24-plan-v1-comment": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
+      "body": "【OnO 自动化】#24｜顶栏日期显示｜方案 v1，待你确认\n\n![#24方案v1：待办和日程日期高保真](https://github.com/user-attachments/assets/0a5b4f88-1bc3-4489-8b7a-ad2f6969ada5)\n\n上图是独立高保真设计预览，使用示例数据，不是已实现截图。此单单独成组，与悬浮窗改版及主工作台“+”入口分开，避免扩大范围。\n\n已核对当前 main：待办展开行确实只显示 HH:mm；日程顶栏摘要和展开行也缺事项日期。本次一起补齐，保留现有白色磨砂、圆角、勾选和新增入口。\n\n方案：\n- 待办补“月-日 时:分”；非当前年补年份。\n- 日程摘要及展开行显示日期；同日时间段只重复结束时间，跨日补结束日期，跨年两端补年份。\n- 有计划日期但没设时间：待办显示日期＋“不限时”，日程显示日期＋“时间待定”。不补假的00:00，也不把缺时间误判为全天；确有全天语义才显示“全天”。\n- 日期缺失显示“未设置”，非法值不显示 Invalid Date。\n- 日期不截断；跨日日程必要时换两行，长标题省略并保留完整提示。图为放大审阅排版，实际保持现有顶栏/面板尺寸并验证窄窗口适配。\n\n不改变：事项筛选、排序、日期数据、完成操作，以及其他日期入口。此方案只改变上述显示和相应布局。\n\n实施后验收：同日/跨日/跨年、无时间/缺日期/异常值；窄窗口和缩放、主题、长标题；待办完成和日程新增回归。完整 Windows 测试、构建、实装及实际截图按主流程执行。当前基线 main 6850a4fb7acc10ac1d04468297b70ebd63cfa0a0，[主干检查已通过](https://github.com/zhshenry/onosan_workbench/actions/runs/38262423630)。\n\n图片来源：独立设计；PNG SHA256 46dcbe7a4d65aec75f7204f00fb1ff6e04f428d3f82d0845152827328240c79b。图片不进仓库、不额外备份。方案批准前不改产品；批准后实现、测试并提交一个 Draft PR，最终合入另请你确认准确版本。\n\n有意见直接回复这里；同意请回复：同意 #24 方案 v1",
+      "createdAt": "2026-10-12T14:44:07.943Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
