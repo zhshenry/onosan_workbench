@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 11,
-  "currentRun": {
-    "owner": "ono-root-20261012T0933Z",
-    "startedAt": "2026-10-12T09:33:43Z",
-    "scope": "分析开放需求与准备高保真方案；已有精简工作独立进行，产品实施未获批准",
-    "developmentIssue": null
-  },
+  "revision": 12,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -24,7 +19,9 @@
       "imageUrl": "https://github.com/user-attachments/assets/5d1ae396-9b29-4ba4-a028-42401a9f79ce",
       "planDigest": "3b55314e92e9a345fb5a3bec479f615d8c3b312577d08e92e6c42a11bae768e8",
       "planPublishedAt": "2026-10-12T09:41:43Z",
-      "imageDisplayVerifiedAt": "2026-10-12T09:42:32Z"
+      "imageDisplayVerifiedAt": "2026-10-12T09:42:32Z",
+      "temporaryImageCleanedAt": "2026-10-12T09:44:21Z",
+      "lastNotifiedAt": "2026-10-12T09:44:21Z"
     },
     "18": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/18",
@@ -40,7 +37,11 @@
       "nextAction": "核对用户对#18方案v1的原始评论，明确批准后进入待开发队列；不自动合入",
       "planCommentId": 6121730958,
       "imageUrl": "https://github.com/user-attachments/assets/98e79b3c-310e-4f75-b33e-8997edc799fa",
-      "planDigest": "758a41b2f32886226cdea4a3be18ee7c7dce74ea91c782bcb4ff522e67b213a2"
+      "planDigest": "758a41b2f32886226cdea4a3be18ee7c7dce74ea91c782bcb4ff522e67b213a2",
+      "planPublishedAt": "2026-10-12T09:43:41Z",
+      "imageDisplayVerifiedAt": "2026-10-12T09:44:12Z",
+      "temporaryImageCleanedAt": "2026-10-12T09:44:21Z",
+      "lastNotifiedAt": "2026-10-12T09:44:21Z"
     }
   },
   "ownCommentIds": [
@@ -131,5 +132,10 @@
     "仅接收初始化后明确绑定当前方案或合入请求的批准，不自动消费历史批准。",
     "每次写入前重新读取 state.json，以当前文件 blob SHA 更新；冲突须重读协调，未知写入结果须核对后再继续。",
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
-  ]
+  ],
+  "lastRun": {
+    "owner": "ono-root-20261012T0933Z",
+    "finishedAt": "2026-10-12T09:44:21Z",
+    "result": "#17/#18高保真方案已发布并核显示，等待各自批准；产品未实施。独立精简PR21仍验收中。"
+  }
 }
