@@ -1,7 +1,12 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 26,
-  "currentRun": null,
+  "revision": 27,
+  "currentRun": {
+    "owner": "ono-root-pr22-merge-20261012T1022Z",
+    "startedAt": "2026-10-12T10:22:54.025Z",
+    "target": "PR22",
+    "stage": "premerge"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -237,6 +242,22 @@
       "updatedAt": "2026-10-12T10:13:14Z",
       "reconciledAt": "2026-10-12T10:13:48.163Z",
       "reconciliationNote": "前置状态写被中断，后续评论已发送；已停止依赖推进并通过服务端原始ID/正文/App来源核对回执，未重发。"
+    },
+    "pr22-ready-0b8e2b3": {
+      "kind": "mark-ready",
+      "target": "https://github.com/zhshenry/onosan_workbench/pull/22",
+      "status": "intent",
+      "expectedHeadSha": "0b8e2b32b1ea9c051fa60d556ca7279ac0b04672",
+      "approvalSource": "用户当前对话明确批准准确版本",
+      "createdAt": "2026-10-12T10:22:54.025Z"
+    },
+    "pr22-merge-0b8e2b3": {
+      "kind": "merge-pr",
+      "target": "https://github.com/zhshenry/onosan_workbench/pull/22",
+      "status": "intent",
+      "expectedHeadSha": "0b8e2b32b1ea9c051fa60d556ca7279ac0b04672",
+      "approvalSource": "用户当前对话明确批准准确版本",
+      "createdAt": "2026-10-12T10:22:54.025Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
