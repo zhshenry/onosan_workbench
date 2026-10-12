@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 105,
+  "revision": 106,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -168,7 +168,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T14:38:55.053Z",
+      "lastReadAt": "2026-10-12T16:48:00Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待Windows真实验收，修复授权内失败，取得实测图后在Issue请求准确版本合入",
       "groupId": "topbar-date-24",
@@ -196,7 +196,10 @@
       },
       "prNumber": 38,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/38",
-      "headSha": "ef76cd47db128222f88f5d9f6201dd8325a62213"
+      "headSha": "ef76cd47db128222f88f5d9f6201dd8325a62213",
+      "ciRunId": 38280682735,
+      "ciConclusion": "in_progress",
+      "testedSha": "d78beaff8736c2424db046edbbda012383d647a0"
     },
     "25": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/25",
@@ -206,7 +209,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T14:38:55.053Z",
+      "lastReadAt": "2026-10-12T16:48:00Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -241,7 +244,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T14:38:55.053Z",
+      "lastReadAt": "2026-10-12T16:48:00Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "待当前24开发组交付后实施，不能并行产品写入",
       "groupId": "workbench-context-26",
@@ -276,7 +279,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T14:38:55.053Z",
+      "lastReadAt": "2026-10-12T16:48:00Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -314,7 +317,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T14:38:55.053Z",
+      "lastReadAt": "2026-10-12T16:48:00Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -349,7 +352,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T14:38:55.053Z",
+      "lastReadAt": "2026-10-12T16:48:00Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -384,7 +387,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T14:38:55.053Z",
+      "lastReadAt": "2026-10-12T16:48:00Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -419,7 +422,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T14:38:55.053Z",
+      "lastReadAt": "2026-10-12T16:48:00Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -454,7 +457,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-12T14:38:55.053Z",
+      "lastReadAt": "2026-10-12T16:48:00Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
       "groupId": "floating-ui-25-28-33",
@@ -490,7 +493,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "lastReadAt": "2026-10-12T16:36:31.562Z",
+      "lastReadAt": "2026-10-12T16:48:00Z",
       "nextAction": "等待当前带图v1方案批准，尚未产品实现",
       "groupId": "settings-update-34",
       "groupIssueNumbers": [
@@ -512,7 +515,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "lastReadAt": "2026-10-12T16:36:31.562Z",
+      "lastReadAt": "2026-10-12T16:48:00Z",
       "nextAction": "附件两次明确失败，停止盲重试；完整带图方案尚未发布，无方案批准，不实施",
       "lastCommentId": 6128766093
     },
@@ -525,7 +528,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "lastReadAt": "2026-10-12T16:36:31.562Z",
+      "lastReadAt": "2026-10-12T16:48:00Z",
       "nextAction": "已解释实际用途，等待用户反馈；未改产品，不自动关单",
       "lastCommentId": 6128520395
     },
@@ -538,7 +541,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "lastReadAt": "2026-10-12T16:36:31.562Z",
+      "lastReadAt": "2026-10-12T16:48:00Z",
       "nextAction": "已解释实际用途，等待用户反馈；未改产品，不自动关单",
       "lastCommentId": 6128522870
     }
@@ -1421,7 +1424,8 @@
       "sha256": "97ee892e637f6b30cfaf546ab06af17f86270ed5859aac2eff4e30f333f1d5e0",
       "createdAt": "2026-10-12T16:41:25.862Z",
       "url": "https://github.com/user-attachments/assets/efcadc8c-6cfc-4314-adad-d12431670b73",
-      "uploadedAt": "2026-10-12T16:45:44.588Z"
+      "uploadedAt": "2026-10-12T16:45:44.588Z",
+      "temporaryImageCleanedAt": "2026-10-12T16:58:07.620Z"
     },
     "float-v2-image-detail": {
       "kind": "upload-image",
@@ -1430,7 +1434,8 @@
       "sha256": "c6903083f1ae5813a6c13758b35f9110142de943708eda7ade52b0601d036d05",
       "createdAt": "2026-10-12T16:41:25.862Z",
       "url": "https://github.com/user-attachments/assets/630377fc-2885-4649-bb69-dd15f2557efa",
-      "uploadedAt": "2026-10-12T16:45:44.588Z"
+      "uploadedAt": "2026-10-12T16:45:44.588Z",
+      "temporaryImageCleanedAt": "2026-10-12T16:58:07.620Z"
     },
     "issue34-v1-image": {
       "kind": "upload-image",
@@ -1439,7 +1444,8 @@
       "sha256": "a0b7a9c77dd0d8cebc52387d0e77f14214cd15a4471a77cf6e83495dfba9637c",
       "createdAt": "2026-10-12T16:41:25.862Z",
       "url": "https://github.com/user-attachments/assets/41e9e253-8a6c-4129-ab78-aab06849ae9e",
-      "uploadedAt": "2026-10-12T16:52:20.373Z"
+      "uploadedAt": "2026-10-12T16:52:20.373Z",
+      "temporaryImageCleanedAt": "2026-10-12T16:58:07.620Z"
     },
     "float-v2-primary-comment": {
       "kind": "comment",
