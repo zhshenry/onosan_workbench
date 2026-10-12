@@ -15,7 +15,7 @@ export function isVaultDir(dir: string): boolean {
 
 /** 相对路径安全化:拒绝绝对路径/穿越,返回库内规范化相对路径 */
 function safeRel(vaultPath: string, rel: string): string {
-  if (path.isAbsolute(rel) || rel.includes('..')) throw new Error('笔记路径无效');
+  if (path.posix.isAbsolute(rel) || path.win32.isAbsolute(rel) || rel.includes('..')) throw new Error('笔记路径无效');
   const abs = path.resolve(vaultPath, rel);
   const root = path.resolve(vaultPath);
   if (abs !== root && !abs.startsWith(root + path.sep)) throw new Error('笔记路径越出了库目录');
