@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 50,
-  "currentRun": {
-    "owner": "ono-root-pr23-closeout-20261012T1238Z",
-    "startedAt": "2026-10-12T12:38:17.202Z",
-    "groupId": "ai-suggestion-card-17-18",
-    "stage": "closing-approved-issues"
-  },
+  "revision": 51,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -170,7 +165,8 @@
     6122575647,
     6122991026,
     6123000879,
-    6124547994
+    6124547994,
+    6124556681
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -738,10 +734,13 @@
     },
     "cards-closeout-comment18": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/18",
       "body": "【OnO 自动化】#17 + #18｜已完成\n\n已按主 Issue 的准确版本合入收尾批准合入 PR #23；真实 main 41dccc749f8ddeb5ab6aab7eac41537a1406e2a9 的 Windows408/408与32/32实装、保存、重启检查全部通过，#18已关闭为 completed。\n\n完整结果、证据来源及边界见[主 Issue 收尾记录](https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6124547994)。未发版、未删除本实现分支。无需再次批准；有实测问题可在这里反馈或重开。",
-      "createdAt": "2026-10-12T12:46:58.188Z"
+      "createdAt": "2026-10-12T12:46:58.188Z",
+      "commentId": 6124556681,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/18#issuecomment-6124556681",
+      "updatedAt": "2026-10-12T12:47:35.469Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -753,8 +752,8 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-retired-cleanup-20261012T1151Z",
-    "finishedAt": "2026-10-12T11:52:47.136Z",
-    "result": "用户明确批准的两条退役独有分支已删除，PR原始head refs仍保留；main/state/当前PR23分支保留。"
+    "owner": "ono-root-pr23-closeout-20261012T1238Z",
+    "finishedAt": "2026-10-12T12:47:35.469Z",
+    "result": "PR23已按准确head合入，真实main408测试+32实装全过，17/18按已批准整包分别关闭完成，收尾评论读回一致；未发版删分支。"
   }
 }
