@@ -1,11 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 75,
-  "currentRun": {
-    "owner": "ono-root-ui-plans-20261012T1438Z",
-    "startedAt": "2026-10-12T14:38:55.053Z",
-    "task": "新需求24–26、28–33分类与独立高保真准备；未授权产品实施"
-  },
+  "revision": 76,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -182,7 +178,7 @@
     },
     "25": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/25",
-      "stage": "analysis",
+      "stage": "awaiting-plan-approval",
       "type": [
         "ui",
         "interaction"
@@ -190,7 +186,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "补齐成员同版本带图评论后等待#28整组方案批准",
+      "nextAction": "等待#28对悬浮窗组v1（25、28–33）统一方案批准；不实施产品",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -207,7 +203,8 @@
       "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999",
       "planCommentId": 6126800886,
       "memberPlanCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/25#issuecomment-6126800886",
-      "imageUrl": "https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4"
+      "imageUrl": "https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4",
+      "imageDisplayVerifiedAt": "2026-10-12T14:59:40.749Z"
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
@@ -232,7 +229,7 @@
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "stage": "analysis",
+      "stage": "awaiting-plan-approval",
       "type": [
         "ui",
         "interaction"
@@ -240,7 +237,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "补齐成员同版本带图评论后等待#28整组方案批准",
+      "nextAction": "等待#28对悬浮窗组v1（25、28–33）统一方案批准；不实施产品",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -254,11 +251,18 @@
       "primaryIssue": 28,
       "planVersion": "group-v1",
       "primaryPlanCommentId": 6126770999,
-      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999"
+      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999",
+      "imageDisplayVerifiedAt": "2026-10-12T14:59:40.749Z",
+      "planCommentId": 6126770999,
+      "imageUrls": [
+        "https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4",
+        "https://github.com/user-attachments/assets/54375109-1de8-4135-84bb-ce34279e5fad",
+        "https://github.com/user-attachments/assets/995767ea-0562-40ce-b878-04c884f95be2"
+      ]
     },
     "29": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
-      "stage": "analysis",
+      "stage": "awaiting-plan-approval",
       "type": [
         "ui",
         "interaction"
@@ -266,7 +270,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "补齐成员同版本带图评论后等待#28整组方案批准",
+      "nextAction": "等待#28对悬浮窗组v1（25、28–33）统一方案批准；不实施产品",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -283,11 +287,12 @@
       "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999",
       "planCommentId": 6126804287,
       "memberPlanCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/29#issuecomment-6126804287",
-      "imageUrl": "https://github.com/user-attachments/assets/54375109-1de8-4135-84bb-ce34279e5fad"
+      "imageUrl": "https://github.com/user-attachments/assets/54375109-1de8-4135-84bb-ce34279e5fad",
+      "imageDisplayVerifiedAt": "2026-10-12T14:59:40.749Z"
     },
     "30": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
-      "stage": "analysis",
+      "stage": "awaiting-plan-approval",
       "type": [
         "ui",
         "interaction"
@@ -295,7 +300,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "补齐成员同版本带图评论后等待#28整组方案批准",
+      "nextAction": "等待#28对悬浮窗组v1（25、28–33）统一方案批准；不实施产品",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -312,11 +317,12 @@
       "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999",
       "planCommentId": 6126806731,
       "memberPlanCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/30#issuecomment-6126806731",
-      "imageUrl": "https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4"
+      "imageUrl": "https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4",
+      "imageDisplayVerifiedAt": "2026-10-12T14:59:40.749Z"
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
-      "stage": "analysis",
+      "stage": "awaiting-plan-approval",
       "type": [
         "ui",
         "interaction"
@@ -324,7 +330,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "补齐成员同版本带图评论后等待#28整组方案批准",
+      "nextAction": "等待#28对悬浮窗组v1（25、28–33）统一方案批准；不实施产品",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -341,11 +347,12 @@
       "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999",
       "planCommentId": 6126809136,
       "memberPlanCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/31#issuecomment-6126809136",
-      "imageUrl": "https://github.com/user-attachments/assets/995767ea-0562-40ce-b878-04c884f95be2"
+      "imageUrl": "https://github.com/user-attachments/assets/995767ea-0562-40ce-b878-04c884f95be2",
+      "imageDisplayVerifiedAt": "2026-10-12T14:59:40.749Z"
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
-      "stage": "analysis",
+      "stage": "awaiting-plan-approval",
       "type": [
         "ui",
         "interaction"
@@ -353,7 +360,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "补齐成员同版本带图评论后等待#28整组方案批准",
+      "nextAction": "等待#28对悬浮窗组v1（25、28–33）统一方案批准；不实施产品",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -370,11 +377,12 @@
       "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999",
       "planCommentId": 6126814796,
       "memberPlanCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/32#issuecomment-6126814796",
-      "imageUrl": "https://github.com/user-attachments/assets/54375109-1de8-4135-84bb-ce34279e5fad"
+      "imageUrl": "https://github.com/user-attachments/assets/54375109-1de8-4135-84bb-ce34279e5fad",
+      "imageDisplayVerifiedAt": "2026-10-12T14:59:40.750Z"
     },
     "33": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
-      "stage": "analysis",
+      "stage": "awaiting-plan-approval",
       "type": [
         "ui",
         "interaction"
@@ -382,7 +390,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T14:38:55.053Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "补齐成员同版本带图评论后等待#28整组方案批准",
+      "nextAction": "等待#28对悬浮窗组v1（25、28–33）统一方案批准；不实施产品",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -399,7 +407,8 @@
       "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999",
       "planCommentId": 6126817506,
       "memberPlanCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/33#issuecomment-6126817506",
-      "imageUrl": "https://github.com/user-attachments/assets/995767ea-0562-40ce-b878-04c884f95be2"
+      "imageUrl": "https://github.com/user-attachments/assets/995767ea-0562-40ce-b878-04c884f95be2",
+      "imageDisplayVerifiedAt": "2026-10-12T14:59:40.750Z"
     }
   },
   "ownCommentIds": [
@@ -1161,7 +1170,8 @@
       "body": "【OnO 自动化】#25｜纳入悬浮窗组方案 v1\n\n![悬浮窗组v1：首页四态](https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4)\n\n以上为独立高保真设计预览，不是实测截图。本单范围与验收：展开首页移除“AI建议”整条区域并收回空白，保留顶栏AI入口和待办/日程操作；不删除已交付建议确认卡。\n\n本组为 #25、#28、#29、#30、#31、#32、#33，因共用同一悬浮窗且宽窄适配互相影响，统一一个方案、后续一个实现PR。完整三张图、逐单边界和验收见[主方案评论](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)；#24、#26不包含在内。\n\n图稿是审阅排版，非实际窗口尺寸。宽窄与展开/收起独立；同状态切宽只改宽度、不改高度。首页窄收起图省略的截止文案不代表删除该功能，实际仍保留截止信息和分页。方案批准前不改产品。\n\n意见可在这里补充；整组批准只需在 #28 回复一次：同意悬浮窗组方案 v1（#25、#28–#33）",
       "createdAt": "2026-10-12T14:57:24Z",
       "commentId": 6126800886,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/25#issuecomment-6126800886"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/25#issuecomment-6126800886",
+      "displayVerifiedAt": "2026-10-12T14:59:40.749Z"
     },
     "float-group-v1-member-29": {
       "kind": "comment",
@@ -1170,7 +1180,8 @@
       "body": "【OnO 自动化】#29｜纳入悬浮窗组方案 v1\n\n![悬浮窗组v1：AI四态](https://github.com/user-attachments/assets/54375109-1de8-4135-84bb-ce34279e5fad)\n\n以上为独立高保真设计预览，不是实测截图。本单范围与验收：展开AI页返回文案统一为“返回首页”，使用左箭头；返回只切页面，不改变宽窄或折叠态。\n\n本组为 #25、#28、#29、#30、#31、#32、#33，因共用同一悬浮窗且宽窄适配互相影响，统一一个方案、后续一个实现PR。完整三张图、逐单边界和验收见[主方案评论](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)；#24、#26不包含在内。\n\n图稿是审阅排版，非实际窗口尺寸。宽窄与展开/收起独立；同状态切宽只改宽度、不改高度。首页窄收起图省略的截止文案不代表删除该功能，实际仍保留截止信息和分页。方案批准前不改产品。\n\n意见可在这里补充；整组批准只需在 #28 回复一次：同意悬浮窗组方案 v1（#25、#28–#33）",
       "createdAt": "2026-10-12T14:57:36Z",
       "commentId": 6126804287,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/29#issuecomment-6126804287"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/29#issuecomment-6126804287",
+      "displayVerifiedAt": "2026-10-12T14:59:40.749Z"
     },
     "float-group-v1-member-30": {
       "kind": "comment",
@@ -1179,7 +1190,8 @@
       "body": "【OnO 自动化】#30｜纳入悬浮窗组方案 v1\n\n![悬浮窗组v1：首页四态](https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4)\n\n以上为独立高保真设计预览，不是实测截图。本单范围与验收：收起首页AI助手按钮用现有橙色AI图标和橙色细边框，保留主题、hover和键盘焦点反馈。\n\n本组为 #25、#28、#29、#30、#31、#32、#33，因共用同一悬浮窗且宽窄适配互相影响，统一一个方案、后续一个实现PR。完整三张图、逐单边界和验收见[主方案评论](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)；#24、#26不包含在内。\n\n图稿是审阅排版，非实际窗口尺寸。宽窄与展开/收起独立；同状态切宽只改宽度、不改高度。首页窄收起图省略的截止文案不代表删除该功能，实际仍保留截止信息和分页。方案批准前不改产品。\n\n意见可在这里补充；整组批准只需在 #28 回复一次：同意悬浮窗组方案 v1（#25、#28–#33）",
       "createdAt": "2026-10-12T14:57:45Z",
       "commentId": 6126806731,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/30#issuecomment-6126806731"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/30#issuecomment-6126806731",
+      "displayVerifiedAt": "2026-10-12T14:59:40.749Z"
     },
     "float-group-v1-member-31": {
       "kind": "comment",
@@ -1188,7 +1200,8 @@
       "body": "【OnO 自动化】#31｜纳入悬浮窗组方案 v1\n\n![悬浮窗组v1：交互细节](https://github.com/user-attachments/assets/995767ea-0562-40ce-b878-04c884f95be2)\n\n以上为独立高保真设计预览，不是实测截图。本单范围与验收：收起AI页去掉“记录1”计数控件（不删聊天/必要运行状态），模型按钮右对齐加宽，菜单略宽于按钮且锚定右边、限制在窗口内。第二张原图上传失败已确认，方案按文字与现有代码形成，无需为此先补图。\n\n本组为 #25、#28、#29、#30、#31、#32、#33，因共用同一悬浮窗且宽窄适配互相影响，统一一个方案、后续一个实现PR。完整三张图、逐单边界和验收见[主方案评论](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)；#24、#26不包含在内。\n\n图稿是审阅排版，非实际窗口尺寸。宽窄与展开/收起独立；同状态切宽只改宽度、不改高度。首页窄收起图省略的截止文案不代表删除该功能，实际仍保留截止信息和分页。方案批准前不改产品。\n\n意见可在这里补充；整组批准只需在 #28 回复一次：同意悬浮窗组方案 v1（#25、#28–#33）",
       "createdAt": "2026-10-12T14:57:53Z",
       "commentId": 6126809136,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/31#issuecomment-6126809136"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/31#issuecomment-6126809136",
+      "displayVerifiedAt": "2026-10-12T14:59:40.749Z"
     },
     "float-group-v1-member-32": {
       "kind": "comment",
@@ -1197,7 +1210,8 @@
       "body": "【OnO 自动化】#32｜纳入悬浮窗组方案 v1\n\n![悬浮窗组v1：AI四态](https://github.com/user-attachments/assets/54375109-1de8-4135-84bb-ce34279e5fad)\n\n以上为独立高保真设计预览，不是实测截图。本单范围与验收：收起AI页返回图标改为左箭头，和展开页一致；作用为返回首页，不是展开/折叠。\n\n本组为 #25、#28、#29、#30、#31、#32、#33，因共用同一悬浮窗且宽窄适配互相影响，统一一个方案、后续一个实现PR。完整三张图、逐单边界和验收见[主方案评论](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)；#24、#26不包含在内。\n\n图稿是审阅排版，非实际窗口尺寸。宽窄与展开/收起独立；同状态切宽只改宽度、不改高度。首页窄收起图省略的截止文案不代表删除该功能，实际仍保留截止信息和分页。方案批准前不改产品。\n\n意见可在这里补充；整组批准只需在 #28 回复一次：同意悬浮窗组方案 v1（#25、#28–#33）",
       "createdAt": "2026-10-12T14:58:15Z",
       "commentId": 6126814796,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/32#issuecomment-6126814796"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/32#issuecomment-6126814796",
+      "displayVerifiedAt": "2026-10-12T14:59:40.750Z"
     },
     "float-group-v1-member-33": {
       "kind": "comment",
@@ -1206,7 +1220,8 @@
       "body": "【OnO 自动化】#33｜纳入悬浮窗组方案 v1\n\n![悬浮窗组v1：交互细节](https://github.com/user-attachments/assets/995767ea-0562-40ce-b878-04c884f95be2)\n\n以上为独立高保真设计预览，不是实测截图。本单范围与验收：两形态关联后在对话区域显示可移除chip，“+ 关联事项”保持左下，模型按钮位置/宽度不被挤压。选择列表补状态图标+文字，业务状态和选中勾分开；先实测并修复选择事件/反馈链路，不能只画静态标签。\n\n本组为 #25、#28、#29、#30、#31、#32、#33，因共用同一悬浮窗且宽窄适配互相影响，统一一个方案、后续一个实现PR。完整三张图、逐单边界和验收见[主方案评论](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)；#24、#26不包含在内。\n\n图稿是审阅排版，非实际窗口尺寸。宽窄与展开/收起独立；同状态切宽只改宽度、不改高度。首页窄收起图省略的截止文案不代表删除该功能，实际仍保留截止信息和分页。方案批准前不改产品。\n\n意见可在这里补充；整组批准只需在 #28 回复一次：同意悬浮窗组方案 v1（#25、#28–#33）",
       "createdAt": "2026-10-12T14:58:25Z",
       "commentId": 6126817506,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/33#issuecomment-6126817506"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/33#issuecomment-6126817506",
+      "displayVerifiedAt": "2026-10-12T14:59:40.750Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -1218,8 +1233,8 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-pr27-closeout-20261012T1421Z",
-    "finishedAt": "2026-10-12T14:28:47.900Z",
-    "result": "PR27准确版本合入6850a4f；实际main408测试+32实装全过；规范分支已清理，剩main/state；无在途写。"
+    "owner": "ono-root-ui-plans-20261012T1438Z",
+    "finishedAt": "2026-10-12T14:59:40.750Z",
+    "result": "九项新需求分为24、26、悬浮窗25/28–33三组；全部中文带图方案已发布原Issue，原生图片回读实看，临时PNG清除，无产品改动；待方案批准，无在途写。"
   }
 }
