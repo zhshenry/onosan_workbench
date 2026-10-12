@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 27,
+  "revision": 28,
   "currentRun": {
     "owner": "ono-root-pr22-merge-20261012T1022Z",
     "startedAt": "2026-10-12T10:22:54.025Z",
@@ -246,10 +246,12 @@
     "pr22-ready-0b8e2b3": {
       "kind": "mark-ready",
       "target": "https://github.com/zhshenry/onosan_workbench/pull/22",
-      "status": "intent",
+      "status": "succeeded",
       "expectedHeadSha": "0b8e2b32b1ea9c051fa60d556ca7279ac0b04672",
       "approvalSource": "用户当前对话明确批准准确版本",
-      "createdAt": "2026-10-12T10:22:54.025Z"
+      "createdAt": "2026-10-12T10:22:54.025Z",
+      "draft": false,
+      "updatedAt": "2026-10-12T10:23:20.242Z"
     },
     "pr22-merge-0b8e2b3": {
       "kind": "merge-pr",
