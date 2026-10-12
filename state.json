@@ -1,20 +1,42 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 30,
-  "currentRun": null,
+  "revision": 31,
+  "currentRun": {
+    "owner": "ono-root-ai-cards-20261012T1036Z",
+    "startedAt": "2026-10-12T10:37:06.478Z",
+    "groupId": "ai-suggestion-card-17-18",
+    "targetIssues": [
+      17,
+      18
+    ],
+    "stage": "implementation"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
-      "stage": "awaiting-plan-approval",
+      "stage": "implementing",
       "type": [
         "ui",
         "interaction"
       ],
-      "lastReadAt": "2026-10-12T10:07:13.782Z",
+      "lastReadAt": "2026-10-12T10:37:06.479Z",
       "baseSha": "94938ee1cc94a652d3b9fdc4c7ef3e75d74e298f",
       "planVersion": "group-v2",
-      "approval": null,
-      "nextAction": "在#17主方案核验用户对#17+#18组方案v2的明确批准后进入整组开发；不自动合入",
+      "approval": {
+        "commentId": 6122337511,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6122337511",
+        "body": "同意 https://github.com/zhshenry/onosan_workbench/issues/17+https://github.com/zhshenry/onosan_workbench/issues/18 组方案 v2",
+        "authorId": 54107847,
+        "createdAt": "2026-10-12T10:22:57Z",
+        "updatedAt": "2026-10-12T10:22:57Z",
+        "performedViaGithubApp": null,
+        "requestCommentId": 6122171698,
+        "planVersion": "group-v2",
+        "allowedActions": "组方案v2产品实现、测试、回归、Draft PR交付；不含最终合入或关单",
+        "corroboratingCommentId": 6122339723,
+        "verifiedAt": "2026-10-12T10:37:06.479Z"
+      },
+      "nextAction": "同组实现17/18、逐项测试和真实截图，完成后一个Draft PR，等待最终合入批准",
       "planCommentId": 6122171698,
       "imageUrl": "https://github.com/user-attachments/assets/93fb3681-bfa4-4257-8446-f6baf1497d17",
       "planPublishedAt": "2026-10-12T10:12:01Z",
@@ -28,20 +50,34 @@
       ],
       "primaryIssue": 17,
       "feedbackCommentId": 6121844831,
-      "primaryPlanCommentId": 6122171698
+      "primaryPlanCommentId": 6122171698,
+      "implementationBaseSha": "ebc21504080900fa6fb1d7f6f1f237e55e6d5575"
     },
     "18": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/18",
-      "stage": "awaiting-plan-approval",
+      "stage": "implementing",
       "type": [
         "ui",
         "interaction"
       ],
-      "lastReadAt": "2026-10-12T10:07:13.782Z",
+      "lastReadAt": "2026-10-12T10:37:06.479Z",
       "baseSha": "94938ee1cc94a652d3b9fdc4c7ef3e75d74e298f",
       "planVersion": "group-v2",
-      "approval": null,
-      "nextAction": "在#17主方案核验用户对#17+#18组方案v2的明确批准后进入整组开发；不自动合入",
+      "approval": {
+        "commentId": 6122337511,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6122337511",
+        "body": "同意 https://github.com/zhshenry/onosan_workbench/issues/17+https://github.com/zhshenry/onosan_workbench/issues/18 组方案 v2",
+        "authorId": 54107847,
+        "createdAt": "2026-10-12T10:22:57Z",
+        "updatedAt": "2026-10-12T10:22:57Z",
+        "performedViaGithubApp": null,
+        "requestCommentId": 6122171698,
+        "planVersion": "group-v2",
+        "allowedActions": "组方案v2产品实现、测试、回归、Draft PR交付；不含最终合入或关单",
+        "corroboratingCommentId": 6122339723,
+        "verifiedAt": "2026-10-12T10:37:06.479Z"
+      },
+      "nextAction": "同组实现17/18、逐项测试和真实截图，完成后一个Draft PR，等待最终合入批准",
       "planCommentId": 6122190320,
       "imageUrl": "https://github.com/user-attachments/assets/9f2bcb64-a500-45fd-b64e-e96944abe866",
       "planPublishedAt": "2026-10-12T10:13:14Z",
@@ -55,7 +91,8 @@
       ],
       "primaryIssue": 17,
       "feedbackCommentId": 6121855689,
-      "primaryPlanCommentId": 6122171698
+      "primaryPlanCommentId": 6122171698,
+      "implementationBaseSha": "ebc21504080900fa6fb1d7f6f1f237e55e6d5575"
     }
   },
   "ownCommentIds": [
@@ -262,6 +299,13 @@
       "mainCiRun": 38236033865,
       "mainCiConclusion": "success",
       "verifiedAt": "2026-10-12T10:29:50.713Z"
+    },
+    "cards-v2-start-comment": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
+      "body": "【OnO 自动化】#17 + #18｜组方案 v2 已批准，开始实施\n\n已核对你的整组 v2 批准（本 Issue 评论 6122337511；#18 评论 6122339723 为同组确认）。两单按一个实现 PR 推进，基线为 main ebc21504080900fa6fb1d7f6f1f237e55e6d5575。\n\n接下来按已确认的四边一致细边框设计，完成可读的修改前后对照、确认应用及应用后保留结果卡，并逐项测试。完成后在这里附真实截图和准确 PR/head 供最终验收，不自动合入。\n\n本条为进度通知，无需重复批准；有补充直接回复本 Issue。",
+      "createdAt": "2026-10-12T10:37:06.479Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
