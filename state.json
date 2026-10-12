@@ -1,11 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 41,
-  "currentRun": {
-    "owner": "ono-root-readcheck-20261012T1134Z",
-    "startedAt": "2026-10-12T11:35:04.782Z",
-    "stage": "recording-read-only-check"
-  },
+  "revision": 42,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -14,7 +10,7 @@
         "ui",
         "interaction"
       ],
-      "lastReadAt": "2026-10-12T11:06:25.608Z",
+      "lastReadAt": "2026-10-12T11:35:09.817Z",
       "baseSha": "94938ee1cc94a652d3b9fdc4c7ef3e75d74e298f",
       "planVersion": "group-v2",
       "approval": {
@@ -74,7 +70,7 @@
         "ui",
         "interaction"
       ],
-      "lastReadAt": "2026-10-12T11:06:25.608Z",
+      "lastReadAt": "2026-10-12T11:35:09.817Z",
       "baseSha": "94938ee1cc94a652d3b9fdc4c7ef3e75d74e298f",
       "planVersion": "group-v2",
       "approval": {
@@ -646,8 +642,8 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-ai-cards-20261012T1036Z",
-    "finishedAt": "2026-10-12T11:06:25.608Z",
-    "result": "17/18实现PR23 Windows408/408及实装32/32通过，真实6图原生内嵌并核验；等待最终合入收尾批准。14条旧分支已清理，2条独有退役分支待明确删除批准。"
+    "owner": "ono-root-readcheck-20261012T1134Z",
+    "finishedAt": "2026-10-12T11:35:09.817Z",
+    "result": "全部ono开放单17/18与原始评论已分页核对；无新反馈或最终批准。PR23准确bff0ff5和main ebc21504未漂移、CI成功，无新阻塞，不重复通知。"
   }
 }
