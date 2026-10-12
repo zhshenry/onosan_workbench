@@ -57,3 +57,11 @@
 静态组件检查见 `tests/date-year-dropdown.test.ts`;真实 Windows 安装版交互、三主题/双尺寸及保存后同版本重启见 `tooling/year-dropdown-pilot.mjs`,由原有 Windows pilot 执行。正式验收以对应提交的 Actions 结果和运行截图为准。
 
 [保存兼容修复 v1](https://github.com/zhshenry/onosan_workbench/issues/13#issuecomment-6119459292)已获[明确批准](https://github.com/zhshenry/onosan_workbench/issues/13#issuecomment-6119530215):命例编辑仅发送 id 与可编辑字段,不把 createdAt 等存储元数据重新提交给输入 schema;现有存储层保留原创建时间、id 和笔记,不改变 schema、文件格式或算法。`tests/bazi-save-compat.test.ts` 验证真实表单提交与存储重载,Windows pilot 逐项校验实际保存日期及原创建时间。
+
+## 顶栏日期显示
+
+依据 [Issue #24 方案 v1](https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6126565074)，仅顶栏待办展开行、日程摘要和日程展开行使用 `src/topbar-dates.ts`。日期按本地时区显示为 `MM-DD HH:mm`，非当前年补年份；日程同日只重复结束时间，跨日分两行，跨年两端补年份。有计划日期而无时间时分别显示“日期 · 不限时”和“日期 · 时间待定”；缺日期显示“未设置”，不补假午夜或全天语义。无效或缺失结束时间显示“时间待定”。
+
+展开面板保持 320px，日期不省略，长标题单行省略并保留完整提示。1181–1440px 窗口优先给事项日期留空间，隐藏冗余的今日日期前缀；更宽窗口保留前缀，≤1180px 保留原有日程摘要收起规则。多条摘要可横向滚动，展开列表仍可访问全部既有筛选结果。不改筛选、排序、完成、新增、日期存储和其他入口格式。
+
+`tests/topbar-dates.test.ts` 验证格式及异常输入。`tooling/topbar-dates-pilot.mjs` 在既有 Windows 实装流程中验证正常 UI 新增/完成/重启、三主题、双尺寸、100%/125% 缩放与完整日期几何；跨日/跨年及缺失/异常历史值使用临时只读响应夹具，恢复原读取处理器后验证真实数据未变。这部分不代表 schema 已支持跨日日程，也不代表迁移或完整非法数据流已通过；既有共享格式器对“非法日程开始时间且无结束时间”的异常不属于本次修改。
