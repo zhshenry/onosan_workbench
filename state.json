@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 106,
+  "revision": 107,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -1591,6 +1591,13 @@
       "commentId": 6128752017,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6128752017",
       "updatedAt": "2026-10-12T16:57:09Z"
+    },
+    "issue24-pr38-progress": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
+      "body": "【OnO 自动化】#24｜实现已提交 Draft PR #38，正在真实 Windows 验收\n\n[PR #38](https://github.com/zhshenry/onosan_workbench/pull/38)，当前 head ef76cd47db128222f88f5d9f6201dd8325a62213；[Windows检查](https://github.com/zhshenry/onosan_workbench/actions/runs/38280682735)正在运行。\n\n本地同测试集424项：422通过、2项已有Windows专用测试在Linux跳过；构建/类型检查通过。Windows安装、真实界面和新增专项仍需以该次运行结果为准，尚未交付实测图，不请求合入。\n\n另发现一个基线旧问题：日程日期为非法值且缺结束时间时，共享逻辑可能先报错；本次顶栏显示处理不会修整条旧数据链路。正常可创建记录和边界显示会分别验明，不能把只读测试示例当成实际保存成功。\n\n下一步继续看检查结果并修复本单范围内问题，通过后在本Issue附实测图和准确版本供最终审阅。现在无需回复。",
+      "createdAt": "2026-10-12T16:58:41.666Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
