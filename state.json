@@ -1,11 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 43,
-  "currentRun": {
-    "owner": "ono-root-retired-cleanup-20261012T1151Z",
-    "startedAt": "2026-10-12T11:51:50.660Z",
-    "stage": "authorized-retired-branch-cleanup"
-  },
+  "revision": 44,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -488,7 +484,7 @@
     },
     "cleanup-branch-ono/issue-13-year-dropdown-v2": {
       "kind": "delete-retired-branch",
-      "status": "intent",
+      "status": "succeeded",
       "branch": "ono/issue-13-year-dropdown-v2",
       "expectedHeadSha": "70a7790bd8c528668d903bfb54f55e07018123b7",
       "reason": "未合独有内容需要明确删除批准；未删除、未绕过安全拒绝",
@@ -496,11 +492,14 @@
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/16",
       "createdAt": "2026-10-12T10:53:10.122Z",
       "updatedAt": "2026-10-12T11:51:50.660Z",
-      "approvalSource": "用户当前对话明确批准两条含独有未合提交的退役分支删除"
+      "approvalSource": "用户当前对话明确批准两条含独有未合提交的退役分支删除",
+      "deleted": true,
+      "recoveryRefVerified": true,
+      "verifiedAt": "2026-10-12T11:52:47.136Z"
     },
     "cleanup-branch-ono/read-only-stage-a": {
       "kind": "delete-retired-branch",
-      "status": "intent",
+      "status": "succeeded",
       "branch": "ono/read-only-stage-a",
       "expectedHeadSha": "75f504db374f86211eac0f2f65fd1287483e89a1",
       "reason": "未合独有内容需要明确删除批准；未删除、未绕过安全拒绝",
@@ -508,7 +507,10 @@
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/20",
       "createdAt": "2026-10-12T10:53:10.122Z",
       "updatedAt": "2026-10-12T11:51:50.660Z",
-      "approvalSource": "用户当前对话明确批准两条含独有未合提交的退役分支删除"
+      "approvalSource": "用户当前对话明确批准两条含独有未合提交的退役分支删除",
+      "deleted": true,
+      "recoveryRefVerified": true,
+      "verifiedAt": "2026-10-12T11:52:47.136Z"
     },
     "cards-v2-draft-pr": {
       "kind": "create-draft-pr",
@@ -648,8 +650,8 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-readcheck-20261012T1134Z",
-    "finishedAt": "2026-10-12T11:35:09.817Z",
-    "result": "全部ono开放单17/18与原始评论已分页核对；无新反馈或最终批准。PR23准确bff0ff5和main ebc21504未漂移、CI成功，无新阻塞，不重复通知。"
+    "owner": "ono-root-retired-cleanup-20261012T1151Z",
+    "finishedAt": "2026-10-12T11:52:47.136Z",
+    "result": "用户明确批准的两条退役独有分支已删除，PR原始head refs仍保留；main/state/当前PR23分支保留。"
   }
 }
