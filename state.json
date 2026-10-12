@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 36,
+  "revision": 37,
   "currentRun": {
     "owner": "ono-root-ai-cards-20261012T1036Z",
     "startedAt": "2026-10-12T10:37:06.478Z",
@@ -9,7 +9,7 @@
       17,
       18
     ],
-    "stage": "ci-verification"
+    "stage": "uploading-real-evidence"
   },
   "tasks": {
     "17": {
@@ -490,7 +490,77 @@
       "prNumber": 23,
       "url": "https://github.com/zhshenry/onosan_workbench/pull/23",
       "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
-      "updatedAt": "2026-10-12T10:55:19.107Z"
+      "updatedAt": "2026-10-12T10:55:19.107Z",
+      "ciRun": 38239284361,
+      "ciConclusion": "success",
+      "testedSha": "01262b1e5d27f5aab76f2840c0b12aa551f6be47",
+      "artifactId": 11742551151
+    },
+    "cards-real-image-pending": {
+      "kind": "native-image-upload",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
+      "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
+      "runId": 38239284361,
+      "artifactId": 11742551151,
+      "imageSha256": "32a8bb24cc9031ba903f5c1f0464e8784cb40fdba57ca7e221e70e815456407d",
+      "createdAt": "2026-10-12T11:01:37.613Z",
+      "purpose": "已批准17/18产品交付的脱敏合成数据真实截图，公开原生展示"
+    },
+    "cards-real-image-applied": {
+      "kind": "native-image-upload",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
+      "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
+      "runId": 38239284361,
+      "artifactId": 11742551151,
+      "imageSha256": "31a044c8287bd0382fefabe9d95848d3eb1c95d61fb45c82fd59efad926d2ce7",
+      "createdAt": "2026-10-12T11:01:37.613Z",
+      "purpose": "已批准17/18产品交付的脱敏合成数据真实截图，公开原生展示"
+    },
+    "cards-real-image-partial": {
+      "kind": "native-image-upload",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
+      "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
+      "runId": 38239284361,
+      "artifactId": 11742551151,
+      "imageSha256": "6195e4feaf5fd2030ec5dc48a7f6257f8d6c02434729181c46028093a9fc903f",
+      "createdAt": "2026-10-12T11:01:37.613Z",
+      "purpose": "已批准17/18产品交付的脱敏合成数据真实截图，公开原生展示"
+    },
+    "cards-real-image-failed": {
+      "kind": "native-image-upload",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
+      "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
+      "runId": 38239284361,
+      "artifactId": 11742551151,
+      "imageSha256": "7b7d1e4ae1a5d1dc2ab872a08477a09feb323fd6a8b2fda33a87ba4a2e7b3e76",
+      "createdAt": "2026-10-12T11:01:37.613Z",
+      "purpose": "已批准17/18产品交付的脱敏合成数据真实截图，公开原生展示"
+    },
+    "cards-real-image-narrow": {
+      "kind": "native-image-upload",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
+      "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
+      "runId": 38239284361,
+      "artifactId": 11742551151,
+      "imageSha256": "a91a125c2a1f69fe8f6aeb7ef9016fa26ea9da19602e954f6efe9dfb2398004c",
+      "createdAt": "2026-10-12T11:01:37.613Z",
+      "purpose": "已批准17/18产品交付的脱敏合成数据真实截图，公开原生展示"
+    },
+    "cards-real-image-relaunched": {
+      "kind": "native-image-upload",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
+      "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
+      "runId": 38239284361,
+      "artifactId": 11742551151,
+      "imageSha256": "ca9f8783269ba127e0731132bdd262bc6ae8e8f62bc3494ac2fc822675bc9426",
+      "createdAt": "2026-10-12T11:01:37.613Z",
+      "purpose": "已批准17/18产品交付的脱敏合成数据真实截图，公开原生展示"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
