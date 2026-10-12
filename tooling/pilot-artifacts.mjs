@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import { lstat, readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { YEAR_DROPDOWN_SCREENSHOTS } from './year-dropdown-pilot.mjs';
 
 export const MAX_ARTIFACT_BYTES = 19_000_000; // Zip overhead stays within the approved 20 MB ceiling.
-const allowed = new Set(['initial.png', 'created.png', 'edited.png', 'completed.png', 'relaunched.png', 'failure.png', 'install.json', 'report.json', 'report.md']);
+const allowed = new Set(['initial.png', 'created.png', 'edited.png', 'completed.png', 'relaunched.png', 'failure.png', 'install.json', 'report.json', 'report.md', ...YEAR_DROPDOWN_SCREENSHOTS]);
 export async function inspectPilotArtifacts(directory, maxBytes = MAX_ARTIFACT_BYTES) {
   assert.ok(Number.isSafeInteger(maxBytes) && maxBytes > 0);
   const root = path.resolve(directory);

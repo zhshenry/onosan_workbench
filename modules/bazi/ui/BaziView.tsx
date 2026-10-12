@@ -524,7 +524,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
               </div>
               <div className="bazi-form-field">
                 <span className="bazi-form-label">公历生日</span>
-                <DatePicker value={fDate} onChange={setFDate} />
+                <DatePicker value={fDate} onChange={setFDate} yearRange={{ min: BAZI_MIN_YEAR, max: BAZI_MAX_YEAR }} />
               </div>
               <div className="bazi-form-field">
                 <span className="bazi-form-label">出生时间</span>

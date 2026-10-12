@@ -31,7 +31,7 @@
 |---|---|---|
 | 导航 | `src/App.tsx` 的工作台/二级目录 | 当前项、收起、最小窗口和键盘行为 |
 | Select/Listbox | `modules/todo/ui/ui.tsx` 的 `Select` | 待办表单与设置页供应商/协议控件共用 authored 选择器,检查打开态与键盘行为 |
-| 日期与时间 | `modules/todo/ui/ui.tsx` 的 DatePicker / TimePicker | 新建与编辑共享,键盘和弹层边界检查 |
+| 日期与时间 | `modules/todo/ui/ui.tsx` 的 DatePicker / TimePicker | 新建与编辑共享;命例生日通过 `yearRange` 启用 1900–2100 年直选,其他调用保持默认日历。年份下拉复用 Select;选年保月且不提交,选日才写入,Escape 逐层取消;覆盖键盘、闰日、关闭重开与弹层边界 |
 | 表单 | `TaskEditor`、`SettingsView` 对应分区 | 待办 schema、设置字段逐项校验;错误与重试 |
 | 弹窗与前景层 | `Modal`、`AiPanel` | 层级、Escape、焦点返回和后景可读性 |
 | Toast 与错误 | App toast、模块内错误区 | 短暂成功提示;错误持续到处理,不要只靠颜色 |
@@ -49,3 +49,9 @@
 ## 验收样例
 
 至少核对:首次空数据、存在逾期与待确认、待办乐观锁冲突、AI 取消/应用失败、设置保存失败、无可用模型、二级导航收起、1024×680 窗口、AI 弹层打开、mist/cool/warm、键盘焦点与减少动态效果。`npm test` 与 `npm run verify` 只覆盖数据和构建,实际视觉与交互仍以隔离 Electron 窗口验证。
+
+## 命例生日年份直选
+
+依据 [Issue #13 已批准方案 v2](https://github.com/zhshenry/onosan_workbench/issues/13#issuecomment-6111054194)与[批准回复](https://github.com/zhshenry/onosan_workbench/issues/13#issuecomment-6118993667),新建与编辑命例共用同一个生日字段。年份仅为日历浏览状态,不输入年份、不增加跳转按钮,不调用存储或排盘。关闭重开恢复当前已选生日;闰日跨平年只校正浏览焦点。既有月份箭头、今天、清除、日期格式、出生时间、存储及其他日期调用维持原行为。下拉的 1900–2100 年边界复用 BaziView 既有常量,不替代既有保存校验。
+
+静态组件检查见 `tests/date-year-dropdown.test.ts`;真实 Windows 安装版交互、三主题/双尺寸及保存后同版本重启见 `tooling/year-dropdown-pilot.mjs`,由原有 Windows pilot 执行。正式验收以对应提交的 Actions 结果和运行截图为准。

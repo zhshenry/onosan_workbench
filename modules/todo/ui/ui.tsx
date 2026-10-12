@@ -4,7 +4,7 @@ import { CalendarBlank, CaretDown, CaretLeft, CaretRight, Clock, Question, X } f
 import { localDay } from '../../../shared/todo-contracts';
 export type SelectOption = { value: string; label: string; group?: string };
 export const HALF_HOUR_TIMES = Array.from({ length: 48 }, (_, index) => `${String(Math.floor(index / 2)).padStart(2, '0')}:${index % 2 ? '30' : '00'}`);
-export function Select({ id, value, onChange, options, className, menuClassName, disabled = false, renderOption, 'aria-label': ariaLabel, 'aria-invalid': invalid, 'aria-describedby': describedBy }: { id?: string; value: string; onChange(value: string): void; options: SelectOption[]; className?: string; menuClassName?: string; disabled?: boolean; renderOption?: (option: SelectOption) => ReactNode; 'aria-label'?: string; 'aria-invalid'?: boolean | 'true' | 'false'; 'aria-describedby'?: string }) {
+export function Select({ id, value, onChange, options, className, menuClassName, disabled = false, renderOption, portalContainer, 'aria-label': ariaLabel, 'aria-invalid': invalid, 'aria-describedby': describedBy }: { id?: string; value: string; onChange(value: string): void; options: SelectOption[]; className?: string; menuClassName?: string; disabled?: boolean; renderOption?: (option: SelectOption) => ReactNode; portalContainer?: () => HTMLElement | null; 'aria-label'?: string; 'aria-invalid'?: boolean | 'true' | 'false'; 'aria-describedby'?: string }) {
   const listId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
@@ -26,6 +26,14 @@ export function Select({ id, value, onChange, options, className, menuClassName,
     const list = menu.current; const button = trigger.current;
     if (!open || !list || !button) return;
     const rect = button.getBoundingClientRect();
+    if (portalContainer) {
+      // Nested calendars own this popup so outside-click and Escape stay layered.
+      list.style.width = `${rect.width}px`;
+      list.style.minWidth = `${rect.width}px`;
+      placePopover(list, button, 'auto', button.closest('dialog'), Math.min(220, window.innerHeight / 2));
+      scrollChild(`${listId}-${active}`, '.select-menu');
+      return;
+    }
     const boundary = list.parentElement instanceof HTMLDialogElement ? list.parentElement.getBoundingClientRect() : { top: 8, bottom: window.innerHeight - 8, left: 8, right: window.innerWidth - 8 };
     list.style.minWidth = `${rect.width}px`;
     const width = list.offsetWidth;
@@ -72,6 +80,7 @@ export function Select({ id, value, onChange, options, className, menuClassName,
     };
   }, [open, selected]);
   function onTriggerKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    if (portalContainer && (event.nativeEvent.isComposing || event.keyCode === 229)) return;
     if (!open && (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Enter' || event.key === ' ')) {
       event.preventDefault(); setActive(selected); setOpen(true); return;
     }
@@ -94,7 +103,7 @@ export function Select({ id, value, onChange, options, className, menuClassName,
           <div className="select-group-label" aria-hidden="true">{group.label ?? '其他'}</div>
           {group.items.map(({ option, index: optionIndex }) => optionElement(option, optionIndex))}
         </div>)}
-    </div>, trigger.current?.closest('dialog') ?? document.body) : null}
+    </div>, portalContainer?.() ?? trigger.current?.closest('dialog') ?? document.body) : null}
   </div>;
 }
 export function Segmented({ value, onChange, options, 'aria-label': ariaLabel }: { value: string; onChange(value: string): void; options: (SelectOption & { icon?: ReactNode })[]; 'aria-label'?: string }) {
@@ -113,16 +122,16 @@ export function Segmented({ value, onChange, options, 'aria-label': ariaLabel }:
     {options.map(option => <button key={option.value} type="button" role="radio" aria-checked={option.value === value} tabIndex={option.value === value ? 0 : -1} onClick={() => { if (option.value !== value) onChange(option.value); }}>{option.icon}{option.label}</button>)}
   </div>;
 }
-function placePopover(list: HTMLElement, button: HTMLElement, direction: 'auto' | 'down' = 'auto') {
+function placePopover(list: HTMLElement, button: HTMLElement, direction: 'auto' | 'down' = 'auto', boundaryElement?: HTMLElement | null, heightLimit = Infinity) {
   const rect = button.getBoundingClientRect();
-  const parent = list.parentElement;
+  const parent = boundaryElement ?? list.parentElement;
   const boundary = parent instanceof HTMLDialogElement ? parent.getBoundingClientRect() : { top: 8, bottom: window.innerHeight - 8, left: 8, right: window.innerWidth - 8 };
   const gap = 4;
   const below = Math.max(0, boundary.bottom - rect.bottom - gap);
   const above = Math.max(0, rect.top - boundary.top - gap);
   list.style.height = '';
   list.style.maxHeight = '';
-  const natural = list.scrollHeight;
+  const natural = Math.min(list.scrollHeight, heightLimit);
   const openUp = direction === 'auto' && below < natural && above > below;
   if (direction === 'down') list.style.maxHeight = 'none';
   else {
@@ -186,8 +195,8 @@ function monthCells(y: number, m: number) {
   }
   return items;
 }
-export function DatePicker({ id, value, onChange, 'aria-invalid': invalid, 'aria-describedby': describedBy }: {
-  id?: string; value: string; onChange(value: string): void; 'aria-invalid'?: boolean | 'true' | 'false'; 'aria-describedby'?: string;
+export function DatePicker({ id, value, onChange, yearRange, 'aria-invalid': invalid, 'aria-describedby': describedBy }: {
+  id?: string; value: string; onChange(value: string): void; yearRange?: { min: number; max: number }; 'aria-invalid'?: boolean | 'true' | 'false'; 'aria-describedby'?: string;
 }) {
   const gridId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
@@ -199,6 +208,20 @@ export function DatePicker({ id, value, onChange, 'aria-invalid': invalid, 'aria
   const [open, setOpen] = useState(false);
   const [view, setView] = useState(() => selected ? { y: selected.y, m: selected.m } : (() => { const now = parseIso(today)!; return { y: now.y, m: now.m }; })());
   const [cursor, setCursor] = useState(value || today);
+  const yearOptions = yearRange ? Array.from({ length: yearRange.max - yearRange.min + 1 }, (_, index) => {
+    const year = `${yearRange.min + index}年`;
+    return { value: year, label: year };
+  }) : [];
+  function yearMenuIsOpen() { return Boolean(yearRange && menu.current?.querySelector('.date-year-select [aria-expanded="true"]')); }
+  function selectYear(value: string) {
+    const year = Number(value.slice(0, -1));
+    if (!yearRange || !Number.isInteger(year) || year < yearRange.min || year > yearRange.max) return;
+    setView(current => ({ y: year, m: current.m }));
+    setCursor(current => {
+      const day = (parseIso(current) ?? parseIso(today)!).d;
+      return toIso(year, view.m, Math.min(day, new Date(year, view.m, 0).getDate()));
+    });
+  }
   function close() { setOpen(false); trigger.current?.focus(); }
   function pick(next: string) { onChange(next); close(); }
   function show(next = !open) {
@@ -244,6 +267,9 @@ export function DatePicker({ id, value, onChange, 'aria-invalid': invalid, 'aria
       setOpen(false);
     }
     function onKeyDown(event: globalThis.KeyboardEvent) {
+      // The shared nested Select handles its own keys and first Escape.
+      if (yearMenuIsOpen()) return;
+      if (yearRange && (event.isComposing || event.keyCode === 229)) return;
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); return; }
       const target = event.target;
       if (target instanceof HTMLElement && menu.current?.contains(target) && target.closest('.date-head, .date-menu-actions')) return;
@@ -285,15 +311,18 @@ export function DatePicker({ id, value, onChange, 'aria-invalid': invalid, 'aria
     <button type="button" ref={trigger} id={id} className="select-trigger" aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? gridId : undefined} aria-invalid={invalid} aria-describedby={describedBy} onClick={() => show()} onKeyDown={onTriggerKeyDown}>
       <span>{parsed ? `${parsed.y}年${parsed.m}月${parsed.d}日` : '选择日期'}</span><CalendarBlank size={14} />
     </button>
-    {open ? createPortal(<div ref={menu} className="date-menu" role="dialog" aria-label="选择日期">
+    {open ? createPortal(<div ref={menu} className={`date-menu${yearRange ? ' date-menu-with-years' : ''}`} role="dialog" aria-label="选择日期">
       <div className="date-head">
         <button type="button" aria-label="上个月" onClick={() => setView(current => { const next = shiftMonth(current.y, current.m, -1); setCursor(iso => { const parsed = parseIso(iso) ?? parseIso(today)!; return toIso(next.y, next.m, Math.min(parsed.d, new Date(next.y, next.m, 0).getDate())); }); return next; })}><CaretLeft size={14} weight="bold" /></button>
-        <span>{view.y}年{view.m}月</span>
+        {yearRange ? <div className="date-month-label">
+          <Select value={`${view.y}年`} onChange={selectYear} options={yearOptions} className="date-year-select" menuClassName="date-year-menu" aria-label="选择年份" portalContainer={() => menu.current} />
+          <span>{view.m}月</span>
+        </div> : <span>{view.y}年{view.m}月</span>}
         <button type="button" aria-label="下个月" onClick={() => setView(current => { const next = shiftMonth(current.y, current.m, 1); setCursor(iso => { const parsed = parseIso(iso) ?? parseIso(today)!; return toIso(next.y, next.m, Math.min(parsed.d, new Date(next.y, next.m, 0).getDate())); }); return next; })}><CaretRight size={14} weight="bold" /></button>
       </div>
       <div className="date-weekdays">{WEEKDAYS.map(day => <span key={day}>{day}</span>)}</div>
       <div id={gridId} className="date-grid" role="grid">
-        {monthCells(view.y, view.m).map(cell => <button key={cell.iso} type="button" id={`${gridId}-${cell.iso}`} role="gridcell" aria-label={cell.iso} aria-selected={cell.iso === value} className={[cell.outside && 'is-outside', cell.iso === today && 'is-today', cell.iso === value && 'is-selected', cell.iso === cursor && 'is-active'].filter(Boolean).join(' ')} onMouseEnter={() => setCursor(cell.iso)} onClick={() => pick(cell.iso)}>{cell.day}</button>)}
+        {monthCells(view.y, view.m).map(cell => <button key={cell.iso} type="button" id={`${gridId}-${cell.iso}`} role="gridcell" aria-label={cell.iso} aria-selected={cell.iso === value} className={[cell.outside && 'is-outside', cell.iso === today && 'is-today', cell.iso === value && 'is-selected', cell.iso === cursor && 'is-active'].filter(Boolean).join(' ')} onMouseEnter={() => { if (!yearMenuIsOpen()) setCursor(cell.iso); }} onClick={() => pick(cell.iso)}>{cell.day}</button>)}
       </div>
       <div className="date-menu-actions">
         <button type="button" onClick={() => pick('')}>清除</button>
