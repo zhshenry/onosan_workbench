@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 84,
+  "revision": 85,
   "currentRun": {
     "owner": "ono-root-ui-execution-20261012T1636Z",
     "startedAt": "2026-10-12T16:36:31.561Z",
@@ -1390,6 +1390,27 @@
       "createdAt": "2026-10-12T16:40:04Z",
       "commentId": 6128522870,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6128522870"
+    },
+    "float-v2-image-dual": {
+      "kind": "upload-image",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
+      "sha256": "97ee892e637f6b30cfaf546ab06af17f86270ed5859aac2eff4e30f333f1d5e0",
+      "createdAt": "2026-10-12T16:41:25.862Z"
+    },
+    "float-v2-image-detail": {
+      "kind": "upload-image",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
+      "sha256": "c6903083f1ae5813a6c13758b35f9110142de943708eda7ade52b0601d036d05",
+      "createdAt": "2026-10-12T16:41:25.862Z"
+    },
+    "issue34-v1-image": {
+      "kind": "upload-image",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/34",
+      "sha256": "a0b7a9c77dd0d8cebc52387d0e77f14214cd15a4471a77cf6e83495dfba9637c",
+      "createdAt": "2026-10-12T16:41:25.862Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
