@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 221,
+  "revision": 222,
   "currentRun": {
     "owner": "ono-root-diagnosis-result-20261013T0436Z",
     "startedAt": "2026-10-13T04:36:52.846Z",
@@ -349,7 +349,7 @@
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "stage": "plan-revision",
+      "stage": "awaiting-plan-approval",
       "type": [
         "ui",
         "interaction"
@@ -357,16 +357,16 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T04:16:50Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "v3草稿及高保真已准备未发布；同云原生附件明确失败，需核实恢复后图文同发再审。旧v2与最终合入请求暂停，不产品实施",
+      "nextAction": "等待当前v3图文方案明确批准；旧v2及旧最终合入请求暂停，不实施",
       "groupId": "workbench-context-26",
       "groupIssueNumbers": [
         26
       ],
       "primaryIssue": 26,
-      "planVersion": "v2",
-      "planCommentId": 6135382383,
-      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6135382383",
-      "imageUrl": "https://github.com/user-attachments/assets/2c16c9d3-fefa-4d5b-883f-eaf267359a0a",
+      "planVersion": "v3",
+      "planCommentId": 6138445292,
+      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6138445292",
+      "imageUrl": "https://github.com/user-attachments/assets/833a6c6c-b43d-4c89-aeff-41a32368369e",
       "approval": {
         "commentId": 6128082959,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6128082959",
@@ -410,7 +410,7 @@
       "temporaryEvidenceCleanedAt": "2026-10-12T18:08:33.944Z",
       "lastNotifiedAt": "2026-10-13T00:44:46Z",
       "feedbackCommentId": 6137391347,
-      "imageDisplayVerifiedAt": "2026-10-13T00:38:05.123Z",
+      "imageDisplayVerifiedAt": "2026-10-13T04:47:48.456Z",
       "temporaryImageCleanedAt": "2026-10-13T00:38:35.156Z",
       "integrationNote": "main已合入24；PR39当前冲突待局部v2批准后在授权实现中集成并重验，不沿用旧CI",
       "latestFeedback": {
@@ -1164,7 +1164,8 @@
     6138131366,
     6138134955,
     6138150575,
-    6138334987
+    6138334987,
+    6138445292
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -2994,10 +2995,13 @@
     "issue26-v3-plan-comment": {
       "operationId": "issue26-v3-plan-comment",
       "targetIssue": 26,
-      "status": "intent",
+      "status": "succeeded",
       "summary": "发布v3完整轻列表方案及已验证原生图，等待明确方案批准，不实施",
       "body": "【OnO 自动化】#26｜关联事项 UI v3｜待方案批准\n\n这版替代 v2：当前 main 的待办悬浮框点击关联入口后，直接展开事项轻列表，没有搜索栏、类型/状态筛选。我上一版保留了这些控件，没有对齐你的意思。\n\n![关联事项 UI v3 高保真：轻列表、选中反馈、关联后及窄面板](https://github.com/user-attachments/assets/833a6c6c-b43d-4c89-aeff-41a32368369e)\n\n经你要求继续网页尝试，本次原生附件上传及预览已成功。此前失败的根因仍未确认，CLI认证仍受网络策略阻断；本图通过云端浏览器上传。\n\n参考基线 main：a5659fa5e6dbef6188ec3e34b061bc317d4d7e78。设计PNG SHA256：5a6e1571b8e6e6c613065bcefd7055b03c826e324247392490dcdcccb875f2c0。\n\n局部范围：\n- 首页/To-Do-List 的关联菜单改为输入区上方轻列表，去掉标题栏、类型/状态筛选和说明页脚；本版同时建议撤下该待办菜单搜索栏，作为明确待批准变化。\n- 保留类型小标识、标题、必要状态和独立选中勾；长标题合理省略并可查看完整信息，同名事项仍可辨识日期/分类。\n- 单选后立即关联并收起；重新点＋更换，标签×取消。列表滚动覆盖全部合资格事项，不照搬当前浮窗8/20条截断。\n- 保留键盘、Esc、外部关闭、焦点返回、空/加载/失败/失效反馈。\n- 图片只展示右侧关联输入区，采用轻列表交互；不重排整个主工作台、不承诺逐像素复制生成图中的模型/＋按钮尺寸。\n- 其他工作台现有映射、博文/命例多选最多8项及确认/取消、书目单选和既有搜索保持。设置/规划入口仍无可读数据，不能借此读取配置或密钥。\n- 主协助对象、只读ID验证、发送快照、历史/会话隔离、建议卡写入确认保持；既有To-Do-List基础上下文不移除，不能声称只向AI发送所选事项。\n\n这是独立设计预览，非产品实测。新意见6137391347不是实施批准；PR39旧head2f24f9577c4adb770146fde38c91c3cb2bbc6dac和旧合入请求暂停。\n图文确认后再修PR39、集成最新main、跑完整Windows测试/安装/真实操作与读回重启，最终按准确新head请求一次合入收尾。\n\n请看上图，在本 Issue 回复：同意 #26 关联事项 UI v3\n\n",
-      "createdAt": "2026-10-13T04:46:19.380Z"
+      "createdAt": "2026-10-13T04:46:19.380Z",
+      "commentId": 6138445292,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6138445292",
+      "verifiedAt": "2026-10-13T04:47:48.456Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
