@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 313,
+  "revision": 314,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1678,7 +1678,8 @@
     6140987611,
     6140988850,
     6142470863,
-    6144006182
+    6144006182,
+    6144073288
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -4121,10 +4122,13 @@
     },
     "issue34-start-comment": {
       "operationId": "issue34-start-comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": 34,
       "body": "【OnO 自动化】已重新核对你对 #34 方案 v2 的原始批准和最新 main b276261a90cb60a53626dd2149b0f3cdc6aad0fd，开始独立实施应用更新状态同行展示。\n\n#35 已停在首页视觉问题与附件上传阻塞，当前不再修改它；本轮仅开发 #34，不混入其他需求。更新检查、下载和重启安装行为保持原样，完成后在本 Issue 提供真实 Windows 检查与截图，再请求准确 PR/head 的最终批准。\n\n当前无需回复。",
-      "startedAt": "2026-10-13T10:59:48.813Z"
+      "startedAt": "2026-10-13T10:59:48.813Z",
+      "commentId": 6144073288,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6144073288",
+      "verifiedAt": "2026-10-13T11:01:25.202Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
