@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 153,
+  "revision": 154,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -243,7 +243,7 @@
     },
     "25": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/25",
-      "stage": "awaiting-plan-approval",
+      "stage": "queued",
       "type": [
         "ui",
         "interaction"
@@ -251,7 +251,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
+      "nextAction": "24实际main验收后启动一组开发，按完整v2，未批准成员不搭载",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -274,7 +274,30 @@
         6128040862,
         6128068467,
         6128067419
-      ]
+      ],
+      "approval": {
+        "commentId": 6135137217,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217",
+        "body": "同意悬浮窗组 v2 的收起布局调整",
+        "authorId": 54107847,
+        "createdAt": "2026-10-13T00:16:46Z",
+        "updatedAt": "2026-10-13T00:16:46Z",
+        "performedViaGithubApp": null,
+        "requestCommentId": 6128626525,
+        "planVersion": "group-v2",
+        "groupIssueNumbers": [
+          25,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33
+        ],
+        "corroboratingCommentId": 6135126353,
+        "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
+        "verifiedAt": "2026-10-13T00:34:00.071Z"
+      }
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
@@ -342,7 +365,7 @@
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "stage": "awaiting-plan-approval",
+      "stage": "queued",
       "type": [
         "ui",
         "interaction"
@@ -350,7 +373,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
+      "nextAction": "24实际main验收后启动一组开发，按完整v2，未批准成员不搭载",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -376,11 +399,34 @@
         6128040862,
         6128068467,
         6128067419
-      ]
+      ],
+      "approval": {
+        "commentId": 6135137217,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217",
+        "body": "同意悬浮窗组 v2 的收起布局调整",
+        "authorId": 54107847,
+        "createdAt": "2026-10-13T00:16:46Z",
+        "updatedAt": "2026-10-13T00:16:46Z",
+        "performedViaGithubApp": null,
+        "requestCommentId": 6128626525,
+        "planVersion": "group-v2",
+        "groupIssueNumbers": [
+          25,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33
+        ],
+        "corroboratingCommentId": 6135126353,
+        "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
+        "verifiedAt": "2026-10-13T00:34:00.071Z"
+      }
     },
     "29": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
-      "stage": "awaiting-plan-approval",
+      "stage": "queued",
       "type": [
         "ui",
         "interaction"
@@ -388,7 +434,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
+      "nextAction": "24实际main验收后启动一组开发，按完整v2，未批准成员不搭载",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -411,11 +457,34 @@
         6128040862,
         6128068467,
         6128067419
-      ]
+      ],
+      "approval": {
+        "commentId": 6135137217,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217",
+        "body": "同意悬浮窗组 v2 的收起布局调整",
+        "authorId": 54107847,
+        "createdAt": "2026-10-13T00:16:46Z",
+        "updatedAt": "2026-10-13T00:16:46Z",
+        "performedViaGithubApp": null,
+        "requestCommentId": 6128626525,
+        "planVersion": "group-v2",
+        "groupIssueNumbers": [
+          25,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33
+        ],
+        "corroboratingCommentId": 6135126353,
+        "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
+        "verifiedAt": "2026-10-13T00:34:00.071Z"
+      }
     },
     "30": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
-      "stage": "awaiting-plan-approval",
+      "stage": "queued",
       "type": [
         "ui",
         "interaction"
@@ -423,7 +492,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
+      "nextAction": "24实际main验收后启动一组开发，按完整v2，未批准成员不搭载",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -446,11 +515,34 @@
         6128040862,
         6128068467,
         6128067419
-      ]
+      ],
+      "approval": {
+        "commentId": 6135137217,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217",
+        "body": "同意悬浮窗组 v2 的收起布局调整",
+        "authorId": 54107847,
+        "createdAt": "2026-10-13T00:16:46Z",
+        "updatedAt": "2026-10-13T00:16:46Z",
+        "performedViaGithubApp": null,
+        "requestCommentId": 6128626525,
+        "planVersion": "group-v2",
+        "groupIssueNumbers": [
+          25,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33
+        ],
+        "corroboratingCommentId": 6135126353,
+        "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
+        "verifiedAt": "2026-10-13T00:34:00.071Z"
+      }
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
-      "stage": "awaiting-plan-approval",
+      "stage": "queued",
       "type": [
         "ui",
         "interaction"
@@ -458,7 +550,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
+      "nextAction": "24实际main验收后启动一组开发，按完整v2，未批准成员不搭载",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -481,11 +573,34 @@
         6128040862,
         6128068467,
         6128067419
-      ]
+      ],
+      "approval": {
+        "commentId": 6135137217,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217",
+        "body": "同意悬浮窗组 v2 的收起布局调整",
+        "authorId": 54107847,
+        "createdAt": "2026-10-13T00:16:46Z",
+        "updatedAt": "2026-10-13T00:16:46Z",
+        "performedViaGithubApp": null,
+        "requestCommentId": 6128626525,
+        "planVersion": "group-v2",
+        "groupIssueNumbers": [
+          25,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33
+        ],
+        "corroboratingCommentId": 6135126353,
+        "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
+        "verifiedAt": "2026-10-13T00:34:00.071Z"
+      }
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
-      "stage": "awaiting-plan-approval",
+      "stage": "queued",
       "type": [
         "ui",
         "interaction"
@@ -493,7 +608,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
+      "nextAction": "24实际main验收后启动一组开发，按完整v2，未批准成员不搭载",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -516,11 +631,34 @@
         6128040862,
         6128068467,
         6128067419
-      ]
+      ],
+      "approval": {
+        "commentId": 6135137217,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217",
+        "body": "同意悬浮窗组 v2 的收起布局调整",
+        "authorId": 54107847,
+        "createdAt": "2026-10-13T00:16:46Z",
+        "updatedAt": "2026-10-13T00:16:46Z",
+        "performedViaGithubApp": null,
+        "requestCommentId": 6128626525,
+        "planVersion": "group-v2",
+        "groupIssueNumbers": [
+          25,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33
+        ],
+        "corroboratingCommentId": 6135126353,
+        "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
+        "verifiedAt": "2026-10-13T00:34:00.071Z"
+      }
     },
     "33": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
-      "stage": "awaiting-plan-approval",
+      "stage": "queued",
       "type": [
         "ui",
         "interaction"
@@ -528,7 +666,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待v2收起布局及保持原字体颜色的修订确认；不变范围保留，未启动实施",
+      "nextAction": "24实际main验收后启动一组开发，按完整v2，未批准成员不搭载",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -551,7 +689,30 @@
         6128040862,
         6128068467,
         6128067419
-      ]
+      ],
+      "approval": {
+        "commentId": 6135137217,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217",
+        "body": "同意悬浮窗组 v2 的收起布局调整",
+        "authorId": 54107847,
+        "createdAt": "2026-10-13T00:16:46Z",
+        "updatedAt": "2026-10-13T00:16:46Z",
+        "performedViaGithubApp": null,
+        "requestCommentId": 6128626525,
+        "planVersion": "group-v2",
+        "groupIssueNumbers": [
+          25,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33
+        ],
+        "corroboratingCommentId": 6135126353,
+        "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
+        "verifiedAt": "2026-10-13T00:34:00.071Z"
+      }
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
@@ -2043,6 +2204,20 @@
       "treeSha": "a71b4486cedec49f3d84d286ed0d1162abb830f7",
       "verifiedAt": "2026-10-13T00:33:07.251Z",
       "authorizationCheck": "首调用拒绝后核对连接器authenticated profile及服务端原始作者同ID，仅同调用重试一次成功"
+    },
+    "issue24-main-progress": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
+      "body": "【OnO 自动化】已核对你的最终批准，PR #38 的 b54528e 已合入 main（a5659fa5e6dbef6188ec3e34b061bc317d4d7e78），合入树与已验收版本一致。接下来验证这次真实 main 的完整 Windows 检查；全部通过后按批准关闭 #24 并核查需求分支清理。当前不提前关单，无需再次批准。",
+      "createdAt": "2026-10-13T00:34:00.071Z"
+    },
+    "floating-v2-approved-progress": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
+      "body": "【OnO 自动化】已核对你在本 Issue 对 v2 的确认；#25 的同文回复作为旁证，不重复记成另一单。按完整 v2 统一处理 #25、#28、#29、#30、#31、#32、#33，提交一个实现 Draft PR。先完成 #24 的实际主干验收，再开始本组；#26 的新视觉反馈单独出图对齐，不混入本组。最终在这里给实测图和准确版本供你一次审阅合入，现在无需重复批准方案。",
+      "createdAt": "2026-10-13T00:34:00.071Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
