@@ -6,6 +6,7 @@ import test from 'node:test';
 import {
   PUBLISH_ASSOCIATION_MATRIX, PUBLISH_ASSOCIATION_SCREENSHOTS,
   assertPublishAssociationRecord, assertPublishAssociationGeometry,
+  assertPublishAssociationFrame,
   installPublishWriteFixture, configurePublishWriteFixture, releasePublishWriteFixture,
   restorePublishWriteFixture, publishWriteFixtureCalls,
 } from '../tooling/publish-association-pilot.mjs';
@@ -87,6 +88,52 @@ test('Association geometry supports natural vertical scrolling but rejects missi
     [value => { value.fields[1].hit = false; }, /pointer hit/],
   ];
   for (const [modify, expected] of samples) { const value = geometry(); modify(value); assert.throws(() => assertPublishAssociationGeometry(value), expected); }
+});
+
+test('Association screenshot frames require simultaneous complete state fields inside the real scroller with no toast', () => {
+  const requirements = {
+    '尚未关联作品': ['heading', 'state', 'blog', 'input', 'format-check'],
+    '待确认': ['heading', 'state', 'blog', 'input', 'format-check', 'target', 'confirm', 'cancel'],
+    '已关联 · 手动确认': ['heading', 'state', 'record', 'copy', 'change', 'remove'],
+    '链接格式不正确': ['heading', 'state', 'blog', 'input', 'format-check', 'error'],
+  };
+  const frame = (state: keyof typeof requirements) => ({
+    state, toastHidden: true, viewport: { x: 0, y: 0, width: 1280, height: 820 },
+    clip: { x: 606, y: 86, width: 648, height: 708 }, section: { x: 625, y: 110, width: 600, height: 600 }, clientWidth: 598, scrollWidth: 598,
+    fields: requirements[state].map((kind, index) => ({ kind, label: kind, bounds: { x: 640, y: 130 + index * 50, width: 560, height: 40 },
+      complete: true, control: ['input', 'format-check', 'confirm', 'cancel', 'copy', 'change', 'remove'].includes(kind), hit: true, textHit: true, controlHit: true })),
+  });
+  for (const state of Object.keys(requirements) as Array<keyof typeof requirements>) {
+    assert.doesNotThrow(() => assertPublishAssociationFrame(frame(state), state));
+    for (const kind of requirements[state]) {
+      const missing = frame(state); missing.fields = missing.fields.filter(field => field.kind !== kind);
+      assert.throws(() => assertPublishAssociationFrame(missing, state), /requires exactly one/);
+    }
+    const toast = frame(state); toast.toastHidden = false;
+    assert.throws(() => assertPublishAssociationFrame(toast, state), /toast to disappear/);
+    const wrong = frame(state); wrong.state = '尚未关联作品';
+    if (state !== wrong.state) assert.throws(() => assertPublishAssociationFrame(wrong, state), /exact expected state/);
+  }
+  const pending = frame('待确认');
+  // Reproduce the old capture failure: a control can be inside the screenshot
+  // viewport but below the actual copy-editor's clipped content area.
+  pending.fields.find(field => field.kind === 'confirm')!.bounds.y = 780;
+  assert.throws(() => assertPublishAssociationFrame(pending, '待确认'), /clipped by the actual scroll panel/);
+  const headerOnly = frame('尚未关联作品'); headerOnly.section.y = 712;
+  assert.throws(() => assertPublishAssociationFrame(headerOnly, '尚未关联作品'), /entire association section/);
+  const clippedText = frame('待确认'); clippedText.fields.find(field => field.kind === 'target')!.complete = false;
+  assert.throws(() => assertPublishAssociationFrame(clippedText, '待确认'), /complete text/);
+  const overlay = frame('链接格式不正确'); overlay.fields.find(field => field.kind === 'error')!.hit = false;
+  assert.throws(() => assertPublishAssociationFrame(overlay, '链接格式不正确'), /obscured/);
+  // A URL line or a control edge may be covered while its container centre is
+  // still reachable; centre-only checks must never accept that partial overlay.
+  const partialText = frame('待确认'); partialText.fields.find(field => field.kind === 'target')!.textHit = false;
+  assert.throws(() => assertPublishAssociationFrame(partialText, '待确认'), /text is obscured/);
+  const partialControl = frame('待确认'); partialControl.fields.find(field => field.kind === 'confirm')!.controlHit = false;
+  assert.throws(() => assertPublishAssociationFrame(partialControl, '待确认'), /control is obscured/);
+  const duplicate = frame('待确认'); duplicate.fields.push(duplicate.fields.find(field => field.kind === 'cancel')!);
+  assert.throws(() => assertPublishAssociationFrame(duplicate, '待确认'), /exactly one cancel/);
+  assert.throws(() => assertPublishAssociationFrame(frame('待确认'), 'unknown'), /Unknown/);
 });
 
 test('Association fixture wraps only real main-frame mark/clear calls and restores exact handler identities', async () => {
@@ -245,5 +292,21 @@ test('Installed association pilot uses twelve checks, real UI storage writes, bo
   assert.ok(entry.indexOf('publishAssociationFixture = await runPublishAssociationPilot(') < entry.indexOf("await check('Choose exit-on-close"));
   assert.ok(entry.indexOf('await verifyPublishAssociationRelaunch(') > entry.indexOf("await check('Relaunch same installed executable"));
   for (const older of ['verifyAiCardsRelaunch', 'verifyYearDropdownRelaunch', 'verifyTopbarDatesRelaunch', 'verifyFloatGroupRelaunch']) assert.match(entry, new RegExp(`await ${older}\\(`));
-  for (const name of PUBLISH_ASSOCIATION_SCREENSHOTS) assert.equal(source.split(`screenshot('${name}')`).length - 1, 1, 'Each approved screenshot is captured once');
+  for (const name of PUBLISH_ASSOCIATION_SCREENSHOTS) assert.equal(source.split(`name: '${name}'`).length - 1, 1, 'Each approved screenshot is captured once through the frame guard');
+  assert.equal(source.split('await screenshot(name)').length - 1, 1, 'One unchanged full-page screenshot call captures only guarded frames');
+  const capture = source.slice(source.indexOf('async function captureAssociationFrame'), source.indexOf('// Bounded main-frame-only'));
+  assert.match(capture, /scrollIntoView\(\{ block: 'start', inline: 'nearest', behavior: 'instant' \}\)/);
+  assert.match(capture, /Number\(getComputedStyle\(toast\)\.opacity\) > 0/);
+  assert.match(capture, /panel\.clientWidth/); assert.match(capture, /panel\.clientHeight/);
+  assert.match(capture, /for \(let x = left \+ 8; x < right; x \+= 8\)/);
+  assert.match(capture, /visibleAt\(owner, x, bounds\.top \+ bounds\.height \* fraction\)/);
+  const sampling = capture.match(/const controlHit = !control \|\| (\[[\d., ]+\])\.every\(x => (\[[\d., ]+\])\.every\(y => visibleAt/);
+  assert.ok(sampling, 'Actual native control sampling fractions are required');
+  // The real pending Cancel button is 50×32px with a 10px corner radius.
+  // Sample its usable inset, not rounded corners that legitimately miss it.
+  const insideCancel = (x: number, y: number) => Math.hypot(Math.max(10 - x, 0, x - 40), Math.max(10 - y, 0, y - 22)) <= 10;
+  assert.equal(insideCancel(50 * 0.05, 32 * 0.1), false);
+  for (const x of JSON.parse(sampling[1])) for (const y of JSON.parse(sampling[2])) assert.equal(insideCancel(50 * x, 32 * y), true);
+  assert.ok(capture.indexOf('assertPublishAssociationFrame(frame, expectedState)') < capture.indexOf('await screenshot(name)'));
+  assert.doesNotMatch(capture, /scrollIntoViewIfNeeded|\.screenshot\(|clip:.*screenshot|setAttribute\(|\.style\.|\.remove\(/);
 });

@@ -56,6 +56,92 @@ export function assertPublishAssociationGeometry(value) {
   }
 }
 
+const FRAME_FIELDS = Object.freeze({
+  '尚未关联作品': ['heading', 'state', 'blog', 'input', 'format-check'],
+  '待确认': ['heading', 'state', 'blog', 'input', 'format-check', 'target', 'confirm', 'cancel'],
+  '已关联 · 手动确认': ['heading', 'state', 'record', 'copy', 'change', 'remove'],
+  '链接格式不正确': ['heading', 'state', 'blog', 'input', 'format-check', 'error'],
+});
+export function assertPublishAssociationFrame(value, expectedState) {
+  assert.ok(Object.hasOwn(FRAME_FIELDS, expectedState), 'Unknown association screenshot state');
+  assert.equal(value.state, expectedState, 'Screenshot must show its exact expected state');
+  assert.equal(value.toastHidden, true, 'Screenshot must wait for the copy/status toast to disappear');
+  assertPublishAssociationGeometry(value);
+  const inside = (rect, area) => rect.x >= area.x - 1 && rect.y >= area.y - 1
+    && rect.x + rect.width <= area.x + area.width + 1 && rect.y + rect.height <= area.y + area.height + 1;
+  for (const key of ['x', 'y', 'width', 'height']) assert.ok(Number.isFinite(value.clip?.[key]), 'Real scroll-panel clipping bounds required');
+  assert.ok(value.clip.width > 0 && value.clip.height > 0 && inside(value.clip, value.viewport), 'Visible scroll-panel area required');
+  assert.ok(inside(value.section, value.clip), 'The entire association section must fit in this one screenshot frame');
+  for (const kind of FRAME_FIELDS[expectedState]) assert.equal(value.fields.filter(field => field.kind === kind).length, 1, `Screenshot requires exactly one ${kind}`);
+  for (const field of value.fields) {
+    assert.ok(inside(field.bounds, value.clip), `${field.kind}: clipped by the actual scroll panel`);
+    assert.equal(field.hit, true, `${field.kind}: screenshot field is obscured`);
+    assert.equal(field.textHit, true, `${field.kind}: screenshot text is obscured`);
+    if (field.control) assert.equal(field.controlHit, true, `${field.kind}: screenshot control is obscured`);
+  }
+}
+
+async function captureAssociationFrame({ application, page, screenshot, report, name, expectedState }) {
+  assert.ok(PUBLISH_ASSOCIATION_SCREENSHOTS.includes(name), 'Only the four existing screenshots may be captured');
+  // This already-tested native size gives the pending target and both actions
+  // enough room together. Resize/scroll the real UI; never crop or alter a PNG.
+  const native = await application.browserWindow(page);
+  await native.evaluate(win => { win.webContents.setZoomFactor(1); win.setContentSize(1280, 820); });
+  assert.deepEqual(await native.evaluate(win => win.getContentSize()), [1280, 820]);
+  await page.waitForFunction(() => innerWidth === 1280 && innerHeight === 820);
+  await waitStatus(page, expectedState);
+  await section(page).evaluate(element => element.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'instant' }));
+  await page.waitForFunction(async () => {
+    await document.fonts.ready;
+    const toast = document.querySelector('.toast');
+    if (toast && (toast.getAttribute('data-show') === '1' || Number(getComputedStyle(toast).opacity) > 0)) return false;
+    return !document.getAnimations().some(animation => animation.effect?.getComputedTiming().iterations !== Infinity
+      && animation.effect?.target instanceof Element && animation.effect.target.closest('.copy-editor, .toast')
+      && (animation.pending || animation.playState === 'running'));
+  });
+  // Unlike the interaction matrix, all rectangles below are read simultaneously
+  // after the final scroll, with no per-field scroll that could hide an action.
+  const frame = await section(page).evaluate(element => {
+    const rect = node => { const { x, y, width, height } = node.getBoundingClientRect(); return { x, y, width, height }; };
+    const panel = element.closest('.copy-editor'); const panelBounds = panel.getBoundingClientRect();
+    const left = Math.max(0, panelBounds.left + panel.clientLeft); const top = Math.max(0, panelBounds.top + panel.clientTop);
+    const right = Math.min(innerWidth, panelBounds.left + panel.clientLeft + panel.clientWidth);
+    const bottom = Math.min(innerHeight, panelBounds.top + panel.clientTop + panel.clientHeight);
+    const toast = document.querySelector('.toast');
+    const fields = [];
+    const add = (kind, node) => {
+      if (!node) return;
+      const box = node.getBoundingClientRect(); const ranges = []; const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+      while (walker.nextNode()) if (walker.currentNode.textContent.trim()) {
+        const range = document.createRange(); range.selectNodeContents(walker.currentNode);
+        for (const bounds of range.getClientRects()) ranges.push({ bounds, owner: walker.currentNode.parentElement });
+      }
+      const visibleAt = (owner, x, y) => { const target = document.elementFromPoint(x, y); return target === owner || owner.contains(target); };
+      const textHit = ranges.every(({ bounds, owner }) => {
+        const left = bounds.left + Math.min(1, bounds.width / 2); const right = bounds.right - Math.min(1, bounds.width / 2);
+        const points = [left, right]; for (let x = left + 8; x < right; x += 8) points.push(x);
+        return points.every(x => [0.2, 0.5, 0.8].every(fraction => visibleAt(owner, x, bounds.top + bounds.height * fraction)));
+      });
+      const control = node.matches('button, input');
+      const controlHit = !control || [0.1, 0.5, 0.9].every(x => [0.2, 0.5, 0.8].every(y => visibleAt(node, box.left + box.width * x, box.top + box.height * y)));
+      const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+      fields.push({ kind, label: kind, bounds: rect(node), control,
+        complete: node.matches('input') || (ranges.length > 0 && ranges.every(({ bounds }) => bounds.left >= box.left - 1 && bounds.right <= box.right + 1 && bounds.top >= box.top - 1 && bounds.bottom <= box.bottom + 1)),
+        hit: hit === node || node.contains(hit), textHit, controlHit });
+    };
+    for (const [kind, selector] of [['heading', 'h2'], ['state', '.pub-association-state'], ['blog', '.pub-association-form > .pub-tip'],
+      ['input', 'input'], ['target', '.pub-linked-preview'], ['record', '.pub-linked-record'], ['error', '[role="alert"]']]) add(kind, element.querySelector(selector));
+    const labels = { '检查链接格式': 'format-check', '确认关联': 'confirm', '取消': 'cancel', '复制作品链接': 'copy', '更换关联': 'change', '移除关联': 'remove' };
+    for (const button of element.querySelectorAll('button')) if (labels[button.textContent.trim()]) add(labels[button.textContent.trim()], button);
+    return { viewport: { x: 0, y: 0, width: innerWidth, height: innerHeight }, section: rect(element), clip: { x: left, y: top, width: right - left, height: bottom - top },
+      clientWidth: element.clientWidth, scrollWidth: element.scrollWidth, fields, state: element.querySelector('.pub-association-state')?.textContent.trim(),
+      toastHidden: !toast || (toast.getAttribute('data-show') !== '1' && Number(getComputedStyle(toast).opacity) === 0) };
+  });
+  assertPublishAssociationFrame(frame, expectedState);
+  (report.publishAssociation.screenshotFrames ??= []).push({ name, ...frame });
+  await screenshot(name);
+}
+
 // Bounded main-frame-only fault/delay fixture. It controls only the two existing
 // association handlers and forwards successful calls to those exact originals.
 // Real persistence acceptance runs separately, after exact restoration.
@@ -296,7 +382,7 @@ export async function runPublishAssociationPilot({ application, page, check, scr
     await page.getByRole('button', { name: '去发布', exact: true }).waitFor({ state: 'visible' });
     await waitStatus(page, '尚未关联作品');
     assert.match(await section(page).innerText(), /本机/); assert.match(await section(page).innerText(), /不.*核验/);
-    await section(page).locator('.copy-pub-head').scrollIntoViewIfNeeded(); await screenshot('publish-association-unlinked.png');
+    await captureAssociationFrame({ application, page, screenshot, report, name: 'publish-association-unlinked.png', expectedState: '尚未关联作品' });
     assert.deepEqual(await state(page), { drafts: originals });
   });
   await check('Publish association: inline format errors, keyboard check/cancel, changed input and blog switches never write', async () => {
@@ -308,7 +394,7 @@ export async function runPublishAssociationPilot({ application, page, check, scr
       assert.equal(await section(page).getByRole('alert').evaluate(element => element === document.activeElement), true, 'Full inline error must be keyboard reachable');
       assert.equal(await button(page, '确认关联').count(), 0); assert.deepEqual(await state(page), { drafts: originals });
     }
-    await section(page).locator('.copy-pub-head').scrollIntoViewIfNeeded(); await screenshot('publish-association-error.png');
+    await captureAssociationFrame({ application, page, screenshot, report, name: 'publish-association-error.png', expectedState: '链接格式不正确' });
     await candidate(page, urls.first, true);
     assert.ok((await section(page).locator('.pub-linked-preview').innerText()).includes(originalA.title));
     assert.match(await section(page).locator('.pub-linked-preview').innerText(), /64abcdef1234567800000001/);
@@ -324,7 +410,7 @@ export async function runPublishAssociationPilot({ application, page, check, scr
     assert.deepEqual(await state(page), { drafts: originals }); await readDisk(application, page, dataRoot);
   });
   await check('Publish association: first real confirmation persists exact target and metadata, then normal navigation/reload retains it', async () => {
-    await candidate(page, urls.first); await section(page).locator('.copy-pub-head').scrollIntoViewIfNeeded(); await screenshot('publish-association-pending.png');
+    await candidate(page, urls.first); await captureAssociationFrame({ application, page, screenshot, report, name: 'publish-association-pending.png', expectedState: '待确认' });
     const before = Date.now(); await button(page, '确认关联').click(); await waitStatus(page, '已关联 · 手动确认');
     const saved = await waitAssociation(page, originalA.id, '64abcdef1234567800000001');
     const expected = { status: 'published', source: 'manual', url: urls.first.split('#')[0], remoteId: '64abcdef1234567800000001', confirmedAt: saved.xhsPublished.confirmedAt };
@@ -451,7 +537,7 @@ export async function runPublishAssociationPilot({ application, page, check, scr
       report.publishAssociation.geometry.push({ ...entry, states });
     }
     assert.deepEqual(await state(page), before); await readDisk(application, page, dataRoot);
-    await section(page).locator('.copy-pub-head').scrollIntoViewIfNeeded(); await screenshot('publish-association-linked.png');
+    await captureAssociationFrame({ application, page, screenshot, report, name: 'publish-association-linked.png', expectedState: '已关联 · 手动确认' });
     await page.emulateMedia({ reducedMotion: 'no-preference' });
   });
   await check('Publish association: authoritative store and actual JSON still match before full application quit', async () => {
