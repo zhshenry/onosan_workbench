@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 261,
+  "revision": 262,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -396,7 +396,8 @@
         "actualMain": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
         "verifiedAt": "2026-10-13T06:50:51.221Z"
       },
-      "closedAt": "2026-10-13T06:56:44Z"
+      "closedAt": "2026-10-13T06:56:44Z",
+      "branchDeletedAt": "2026-10-13T06:59:51.864Z"
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
@@ -637,7 +638,8 @@
         "actualMain": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
         "verifiedAt": "2026-10-13T06:50:51.221Z"
       },
-      "closedAt": "2026-10-13T06:57:01Z"
+      "closedAt": "2026-10-13T06:57:01Z",
+      "branchDeletedAt": "2026-10-13T06:59:51.864Z"
     },
     "29": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
@@ -782,7 +784,8 @@
         "actualMain": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
         "verifiedAt": "2026-10-13T06:50:51.221Z"
       },
-      "closedAt": "2026-10-13T06:57:17Z"
+      "closedAt": "2026-10-13T06:57:17Z",
+      "branchDeletedAt": "2026-10-13T06:59:51.864Z"
     },
     "30": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
@@ -927,7 +930,8 @@
         "actualMain": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
         "verifiedAt": "2026-10-13T06:50:51.221Z"
       },
-      "closedAt": "2026-10-13T06:57:33Z"
+      "closedAt": "2026-10-13T06:57:33Z",
+      "branchDeletedAt": "2026-10-13T06:59:51.864Z"
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
@@ -1072,7 +1076,8 @@
         "actualMain": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
         "verifiedAt": "2026-10-13T06:50:51.221Z"
       },
-      "closedAt": "2026-10-13T06:57:50Z"
+      "closedAt": "2026-10-13T06:57:50Z",
+      "branchDeletedAt": "2026-10-13T06:59:51.864Z"
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
@@ -1217,7 +1222,8 @@
         "actualMain": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
         "verifiedAt": "2026-10-13T06:50:51.221Z"
       },
-      "closedAt": "2026-10-13T06:58:05Z"
+      "closedAt": "2026-10-13T06:58:05Z",
+      "branchDeletedAt": "2026-10-13T06:59:51.864Z"
     },
     "33": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
@@ -1362,7 +1368,8 @@
         "actualMain": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
         "verifiedAt": "2026-10-13T06:50:51.221Z"
       },
-      "closedAt": "2026-10-13T06:58:26Z"
+      "closedAt": "2026-10-13T06:58:26Z",
+      "branchDeletedAt": "2026-10-13T06:59:51.864Z"
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
@@ -3695,13 +3702,21 @@
     },
     "pr40-delete-merged-branch": {
       "operationId": "pr40-delete-merged-branch",
-      "status": "intent",
+      "status": "succeeded",
       "branch": "ono/floating-group-v2",
       "expectedHead": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
       "prNumber": 40,
       "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "mainCiRunId": 38358108575,
-      "summary": "已合入分支无新增head/unmerged，非保护，无开放PR依赖；单协调者UI非原子删除，保留PR恢复；先暂停至关单授权阻碍处理，不改变已验收产品结果"
+      "summary": "已合入分支无新增head/unmerged，非保护，无开放PR依赖；单协调者UI非原子删除，保留PR恢复；先暂停至关单授权阻碍处理，不改变已验收产品结果",
+      "deletedAt": "2026-10-13T06:59:51.864Z",
+      "verification": "分页branch列表不存在；PR40保留，UI Restore branch可用；非原子UI删除"
+    },
+    "pr40-completion-comment": {
+      "operationId": "pr40-completion-comment",
+      "status": "intent",
+      "targetIssue": 28,
+      "summary": "报告实际main完整验收通过、7单已关闭、准确需求分支已删且PR历史可恢复，不发版"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
