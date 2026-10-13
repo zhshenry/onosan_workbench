@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 357,
+  "revision": 358,
   "currentRun": {
     "owner": "ono-root-issue26-20261013T1529Z",
     "startedAt": "2026-10-13T15:29:11.440Z",
@@ -401,7 +401,7 @@
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "stage": "v3-native-fixture-diagnosis",
+      "stage": "v3-corrected-native-validation",
       "type": [
         "ui",
         "interaction"
@@ -433,7 +433,7 @@
         "allowedActions": "本单v1方案产品实现、测试、回归和DraftPR交付；不含合入关单",
         "sourceAssessment": "紧接唯一方案请求的明确v1肯定，虽复制请求前缀，完整语境无引用/提问/否定；独立核对自发日志排除"
       },
-      "headSha": "7f19df9dfccc3d05e8574c57f58db5bec6170c1d",
+      "headSha": "f27d982dd2abbdc9d2d730206e318a86ef0dbd26",
       "prNumber": 39,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/39",
       "implementationBaseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
@@ -4487,11 +4487,13 @@
     },
     "issue26-check-fix-publish": {
       "operationId": "issue26-check-fix-publish",
-      "status": "intent",
+      "status": "succeeded",
       "expectedHead": "7f19df9dfccc3d05e8574c57f58db5bec6170c1d",
       "candidateTree": "a0196dd81b1aff07897f2d359d73b166b014c49c",
       "summary": "仅两fixture/test文件：真实点击自动关闭待办菜单，严格核对关闭焦点及准确chip；保留其他模式和快照检查",
-      "startedAt": "2026-10-13T16:10:35.848Z"
+      "startedAt": "2026-10-13T16:10:35.848Z",
+      "head": "f27d982dd2abbdc9d2d730206e318a86ef0dbd26",
+      "verifiedAt": "2026-10-13T16:11:43.704Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -4507,7 +4509,7 @@
     "finishedAt": "2026-10-13T14:27:19.230Z",
     "summary": "重新分页检查无新需求/评论/批准或版本变化，34/37待批，35方案待附图，36等35；云电脑读取执行配置失败，无法继续本地开发/浏览器，GitHub连接器读取正常。修正34/37旧ciRun摘要。"
   },
-  "updatedAt": "2026-10-13T16:10:35.848Z",
+  "updatedAt": "2026-10-13T16:11:43.704Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
