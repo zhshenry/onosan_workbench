@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 207,
+  "revision": 208,
   "currentRun": {
     "owner": "ono-root-feedback-20261013T0334Z",
     "startedAt": "2026-10-13T03:34:35.918Z",
@@ -419,7 +419,8 @@
         "createdAt": "2026-10-13T03:14:56Z",
         "updatedAt": "2026-10-13T03:14:56Z",
         "authorId": 54107847
-      }
+      },
+      "lastCommentId": 6137629928
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
@@ -1142,7 +1143,8 @@
     6137073860,
     6137253601,
     6137427103,
-    6137624093
+    6137624093,
+    6137629928
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -2901,10 +2903,12 @@
     },
     "issue26-v3-feedback-ack": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
       "body": "【OnO 自动化】明白了，上一版把“参考悬浮框”理解成只调整行样式，仍保留类型/状态筛选，没对齐你要的简洁选择方式。\n\n我先重新核对当前待办悬浮框的实际选择器，再修订 #26 的局部高保真；v2 暂停待审，PR #39 也不继续实施或合入。修订只针对这里的关联事项选择框，不据此删除其他工作台的功能。\n\n新图和完整范围准备好后继续在本 Issue 对齐；当前无需批准旧版。",
-      "createdAt": "2026-10-13T03:34:35.918Z"
+      "createdAt": "2026-10-13T03:35:57Z",
+      "commentId": 6137629928,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6137629928"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
