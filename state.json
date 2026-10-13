@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 230,
+  "revision": 231,
   "currentRun": {
     "owner": "ono-root-diagnosis-result-20261013T0436Z",
     "startedAt": "2026-10-13T04:36:52.846Z",
@@ -917,7 +917,8 @@
         "float-group-picker.png": "https://github.com/user-attachments/assets/1afe8260-3af3-48c0-895c-f947fa67931d",
         "float-group-relaunched.png": "https://github.com/user-attachments/assets/9bf2670f-dcf6-4e89-9686-642580732243",
         "float-group-warm.png": "https://github.com/user-attachments/assets/79798add-0dfa-4870-ac32-755258354287"
-      }
+      },
+      "memberAcceptanceCommentId": 6138553530
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
@@ -1312,7 +1313,8 @@
     6138529868,
     6138544104,
     6138547683,
-    6138549759
+    6138549759,
+    6138553530
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -3224,10 +3226,13 @@
     },
     "pr40-member-final-31": {
       "operationId": "pr40-member-final-31",
-      "status": "intent",
+      "status": "succeeded",
       "targetIssue": 31,
       "body": "【OnO 自动化】本单实现验收已补实测图，归属悬浮窗组 PR #40（head 5a74dbb79469bb0bbc5d681939e8fbe430d44d4f）。\n\n- [x] 收起AI移除记录计数控件但保留历史，模型按钮及有界滚动菜单可用。\n- [x] 准确版本Windows CI：486/486单测、84/84安装后验收通过。\n\n![本单Windows实测图](https://github.com/user-attachments/assets/42f4ba27-a6c7-4932-b9a6-2323678a5eb0)\n\n完整16图、逐单清单、测试边界及统一收尾范围见 [#28 最终验收](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6138529868)。本单尚未合入或关闭，审批只在#28进行一次。\n\n如需调整，直接在本单回复修改意见；同意整组时按#28评论末尾的完整短句回复即可，无需逐单批准。",
-      "summary": "本单实际图片与验收清单，链接28统一审批"
+      "summary": "本单实际图片与验收清单，链接28统一审批",
+      "commentId": 6138553530,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/31#issuecomment-6138553530",
+      "verifiedAt": "2026-10-13T04:56:43.147Z"
     },
     "pr40-member-final-32": {
       "operationId": "pr40-member-final-32",
