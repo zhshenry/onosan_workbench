@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 201,
+  "revision": 202,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -2848,7 +2848,14 @@
         }
       ],
       "summary": "16张准确最终Windows实装截图已逐张看图，原生附件一次上传供本组Issue验收，不入Git",
-      "createdAt": "2026-10-13T03:15:15.766Z"
+      "createdAt": "2026-10-13T03:15:15.766Z",
+      "attempts": [
+        {
+          "at": "2026-10-13T03:15:29Z",
+          "result": "16 files explicit Failed to upload; zero URLs; no comment submitted; visible no permission/bot prompt; cause unverified"
+        }
+      ],
+      "recovery": "刷新表单，一张小PNG进行唯一低风险补试；不得循环或下轮重置预算"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
