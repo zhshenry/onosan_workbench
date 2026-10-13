@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 324,
+  "revision": 325,
   "currentRun": {
     "owner": "ono-root-issue37-20261013T1151Z",
     "startedAt": "2026-10-13T11:51:31.363Z",
@@ -1441,7 +1441,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "附件上传两次明确失败；需原生图内嵌后准备额外首页窄屏修复范围，不消费旧批准或合入；当前PR43冻结4098f131",
+      "nextAction": "按原始请求6145544905准备首页窄屏附加方案；上传新一次仍失败，缺图不请求方案批准",
       "lastCommentId": 6144006182,
       "groupId": "media-keepalive-35",
       "groupIssueNumbers": [
@@ -1487,6 +1487,16 @@
         "artifact": 11803620580,
         "visualFinding": "media-keepalive-hidden.png home layout compressed/overlap; other7media screenshots reviewed normal",
         "zipSha256": "d8b263c298d6502d57fe2f41334a65284d1de28ee4105ad350c96e22401aea0a"
+      },
+      "additionalPlanRequest": {
+        "commentId": 6145544905,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6145544905",
+        "body": "请补充首页窄屏修复方案",
+        "authorId": 54107847,
+        "app": null,
+        "createdAt": "2026-10-13T12:28:27Z",
+        "updatedAt": "2026-10-13T12:28:27Z",
+        "allowedActions": "准备补充方案，不含产品实施或合入"
       }
     },
     "36": {
@@ -4203,10 +4213,12 @@
     },
     "issue35-upload-user-retry-1231": {
       "operationId": "issue35-upload-user-retry-1231",
-      "status": "intent",
+      "status": "failed",
       "target": 35,
       "summary": "用户本次明确要求再试一次；同一已核Windows首访图，成功验证后补齐；无新服务",
-      "startedAt": "2026-10-13T12:31:12.845Z"
+      "startedAt": "2026-10-13T12:31:12.845Z",
+      "result": "重建已被清理标签页后单张217172字节PNG明确Failed to upload，未返回URL；草稿已清",
+      "verifiedAt": "2026-10-13T12:33:13.069Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
