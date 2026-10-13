@@ -1,7 +1,12 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 241,
-  "currentRun": null,
+  "revision": 242,
+  "currentRun": {
+    "owner": "ono-root-pr40-closeout-20261013T0637Z",
+    "startedAt": "2026-10-13T06:37:50.475Z",
+    "currentDevelopmentGroup": "floating-ui-25-28-33",
+    "task": "核实28原始准确合入收尾批准，合入后真实main验收通过再收尾"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -363,7 +368,21 @@
       },
       "memberAcceptanceCommentId": 6138544104,
       "imagesVerifiedAt": "2026-10-13T04:59:14.165Z",
-      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z"
+      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z",
+      "mergeApproval": {
+        "commentId": 6139438818,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6139438818",
+        "body": "同意",
+        "authorId": 54107847,
+        "performedViaGithubApp": null,
+        "createdAt": "2026-10-13T06:10:10Z",
+        "updatedAt": "2026-10-13T06:10:10Z",
+        "requestCommentId": 6138529868,
+        "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
+        "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
+        "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
+        "verifiedAt": "2026-10-13T06:37:50.475Z"
+      }
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
@@ -576,7 +595,21 @@
         "float-group-warm.png": "https://github.com/user-attachments/assets/79798add-0dfa-4870-ac32-755258354287"
       },
       "imagesVerifiedAt": "2026-10-13T04:59:14.165Z",
-      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z"
+      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z",
+      "mergeApproval": {
+        "commentId": 6139438818,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6139438818",
+        "body": "同意",
+        "authorId": 54107847,
+        "performedViaGithubApp": null,
+        "createdAt": "2026-10-13T06:10:10Z",
+        "updatedAt": "2026-10-13T06:10:10Z",
+        "requestCommentId": 6138529868,
+        "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
+        "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
+        "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
+        "verifiedAt": "2026-10-13T06:37:50.475Z"
+      }
     },
     "29": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
@@ -693,7 +726,21 @@
       },
       "memberAcceptanceCommentId": 6138547683,
       "imagesVerifiedAt": "2026-10-13T04:59:14.165Z",
-      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z"
+      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z",
+      "mergeApproval": {
+        "commentId": 6139438818,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6139438818",
+        "body": "同意",
+        "authorId": 54107847,
+        "performedViaGithubApp": null,
+        "createdAt": "2026-10-13T06:10:10Z",
+        "updatedAt": "2026-10-13T06:10:10Z",
+        "requestCommentId": 6138529868,
+        "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
+        "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
+        "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
+        "verifiedAt": "2026-10-13T06:37:50.475Z"
+      }
     },
     "30": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
@@ -810,7 +857,21 @@
       },
       "memberAcceptanceCommentId": 6138549759,
       "imagesVerifiedAt": "2026-10-13T04:59:14.165Z",
-      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z"
+      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z",
+      "mergeApproval": {
+        "commentId": 6139438818,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6139438818",
+        "body": "同意",
+        "authorId": 54107847,
+        "performedViaGithubApp": null,
+        "createdAt": "2026-10-13T06:10:10Z",
+        "updatedAt": "2026-10-13T06:10:10Z",
+        "requestCommentId": 6138529868,
+        "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
+        "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
+        "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
+        "verifiedAt": "2026-10-13T06:37:50.475Z"
+      }
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
@@ -927,7 +988,21 @@
       },
       "memberAcceptanceCommentId": 6138553530,
       "imagesVerifiedAt": "2026-10-13T04:59:14.165Z",
-      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z"
+      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z",
+      "mergeApproval": {
+        "commentId": 6139438818,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6139438818",
+        "body": "同意",
+        "authorId": 54107847,
+        "performedViaGithubApp": null,
+        "createdAt": "2026-10-13T06:10:10Z",
+        "updatedAt": "2026-10-13T06:10:10Z",
+        "requestCommentId": 6138529868,
+        "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
+        "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
+        "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
+        "verifiedAt": "2026-10-13T06:37:50.475Z"
+      }
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
@@ -1044,7 +1119,21 @@
       },
       "memberAcceptanceCommentId": 6138557538,
       "imagesVerifiedAt": "2026-10-13T04:59:14.165Z",
-      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z"
+      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z",
+      "mergeApproval": {
+        "commentId": 6139438818,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6139438818",
+        "body": "同意",
+        "authorId": 54107847,
+        "performedViaGithubApp": null,
+        "createdAt": "2026-10-13T06:10:10Z",
+        "updatedAt": "2026-10-13T06:10:10Z",
+        "requestCommentId": 6138529868,
+        "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
+        "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
+        "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
+        "verifiedAt": "2026-10-13T06:37:50.475Z"
+      }
     },
     "33": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
@@ -1161,7 +1250,21 @@
       },
       "memberAcceptanceCommentId": 6138559936,
       "imagesVerifiedAt": "2026-10-13T04:59:14.165Z",
-      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z"
+      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z",
+      "mergeApproval": {
+        "commentId": 6139438818,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6139438818",
+        "body": "同意",
+        "authorId": 54107847,
+        "performedViaGithubApp": null,
+        "createdAt": "2026-10-13T06:10:10Z",
+        "updatedAt": "2026-10-13T06:10:10Z",
+        "requestCommentId": 6138529868,
+        "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
+        "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
+        "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
+        "verifiedAt": "2026-10-13T06:37:50.475Z"
+      }
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
@@ -3320,6 +3423,13 @@
       "commentId": 6139419969,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6139419969",
       "verifiedAt": "2026-10-13T06:09:58.364Z"
+    },
+    "pr40-approved-ready": {
+      "operationId": "pr40-approved-ready",
+      "targetPR": 40,
+      "status": "intent",
+      "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
+      "summary": "准确合入批准后将Draft标为可审阅作为合入前置"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
