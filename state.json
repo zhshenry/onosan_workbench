@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 212,
+  "revision": 213,
   "currentRun": {
     "owner": "ono-root-attachment-diagnosis-20261013T0418Z",
     "startedAt": "2026-10-13T04:18:15.948Z",
@@ -1161,7 +1161,8 @@
     6137624093,
     6137629928,
     6137668925,
-    6138131366
+    6138131366,
+    6138134955
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -2947,10 +2948,12 @@
     },
     "issue28-diagnosis-ack": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
       "body": "【OnO 自动化】还没有恢复成功。目前没有取得任何新图片URL，不能把“页面能打开/已经登录”当成附件恢复。\n\n我已看到你在 #26 要求先查清原因，正在按这个顺序诊断；不会靠重复上传碰运气。PR #40 的486项单测和84项实装通过结果仍有效，待附件交付完成后再请求最终合入。",
-      "createdAt": "2026-10-13T04:18:15.948Z"
+      "createdAt": "2026-10-13T04:18:45Z",
+      "commentId": 6138134955,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6138134955"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
