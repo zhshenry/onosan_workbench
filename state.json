@@ -1,7 +1,12 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 210,
-  "currentRun": null,
+  "revision": 211,
+  "currentRun": {
+    "owner": "ono-root-attachment-diagnosis-20261013T0418Z",
+    "startedAt": "2026-10-13T04:18:15.948Z",
+    "currentDevelopmentGroup": null,
+    "task": "按26新要求只读查附件失败原因，回复28恢复状态；不盲试、不实施"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -424,6 +429,12 @@
         "summary": "按实际main轻列表；待办菜单去类型/状态筛选，提议移除该菜单搜索；保留全部事项滚动、状态/选择分离、其他工作台多选及搜索",
         "imageReviewedAt": "2026-10-13T03:38:30.598Z",
         "deliveryBlocker": "同一原生附件链路明确失败，无核实恢复前不跨Issue盲重试；尚未上传本图，不存在可消费v3请求"
+      },
+      "latestDiagnosticRequest": {
+        "commentId": 6137795601,
+        "body": "先把失败原因查清楚，然后再把图重新给我附上",
+        "authorId": 54107847,
+        "createdAt": "2026-10-13T03:48:52Z"
       }
     },
     "28": {
@@ -2923,6 +2934,20 @@
       "createdAt": "2026-10-13T03:38:52Z",
       "commentId": 6137668925,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6137668925"
+    },
+    "issue26-diagnosis-ack": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
+      "body": "【OnO 自动化】收到，先定位失败原因，再补图。我已重新核对：云端浏览器仍登录在正确账号，Issue评论和附件入口正常；此前小PNG也失败，现有提示不足以把原因归为文件大小或账号未登录。\n\n正在继续核对原生上传支持和能取得的错误证据，暂不再次上传。v3设计图已准备，但只有上传成功并读回实际图片后才发正式方案。",
+      "createdAt": "2026-10-13T04:18:15.948Z"
+    },
+    "issue28-diagnosis-ack": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
+      "body": "【OnO 自动化】还没有恢复成功。目前没有取得任何新图片URL，不能把“页面能打开/已经登录”当成附件恢复。\n\n我已看到你在 #26 要求先查清原因，正在按这个顺序诊断；不会靠重复上传碰运气。PR #40 的486项单测和84项实装通过结果仍有效，待附件交付完成后再请求最终合入。",
+      "createdAt": "2026-10-13T04:18:15.948Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
