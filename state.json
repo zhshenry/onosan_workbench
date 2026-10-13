@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 323,
+  "revision": 324,
   "currentRun": {
     "owner": "ono-root-issue37-20261013T1151Z",
     "startedAt": "2026-10-13T11:51:31.363Z",
@@ -4200,6 +4200,13 @@
       "url": "https://github.com/zhshenry/onosan_workbench/pull/45",
       "ciRun": 38396752842,
       "verifiedAt": "2026-10-13T12:22:10.882Z"
+    },
+    "issue35-upload-user-retry-1231": {
+      "operationId": "issue35-upload-user-retry-1231",
+      "status": "intent",
+      "target": 35,
+      "summary": "用户本次明确要求再试一次；同一已核Windows首访图，成功验证后补齐；无新服务",
+      "startedAt": "2026-10-13T12:31:12.845Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
