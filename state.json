@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 203,
+  "revision": 204,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -1125,7 +1125,8 @@
     6136264679,
     6137005006,
     6137073860,
-    6137253601
+    6137253601,
+    6137427103
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -2856,10 +2857,19 @@
     },
     "floating-pr40-attachment-blocker": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
       "body": "【OnO 自动化】悬浮窗组｜测试已通过，实测附图交付受阻\n\nPR #40 当前准确 head **5a74dbb79469bb0bbc5d681939e8fbe430d44d4f**。\n[最终 Windows 验收](https://github.com/zhshenry/onosan_workbench/actions/runs/38339682689/job/115107626110) attempt 1 成功：**486/486 单测，0失败/0跳过；84/84 实装检查通过**，类型、构建、actionlint、路径安全检查和 NSIS 0.1.0 安装通过。实际 checkout merge 为 65c469304680ae426e74728a43d05fb328fd7474，父提交是当前 main a5659fa5e6dbef6188ec3e34b061bc317d4d7e78 与上述 head，tree 6c77b70e050aa3a29a8abde1fe29aba0c54625a5。\n\n逐单结果：\n- #25：展开首页已去掉 AI 建议条，保留 AI 入口、待办和日程。\n- #28：440/330 宽度独立切换、16态实际窗口高度、屏幕边缘、隐藏重显及重启默认440通过。\n- #29/#32：展开“返回首页”、收起左箭头“返回”及原灰色小字样式通过。\n- #30：收起首页橙色 AI 图标/细边框通过。\n- #31：移除记录计数控件，保留历史；模型按钮与有界滚动菜单通过。\n- #33：关联 chip 独立行、真实指针选择/替换/删除、键盘、外部取消、业务状态与选中勾分开、模型位置不变均通过。\n- 已追加批准的退出修复：无浮窗、显示/隐藏/反复操作后的正常退出，以及同版本重启数据保留均通过；未把强制清理当正常退出。\n\n已下载准确本轮证据、核对 SHA256，并逐张查看16张本组实际截图，包括宽窄首页/AI、关联选择器、模型菜单、空状态、三主题及重启结果。上一版330展开入口换行问题已修复，本版实图已复核。\n但在我的云端 GitHub 浏览器上传原生附件时，16张均明确返回 Failed to upload、没有图片URL；清空失败草稿、刷新表单后只补试一张26KB小图，也明确失败。页面未给出具体原因，不能归因为权限、登录或文件大小。目前没有图片成功内嵌，故**尚未完成可审阅的带图验收，不请求合入、不关单**。已停止重试，未把失败占位发成图片，也不把设计图冒充实测图。\n\n暂可查看[本轮实测证据](https://github.com/zhshenry/onosan_workbench/actions/runs/38339682689/artifacts/11786408859)：43文件（40 PNG＋3报告），ZIP 8,799,120 字节，SHA256 `79fe6112115d8feaab82bc3611b6fbc40697cbd1cc53fd5a95670daa967ae590`。到期 **2026-10-16 11:08:32（UTC+08）**；不额外备份、不把图放进代码仓。\n\n测试边界：AI请求使用本机回环合成服务验证精确正文/模型及无任务写入，不代表真实外部模型质量；未覆盖真实跨版本更新、签名/SmartScreen/UAC人工向导。其他主工作台布局和已知畸形旧日程加载问题未纳入本组修复。#26及其PR #39不在本组；本组只有实现PR #40，仍为Draft。\n\n下一步需恢复原生附件链路，再补齐本组各Issue实嵌图和准确head的统一合入收尾请求。当前有意见请直接回复本Issue；无需重复批准已完成的开发。",
-      "createdAt": "2026-10-13T03:17:35.107Z"
+      "createdAt": "2026-10-13T03:18:07Z",
+      "commentId": 6137427103,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103"
+    },
+    "pr40-final-ci-metadata": {
+      "kind": "edit-pr-body",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/pull/40",
+      "body": "【OnO 自动化】悬浮窗组 v2｜Windows验收通过，原生附图交付阻塞\n\n关联 #25、#28、#29、#30、#31、#32、#33，统一讨论/审批在#28。\n最新逐单结果及附件阻碍：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103\n方案批准：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217\n退出修复追加批准：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484\n\nhead 5a74dbb79469bb0bbc5d681939e8fbe430d44d4f\nbase a5659fa5e6dbef6188ec3e34b061bc317d4d7e78\ntested merge 65c469304680ae426e74728a43d05fb328fd7474\ntree 6c77b70e050aa3a29a8abde1fe29aba0c54625a5\n最终run38339682689 attempt1成功：486/486 Windows单测0skip、84/84实装、类型/构建/actionlint/安全/NSIS安装通过。\nhttps://github.com/zhshenry/onosan_workbench/actions/runs/38339682689\n\n准确本组16张实测截图已逐张查看，但原生附件批量及单图补试均明确失败，无URL。仍缺Issue实嵌图和最终合入收尾批准，保持Draft/open。旧失败运行已被本次准确版本验收替代，不能将此前通过截图混为当前head。\n不包含#26，尚未合入main、不关单、不发版；真实外部AI质量、跨版本更新/签名及人工UAC验证未覆盖。完整边界见Issue评论。",
+      "createdAt": "2026-10-13T03:18:35.297Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
