@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 199,
+  "revision": 200,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -1131,7 +1131,8 @@
     6136208994,
     6136264679,
     6137005006,
-    6137073860
+    6137073860,
+    6137253601
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -2751,10 +2752,12 @@
     },
     "release41-branch-requirement-comment": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/41",
       "body": "【OnO 自动化】#41｜已补入发布前检查\n\n按你[最新要求](https://github.com/zhshenry/onosan_workbench/issues/41#issuecomment-6137177280)，发布前会逐项核对：\n1. 本次发布范围内的所有功能及对应实现PR都已合入main，实际main验收通过，没有仍停在需求分支上的遗漏功能。\n2. 全量分页检查远端分支，已合入且无其他用途的需求分支清理干净；未合入或含独有提交的分支不强删，也不为清理而误合过时试验代码，先在这里列明。\n\n有一个必要保留项会明确列出：ono-pipeline-state 是当前自动流程的进度记录分支，不是多余的功能分支，按现有约定保留；main也保留。最终发布清单会列出实际剩余分支及用途，确保没有不明或多余的分支。\n当前仍先推进前置需求；这条要求不替代具体PR/head的合入批准。若你指的是最终严格只留main、连进度分支也不要，请回复“只保留 main”，我会先说明进度记录迁移方案，避免丢失续接记录。",
-      "createdAt": "2026-10-13T03:02:00.313Z"
+      "createdAt": "2026-10-13T03:02:23Z",
+      "commentId": 6137253601,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/41#issuecomment-6137253601"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
