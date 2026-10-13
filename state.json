@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 276,
+  "revision": 277,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1609,7 +1609,8 @@
     6140182883,
     6140309803,
     6140325358,
-    6140721933
+    6140721933,
+    6140847650
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -3872,9 +3873,12 @@
     },
     "issue35-ci-first-failure-comment": {
       "operationId": "issue35-ci-first-failure-comment",
-      "status": "intent",
+      "status": "succeeded",
       "targetIssue": 35,
-      "body": "【OnO 自动化】#35 Windows 首轮结果：494/494 单测、verify、构建和真实安装均通过；原生验收在“加载中切换工作台”处失败，断言收到 undefined 而预期 false。后面的网页输入/滚动保留、焦点矩阵和重启尚未执行，不能算验收通过。\n\n[失败运行与日志](https://github.com/zhshenry/onosan_workbench/actions/runs/38363794558)，对应 e9292af2a7764413faf78347ecebdad9e4b30e1e。我正在定位并修复本单范围内的问题，完成后用新版本重跑，保留失败记录，不跳过断言。当前无需回复。"
+      "body": "【OnO 自动化】#35 Windows 首轮结果：494/494 单测、verify、构建和真实安装均通过；原生验收在“加载中切换工作台”处失败，断言收到 undefined 而预期 false。后面的网页输入/滚动保留、焦点矩阵和重启尚未执行，不能算验收通过。\n\n[失败运行与日志](https://github.com/zhshenry/onosan_workbench/actions/runs/38363794558)，对应 e9292af2a7764413faf78347ecebdad9e4b30e1e。我正在定位并修复本单范围内的问题，完成后用新版本重跑，保留失败记录，不跳过断言。当前无需回复。",
+      "commentId": 6140847650,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6140847650",
+      "verifiedAt": "2026-10-13T07:47:00.421Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
