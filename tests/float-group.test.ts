@@ -44,6 +44,11 @@ test('floating picker survives pointerdown, displays real status and cancels wit
       await act(async () => dom.window.document.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
       assert.equal(dom.window.document.querySelector('[role="listbox"]'), null);
       assert.equal(dom.window.document.activeElement, find('.ai-add-reference'));
+      if (!mini) {
+        const fullModelName = 'A very long model name';
+        assert.equal(find('.ai-model-select .select-trigger [title]').getAttribute('title'), fullModelName);
+        assert.equal(find('.ai-model-select .select-trigger').getAttribute('aria-valuetext'), fullModelName);
+      }
       if (mini) {
         await click(find('.fa-model-toggle'));
         await act(async () => dom.window.document.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
@@ -61,4 +66,11 @@ test('width-only measurement is isolated from polling and home AI stripe is remo
   assert.doesNotMatch(source, /className="float-insight"/);
   assert.match(source, /返回首页/);
   assert.doesNotMatch(source, />记录 \{tools.length\}/);
+});
+
+test('floating expanded toolbar reserves reference text while model takes shrinkable remaining width', () => {
+  const css = readFileSync('src/shell.css', 'utf8');
+  assert.match(css, /\.float-app\.narrow \.fa-surface \.ai-compose-toolbar > \.ai-add-reference \{[^}]*flex: none;[^}]*white-space: nowrap;/);
+  assert.match(css, /\.float-app\.narrow \.fa-surface \.ai-compose-toolbar > \.ai-model-select \{ flex: 1 1 0; min-width: 0; max-width: none;/);
+  assert.match(css, /\.float-app\.narrow \.fa-surface \.ai-model-select \.select-trigger > span \{[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/);
 });

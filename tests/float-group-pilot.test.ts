@@ -5,7 +5,7 @@ import { createServer } from 'node:http';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
-import { FLOAT_GROUP_MATRIX, FLOAT_GROUP_SCREENSHOTS, assertFloatWidthTransition, assertFloatModelGeometry, assertFloatMenuGeometry, assertFloatCompactGeometry, assertFloatRectInside, expectedFloatMeasuredHeight, assertFloatStateHeight, resolveFloatExpandedHeight } from '../tooling/float-group-pilot.mjs';
+import { FLOAT_GROUP_MATRIX, FLOAT_GROUP_SCREENSHOTS, assertFloatWidthTransition, assertFloatModelGeometry, assertFloatMenuGeometry, assertFloatCompactGeometry, assertFloatRectInside, expectedFloatMeasuredHeight, assertFloatStateHeight, resolveFloatExpandedHeight, assertFloatExpandedToolbarGeometry } from '../tooling/float-group-pilot.mjs';
 import { inspectPilotArtifacts, MAX_ARTIFACT_BYTES } from '../tooling/pilot-artifacts.mjs';
 
 test('Floating acceptance covers exactly eight mode/size/width states with immutable bounded screenshots', () => {
@@ -15,8 +15,8 @@ test('Floating acceptance covers exactly eight mode/size/width states with immut
     assert.equal(FLOAT_GROUP_MATRIX.filter(entry => entry.mode === mode && entry.mini === mini && entry.narrow === narrow).length, 1);
     assert.ok(FLOAT_GROUP_SCREENSHOTS.includes(`float-group-${mode}-${mini ? 'mini' : 'expanded'}-${narrow ? 'narrow' : 'wide'}.png`));
   }
-  assert.equal(FLOAT_GROUP_SCREENSHOTS.length, 15); assert.ok(Object.isFrozen(FLOAT_GROUP_SCREENSHOTS));
-  assert.equal(new Set(FLOAT_GROUP_SCREENSHOTS).size, 15);
+  assert.equal(FLOAT_GROUP_SCREENSHOTS.length, 16); assert.ok(Object.isFrozen(FLOAT_GROUP_SCREENSHOTS));
+  assert.equal(new Set(FLOAT_GROUP_SCREENSHOTS).size, 16);
 });
 
 test('Native bounds assertions reject width-induced height changes and offscreen clamping', () => {
@@ -55,9 +55,9 @@ test('Floating evidence shares the unchanged global 19 MB allowlist and 3-day re
   t.after(() => rm(directory, { recursive: true, force: true }));
   for (const name of FLOAT_GROUP_SCREENSHOTS) await writeFile(path.join(directory, name), Buffer.from('89504e470d0a1a0a', 'hex'));
   const result = await inspectPilotArtifacts(directory);
-  assert.equal(result.files.length, 15); assert.equal(result.bytes, 120);
+  assert.equal(result.files.length, 16); assert.equal(result.bytes, 128);
   assert.equal(result.retentionDays, 3); assert.equal(result.uploadCeilingBytes, 20_000_000); assert.equal(MAX_ARTIFACT_BYTES, 19_000_000);
-  await assert.rejects(inspectPilotArtifacts(directory, 119), /exceed/);
+  await assert.rejects(inspectPilotArtifacts(directory, 127), /exceed/);
   await writeFile(path.join(directory, 'float-group-unapproved.png'), Buffer.from('89504e470d0a1a0a', 'hex'));
   await assert.rejects(inspectPilotArtifacts(directory), /unapproved artifact/);
 });
@@ -180,7 +180,7 @@ test('State matrix verifies restoration and both settled width results without a
   assert.match(source, /finally \{ if \(!mini\) await stopObservingFloatResize\(application\); \}/);
   assert.match(source, /Renderer mini class must match the requested native state/);
   assert.match(source, /Renderer classes must match the complete requested matrix state/);
-  assert.equal(FLOAT_GROUP_SCREENSHOTS.length, 15);
+  assert.equal(FLOAT_GROUP_SCREENSHOTS.length, 16);
 });
 
 // JSDOM supplies the actual DOM/closest semantics. Explicit rectangles and hit
@@ -366,4 +366,75 @@ test('Wire acceptance checks latest normalized user message exactly and keeps sy
   assert.match(wireCheck, /assert\.equal\(requests\.length, 1\)/);
   assert.match(wireCheck, /requests\[0\]\.model, 'float-synthetic-long-model-name-0'/);
   assert.doesNotMatch(wireCheck.replace(/^\s*\/\/.*$/gm, ''), /headers|authorization|apiKey|systemPrompt/);
+});
+
+const expandedToolbar = () => ({
+  native: { width: 330, height: 704 }, viewport: { x: 0, y: 0, width: 330, height: 704 },
+  toolbar: { x: 20, y: 640, width: 290, height: 40 }, reference: { x: 22, y: 645, width: 82, height: 30 },
+  model: { x: 112, y: 645, width: 156, height: 30 }, send: { x: 276, y: 645, width: 30, height: 30 },
+  referenceText: '关联事项', referenceWhiteSpace: 'nowrap', referenceTextRects: [{ x: 40, y: 651, width: 52, height: 16 }],
+  modelText: 'synthetic-complete-long-model-name', expectedModelName: 'synthetic-complete-long-model-name',
+  modelTitle: 'synthetic-complete-long-model-name', modelAriaValueText: 'synthetic-complete-long-model-name',
+  modelTextBounds: { x: 120, y: 651, width: 120, height: 16 }, modelTextClientWidth: 120, modelTextScrollWidth: 250,
+  modelWhiteSpace: 'nowrap', modelOverflow: 'hidden', modelTextOverflow: 'ellipsis', hitReference: true, hitModel: true, hitSend: true,
+});
+test('Expanded330 toolbar requires actual single-line reference, usable model ellipsis/full title and pointer hits', () => {
+  assert.doesNotThrow(() => assertFloatExpandedToolbarGeometry(expandedToolbar()));
+  const mutations = [
+    (value: ReturnType<typeof expandedToolbar>) => { value.native.width = 440; },
+    (value: ReturnType<typeof expandedToolbar>) => { value.native.height = 176; },
+    (value: ReturnType<typeof expandedToolbar>) => { value.referenceWhiteSpace = 'normal'; },
+    (value: ReturnType<typeof expandedToolbar>) => { value.referenceTextRects.push({ x: 40, y: 667, width: 26, height: 16 }); },
+    (value: ReturnType<typeof expandedToolbar>) => { value.referenceTextRects[0].width = 90; },
+    (value: ReturnType<typeof expandedToolbar>) => { value.reference.width = 100; },
+    (value: ReturnType<typeof expandedToolbar>) => { value.model.width = 70; },
+    (value: ReturnType<typeof expandedToolbar>) => { value.model.width = 180; },
+    (value: ReturnType<typeof expandedToolbar>) => { value.modelTextOverflow = 'clip'; },
+    (value: ReturnType<typeof expandedToolbar>) => { value.modelText = 'truncated…'; },
+    (value: ReturnType<typeof expandedToolbar>) => { value.modelTitle = ''; },
+    (value: ReturnType<typeof expandedToolbar>) => { value.modelAriaValueText = ''; },
+    (value: ReturnType<typeof expandedToolbar>) => { value.modelTextClientWidth = 0; },
+    (value: ReturnType<typeof expandedToolbar>) => { value.hitReference = false; },
+    (value: ReturnType<typeof expandedToolbar>) => { value.hitModel = false; },
+    (value: ReturnType<typeof expandedToolbar>) => { value.hitSend = false; },
+  ];
+  for (const mutate of mutations) { const value = expandedToolbar(); mutate(value); assert.throws(() => assertFloatExpandedToolbarGeometry(value)); }
+});
+test('Narrow expanded acceptance uses real range/hit geometry and physical model open/dismiss without changed selection', async () => {
+  const source = await readFile(new URL('../tooling/float-group-pilot.mjs', import.meta.url), 'utf8');
+  assert.match(source, /range\.getClientRects\(\)/);
+  assert.match(source, /document\.elementFromPoint\(box\.x \+ box\.width \/ 2/);
+  assert.match(source, /if \(entry\.narrow\) await expandedToolbarGeometry/);
+  assert.match(source, /getByRole\('combobox', \{ name: '选择大模型', exact: true \}\)/);
+  assert.match(source, /await trigger\.click\(\)/);
+  assert.match(source, /Opening\/dismissing expanded model picker must preserve model/);
+  assert.match(source, /Model dismissal must preserve association/);
+  assert.match(source, /Model dismissal must not submit a request/);
+  assert.doesNotMatch(source, /force:\s*true|element\.click\(\)/);
+});
+test('Selected mini picker screenshot supplements existing evidence and distinguishes business status from selection', async () => {
+  const source = await readFile(new URL('../tooling/float-group-pilot.mjs', import.meta.url), 'utf8');
+  assert.ok(FLOAT_GROUP_SCREENSHOTS.includes('float-group-picker.png'));
+  assert.equal(FLOAT_GROUP_SCREENSHOTS.length, 16);
+  assert.match(source, /Association selection must not replace business status/);
+  assert.match(source, /Independent selection check must match aria-selected/);
+  assert.match(source, /Selection check must not masquerade as business status/);
+  assert.match(source, /capture\(screenshot, floatPage, 'float-group-picker\.png'\)/);
+});
+
+test('Complete evidence enumerates40 success PNGs43 success files44 allowlisted files without raising budget', async t => {
+  const { YEAR_DROPDOWN_SCREENSHOTS } = await import('../tooling/year-dropdown-pilot.mjs');
+  const { TOPBAR_DATES_SCREENSHOTS } = await import('../tooling/topbar-dates-pilot.mjs');
+  const { AI_CARDS_SCREENSHOTS } = await import('../tooling/ai-cards-pilot.mjs');
+  const screenshots = ['initial.png', 'created.png', 'edited.png', 'completed.png', 'relaunched.png', ...YEAR_DROPDOWN_SCREENSHOTS, ...TOPBAR_DATES_SCREENSHOTS, ...AI_CARDS_SCREENSHOTS, ...FLOAT_GROUP_SCREENSHOTS];
+  assert.equal(screenshots.length, 40); assert.equal(new Set(screenshots).size, 40);
+  const directory = await mkdtemp(path.join(tmpdir(), 'ono-float-complete-evidence-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  for (const name of screenshots) await writeFile(path.join(directory, name), Buffer.from('89504e470d0a1a0a', 'hex'));
+  await writeFile(path.join(directory, 'install.json'), '{}'); await writeFile(path.join(directory, 'report.json'), '{}'); await writeFile(path.join(directory, 'report.md'), 'Synthetic unit evidence');
+  assert.equal((await inspectPilotArtifacts(directory)).files.length, 43);
+  await writeFile(path.join(directory, 'failure.png'), Buffer.from('89504e470d0a1a0a', 'hex'));
+  const all = await inspectPilotArtifacts(directory);
+  assert.equal(all.files.length, 44); assert.equal(all.retentionDays, 3); assert.equal(all.uploadCeilingBytes, 20_000_000);
+  assert.equal(MAX_ARTIFACT_BYTES, 19_000_000);
 });

@@ -6,7 +6,7 @@ export const FLOAT_GROUP_MATRIX = Object.freeze(['home', 'ai'].flatMap(mode => [
 export const FLOAT_GROUP_SCREENSHOTS = Object.freeze([
   ...FLOAT_GROUP_MATRIX.map(({ mode, mini, narrow }) => `float-group-${mode}-${mini ? 'mini' : 'expanded'}-${narrow ? 'narrow' : 'wide'}.png`),
   'float-group-empty.png', 'float-group-linked.png', 'float-group-models.png', 'float-group-relaunched.png',
-  'float-group-mist.png', 'float-group-cool.png', 'float-group-warm.png',
+  'float-group-mist.png', 'float-group-cool.png', 'float-group-warm.png', 'float-group-picker.png',
 ]);
 export function floatWireText(content) {
   if (typeof content === 'string') return content;
@@ -57,6 +57,51 @@ export function assertFloatCompactGeometry(value, before) {
     assert.equal(value.linkedRow.height, before.linkedRow.height, 'Empty/linked chip row must retain the same measured height');
     for (const key of rows) assertFloatModelGeometry(before[key], value[key]);
   }
+}
+export function assertFloatExpandedToolbarGeometry(value) {
+  assert.equal(value.native.width, 330, 'Expanded toolbar regression must exercise actual narrow native width');
+  assert.ok(value.native.height >= 330, 'Expanded toolbar needs a real expanded window');
+  assertFloatRectInside(value.toolbar, value.viewport, 'Expanded toolbar');
+  for (const key of ['reference', 'model', 'send']) assertFloatRectInside(value[key], value.toolbar, key);
+  assert.equal(value.referenceWhiteSpace, 'nowrap', 'Reference control must explicitly prevent wrapping');
+  assert.equal(value.referenceText, '关联事项');
+  assert.equal(value.referenceTextRects.length, 1, 'Reference text must occupy exactly one real rendered line');
+  assertFloatRectInside(value.referenceTextRects[0], value.reference, 'Reference text');
+  assert.ok(value.reference.x + value.reference.width <= value.model.x + 1, 'Reference/model controls must not overlap');
+  assert.ok(value.model.x + value.model.width <= value.send.x + 1, 'Model/send controls must not overlap');
+  assert.ok(value.model.width >= 80, 'Model control must retain at least 80px of usable remaining width');
+  assert.ok(value.modelTextClientWidth > 0 && value.modelTextScrollWidth >= value.modelTextClientWidth);
+  assertFloatRectInside(value.modelTextBounds, value.model, 'Model label');
+  assert.equal(value.modelWhiteSpace, 'nowrap'); assert.equal(value.modelOverflow, 'hidden'); assert.equal(value.modelTextOverflow, 'ellipsis');
+  assert.equal(value.modelText, value.expectedModelName, 'Ellipsis must preserve the complete actual model name in the DOM');
+  assert.equal(value.modelTitle, value.expectedModelName, 'Floating model tooltip must retain its complete name');
+  assert.equal(value.modelAriaValueText, value.expectedModelName, 'Floating model accessible value must retain its complete name');
+  assert.ok(value.hitReference && value.hitModel && value.hitSend, 'All expanded toolbar button centers must receive real pointer hits');
+}
+async function expandedToolbarGeometry(application, page, report) {
+  const config = await page.evaluate(() => window.workbench.ai.config());
+  const expectedModelName = config.models.find(model => model.id === config.activeModelId)?.name;
+  assert.ok(expectedModelName, 'Expanded toolbar must have a configured active model');
+  const value = await page.locator('.fa-surface .ai-compose-toolbar').evaluate(toolbar => {
+    const rect = element => { const box = element.getBoundingClientRect(); return { x: box.x, y: box.y, width: box.width, height: box.height }; };
+    const reference = toolbar.querySelector('.ai-add-reference'); const model = toolbar.querySelector('.ai-model-select .select-trigger'); const send = toolbar.querySelector('.ai-send');
+    const label = model.querySelector('span'); const style = getComputedStyle(label);
+    const walker = document.createTreeWalker(reference, NodeFilter.SHOW_TEXT); const referenceTextRects = [];
+    while (walker.nextNode()) if (walker.currentNode.textContent.trim()) {
+      const range = document.createRange(); range.selectNodeContents(walker.currentNode);
+      referenceTextRects.push(...[...range.getClientRects()].map(box => ({ x: box.x, y: box.y, width: box.width, height: box.height })));
+    }
+    const hit = element => { const box = element.getBoundingClientRect(); const target = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2); return target === element || element.contains(target); };
+    return { viewport: { x: 0, y: 0, width: innerWidth, height: innerHeight }, toolbar: rect(toolbar), reference: rect(reference), model: rect(model), send: rect(send),
+      referenceText: reference.textContent.trim(), referenceWhiteSpace: getComputedStyle(reference).whiteSpace, referenceTextRects,
+      modelText: label.textContent, modelTitle: model.querySelector('[title]')?.getAttribute('title'), modelAriaValueText: model.getAttribute('aria-valuetext'), modelTextBounds: rect(label), modelTextClientWidth: label.clientWidth, modelTextScrollWidth: label.scrollWidth,
+      modelWhiteSpace: style.whiteSpace, modelOverflow: style.overflow, modelTextOverflow: style.textOverflow,
+      hitReference: hit(reference), hitModel: hit(model), hitSend: hit(send) };
+  });
+  Object.assign(value, { native: await bounds(application, page), expectedModelName });
+  assertFloatExpandedToolbarGeometry(value);
+  (report.floatGroup.expandedToolbarGeometry ??= []).push(value);
+  return value;
 }
 async function compactGeometry(application, page, report, before) {
   const selectors = { context: '.fa-mini-context', linkedRow: '.fa-linked-row', compose: '.fa-mini-compose', bottom: '.fa-mini-quick', textarea: '.fa-mini-compose textarea', send: '.fa-mini-compose button', reference: '.ai-add-reference', model: '.fa-model-toggle', chip: '.fa-linked-row .ai-reference-chip', remove: '.fa-linked-row .ai-reference-chip button' };
@@ -334,7 +379,10 @@ export async function runFloatGroupPilot({ application, page, check, screenshot,
             assert.equal((await floatPage.locator('.fa-mini-back').innerText()).trim(), '返回');
             await compactGeometry(application, floatPage, report);
           }
-          else await floatPage.getByRole('button', { name: '返回首页', exact: true }).waitFor();
+          else {
+            await floatPage.getByRole('button', { name: '返回首页', exact: true }).waitFor();
+            if (entry.narrow) await expandedToolbarGeometry(application, floatPage, report);
+          }
         }
         report.floatGroup.states.push({ ...entry, reducedMotion, native, geometry, expectedExpandedHeight, expectedHeight: entry.mini ? 176 : expectedExpandedHeight });
         if (reducedMotion === 'no-preference') await capture(screenshot, floatPage, `float-group-${entry.mode}-${entry.mini ? 'mini' : 'expanded'}-${entry.narrow ? 'narrow' : 'wide'}.png`);
@@ -426,7 +474,11 @@ export async function runFloatGroupPilot({ application, page, check, screenshot,
       const model = floatPage.locator(mini ? '.fa-model-toggle' : '.ai-model-select');
       const before = await model.boundingBox(); assert.ok(before);
       const compactBefore = mini ? await compactGeometry(application, floatPage, report) : null;
-      const inspectCompact = async () => { if (mini) await compactGeometry(application, floatPage, report, compactBefore); };
+      const inspectCompact = async () => {
+        if (mini) await compactGeometry(application, floatPage, report, compactBefore);
+        else await expandedToolbarGeometry(application, floatPage, report);
+      };
+      if (!mini) await expandedToolbarGeometry(application, floatPage, report);
       const initialCalls = requests.length;
       const picker = floatPage.getByRole('listbox', { name: '选择事项', exact: true });
       const open = async () => { await floatPage.locator('.ai-add-reference').click(); await picker.waitFor(); await pickerGeometry(floatPage, report); };
@@ -443,6 +495,7 @@ export async function runFloatGroupPilot({ application, page, check, screenshot,
         assert.ok((await row.locator('.fa-task-status').innerText()).includes(status), `Business status must be independent of selection: ${task.title}`);
         assert.equal(await row.getAttribute('title'), task.title, 'Picker must expose full title tooltip');
       }
+      const statusBeforeSelection = await options.locator('.fa-task-status').allTextContents();
       const first = await options.nth(0).getAttribute('title'); assert.ok(first);
       await options.nth(0).click(); // Playwright dispatches physical pointerdown/up/click, never HTMLElement.click().
       await picker.waitFor({ state: 'hidden' });
@@ -451,7 +504,19 @@ export async function runFloatGroupPilot({ application, page, check, screenshot,
       assert.equal(await chip.locator('span[title]').getAttribute('title'), first);
       assertFloatModelGeometry(before, await model.boundingBox());
       await inspectCompact();
-      await open(); await options.nth(1).click(); await picker.waitFor({ state: 'hidden' });
+      await open();
+      if (mini) {
+        assert.deepEqual(await options.locator('.fa-task-status').allTextContents(), statusBeforeSelection, 'Association selection must not replace business status');
+        for (let index = 0; index < await options.count(); index++) {
+          const row = options.nth(index);
+          assert.equal(await row.getAttribute('aria-selected'), String(index === 0));
+          assert.equal(await row.locator('[aria-label="当前选择"]').count(), index === 0 ? 1 : 0, 'Independent selection check must match aria-selected');
+          assert.equal(await row.locator('.fa-task-status [aria-label="当前选择"]').count(), 0, 'Selection check must not masquerade as business status');
+        }
+        await options.nth(0).scrollIntoViewIfNeeded();
+        await capture(screenshot, floatPage, 'float-group-picker.png');
+      }
+      await options.nth(1).click(); await picker.waitFor({ state: 'hidden' });
       assertFloatModelGeometry(before, await model.boundingBox());
       await inspectCompact();
       await chip.getByRole('button').click(); await chip.waitFor({ state: 'hidden' });
@@ -490,6 +555,21 @@ export async function runFloatGroupPilot({ application, page, check, screenshot,
         await capture(screenshot, floatPage, 'float-group-models.png');
         await floatPage.keyboard.press('Escape'); await menu.waitFor({ state: 'hidden' });
         assert.equal(await model.evaluate(element => element === document.activeElement), true, 'Escape must restore model-trigger focus');
+      }
+      if (!mini) {
+        const selectedModelBefore = await floatPage.evaluate(() => window.workbench.ai.config().then(config => config.activeModelId));
+        const linkedBeforeModel = await chip.allTextContents();
+        const trigger = floatPage.getByRole('combobox', { name: '选择大模型', exact: true });
+        await trigger.click();
+        const menu = floatPage.getByRole('listbox', { name: '选择大模型', exact: true }); await menu.waitFor();
+        const selectedOption = menu.getByRole('option', { selected: true });
+        const fullModelName = await floatPage.evaluate(() => window.workbench.ai.config().then(config => config.models.find(model => model.id === config.activeModelId)?.name));
+        assert.equal(await selectedOption.textContent(), fullModelName, 'Expanded model picker must expose the complete selected name');
+        await floatPage.keyboard.press('Escape'); await menu.waitFor({ state: 'hidden' });
+        assert.equal(await floatPage.evaluate(() => window.workbench.ai.config().then(config => config.activeModelId)), selectedModelBefore, 'Opening/dismissing expanded model picker must preserve model');
+        assert.deepEqual(await chip.allTextContents(), linkedBeforeModel, 'Model dismissal must preserve association');
+        assert.equal(requests.length, initialCalls, 'Model dismissal must not submit a request');
+        await expandedToolbarGeometry(application, floatPage, report);
       }
       await chip.getByRole('button').click();
     });

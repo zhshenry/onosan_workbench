@@ -823,6 +823,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini
               {config && config.models.length ? (
                 <TodoSelect aria-label="选择大模型" className="ai-model-select" menuClassName="ai-model-menu"
                   value={config.activeModelId || config.models[0].id} onChange={selectModel} disabled={busy}
+                  renderOption={(option) => <span title={option.label}>{option.label}</span>}
                   options={config.providers.flatMap((provider) => config.models.filter((item) => item.providerId === provider.id).map((item) => ({ value: item.id, label: item.name, group: provider.name })))} />
               ) : null}
               {busy ? (
