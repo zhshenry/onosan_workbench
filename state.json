@@ -1,7 +1,12 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 318,
-  "currentRun": null,
+  "revision": 319,
+  "currentRun": {
+    "owner": "ono-root-issue37-20261013T1151Z",
+    "startedAt": "2026-10-13T11:51:31.363Z",
+    "currentDevelopmentGroup": "publish-association-37",
+    "task": "已批37v1独立实施，34/35停于附图/视觉门，36等待35，26排队"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -1514,15 +1519,15 @@
     },
     "37": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/37",
-      "stage": "approved-queued",
+      "stage": "implementing",
       "type": [
         "ui",
         "investigation"
       ],
       "sourceAuthorId": 54107847,
-      "baseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
-      "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "一次开发一组；待35推进到安全关口后刷新基线按已批方案实施",
+      "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
+      "lastReadAt": "2026-10-13T11:51:31.363Z",
+      "nextAction": "已重新核准37v1，独立实施真实本地关联与重启验收；不发布线上作品",
       "lastCommentId": 6128522870,
       "planVersion": "v1",
       "planCommentId": 6140325358,
@@ -1538,7 +1543,12 @@
         "createdAt": "2026-10-13T07:34:09Z",
         "updatedAt": "2026-10-13T07:34:09Z",
         "performedViaApp": null
-      }
+      },
+      "groupId": "publish-association-37",
+      "groupIssueNumbers": [
+        37
+      ],
+      "primaryIssue": 37
     },
     "41": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/41",
