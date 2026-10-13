@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 250,
+  "revision": 251,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -385,7 +385,17 @@
       },
       "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "mainCiRunId": 38358108575,
-      "mainCiConclusion": null
+      "mainCiConclusion": "success",
+      "mainEvidence": {
+        "runId": 38358108575,
+        "artifactId": 11794033018,
+        "sha256": "660d678471ceb4aceeca0a8b51c867e03b7402cf07c7f09a32918a8ef7e8902a",
+        "expiresAt": "2026-10-16T06:48:58Z",
+        "unitTests": "486/486 0skip",
+        "installed": "84/84",
+        "actualMain": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
+        "verifiedAt": "2026-10-13T06:50:51.221Z"
+      }
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
@@ -615,7 +625,17 @@
       },
       "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "mainCiRunId": 38358108575,
-      "mainCiConclusion": null
+      "mainCiConclusion": "success",
+      "mainEvidence": {
+        "runId": 38358108575,
+        "artifactId": 11794033018,
+        "sha256": "660d678471ceb4aceeca0a8b51c867e03b7402cf07c7f09a32918a8ef7e8902a",
+        "expiresAt": "2026-10-16T06:48:58Z",
+        "unitTests": "486/486 0skip",
+        "installed": "84/84",
+        "actualMain": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
+        "verifiedAt": "2026-10-13T06:50:51.221Z"
+      }
     },
     "29": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
@@ -749,7 +769,17 @@
       },
       "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "mainCiRunId": 38358108575,
-      "mainCiConclusion": null
+      "mainCiConclusion": "success",
+      "mainEvidence": {
+        "runId": 38358108575,
+        "artifactId": 11794033018,
+        "sha256": "660d678471ceb4aceeca0a8b51c867e03b7402cf07c7f09a32918a8ef7e8902a",
+        "expiresAt": "2026-10-16T06:48:58Z",
+        "unitTests": "486/486 0skip",
+        "installed": "84/84",
+        "actualMain": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
+        "verifiedAt": "2026-10-13T06:50:51.221Z"
+      }
     },
     "30": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
@@ -883,7 +913,17 @@
       },
       "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "mainCiRunId": 38358108575,
-      "mainCiConclusion": null
+      "mainCiConclusion": "success",
+      "mainEvidence": {
+        "runId": 38358108575,
+        "artifactId": 11794033018,
+        "sha256": "660d678471ceb4aceeca0a8b51c867e03b7402cf07c7f09a32918a8ef7e8902a",
+        "expiresAt": "2026-10-16T06:48:58Z",
+        "unitTests": "486/486 0skip",
+        "installed": "84/84",
+        "actualMain": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
+        "verifiedAt": "2026-10-13T06:50:51.221Z"
+      }
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
@@ -1017,7 +1057,17 @@
       },
       "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "mainCiRunId": 38358108575,
-      "mainCiConclusion": null
+      "mainCiConclusion": "success",
+      "mainEvidence": {
+        "runId": 38358108575,
+        "artifactId": 11794033018,
+        "sha256": "660d678471ceb4aceeca0a8b51c867e03b7402cf07c7f09a32918a8ef7e8902a",
+        "expiresAt": "2026-10-16T06:48:58Z",
+        "unitTests": "486/486 0skip",
+        "installed": "84/84",
+        "actualMain": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
+        "verifiedAt": "2026-10-13T06:50:51.221Z"
+      }
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
@@ -1151,7 +1201,17 @@
       },
       "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "mainCiRunId": 38358108575,
-      "mainCiConclusion": null
+      "mainCiConclusion": "success",
+      "mainEvidence": {
+        "runId": 38358108575,
+        "artifactId": 11794033018,
+        "sha256": "660d678471ceb4aceeca0a8b51c867e03b7402cf07c7f09a32918a8ef7e8902a",
+        "expiresAt": "2026-10-16T06:48:58Z",
+        "unitTests": "486/486 0skip",
+        "installed": "84/84",
+        "actualMain": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
+        "verifiedAt": "2026-10-13T06:50:51.221Z"
+      }
     },
     "33": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
@@ -1285,7 +1345,17 @@
       },
       "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "mainCiRunId": 38358108575,
-      "mainCiConclusion": null
+      "mainCiConclusion": "success",
+      "mainEvidence": {
+        "runId": 38358108575,
+        "artifactId": 11794033018,
+        "sha256": "660d678471ceb4aceeca0a8b51c867e03b7402cf07c7f09a32918a8ef7e8902a",
+        "expiresAt": "2026-10-16T06:48:58Z",
+        "unitTests": "486/486 0skip",
+        "installed": "84/84",
+        "actualMain": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
+        "verifiedAt": "2026-10-13T06:50:51.221Z"
+      }
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
@@ -3536,12 +3606,73 @@
     },
     "issue34-v2-upload": {
       "operationId": "issue34-v2-upload",
-      "status": "intent",
+      "status": "succeeded",
       "targetIssue": 34,
       "imageSha256": "138b713165c38f19d5f7fd7699247e791bf47d37811e56241b19d8525928bd51",
       "bytes": 1676632,
       "summary": "按用户反馈独立v2高保真：正常状态与标题同行，长错误详情不硬截断；不实施",
-      "createdAt": "2026-10-13T06:49:24.072Z"
+      "createdAt": "2026-10-13T06:49:24.072Z",
+      "url": "https://github.com/user-attachments/assets/5ce38d40-c410-4c48-a836-bd953c5ad874",
+      "displayVerifiedAt": "2026-10-13T06:50:51.220Z"
+    },
+    "pr40-close-issue-25": {
+      "operationId": "pr40-close-issue-25",
+      "targetIssue": 25,
+      "status": "intent",
+      "summary": "已批准包，PR40真实merged，准确实际main完整Windows486/84通过，图文交付完成，仅关闭本Issue",
+      "approvalCommentId": 6139438818
+    },
+    "pr40-close-issue-28": {
+      "operationId": "pr40-close-issue-28",
+      "targetIssue": 28,
+      "status": "intent",
+      "summary": "已批准包，PR40真实merged，准确实际main完整Windows486/84通过，图文交付完成，仅关闭本Issue",
+      "approvalCommentId": 6139438818
+    },
+    "pr40-close-issue-29": {
+      "operationId": "pr40-close-issue-29",
+      "targetIssue": 29,
+      "status": "intent",
+      "summary": "已批准包，PR40真实merged，准确实际main完整Windows486/84通过，图文交付完成，仅关闭本Issue",
+      "approvalCommentId": 6139438818
+    },
+    "pr40-close-issue-30": {
+      "operationId": "pr40-close-issue-30",
+      "targetIssue": 30,
+      "status": "intent",
+      "summary": "已批准包，PR40真实merged，准确实际main完整Windows486/84通过，图文交付完成，仅关闭本Issue",
+      "approvalCommentId": 6139438818
+    },
+    "pr40-close-issue-31": {
+      "operationId": "pr40-close-issue-31",
+      "targetIssue": 31,
+      "status": "intent",
+      "summary": "已批准包，PR40真实merged，准确实际main完整Windows486/84通过，图文交付完成，仅关闭本Issue",
+      "approvalCommentId": 6139438818
+    },
+    "pr40-close-issue-32": {
+      "operationId": "pr40-close-issue-32",
+      "targetIssue": 32,
+      "status": "intent",
+      "summary": "已批准包，PR40真实merged，准确实际main完整Windows486/84通过，图文交付完成，仅关闭本Issue",
+      "approvalCommentId": 6139438818
+    },
+    "pr40-close-issue-33": {
+      "operationId": "pr40-close-issue-33",
+      "targetIssue": 33,
+      "status": "intent",
+      "summary": "已批准包，PR40真实merged，准确实际main完整Windows486/84通过，图文交付完成，仅关闭本Issue",
+      "approvalCommentId": 6139438818
+    },
+    "pr40-delete-merged-branch": {
+      "operationId": "pr40-delete-merged-branch",
+      "status": "intent",
+      "branch": "ono/floating-group-v2",
+      "expectedHead": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
+      "prNumber": 40,
+      "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
+      "mainCiRunId": 38358108575,
+      "summary": "已合入分支无新增head/unmerged，非保护，无开放PR依赖；单协调者UI非原子删除，保留PR恢复"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
