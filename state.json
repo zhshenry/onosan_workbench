@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 328,
+  "revision": 329,
   "currentRun": {
     "owner": "ono-root-issue37-20261013T1151Z",
     "startedAt": "2026-10-13T11:51:31.363Z",
@@ -1385,7 +1385,7 @@
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
-      "stage": "tested-awaiting-image-delivery",
+      "stage": "tested-images-sent-awaiting-final-approval",
       "type": [
         "ui",
         "investigation"
@@ -1428,7 +1428,13 @@
         "visual": "4 actual screenshots viewed; correct inline status, fullerror wraps, no productlayout issue"
       },
       "artifactId": 11808447592,
-      "lastCommentId": 6144599897
+      "lastCommentId": 6144599897,
+      "imageDelivery": {
+        "channel": "one-time-private-chat",
+        "imageCount": 4,
+        "acceptedAt": "2026-10-13T12:45:00Z",
+        "scope": "current tested head only; no merge approval"
+      }
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
@@ -1497,6 +1503,12 @@
         "createdAt": "2026-10-13T12:28:27Z",
         "updatedAt": "2026-10-13T12:28:27Z",
         "allowedActions": "准备补充方案，不含产品实施或合入"
+      },
+      "imageDelivery": {
+        "channel": "one-time-private-chat",
+        "imageCount": 8,
+        "acceptedAt": "2026-10-13T12:45:03Z",
+        "visualAcceptance": false
       }
     },
     "36": {
@@ -4246,7 +4258,24 @@
         37
       ],
       "summary": "用户明确要求仅此次将当前需求实测图在现有私聊交付；34四图、35八图先交付，37修正取景且新CI通过后交付。图片不入Git；不替代方案或合入批准。",
-      "startedAt": "2026-10-13T12:44:18.645Z"
+      "startedAt": "2026-10-13T12:44:18.645Z",
+      "receipts": {
+        "34": {
+          "imageCount": 4,
+          "head": "cbe2a25da8c5a209adbf031bcef0684836963a2d",
+          "runId": 38389670397,
+          "channel": "user-approved-one-time-private-chat",
+          "acceptedAt": "2026-10-13T12:45:00Z"
+        },
+        "35": {
+          "imageCount": 8,
+          "head": "4098f131a2ab17cb77c57df9f1119df0c15c898b",
+          "runId": 38384962098,
+          "channel": "user-approved-one-time-private-chat",
+          "acceptedAt": "2026-10-13T12:45:03Z",
+          "visualAcceptance": false
+        }
+      }
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -4262,7 +4291,7 @@
     "endedAt": "2026-10-13T11:33:25.184Z",
     "summary": "35原生500/500+95/95通过但既有首页视觉异常与附件交付阻塞；34PR44实现Windows513/513+95/95及4图实际查看，待内嵌附件；无在途写，释放协调占用"
   },
-  "updatedAt": "2026-10-13T12:44:18.645Z",
+  "updatedAt": "2026-10-13T12:45:32.188Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
