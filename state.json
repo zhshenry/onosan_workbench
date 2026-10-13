@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 277,
+  "revision": 278,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -401,7 +401,7 @@
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "stage": "awaiting-plan-approval",
+      "stage": "approved-queued",
       "type": [
         "ui",
         "interaction"
@@ -409,7 +409,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T06:05:41Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待当前v3图文方案明确批准；旧v2及旧最终合入请求暂停，不实施",
+      "nextAction": "一次开发一组；待35推进到安全关口后刷新基线按已批方案实施",
       "groupId": "workbench-context-26",
       "groupIssueNumbers": [
         26
@@ -491,6 +491,18 @@
         "body": "先把失败原因查清楚，然后再把图重新给我附上",
         "authorId": 54107847,
         "createdAt": "2026-10-13T03:48:52Z"
+      },
+      "planApproval": {
+        "n": 26,
+        "v": "v3",
+        "requestCommentId": 6138445292,
+        "commentId": 6140670324,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6140670324",
+        "body": "同意 https://github.com/zhshenry/onosan_workbench/issues/26 关联事项 UI v3",
+        "authorId": 54107847,
+        "createdAt": "2026-10-13T07:35:24Z",
+        "updatedAt": "2026-10-13T07:35:24Z",
+        "performedViaApp": null
       }
     },
     "28": {
@@ -1373,7 +1385,7 @@
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
-      "stage": "awaiting-plan-approval",
+      "stage": "approved-queued",
       "type": [
         "ui",
         "investigation"
@@ -1381,7 +1393,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "等待当前34 v2图文批准，不沿用v1",
+      "nextAction": "一次开发一组；待35推进到安全关口后刷新基线按已批方案实施",
       "groupId": "settings-update-34",
       "groupIssueNumbers": [
         34
@@ -1391,7 +1403,19 @@
       "planCommentId": 6140182883,
       "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6140182883",
       "imageUrl": "https://github.com/user-attachments/assets/5ce38d40-c410-4c48-a836-bd953c5ad874",
-      "imageDisplayVerifiedAt": "2026-10-13T07:03:32.343Z"
+      "imageDisplayVerifiedAt": "2026-10-13T07:03:32.343Z",
+      "planApproval": {
+        "n": 34,
+        "v": "v2",
+        "requestCommentId": 6140182883,
+        "commentId": 6140660225,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6140660225",
+        "body": "同意 https://github.com/zhshenry/onosan_workbench/issues/34 方案 v2",
+        "authorId": 54107847,
+        "createdAt": "2026-10-13T07:34:44Z",
+        "updatedAt": "2026-10-13T07:34:44Z",
+        "performedViaApp": null
+      }
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
@@ -1445,7 +1469,7 @@
     },
     "36": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/36",
-      "stage": "awaiting-plan-approval",
+      "stage": "approved-queued",
       "type": [
         "ui",
         "investigation"
@@ -1453,15 +1477,27 @@
       "sourceAuthorId": 54107847,
       "baseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "等待用户准确v1方案批准后排队实施，不改变35范围",
+      "nextAction": "35完成后基于最新main独立实施并回归保活",
       "lastCommentId": 6128520395,
       "planVersion": "v1",
       "planCommentId": 6140309803,
-      "planUrl": "https://github.com/zhshenry/onosan_workbench/issues/36#issuecomment-6140309803"
+      "planUrl": "https://github.com/zhshenry/onosan_workbench/issues/36#issuecomment-6140309803",
+      "planApproval": {
+        "n": 36,
+        "v": "v1",
+        "requestCommentId": 6140309803,
+        "commentId": 6140656456,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/36#issuecomment-6140656456",
+        "body": "同意 https://github.com/zhshenry/onosan_workbench/issues/36 方案 v1",
+        "authorId": 54107847,
+        "createdAt": "2026-10-13T07:34:28Z",
+        "updatedAt": "2026-10-13T07:34:28Z",
+        "performedViaApp": null
+      }
     },
     "37": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/37",
-      "stage": "awaiting-plan-approval",
+      "stage": "approved-queued",
       "type": [
         "ui",
         "investigation"
@@ -1469,11 +1505,23 @@
       "sourceAuthorId": 54107847,
       "baseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "等待用户准确v1方案批准后排队实施",
+      "nextAction": "一次开发一组；待35推进到安全关口后刷新基线按已批方案实施",
       "lastCommentId": 6128522870,
       "planVersion": "v1",
       "planCommentId": 6140325358,
-      "planUrl": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6140325358"
+      "planUrl": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6140325358",
+      "planApproval": {
+        "n": 37,
+        "v": "v1",
+        "requestCommentId": 6140325358,
+        "commentId": 6140651596,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6140651596",
+        "body": "同意 https://github.com/zhshenry/onosan_workbench/issues/37 方案 v1",
+        "authorId": 54107847,
+        "createdAt": "2026-10-13T07:34:09Z",
+        "updatedAt": "2026-10-13T07:34:09Z",
+        "performedViaApp": null
+      }
     },
     "41": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/41",
@@ -3879,6 +3927,30 @@
       "commentId": 6140847650,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6140847650",
       "verifiedAt": "2026-10-13T07:47:00.421Z"
+    },
+    "issue37-v1-approval-ack": {
+      "operationId": "issue37-v1-approval-ack",
+      "status": "intent",
+      "targetIssue": 37,
+      "body": "【OnO 自动化】已核对你对 #37 v1 的原始方案批准，已排入实施队列。当前 #35 正在修复真实 Windows 验收失败，一次只开发一组；轮到本单时会重新核对最新主干和批准范围，独立提交实现 PR，并在这里附实测结果请求最终准确版本合入。\n\n当前无需重复回复。"
+    },
+    "issue36-v1-approval-ack": {
+      "operationId": "issue36-v1-approval-ack",
+      "status": "intent",
+      "targetIssue": 36,
+      "body": "【OnO 自动化】已核对你对 #36 v1 的原始方案批准，已排入实施队列。当前 #35 正在修复真实 Windows 验收失败，一次只开发一组；轮到本单时会重新核对最新主干和批准范围，独立提交实现 PR，并在这里附实测结果请求最终准确版本合入。本单会回归 #35 的网页保活，不混入其当前实现。\n\n当前无需重复回复。"
+    },
+    "issue34-v2-approval-ack": {
+      "operationId": "issue34-v2-approval-ack",
+      "status": "intent",
+      "targetIssue": 34,
+      "body": "【OnO 自动化】已核对你对 #34 v2 的原始方案批准，已排入实施队列。当前 #35 正在修复真实 Windows 验收失败，一次只开发一组；轮到本单时会重新核对最新主干和批准范围，独立提交实现 PR，并在这里附实测结果请求最终准确版本合入。\n\n当前无需重复回复。"
+    },
+    "issue26-v3-approval-ack": {
+      "operationId": "issue26-v3-approval-ack",
+      "status": "intent",
+      "targetIssue": 26,
+      "body": "【OnO 自动化】已核对你对 #26 v3 的原始方案批准，已排入实施队列。当前 #35 正在修复真实 Windows 验收失败，一次只开发一组；轮到本单时会重新核对最新主干和批准范围，独立提交实现 PR，并在这里附实测结果请求最终准确版本合入。\n\n当前无需重复回复。"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
