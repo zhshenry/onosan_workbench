@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 355,
+  "revision": 356,
   "currentRun": {
     "owner": "ono-root-issue26-20261013T1529Z",
     "startedAt": "2026-10-13T15:29:11.440Z",
@@ -1804,7 +1804,8 @@
     6146027415,
     6146391991,
     6146554493,
-    6149123195
+    6149123195,
+    6149778667
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -4476,10 +4477,13 @@
     },
     "issue26-v3-native-progress": {
       "operationId": "issue26-v3-native-progress",
-      "status": "intent",
+      "status": "succeeded",
       "target": 26,
       "body": "【OnO 自动化】v3 已更新到原 Draft PR #39，当前 head 7f19df9dfccc3d05e8574c57f58db5bec6170c1d，并保留最新 main 的既有专项。\n\n[本轮Windows](https://github.com/zhshenry/onosan_workbench/actions/runs/38425855964)510/510单测、类型/构建、固定actionlint和安装通过；原生检查75/76，在单选步骤暂停，后续保存/重启尚未跑到，不能称完整通过。\n\n已查看失败原图：点击后菜单确实收起、正确事项标签已出现。失败来自旧测试仍用check等待已卸载的radio保持选中，和v3“单选即收起”行为冲突。正在只修验收操作为真实点击，并继续严格核对菜单关闭、焦点、标签及发送快照，不放宽产品断言。完成后重新跑准确新版本。\n\n当前无需回复，不请求合入；新实测图仍须按本单交付规则核验。",
-      "startedAt": "2026-10-13T16:04:06.360Z"
+      "startedAt": "2026-10-13T16:04:06.360Z",
+      "commentId": 6149778667,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6149778667",
+      "verifiedAt": "2026-10-13T16:04:50.403Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -4495,7 +4499,7 @@
     "finishedAt": "2026-10-13T14:27:19.230Z",
     "summary": "重新分页检查无新需求/评论/批准或版本变化，34/37待批，35方案待附图，36等35；云电脑读取执行配置失败，无法继续本地开发/浏览器，GitHub连接器读取正常。修正34/37旧ciRun摘要。"
   },
-  "updatedAt": "2026-10-13T16:04:06.360Z",
+  "updatedAt": "2026-10-13T16:04:50.403Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
