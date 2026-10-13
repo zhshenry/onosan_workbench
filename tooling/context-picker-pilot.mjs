@@ -63,13 +63,15 @@ async function dismiss(page) {
 async function selectReference(page, name, multiple = false) {
   await add(page).click();
   await picker(page).waitFor({ state: 'visible' });
-  await picker(page).locator('.ai-reference-search input').fill(name);
+  const search = picker(page).locator('.ai-reference-search input');
+  if (await search.count()) await search.fill(name);
   const option = picker(page).locator('.ai-reference-option').filter({ hasText: name });
   await option.waitFor({ state: 'visible' });
   assert.equal(await option.count(), 1, 'Reference fixture must resolve to one actual option');
   await option.locator('input').check();
   if (multiple) await picker(page).locator('.primary').click();
-  else await dismiss(page);
+  else if (await picker(page).count()) await dismiss(page);
+  await picker(page).waitFor({ state: 'hidden' });
   assert.equal(await chips(page).count(), 1);
   assert.ok((await chips(page).innerText()).includes(name));
 }
@@ -168,7 +170,7 @@ async function geometry(page, baseline) {
     const picker = document.querySelector('.ai-reference-dialog');
     const model = panel.querySelector('.ai-model-select .select-trigger');
     const send = panel.querySelector('.ai-send');
-    const option = picker.querySelector('.ai-reference-option');
+    const option = picker.querySelector('.ai-reference-option.is-selected') ?? picker.querySelector('.ai-reference-option');
     const optionRect = option.getBoundingClientRect();
     const hit = document.elementFromPoint(optionRect.x + optionRect.width / 2, optionRect.y + optionRect.height / 2);
     const move = (current, before) => Math.max(Math.abs(current.x - before.x), Math.abs(current.y - before.y), Math.abs(current.width - before.width), Math.abs(current.height - before.height));
@@ -180,6 +182,15 @@ async function geometry(page, baseline) {
 }
 async function controlBounds(page) {
   return { model: await model(page).boundingBox(), send: await panel(page).locator('.ai-send').boundingBox() };
+}
+
+export function assertContextPilotConfig(config, endpoint) {
+  const selected = config.models.find(item => item.id === config.activeModelId);
+  assert.equal(selected?.name, 'synthetic-card-acceptance', 'Reference acceptance must explicitly restore its own model after the floating pilot');
+  const provider = config.providers.find(item => item.id === selected.providerId);
+  assert.equal(provider?.name, '本机合成验收');
+  assert.equal(provider.endpoint, endpoint, 'The actual selected model must use this live context loopback server');
+  assert.equal(provider.hasKey, false);
 }
 
 export async function runContextPickerPilot({ application, page, check, screenshot, runId, report, birthdayFixture }) {
@@ -228,10 +239,14 @@ export async function runContextPickerPilot({ application, page, check, screensh
       const dialog = page.getByRole('dialog', { name: '编辑供应商', exact: true });
       await dialog.getByRole('textbox', { name: '服务地址', exact: true }).fill(`http://127.0.0.1:${server.address().port}/v1`);
       await dialog.getByRole('button', { name: '保存供应商', exact: true }).click(); await dialog.waitFor({ state: 'hidden' });
-      const config = await page.evaluate(() => window.workbench.ai.config());
-      const selected = config.models.find(item => item.id === config.activeModelId);
-      const provider = config.providers.find(item => item.id === selected?.providerId);
-      assert.equal(provider.endpoint, `http://127.0.0.1:${server.address().port}/v1`); assert.equal(provider.hasKey, false);
+      // The preceding floating pilot intentionally changes the active model.
+      // Restore this fixture through the same real picker used by the user.
+      await openPanel(page); await model(page).click();
+      await page.getByRole('option', { name: 'synthetic-card-acceptance', exact: true }).click();
+      const config = await eventually(() => page.evaluate(() => window.workbench.ai.config()),
+        config => config.models.find(item => item.id === config.activeModelId)?.name === 'synthetic-card-acceptance', 'Reference acceptance model did not settle');
+      assertContextPilotConfig(config, `http://127.0.0.1:${server.address().port}/v1`);
+      await closePanel(page);
     });
     await check('Context picker: real UI creates long todo fixture and keyboard/change/remove/cancel stay read-only', async () => {
       await navigate(page, 'home', null, 'home');
@@ -242,32 +257,47 @@ export async function runContextPickerPilot({ application, page, check, screensh
       await editor.getByRole('textbox', { name: '备注 / 进展', exact: true }).fill(originalNote);
       await editor.getByRole('button', { name: '创建', exact: true }).click(); await editor.waitFor({ state: 'hidden' });
       todo = (await eventually(() => taskState(page), state => state.tasks.some(task => task.title === longTitle), 'Todo fixture did not save')).tasks.find(task => task.title === longTitle);
+      for (let i = 0; i < 21; i++) {
+        await page.locator('#view-home').getByRole('button', { name: '新增', exact: true }).click();
+        const extra = page.getByRole('dialog', { name: '新增事项', exact: true });
+        await extra.getByRole('textbox', { name: '待办名称', exact: true }).fill(`CI参考滚动${marker}-${i}`);
+        await extra.getByRole('button', { name: '创建', exact: true }).click(); await extra.waitFor({ state: 'hidden' });
+      }
+      await eventually(() => taskState(page), state => state.tasks.filter(task => task.title.startsWith(`CI参考滚动${marker}-`)).length === 21, 'All scroll fixtures must reach real storage');
       await openPanel(page); await newChat(page);
       const before = await taskState(page);
+
       await add(page).focus(); await page.keyboard.press('Enter');
-      await picker(page).locator('.ai-reference-search input').fill(longTitle);
-      await picker(page).locator('.ai-reference-option').waitFor({ state: 'visible' });
-      await page.keyboard.press('ArrowDown'); await page.keyboard.press('Enter');
+      await picker(page).locator('.ai-reference-option').first().waitFor({ state: 'visible' });
+      for (const selector of ['.ai-reference-head', '.ai-reference-search', '.ai-reference-filters', '.ai-reference-footer']) {
+        assert.equal(await picker(page).locator(selector).count(), 0, `Todo v3 must remove ${selector}`);
+      }
+      const eligible = before.tasks.filter(task => !task.deletedAt);
+      assert.ok(eligible.length > 20);
+      assert.equal(await picker(page).locator('.ai-reference-option').count(), eligible.length, 'Every eligible task remains available without legacy truncation');
+      const target = picker(page).locator(`[data-reference-key="todo:${todo.id}"] input`);
+      const index = await target.evaluate(element => [...document.querySelectorAll('.ai-reference-option input')].indexOf(element));
+      await page.keyboard.press('Home');
+      for (let i = 0; i < index; i++) await page.keyboard.press('ArrowDown');
+      assert.equal(await target.evaluate(element => element === document.activeElement), true);
+      assert.equal(await chips(page).count(), 0, 'Keyboard navigation alone is read-only');
+      await page.keyboard.press('Enter'); await picker(page).waitFor({ state: 'hidden' });
       assert.equal(await chips(page).count(), 1); assert.ok((await chips(page).innerText()).includes(longTitle));
-      await dismiss(page); assert.equal(await add(page).evaluate(element => element === document.activeElement), true);
+      assert.equal(await add(page).evaluate(element => element === document.activeElement), true);
       await chips(page).getByRole('button').click(); assert.equal(await chips(page).count(), 0);
       const alternate = before.tasks.find(task => task.id !== todo.id && task.status === 'todo'); assert.ok(alternate);
       await selectReference(page, alternate.title); await selectReference(page, longTitle);
       assert.equal(await chips(page).count(), 1, 'Changing todo replaces, never appends');
-      await add(page).click(); await picker(page).locator('.ai-reference-search input').fill(longTitle);
-      await picker(page).getByRole('combobox', { name: '筛选事项状态', exact: true }).click();
-      await picker(page).getByRole('option', { name: '已完成', exact: true }).click();
-      assert.equal(await picker(page).locator('.ai-reference-option').count(), 0);
-      await picker(page).getByRole('combobox', { name: '筛选事项状态', exact: true }).click();
-      await picker(page).getByRole('option', { name: '全部状态', exact: true }).click();
-      await picker(page).getByRole('combobox', { name: '筛选事项类型', exact: true }).click();
-      await picker(page).getByRole('option', { name: '日程', exact: true }).click();
-      assert.equal(await picker(page).locator('.ai-reference-option').count(), 0);
-      await picker(page).getByRole('combobox', { name: '筛选事项类型', exact: true }).click();
-      await picker(page).getByRole('option', { name: '全部类型', exact: true }).click();
-      assert.equal(await picker(page).locator('.ai-reference-option').count(), 1); await dismiss(page);
-      await add(page).click(); await picker(page).locator('.ai-reference-search input').fill(`NO_MATCH_${marker}`);
-      assert.equal(await picker(page).locator('.ai-reference-option').count(), 0);
+      await add(page).click();
+      const selected = picker(page).locator(`[data-reference-key="todo:${todo.id}"]`);
+      assert.equal(await selected.locator('input').isChecked(), true);
+      assert.equal(await selected.locator('.ai-reference-selected-mark svg').count(), 1, 'Independent selection check remains separate from business status');
+      assert.equal(await selected.locator('.ai-reference-kind').count(), 1);
+      assert.equal(await selected.locator('.ai-reference-status').count(), 1);
+      assert.ok((await selected.getAttribute('title')).includes(longTitle), 'Full long title stays available');
+      await page.keyboard.press('End');
+      assert.equal(await picker(page).locator('.ai-reference-option input').last().evaluate(element => element === document.activeElement), true);
+      assert.equal(await picker(page).locator('.ai-reference-options').evaluate(element => element.scrollHeight > element.clientHeight && element.scrollTop > 0), true, 'Last eligible row is keyboard-accessible through real scrolling');
       await dismiss(page); assert.equal(await chips(page).count(), 1);
       await add(page).click(); await input(page).click(); await picker(page).waitFor({ state: 'hidden' });
       await add(page).click();
@@ -401,8 +431,8 @@ export async function runContextPickerPilot({ application, page, check, screensh
         assert.equal(await panel(page).locator('.ai-resizer').getAttribute('aria-valuenow'), '340');
         await selectReference(page, longTitle);
         const baseline = await controlBounds(page);
-        await add(page).click(); await picker(page).locator('.ai-reference-search input').fill(longTitle);
-        await picker(page).locator('.ai-reference-option').waitFor({ state: 'visible' });
+        await add(page).click();
+        await picker(page).locator(`[data-reference-key="todo:${todo.id}"]`).waitFor({ state: 'visible' });
         const measured = await geometry(page, baseline); assertContextPickerGeometry(measured); assert.equal(measured.colorScheme, fixture.colorScheme);
         report.contextPicker.matrix.push({ ...fixture, geometry: measured });
         if (fixture.width === 1024) await screenshot(`context-picker-${fixture.theme}-1024x680.png`);

@@ -4,9 +4,9 @@
 // 不移植:AI 启动按钮、To-Do-List 品牌图标(用户明确排除)。
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowsInLineVertical, ArrowsOutLineVertical, ArrowsOutSimple, ArrowLeft, CaretDown, Check, Minus, PaperPlaneRight, Plus, PushPin, Sparkle, Stop, X } from '@phosphor-icons/react';
-import { insightTarget, localDay, openToday, type AIAction, type ChatSession, type ChatSummary, type Task } from '../../shared/todo-contracts';
-import { scheduleStamp } from '../../shared/todo-format';
+import { ArrowsInLineVertical, ArrowsOutLineVertical, ArrowsOutSimple, ArrowsHorizontal, ArrowLeft, CaretDown, Check, Minus, PaperPlaneRight, Plus, PushPin, Sparkle, Stop, X } from '@phosphor-icons/react';
+import { localDay, openToday, type AIAction, type ChatSession, type ChatSummary, type Task } from '../../shared/todo-contracts';
+import { isOverdue, scheduleStamp } from '../../shared/todo-format';
 import { errorText, Select as TodoSelect } from '../../modules/todo/ui/ui';
 import { AiResponse } from './AiResponse';
 import { TaskEditor, type TaskEditorApi, type TodoState } from '../../modules/todo/ui/TaskEditor';
@@ -48,6 +48,18 @@ function actionSummary(action: AIAction): { verb: string; detail: string; danger
 export function FloatTodoApp() {
   const [data, setData] = useState<TodoState | null>(null);
   const [clock, setClock] = useState(() => new Date());
+  const [narrow, setNarrow] = useState(false);
+  const [widthBusy, setWidthBusy] = useState(false);
+  const widthChanging = useRef(false);
+  useEffect(() => { void wb.float.width().then(width => setNarrow(width === 330)).catch(error => setError(errorText(error))); }, []);
+  const changeWidth = async (): Promise<void> => {
+    if (widthChanging.current || movingRef.current) return;
+    widthChanging.current = true;
+    setWidthBusy(true);
+    try { setNarrow((await wb.float.width(!narrow)) === 330); }
+    catch (error) { setError(errorText(error)); }
+    finally { widthChanging.current = false; setWidthBusy(false); }
+  };
   const [collapsed, setCollapsed] = useState(false);
   const [motion, setMotion] = useState<'idle' | 'collapsing' | 'expanding' | 'entering'>('idle');
   const movingRef = useRef(false);
@@ -120,7 +132,7 @@ export function FloatTodoApp() {
   };
 
   const setCollapsedAndSync = async (next: boolean, after?: () => void): Promise<void> => {
-    if (movingRef.current || next === collapsed) return;
+    if (movingRef.current || widthChanging.current || next === collapsed) return;
     movingRef.current = true;
     const animate = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     setMotion(next ? 'collapsing' : 'expanding');
@@ -159,7 +171,6 @@ export function FloatTodoApp() {
   const focusOverdue = focus ? (focus.dueAt ? Date.parse(focus.dueAt) < clock.getTime() : focus.plannedDate < today) : false;
   const focusTime = focus?.dueAt ? new Date(focus.dueAt) : null;
   const focusTimeLabel = focusTime ? `${focusTime.getMonth() + 1}/${focusTime.getDate()} ${String(focusTime.getHours()).padStart(2, '0')}:${String(focusTime.getMinutes()).padStart(2, '0')}` : '不限时';
-  const insight = insightTarget(openTasks, clock);
   const todayTasks = data ? data.tasks.filter((t) => !t.deletedAt && t.plannedDate <= today) : [];
   const dueReminders = todayTasks.filter((t) => t.status !== 'done' && t.remindAt && Date.parse(t.remindAt) <= clock.getTime());
 
@@ -169,10 +180,16 @@ export function FloatTodoApp() {
     return () => window.clearTimeout(timer);
   }, [armedTaskId]);
 
+  const measurementData = JSON.stringify(data);
   useLayoutEffect(() => {
-    if (collapsed || !data || motion !== 'idle') return;
+    if (collapsed || floatMode !== 'home' || !data || motion !== 'idle') return;
+    let initialWidth = window.innerWidth;
+    let widthReflow = false;
     const measure = (): void => {
-      if (movingRef.current) return;
+      if (window.innerWidth !== initialWidth || widthChanging.current) widthReflow = true;
+      // A width-only reflow must never feed back into native height. Reset this
+      // guard only for actual content/view changes, not identical poll results.
+      if (movingRef.current || widthReflow) return;
       if (window.innerHeight < 330) return;
       if (libraryOpen || editor || review !== null) { wb.float.resize(floatMinHeight()); return; }
       const root = document.querySelector<HTMLElement>('.float-app');
@@ -194,21 +211,34 @@ export function FloatTodoApp() {
     const scheduleCard = document.querySelector<HTMLElement>('.float-body .plan-schedule');
     const observer = scheduleCard ? new ResizeObserver(measure) : null;
     if (scheduleCard) observer?.observe(scheduleCard);
+    const board = document.querySelector<HTMLElement>('.float-body .today-board');
+    // Child-owned state (schedule folders, confirmation rows) does not change
+    // measurementData. Observe semantic DOM changes separately from CSS reflow:
+    // a width toggle changes the ancestor class, never these contents.
+    const contents = board ? new MutationObserver(() => {
+      initialWidth = window.innerWidth;
+      widthReflow = false;
+      measure();
+    }) : null;
+    if (board) contents?.observe(board, { childList: true, subtree: true, characterData: true,
+      attributes: true, attributeFilter: ['aria-expanded'] });
     return () => {
       window.removeEventListener('resize', measure);
       observer?.disconnect();
+      contents?.disconnect();
     };
-  }, [collapsed, data, today, libraryOpen, editor, review, dueReminders.length, motion]);
+  }, [collapsed, floatMode, measurementData, today, libraryOpen, editor, review, dueReminders.length, motion]);
 
   return (
-    <div className={`float-app${collapsed ? ' mini' : ''} is-${motion}${floatMode === 'ai' ? ' ai-active' : ''}`}>
+    <div className={`float-app${narrow ? ' narrow' : ''}${collapsed ? ' mini' : ''} is-${motion}${floatMode === 'ai' ? ' ai-active' : ''}`}>
       <header className={collapsed ? 'float-bar float-mini-bar' : 'float-bar'}>
         <span className="float-brand" aria-hidden="true"><LogoMark size={40} /></span>
         <span className="float-bar-title">待办</span>
         <div className="float-window-actions">
           <button className={floatMode === 'ai' ? 'float-bar-btn ai on' : 'float-bar-btn ai'} title="AI 助手" aria-label="AI 助手" aria-pressed={floatMode === 'ai'} onClick={() => { if (collapsed) { if (floatMode === 'ai') { setFloatMode('home'); wb.float.collapse(true, true); } else { setFloatMode('ai'); wb.float.tempHeight(null); } } else { setFloatMode(m => m === 'ai' ? 'home' : 'ai'); } }}><span className={floatMode === 'ai' ? 'float-ai-glyph on' : 'float-ai-glyph'} aria-hidden='true' /></button>
           <button className={pinned ? 'float-bar-btn on' : 'float-bar-btn'} title={pinned ? '取消置顶' : '置顶'} aria-label={pinned ? '取消置顶' : '置顶'} aria-pressed={pinned} onClick={() => { void wb.float.pin().then(setPinned); }}><PushPin size={19} weight={pinned ? 'fill' : 'regular'} /></button>
-          <button className="float-bar-btn" title={collapsed ? '展开主界面' : '收起为卡片'} aria-label={collapsed ? '展开主界面' : '收起为卡片'} disabled={motion !== 'idle'} onClick={() => { void setCollapsedAndSync(!collapsed); }}>{collapsed ? <ArrowsOutLineVertical size={19} /> : <ArrowsInLineVertical size={19} />}</button>
+          <button className="float-bar-btn" title={narrow ? '加宽悬浮窗' : '收窄悬浮窗'} aria-label={narrow ? '加宽悬浮窗' : '收窄悬浮窗'} aria-pressed={narrow} disabled={widthBusy || motion !== 'idle'} onClick={() => { void changeWidth(); }}><ArrowsHorizontal size={19} /></button>
+          <button className="float-bar-btn" title={collapsed ? '展开主界面' : '收起为卡片'} aria-label={collapsed ? '展开主界面' : '收起为卡片'} disabled={widthBusy || motion !== 'idle'} onClick={() => { void setCollapsedAndSync(!collapsed); }}>{collapsed ? <ArrowsOutLineVertical size={19} /> : <ArrowsInLineVertical size={19} />}</button>
           <button className="float-bar-btn" title="隐藏(托盘可再次打开)" aria-label="隐藏悬浮待办窗" onClick={() => { void wb.float.toggle(); }}><Minus size={20} /></button>
         </div>
       </header>
@@ -271,20 +301,11 @@ export function FloatTodoApp() {
         </div>
       </div>
 
-      {insight && !libraryOpen && floatMode === 'home' && motion === 'idle' && (
-        <button type="button" className="float-insight" onClick={() => askAI(insight.prompt)}>
-          <span>✦ AI 建议</span>
-          <b>{insight.title}</b>
-          <small>{insight.context}</small>
-          <em>生成方案</em>
-        </button>
-      )}
-
       {floatMode === 'ai' ? (
         <div className="float-ai">
           <header className="float-ai-head">
             <b><Sparkle size={14} weight="fill" /> AI 助手</b>
-            <button className="float-ai-back" onClick={() => setFloatMode('home')}><ArrowLeft size={15} />返回</button>
+            <button className="float-ai-back" onClick={() => setFloatMode('home')}><ArrowLeft size={15} />返回首页</button>
           </header>
           <div className="float-ai-body">
             <FloatAiChat seed={aiSeed} onSeedConsumed={() => setAiSeed(null)} tasks={data?.tasks ?? []} />
@@ -397,7 +418,7 @@ type AiConfigBrief = {
 };
 
 
-function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini = false, onExpand, onBack }: {
+export function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini = false, onExpand, onBack }: {
   seed: { text: string; nonce: number } | null;
   onSeedConsumed(): void;
   tasks: Task[];
@@ -487,7 +508,7 @@ function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini = fals
   // 模型切换(上游 compact 同款:底部 toggle + 按供应商分组菜单;菜单用 portal 固定定位,不被 surface overflow 裁剪)
   const [config, setConfig] = useState<AiConfigBrief | null>(null);
   const [modelOpen, setModelOpen] = useState(false);
-  const [modelMenuPos, setModelMenuPos] = useState<{ bottom: number; maxHeight?: number } | null>(null);
+  const [modelMenuPos, setModelMenuPos] = useState<{ bottom: number; right: number; width: number; maxHeight: number } | null>(null);
   const modelBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -510,12 +531,26 @@ function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini = fals
     if (!pickerOpen) return;
     const onDown = (e: PointerEvent): void => {
       const target = e.target as HTMLElement | null;
-      if (target?.closest('.fa-picker-list') || target?.closest('.ai-add-reference')) return;
+      if (target?.closest('.fa-picker-list, .fa-mini-picker, .ai-add-reference')) return;
       setPickerOpen(false);
     };
     document.addEventListener('pointerdown', onDown);
     return () => document.removeEventListener('pointerdown', onDown);
   }, [pickerOpen]);
+
+  useEffect(() => {
+    const close = (): void => { setPickerOpen(false); setModelOpen(false); };
+    const key = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape' || (!pickerOpen && !modelOpen)) return;
+      event.preventDefault();
+      if (modelOpen) modelBtnRef.current?.focus();
+      else document.querySelector<HTMLButtonElement>('.ai-add-reference')?.focus();
+      close();
+    };
+    window.addEventListener('resize', close);
+    document.addEventListener('keydown', key);
+    return () => { window.removeEventListener('resize', close); document.removeEventListener('keydown', key); };
+  }, [pickerOpen, modelOpen]);
 
   // 消息区滚动跟随(同 AiPanel:用户上翻即暂停跟随)
   useLayoutEffect(() => {
@@ -532,7 +567,8 @@ function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini = fals
     if (rect) {
       const bottom = Math.round(window.innerHeight - rect.top + 6);
       const cap = Math.round(window.innerHeight - bottom - 8);
-      setModelMenuPos({ bottom, maxHeight: cap < 240 ? Math.max(120, cap) : undefined });
+      setModelMenuPos({ bottom, right: Math.max(8, window.innerWidth - rect.right),
+        width: Math.min(196, window.innerWidth - 16), maxHeight: Math.max(24, Math.min(240, cap)) });
     }
     setModelOpen(true);
   };
@@ -544,7 +580,7 @@ function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini = fals
   };
 
   const modelMenu = modelOpen && config && config.models.length ? createPortal(
-    <div className="fa-model-menu" role="menu" aria-label="按供应商选择模型" style={{ bottom: modelMenuPos?.bottom, maxHeight: modelMenuPos?.maxHeight }}>
+    <div className="fa-model-menu" role="menu" aria-label="按供应商选择模型" style={{ bottom: modelMenuPos?.bottom, right: modelMenuPos?.right, width: modelMenuPos?.width, maxHeight: modelMenuPos?.maxHeight }}>
       {config.providers.map((provider) => {
         const models = config.models.filter((m) => m.providerId === provider.id);
         if (!models.length) return null;
@@ -565,13 +601,30 @@ function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini = fals
   ) : null;
 
   const modelControl = config && config.models.length ? (
-    <button ref={modelBtnRef} type="button" className="fa-model-toggle" aria-label={`切换模型,当前为 ${modelLabel}`} aria-haspopup="menu" aria-expanded={modelOpen} onClick={toggleModelMenu}>
+    <button ref={modelBtnRef} type="button" className="fa-model-toggle" title={modelLabel} aria-label={`切换模型,当前为 ${modelLabel}`} aria-haspopup="menu" aria-expanded={modelOpen} onClick={toggleModelMenu}>
       <span>{modelLabel}</span>
       <CaretDown size={9} />
     </button>
   ) : null;
 
-  // ================= 迷你布局(上游 mini-ai-surface 一比一:22/34/22 三行网格 + 流光边框) =================
+  const linkedRow = <div className="fa-linked-row" aria-live="polite">
+    {linked && <span className="ai-reference-chip"><span title={linked.title}>关联 · {linked.title}</span><button type="button" aria-label={`取消关联 ${linked.title}`} onClick={() => setLinked(null)}><X size={12} /></button></span>}
+  </div>;
+  const referenceControl = <button type="button" className="ai-add-reference" aria-expanded={pickerOpen} aria-label="关联已有事项" onClick={() => { setModelOpen(false); setPickerOpen(value => !value); }}><Plus size={13} />关联事项</button>;
+  const picker = pickerOpen ? <div className={`fa-picker-list${mini ? ' fa-mini-picker' : ''}`} role="listbox" aria-label="选择事项">
+    {tasks.filter(task => !task.deletedAt).map(task => {
+      const status = task.status === 'done' ? '已完成' : isOverdue(task) ? '已超期' : task.status === 'doing' ? '进行中' : '待办';
+      return <button type="button" key={task.id} role="option" aria-selected={linked?.id === task.id} className={linked?.id === task.id ? 'is-linked' : ''} title={task.title} onClick={() => { setLinked(task); setPickerOpen(false); document.querySelector<HTMLButtonElement>('.ai-add-reference')?.focus(); }}>
+        <i className={task.kind === 'meeting' ? 'pill meet' : 'pill task'} aria-hidden="true" />
+        <span>{task.kind === 'meeting' ? '日程' : '待办'} · {task.title}</span>
+        <small className="fa-task-status"><span aria-hidden="true">{task.status === 'done' ? '✓' : isOverdue(task) ? '!' : task.status === 'doing' ? '◐' : '○'}</span> {status}</small>
+        {linked?.id === task.id ? <Check size={12} aria-label="当前选择" /> : null}
+      </button>;
+    })}
+    {!tasks.some(task => !task.deletedAt) && <p>暂无可关联事项</p>}
+  </div> : null;
+
+  // ================= 迷你布局(v2:标题 / 关联 / 输入 / 底栏;运行态保留三行) =================
   if (mini) {
     const surfaceClass = ask ? 'fa-mini-surface is-asking' : busy ? 'fa-mini-surface is-working' : pendingEntry ? 'fa-mini-surface is-result' : 'fa-mini-surface';
     return (
@@ -582,7 +635,7 @@ function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini = fals
           {onExpand && (
             <button className="fa-mini-icon" title="展开 AI 对话" aria-label="展开 AI 对话" onClick={onExpand}><ArrowsOutSimple size={11} /></button>
           )}
-          <button className="fa-mini-back" onClick={() => { onBack?.(); }}><CaretDown size={9} className="up" />返回</button>
+          <button className="fa-mini-back" onClick={() => { onBack?.(); }}><ArrowLeft size={9} />返回</button>
         </div>
 
         {ask ? (
@@ -654,8 +707,8 @@ function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini = fals
           </>
         ) : (
           <>
+            {linkedRow}
             <form className="fa-mini-compose" onSubmit={(e) => { e.preventDefault(); void send(input); }}>
-              <button type="button" className="fa-mini-plus" aria-label="关联已有事项" aria-expanded={pickerOpen} onClick={() => setPickerOpen(v => !v)}><Plus size={12} /></button>
               <textarea rows={1} value={input} maxLength={10000} aria-label="AI 对话输入"
                 placeholder={linked ? `针对「${linked.title}」…` : '一句话告诉 AI 你想怎么处理'}
                 onChange={(e) => setInput(e.target.value)}
@@ -663,25 +716,10 @@ function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini = fals
               <button type="submit" aria-label="发送" disabled={!input.trim()}><PaperPlaneRight size={11} weight="fill" /></button>
             </form>
             <div className="fa-mini-quick">
-              {pickerOpen ? (
-                <div className="fa-mini-picker" role="listbox" aria-label="选择事项">
-                  {tasks.filter((t) => !t.deletedAt).slice(0, 8).map((t) => (
-                    <button key={t.id} role="option" aria-selected={linked?.id === t.id} className={linked?.id === t.id ? 'is-linked' : ''} onClick={() => { setLinked(t); setPickerOpen(false); }}>
-                      <i className={t.kind === 'meeting' ? 'pill meet' : 'pill task'} aria-hidden="true" />
-                      <span>{t.title}</span>
-                      {linked?.id === t.id ? <Check size={10} /> : null}
-                    </button>
-                  ))}
-                </div>
-              ) : linked ? (
-                <button className="fa-mini-linked" title={`取消关联 ${linked.title}`} onClick={() => setLinked(null)}><X size={9} />{linked.title}</button>
-              ) : null}
-              {!pickerOpen && !linked && <span className="fa-mini-hint">改动先出建议卡,确认后才写入</span>}
+              {referenceControl}
               {modelControl}
-              {latestAssistant && !busy && latestAssistant.content && !logOpen && !pickerOpen && !linked && (
-                <button className="fa-mini-answer-toggle" onClick={() => setLogOpen(true)}>记录 {tools.length}</button>
-              )}
             </div>
+            {picker}
             {logOpen && (
               <div className="fa-mini-answer">
                 <p>{latestAssistant?.error ?? latestAssistant?.content}</p>
@@ -772,17 +810,8 @@ function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini = fals
         )}
       </div>
       <div className="ai-compose-wrap">
-        {pickerOpen && (
-          <div className="fa-picker-list" role="listbox" aria-label="选择事项">
-            {tasks.filter((t) => !t.deletedAt).slice(0, 20).map((t) => (
-              <button key={t.id} role="option" aria-selected={linked?.id === t.id} className={linked?.id === t.id ? 'is-linked' : ''} onClick={() => { setLinked(t); setPickerOpen(false); }}>
-                <i className={t.kind === 'meeting' ? 'pill meet' : 'pill task'} aria-hidden="true" />
-                <span>{t.title}</span>
-                {linked?.id === t.id ? <Check size={12} /> : null}
-              </button>
-            ))}
-          </div>
-        )}
+        {picker}
+        {linkedRow}
         <div className="ai-compose">
           <div className="ai-compose-input">
             <textarea rows={1} value={input} maxLength={10000} aria-label="AI 对话输入"
@@ -790,16 +819,11 @@ function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini = fals
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(input); } }} />
             <div className="ai-compose-toolbar">
-              {linked && (
-                <span className="ai-reference-chip">
-                  <span title={linked.title}>关联 · {linked.title}</span>
-                  <button type="button" aria-label={`取消关联 ${linked.title}`} onClick={() => setLinked(null)}><X size={12} /></button>
-                </span>
-              )}
-              <button type="button" className="ai-add-reference" aria-expanded={pickerOpen} aria-label="关联已有事项" onClick={() => setPickerOpen(v => !v)}><Plus size={13} />{linked ? '更换关联' : '关联事项'}</button>
+              {referenceControl}
               {config && config.models.length ? (
                 <TodoSelect aria-label="选择大模型" className="ai-model-select" menuClassName="ai-model-menu"
                   value={config.activeModelId || config.models[0].id} onChange={selectModel} disabled={busy}
+                  renderOption={(option) => <span title={option.label}>{option.label}</span>}
                   options={config.providers.flatMap((provider) => config.models.filter((item) => item.providerId === provider.id).map((item) => ({ value: item.id, label: item.name, group: provider.name })))} />
               ) : null}
               {busy ? (

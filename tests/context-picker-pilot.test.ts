@@ -6,7 +6,7 @@ import test from 'node:test';
 import { JSDOM } from 'jsdom';
 import {
   CONTEXT_PICKER_MATRIX, CONTEXT_PICKER_SCREENSHOTS, assertContextPickerGeometry,
-  assertReferenceTurn, assertSavedReferenceTurn, assertTransmittedReferenceSnapshots, referencePromptBubble,
+  assertReferenceTurn, assertSavedReferenceTurn, assertTransmittedReferenceSnapshots, referencePromptBubble, assertContextPilotConfig,
 } from '../tooling/context-picker-pilot.mjs';
 import { inspectPilotArtifacts, MAX_ARTIFACT_BYTES } from '../tooling/pilot-artifacts.mjs';
 
@@ -20,6 +20,26 @@ function chatFixture() {
   ] };
 }
 const turn = () => assertReferenceTurn(chatFixture(), 'synthetic prompt', reference, 'original synthetic note');
+
+test('Reference acceptance rejects a floating-pilot active model, stale loopback endpoint and any saved key', () => {
+  const endpoint = 'http://127.0.0.1:12345/v1';
+  const config = { activeModelId: 'reference', models: [
+    { id: 'reference', name: 'synthetic-card-acceptance', providerId: 'cards' },
+    { id: 'floating', name: 'float-synthetic-long-model-name-0', providerId: 'float' },
+  ], providers: [
+    { id: 'cards', name: '本机合成验收', endpoint, hasKey: false },
+    { id: 'float', name: '悬浮窗合成验收', endpoint: 'http://127.0.0.1:54321/v1', hasKey: false },
+  ] };
+  assertContextPilotConfig(config, endpoint);
+  assert.throws(() => assertContextPilotConfig({ ...config, activeModelId: 'floating' }, endpoint), /explicitly restore/);
+  assert.throws(() => assertContextPilotConfig({ ...config, activeModelId: 'missing' }, endpoint), /explicitly restore/);
+  const stale = structuredClone(config); stale.providers[0].endpoint = 'http://127.0.0.1:11111/v1';
+  assert.throws(() => assertContextPilotConfig(stale, endpoint), /live context loopback/);
+  const wrongProvider = structuredClone(config); wrongProvider.models[0].providerId = 'float';
+  assert.throws(() => assertContextPilotConfig(wrongProvider, endpoint));
+  const keyed = structuredClone(config); keyed.providers[0].hasKey = true;
+  assert.throws(() => assertContextPilotConfig(keyed, endpoint));
+});
 
 test('Restart prompt locator requires the exact user bubble, never a matching title or assistant echo', async () => {
   const prompt = 'CI待办参考8286044872 [a+b].*?($)\\';
@@ -157,6 +177,9 @@ test('Installed reference pilot uses normal UI writes, bounded loopback transpor
   assert.doesNotMatch(source, /workbench\.(?:ai\.(?:ask|chatOpen|chatNew|saveProvider|saveModel)|todo\.(?:create|update|remove)|copy\.(?:save|remove)|reading\.(?:save|setVault|scan)|bazi\.(?:saveProfile|saveNote|removeProfile))\(/);
   assert.doesNotMatch(source, /\.route\(|setContent\(|addInitScript\(|localStorage\.setItem|--no-sandbox|page\.screenshot\(/);
   assert.match(source, /assertTransmittedReferenceSnapshots\(requests\[requestIndex\]\.messages, turn\.snapshots\)/);
+  assert.match(source, /await openPanel\(page\); await model\(page\)\.click\(\)/);
+  assert.match(source, /getByRole\('option', \{ name: 'synthetic-card-acceptance', exact: true \}\)\.click\(\)/);
+  assert.match(source, /assertContextPilotConfig\(config, `http:\/\/127\.0\.0\.1:/);
   assert.match(source, /assert\.deepEqual\(await taskState\(page\), before/);
   assert.match(source, /await openChat\(page, cardsChat\.title\)/);
   assert.ok(entry.indexOf('aiCardsFixture = await runAiCardsPilot(') < entry.indexOf('contextPickerFixture = await runContextPickerPilot('));

@@ -3,7 +3,8 @@ import { CheckSquareOffset, GearSix, Sparkle } from '@phosphor-icons/react';
 import { NAV, defaultViewOfWorkbench, ownerOfWorkbench, workbenchById, type WorkbenchDef, type WorkbenchId } from './nav';
 import type { AvatarColor, UiTheme, ViewId } from '../shared/contracts';
 import { localDay, openToday, taskTime, type ChatSession, type CopySource, type Task, type TaskInput } from '../shared/todo-contracts';
-import { isOverdue, meetingEndAt, scheduleTimeRange } from '../shared/todo-format';
+import { isOverdue, meetingEndAt } from '../shared/todo-format';
+import { topbarScheduleDate, topbarTodoDate } from './topbar-dates';
 import { HomeView, useTodoData } from './views/HomeView';
 import { AiPanel, type AiPanelContext, type AiSeed } from './views/AiPanel';
 import { chatContextScope, TODO_AI_WORKBENCH_NAME, type AiScope } from '../shared/ai-scope';
@@ -455,12 +456,12 @@ export function App() {
             )}
             {todayMeetings.map((t) => {
               const start = t.dueAt ? Date.parse(t.dueAt) : null;
-              const end = meetingEndAt(t);
+              const end = start !== null && Number.isFinite(start) ? meetingEndAt(t) : null;
               const live = start !== null && end ? start <= todo.clock.getTime() && Date.parse(end) > todo.clock.getTime() : false;
               return (
                 <button key={t.id} className={live ? 'schip now' : 'schip'} title={t.title} onClick={(e) => { e.stopPropagation(); openTaskEditor(t); }}>
                   {live && <span className="live" />}
-                  <span className="t">{scheduleTimeRange(t)}</span>
+                  <span className="t">{topbarScheduleDate(t, todo.clock)}</span>
                   <span className="n">{t.title}</span>
                 </button>
               );
@@ -476,8 +477,8 @@ export function App() {
             {todaySchedule.map((t) => {
               return (
                 <div key={t.id} className={t.status === 'done' ? 'ipop-row done' : 'ipop-row'}>
-                  <span className="ipop-time">{scheduleTimeRange(t)}</span>
-                  <button className="ipop-title" onClick={() => openTaskEditor(t)}>{t.title}</button>
+                  <span className="ipop-time">{topbarScheduleDate(t, todo.clock)}</span>
+                  <button className="ipop-title" title={t.title} onClick={() => openTaskEditor(t)}>{t.title}</button>
                 </div>
               );
             })}
@@ -512,7 +513,7 @@ export function App() {
                 {t.status === 'done' ? '✓' : ''}
               </button>
               <button className="ipop-title" title={t.title} onClick={() => openTaskEditor(t)}>{t.title}</button>
-              <span className="ipop-time">{t.dueAt ? new Date(t.dueAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }) : '不限时'}</span>
+              <span className="ipop-time">{topbarTodoDate(t, todo.clock)}</span>
             </div>
           ))}
           <div className="ipop-foot">

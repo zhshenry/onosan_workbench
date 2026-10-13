@@ -205,6 +205,7 @@ const clipboard = {
   resize: (height: number): void => {
     ipcRenderer.send('float:resize', height);
   },
+  width: (narrow?: boolean): Promise<number> => ipcRenderer.invoke('float:width', narrow),
   pin: (): Promise<boolean> => ipcRenderer.invoke('float:pin'),
 };
 
