@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 338,
+  "revision": 339,
   "currentRun": {
     "owner": "ono-root-issue37-20261013T1151Z",
     "startedAt": "2026-10-13T11:51:31.363Z",
@@ -1564,7 +1564,7 @@
     },
     "37": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/37",
-      "stage": "screenshot-fixture-blocked",
+      "stage": "screenshot-readiness-windows-validation",
       "type": [
         "ui",
         "investigation"
@@ -1596,7 +1596,7 @@
       "primaryIssue": 37,
       "pr": 45,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/45",
-      "headSha": "c00b6f082841132fc2d8bfc059978949e6d9aa35",
+      "headSha": "42733f0bcfcb1155f0f03145b8ffd0ace2001882",
       "ciRun": 38396752842,
       "ciResult": "success",
       "tests": {
@@ -4366,11 +4366,13 @@
     },
     "issue37-wait-fix-publish": {
       "operationId": "issue37-wait-fix-publish",
-      "status": "intent",
+      "status": "succeeded",
       "expectedHead": "c00b6f082841132fc2d8bfc059978949e6d9aa35",
       "candidateTree": "1d557d3b94ba9bf13d488b1f68995a2a7df8acb4",
       "summary": "仅fixture测试：fonts单独await，toast/动画使用同步布尔轮询；严格隐藏断言保留",
-      "startedAt": "2026-10-13T13:10:00.912Z"
+      "startedAt": "2026-10-13T13:10:00.912Z",
+      "commitSha": "42733f0bcfcb1155f0f03145b8ffd0ace2001882",
+      "verifiedAt": "2026-10-13T13:11:33.604Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -4386,7 +4388,7 @@
     "endedAt": "2026-10-13T11:33:25.184Z",
     "summary": "35原生500/500+95/95通过但既有首页视觉异常与附件交付阻塞；34PR44实现Windows513/513+95/95及4图实际查看，待内嵌附件；无在途写，释放协调占用"
   },
-  "updatedAt": "2026-10-13T13:10:00.912Z",
+  "updatedAt": "2026-10-13T13:11:33.604Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
