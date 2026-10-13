@@ -45,6 +45,56 @@ export function assertMediaStatePreserved(before, after) {
   assert.ok(Number.isFinite(after.scrollY) && Math.abs(after.scrollY - before.scrollY) <= 2, 'Workspace switch must preserve scroll');
   assert.deepEqual(after.history, before.history, 'Workspace switch must preserve the real native navigation history');
 }
+export function assertMediaHomeLayoutUnchanged(before, after) {
+  for(const value of [before,after]) {
+    assert.deepEqual(value.nativeSize,[1024,680],'Home comparison must use the same native content size');
+    assert.equal(value.zoom,1,'Home comparison must use normal native zoom');
+    assert.deepEqual(value.viewport,{width:1024,height:680},'Home comparison must use the actual CSS viewport');
+    assert.equal(value.homeMode,'today-board','Home comparison must use the ordinary task board, not the library');
+    assert.equal(value.fontStatus,'loaded');assert.equal(value.fadeTransform,'none');
+    for(const rect of Object.values(value.bounds)) for(const key of ['x','y','width','height']) assert.ok(Number.isFinite(rect[key]),'Home geometry must be finite');
+  }
+  assert.equal(before.hosts.length,0,'First home observation must precede any retained creator DOM');
+  assert.equal(after.hosts.length,1,'Hidden home observation must retain the real creator DOM');
+  assert.deepEqual(after.hosts[0],{hidden:true,inert:true,display:'none',width:0,height:0});
+  assert.deepEqual(after.styles,before.styles,'Retained hidden media must not change current home CSS layout');
+  for(const [name,rect] of Object.entries(before.bounds)) for(const key of ['x','y','width','height']) {
+    assert.ok(Math.abs(after.bounds[name][key]-rect[key])<=2,`Retained hidden media must not change home ${name}.${key}`);
+  }
+  assert.deepEqual(after.overflow,before.overflow,'Retained hidden media must not change home overflow');
+  assert.deepEqual(after.layoutFlags,before.layoutFlags,'Retained hidden media must not change home collapse/overlap indicators');
+  // Equal bad geometry proves no hidden-host delta, never visual acceptance.
+  return {unchanged:true,visualAcceptance:!Object.values(before.layoutFlags).some(Boolean)&&!Object.values(after.layoutFlags).some(Boolean)};
+}
+async function settledMediaHomeGeometry(native,page) {
+  await page.evaluate(async()=>{await document.fonts.ready;});
+  let previous;let stable=0;
+  return until(page,async()=>({
+    ...await native.evaluate(win=>({nativeSize:win.getContentSize(),zoom:win.webContents.getZoomFactor()})),
+    ...await page.evaluate(()=>{
+      const select=selector=>{const value=document.querySelector(selector);if(!value)throw new Error(`Missing real home element ${selector}`);return value;};
+      const rect=element=>{const r=element.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};};
+      const content=select('.content'),home=select('#view-home'),cols=select('#view-home > .cols');
+      const todo=select('#view-home .todo-panel'),overview=select('#view-home > .cols > div:last-child'),overviewPanel=overview.querySelector('.panel');
+      const contentStyle=getComputedStyle(content),colsStyle=getComputedStyle(cols),todoStyle=getComputedStyle(todo),overviewStyle=getComputedStyle(overview);
+      const bounds={content:rect(content),home:rect(home),cols:rect(cols),todo:rect(todo),overview:rect(overview),overviewPanel:rect(overviewPanel),date:rect(select('#view-home .dash-heading h1')),weekTitle:rect(overview.querySelector('.ptitle'))};
+      return {viewport:{width:innerWidth,height:innerHeight},fontStatus:document.fonts.status,fadeTransform:getComputedStyle(home.parentElement).transform,
+        homeMode:home.querySelector('.task-library')?'library':home.querySelector('.today-board')?'today-board':'unknown',
+        styles:{contentClass:content.className,contentDisplay:contentStyle.display,contentPadding:contentStyle.padding,homeDisplay:getComputedStyle(home).display,
+          colsDisplay:colsStyle.display,columns:colsStyle.gridTemplateColumns,columnGap:colsStyle.columnGap,todoColumn:todoStyle.gridColumn,todoRow:todoStyle.gridRow,
+          overviewColumn:overviewStyle.gridColumn,overviewRow:overviewStyle.gridRow,overviewContainer:overviewStyle.containerType},bounds,
+        overflow:{contentX:content.scrollWidth-content.clientWidth,overviewX:overviewPanel.scrollWidth-overviewPanel.clientWidth,todoX:todo.scrollWidth-todo.clientWidth},
+        layoutFlags:{overviewCollapsed:bounds.overview.width<100,overviewContentOverflows:overviewPanel.scrollWidth>overviewPanel.clientWidth+2,
+          panelsOverlap:Math.min(bounds.todo.x+bounds.todo.width,bounds.overviewPanel.x+bounds.overviewPanel.width)-Math.max(bounds.todo.x,bounds.overviewPanel.x)>2
+            &&Math.min(bounds.todo.y+bounds.todo.height,bounds.overviewPanel.y+bounds.overviewPanel.height)-Math.max(bounds.todo.y,bounds.overviewPanel.y)>2},
+        hosts:[...document.querySelectorAll('.media-browser-host')].map(host=>({hidden:host.hidden,inert:host.inert,display:getComputedStyle(host).display,width:rect(host).width,height:rect(host).height}))};
+    }),
+  }),value=>{
+    const ready=value.nativeSize[0]===1024&&value.nativeSize[1]===680&&value.zoom===1&&value.viewport.width===1024&&value.viewport.height===680
+      &&value.homeMode==='today-board'&&value.fontStatus==='loaded'&&value.fadeTransform==='none';
+    const current=JSON.stringify(value);stable=ready&&current===previous?stable+1:ready?1:0;previous=current;return stable>=2;
+  },'Actual home geometry did not settle at native 1024x680 zoom 1');
+}
 export function assertMediaGuestSecurity(id, reported, attachment) {
   assert.ok(reported && typeof reported === 'object', 'Native preferences must be an actual reported object');
   assert.equal(attachment?.id, id, 'Security observations must belong to this native guest');
@@ -382,7 +432,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
   const originalSize = await native.evaluate(win => win.getContentSize());
   const html = Object.fromEntries(MEDIA_FIXTURE_PATHS.map(route => [route, mediaFixtureHtml(route)]));
   const token = `media35-${Date.now()}`;
-  const rows = []; let fixtureInstalled = false; let ax; let failure;
+  const rows = []; let fixtureInstalled = false; let ax; let failure; let homeBefore; let homeTasks;
   report.mediaKeepalive = { fixture:'local synthetic HTTPS responses in unchanged creator/material partitions', rows };
   try {
     await check('Creator fixture keeps real security/partition and startup remains lazy', async () => {
@@ -440,6 +490,13 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
         owner.on('did-attach-webview', attach); fixture.ownerListeners.push({ name:'did-attach-webview', listener:attach });
       }, { html, origin:MEDIA_FIXTURE_ORIGIN, paths:MEDIA_FIXTURE_PATHS, token });
       await aiVisible(page, false);
+      await page.locator('.rail [data-workbench="home"]').click();
+      if(await page.locator('#view-home .task-library').count()) await page.locator('#view-home .dash-actions').getByRole('button',{name:'事项库',exact:true}).click();
+      await native.evaluate(win=>{win.webContents.setZoomFactor(1);win.setContentSize(1024,680);});
+      homeTasks=await page.evaluate(()=>window.workbench.todo.state());
+      homeBefore=await settledMediaHomeGeometry(native,page);assert.equal(homeBefore.hosts.length,0);
+      report.mediaKeepaliveHomeLayout={beforeCreator:homeBefore,screenshots:{beforeCreator:'media-keepalive-before.png',hiddenCreator:'media-keepalive-hidden.png'},visualAcceptance:null};
+      await screenshot('media-keepalive-before.png');
     });
     let id; let preserved; let preservedProbe; let retainedPoint;
     await check('Loading workspace switch preserves one real guest and completes exactly one initial home load', async () => {
@@ -470,7 +527,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       retainedPoint = await clickGuest(application, page, id, '#click-target');
       preserved = await nativeState(application, id); assert.ok(preserved.keys > 0 && preserved.targetClicks > 0);
       await page.evaluate(() => { window.__onoRetainedWebview = document.querySelector('webview'); window.__onoRetainedMediaHost = document.querySelector('.media-browser-host'); });
-      preservedProbe = await probe(application); await screenshot('media-keepalive-before.png');
+      preservedProbe = await probe(application);
     });
     await check('Repeated real workbench navigation keeps DOM/native identity, state, history and listener counts', async () => {
       for (let turn = 0; turn < 2; turn++) for (const workbench of ['home', 'settings', 'life', 'game', 'web']) {
@@ -511,7 +568,11 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       const tree = await ax.send('Accessibility.getPartialAXTree', { nodeId:selected.nodeId, fetchRelatives:false });
       const target = tree.nodes.find(node => node.backendDOMNodeId === described.node.backendNodeId);
       assert.ok(target?.ignored && target.ignoredReasons?.some(reason => /hidden|inert|notRendered/i.test(reason.name)), 'Hidden host must be absent from accessibility navigation');
-      await ax.detach(); ax = undefined; await screenshot('media-keepalive-hidden.png');
+      await ax.detach(); ax = undefined;
+      const homeHidden=await settledMediaHomeGeometry(native,page);report.mediaKeepaliveHomeLayout.hiddenCreator=homeHidden;
+      assert.deepEqual(await page.evaluate(()=>window.workbench.todo.state()),homeTasks,'Home layout comparison must preserve the same task data');
+      Object.assign(report.mediaKeepaliveHomeLayout,assertMediaHomeLayoutUnchanged(homeBefore,homeHidden));
+      await screenshot('media-keepalive-hidden.png');
       await creator(page, true); assertMediaStatePreserved(preserved, await nativeState(application, id));
     });
     await check('Three themes, two native sizes, AI/navigation changes and reduced motion retain accurate guest bounds', async () => {

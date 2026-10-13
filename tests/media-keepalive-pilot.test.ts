@@ -11,7 +11,7 @@ import { JSDOM } from 'jsdom';
 import { TaskEditor } from '../modules/todo/ui/TaskEditor';
 import { newTask, type Task } from '../shared/todo-contracts';
 import { MEDIA_FIXTURE_ORIGIN, MEDIA_FIXTURE_PATHS, MEDIA_KEEPALIVE_SCREENSHOTS, isMediaFixtureUrl, mediaFixtureHtml,
-  assertMediaStatePreserved, assertMediaGeometry, assertMediaGuestSecurity, assertMediaHiddenFocus, mediaNativeFocus, closeUnchangedMediaTaskEditor } from '../tooling/media-keepalive-pilot.mjs';
+  assertMediaStatePreserved, assertMediaGeometry, assertMediaGuestSecurity, assertMediaHiddenFocus, mediaNativeFocus, closeUnchangedMediaTaskEditor, assertMediaHomeLayoutUnchanged } from '../tooling/media-keepalive-pilot.mjs';
 import { inspectPilotArtifacts, MAX_ARTIFACT_BYTES } from '../tooling/pilot-artifacts.mjs';
 
 test('synthetic creator HTTPS fixture is exact-origin, exact-route and never forwards to the live site', () => {
@@ -42,6 +42,38 @@ test('preservation assertion requires real identity, document/input state, scrol
   assert.throws(()=>assertMediaStatePreserved(before,{...state(),scrollY:903}),/scroll/);
   assert.throws(()=>assertMediaStatePreserved(before,{...state(),scrollY:NaN}),/scroll/);
   assert.throws(()=>assertMediaStatePreserved(before,{...state(),history:{...before.history,index:0}}),/history/);
+});
+
+test('same-size home comparison distinguishes hidden-host layout regression from visual acceptance', async () => {
+  const before={nativeSize:[1024,680],zoom:1,viewport:{width:1024,height:680},homeMode:'today-board',fontStatus:'loaded',fadeTransform:'none',
+    bounds:{content:{x:66,y:64,width:958,height:616},overview:{x:90,y:156,width:540,height:480},todo:{x:646,y:156,width:340,height:480}},
+    styles:{contentDisplay:'block',contentPadding:'22px 24px 26px',columns:'540px 340px'},overflow:{contentX:0,overviewX:0,todoX:0},
+    layoutFlags:{overviewCollapsed:false,overviewContentOverflows:false,panelsOverlap:false},hosts:[] as unknown[]};
+  const hidden={hidden:true,inert:true,display:'none',width:0,height:0};
+  const after=()=>({...structuredClone(before),hosts:[hidden]});
+  assert.deepEqual(assertMediaHomeLayoutUnchanged(before,after()),{unchanged:true,visualAcceptance:true});
+  for(const key of Object.keys(before.bounds)) {
+    const changed=after();Reflect.set(Reflect.get(changed.bounds,key),'width',Reflect.get(before.bounds,key).width+3);
+    assert.throws(()=>assertMediaHomeLayoutUnchanged(before,changed),new RegExp(`home ${key}.width`));
+  }
+  assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),nativeSize:[1024,728]}),/same native content size/);
+  assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),zoom:1.25}),/normal native zoom/);
+  assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),viewport:{width:819,height:544}}),/actual CSS viewport/);
+  assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),homeMode:'library'}),/ordinary task board/);
+  assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),styles:{...before.styles,contentDisplay:'flex'}}),/home CSS layout/);
+  assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),hosts:[{...hidden,display:'flex'}]}));
+  assert.throws(()=>assertMediaHomeLayoutUnchanged({...before,hosts:[hidden]},after()),/precede any retained creator DOM/);
+  assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),overflow:{...before.overflow,overviewX:10}}),/home overflow/);
+  assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),layoutFlags:{...before.layoutFlags,overviewCollapsed:true}}),/collapse\/overlap/);
+  const badBefore={...structuredClone(before),layoutFlags:{...before.layoutFlags,overviewCollapsed:true,overviewContentOverflows:true}};
+  const badAfter={...structuredClone(badBefore),hosts:[hidden]};
+  assert.deepEqual(assertMediaHomeLayoutUnchanged(badBefore,badAfter),{unchanged:true,visualAcceptance:false},'Equal existing collapse must never be called visually acceptable');
+  const source=await readFile(new URL('../tooling/media-keepalive-pilot.mjs',import.meta.url),'utf8');
+  assert.match(source,/if\(await page\.locator\('#view-home \.task-library'\)\.count\(\)\).*name:'事项库'/);
+  assert.match(source,/win\.webContents\.setZoomFactor\(1\);win\.setContentSize\(1024,680\)/);
+  assert.match(source,/await document\.fonts\.ready/);assert.match(source,/same task data/);
+  assert.equal(source.indexOf("screenshot('media-keepalive-before.png')")<source.indexOf("await creator(page, true); id = await guestId(page)"),true,'Before PNG must show actual home before creating any guest');
+  assert.match(source,/assertMediaHomeLayoutUnchanged\(homeBefore,homeHidden\)/);
 });
 
 const security = () => ({ contextIsolation:true, sandbox:true, webSecurity:true,
