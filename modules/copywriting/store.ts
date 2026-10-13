@@ -34,9 +34,9 @@ export class CopyStore {
     }
   }
 
-  private flush(): void {
+  private flush(data: CopyStoreData = this.data): void {
     mkdirSync(join(this.file, '..'), { recursive: true });
-    writeFileSync(this.file, JSON.stringify(this.data, null, 2), 'utf8');
+    writeFileSync(this.file, JSON.stringify(data, null, 2), 'utf8');
   }
 
   all(): CopyStoreData {
@@ -75,8 +75,10 @@ export class CopyStore {
       ...existing,
       xhsPublished: { status: 'published', source: 'manual', url, remoteId, confirmedAt: new Date().toISOString() },
     };
-    this.data = { drafts: this.data.drafts.map((item) => item.id === id ? draft : item) };
-    this.flush();
+    const next = { drafts: this.data.drafts.map((item) => item.id === id ? draft : item) };
+    // A failed association write must not replace the previous in-memory record.
+    this.flush(next);
+    this.data = next;
     return this.data;
   }
 
@@ -84,8 +86,9 @@ export class CopyStore {
     const existing = this.get(id);
     if (!existing) throw new Error('博客不存在或已删除');
     const { xhsPublished: _previous, ...draft } = existing;
-    this.data = { drafts: this.data.drafts.map((item) => item.id === id ? draft : item) };
-    this.flush();
+    const next = { drafts: this.data.drafts.map((item) => item.id === id ? draft : item) };
+    this.flush(next);
+    this.data = next;
     return this.data;
   }
 

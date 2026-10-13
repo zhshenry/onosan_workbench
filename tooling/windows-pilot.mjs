@@ -10,6 +10,7 @@ import { runFloatEmptyPilot, runFloatGroupPilot, verifyFloatGroupRelaunch } from
 import { inspectPilotArtifacts } from './pilot-artifacts.mjs';
 import { bounded, exitPilot, failurePage, finalizePilot } from './pilot-cleanup.mjs';
 import { runTopbarDatesPilot, verifyTopbarDatesRelaunch } from './topbar-dates-pilot.mjs';
+import { runPublishAssociationPilot, verifyPublishAssociationRelaunch } from './publish-association-pilot.mjs';
 import { runYearDropdownPilot, verifyUnboundedDatePicker, verifyYearDropdownRelaunch } from './year-dropdown-pilot.mjs';
 
 assert.equal(process.platform, 'win32', 'Run the acceptance pilot on standard Windows hosted CI');
@@ -33,7 +34,7 @@ const report = {
   baseCommit: process.env.WORKBENCH_CI_BASE_SHA || null,
   platform: process.platform, version: install.version, installer: install,
   checks: [], screenshots: [], launch: [], errors: [],
-  limitations: ['Silent NSIS installation only; no native wizard, UAC or SmartScreen assessment', 'Isolated test mode disables real auto-update and launch-at-login registration', 'Same-version relaunch only; no cross-version upgrade, Office conversion or external AI/network coverage (AI card flow uses synthetic loopback responses)', 'Playwright Electron automation is experimental; launch is separately asserted', 'Topbar cross-day/year and invalid/missing legacy fixtures temporarily replace only todo:state read responses; those renderer checks are separate from UI-created persisted records and same-version relaunch'],
+  limitations: ['Silent NSIS installation only; no native wizard, UAC or SmartScreen assessment', 'Isolated test mode disables real auto-update and launch-at-login registration', 'Same-version relaunch only; no cross-version upgrade, Office conversion or external AI/network coverage (AI card flow uses synthetic loopback responses)', 'Playwright Electron automation is experimental; launch is separately asserted', 'Topbar cross-day/year and invalid/missing legacy fixtures temporarily replace only todo:state read responses; those renderer checks are separate from UI-created persisted records and same-version relaunch', 'Publish association failure/delay fixtures temporarily wrap only the main-frame copy mark/clear IPC handlers and restore the exact originals; final persistence and full application relaunch are separate real local JSON checks. No platform requests, publications or deletions are performed.'],
 };
 let application;
 let page;
@@ -149,6 +150,7 @@ let birthdayFixture;
 let aiCardsFixture;
 let topbarDatesFixture;
 let floatGroupFixture;
+let publishAssociationFixture;
 try {
   await check('Launch actual installed executable with isolated data and updater disabled', launch);
   await check('Fresh isolated task database is empty', async () => assert.equal((await state()).tasks.length, 0));
@@ -212,6 +214,7 @@ try {
   topbarDatesFixture = await runTopbarDatesPilot({ application, page, check, screenshot, runId, report });
   aiCardsFixture = await runAiCardsPilot({ application, page, check, screenshot, runId, report });
   floatGroupFixture = await runFloatGroupPilot({ application, page, check, screenshot, runId, report });
+  publishAssociationFixture = await runPublishAssociationPilot({ application, page, check, screenshot, runId, report, dataRoot });
   await check('Choose exit-on-close in settings and quit through the window close button', async () => {
     await page.locator('.rail [data-workbench="settings"]').click();
     await page.locator('.tree').getByRole('button', { name: '通用', exact: true }).click();
@@ -239,6 +242,7 @@ try {
   await verifyAiCardsRelaunch({ page, check, screenshot, fixture: aiCardsFixture });
   await verifyTopbarDatesRelaunch({ page, check, screenshot, fixture: topbarDatesFixture });
   await verifyFloatGroupRelaunch({ application, page, check, screenshot, fixture: floatGroupFixture });
+  await verifyPublishAssociationRelaunch({ application, page, check, fixture: publishAssociationFixture, report });
   await check('Floating group: visible native window permits normal main-window exit', async () => {
     const { floating, native } = await showLifecycleFloat();
     await floating.getByRole('button', { name: '收窄悬浮窗', exact: true }).click();

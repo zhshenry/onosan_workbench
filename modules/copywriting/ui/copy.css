@@ -130,9 +130,35 @@
 .copy-pub-add { margin-top: 12px; }
 .copy-pub-actions { margin-top: 12px; }
 .pub-tip { margin-top: 10px; font-size: var(--type-support); color: var(--ink-3); }
-.pub-linked { margin-top: 18px; padding: 14px; border: 1px solid var(--hairline); border-radius: var(--r-card); }
-.pub-linked .pub-tip { margin: 8px 0 10px; }
-.pub-linked-record, .pub-linked-input, .pub-linked-preview { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-.pub-linked-record { margin-top: 10px; font-size: var(--type-support); color: var(--ink-2); }
-.pub-linked-input input { flex: 1; min-width: 220px; height: 34px; padding: 0 10px; border: 1px solid var(--hairline); border-radius: var(--r-ctl); background: var(--glass-surface); color: var(--ink); }
-.pub-linked-preview { margin-top: 10px; font-size: var(--type-support); color: var(--ink-2); }
+/* Each section keeps natural height inside the existing copy-editor scroller. */
+.pub-preparation-tip { margin-top: 6px; font-size: var(--type-support); color: var(--ink-3); line-height: 1.6; }
+.pub-blog-option { width: 100%; text-align: left; }
+.pub-linked { margin-top: 4px; padding: 14px; border: 1px solid var(--hairline); border-radius: var(--r-card); background: var(--module-surface); }
+.pub-linked .copy-pub-head { align-items: flex-start; flex-wrap: wrap; }
+.pub-linked .pub-tip { margin: 8px 0 10px; line-height: 1.65; }
+.pub-association-state { flex: none; padding: 5px 9px; border-radius: var(--r-ctl); background: var(--glass-surface); color: var(--ink-2); font-size: var(--type-support); font-weight: 700; }
+.pub-association-state.linked { color: var(--acc-deep); background: var(--acc-soft); }
+.pub-association-state.pending { color: var(--ink); background: var(--acc-soft); }
+.pub-association-state.bad { color: var(--danger); background: var(--danger-soft); }
+.pub-linked-record, .pub-linked-preview { margin-top: 12px; padding: 12px; border-radius: var(--r-ctl); background: var(--todo-white); color: var(--ink-2); font-size: var(--type-support); }
+.pub-association-details { margin: 0; display: grid; gap: 6px; line-height: 1.65; user-select: text; }
+.pub-association-details > div { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px; }
+.pub-association-details dt { color: var(--ink-3); }
+.pub-association-details dd { margin: 0; overflow-wrap: anywhere; }
+.pub-association-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.pub-association-form { margin-top: 12px; }
+.pub-association-form > label { font-size: var(--type-support); font-weight: 700; color: var(--ink-2); }
+.pub-linked-input { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.pub-linked-input input { flex: 1; min-width: min(220px, 100%); height: 36px; padding: 0 10px; border: 1px solid var(--hairline); border-radius: var(--r-ctl); background: var(--glass-surface); color: var(--ink); font: inherit; font-size: var(--type-control); }
+.pub-linked-input input[aria-invalid="true"] { border-color: var(--danger); }
+.pub-linked-preview > p { margin-bottom: 8px; line-height: 1.65; overflow-wrap: anywhere; }
+.pub-association-error { margin-top: 8px; color: var(--danger); font-size: var(--type-support); line-height: 1.65; overflow-wrap: anywhere; user-select: text; }
+.pub-association-retention { margin-top: 10px; color: var(--ink-3); font-size: var(--type-support); line-height: 1.65; }
+.pub-association-cancel { margin-top: 8px; }
+.pub-remove { color: var(--danger); }
+.pub-remove:hover { background: var(--danger-soft); }
+.pub-remove-confirm { margin-top: 12px; border-top: 1px solid var(--hairline); padding-top: 10px; line-height: 1.65; overflow-wrap: anywhere; }
+@media (forced-colors: active) {
+  .pub-association-state, .pub-linked-record, .pub-linked-preview { border: 1px solid CanvasText; }
+  .pub-linked-input input[aria-invalid="true"] { border-color: Mark; }
+}
