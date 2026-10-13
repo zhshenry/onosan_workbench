@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 344,
+  "revision": 345,
   "currentRun": {
     "owner": "ono-root-issue37-20261013T1151Z",
     "startedAt": "2026-10-13T11:51:31.363Z",
@@ -1603,7 +1603,7 @@
         "installed": "96/96",
         "visual": "关键pending确认按钮与unlinked输入未完整进入截图视口，需要仅修复证据取景"
       },
-      "nextStep": "准确c00b6f0真实Windows完成后读4原图，再按用户本次例外私聊交付",
+      "nextStep": "等当前最终请求原始用户批准；批准后fresh核base并重验集成",
       "latestRun": {
         "id": 38402967190,
         "head": "42733f0bcfcb1155f0f03145b8ffd0ace2001882",
@@ -1619,6 +1619,15 @@
         "imageCount": 4,
         "head": "42733f0bcfcb1155f0f03145b8ffd0ace2001882",
         "acceptedAt": "2026-10-13T13:22:25Z"
+      },
+      "finalApprovalRequest": {
+        "commentId": 6146554493,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6146554493",
+        "head": "42733f0bcfcb1155f0f03145b8ffd0ace2001882",
+        "closeIssues": [
+          37
+        ],
+        "cleanupBranch": "ono/issue-37-publish-association"
       }
     },
     "41": {
@@ -1774,7 +1783,8 @@
     6145874018,
     6146026117,
     6146027415,
-    6146391991
+    6146391991,
+    6146554493
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -4414,10 +4424,13 @@
     },
     "issue37-final-gate": {
       "operationId": "issue37-final-gate",
-      "status": "intent",
+      "status": "succeeded",
       "target": 37,
       "body": "【OnO 自动化】#37 方案v1已实现并完成真实Windows验收。[Draft PR #45](https://github.com/zhshenry/onosan_workbench/pull/45)，准确 head 42733f0bcfcb1155f0f03145b8ffd0ace2001882。\n\n[Windows运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38402967190)514/514单测、96/96原生检查全部通过。覆盖链接格式检查与线上核验区别、取消不写入、更换确认前保留旧关联、博客切换隔离、保存失败保留原记录、真实本地JSON读回，以及普通退出后同版本重启仍保留。三主题、两尺寸和减少动画组合均检查。\n\n此前截图取景不完整，已仅修正采集fixture并重新跑完整Windows。四张最终原图（未关联／待确认／已关联／格式错误）均已实际查看，同帧关键字段、确认取消按钮完整且无遮挡。按你本次明确允许的临时渠道，已于21:22（UTC+8）发送到现有私聊；仅此次交付例外，这里没有GitHub内嵌图。测试使用合成本地博客与作品链接，没有线上发布、抓取或登录账号验证。\n\n请求范围：合入上述准确head，验证实际main必要检查通过后关闭Issue #37，并按规范核查、清理本需求分支。不包含其他Issue、PR或发布。主干若先变化，会先重验集成结果。\n\n可复制回复：同意合入 PR #45，版本 42733f0，并在 main 验收通过后关闭 #37、按规范清理该需求分支。",
-      "startedAt": "2026-10-13T13:22:52.937Z"
+      "startedAt": "2026-10-13T13:22:52.937Z",
+      "commentId": 6146554493,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6146554493",
+      "verifiedAt": "2026-10-13T13:23:45.235Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -4433,7 +4446,7 @@
     "endedAt": "2026-10-13T11:33:25.184Z",
     "summary": "35原生500/500+95/95通过但既有首页视觉异常与附件交付阻塞；34PR44实现Windows513/513+95/95及4图实际查看，待内嵌附件；无在途写，释放协调占用"
   },
-  "updatedAt": "2026-10-13T13:22:52.937Z",
+  "updatedAt": "2026-10-13T13:23:45.235Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
