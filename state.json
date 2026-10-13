@@ -1,7 +1,12 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 237,
-  "currentRun": null,
+  "revision": 238,
+  "currentRun": {
+    "owner": "ono-root-issue35-design-20261013T0606Z",
+    "startedAt": "2026-10-13T06:06:27.722Z",
+    "currentDevelopmentGroup": null,
+    "task": "全量重新核查后准备35独立带图方案；无产品实施"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -3280,6 +3285,15 @@
       "summary": "更新已完成附图交付与统一待审批链接",
       "verifiedAt": "2026-10-13T04:59:14.165Z",
       "url": "https://github.com/zhshenry/onosan_workbench/pull/40"
+    },
+    "issue35-v1-recovered-native-upload": {
+      "operationId": "issue35-v1-recovered-native-upload",
+      "targetIssue": 35,
+      "status": "intent",
+      "imageSha256": "49262c18cb3e1bd51411512e3d8dc2f9564f677529938e55e0b51ced1df93aa2",
+      "bytes": 1490851,
+      "summary": "26设计与28真实16图网页上传已核实恢复后，恢复35既有独立设计原生上传；hash及实际图已核",
+      "createdAt": "2026-10-13T06:06:27.722Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
