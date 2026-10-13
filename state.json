@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 155,
+  "revision": 156,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -2224,6 +2224,14 @@
       "createdAt": "2026-10-13T00:34:12Z",
       "commentId": 6135343025,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135343025"
+    },
+    "issue26-v2-design-upload": {
+      "kind": "upload-image",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
+      "sha256": "f5661383d2a79ed45e075b0014aba7a92c72af1fa29a627da931c6cda97e8cdd",
+      "createdAt": "2026-10-13T00:35:14.471Z",
+      "summary": "独立局部v2设计图，回应6135158729，1536x1024，已实看，不是产品截图"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
