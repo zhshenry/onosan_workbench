@@ -8,6 +8,12 @@ export const FLOAT_GROUP_SCREENSHOTS = Object.freeze([
   'float-group-empty.png', 'float-group-linked.png', 'float-group-models.png', 'float-group-relaunched.png',
   'float-group-mist.png', 'float-group-cool.png', 'float-group-warm.png',
 ]);
+export function floatWireText(content) {
+  if (typeof content === 'string') return content;
+  assert.ok(Array.isArray(content) && content.length > 0, 'User content must be a string or nonempty text-block array');
+  assert.ok(content.every(part => part && typeof part === 'object' && part.type === 'text' && typeof part.text === 'string'), 'Every user content block must be text; unknown or mixed blocks cannot be ignored');
+  return content.map(part => part.text).join('');
+}
 export function assertFloatWidthTransition(before, after, width, area) {
   for (const rect of [before, after, area]) for (const key of ['x', 'y', 'width', 'height']) assert.ok(Number.isFinite(rect[key]), 'Native bounds must be finite');
   assert.equal(after.width, width, 'Native width must match the selected mode');
@@ -516,9 +522,21 @@ export async function runFloatGroupPilot({ application, page, check, screenshot,
       await floatPage.getByRole('textbox', { name: 'AI 对话输入', exact: true }).fill('仅验证关联，不修改事项');
       await floatPage.getByRole('button', { name: '发送', exact: true }).click();
       const start = Date.now(); while (!requests.length && Date.now() - start < 15000) await floatPage.waitForTimeout(100);
+      const expectedText = `关于事项「${title}」:仅验证关联，不修改事项`;
+      // Only this synthetic loopback fixture's model/user text goes into evidence.
+      // Never record headers, credentials, system context, or arbitrary request bodies.
+      const userMessages = Array.isArray(requests[0]?.messages) ? requests[0].messages.filter(message => message.role === 'user') : [];
+      report.floatGroup.wirePrompt = { requestCount: requests.length, model: requests[0]?.model, expectedText,
+        userMessages: userMessages.map(message => {
+          const contentType = Array.isArray(message.content) ? 'array' : typeof message.content;
+          const partTypes = Array.isArray(message.content) ? message.content.map(part => typeof part?.type === 'string' ? part.type : typeof part) : undefined;
+          try { return { contentType, partTypes, actualText: floatWireText(message.content) }; }
+          catch (error) { return { contentType, partTypes, invalidContent: String(error) }; }
+        }) };
       assert.equal(requests.length, 1);
       assert.equal(requests[0].model, 'float-synthetic-long-model-name-0', 'Explicit send must use the settled selected model');
-      assert.ok(requests[0].messages.some(message => message.role === 'user' && message.content === `关于事项「${title}」:仅验证关联，不修改事项`), 'Wire prompt must contain exact linked title and explicit user text');
+      assert.ok(userMessages.length > 0, 'Wire request must contain a user turn');
+      assert.equal(floatWireText(userMessages.at(-1).content), expectedText, 'Latest wire user prompt must exactly equal linked title and explicit user text');
       await floatPage.locator('.ai-add-reference').waitFor({ state: 'visible' });
       assert.deepEqual(await page.evaluate(() => window.workbench.todo.state()), before);
     });

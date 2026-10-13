@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
+import { createServer } from 'node:http';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
@@ -70,7 +71,7 @@ test('Installed pilot uses actual float surfaces, physical UI, native bounds and
   assert.match(source, /await screenshot\(name, page\)/); assert.match(entry, /await capturePage\.screenshot/);
   assert.match(source, /await options\.nth\(0\)\.click\(\)/); assert.match(source, /keyboard\.press\('Enter'\)/);
   assert.match(source, /\['no-preference', 'reduce'\]/); assert.match(source, /stable >= 6/);
-  assert.match(source, /requests\.length, initialCalls/); assert.match(source, /message\.content === `关于事项/);
+  assert.match(source, /requests\.length, initialCalls/); assert.match(source, /assert\.equal\(floatWireText\(userMessages\.at\(-1\)\.content\), expectedText/);
   assert.match(source, /full same-installed-executable restart/);
   assert.ok(entry.indexOf('await runFloatEmptyPilot(') < entry.indexOf("await check('Create one synthetic task"));
   assert.ok(entry.indexOf('aiCardsFixture = await runAiCardsPilot(') < entry.indexOf('floatGroupFixture = await runFloatGroupPilot('));
@@ -297,4 +298,72 @@ test('Actual outside-point helper requires exposed two-pixel margins in all four
       assert.throws(fixture.run, /No exposed non-interactive/, `Margin ${blocked} is covered despite exposed center`);
     }
   } finally { fixture.dom.window.close(); }
+});
+
+test('Floating wire text accepts exact strings and text blocks without trimming or dropping unknown parts', async () => {
+  const { floatWireText } = await import('../tooling/float-group-pilot.mjs');
+  const expected = '关于事项「CI synthetic 长标题」:仅验证关联，不修改事项';
+  assert.equal(floatWireText(expected), expected);
+  assert.equal(floatWireText([{ type: 'text', text: expected }]), expected);
+  assert.equal(floatWireText([{ type: 'text', text: '关于事项「CI synthetic 长标题」:' }, { type: 'text', text: '仅验证关联，' }, { type: 'text', text: '不修改事项' }]), expected);
+  assert.equal(floatWireText('  raw text\n'), '  raw text\n');
+  assert.equal(floatWireText([{ type: 'text', text: '  raw' }, { type: 'text', text: ' text\n' }]), '  raw text\n');
+  for (const content of [null, undefined, 42, {}, [], [null], ['text'], [{ type: 'text' }], [{ type: 'text', text: 42 }], [{ type: 'image_url', image_url: { url: 'synthetic-image' } }], [{ type: 'text', text: expected }, { type: 'unknown', text: 'ignored?' }]]) {
+    assert.throws(() => floatWireText(content), /content|block/);
+  }
+  for (const wrong of [`prefix ${expected}`, `${expected} suffix`, expected.replace('长标题', '错误标题'), ` ${expected}`, `${expected}\n`]) {
+    for (const content of [wrong, [{ type: 'text', text: wrong }]]) assert.throws(() => assert.equal(floatWireText(content), expected));
+  }
+});
+
+test('Actual openai-chat runAgentLoop transport preserves exact linked prompt with and without history', async t => {
+  const { runAgentLoop } = await import('../electron/ai-core');
+  const { floatWireText } = await import('../tooling/float-group-pilot.mjs');
+  const expected = `关于事项「CI floating transport ${'长标题关联与窄屏验收'.repeat(10)}」:仅验证关联，不修改事项`;
+  // Capture only synthetic user content and selected model, never credentials,
+  // headers, system instructions, or other request metadata.
+  const captured: Array<{ model: string; users: Array<{ content: unknown }> }> = [];
+  const server = createServer(async (request, response) => {
+    let body = ''; for await (const chunk of request) body += chunk;
+    const value = JSON.parse(body);
+    captured.push({ model: value.model, users: value.messages.filter((message: { role: string }) => message.role === 'user').map((message: { content: unknown }) => ({ content: message.content })) });
+    response.writeHead(200, { 'Content-Type': 'text/event-stream' });
+    const chunk = (delta: object, finish_reason: string | null = null) => response.write(`data: ${JSON.stringify({ id: 'floating-transport-test', object: 'chat.completion.chunk', choices: [{ index: 0, delta, finish_reason }] })}\n\n`);
+    chunk({ role: 'assistant' }); chunk({ content: 'Synthetic loopback acknowledgement.' }); chunk({}, 'stop');
+    response.end('data: [DONE]\n\n');
+  });
+  await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
+  const address = server.address() as { port: number };
+  const contribution = { buildTools: () => [], toolNames: [], labels: {}, systemPrompt: () => 'Synthetic transport test. Reply with acknowledgement only.' };
+  try {
+    for (const withHistory of [false, true]) {
+      const history = withHistory ? [{ role: 'user' as const, content: '合成历史请求' }, { role: 'assistant' as const, content: '合成历史回复' }] : [];
+      const before = captured.length;
+      const result = await runAgentLoop({ endpoint: `http://127.0.0.1:${address.port}/v1`, model: 'float-synthetic-long-model-name-0', protocol: 'openai-chat', key: '' }, expected, history, AbortSignal.timeout(15000), contribution);
+      assert.equal(result.reply, 'Synthetic loopback acknowledgement.');
+      assert.equal(captured.length, before + 1, 'Each explicit send must produce exactly one transport request');
+      const request = captured.at(-1)!;
+      assert.equal(request.model, 'float-synthetic-long-model-name-0');
+      assert.equal(request.users.length, withHistory ? 2 : 1);
+      const latest = request.users.at(-1)!.content;
+      assert.equal(floatWireText(latest), expected, 'Latest actual wire user content must equal the entire linked prompt');
+      assert.ok(Array.isArray(latest), 'Current real openai-chat adapter sends user content as text blocks');
+      assert.deepEqual(latest, [{ type: 'text', text: expected }]);
+      if (withHistory) assert.equal(floatWireText(request.users[0].content), '合成历史请求');
+      t.diagnostic(`Actual openai-chat transport: history=${withHistory}, latestUserContent=array, parts=text, exactLinkedPrompt=true, requestCount=1`);
+    }
+  } finally {
+    server.closeAllConnections();
+    await new Promise<void>(resolve => server.close(() => resolve()));
+  }
+});
+
+test('Wire acceptance checks latest normalized user message exactly and keeps synthetic diagnostics header-free', async () => {
+  const source = await readFile(new URL('../tooling/float-group-pilot.mjs', import.meta.url), 'utf8');
+  assert.match(source, /assert\.equal\(floatWireText\(userMessages\.at\(-1\)\.content\), expectedText/);
+  assert.doesNotMatch(source, /messages\.some\(/);
+  const wireCheck = source.slice(source.indexOf("await check('Floating group: explicit send"), source.indexOf("await check('Floating group: hide/show"));
+  assert.match(wireCheck, /assert\.equal\(requests\.length, 1\)/);
+  assert.match(wireCheck, /requests\[0\]\.model, 'float-synthetic-long-model-name-0'/);
+  assert.doesNotMatch(wireCheck.replace(/^\s*\/\/.*$/gm, ''), /headers|authorization|apiKey|systemPrompt/);
 });
