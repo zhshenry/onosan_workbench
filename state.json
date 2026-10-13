@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 299,
+  "revision": 300,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1419,7 +1419,7 @@
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "ci-running",
+      "stage": "ci-blocked",
       "type": [
         "ui",
         "bugfix",
@@ -1428,7 +1428,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "核真实focusedFrame/隐藏输入及正常退出重启完整终态；未获合入批准",
+      "nextAction": "修复quit fixture新guest真实click/键盘准备；完整10主专项已通过，正常退出重启未跑",
       "lastCommentId": 6128766093,
       "groupId": "media-keepalive-35",
       "groupIssueNumbers": [
@@ -1460,18 +1460,18 @@
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/43",
       "headSha": "e21898bc2539c6c3ed766668bf29ac94eb23b155",
       "ciRun": 38377134149,
-      "ciResult": null,
+      "ciResult": "failure",
       "tests": {
         "windowsUnit": "494/494,0skip",
         "verify": "pass",
         "installed": "75/76,35 Loading workspace switch undefined !== false;后续未执行"
       },
       "nativeProgress": {
-        "run": 38373762029,
-        "passed": "前9项keepalive含wheel/历史/错误崩溃/模式边界",
-        "failed": "new guest id6 hidden native focus true",
-        "remaining": "host final teardown and normal quit/restart",
-        "artifact": 11800284391
+        "run": 38377134149,
+        "passed": "全部10主专项含真实frame/隐藏键鼠/host teardown，协议注册修复生效",
+        "failed": "quit guest7 keys0 clicks0 draft empty; actual frame remains owner",
+        "remaining": "normal quit/relaunch",
+        "artifact": 11802096642
       }
     },
     "36": {
