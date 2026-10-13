@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 168,
+  "revision": 169,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -2324,13 +2324,24 @@
     },
     "floating-v2-publish": {
       "kind": "publish-implementation",
-      "status": "intent",
+      "status": "succeeded",
       "target": "ono/floating-group-v2",
       "baseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "baseTree": "a71b4486cedec49f3d84d286ed0d1162abb830f7",
       "patchSha256": "e35fe95f155bc724c7df71a4d2607c10e56e47ca9c2b9025c4ff71b62fb057cb",
       "summary": "整组已批v2的13文件实现；本地447=445pass+2既有Windowsskip，verify通过，P2真实React回归已修并独立复核；发布一个DraftPR补Windows80项真实验收，不合入关单",
-      "createdAt": "2026-10-13T01:07:24.178Z"
+      "createdAt": "2026-10-13T01:07:24.178Z",
+      "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
+      "treeSha": "21e1f76042e6f2dc82fe431bcc563d2686855b11",
+      "verifiedAt": "2026-10-13T01:08:34.389Z"
+    },
+    "floating-v2-draft-pr": {
+      "kind": "create-pr",
+      "status": "intent",
+      "target": "ono/floating-group-v2 -> main",
+      "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
+      "summary": "一个Draft实现PR，补真实Windows80项验收；不请求合入直到验收及附图完成",
+      "createdAt": "2026-10-13T01:08:34.389Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
