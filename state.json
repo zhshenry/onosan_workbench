@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 169,
+  "revision": 170,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -255,7 +255,7 @@
     },
     "25": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/25",
-      "stage": "implementation",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -263,7 +263,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "本地实现完成待交叉复核；修复切宽后真实日程内容测高回归，完成最终测试后一个DraftPR及真实Windows验收",
+      "nextAction": "等待准确PR40 Windows全套及80项实装，核对报告和实际截图后在28交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -310,7 +310,10 @@
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
-      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78"
+      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
+      "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
+      "prNumber": 40,
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40"
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
@@ -381,7 +384,7 @@
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "stage": "implementation",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -389,7 +392,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "本地实现完成待交叉复核；修复切宽后真实日程内容测高回归，完成最终测试后一个DraftPR及真实Windows验收",
+      "nextAction": "等待准确PR40 Windows全套及80项实装，核对报告和实际截图后在28交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -439,11 +442,14 @@
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
-      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78"
+      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
+      "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
+      "prNumber": 40,
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40"
     },
     "29": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
-      "stage": "implementation",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -451,7 +457,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "本地实现完成待交叉复核；修复切宽后真实日程内容测高回归，完成最终测试后一个DraftPR及真实Windows验收",
+      "nextAction": "等待准确PR40 Windows全套及80项实装，核对报告和实际截图后在28交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -498,11 +504,14 @@
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
-      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78"
+      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
+      "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
+      "prNumber": 40,
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40"
     },
     "30": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
-      "stage": "implementation",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -510,7 +519,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "本地实现完成待交叉复核；修复切宽后真实日程内容测高回归，完成最终测试后一个DraftPR及真实Windows验收",
+      "nextAction": "等待准确PR40 Windows全套及80项实装，核对报告和实际截图后在28交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -557,11 +566,14 @@
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
-      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78"
+      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
+      "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
+      "prNumber": 40,
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40"
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
-      "stage": "implementation",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -569,7 +581,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "本地实现完成待交叉复核；修复切宽后真实日程内容测高回归，完成最终测试后一个DraftPR及真实Windows验收",
+      "nextAction": "等待准确PR40 Windows全套及80项实装，核对报告和实际截图后在28交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -616,11 +628,14 @@
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
-      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78"
+      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
+      "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
+      "prNumber": 40,
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40"
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
-      "stage": "implementation",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -628,7 +643,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "本地实现完成待交叉复核；修复切宽后真实日程内容测高回归，完成最终测试后一个DraftPR及真实Windows验收",
+      "nextAction": "等待准确PR40 Windows全套及80项实装，核对报告和实际截图后在28交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -675,11 +690,14 @@
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
-      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78"
+      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
+      "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
+      "prNumber": 40,
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40"
     },
     "33": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
-      "stage": "implementation",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -687,7 +705,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "本地实现完成待交叉复核；修复切宽后真实日程内容测高回归，完成最终测试后一个DraftPR及真实Windows验收",
+      "nextAction": "等待准确PR40 Windows全套及80项实装，核对报告和实际截图后在28交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -734,7 +752,10 @@
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
-      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78"
+      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
+      "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
+      "prNumber": 40,
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40"
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
@@ -2337,11 +2358,14 @@
     },
     "floating-v2-draft-pr": {
       "kind": "create-pr",
-      "status": "intent",
+      "status": "succeeded",
       "target": "ono/floating-group-v2 -> main",
       "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
       "summary": "一个Draft实现PR，补真实Windows80项验收；不请求合入直到验收及附图完成",
-      "createdAt": "2026-10-13T01:08:34.389Z"
+      "createdAt": "2026-10-13T01:09:12Z",
+      "prNumber": 40,
+      "url": "https://github.com/zhshenry/onosan_workbench/pull/40",
+      "verifiedAt": "2026-10-13T01:09:37.958Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
