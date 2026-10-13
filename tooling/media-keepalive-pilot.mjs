@@ -168,9 +168,12 @@ export async function prepareMediaKeepaliveQuit({application,page,report}) {
       app.once('will-quit',fixture.cleanup);
     },{token,html:mediaFixtureHtml('/'),url:MEDIA_FIXTURE_ORIGIN+'/'});
     await aiVisible(page,false);await creator(page,true);const id=await guestId(page);
-    await loaded(application,page,id,'/');await clickGuest(application,page,id,'#draft');await page.keyboard.type('Quit-only unsent fixture');
+    await loaded(application,page,id,'/');const native=await application.browserWindow(page);
+    const input=report.mediaKeepaliveQuitInput={};
+    await focusMediaFixtureControl({application,page,native,id,selector:'#draft',observation:input});
+    await page.keyboard.type('Quit-only unsent fixture');
     const retained=await until(page,()=>nativeState(application,id),value=>value?.draft==='Quit-only unsent fixture','Quit fixture input must be real');
-    const oldPoint=await clickGuest(application,page,id,'#click-target');
+    const {point:oldPoint}=await focusMediaFixtureControl({application,page,native,id,selector:'#click-target',observation:{}});
     await page.locator('.rail [data-workbench="home"]').click();await assertHidden(application,page,id,report);
     await assertMediaHiddenInput({application,page,id,oldPoint,report,label:'normal quit'});
     assertMediaStatePreserved(retained,await nativeState(application,id));
@@ -269,18 +272,18 @@ async function probe(application) {
   });
 }
 
-export async function restoreMediaFixtureNavigation({ application, page, native, id, report }) {
-  const input = report.mediaKeepaliveNavigationInput = { id, expectedContentSize:[1280,820], readiness:null, before:null, attempts:[], after:null };
-  await aiVisible(page,false); await page.emulateMedia({ reducedMotion:'no-preference' });
-  await native.evaluate(win=>win.setContentSize(1280,820));
+export async function focusMediaFixtureControl({application,page,native,id,selector,expectedContentSize,observation}) {
+  assert.ok(selector==='#draft'||selector==='#click-target','Only non-submitting synthetic controls may use the input focus barrier');
+  expectedContentSize??=await native.evaluate(win=>win.getContentSize());
+  Object.assign(observation,{id,selector,expectedContentSize,readiness:null,before:null,after:null});
   let previousGeometry;
   await until(page,async()=>{
     const window = await native.evaluate(win=>({ contentSize:win.getContentSize(), focused:win.isFocused() }));
     const metrics = await geometry(application,page,id);
-    return input.readiness = { window, metrics };
+    return observation.readiness = { window, metrics };
   },value=>{
     try { assertMediaGeometry(value.metrics); } catch { previousGeometry=undefined;return false; }
-    if(value.window.contentSize[0]!==1280||value.window.contentSize[1]!==820||value.metrics.viewport.width!==1280||value.metrics.viewport.height!==820) {
+    if(value.window.contentSize[0]!==expectedContentSize[0]||value.window.contentSize[1]!==expectedContentSize[1]||value.metrics.viewport.width!==expectedContentSize[0]||value.metrics.viewport.height!==expectedContentSize[1]) {
       previousGeometry=undefined;return false;
     }
     const signature=JSON.stringify([value.metrics.stage,value.metrics.webview,value.metrics.guestViewport]);
@@ -290,10 +293,19 @@ export async function restoreMediaFixtureNavigation({ application, page, native,
   // Restore actual foreground focus, then prove a real click reached this guest.
   await native.evaluate(win=>win.focus());
   await until(page,()=>native.evaluate(win=>win.isFocused()),value=>value===true,'Creator native window did not regain foreground focus');
-  const before=input.before=await nativeState(application,id);
-  await clickGuest(application,page,id,'#click-target');
-  const focused=await until(page,()=>nativeState(application,id),value=>value?.targetClicks===before.targetClicks+1&&value.guestFocusedFrame&&value.guestFocusedContentsId===id,'Creator physical click did not restore native guest focus');
+  const before=observation.before=await nativeState(application,id);
+  const point=observation.point=await clickGuest(application,page,id,selector);
+  const counter=selector==='#draft'?'clicks':'targetClicks';
+  const focused=observation.after=await until(page,()=>nativeState(application,id),value=>value?.[counter]===before[counter]+1&&value.activeElement===selector.slice(1)&&value.guestFocusedFrame&&value.guestFocusedContentsId===id,'Creator physical click did not restore native guest focus to the requested control');
   assertMediaStatePreserved(before,focused);
+  return {before,after:focused,point};
+}
+
+export async function restoreMediaFixtureNavigation({ application, page, native, id, report }) {
+  const input = report.mediaKeepaliveNavigationInput = { attempts:[] };
+  await aiVisible(page,false);await page.emulateMedia({ reducedMotion:'no-preference' });
+  await native.evaluate(win=>win.setContentSize(1280,820));
+  const {before}=await focusMediaFixtureControl({application,page,native,id,selector:'#click-target',expectedContentSize:[1280,820],observation:input});
   const metrics=await geometry(application,page,id);assertMediaGeometry(metrics);
   const point={x:metrics.webview.x+100,y:metrics.webview.y+metrics.webview.height-50};
   // mouse.wheel dispatches input without waiting for scrolling to finish. A
@@ -450,7 +462,8 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
     });
     await check('Real nested navigation, unsent keyboard input and wheel scroll form the preservation baseline', async () => {
       await clickGuest(application, page, id, '#nested'); await loaded(application, page, id, '/note/keepalive');
-      await clickGuest(application, page, id, '#draft'); await page.keyboard.type('Synthetic unsent draft for Issue 35');
+      await focusMediaFixtureControl({application,page,native,id,selector:'#draft',observation:{}});
+      await page.keyboard.type('Synthetic unsent draft for Issue 35');
       await until(page, () => nativeState(application, id), value => value?.draft === 'Synthetic unsent draft for Issue 35', 'Real guest keyboard input was not delivered');
       const surface = await page.locator('webview').boundingBox(); await page.mouse.move(surface.x + 100, surface.y + surface.height - 50); await page.mouse.wheel(0, 900);
       await until(page, () => nativeState(application, id), value => value?.scrollY > 500, 'Real guest wheel input was not delivered');
@@ -570,7 +583,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       assert.equal(await page.locator('.mbp-capbtn').count(),0); assert.equal(await page.locator('[title^="AI 看这页"]').count(),0);
     });
     await check('Actual renderer host teardown destroys the retained guest and reload is lazy again', async () => {
-      const departing=id;const oldPoint=await clickGuest(application,page,id,'#click-target');
+      const departing=id;const {point:oldPoint}=await focusMediaFixtureControl({application,page,native,id,selector:'#click-target',observation:{}});
       await page.locator('.rail [data-workbench="home"]').click(); await assertHidden(application,page,id,report);
       await assertMediaHiddenInput({application,page,id,oldPoint,report,label:'renderer host teardown'});
       await page.reload(); await page.locator('#view-home').waitFor({state:'visible'});

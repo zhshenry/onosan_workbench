@@ -141,6 +141,8 @@ test('navigation wheel waits for requested native geometry and physical focus, o
   const source=await readFile(new URL('../tooling/media-keepalive-pilot.mjs',import.meta.url),'utf8');
   const helperStart=source.indexOf('export async function restoreMediaFixtureNavigation(');
   const helperEnd=source.indexOf('\nasync function assertHidden(',helperStart);
+  const controlStart=source.indexOf('export async function focusMediaFixtureControl(');
+  const controlEnd=source.indexOf('\nexport async function restoreMediaFixtureNavigation(',controlStart);
   const untilStart=source.indexOf('async function until(');const untilEnd=source.indexOf('\nasync function aiVisible(',untilStart);
   const old=()=>({ content:{x:50,y:40,width:960,height:640},stage:{x:50,y:56,width:948,height:614},
     webview:{x:50,y:56,width:948,height:614},guestViewport:{width:948,height:614},viewport:{width:1024,height:680},contentOverflow:0 });
@@ -148,7 +150,7 @@ test('navigation wheel waits for requested native geometry and physical focus, o
   const make=(behavior='normal')=>{
     let clock=0;let geometryReads=0;let clicks=0;let wheels=0;let foreground=false;let pendingWheel=false;
     let contentSize=[1024,680];const order:string[]=[];
-    const current:any={...state(),targetClicks:25,focused:false,focusedId:null,documentFocused:true,guestFocusedFrame:null,guestFocusedContentsId:null,
+    const current:any={...state(),clicks:26,targetClicks:25,activeElement:'',focused:false,focusedId:null,documentFocused:true,guestFocusedFrame:null,guestFocusedContentsId:null,
       guestViewport:{width:948,height:614},wheelEvents:[{deltaY:900,isTrusted:true}]};
     const copy=(value:any)=>JSON.parse(JSON.stringify(value));
     const win={setContentSize(width:number,height:number){order.push('resize');contentSize=[width,height];},
@@ -170,15 +172,18 @@ test('navigation wheel waits for requested native geometry and physical focus, o
         else current.guestViewport=next.guestViewport;
         return next;
       },nativeState:async()=>copy(current),clickGuest:async(_application:any,_page:any,id:number,selector:string)=>{
-        assert.equal(id,current.id);assert.equal(selector,'#click-target');assert.ok(geometryReads>=4);assert.equal(foreground,true);clicks++;order.push('physical-click');
-        if(behavior!=='missed-click')current.targetClicks++;current.focused=behavior!=='guest-unfocused';
+        assert.equal(id,current.id);assert.ok(selector==='#click-target'||selector==='#draft');assert.ok(geometryReads>=4);assert.equal(foreground,true);clicks++;order.push('physical-click');
+        if(behavior!=='missed-click'){current.clicks++;if(selector==='#click-target')current.targetClicks++;}current.focused=behavior!=='guest-unfocused';
         current.focusedId=behavior==='wrong-guest'?id+1:behavior==='guest-unfocused'?null:id;
-        current.guestFocusedFrame=behavior==='guest-unfocused'?null:{frameTreeNodeId:3};current.guestFocusedContentsId=current.focusedId;
+        current.guestFocusedFrame=behavior==='guest-unfocused'?null:{frameTreeNodeId:3,frameToken:'guest-frame',processId:4,url:current.url};current.guestFocusedContentsId=current.focusedId;
+        current.activeElement=behavior==='wrong-control'?'other':selector.slice(1);return {x:324,y:176};
       }};
     const wait=runInNewContext(`(${source.slice(untilStart,untilEnd)})`,context);context.until=wait;
+    const control=runInNewContext(`(${source.slice(controlStart+'export '.length,controlEnd)})`,context);context.focusMediaFixtureControl=control;
     const helper=runInNewContext(`(${source.slice(helperStart+'export '.length,helperEnd)})`,context);
     const report:any={};const run=()=>helper({application:{},page,native,id:current.id,report});
-    return {run,report,order,current,clicks:()=>clicks,wheels:()=>wheels};
+    const input:any={};const draft=()=>{win.setContentSize(1280,820);return control({application:{},page,native,id:current.id,selector:'#draft',observation:input});};
+    return {run,draft,input,report,order,current,clicks:()=>clicks,wheels:()=>wheels};
   };
   const normal=make();await normal.run();assert.equal(normal.clicks(),1);assert.equal(normal.wheels(),2,'A dropped first wheel must receive only bounded further physical input');
   assert.equal(normal.current.scrollY,0);assert.equal(normal.report.mediaKeepaliveNavigationInput.attempts.length,2);
@@ -197,6 +202,12 @@ test('navigation wheel waits for requested native geometry and physical focus, o
   const dropped=make('no-wheel');await assert.rejects(dropped.run(),/Guest did not return to fixture navigation/);assert.equal(dropped.wheels(),3);
   const unrouted=make('scroll-without-event');await assert.rejects(unrouted.run(),/Guest did not return to fixture navigation/);assert.equal(unrouted.wheels(),1,'Unobserved scrolling cannot count as actual guest wheel routing');
   const changed=make('changed-document');await assert.rejects(changed.run(),/Physical wheel must preserve nonce/);
+  const draft=make();await draft.draft();assert.equal(draft.clicks(),1);assert.equal(draft.wheels(),0);
+  assert.equal(draft.current.activeElement,'draft');assert.equal(draft.input.after.clicks,draft.input.before.clicks+1);
+  assert.equal(draft.input.after.guestFocusedContentsId,4);assert.deepEqual([...draft.input.expectedContentSize],[1280,820]);
+  for(const behavior of ['missed-click','wrong-control','guest-unfocused','wrong-guest']) {
+    const failed=make(behavior);await assert.rejects(failed.draft(),/physical click did not restore native guest focus to the requested control/);assert.equal(failed.wheels(),0);
+  }
 });
 
 test('keepalive screenshots share existing raw/ZIP ceilings and three-day single-upload policy', async t => {
@@ -244,6 +255,8 @@ test('installed keepalive acceptance keeps prior suites and exercises physical i
   assert.match(source,/report\.mediaKeepalive\.cleanup=cleaned/);
   assert.match(source,/partition\.protocol\.isProtocolHandled\('https'\)/);
   assert.match(source,/await restoreMediaFixtureNavigation\(\{ application,page,native,id,report \}\)/);
+  assert.equal(source.match(/await focusMediaFixtureControl\(\{application,page,native,id,selector:'#draft'/g)?.length,2,'Both actual guest keyboard input sites must use the verified physical-control barrier');
+  assert.doesNotMatch(source,/await clickGuest\([^;]*'#draft'\)/,'No new guest may receive blind keyboard input after a raw click');
   assert.doesNotMatch(source,/\bscrollTo\(|\bscrollBy\(|\bscrollTop\s*=/,'Native scrolling must never be replaced with injected document scrolling');
   assert.match(source,/const currentTasks = await page\.evaluate\(\(\) => window\.workbench\.todo\.state\(\)\)/);
   assert.match(source,/Hidden-input acceptance must not create or modify a task/);
