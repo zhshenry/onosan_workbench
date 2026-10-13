@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 243,
+  "revision": 244,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -255,7 +255,7 @@
     },
     "25": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/25",
-      "stage": "awaiting-merge-approval",
+      "stage": "post-merge-validation",
       "type": [
         "ui",
         "interaction"
@@ -263,7 +263,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T06:05:41Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待28准确PR40/head和所列收尾范围的明确批准，不自动合入关闭",
+      "nextAction": "等待实际main完整Windows终态并核证据；通过后按已批包收尾",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -382,7 +382,10 @@
         "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
         "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
         "verifiedAt": "2026-10-13T06:37:50.475Z"
-      }
+      },
+      "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
+      "mainCiRunId": 38358108575,
+      "mainCiConclusion": null
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
@@ -480,7 +483,7 @@
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "stage": "awaiting-merge-approval",
+      "stage": "post-merge-validation",
       "type": [
         "ui",
         "interaction"
@@ -488,7 +491,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T06:05:41Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待28准确PR40/head和所列收尾范围的明确批准，不自动合入关闭",
+      "nextAction": "等待实际main完整Windows终态并核证据；通过后按已批包收尾",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -609,11 +612,14 @@
         "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
         "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
         "verifiedAt": "2026-10-13T06:37:50.475Z"
-      }
+      },
+      "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
+      "mainCiRunId": 38358108575,
+      "mainCiConclusion": null
     },
     "29": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
-      "stage": "awaiting-merge-approval",
+      "stage": "post-merge-validation",
       "type": [
         "ui",
         "interaction"
@@ -621,7 +627,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T06:05:41Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待28准确PR40/head和所列收尾范围的明确批准，不自动合入关闭",
+      "nextAction": "等待实际main完整Windows终态并核证据；通过后按已批包收尾",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -740,11 +746,14 @@
         "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
         "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
         "verifiedAt": "2026-10-13T06:37:50.475Z"
-      }
+      },
+      "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
+      "mainCiRunId": 38358108575,
+      "mainCiConclusion": null
     },
     "30": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
-      "stage": "awaiting-merge-approval",
+      "stage": "post-merge-validation",
       "type": [
         "ui",
         "interaction"
@@ -752,7 +761,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T06:05:41Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待28准确PR40/head和所列收尾范围的明确批准，不自动合入关闭",
+      "nextAction": "等待实际main完整Windows终态并核证据；通过后按已批包收尾",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -871,11 +880,14 @@
         "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
         "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
         "verifiedAt": "2026-10-13T06:37:50.475Z"
-      }
+      },
+      "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
+      "mainCiRunId": 38358108575,
+      "mainCiConclusion": null
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
-      "stage": "awaiting-merge-approval",
+      "stage": "post-merge-validation",
       "type": [
         "ui",
         "interaction"
@@ -883,7 +895,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T06:05:41Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待28准确PR40/head和所列收尾范围的明确批准，不自动合入关闭",
+      "nextAction": "等待实际main完整Windows终态并核证据；通过后按已批包收尾",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -1002,11 +1014,14 @@
         "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
         "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
         "verifiedAt": "2026-10-13T06:37:50.475Z"
-      }
+      },
+      "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
+      "mainCiRunId": 38358108575,
+      "mainCiConclusion": null
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
-      "stage": "awaiting-merge-approval",
+      "stage": "post-merge-validation",
       "type": [
         "ui",
         "interaction"
@@ -1014,7 +1029,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T06:05:41Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待28准确PR40/head和所列收尾范围的明确批准，不自动合入关闭",
+      "nextAction": "等待实际main完整Windows终态并核证据；通过后按已批包收尾",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -1133,11 +1148,14 @@
         "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
         "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
         "verifiedAt": "2026-10-13T06:37:50.475Z"
-      }
+      },
+      "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
+      "mainCiRunId": 38358108575,
+      "mainCiConclusion": null
     },
     "33": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
-      "stage": "awaiting-merge-approval",
+      "stage": "post-merge-validation",
       "type": [
         "ui",
         "interaction"
@@ -1145,7 +1163,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T06:05:41Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待28准确PR40/head和所列收尾范围的明确批准，不自动合入关闭",
+      "nextAction": "等待实际main完整Windows终态并核证据；通过后按已批包收尾",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -1264,11 +1282,14 @@
         "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
         "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
         "verifiedAt": "2026-10-13T06:37:50.475Z"
-      }
+      },
+      "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
+      "mainCiRunId": 38358108575,
+      "mainCiConclusion": null
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
-      "stage": "awaiting-plan-approval",
+      "stage": "plan-revision",
       "type": [
         "ui",
         "investigation"
@@ -1276,7 +1297,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "等待当前带图v1方案批准，尚未产品实现",
+      "nextAction": "按6139529978短状态尽量单行修v2高保真，不沿用v1批准",
       "groupId": "settings-update-34",
       "groupIssueNumbers": [
         34
@@ -1290,7 +1311,7 @@
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "awaiting-plan-approval",
+      "stage": "queued",
       "type": [
         "ui",
         "bugfix",
@@ -1299,7 +1320,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "等待35方案v1明确批准；仅跨工作台保活，不含跨素材/创作模式及重启状态保持；未实施",
+      "nextAction": "PR40合后收尾后以最新main实施35已批v1，一次一组",
       "lastCommentId": 6128766093,
       "groupId": "media-keepalive-35",
       "groupIssueNumbers": [
@@ -1312,11 +1333,24 @@
       "imageUrl": "https://github.com/user-attachments/assets/dc2ec277-889d-4a78-948d-bb0c6f9ebf09",
       "imageSha256": "49262c18cb3e1bd51411512e3d8dc2f9564f677529938e55e0b51ced1df93aa2",
       "imageDisplayVerifiedAt": "2026-10-13T06:09:58.364Z",
-      "temporaryImageCleanedAt": "2026-10-13T06:09:58.364Z"
+      "temporaryImageCleanedAt": "2026-10-13T06:09:58.364Z",
+      "approval": {
+        "commentId": 6139474532,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6139474532",
+        "body": "同意 https://github.com/zhshenry/onosan_workbench/issues/35 方案 v1。",
+        "authorId": 54107847,
+        "createdAt": "2026-10-13T06:12:59Z",
+        "updatedAt": "2026-10-13T06:12:59Z",
+        "performedViaGithubApp": null,
+        "requestCommentId": 6139419969,
+        "planVersion": "v1",
+        "allowedActions": "35 v1独立实现/测试/一个Draft PR，不含合入关单",
+        "verifiedAt": "2026-10-13T06:42:20.661Z"
+      }
     },
     "36": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/36",
-      "stage": "answered-awaiting-feedback",
+      "stage": "plan-preparation",
       "type": [
         "ui",
         "investigation"
@@ -1324,12 +1358,12 @@
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "已解释实际用途，等待用户反馈；未改产品，不自动关单",
+      "nextAction": "根据6139497657准备入口精简/移除带图方案，不删除已有素材数据",
       "lastCommentId": 6128520395
     },
     "37": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/37",
-      "stage": "answered-awaiting-feedback",
+      "stage": "plan-preparation",
       "type": [
         "ui",
         "investigation"
@@ -1337,7 +1371,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "已解释实际用途，等待用户反馈；未改产品，不自动关单",
+      "nextAction": "根据6139520766解释持久化并准备发布前/后区域文案高保真",
       "lastCommentId": 6128522870
     },
     "41": {
@@ -3435,12 +3469,50 @@
     "pr40-approved-merge": {
       "operationId": "pr40-approved-merge",
       "targetPR": 40,
-      "status": "intent",
+      "status": "succeeded",
       "expectedHead": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
       "baseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "approvalCommentId": 6139438818,
       "summary": "merge方法合入准确PR40；实际main验证前不关单",
-      "createdAt": "2026-10-13T06:40:10.046Z"
+      "createdAt": "2026-10-13T06:40:10.046Z",
+      "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
+      "treeSha": "6c77b70e050aa3a29a8abde1fe29aba0c54625a5",
+      "verifiedAt": "2026-10-13T06:42:20.661Z"
+    },
+    "feedback-20261013T0641-28": {
+      "operationId": "feedback-20261013T0641-28",
+      "status": "intent",
+      "targetIssue": 28,
+      "body": "【OnO 自动化】已核对你在本条最终请求后的“同意”，对应 PR #40 的准确版本 5a74dbb 及列明收尾范围。\n\nPR #40 已合入，实际 main 为 9bf6d06ae509dec4d8648b5cdc481813b20f0702，合入树与已验收集成树一致。[实际主干 Windows 检查](https://github.com/zhshenry/onosan_workbench/actions/runs/38358108575)正在运行；成功并核对证据后才关闭本组7单及安全清理分支，不发版。现在无需重复批准。",
+      "summary": "回应已核原始反馈/批准及当前阶段"
+    },
+    "feedback-20261013T0641-34": {
+      "operationId": "feedback-20261013T0641-34",
+      "status": "intent",
+      "targetIssue": 34,
+      "body": "【OnO 自动化】收到，v1 暂停待审。我会把正常更新状态文字尽量改成单行，再附 v2 高保真供你看；窄窗口和较长错误信息会保留可读的完整说明，不把文字硬截掉。当前不用批准旧图。",
+      "summary": "回应已核原始反馈/批准及当前阶段"
+    },
+    "feedback-20261013T0641-35": {
+      "operationId": "feedback-20261013T0641-35",
+      "status": "intent",
+      "targetIssue": 35,
+      "body": "【OnO 自动化】已收到并核对你对方案 v1 的明确批准，范围按上面的完整图文方案执行。先完成当前悬浮窗组的合后验收，再以最新主干开始本单实施、测试和 Draft PR；一次只开发一组，不需要你重复确认开发步骤。最终合入仍会在本 Issue 按准确版本请你审阅。",
+      "summary": "回应已核原始反馈/批准及当前阶段"
+    },
+    "feedback-20261013T0641-36": {
+      "operationId": "feedback-20261013T0641-36",
+      "status": "intent",
+      "targetIssue": 36,
+      "body": "【OnO 自动化】收到，我先核对“找素材”入口和现有功能的依赖，准备精简或移除入口的明确方案并附图。不会把“去掉入口”扩大成删除已有素材数据或整个底层功能；也会说明移除后是否还有其他实际入口，图文对齐后再实施。",
+      "summary": "回应已核原始反馈/批准及当前阶段"
+    },
+    "feedback-20261013T0641-37": {
+      "operationId": "feedback-20261013T0641-37",
+      "status": "intent",
+      "targetIssue": 37,
+      "body": "【OnO 自动化】对，上方是发布前准备；下方是手动记录这篇本地博客对应的已发布作品链接，不会自动修改或优化线上作品。\n\n关联会保存在这台电脑的该篇博客记录中。已用当前源码验证真实落盘、重新打开存储、编辑标题/正文后仍保留；手动移除关联或删除博客会清除。本轮验证是存储级测试，不冒充完整应用重启实测。清除本地数据也会影响它；线上作品删除或链接失效不会自动同步检测，不能承诺永久有效。\n\n我会再把这两个区域的用途写清楚，附上对应高保真让你确认；这次先答复事实，尚未修改界面。",
+      "summary": "回应已核原始反馈/批准及当前阶段"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
