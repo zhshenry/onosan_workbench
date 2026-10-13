@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 330,
+  "revision": 331,
   "currentRun": {
     "owner": "ono-root-issue37-20261013T1151Z",
     "startedAt": "2026-10-13T11:51:31.363Z",
@@ -1434,6 +1434,15 @@
         "imageCount": 4,
         "acceptedAt": "2026-10-13T12:45:00Z",
         "scope": "current tested head only; no merge approval"
+      },
+      "finalApprovalRequest": {
+        "commentId": 6145874018,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6145874018",
+        "head": "cbe2a25da8c5a209adbf031bcef0684836963a2d",
+        "closeIssues": [
+          34
+        ],
+        "cleanupBranch": "ono/issue-34-update-status-inline"
       }
     },
     "35": {
@@ -1731,7 +1740,8 @@
     6144073288,
     6144599897,
     6144934226,
-    6145667898
+    6145667898,
+    6145874018
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -4279,10 +4289,13 @@
     },
     "issue34-final-gate-once-chat": {
       "operationId": "issue34-final-gate-once-chat",
-      "status": "intent",
+      "status": "succeeded",
       "target": 34,
       "body": "【OnO 自动化】按你本次明确允许的临时交付方式，#34 的4张原始 Windows 实测图已于今日20:45（UTC+8）发送到我们的现有私聊，仅此一次。这里没有 GitHub 内嵌图，后续需求仍按原规则交付。\n\n待验收：[PR #44](https://github.com/zhshenry/onosan_workbench/pull/44)，准确 head cbe2a25da8c5a209adbf031bcef0684836963a2d。[Windows 检查](https://github.com/zhshenry/onosan_workbench/actions/runs/38389670397)通过：513/513 单测、95/95 原生检查，安装、普通退出重启及4张截图已核对。更新状态使用合成测试数据，没有实际下载安装更新。\n\n本次请求的收尾范围：合入上述准确版本，验证实际 main 必要检查通过后关闭 Issue #34，并按规范核查、清理本需求分支。不包含其他 Issue、PR 或发布。\n\n看完图后可复制回复：同意合入 PR #44，版本 cbe2a25，并在 main 验收通过后关闭 #34、按规范清理该需求分支。若需要调整，直接写修改意见即可。",
-      "startedAt": "2026-10-13T12:46:17.926Z"
+      "startedAt": "2026-10-13T12:46:17.926Z",
+      "commentId": 6145874018,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6145874018",
+      "verifiedAt": "2026-10-13T12:47:07.418Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -4298,7 +4311,7 @@
     "endedAt": "2026-10-13T11:33:25.184Z",
     "summary": "35原生500/500+95/95通过但既有首页视觉异常与附件交付阻塞；34PR44实现Windows513/513+95/95及4图实际查看，待内嵌附件；无在途写，释放协调占用"
   },
-  "updatedAt": "2026-10-13T12:46:17.926Z",
+  "updatedAt": "2026-10-13T12:47:07.418Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
