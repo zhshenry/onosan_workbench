@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 306,
+  "revision": 307,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -4085,6 +4085,14 @@
       "headSha": "4d7bcacb44562f78e77e113cfdd01f48549ad427",
       "ciRun": 38383275625,
       "verifiedAt": "2026-10-13T10:25:55.234Z"
+    },
+    "issue35-home-navigation-settle": {
+      "operationId": "issue35-home-navigation-settle",
+      "status": "intent",
+      "expectedHead": "4d7bcacb44562f78e77e113cfdd01f48549ad427",
+      "treeSha": "4a1593e55afa7bb99f7d52a1e50e40adba38f379",
+      "summary": "修复原生对照首次未等侧栏卸载导致240px差；仅3测试文档文件，产品无变更；失败也先保存两图",
+      "startedAt": "2026-10-13T10:39:08.895Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
