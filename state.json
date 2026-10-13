@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 181,
+  "revision": 182,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -2615,10 +2615,11 @@
     },
     "pr40-quit-fix-metadata": {
       "kind": "edit-pr-body",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "body": "【OnO 自动化】悬浮窗组 v2｜已补退出修复，真实Windows重验中\n\n关联 #25、#28、#29、#30、#31、#32、#33，统一讨论/审批在#28。\n方案：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525\n方案批准：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217\n追加退出修复批准：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484\n\n当前head c2ed2e0db07529deb7f7313050ba56d887a9c390，base a5659fa5e6dbef6188ec3e34b061bc317d4d7e78。\n已实现440/330独立宽度、176紧凑AI布局、关联真实指针选择、返回/模型/业务状态样式；保留截止/分页/历史。追加仅before-quit销毁本浮窗，普通关闭隐藏不变；修复验收边缘位置泄漏与失败报告/清理。不含#26。\n\n首run38330757284单测447/447通过，实装64项后日程今天组点击拦截，清理挂起最终cancelled，未完整通过。\n新修订本地468项=466pass+2既有Windows-onlyskip，完整verify及独立审查通过。\n新run：https://github.com/zhshenry/onosan_workbench/actions/runs/38334505107\n尚待准确版本Windows真实安装/84项实装、截图及逐图检查，不提前当通过。19MB原始证据守卫/3天保留不变。完成后在#28带图请求准确head合入收尾；当前保持Draft，不合入、不关单、不发版。",
-      "createdAt": "2026-10-13T01:57:44.744Z"
+      "createdAt": "2026-10-13T01:57:44.744Z",
+      "updatedAt": "2026-10-13T01:57:56Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
