@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 163,
+  "revision": 164,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -170,7 +170,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "产品收尾完成；安全核查后清理需求分支",
+      "nextAction": "已完成；仅新反馈/重开时重新核范围",
       "groupId": "topbar-date-24",
       "groupIssueNumbers": [
         24
@@ -242,7 +242,16 @@
       "mergeSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "mainCiRunId": 38327784514,
       "mainCiConclusion": "success",
-      "closedAt": "2026-10-13T00:41:59Z"
+      "closedAt": "2026-10-13T00:41:59Z",
+      "branchDeletedAt": "2026-10-13T00:44:13.018Z",
+      "mainEvidence": {
+        "runId": 38327784514,
+        "artifactId": 11781621380,
+        "sha256": "1f4eb52e7b6871a4e744b960f2d31281bd670ae4ee42779a1f59cafc6283f554",
+        "expiresAt": "2026-10-16T00:37:15Z",
+        "verifiedAt": "2026-10-13T00:44:13.018Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T00:44:13.018Z"
+      }
     },
     "25": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/25",
@@ -2284,14 +2293,23 @@
     },
     "issue24-delete-merged-branch": {
       "kind": "delete-branch",
-      "status": "intent",
+      "status": "succeeded",
       "target": "ono/issue-24-topbar-dates",
       "expectedHead": "b54528e849bec6549aec8ec78b67da3eb02e34e9",
       "prNumber": 38,
       "mergeSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "mainCiRunId": 38327784514,
       "summary": "已merged真实main验收成功，branch无新增提交、protected false、全部开放PR无head/base引用、无该分支活动写入，保留PR提交可恢复；UI无原子CAS，操作紧前再核",
-      "createdAt": "2026-10-13T00:42:22.112Z"
+      "createdAt": "2026-10-13T00:42:22.112Z",
+      "verifiedAt": "2026-10-13T00:44:13.018Z",
+      "recovery": "PR38 Restore branch入口存在，完整head在merge第二父提交可追溯"
+    },
+    "issue24-final-closeout-comment": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
+      "body": "【OnO 自动化】#24｜已合入、主干验收通过并完成收尾\n\n依据你的[原始批准](https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6135120268)，[PR #38](https://github.com/zhshenry/onosan_workbench/pull/38) 的 b54528e849bec6549aec8ec78b67da3eb02e34e9 已合入。\n- 实际main：**a5659fa5e6dbef6188ec3e34b061bc317d4d7e78**，tree a71b4486cedec49f3d84d286ed0d1162abb830f7，与已审阅实现树一致。\n- [合入后真实main Windows运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38327784514)（push，attempt 1）：**431/431单测，0跳过；51/51实装检查通过**。actionlint、类型/生产构建、NSIS安装、保存读回/同版本重启、文件路径安全及证据守卫均通过，不是沿用PR结果。\n- 已下载核对本次main报告与ZIP hash，并逐张查看8张日期相关主干截图；原审阅图仍在[带图验收评论](https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6129172271)，不把旧图冒称这次main图。\n- [本次main临时证据](https://github.com/zhshenry/onosan_workbench/actions/runs/38327784514/artifacts/11781621380)：27文件，8,235,703 bytes；到期 **2026-10-16 08:37:15（UTC+08）**。ZIP SHA256：1f4eb52e7b6871a4e744b960f2d31281bd670ae4ee42779a1f59cafc6283f554。临时下载图片/ZIP已清除，不进Git、不备份。\n\n#24 已于2026-10-13 08:41:59（UTC+08）按批准关闭。本单只有实现PR38，已merged，无旧辅助PR需要关闭。\n需求分支 **ono/issue-24-topbar-dates** 已按安全清理规范删除：删除前head仍是上述b54528e，无新提交、无其他开放PR引用、未受保护且无活动用途；删除后API确认引用不存在，PR保留正常Restore branch入口。此次为单协调者UI清理，不声称原子CAS。\n\n已接受的本单边界继续保留：畸形旧日程“非法开始日期且缺结束时间”的加载链路未修复；跨日输入schema、真实更新/跨版本升级不在本次范围。不发版。若实际使用发现问题，可在本Issue重新反馈或重开。",
+      "createdAt": "2026-10-13T00:44:13.018Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
