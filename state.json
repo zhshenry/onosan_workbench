@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 359,
-  "currentRun": {
-    "owner": "ono-root-issue26-20261013T1529Z",
-    "startedAt": "2026-10-13T15:29:11.440Z",
-    "currentDevelopmentGroup": "workbench-context-26",
-    "task": "已批26v3刷新main后实施；34/37待批、35方案附图阻塞、36等35"
-  },
+  "revision": 360,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -514,6 +509,28 @@
         "native": "99/99",
         "artifactId": 11829803222,
         "expiresAt": "2026-10-16T16:19:25Z"
+      },
+      "actualImageHashes": {
+        "context-picker-warm-1024x680.png": "286ee03399ebf5fd8c8ee5d94d2c26a7beee772ceaad19e3b53f8760dacfaa5c",
+        "context-picker-saved.png": "9f8b13e706fd817879c56c08e9c663eb5df69a4aa28a83f29e5bdc70cb6b1d49",
+        "context-picker-relaunched.png": "d589940b7626ad5d8ba44c0ab9be673b7aba5a4055d7aef9a5612c451d61ca94",
+        "context-picker-mist-1024x680.png": "de00cf66688a08a23b2fce98df341d3cc5d2c24d141907fdce8ebd4322fe70ae",
+        "context-picker-cool-1024x680.png": "2b2ad2479536fe3e02528aa37540164fddb8006a8979490574400b8ddac150fa"
+      },
+      "actualImageReview": {
+        "head": "f27d982dd2abbdc9d2d730206e318a86ef0dbd26",
+        "runId": 38428449729,
+        "reviewedAt": "2026-10-13T16:23:13.626Z",
+        "issueControls": "passed",
+        "homeNarrow": "known issue not fixed",
+        "delivery": "not embedded; explicit channel exception pending"
+      },
+      "imageChannelRequest": {
+        "commentId": 6150122550,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6150122550",
+        "head": "f27d982dd2abbdc9d2d730206e318a86ef0dbd26",
+        "count": 5,
+        "scope": "one-time private chat delivery only; no merge"
       }
     },
     "28": {
@@ -1807,7 +1824,8 @@
     6146391991,
     6146554493,
     6149123195,
-    6149778667
+    6149778667,
+    6150122550
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -4499,10 +4517,13 @@
     },
     "issue26-v3-result": {
       "operationId": "issue26-v3-result",
-      "status": "intent",
+      "status": "succeeded",
       "target": 26,
       "body": "【OnO 自动化】#26 v3 已完成实现和新一轮真实 Windows 验收，当前停在新图交付。\n\n[PR #39](https://github.com/zhshenry/onosan_workbench/pull/39)准确 head f27d982dd2abbdc9d2d730206e318a86ef0dbd26。[Windows运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38428449729)511/511单测、99/99原生检查、固定actionlint、构建与真实NSIS安装全部通过。测试base为b276261a90cb60a53626dd2149b0f3cdc6aad0fd，实际合成merge为8809dfd3581f33f329d7a65d1bfb30c868aefb27。\n\n已验证待办轻列表无搜索/类型状态筛选、全列表滚动、单选即关/更换/取消、焦点键盘；其他工作台的搜索和多选、真实IPC与发送快照、历史/会话隔离、普通退出重启后字段保留均通过。首轮旧check等待已卸载radio的问题已修为真实点击后检查准确标签与菜单关闭，未放宽产品要求。\n\n5张新Windows原图已逐张查看：三主题轻列表、保存后历史、同版本重启。右侧本单控件完整；左侧首页1024窄窗仍有此前报告的概览挤压，未修复，不能称整页视觉通过。该问题由#35补充方案处理，本单不搭载。模型响应和业务数据为合成验收，不代表外部模型服务效果；既有待办最新120条基础上下文仍保留。\n\n无GitHub内嵌图：[临时证据](https://github.com/zhshenry/onosan_workbench/actions/runs/38428449729/artifacts/11829803222)含5图，48文件/10,496,140bytes，2026-10-17 00:19:25（UTC+8）到期。原生附件故障尚无已证实修复原因，不重置重试次数。此前仅本次私聊附图已完成于#34/#35/#37，不自动延伸为此新交付的长期规则。\n\n若你希望本单也临时在现有私聊看这5张准确版本的实测图，可回复：同意仅本次将 #26 版本 f27d982 的5张实测图发到私聊。该回复仅批准图片渠道，不含合入；看图后再给出最终准确版本收尾请求。",
-      "startedAt": "2026-10-13T16:22:07.219Z"
+      "startedAt": "2026-10-13T16:22:07.219Z",
+      "commentId": 6150122550,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6150122550",
+      "verifiedAt": "2026-10-13T16:23:13.626Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -4514,11 +4535,11 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-reconcile-20261013T1426Z",
-    "finishedAt": "2026-10-13T14:27:19.230Z",
-    "summary": "重新分页检查无新需求/评论/批准或版本变化，34/37待批，35方案待附图，36等35；云电脑读取执行配置失败，无法继续本地开发/浏览器，GitHub连接器读取正常。修正34/37旧ciRun摘要。"
+    "owner": "ono-root-issue26-20261013T1529Z",
+    "finishedAt": "2026-10-13T16:23:13.626Z",
+    "summary": "已批26v3实施完成，准确PR39 f27d982 Windows511/511+99/99，5原图看过，待本单图片交付；34/37待最终批准，35方案图阻塞，36等35，未合入关单"
   },
-  "updatedAt": "2026-10-13T16:22:07.219Z",
+  "updatedAt": "2026-10-13T16:23:13.626Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
