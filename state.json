@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 165,
+  "revision": 166,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -2316,10 +2316,11 @@
     },
     "issue24-pr38-closed-metadata": {
       "kind": "edit-pr-body",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/pull/38",
       "body": "【OnO 自动化】#24 顶栏日期显示｜已合入并完成收尾\n\n完整结果与保留边界：https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6135485302\n用户原始批准：https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6135120268\n原带图验收：https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6129172271\n\n已批准head b54528e849bec6549aec8ec78b67da3eb02e34e9；实际merge/main a5659fa5e6dbef6188ec3e34b061bc317d4d7e78，treea71b4486cedec49f3d84d286ed0d1162abb830f7与已验收树一致。main push run38327784514成功431/431单测、0skip，51/51实装检查；NSIS安装、持久化/重启、路径安全和证据守卫通过。\n#24按批准关闭；合格需求分支已安全清理，可从本PR恢复。仅本单畸形旧日程加载缺口仍按用户明确接受边界保留，未修复；不发版。",
-      "createdAt": "2026-10-13T00:45:43.677Z"
+      "createdAt": "2026-10-13T00:45:43.677Z",
+      "updatedAt": "2026-10-13T00:45:52Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
