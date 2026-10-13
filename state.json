@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 273,
+  "revision": 274,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1395,7 +1395,7 @@
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "implementation",
+      "stage": "ci-running",
       "type": [
         "ui",
         "bugfix",
@@ -1404,7 +1404,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "按v1本地实施/测试/真实Electron专项，外部发布仍根统一记账",
+      "nextAction": "真实Windows验收与截图；通过后回Issue35请求准确head最终合入收尾批准",
       "lastCommentId": 6128766093,
       "groupId": "media-keepalive-35",
       "groupIssueNumbers": [
@@ -1431,7 +1431,11 @@
         "allowedActions": "35 v1独立实现/测试/一个Draft PR，不含合入关单",
         "verifiedAt": "2026-10-13T06:42:20.661Z"
       },
-      "implementationBaseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702"
+      "implementationBaseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
+      "pr": 43,
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/43",
+      "headSha": "e9292af2a7764413faf78347ecebdad9e4b30e1e",
+      "ciRun": 38363794558
     },
     "36": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/36",
@@ -3828,7 +3832,7 @@
     },
     "issue35-v1-implementation-publish": {
       "operationId": "issue35-v1-implementation-publish",
-      "status": "branch-published-pr-intent",
+      "status": "succeeded",
       "branch": "ono/issue-35-creator-keepalive",
       "baseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "treeSha": "22caf9dbaff8ea638bb336b5da45988954b1bbf7",
@@ -3846,7 +3850,15 @@
       ],
       "summary": "已批35v1云端实施：本地verify/actionlint与上海时区全套492pass2skip；UTC3旧失败精确main复现；真实Windows待PR验收",
       "headSha": "e9292af2a7764413faf78347ecebdad9e4b30e1e",
-      "verifiedAt": "2026-10-13T07:36:19.282Z"
+      "verifiedAt": "2026-10-13T07:38:02.699Z",
+      "pr": 43,
+      "url": "https://github.com/zhshenry/onosan_workbench/pull/43"
+    },
+    "issue35-draft-progress-comment": {
+      "operationId": "issue35-draft-progress-comment",
+      "status": "intent",
+      "targetIssue": 35,
+      "body": "【OnO 自动化】#35 v1 已完成本地实现并提交 [Draft PR #43](https://github.com/zhshenry/onosan_workbench/pull/43)，准确 head e9292af2a7764413faf78347ecebdad9e4b30e1e。\n\n创作者网页现在跨工作台保留同一宿主，返回后恢复当前会话；不改变默认子页、素材模式释放或网站权限。仅实施你已批准的本单范围。\n\n本地 verify、actionlint及8项专项通过；上海时区全套492通过、2个既有Windows打包fixture跳过。UTC有3项原有待办测试失败，在准确main复现相同结果，未改待办代码。真实Windows安装、原生网页状态/焦点/几何、退出重启及截图正在跑，暂不算可验收交付。\n\n下一步我核查CI与实际截图，完成后在这里附图请求一次准确版本合入收尾。当前无需回复。"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
