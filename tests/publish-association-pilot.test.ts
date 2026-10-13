@@ -136,6 +136,56 @@ test('Association screenshot frames require simultaneous complete state fields i
   assert.throws(() => assertPublishAssociationFrame(frame('待确认'), 'unknown'), /Unknown/);
 });
 
+test('Pinned Playwright synchronously polls association readiness until toast opacity and finite animations are settled', async () => {
+  const source = await readFile(new URL('../tooling/publish-association-pilot.mjs', import.meta.url), 'utf8');
+  const pinned = await readFile(new URL('../node_modules/playwright-core/lib/coreBundle.js', import.meta.url), 'utf8');
+  const implementation = pinned.slice(pinned.indexOf('async waitForFunctionExpression('), pinned.indexOf('async waitForFunctionExpressionOnElement('));
+  assert.match(implementation, /const success = predicate\(\);\s*if \(success\) \{\s*fulfill\(success\);\s*return;/);
+  const capture = source.slice(source.indexOf('async function captureAssociationFrame'), source.indexOf('// Bounded main-frame-only'));
+  const navigation = source.slice(source.indexOf('async function settledNavigation'), source.indexOf('async function openCopy'));
+  const captureCallback = capture.match(/await page\.waitForFunction\(((?:async )?\(\) => \{[\s\S]*?\n  \})\);/);
+  const navigationCallback = navigation.match(/await page\.waitForFunction\(((?:async )?\(\{ workbench, label \}\) => \{[\s\S]*?\n  \})\s*,/);
+  assert.ok(captureCallback); assert.ok(navigationCallback);
+  for (const text of [capture, navigation]) {
+    const fonts = text.indexOf('await page.evaluate(async () => { await document.fonts.ready; });');
+    assert.ok(fonts >= 0 && fonts < text.indexOf('await page.waitForFunction(', fonts), 'Font Promise must be awaited separately before boolean polling');
+  }
+  // Match the actual pinned polling semantics without launching a browser or
+  // IPC socket: a truthy Promise resolves once, even when its value is false.
+  const poll = async (predicate: () => unknown, advance: () => void) => {
+    for (let polls = 1; polls <= 6; polls++) {
+      const success = predicate(); if (success) return { value: await success, polls };
+      advance();
+    }
+    throw new Error('Readiness never became true');
+  };
+  assert.deepEqual(await poll(async () => false, () => assert.fail('Promise short-circuits before retry')), { value: false, polls: 1 });
+  let step = 0; let opacityOverride: string | null = null;
+  class Element { closest() { return true; } }
+  const toast = { getAttribute: () => step === 0 ? '1' : '0' };
+  const tree = { querySelector: () => ({ textContent: '图文发布' }) };
+  const menu = { querySelector: (selector: string) => selector === '.tree[data-switching="false"]' ? tree : { textContent: '自媒体工作台' } };
+  const document = {
+    fonts: { ready: Promise.resolve() },
+    querySelector: (selector: string) => selector === '.toast' ? toast : step < 2 ? null
+      : selector.includes('.rail') ? { getAttribute: () => 'media' } : menu,
+    getAnimations: () => [{ effect: { getComputedTiming: () => ({ iterations: 1 }), target: new Element() }, pending: step === 2, playState: step < 3 ? 'running' : 'finished' }],
+  };
+  const style = () => ({ opacity: opacityOverride ?? (step === 0 ? '1' : step === 1 ? '0.2' : '0') });
+  const capturePredicate = new Function('document', 'getComputedStyle', 'Element', `return (${captureCallback[1]});`)(document, style, Element);
+  assert.equal(typeof capturePredicate(), 'boolean', 'Capture predicate must not return a truthy Promise');
+  assert.deepEqual(await poll(capturePredicate, () => step++), { value: true, polls: 4 });
+  opacityOverride = '0.000001'; assert.equal(capturePredicate(), false, 'Even tiny nonzero toast opacity must wait');
+  opacityOverride = 'not-a-number'; assert.equal(capturePredicate(), false, 'Invalid opacity must fail closed');
+  opacityOverride = null; step = 0;
+  const navigationPredicate = new Function('document', 'Element', `return (${navigationCallback[1]});`)(document, Element);
+  const readyNavigation = () => navigationPredicate({ workbench: 'media', label: '图文发布' });
+  assert.equal(typeof readyNavigation(), 'boolean', 'Navigation predicate must not return a truthy Promise');
+  assert.deepEqual(await poll(readyNavigation, () => step++), { value: true, polls: 4 });
+  assert.ok(capture.indexOf('screenshotFrames ??= []') < capture.indexOf('assertPublishAssociationFrame(frame, expectedState)'), 'Rejected real frames must remain in the failure report');
+  assert.match(capture, /toastVisibility: toast \? \{ show:/);
+});
+
 test('Association fixture wraps only real main-frame mark/clear calls and restores exact handler identities', async () => {
   const value = runtimeFixture();
   try {
@@ -296,7 +346,7 @@ test('Installed association pilot uses twelve checks, real UI storage writes, bo
   assert.equal(source.split('await screenshot(name)').length - 1, 1, 'One unchanged full-page screenshot call captures only guarded frames');
   const capture = source.slice(source.indexOf('async function captureAssociationFrame'), source.indexOf('// Bounded main-frame-only'));
   assert.match(capture, /scrollIntoView\(\{ block: 'start', inline: 'nearest', behavior: 'instant' \}\)/);
-  assert.match(capture, /Number\(getComputedStyle\(toast\)\.opacity\) > 0/);
+  assert.match(capture, /Number\(getComputedStyle\(toast\)\.opacity\) !== 0/);
   assert.match(capture, /panel\.clientWidth/); assert.match(capture, /panel\.clientHeight/);
   assert.match(capture, /for \(let x = left \+ 8; x < right; x \+= 8\)/);
   assert.match(capture, /visibleAt\(owner, x, bounds\.top \+ bounds\.height \* fraction\)/);

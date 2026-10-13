@@ -91,10 +91,12 @@ async function captureAssociationFrame({ application, page, screenshot, report, 
   await page.waitForFunction(() => innerWidth === 1280 && innerHeight === 820);
   await waitStatus(page, expectedState);
   await section(page).evaluate(element => element.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'instant' }));
-  await page.waitForFunction(async () => {
-    await document.fonts.ready;
+  // Pinned Playwright polls predicate() synchronously: a Promise is truthy even
+  // when it later resolves false. Await fonts separately, then poll booleans.
+  await page.evaluate(async () => { await document.fonts.ready; });
+  await page.waitForFunction(() => {
     const toast = document.querySelector('.toast');
-    if (toast && (toast.getAttribute('data-show') === '1' || Number(getComputedStyle(toast).opacity) > 0)) return false;
+    if (toast && (toast.getAttribute('data-show') === '1' || Number(getComputedStyle(toast).opacity) !== 0)) return false;
     return !document.getAnimations().some(animation => animation.effect?.getComputedTiming().iterations !== Infinity
       && animation.effect?.target instanceof Element && animation.effect.target.closest('.copy-editor, .toast')
       && (animation.pending || animation.playState === 'running'));
@@ -108,6 +110,7 @@ async function captureAssociationFrame({ application, page, screenshot, report, 
     const right = Math.min(innerWidth, panelBounds.left + panel.clientLeft + panel.clientWidth);
     const bottom = Math.min(innerHeight, panelBounds.top + panel.clientTop + panel.clientHeight);
     const toast = document.querySelector('.toast');
+    const toastStyle = toast ? getComputedStyle(toast) : null;
     const fields = [];
     const add = (kind, node) => {
       if (!node) return;
@@ -135,10 +138,13 @@ async function captureAssociationFrame({ application, page, screenshot, report, 
     for (const button of element.querySelectorAll('button')) if (labels[button.textContent.trim()]) add(labels[button.textContent.trim()], button);
     return { viewport: { x: 0, y: 0, width: innerWidth, height: innerHeight }, section: rect(element), clip: { x: left, y: top, width: right - left, height: bottom - top },
       clientWidth: element.clientWidth, scrollWidth: element.scrollWidth, fields, state: element.querySelector('.pub-association-state')?.textContent.trim(),
-      toastHidden: !toast || (toast.getAttribute('data-show') !== '1' && Number(getComputedStyle(toast).opacity) === 0) };
+      toastHidden: !toast || (toast.getAttribute('data-show') !== '1' && Number(toastStyle.opacity) === 0),
+      toastVisibility: toast ? { show: toast.getAttribute('data-show'), opacity: toastStyle.opacity, display: toastStyle.display, visibility: toastStyle.visibility, bounds: rect(toast) } : null };
   });
-  assertPublishAssociationFrame(frame, expectedState);
+  // Keep the real diagnostic frame even if its strict assertion rejects it;
+  // a failed frame never reaches the screenshot callback.
   (report.publishAssociation.screenshotFrames ??= []).push({ name, ...frame });
+  assertPublishAssociationFrame(frame, expectedState);
   await screenshot(name);
 }
 
@@ -238,8 +244,8 @@ async function collapseAi(page) {
   await panel.waitFor({ state: 'hidden' });
 }
 async function settledNavigation(page, workbench, label = null) {
-  await page.waitForFunction(async ({ workbench, label }) => {
-    await document.fonts.ready;
+  await page.evaluate(async () => { await document.fonts.ready; });
+  await page.waitForFunction(({ workbench, label }) => {
     const title = { media: '自媒体工作台', settings: '设置' }[workbench];
     const rail = document.querySelector('.rail [data-workbench].on');
     const menu = document.querySelector('.snav:not(.closing) .snav-content[data-swap="idle"]');
