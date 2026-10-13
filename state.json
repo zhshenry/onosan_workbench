@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 352,
+  "revision": 353,
   "currentRun": {
     "owner": "ono-root-issue26-20261013T1529Z",
     "startedAt": "2026-10-13T15:29:11.440Z",
@@ -401,7 +401,7 @@
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "stage": "implementing-approved-v3",
+      "stage": "v3-windows-validation",
       "type": [
         "ui",
         "interaction"
@@ -409,7 +409,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T14:27:19.230Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "准确main集成PR39原功能并局部v3修订，验证真实Windows和新图后最终审批",
+      "nextAction": "准确新head Windows终态及5图逐图核验；原生附件失败次数不重置，本次34/35/37聊天例外不自动延伸26",
       "groupId": "workbench-context-26",
       "groupIssueNumbers": [
         26
@@ -433,10 +433,10 @@
         "allowedActions": "本单v1方案产品实现、测试、回归和DraftPR交付；不含合入关单",
         "sourceAssessment": "紧接唯一方案请求的明确v1肯定，虽复制请求前缀，完整语境无引用/提问/否定；独立核对自发日志排除"
       },
-      "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac",
+      "headSha": "7f19df9dfccc3d05e8574c57f58db5bec6170c1d",
       "prNumber": 39,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/39",
-      "implementationBaseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
+      "implementationBaseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "ciRunId": 38287586027,
       "ciConclusion": "success",
       "lastCi": {
@@ -4455,13 +4455,15 @@
     },
     "issue26-v3-publish": {
       "operationId": "issue26-v3-publish",
-      "status": "intent",
+      "status": "succeeded",
       "target": 39,
       "expectedHead": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac",
       "base": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "candidateTree": "053b9ee4ba39198d3e6cb0e0b987f6a94f1f7e13",
       "summary": "已批v3局部轻列表，22文件含原PR39功能与main集成；本地UTC/Shanghai508pass2旧skip、verify、focused38通过，Windows及actionlint待真实CI",
-      "startedAt": "2026-10-13T15:50:47.941Z"
+      "startedAt": "2026-10-13T15:50:47.941Z",
+      "head": "7f19df9dfccc3d05e8574c57f58db5bec6170c1d",
+      "verifiedAt": "2026-10-13T15:53:26.389Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -4477,7 +4479,7 @@
     "finishedAt": "2026-10-13T14:27:19.230Z",
     "summary": "重新分页检查无新需求/评论/批准或版本变化，34/37待批，35方案待附图，36等35；云电脑读取执行配置失败，无法继续本地开发/浏览器，GitHub连接器读取正常。修正34/37旧ciRun摘要。"
   },
-  "updatedAt": "2026-10-13T15:50:47.941Z",
+  "updatedAt": "2026-10-13T15:53:26.389Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
