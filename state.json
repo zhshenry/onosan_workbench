@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 211,
+  "revision": 212,
   "currentRun": {
     "owner": "ono-root-attachment-diagnosis-20261013T0418Z",
     "startedAt": "2026-10-13T04:18:15.948Z",
@@ -1160,7 +1160,8 @@
     6137427103,
     6137624093,
     6137629928,
-    6137668925
+    6137668925,
+    6138131366
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -2937,10 +2938,12 @@
     },
     "issue26-diagnosis-ack": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
       "body": "【OnO 自动化】收到，先定位失败原因，再补图。我已重新核对：云端浏览器仍登录在正确账号，Issue评论和附件入口正常；此前小PNG也失败，现有提示不足以把原因归为文件大小或账号未登录。\n\n正在继续核对原生上传支持和能取得的错误证据，暂不再次上传。v3设计图已准备，但只有上传成功并读回实际图片后才发正式方案。",
-      "createdAt": "2026-10-13T04:18:15.948Z"
+      "createdAt": "2026-10-13T04:18:25Z",
+      "commentId": 6138131366,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6138131366"
     },
     "issue28-diagnosis-ack": {
       "kind": "comment",
