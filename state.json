@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 223,
+  "revision": 224,
   "currentRun": {
     "owner": "ono-root-diagnosis-result-20261013T0436Z",
     "startedAt": "2026-10-13T04:36:52.846Z",
@@ -3006,11 +3006,15 @@
     "pr40-native-evidence-recovered-upload": {
       "operationId": "pr40-native-evidence-recovered-upload",
       "targetIssue": 28,
-      "status": "intent",
+      "status": "partial",
       "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
       "artifactId": 11786408859,
       "summary": "用户要求继续网页；26上传及发布显示成功后，恢复准确同hash16张PR40实测图交付，先单张验证",
-      "createdAt": "2026-10-13T04:48:35.088Z"
+      "createdAt": "2026-10-13T04:48:35.088Z",
+      "actualImageURLs": {
+        "float-group-ai-mini-narrow.png": "https://github.com/user-attachments/assets/b7e83d82-2fa4-4a16-be91-9828ae0bf6bb"
+      },
+      "nextAction": "已取得单图URL；继续其余15张准确hash证据"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
