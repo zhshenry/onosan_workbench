@@ -99,17 +99,40 @@ async function subview(page, workbench, label) {
   }
 }
 
+export async function closeUnchangedMediaTaskEditor(page) {
+  const dialog = page.locator('.task-modal[open]');
+  const title = await dialog.getAttribute('aria-label');
+  assert.ok(title === '新增事项' || title === '编辑事项', `Unexpected current-page task editor: ${title}`);
+  // TaskEditor exposes a text return control only when creating. Existing-item
+  // editing uses Modal's accessible close icon; do not submit either form.
+  await dialog.getByRole('button', { name:title === '新增事项' ? '返回' : '关闭', exact:true }).click();
+  await dialog.waitFor({ state:'hidden' });
+}
+
 /** Arm a fresh synthetic guest for the existing real UI quit, leaving teardown to the app. */
 export async function prepareMediaKeepaliveQuit({application,page,report}) {
   const token=`media35-quit-${Date.now()}`;
   try {
     await application.evaluate(({app,session},{token,html,url})=>{
       if(globalThis.__onoMediaKeepaliveQuit) throw new Error('Duplicate media quit fixture');
+      if(globalThis.__onoMediaKeepaliveFixture) throw new Error('Previous media fixture cleanup has not completed');
       const partition=session.fromPartition('persist:wb-browser-xhs-creator');
-      const fixture={token,partition,handled:false,cleanup:null};globalThis.__onoMediaKeepaliveQuit=fixture;
+      if(partition.protocol.isProtocolHandled('https')) throw new Error('Quit fixture must not replace an existing HTTPS handler');
+      const fixture={token,partition,handled:false,cleanup:null,cleanupError:null};globalThis.__onoMediaKeepaliveQuit=fixture;
       partition.protocol.handle('https',request=>request.url===url?new Response(html,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}}):Response.error());
       fixture.handled=true;
-      fixture.cleanup=()=>{if(fixture.handled){partition.protocol.unhandle('https');fixture.handled=false;}delete globalThis.__onoMediaKeepaliveQuit;};
+      if(!partition.protocol.isProtocolHandled('https')) throw new Error('Quit fixture handler registration was not observed');
+      fixture.cleanup=()=>{
+        if(globalThis.__onoMediaKeepaliveQuit!==fixture) return;
+        try {
+          if(fixture.handled){
+            partition.protocol.unhandle('https');
+            if(partition.protocol.isProtocolHandled('https')) throw new Error('Quit fixture handler was not removed');
+            fixture.handled=false;
+          }
+          delete globalThis.__onoMediaKeepaliveQuit;
+        } catch(error) { fixture.cleanupError=String(error); throw error; }
+      };
       // On normal exit the real owner/BrowserGuests teardown destroys the guest.
       // The fixture only removes its own response handler; it does not destroy the guest early.
       app.once('will-quit',fixture.cleanup);
@@ -125,7 +148,12 @@ export async function prepareMediaKeepaliveQuit({application,page,report}) {
       const fixture=globalThis.__onoMediaKeepaliveQuit;if(!fixture||fixture.token!==token)return;
       if(fixture.cleanup) app.removeListener('will-quit',fixture.cleanup);
       for(const guest of webContents.getAllWebContents()) if(guest.getType()==='webview'&&guest.session===fixture.partition&&!guest.isDestroyed()) guest.close({waitForBeforeUnload:false});
-      if(fixture.handled) fixture.partition.protocol.unhandle('https');delete globalThis.__onoMediaKeepaliveQuit;
+      if(fixture.handled){
+        fixture.partition.protocol.unhandle('https');
+        if(fixture.partition.protocol.isProtocolHandled('https')) throw new Error('Failed quit fixture handler was not removed');
+        fixture.handled=false;
+      }
+      delete globalThis.__onoMediaKeepaliveQuit;
     },token).catch(cleanupError=>report.errors.push(`Media quit fixture cleanup: ${String(cleanupError)}`));
     throw error;
   }
@@ -330,11 +358,12 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
     });
     await check('Hidden creator rejects native keyboard/pointer/focus and is excluded from host accessibility', async () => {
       await page.locator('.rail [data-workbench="home"]').click(); await assertHidden(application, page, id);
+      const currentTasks = await page.evaluate(() => window.workbench.todo.state());
       const hit = await page.evaluate(({ x,y }) => { const e = document.elementFromPoint(x,y); return Boolean(e && !e.closest('.media-browser-host')); }, retainedPoint);
       assert.equal(hit, true, 'Former guest surface must hit current workspace');
       const before = await nativeState(application, id); await page.mouse.click(retainedPoint.x, retainedPoint.y);
       if (await page.locator('.task-modal').count()) {
-        await page.locator('.task-modal').getByRole('button', { name:'返回', exact:true }).click();
+        await closeUnchangedMediaTaskEditor(page);
       }
       // Use the real current-page task editor, then discard without creating anything.
       await page.locator('#view-home').getByRole('button', { name:'新增', exact:true }).click();
@@ -349,7 +378,8 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       assert.equal(after.focusAttempts,before.focusAttempts+1,'The synthetic guest must really attempt focus while hidden');
       assert.equal(after.keys, before.keys); assert.equal(after.clicks, before.clicks); assert.equal(after.targetClicks, before.targetClicks);
       // Clearing an unsent form before returning avoids any persisted task mutation.
-      await title.fill(''); await page.locator('.task-modal').getByRole('button', { name:'返回', exact:true }).click();
+      await title.fill(''); await closeUnchangedMediaTaskEditor(page);
+      assert.deepEqual(await page.evaluate(() => window.workbench.todo.state()), currentTasks, 'Hidden-input acceptance must not create or modify a task');
       ax = await page.context().newCDPSession(page);
       const document = await ax.send('DOM.getDocument'); const selected = await ax.send('DOM.querySelector', { nodeId:document.root.nodeId, selector:'.media-browser-host' });
       const described = await ax.send('DOM.describeNode', { nodeId:selected.nodeId });
@@ -448,17 +478,37 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
   } finally {
     try {
     if(ax) await ax.detach().catch(()=>{});
-    if(fixtureInstalled) await application.evaluate(async token=>{
+    if(fixtureInstalled) {
+    // ElectronApplication.evaluate passes the Electron module first and the
+    // supplied argument second. Token ownership must use that second argument.
+    const cleaned = await application.evaluate(async (_electron,token)=>{
       const fixture=globalThis.__onoMediaKeepaliveFixture;if(!fixture||fixture.token!==token)return;
       fixture.releaseHome?.();
       for(const {name,listener} of fixture.ownerListeners) fixture.owner.removeListener(name,listener);
       for(const {guest,ready,started,destroyed} of fixture.observations) {
         if(!guest.isDestroyed()) { guest.removeListener('dom-ready',ready);guest.removeListener('did-start-navigation',started);guest.removeListener('destroyed',destroyed);guest.close({waitForBeforeUnload:false}); }
       }
-      if(fixture.creatorHandled) fixture.creatorSession.protocol.unhandle('https');
-      if(fixture.materialHandled) fixture.materialSession.protocol.unhandle('https');
+      if(fixture.creatorHandled){
+        fixture.creatorSession.protocol.unhandle('https');
+        if(fixture.creatorSession.protocol.isProtocolHandled('https')) throw new Error('Owned creator fixture handler was not removed');
+        fixture.creatorHandled=false;
+      }
+      if(fixture.materialHandled){
+        fixture.materialSession.protocol.unhandle('https');
+        if(fixture.materialSession.protocol.isProtocolHandled('https')) throw new Error('Owned material fixture handler was not removed');
+        fixture.materialHandled=false;
+      }
+      const result = { token:fixture.token, creatorHandled:fixture.creatorSession.protocol.isProtocolHandled('https'),
+        materialHandled:fixture.materialSession.protocol.isProtocolHandled('https'),
+        ownerObserversPresent:fixture.ownerListeners.some(({name,listener})=>fixture.owner.listeners(name).includes(listener)) };
+      if(result.creatorHandled||result.materialHandled||result.ownerObserversPresent) throw new Error(`Owned media fixture cleanup incomplete: ${JSON.stringify(result)}`);
       delete globalThis.__onoMediaKeepaliveFixture;
+      return result;
     },token);
+    assert.equal(cleaned?.token,token,'The owned fixture cleanup must execute with the actual Electron evaluate argument');
+    assert.equal(cleaned.creatorHandled,false);assert.equal(cleaned.materialHandled,false);assert.equal(cleaned.ownerObserversPresent,false);
+    report.mediaKeepalive.cleanup=cleaned;
+    }
     await page.emulateMedia({reducedMotion:'no-preference'});
     await native.evaluate((win,size)=>win.setContentSize(size[0],size[1]),originalSize);
     await aiVisible(page,false); await subview(page,'settings','外观');
