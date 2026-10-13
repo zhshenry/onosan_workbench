@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 300,
+  "revision": 301,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -4063,6 +4063,13 @@
       "headSha": "e21898bc2539c6c3ed766668bf29ac94eb23b155",
       "ciRun": 38377134149,
       "verifiedAt": "2026-10-13T09:33:28.773Z"
+    },
+    "issue35-quit-input-fix": {
+      "operationId": "issue35-quit-input-fix",
+      "status": "intent",
+      "expectedHead": "e21898bc2539c6c3ed766668bf29ac94eb23b155",
+      "treeSha": "6441bcf34e63e42e665ac8ccd2cd606d7870898f",
+      "summary": "仅2fixture/test文件复用已验证尺寸与实际frame/控件click就绪屏障到新guest输入；不脚本写输入，产品不改"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
