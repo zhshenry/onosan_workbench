@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 177,
+  "revision": 178,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -255,7 +255,7 @@
     },
     "25": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/25",
-      "stage": "ci-blocked",
+      "stage": "implementation",
       "type": [
         "ui",
         "interaction"
@@ -263,7 +263,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "完成授权内pilot修复；原有浮窗退出生命周期修复等待28追加批准，不以强杀代替正常退出验收",
+      "nextAction": "合并已批退出生命周期最小修复及pilot修复，完整测试后更新PR40重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -328,7 +328,19 @@
         "commentId": 6136264679,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136264679",
         "version": "float-quit-v1",
-        "status": "awaiting-approval"
+        "status": "approved"
+      },
+      "additionalScopeApproval": {
+        "commentId": 6136285484,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484",
+        "body": "同意修复浮窗退出缺陷 v1",
+        "authorId": 54107847,
+        "createdAt": "2026-10-13T01:47:12Z",
+        "updatedAt": "2026-10-13T01:47:12Z",
+        "requestCommentId": 6136264679,
+        "version": "float-quit-v1",
+        "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
+        "verifiedAt": "2026-10-13T01:47:40.010Z"
       }
     },
     "26": {
@@ -400,7 +412,7 @@
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "stage": "ci-blocked",
+      "stage": "implementation",
       "type": [
         "ui",
         "interaction"
@@ -408,7 +420,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "完成授权内pilot修复；原有浮窗退出生命周期修复等待28追加批准，不以强杀代替正常退出验收",
+      "nextAction": "合并已批退出生命周期最小修复及pilot修复，完整测试后更新PR40重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -476,12 +488,24 @@
         "commentId": 6136264679,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136264679",
         "version": "float-quit-v1",
-        "status": "awaiting-approval"
+        "status": "approved"
+      },
+      "additionalScopeApproval": {
+        "commentId": 6136285484,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484",
+        "body": "同意修复浮窗退出缺陷 v1",
+        "authorId": 54107847,
+        "createdAt": "2026-10-13T01:47:12Z",
+        "updatedAt": "2026-10-13T01:47:12Z",
+        "requestCommentId": 6136264679,
+        "version": "float-quit-v1",
+        "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
+        "verifiedAt": "2026-10-13T01:47:40.010Z"
       }
     },
     "29": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
-      "stage": "ci-blocked",
+      "stage": "implementation",
       "type": [
         "ui",
         "interaction"
@@ -489,7 +513,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "完成授权内pilot修复；原有浮窗退出生命周期修复等待28追加批准，不以强杀代替正常退出验收",
+      "nextAction": "合并已批退出生命周期最小修复及pilot修复，完整测试后更新PR40重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -554,12 +578,24 @@
         "commentId": 6136264679,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136264679",
         "version": "float-quit-v1",
-        "status": "awaiting-approval"
+        "status": "approved"
+      },
+      "additionalScopeApproval": {
+        "commentId": 6136285484,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484",
+        "body": "同意修复浮窗退出缺陷 v1",
+        "authorId": 54107847,
+        "createdAt": "2026-10-13T01:47:12Z",
+        "updatedAt": "2026-10-13T01:47:12Z",
+        "requestCommentId": 6136264679,
+        "version": "float-quit-v1",
+        "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
+        "verifiedAt": "2026-10-13T01:47:40.010Z"
       }
     },
     "30": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
-      "stage": "ci-blocked",
+      "stage": "implementation",
       "type": [
         "ui",
         "interaction"
@@ -567,7 +603,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "完成授权内pilot修复；原有浮窗退出生命周期修复等待28追加批准，不以强杀代替正常退出验收",
+      "nextAction": "合并已批退出生命周期最小修复及pilot修复，完整测试后更新PR40重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -632,12 +668,24 @@
         "commentId": 6136264679,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136264679",
         "version": "float-quit-v1",
-        "status": "awaiting-approval"
+        "status": "approved"
+      },
+      "additionalScopeApproval": {
+        "commentId": 6136285484,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484",
+        "body": "同意修复浮窗退出缺陷 v1",
+        "authorId": 54107847,
+        "createdAt": "2026-10-13T01:47:12Z",
+        "updatedAt": "2026-10-13T01:47:12Z",
+        "requestCommentId": 6136264679,
+        "version": "float-quit-v1",
+        "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
+        "verifiedAt": "2026-10-13T01:47:40.010Z"
       }
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
-      "stage": "ci-blocked",
+      "stage": "implementation",
       "type": [
         "ui",
         "interaction"
@@ -645,7 +693,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "完成授权内pilot修复；原有浮窗退出生命周期修复等待28追加批准，不以强杀代替正常退出验收",
+      "nextAction": "合并已批退出生命周期最小修复及pilot修复，完整测试后更新PR40重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -710,12 +758,24 @@
         "commentId": 6136264679,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136264679",
         "version": "float-quit-v1",
-        "status": "awaiting-approval"
+        "status": "approved"
+      },
+      "additionalScopeApproval": {
+        "commentId": 6136285484,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484",
+        "body": "同意修复浮窗退出缺陷 v1",
+        "authorId": 54107847,
+        "createdAt": "2026-10-13T01:47:12Z",
+        "updatedAt": "2026-10-13T01:47:12Z",
+        "requestCommentId": 6136264679,
+        "version": "float-quit-v1",
+        "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
+        "verifiedAt": "2026-10-13T01:47:40.010Z"
       }
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
-      "stage": "ci-blocked",
+      "stage": "implementation",
       "type": [
         "ui",
         "interaction"
@@ -723,7 +783,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "完成授权内pilot修复；原有浮窗退出生命周期修复等待28追加批准，不以强杀代替正常退出验收",
+      "nextAction": "合并已批退出生命周期最小修复及pilot修复，完整测试后更新PR40重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -788,12 +848,24 @@
         "commentId": 6136264679,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136264679",
         "version": "float-quit-v1",
-        "status": "awaiting-approval"
+        "status": "approved"
+      },
+      "additionalScopeApproval": {
+        "commentId": 6136285484,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484",
+        "body": "同意修复浮窗退出缺陷 v1",
+        "authorId": 54107847,
+        "createdAt": "2026-10-13T01:47:12Z",
+        "updatedAt": "2026-10-13T01:47:12Z",
+        "requestCommentId": 6136264679,
+        "version": "float-quit-v1",
+        "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
+        "verifiedAt": "2026-10-13T01:47:40.010Z"
       }
     },
     "33": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
-      "stage": "ci-blocked",
+      "stage": "implementation",
       "type": [
         "ui",
         "interaction"
@@ -801,7 +873,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "完成授权内pilot修复；原有浮窗退出生命周期修复等待28追加批准，不以强杀代替正常退出验收",
+      "nextAction": "合并已批退出生命周期最小修复及pilot修复，完整测试后更新PR40重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -866,7 +938,19 @@
         "commentId": 6136264679,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136264679",
         "version": "float-quit-v1",
-        "status": "awaiting-approval"
+        "status": "approved"
+      },
+      "additionalScopeApproval": {
+        "commentId": 6136285484,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484",
+        "body": "同意修复浮窗退出缺陷 v1",
+        "authorId": 54107847,
+        "createdAt": "2026-10-13T01:47:12Z",
+        "updatedAt": "2026-10-13T01:47:12Z",
+        "requestCommentId": 6136264679,
+        "version": "float-quit-v1",
+        "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
+        "verifiedAt": "2026-10-13T01:47:40.010Z"
       }
     },
     "34": {
