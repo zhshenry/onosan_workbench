@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 178,
+  "revision": 179,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -2592,6 +2592,16 @@
       "createdAt": "2026-10-13T01:45:15Z",
       "commentId": 6136264679,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136264679"
+    },
+    "floating-pr40-quit-fix-publish": {
+      "kind": "update-implementation",
+      "status": "intent",
+      "target": "ono/floating-group-v2",
+      "expectedHead": "fbbf76b99733295c6325144c10586a50a7df0a2b",
+      "approvalCommentId": 6136285484,
+      "patchSha256": "527e339dc096c0dbb2778f6ef49a271d2dfbc4208559dcbbd06083e68d051477",
+      "summary": "7文件：已批before-quit浮窗销毁，真实退出回归及pilot位置复位/失败保存/有界清理；468=466pass2skip、verify及独立复核通过，Windows84待验",
+      "createdAt": "2026-10-13T01:54:55.718Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
