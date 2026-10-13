@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 286,
+  "revision": 287,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -4014,6 +4014,15 @@
       "headSha": "224de024fbfe3309ae04b1dbb558ede28bb0bdab",
       "verifiedAt": "2026-10-13T08:17:53.062Z",
       "ciRun": 38368255458
+    },
+    "pr42-delete-merged-branch": {
+      "operationId": "pr42-delete-merged-branch",
+      "status": "intent",
+      "branch": "ono/closeout-no-repeat-confirmation",
+      "headSha": "e550ed2efff06fcbb3d92a340108139743149d08",
+      "mergeSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
+      "ciRun": 38367730590,
+      "summary": "准确head已合入，实际main检查通过，无开放PR依赖，非保护且PR可恢复；仅删分支引用"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
