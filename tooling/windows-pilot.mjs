@@ -1,4 +1,5 @@
-// Installed executable only. All task/settings mutations below are real UI actions.
+// Installed executable only. All persisted task/settings mutations are real UI actions.
+// Topbar legacy edge cases separately label temporary renderer-only read responses.
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
@@ -6,6 +7,7 @@ import path from 'node:path';
 import { _electron as electron } from 'playwright';
 import { runAiCardsPilot, verifyAiCardsRelaunch } from './ai-cards-pilot.mjs';
 import { inspectPilotArtifacts } from './pilot-artifacts.mjs';
+import { runTopbarDatesPilot, verifyTopbarDatesRelaunch } from './topbar-dates-pilot.mjs';
 import { runYearDropdownPilot, verifyUnboundedDatePicker, verifyYearDropdownRelaunch } from './year-dropdown-pilot.mjs';
 
 assert.equal(process.platform, 'win32', 'Run the acceptance pilot on standard Windows hosted CI');
@@ -29,7 +31,7 @@ const report = {
   baseCommit: process.env.WORKBENCH_CI_BASE_SHA || null,
   platform: process.platform, version: install.version, installer: install,
   checks: [], screenshots: [], launch: [], errors: [],
-  limitations: ['Silent NSIS installation only; no native wizard, UAC or SmartScreen assessment', 'Isolated test mode disables real auto-update and launch-at-login registration', 'Same-version relaunch only; no cross-version upgrade, Office conversion or external AI/network coverage (AI card flow uses synthetic loopback responses)', 'Playwright Electron automation is experimental; launch is separately asserted'],
+  limitations: ['Silent NSIS installation only; no native wizard, UAC or SmartScreen assessment', 'Isolated test mode disables real auto-update and launch-at-login registration', 'Same-version relaunch only; no cross-version upgrade, Office conversion or external AI/network coverage (AI card flow uses synthetic loopback responses)', 'Playwright Electron automation is experimental; launch is separately asserted', 'Topbar cross-day/year and invalid/missing legacy fixtures temporarily replace only todo:state read responses; those renderer checks are separate from UI-created persisted records and same-version relaunch'],
 };
 let application;
 let page;
@@ -49,7 +51,22 @@ async function check(name, action) {
   }
 }
 async function screenshot(name) {
-  await page.screenshot({ path: path.join(reportDirectory, name), animations: 'disabled' });
+  if (name.startsWith('topbar-dates-') && name.endsWith('-zoom125.png')) {
+    // Playwright's Electron viewport screenshot can crop a zoomed window to its
+    // CSS viewport size. Capture the complete native surface without resampling.
+    const window = await application.browserWindow(page);
+    const frame = await window.evaluate(async win => {
+      const image = await win.webContents.capturePage();
+      return { png: image.toPNG().toString('base64'), imageSize: image.getSize(), contentSize: win.getContentSize(), zoom: win.webContents.getZoomFactor() };
+    });
+    assert.deepEqual([frame.imageSize.width, frame.imageSize.height], frame.contentSize, 'Native screenshot must cover the complete content surface');
+    const png = Buffer.from(frame.png, 'base64');
+    await writeFile(path.join(reportDirectory, name), png);
+    (report.screenshotCapture ??= []).push({ name, method: 'Electron webContents.capturePage (unmodified PNG)', imageSize: frame.imageSize,
+      contentSize: frame.contentSize, zoom: frame.zoom, pngPixels: { width: png.readUInt32BE(16), height: png.readUInt32BE(20) } });
+  } else {
+    await page.screenshot({ path: path.join(reportDirectory, name), animations: 'disabled' });
+  }
   report.screenshots.push(name);
 }
 async function state() { return page.evaluate(() => window.workbench.todo.state()); }
@@ -94,6 +111,7 @@ async function doneLibrary() {
 let taskId;
 let birthdayFixture;
 let aiCardsFixture;
+let topbarDatesFixture;
 try {
   await check('Launch actual installed executable with isolated data and updater disabled', launch);
   await check('Fresh isolated task database is empty', async () => assert.equal((await state()).tasks.length, 0));
@@ -144,6 +162,7 @@ try {
   });
   await screenshot('completed.png');
   birthdayFixture = await runYearDropdownPilot({ application, page, check, screenshot, runId, report });
+  topbarDatesFixture = await runTopbarDatesPilot({ application, page, check, screenshot, runId, report });
   aiCardsFixture = await runAiCardsPilot({ application, page, check, screenshot, runId, report });
   await check('Choose exit-on-close in settings and quit through the window close button', async () => {
     await page.locator('.rail [data-workbench="settings"]').click();
@@ -170,6 +189,7 @@ try {
   await screenshot('relaunched.png');
   await verifyYearDropdownRelaunch({ page, check, screenshot, fixture: birthdayFixture });
   await verifyAiCardsRelaunch({ page, check, screenshot, fixture: aiCardsFixture });
+  await verifyTopbarDatesRelaunch({ page, check, screenshot, fixture: topbarDatesFixture });
   await check('No renderer page errors during the core flow', async () => assert.deepEqual(report.errors, []));
   report.status = 'passed';
 } catch (error) {

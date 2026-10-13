@@ -408,7 +408,8 @@ input { font: inherit; color: inherit; }
 .ipop-check { width: 18px; height: 18px; border-radius: 6px; border: 1.4px solid #9fb2c4; background: none; cursor: pointer; display: grid; place-items: center; color: #fff; font-size: var(--type-caption); font-weight: 800; flex: none; padding: 0; }
 .ipop-check.done { background: var(--acc); border-color: var(--acc); }
 .ipop-title { flex: 1; min-width: 0; text-align: left; font: inherit; font-size: var(--type-control); font-weight: 600; color: var(--ink); background: none; border: none; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0; }
-.ipop-time { font-size: var(--type-micro); color: var(--ink-3); font-variant-numeric: tabular-nums; flex: none; }
+.ipop-time { font-size: var(--type-micro); color: var(--ink-3); font-variant-numeric: tabular-nums; flex: none; white-space: pre-line; line-height: 1.4; }
+.ipop-sched .ipop-time { width: max-content; max-width: 165px; }
 .ipop-empty { padding: 14px 8px; text-align: center; color: var(--ink-3); font-size: var(--type-support); }
 .ipop-foot { display: flex; justify-content: space-between; align-items: center; padding-top: 8px; margin-top: 4px; border-top: 1px solid var(--hairline); }
 .ipop-link { border: none; background: none; color: var(--acc-deep); font-size: var(--type-support); font-weight: 600; cursor: pointer; padding: 4px 6px; font-family: var(--font); }
@@ -432,20 +433,24 @@ input { font: inherit; color: inherit; }
 .sched-label .lbl { font-weight: 700; }
 .sched-label .date { color: var(--ink-3); font-weight: 600; }
 .sdiv { width: 1px; height: 20px; background: var(--hairline); margin: 0 6px; flex: none; }
-.sched-track { display: flex; align-items: center; gap: 6px; overflow: hidden; min-width: 0; }
+.sched-track { display: flex; align-items: center; gap: 6px; overflow-x: auto; min-width: 0; scrollbar-width: none; }
+.sched-track::-webkit-scrollbar { display: none; }
+.sched-track > .date { flex: none; white-space: nowrap; }
 .schip {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  flex: none;
+  max-width: min(360px, 100%);
   gap: 7px;
-  padding: 6px 12px;
+  padding: 4px 12px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.62);
   white-space: nowrap;
   transition: transform 0.16s var(--ease);
 }
 .schip:hover { transform: translateY(-1px); }
-.schip .t { font-weight: 700; font-size: var(--type-control); color: var(--ink-2); font-variant-numeric: tabular-nums; }
-.schip .n { font-size: var(--type-control); color: var(--ink-2); }
+.schip .t { flex: none; white-space: pre-line; text-align: left; line-height: 1.2; font-weight: 700; font-size: var(--type-control); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.schip .n { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: var(--type-control); color: var(--ink-2); }
 .schip.done { opacity: 0.55; }
 .schip.done .n { text-decoration: line-through; }
 .schip.now { background: var(--acc-soft); }
@@ -1235,8 +1240,21 @@ kbd {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+/* Allocate the actual right-control width instead of guessing a centered
+   reserve. Keep the compact track for the item date. */
+@media (max-width: 1440px) {
+  .topbar { gap: 8px; }
+  .tb-middle { position: static; transform: none; flex: 0 1 auto; max-width: none; }
+}
+@media (min-width: 1181px) and (max-width: 1440px) {
+  .sched-track > .date, .sched-track > .date + .sdiv { display: none; }
+}
 @media (max-width: 1180px) {
-  .tb-middle { gap: 8px; }
+  /* The collapsed pair must keep its intrinsic width. Absolute centering with
+     the wide-screen reserve can shrink the schedule under the todo trigger. */
+  .tb-middle { position: static; transform: none; flex: none; max-width: none; gap: 8px; }
+  .tb-left { flex: none; }
+  .ipop-sched { left: 0; margin-left: 0; }
   .tb-right { gap: 5px; margin-left: auto; }
   .sched-track, .sdiv, .tprog { display: none; }
   .todopill { gap: 6px; padding: 0 10px; }
