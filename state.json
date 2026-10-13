@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 282,
+  "revision": 283,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1575,12 +1575,12 @@
       "stateBranchQuestionCommentId": 6137399050
     },
     "closeout-docs": {
-      "stage": "awaiting-merge-approval",
+      "stage": "merge-approved",
       "pr": 42,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/42",
       "headSha": "e550ed2efff06fcbb3d92a340108139743149d08",
       "baseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
-      "nextAction": "等待用户同意合入PR42准确head e550ed2，再验证实际main后按规范清理分支",
+      "nextAction": "合入准确head并验证实际main",
       "ciRun": 38361434048,
       "ciResult": "success",
       "tests": {
@@ -3989,6 +3989,14 @@
       "headSha": "ba6b9aeeb6aca2d2887778003b0d5e6e5ca5ec15",
       "verifiedAt": "2026-10-13T07:58:21.217Z",
       "ciRun": 38366079166
+    },
+    "pr42-ready-merge": {
+      "operationId": "pr42-ready-merge",
+      "status": "intent",
+      "pr": 42,
+      "expectedHead": "e550ed2efff06fcbb3d92a340108139743149d08",
+      "baseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
+      "summary": "用户明确批准准确PR42/head，转ready合入并验证actual main；不关闭任何Issue或发版"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
