@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 314,
+  "revision": 315,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -4129,6 +4129,15 @@
       "commentId": 6144073288,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6144073288",
       "verifiedAt": "2026-10-13T11:01:25.202Z"
+    },
+    "issue34-publish-v2": {
+      "operationId": "issue34-publish-v2",
+      "status": "intent",
+      "target": "ono/issue-34-update-status-inline",
+      "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
+      "treeSha": "117c7c7a826f1399d8537ace4eb3039af6be6a15",
+      "summary": "已批34v2独立9文件应用更新同行展示及真实Windows夹具，DraftPR；不含35或新发布行为",
+      "startedAt": "2026-10-13T11:18:29.500Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
