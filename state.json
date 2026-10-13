@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 189,
+  "revision": 190,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -2658,6 +2658,13 @@
       "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
       "treeSha": "ce41db3253032675c13fb70208c56c70855b2d77",
       "verifiedAt": "2026-10-13T02:30:17.290Z"
+    },
+    "floating-pr40-progress-72": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
+      "body": "【OnO 自动化】悬浮窗组｜已按追加批准修复退出，继续最终验收\n\n已核对你的[退出修复批准](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484)，最小修复已进入PR #40。随后定位并修复了减少动画下迟到的迷你高度事件把展开窗改回176的竞态；加强断言后，真实16态宽窄/展开矩阵、日程组开合均通过。\n\n当前head **cf9b2c67217830fbaa8aac557975527e4597383e** 的[最新Windows运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38337172824)为 **478/478单测，0跳过；实装72项通过/73项已执行**。真实关联选择、替换、删除、键盘、已有选择的外部取消，以及三主题已通过；无浮窗正常退出也已通过。\n还卡在合成AI请求正文的精确核对：请求数量和模型已匹配，正文断言未通过，正在按实际传输格式排查；不会改业务内容或放宽为模糊匹配。其余退出/重启等尚未执行完，所以仍未满足84项完整验收。\n\n我继续完成当前授权范围内修复及真实带图交付。当前不用重复批准；如有新意见直接回复本Issue。",
+      "createdAt": "2026-10-13T02:39:46.575Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
