@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 264,
+  "revision": 265,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1373,7 +1373,7 @@
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
-      "stage": "plan-revision",
+      "stage": "awaiting-plan-approval",
       "type": [
         "ui",
         "investigation"
@@ -1381,17 +1381,17 @@
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "按6139529978短状态尽量单行修v2高保真，不沿用v1批准",
+      "nextAction": "等待当前34 v2图文批准，不沿用v1",
       "groupId": "settings-update-34",
       "groupIssueNumbers": [
         34
       ],
       "primaryIssue": 34,
-      "planVersion": "v1",
-      "planCommentId": 6128752017,
-      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6128752017",
-      "imageUrl": "https://github.com/user-attachments/assets/41e9e253-8a6c-4129-ab78-aab06849ae9e",
-      "imageDisplayVerifiedAt": "2026-10-12T16:56:23.948Z"
+      "planVersion": "v2",
+      "planCommentId": 6140182883,
+      "planCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6140182883",
+      "imageUrl": "https://github.com/user-attachments/assets/5ce38d40-c410-4c48-a836-bd953c5ad874",
+      "imageDisplayVerifiedAt": "2026-10-13T07:03:32.343Z"
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
@@ -1573,7 +1573,8 @@
     6139920609,
     6139928459,
     6139936671,
-    6140152943
+    6140152943,
+    6140182883
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -3725,10 +3726,29 @@
     },
     "issue34-v2-plan-comment": {
       "operationId": "issue34-v2-plan-comment",
-      "status": "intent",
+      "status": "succeeded",
       "targetIssue": 34,
       "body": "【OnO 自动化】#34｜应用更新状态｜方案 v2，待批准\n\n这版采纳你“尽量都在一行”的意见：把短状态与“应用更新”标题并排，例如“应用更新 · 当前已是最新版本”，不再把状态另起一行。右侧操作按钮位置保持不变。\n\n![应用更新状态v2：常规状态同行与错误详情](https://github.com/user-attachments/assets/5ce38d40-c410-4c48-a836-bd953c5ad874)\n\n图中上方是“最新版本”和“检查中”两种状态，下方是下载、待重启和失败的行内展示示例；均为独立设计，不是已实现的实测截图。图中版本号沿用参考画面，不代表本轮读取的实际安装版本。\n\n本版范围：\n- 最新、检查中、下载百分比、待重启等短状态优先与标题保持一行，说明文字继续留在栏目内；不再在整张设置卡底部重复显示更新状态。\n- 下载进度仍归属“应用更新”栏目。错误先显示简短状态，通过可键盘操作的“详情”查看完整说明，不截掉重要错误、不要求悬停才能阅读。\n- 窄窗口优先缩短非必要文字并调整间距，保留清楚的标题、状态与按钮；完整错误详情允许换行，不为强行单行缩小字体或挤出按钮。\n- 仅调整状态展示。检查、下载、重启安装的现有流程及按钮动作不变；应用信息、目录、共享库读取错误与底部独立说明保持各自归属。\n\n实施后重点验收：各更新状态切换、重复点击与忙碌态、进度和错误详情、搜索过滤、三主题、窄窗口、键盘与焦点；完成仓库公共检查及真实 Windows 运行截图对照。不为测试实际安装未经批准的新发布版本。\n\n本单独立一个实现 PR。当前主干已推进到 9bf6d06ae509dec4d8648b5cdc481813b20f0702，实施前会重新核对准确基线；产品尚未因本方案修改。图片为独立绘图，无源码渲染 SHA；SHA256：138b713165c38f19d5f7fd7699247e791bf47d37811e56241b19d8525928bd51。\n\n本次批准仅覆盖上述实施、测试和交付；最终合入另审准确版本。\n直接在本 Issue 回复：同意 #34 方案 v2",
-      "summary": "原生图已验证，按反馈发布单行状态v2，等待批准不实施"
+      "summary": "原生图已验证，按反馈发布单行状态v2，等待批准不实施",
+      "commentId": 6140182883,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6140182883",
+      "verifiedAt": "2026-10-13T07:03:32.342Z"
+    },
+    "issue36-v1-upload": {
+      "operationId": "issue36-v1-upload",
+      "targetIssue": 36,
+      "status": "intent",
+      "imageSha256": "80d88f83a0908afa4317b1eba72f2c332739f122919739839116d3f380e72d81",
+      "bytes": 1408775,
+      "summary": "准确本单独立高保真已实际查看，原生附件上传供方案审批；不实施"
+    },
+    "issue37-v1-upload": {
+      "operationId": "issue37-v1-upload",
+      "targetIssue": 37,
+      "status": "intent",
+      "imageSha256": "c2a8e69a369f2494fbca04f5c9fa7e6006c530fd124731ef1a05cd0710fecbb3",
+      "bytes": 1698341,
+      "summary": "准确本单独立高保真已实际查看，原生附件上传供方案审批；不实施"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
