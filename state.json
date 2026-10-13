@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 244,
+  "revision": 245,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1482,7 +1482,8 @@
     6138553530,
     6138557538,
     6138559936,
-    6139419969
+    6139419969,
+    6139903018
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -3481,10 +3482,13 @@
     },
     "feedback-20261013T0641-28": {
       "operationId": "feedback-20261013T0641-28",
-      "status": "intent",
+      "status": "succeeded",
       "targetIssue": 28,
       "body": "【OnO 自动化】已核对你在本条最终请求后的“同意”，对应 PR #40 的准确版本 5a74dbb 及列明收尾范围。\n\nPR #40 已合入，实际 main 为 9bf6d06ae509dec4d8648b5cdc481813b20f0702，合入树与已验收集成树一致。[实际主干 Windows 检查](https://github.com/zhshenry/onosan_workbench/actions/runs/38358108575)正在运行；成功并核对证据后才关闭本组7单及安全清理分支，不发版。现在无需重复批准。",
-      "summary": "回应已核原始反馈/批准及当前阶段"
+      "summary": "回应已核原始反馈/批准及当前阶段",
+      "commentId": 6139903018,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6139903018",
+      "verifiedAt": "2026-10-13T06:43:23.546Z"
     },
     "feedback-20261013T0641-34": {
       "operationId": "feedback-20261013T0641-34",
