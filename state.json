@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 349,
+  "revision": 350,
   "currentRun": {
     "owner": "ono-root-issue26-20261013T1529Z",
     "startedAt": "2026-10-13T15:29:11.440Z",
@@ -401,7 +401,7 @@
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "stage": "approved-queued",
+      "stage": "implementing-approved-v3",
       "type": [
         "ui",
         "interaction"
@@ -409,7 +409,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T14:27:19.230Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "一次开发一组；待35推进到安全关口后刷新基线按已批方案实施",
+      "nextAction": "准确main集成PR39原功能并局部v3修订，验证真实Windows和新图后最终审批",
       "groupId": "workbench-context-26",
       "groupIssueNumbers": [
         26
@@ -4441,6 +4441,13 @@
       "commentId": 6146554493,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6146554493",
       "verifiedAt": "2026-10-13T13:23:45.235Z"
+    },
+    "issue26-v3-start-1529": {
+      "operationId": "issue26-v3-start-1529",
+      "status": "intent",
+      "target": 26,
+      "body": "【OnO 自动化】已重新核对你对关联事项 UI v3 的原始批准和全部后续评论，现在继续修订 PR #39，并集成最新 main b276261a90cb60a53626dd2149b0f3cdc6aad0fd。\n\n待办关联菜单按已批v3改为简洁轻列表，去掉搜索与筛选；其他工作台搜索、多选及既有只读快照/会话边界保持。首页窄窗问题不混入本单。#34、#37已完成当前交付停在最终审批，#35停在补充方案；本轮仅开发#26。\n\n完成后重新跑完整Windows、核对实际截图，再在这里请求准确新版本合入。旧head与旧最终请求不再适用，当前无需重复批准方案。",
+      "startedAt": "2026-10-13T15:30:18.717Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -4456,7 +4463,7 @@
     "finishedAt": "2026-10-13T14:27:19.230Z",
     "summary": "重新分页检查无新需求/评论/批准或版本变化，34/37待批，35方案待附图，36等35；云电脑读取执行配置失败，无法继续本地开发/浏览器，GitHub连接器读取正常。修正34/37旧ciRun摘要。"
   },
-  "updatedAt": "2026-10-13T15:29:11.440Z",
+  "updatedAt": "2026-10-13T15:30:18.717Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
