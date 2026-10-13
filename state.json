@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 322,
+  "revision": 323,
   "currentRun": {
     "owner": "ono-root-issue37-20261013T1151Z",
     "startedAt": "2026-10-13T11:51:31.363Z",
@@ -1519,7 +1519,7 @@
     },
     "37": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/37",
-      "stage": "implementing",
+      "stage": "ci-running",
       "type": [
         "ui",
         "investigation"
@@ -1527,7 +1527,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-13T11:51:31.363Z",
-      "nextAction": "已重新核准37v1，独立实施真实本地关联与重启验收；不发布线上作品",
+      "nextAction": "核验真实Windows实际关联持久化与重启及4图；缺原生附图时不请求最终批准",
       "lastCommentId": 6144934226,
       "planVersion": "v1",
       "planCommentId": 6140325358,
@@ -1548,7 +1548,11 @@
       "groupIssueNumbers": [
         37
       ],
-      "primaryIssue": 37
+      "primaryIssue": 37,
+      "pr": 45,
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/45",
+      "headSha": "64f04ad6da610fda1d9cdc92390adb437ad7e6c6",
+      "ciRun": 38396752842
     },
     "41": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/41",
@@ -4185,12 +4189,17 @@
     },
     "issue37-publish-v1": {
       "operationId": "issue37-publish-v1",
-      "status": "intent",
+      "status": "succeeded",
       "target": "ono/issue-37-publish-association",
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "treeSha": "b9af418af1e216ada3562c383bdee0b1e3ceb320",
       "summary": "37已批v1发布前准备/发布后本地关联13文件及Windows真实保存重启验证，独立DraftPR，不含其他需求/线上发布",
-      "startedAt": "2026-10-13T12:20:24.462Z"
+      "startedAt": "2026-10-13T12:20:24.462Z",
+      "headSha": "64f04ad6da610fda1d9cdc92390adb437ad7e6c6",
+      "pr": 45,
+      "url": "https://github.com/zhshenry/onosan_workbench/pull/45",
+      "ciRun": 38396752842,
+      "verifiedAt": "2026-10-13T12:22:10.882Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
