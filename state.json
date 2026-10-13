@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 245,
+  "revision": 246,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1483,7 +1483,8 @@
     6138557538,
     6138559936,
     6139419969,
-    6139903018
+    6139903018,
+    6139911535
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -3499,10 +3500,13 @@
     },
     "feedback-20261013T0641-35": {
       "operationId": "feedback-20261013T0641-35",
-      "status": "intent",
+      "status": "succeeded",
       "targetIssue": 35,
       "body": "【OnO 自动化】已收到并核对你对方案 v1 的明确批准，范围按上面的完整图文方案执行。先完成当前悬浮窗组的合后验收，再以最新主干开始本单实施、测试和 Draft PR；一次只开发一组，不需要你重复确认开发步骤。最终合入仍会在本 Issue 按准确版本请你审阅。",
-      "summary": "回应已核原始反馈/批准及当前阶段"
+      "summary": "回应已核原始反馈/批准及当前阶段",
+      "commentId": 6139911535,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6139911535",
+      "verifiedAt": "2026-10-13T06:44:00.365Z"
     },
     "feedback-20261013T0641-36": {
       "operationId": "feedback-20261013T0641-36",
