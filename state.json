@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 246,
+  "revision": 247,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1484,7 +1484,8 @@
     6138559936,
     6139419969,
     6139903018,
-    6139911535
+    6139911535,
+    6139920609
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -3493,10 +3494,13 @@
     },
     "feedback-20261013T0641-34": {
       "operationId": "feedback-20261013T0641-34",
-      "status": "intent",
+      "status": "succeeded",
       "targetIssue": 34,
       "body": "【OnO 自动化】收到，v1 暂停待审。我会把正常更新状态文字尽量改成单行，再附 v2 高保真供你看；窄窗口和较长错误信息会保留可读的完整说明，不把文字硬截掉。当前不用批准旧图。",
-      "summary": "回应已核原始反馈/批准及当前阶段"
+      "summary": "回应已核原始反馈/批准及当前阶段",
+      "commentId": 6139920609,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6139920609",
+      "verifiedAt": "2026-10-13T06:44:41.856Z"
     },
     "feedback-20261013T0641-35": {
       "operationId": "feedback-20261013T0641-35",
