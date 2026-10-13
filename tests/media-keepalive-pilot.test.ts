@@ -46,6 +46,7 @@ test('preservation assertion requires real identity, document/input state, scrol
 
 test('same-size home comparison distinguishes hidden-host layout regression from visual acceptance', async () => {
   const before={nativeSize:[1024,680],zoom:1,viewport:{width:1024,height:680},homeMode:'today-board',fontStatus:'loaded',fadeTransform:'none',
+    navigation:{homeActive:true,aiOpen:false,snavCount:0},
     bounds:{content:{x:66,y:64,width:958,height:616},overview:{x:90,y:156,width:540,height:480},todo:{x:646,y:156,width:340,height:480}},
     styles:{contentDisplay:'block',contentPadding:'22px 24px 26px',columns:'540px 340px'},overflow:{contentX:0,overviewX:0,todoX:0},
     layoutFlags:{overviewCollapsed:false,overviewContentOverflows:false,panelsOverlap:false},hosts:[] as unknown[]};
@@ -60,6 +61,9 @@ test('same-size home comparison distinguishes hidden-host layout regression from
   assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),zoom:1.25}),/normal native zoom/);
   assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),viewport:{width:819,height:544}}),/actual CSS viewport/);
   assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),homeMode:'library'}),/ordinary task board/);
+  for(const changed of [{homeActive:false},{aiOpen:true},{snavCount:1}]) {
+    assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),navigation:{...before.navigation,...changed}}),/secondary sidebar/);
+  }
   assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),styles:{...before.styles,contentDisplay:'flex'}}),/home CSS layout/);
   assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),hosts:[{...hidden,display:'flex'}]}));
   assert.throws(()=>assertMediaHomeLayoutUnchanged({...before,hosts:[hidden]},after()),/precede any retained creator DOM/);
@@ -72,8 +76,11 @@ test('same-size home comparison distinguishes hidden-host layout regression from
   assert.match(source,/if\(await page\.locator\('#view-home \.task-library'\)\.count\(\)\).*name:'事项库'/);
   assert.match(source,/win\.webContents\.setZoomFactor\(1\);win\.setContentSize\(1024,680\)/);
   assert.match(source,/await document\.fonts\.ready/);assert.match(source,/same task data/);
+  assert.match(source,/page\.locator\('\.snav'\)\.waitFor\(\{state:'detached'\}\)/);
+  assert.match(source,/longTitlePresent,true/);assert.match(source,/taskDataUnchanged=true/);
   assert.equal(source.indexOf("screenshot('media-keepalive-before.png')")<source.indexOf("await creator(page, true); id = await guestId(page)"),true,'Before PNG must show actual home before creating any guest');
   assert.match(source,/assertMediaHomeLayoutUnchanged\(homeBefore,homeHidden\)/);
+  assert.equal(source.indexOf("screenshot('media-keepalive-hidden.png')")<source.indexOf('Object.assign(report.mediaKeepaliveHomeLayout,assertMediaHomeLayoutUnchanged'),true,'A failing comparison must still deliver the hidden native screenshot');
 });
 
 const security = () => ({ contextIsolation:true, sandbox:true, webSecurity:true,

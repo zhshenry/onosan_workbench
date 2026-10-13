@@ -51,6 +51,7 @@ export function assertMediaHomeLayoutUnchanged(before, after) {
     assert.equal(value.zoom,1,'Home comparison must use normal native zoom');
     assert.deepEqual(value.viewport,{width:1024,height:680},'Home comparison must use the actual CSS viewport');
     assert.equal(value.homeMode,'today-board','Home comparison must use the ordinary task board, not the library');
+    assert.deepEqual(value.navigation,{homeActive:true,aiOpen:false,snavCount:0},'Home comparison must wait for the real secondary sidebar to be fully unmounted');
     assert.equal(value.fontStatus,'loaded');assert.equal(value.fadeTransform,'none');
     for(const rect of Object.values(value.bounds)) for(const key of ['x','y','width','height']) assert.ok(Number.isFinite(rect[key]),'Home geometry must be finite');
   }
@@ -67,6 +68,9 @@ export function assertMediaHomeLayoutUnchanged(before, after) {
   return {unchanged:true,visualAcceptance:!Object.values(before.layoutFlags).some(Boolean)&&!Object.values(after.layoutFlags).some(Boolean)};
 }
 async function settledMediaHomeGeometry(native,page) {
+  // Home's existing exit animation can leave a 240px sidebar in normal flow
+  // even while the home fade and two consecutive content reads are stable.
+  await page.locator('.snav').waitFor({state:'detached'});
   await page.evaluate(async()=>{await document.fonts.ready;});
   let previous;let stable=0;
   return until(page,async()=>({
@@ -79,6 +83,8 @@ async function settledMediaHomeGeometry(native,page) {
       const contentStyle=getComputedStyle(content),colsStyle=getComputedStyle(cols),todoStyle=getComputedStyle(todo),overviewStyle=getComputedStyle(overview);
       const bounds={content:rect(content),home:rect(home),cols:rect(cols),todo:rect(todo),overview:rect(overview),overviewPanel:rect(overviewPanel),date:rect(select('#view-home .dash-heading h1')),weekTitle:rect(overview.querySelector('.ptitle'))};
       return {viewport:{width:innerWidth,height:innerHeight},fontStatus:document.fonts.status,fadeTransform:getComputedStyle(home.parentElement).transform,
+        navigation:{homeActive:Boolean(document.querySelector('.rail [data-workbench="home"]')?.classList.contains('on')),
+          aiOpen:document.querySelector('.ai-topbar-btn')?.getAttribute('aria-expanded')==='true',snavCount:document.querySelectorAll('.snav').length},
         homeMode:home.querySelector('.task-library')?'library':home.querySelector('.today-board')?'today-board':'unknown',
         styles:{contentClass:content.className,contentDisplay:contentStyle.display,contentPadding:contentStyle.padding,homeDisplay:getComputedStyle(home).display,
           colsDisplay:colsStyle.display,columns:colsStyle.gridTemplateColumns,columnGap:colsStyle.columnGap,todoColumn:todoStyle.gridColumn,todoRow:todoStyle.gridRow,
@@ -91,7 +97,8 @@ async function settledMediaHomeGeometry(native,page) {
     }),
   }),value=>{
     const ready=value.nativeSize[0]===1024&&value.nativeSize[1]===680&&value.zoom===1&&value.viewport.width===1024&&value.viewport.height===680
-      &&value.homeMode==='today-board'&&value.fontStatus==='loaded'&&value.fadeTransform==='none';
+      &&value.homeMode==='today-board'&&value.fontStatus==='loaded'&&value.fadeTransform==='none'
+      &&value.navigation.homeActive&&!value.navigation.aiOpen&&value.navigation.snavCount===0;
     const current=JSON.stringify(value);stable=ready&&current===previous?stable+1:ready?1:0;previous=current;return stable>=2;
   },'Actual home geometry did not settle at native 1024x680 zoom 1');
 }
@@ -495,7 +502,11 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       await native.evaluate(win=>{win.webContents.setZoomFactor(1);win.setContentSize(1024,680);});
       homeTasks=await page.evaluate(()=>window.workbench.todo.state());
       homeBefore=await settledMediaHomeGeometry(native,page);assert.equal(homeBefore.hosts.length,0);
-      report.mediaKeepaliveHomeLayout={beforeCreator:homeBefore,screenshots:{beforeCreator:'media-keepalive-before.png',hiddenCreator:'media-keepalive-hidden.png'},visualAcceptance:null};
+      const longTitlePresent=homeTasks.tasks.some(task=>task.title.startsWith('CI floating ')&&task.title.includes('长标题关联与窄屏验收'));
+      assert.equal(longTitlePresent,true,'The matched home comparison must include the existing synthetic long task title');
+      report.mediaKeepaliveHomeLayout={beforeCreator:homeBefore,taskData:{taskCount:homeTasks.tasks.length,longTitlePresent,
+        longestTitleLength:Math.max(0,...homeTasks.tasks.map(task=>task.title.length))},
+        screenshots:{beforeCreator:'media-keepalive-before.png',hiddenCreator:'media-keepalive-hidden.png'},visualAcceptance:null};
       await screenshot('media-keepalive-before.png');
     });
     let id; let preserved; let preservedProbe; let retainedPoint;
@@ -570,9 +581,11 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       assert.ok(target?.ignored && target.ignoredReasons?.some(reason => /hidden|inert|notRendered/i.test(reason.name)), 'Hidden host must be absent from accessibility navigation');
       await ax.detach(); ax = undefined;
       const homeHidden=await settledMediaHomeGeometry(native,page);report.mediaKeepaliveHomeLayout.hiddenCreator=homeHidden;
-      assert.deepEqual(await page.evaluate(()=>window.workbench.todo.state()),homeTasks,'Home layout comparison must preserve the same task data');
-      Object.assign(report.mediaKeepaliveHomeLayout,assertMediaHomeLayoutUnchanged(homeBefore,homeHidden));
+      // Always retain both exact native surfaces, including a failing comparison.
       await screenshot('media-keepalive-hidden.png');
+      assert.deepEqual(await page.evaluate(()=>window.workbench.todo.state()),homeTasks,'Home layout comparison must preserve the same task data');
+      report.mediaKeepaliveHomeLayout.taskDataUnchanged=true;
+      Object.assign(report.mediaKeepaliveHomeLayout,assertMediaHomeLayoutUnchanged(homeBefore,homeHidden));
       await creator(page, true); assertMediaStatePreserved(preserved, await nativeState(application, id));
     });
     await check('Three themes, two native sizes, AI/navigation changes and reduced motion retain accurate guest bounds', async () => {
