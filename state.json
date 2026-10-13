@@ -1,7 +1,12 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 205,
-  "currentRun": null,
+  "revision": 206,
+  "currentRun": {
+    "owner": "ono-root-feedback-20261013T0334Z",
+    "startedAt": "2026-10-13T03:34:35.918Z",
+    "currentDevelopmentGroup": null,
+    "task": "回复41进度分支疑问；26方案反馈核验与设计修订准备，不实施产品"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -344,7 +349,7 @@
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "stage": "awaiting-plan-approval",
+      "stage": "plan-revision",
       "type": [
         "ui",
         "interaction"
@@ -352,7 +357,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T02:44:55Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待局部视觉v2批准，再集成最新main修订PR39；旧最终请求暂停",
+      "nextAction": "核对当前浮窗无筛选器的简洁列表，准备局部v3高保真，图可交付后在Issue26重审；v2与旧合入请求暂停，不实施",
       "groupId": "workbench-context-26",
       "groupIssueNumbers": [
         26
@@ -404,10 +409,17 @@
       "imagesVerifiedAt": "2026-10-12T18:07:33.897Z",
       "temporaryEvidenceCleanedAt": "2026-10-12T18:08:33.944Z",
       "lastNotifiedAt": "2026-10-13T00:44:46Z",
-      "feedbackCommentId": 6135158729,
+      "feedbackCommentId": 6137391347,
       "imageDisplayVerifiedAt": "2026-10-13T00:38:05.123Z",
       "temporaryImageCleanedAt": "2026-10-13T00:38:35.156Z",
-      "integrationNote": "main已合入24；PR39当前冲突待局部v2批准后在授权实现中集成并重验，不沿用旧CI"
+      "integrationNote": "main已合入24；PR39当前冲突待局部v2批准后在授权实现中集成并重验，不沿用旧CI",
+      "latestFeedback": {
+        "body": "还是不对，参考当前to-do-list悬浮框的选择，那选择框里面就不需要有筛选器这些，你再看看呢",
+        "commentId": 6137391347,
+        "createdAt": "2026-10-13T03:14:56Z",
+        "updatedAt": "2026-10-13T03:14:56Z",
+        "authorId": 54107847
+      }
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
@@ -1074,7 +1086,8 @@
         "updatedAt": "2026-10-13T02:57:04Z",
         "body": "没问题，在发布版本前你需要确认几个事情：\n1、所有功能和分支都已经合入主分支\n2、除了主分支外没有多余的其他分支",
         "interpretation": "发布前核对全部目标功能已合入main、无未处理需求分支；清理无用分支，必要进度分支单列用途，不误合过时实验，不因发布需求推定批准具体合入"
-      }
+      },
+      "stateBranchQuestionCommentId": 6137399050
     }
   },
   "ownCommentIds": [
@@ -2875,6 +2888,20 @@
       "createdAt": "2026-10-13T03:18:35.297Z",
       "updatedAt": "2026-10-13T03:19:06Z",
       "verifiedAt": "2026-10-13T03:19:35.279Z"
+    },
+    "release41-state-explanation": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/41",
+      "body": "【OnO 自动化】不需要合入 main。ono-pipeline-state 只保存每单进度、当前方案/PR版本和操作回执，供我下次继续处理；它不包含待发布功能，也不参与产品构建。\n\n按当前约定，这个分支单独保留即可。发布前我会确认所有目标功能都已合入 main，并清理无用需求分支；最终清单会明确列出 main 和这个必要的进度记录分支。\n\n这条是说明，无需批准或执行合入。",
+      "createdAt": "2026-10-13T03:34:35.918Z"
+    },
+    "issue26-v3-feedback-ack": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
+      "body": "【OnO 自动化】明白了，上一版把“参考悬浮框”理解成只调整行样式，仍保留类型/状态筛选，没对齐你要的简洁选择方式。\n\n我先重新核对当前待办悬浮框的实际选择器，再修订 #26 的局部高保真；v2 暂停待审，PR #39 也不继续实施或合入。修订只针对这里的关联事项选择框，不据此删除其他工作台的功能。\n\n新图和完整范围准备好后继续在本 Issue 对齐；当前无需批准旧版。",
+      "createdAt": "2026-10-13T03:34:35.918Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
