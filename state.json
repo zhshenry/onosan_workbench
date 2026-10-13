@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 206,
+  "revision": 207,
   "currentRun": {
     "owner": "ono-root-feedback-20261013T0334Z",
     "startedAt": "2026-10-13T03:34:35.918Z",
@@ -1079,7 +1079,7 @@
         36,
         37
       ],
-      "lastCommentId": 6137073860,
+      "lastCommentId": 6137624093,
       "preReleaseRequirements": {
         "sourceCommentId": 6137177280,
         "sourceUrl": "https://github.com/zhshenry/onosan_workbench/issues/41#issuecomment-6137177280",
@@ -1141,7 +1141,8 @@
     6137005006,
     6137073860,
     6137253601,
-    6137427103
+    6137427103,
+    6137624093
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -2891,10 +2892,12 @@
     },
     "release41-state-explanation": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/41",
       "body": "【OnO 自动化】不需要合入 main。ono-pipeline-state 只保存每单进度、当前方案/PR版本和操作回执，供我下次继续处理；它不包含待发布功能，也不参与产品构建。\n\n按当前约定，这个分支单独保留即可。发布前我会确认所有目标功能都已合入 main，并清理无用需求分支；最终清单会明确列出 main 和这个必要的进度记录分支。\n\n这条是说明，无需批准或执行合入。",
-      "createdAt": "2026-10-13T03:34:35.918Z"
+      "createdAt": "2026-10-13T03:35:28Z",
+      "commentId": 6137624093,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/41#issuecomment-6137624093"
     },
     "issue26-v3-feedback-ack": {
       "kind": "comment",
