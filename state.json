@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 200,
+  "revision": 201,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -2758,6 +2758,97 @@
       "createdAt": "2026-10-13T03:02:23Z",
       "commentId": 6137253601,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/41#issuecomment-6137253601"
+    },
+    "floating-pr40-final-images": {
+      "kind": "upload-images",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
+      "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
+      "runId": 38339682689,
+      "images": [
+        {
+          "file": "float-group-ai-expanded-narrow.png",
+          "sha256": "7eb9262eb3acb623a2d9fbd5367750d713a6c283663e3f15e2e48342981bf744",
+          "bytes": 101605
+        },
+        {
+          "file": "float-group-ai-expanded-wide.png",
+          "sha256": "795e60af6e1f1f81d442fbd6beea5f835297399789accb1d8bc263229a11129c",
+          "bytes": 121557
+        },
+        {
+          "file": "float-group-ai-mini-narrow.png",
+          "sha256": "e04300cf0803da53c0ab60aa762e96dc41e7b8c769be77fb8a4224ec0cce5754",
+          "bytes": 26425
+        },
+        {
+          "file": "float-group-ai-mini-wide.png",
+          "sha256": "323f9038b2f69deeb68efed7769482680ebf4f39e0bb8eb7ffa7423d35d65df4",
+          "bytes": 30317
+        },
+        {
+          "file": "float-group-cool.png",
+          "sha256": "97c6bfff2d7b8e623c89bfacb92e92534af6f1bca8fd174638a903d933deaaec",
+          "bytes": 27820
+        },
+        {
+          "file": "float-group-empty.png",
+          "sha256": "20c2b6178d7f417a9aa3f2110098cadc432ee9188fc92236ac19e8fdd1813921",
+          "bytes": 39189
+        },
+        {
+          "file": "float-group-home-expanded-narrow.png",
+          "sha256": "1a9dd89401bd8d2e6dfa6a998cde831fc02bc70c0089007b16e0e04cd5a8fa66",
+          "bytes": 89107
+        },
+        {
+          "file": "float-group-home-expanded-wide.png",
+          "sha256": "b91813ff94db12c53e9434eb6ff20e8f62e7f0dbfe9660e0a9db344b0cf7b1c0",
+          "bytes": 112106
+        },
+        {
+          "file": "float-group-home-mini-narrow.png",
+          "sha256": "53f079f775717151a222f768140d10fcb82fa3a43c368fe66f759232c827ecf5",
+          "bytes": 36609
+        },
+        {
+          "file": "float-group-home-mini-wide.png",
+          "sha256": "17a691495198a2945241cafef54f991c9d62ca971444b46990bab23f42fb75ff",
+          "bytes": 47790
+        },
+        {
+          "file": "float-group-linked.png",
+          "sha256": "73ba5d2ddc031a5d0ce637bf50d899f8ac3b97f87a3e335eab58f69a851523b4",
+          "bytes": 29955
+        },
+        {
+          "file": "float-group-mist.png",
+          "sha256": "60e9d1e483fc3af739f846cc86ab01d95460120bc079cbb49153a85cea048aff",
+          "bytes": 22662
+        },
+        {
+          "file": "float-group-models.png",
+          "sha256": "f0061cd22ff2df274886e17412f96e52a29271b7b3d7331e7dfeda40d9bcd127",
+          "bytes": 28785
+        },
+        {
+          "file": "float-group-picker.png",
+          "sha256": "b7aaced8c40ae4a12f9c6c3df56da31314aca8bc41d489b08865b70e2773a735",
+          "bytes": 32011
+        },
+        {
+          "file": "float-group-relaunched.png",
+          "sha256": "5b4b04e1e14e9f934fd26138604dd68fb91ac2b3a8630f183253e17274bb02ac",
+          "bytes": 112118
+        },
+        {
+          "file": "float-group-warm.png",
+          "sha256": "fc248bb10db7f5c7ae3de7df4c0da9528af27fc110ad4895a3249b379a5fffc7",
+          "bytes": 26601
+        }
+      ],
+      "summary": "16张准确最终Windows实装截图已逐张看图，原生附件一次上传供本组Issue验收，不入Git",
+      "createdAt": "2026-10-13T03:15:15.766Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
