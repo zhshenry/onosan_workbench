@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 336,
+  "revision": 337,
   "currentRun": {
     "owner": "ono-root-issue37-20261013T1151Z",
     "startedAt": "2026-10-13T11:51:31.363Z",
@@ -1385,7 +1385,7 @@
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
-      "stage": "revision-requested-error-example",
+      "stage": "revised-error-screenshot-windows-validation",
       "type": [
         "ui",
         "investigation"
@@ -1419,7 +1419,7 @@
       "approvalReverifiedAt": "2026-10-13T10:58:39.185Z",
       "pr": 44,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/44",
-      "headSha": "cbe2a25da8c5a209adbf031bcef0684836963a2d",
+      "headSha": "71416bb20380c013960d005f53b281340e97caa2",
       "ciRun": 38389670397,
       "ciResult": "success",
       "tests": {
@@ -1442,14 +1442,16 @@
         "closeIssues": [
           34
         ],
-        "cleanupBranch": "ono/issue-34-update-status-inline"
+        "cleanupBranch": "ono/issue-34-update-status-inline",
+        "superseded": true
       },
       "latestFeedback": {
         "commentId": 6145956873,
         "createdAt": "2026-10-13T12:51:25Z",
         "authorId": 54107847,
         "summary": "修复验收截图错误内容重复，不是合入批准"
-      }
+      },
+      "nextStep": "新Windows通过后查看并交付4张原图，准确新head重新请求最终审批"
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
@@ -4353,12 +4355,14 @@
     },
     "issue34-error-fixture-publish": {
       "operationId": "issue34-error-fixture-publish",
-      "status": "intent",
+      "status": "succeeded",
       "target": 44,
       "expectedHead": "cbe2a25da8c5a209adbf031bcef0684836963a2d",
       "candidateTree": "f1cf9c97485be1ca6a63c10086e51cfc279d4d15",
       "summary": "用户截图修改意见：仅test/fixture正常错误交付图，保留长文本压力检查并补重复事件不累加测试；不改产品",
-      "startedAt": "2026-10-13T13:00:41.464Z"
+      "startedAt": "2026-10-13T13:00:41.464Z",
+      "commitSha": "71416bb20380c013960d005f53b281340e97caa2",
+      "verifiedAt": "2026-10-13T13:02:06.526Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -4374,7 +4378,7 @@
     "endedAt": "2026-10-13T11:33:25.184Z",
     "summary": "35原生500/500+95/95通过但既有首页视觉异常与附件交付阻塞；34PR44实现Windows513/513+95/95及4图实际查看，待内嵌附件；无在途写，释放协调占用"
   },
-  "updatedAt": "2026-10-13T13:00:41.464Z",
+  "updatedAt": "2026-10-13T13:02:06.526Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
