@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 197,
+  "revision": 198,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -255,7 +255,7 @@
     },
     "25": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/25",
-      "stage": "visual-review",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -263,7 +263,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T02:44:55Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "84实装全过，真实看15张浮窗图发现330展开关联入口被压换行，修窄宽适配并补实际picker图后完整重验",
+      "nextAction": "等待330底栏最终视觉修订准确head Windows84项及40PNG逐图交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -311,7 +311,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
+      "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38338289863,
@@ -416,7 +416,7 @@
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "stage": "visual-review",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -424,7 +424,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T02:44:55Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "84实装全过，真实看15张浮窗图发现330展开关联入口被压换行，修窄宽适配并补实际picker图后完整重验",
+      "nextAction": "等待330底栏最终视觉修订准确head Windows84项及40PNG逐图交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -475,7 +475,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
+      "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38338289863,
@@ -513,7 +513,7 @@
     },
     "29": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
-      "stage": "visual-review",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -521,7 +521,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T02:44:55Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "84实装全过，真实看15张浮窗图发现330展开关联入口被压换行，修窄宽适配并补实际picker图后完整重验",
+      "nextAction": "等待330底栏最终视觉修订准确head Windows84项及40PNG逐图交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -569,7 +569,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
+      "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38338289863,
@@ -607,7 +607,7 @@
     },
     "30": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
-      "stage": "visual-review",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -615,7 +615,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T02:44:55Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "84实装全过，真实看15张浮窗图发现330展开关联入口被压换行，修窄宽适配并补实际picker图后完整重验",
+      "nextAction": "等待330底栏最终视觉修订准确head Windows84项及40PNG逐图交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -663,7 +663,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
+      "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38338289863,
@@ -701,7 +701,7 @@
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
-      "stage": "visual-review",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -709,7 +709,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T02:44:55Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "84实装全过，真实看15张浮窗图发现330展开关联入口被压换行，修窄宽适配并补实际picker图后完整重验",
+      "nextAction": "等待330底栏最终视觉修订准确head Windows84项及40PNG逐图交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -757,7 +757,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
+      "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38338289863,
@@ -795,7 +795,7 @@
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
-      "stage": "visual-review",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -803,7 +803,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T02:44:55Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "84实装全过，真实看15张浮窗图发现330展开关联入口被压换行，修窄宽适配并补实际picker图后完整重验",
+      "nextAction": "等待330底栏最终视觉修订准确head Windows84项及40PNG逐图交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -851,7 +851,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
+      "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38338289863,
@@ -889,7 +889,7 @@
     },
     "33": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
-      "stage": "visual-review",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -897,7 +897,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T02:44:55Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "84实装全过，真实看15张浮窗图发现330展开关联入口被压换行，修窄宽适配并补实际picker图后完整重验",
+      "nextAction": "等待330底栏最终视觉修订准确head Windows84项及40PNG逐图交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -945,7 +945,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
+      "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38338289863,
@@ -2739,12 +2739,15 @@
     },
     "floating-pr40-toolbar-publish": {
       "kind": "update-implementation",
-      "status": "intent",
+      "status": "succeeded",
       "target": "ono/floating-group-v2",
       "expectedHead": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
       "patchSha256": "73a387b8aa7cc5e9c1a7e54c82e4bcfcf61eaef6c9e49d001fe42e8eb4266250",
       "summary": "真实看图修330expanded关联入口换行，仅narrowCSS及本调用tooltip；补实际picker图，486=484pass2skipverify和独立复核通过；84checks40PNG待真实验收",
-      "createdAt": "2026-10-13T03:00:21.061Z"
+      "createdAt": "2026-10-13T03:00:21.061Z",
+      "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
+      "treeSha": "6c77b70e050aa3a29a8abde1fe29aba0c54625a5",
+      "verifiedAt": "2026-10-13T03:01:21.478Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
