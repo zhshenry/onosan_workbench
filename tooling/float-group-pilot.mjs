@@ -229,6 +229,29 @@ async function setWidth(application, page, narrow, report) {
   report.floatGroup.measurements.push({ before, after, area, narrow });
   return after;
 }
+// Read-only hit testing: click only exposed toolbar background, never a control,
+// picker surface, or draggable titlebar. No DOM event synthesis or force-click.
+export function findFloatOutsidePoint(selector) {
+  const toolbar = document.querySelector(selector);
+  if (!toolbar) throw new Error(`Missing outside-dismissal toolbar: ${selector}`);
+  const box = toolbar.getBoundingClientRect();
+  for (const fraction of [0.5, 0.25, 0.75]) {
+    const y = box.y + box.height * fraction;
+    for (let x = Math.ceil(box.x + 2); x < box.right - 2; x += 2) {
+      if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) continue;
+      const hit = document.elementFromPoint(x, y);
+      // Keep a small hit-tested margin from control/popover edges and DPI rounding.
+      if ([[x - 2, y], [x + 2, y], [x, y - 2], [x, y + 2]].some(([px, py]) => px < 0 || py < 0 || px >= innerWidth || py >= innerHeight || document.elementFromPoint(px, py) !== toolbar)) continue;
+      if (hit !== toolbar || hit.closest('.fa-picker-list, .fa-mini-picker, .ai-add-reference, button, input, textarea, select, a, [role="button"], [role="option"], [contenteditable="true"]')) continue;
+      let draggable = false;
+      for (let node = hit; node; node = node.parentElement) {
+        if (getComputedStyle(node).getPropertyValue('-webkit-app-region') === 'drag') { draggable = true; break; }
+      }
+      if (!draggable) return { x, y, selector, hitClass: hit.className, viewport: { width: innerWidth, height: innerHeight } };
+    }
+  }
+  throw new Error(`No exposed non-interactive outside-dismissal point: ${selector}`);
+}
 async function capture(screenshot, page, name) { await screenshot(name, page); }
 export async function runFloatEmptyPilot({ application, page, check, screenshot, report }) {
   report.floatGroup = { measurements: [], states: [], associations: [] };
@@ -429,8 +452,23 @@ export async function runFloatGroupPilot({ application, page, check, screenshot,
       assertFloatModelGeometry(before, await model.boundingBox());
       await inspectCompact();
       await open(); await floatPage.keyboard.press('Escape'); await picker.waitFor({ state: 'hidden' });
-      await open(); await floatPage.locator('textarea[aria-label="AI 对话输入"]').click(); await picker.waitFor({ state: 'hidden' });
-      await open(); await options.nth(0).focus(); await floatPage.keyboard.press('Enter'); await picker.waitFor({ state: 'hidden' });
+      await open(); await options.nth(0).click(); await picker.waitFor({ state: 'hidden' });
+      await chip.waitFor();
+      await open();
+      const linkedBeforeOutside = await chip.allTextContents();
+      const selectedBeforeOutside = await options.evaluateAll(elements => elements.filter(element => element.getAttribute('aria-selected') === 'true').map(element => element.getAttribute('title')));
+      assert.deepEqual(selectedBeforeOutside, [first], 'Outside dismissal must retain a real existing selection');
+      const modelBeforeOutside = await model.innerText(); const callsBeforeOutside = requests.length;
+      const outsidePoint = await floatPage.evaluate(findFloatOutsidePoint, mini ? '.fa-mini-quick' : '.fa-surface .ai-compose-toolbar');
+      await floatPage.mouse.click(outsidePoint.x, outsidePoint.y);
+      await picker.waitFor({ state: 'hidden' });
+      assert.deepEqual(await chip.allTextContents(), linkedBeforeOutside, 'Outside pointer must not change association');
+      assert.equal(await model.innerText(), modelBeforeOutside, 'Outside pointer must not change selected model');
+      assert.equal(requests.length, callsBeforeOutside, 'Outside pointer must not send a model request');
+      (report.floatGroup.outsideDismissals ??= []).push({ mini, ...outsidePoint, selectedBeforeOutside, requestCount: requests.length });
+      await open();
+      assert.deepEqual(await options.evaluateAll(elements => elements.filter(element => element.getAttribute('aria-selected') === 'true').map(element => element.getAttribute('title'))), selectedBeforeOutside, 'Dismiss/reopen must preserve picker selection');
+      await options.nth(0).focus(); await floatPage.keyboard.press('Enter'); await picker.waitFor({ state: 'hidden' });
       assertFloatModelGeometry(before, await model.boundingBox());
       await inspectCompact();
       assert.equal(requests.length, initialCalls, 'Association alone must never call a model');

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { JSDOM } from 'jsdom';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
@@ -179,4 +180,121 @@ test('State matrix verifies restoration and both settled width results without a
   assert.match(source, /Renderer mini class must match the requested native state/);
   assert.match(source, /Renderer classes must match the complete requested matrix state/);
   assert.equal(FLOAT_GROUP_SCREENSHOTS.length, 15);
+});
+
+// JSDOM supplies the actual DOM/closest semantics. Explicit rectangles and hit
+// results model browser layout, which JSDOM itself deliberately does not render.
+async function outsidePointFixture(mini = true) {
+  const { findFloatOutsidePoint } = await import('../tooling/float-group-pilot.mjs');
+  const dom = new JSDOM(`<main class="float-app"><section class="fa-surface"><div class="${mini ? 'fa-mini-quick' : 'ai-compose-toolbar'}"><button class="ai-add-reference"><span>关联事项</span></button><button class="fa-model-toggle"><span>model</span></button><button class="ai-send">发送</button></div><div class="fa-picker-list fa-mini-picker"><button role="option">task</button></div></section></main>`, { runScripts: 'outside-only' });
+  const document = dom.window.document;
+  const selector = mini ? '.fa-mini-quick' : '.fa-surface .ai-compose-toolbar';
+  const toolbar = document.querySelector(selector)!;
+  let rect = { x: 10, y: mini ? 140 : 700, width: mini ? 310 : 420, height: mini ? 22 : 36 };
+  const width = mini ? 330 : 440; const height = mini ? 176 : 800;
+  Object.defineProperties(dom.window, { innerWidth: { value: width }, innerHeight: { value: height } });
+  Object.defineProperty(toolbar, 'getBoundingClientRect', { value: () => ({ ...rect, left: rect.x, top: rect.y, right: rect.x + rect.width, bottom: rect.y + rect.height }) });
+  let hit: (x: number, y: number) => Element | null = () => toolbar;
+  const hitCalls: Array<{ x: number; y: number }> = [];
+  Object.defineProperty(document, 'elementFromPoint', { value: (x: number, y: number) => { hitCalls.push({ x, y }); return hit(x, y); } });
+  const nativeStyle = dom.window.getComputedStyle.bind(dom.window);
+  Object.defineProperty(dom.window, 'getComputedStyle', { value: (element: Element) => {
+    const style = nativeStyle(element);
+    return { getPropertyValue: (name: string) => name === '-webkit-app-region' ? element.getAttribute('data-app-region') || '' : style.getPropertyValue(name) };
+  } });
+  const run = dom.window.eval(`(${findFloatOutsidePoint.toString()})`);
+  return { dom, document, toolbar, selector, width, height, hitCalls, run: () => run(selector),
+    setHit: (next: typeof hit) => { hit = next; }, setRect: (next: typeof rect) => { rect = next; } };
+}
+
+test('Actual outside-point helper selects compact and expanded toolbar gaps without activating any control', async () => {
+  for (const mini of [true, false]) {
+    const fixture = await outsidePointFixture(mini);
+    try {
+      const { document, toolbar } = fixture;
+      let actions = 0;
+      for (const event of ['click', 'pointerdown', 'change']) document.addEventListener(event, () => { actions++; });
+      const original = document.body.innerHTML;
+      fixture.setHit((x) => x < 100 ? document.querySelector('.ai-add-reference span') : x >= 140 ? document.querySelector('.fa-model-toggle span') : toolbar);
+      const point = fixture.run();
+      assert.equal(point.selector, fixture.selector);
+      assert.ok(point.x >= 102 && point.x <= 137, 'Chosen point must retain the two-pixel hit-tested margin from both controls');
+      assert.ok(point.y >= 0 && point.y < fixture.height);
+      assert.equal(point.hitClass, toolbar.className);
+      assert.equal(point.viewport.width, fixture.width); assert.equal(point.viewport.height, fixture.height);
+      assert.equal(actions, 0, 'Read-only helper must not synthesize clicks or change selection/model');
+      assert.equal(document.body.innerHTML, original);
+      assert.ok(fixture.hitCalls.length > 1, 'Hit testing must skip real control descendants before finding gap');
+    } finally { fixture.dom.window.close(); }
+  }
+});
+
+test('Actual outside-point helper refuses picker, trigger, model and action overlays', async () => {
+  const fixture = await outsidePointFixture();
+  try {
+    for (const selector of ['.fa-picker-list', '[role="option"]', '.ai-add-reference', '.ai-add-reference span', '.fa-model-toggle', '.fa-model-toggle span', '.ai-send']) {
+      fixture.setHit(() => fixture.document.querySelector(selector));
+      assert.throws(fixture.run, /No exposed non-interactive/, selector);
+    }
+    fixture.setHit(() => null); assert.throws(fixture.run, /No exposed non-interactive/);
+    // A toolbar-shaped node inside an interactive/picker ancestor is unsafe too.
+    fixture.setHit(() => fixture.toolbar);
+    for (const className of ['fa-picker-list', 'fa-mini-picker', 'ai-add-reference']) {
+      fixture.toolbar.parentElement!.classList.add(className);
+      assert.throws(fixture.run, /No exposed non-interactive/, className);
+      fixture.toolbar.parentElement!.classList.remove(className);
+    }
+  } finally { fixture.dom.window.close(); }
+});
+
+test('Actual outside-point helper excludes out-of-viewport coordinates and draggable ancestors', async () => {
+  const fixture = await outsidePointFixture();
+  try {
+    for (const rect of [
+      { x: -200, y: 140, width: 100, height: 22 },
+      { x: 340, y: 140, width: 100, height: 22 },
+      { x: 10, y: -100, width: 310, height: 22 },
+      { x: 10, y: 180, width: 310, height: 22 },
+    ]) {
+      fixture.setRect(rect); const before = fixture.hitCalls.length;
+      assert.throws(fixture.run, /No exposed non-interactive/);
+      assert.equal(fixture.hitCalls.length, before, 'Offscreen coordinates must never be queried or clicked');
+    }
+    fixture.setRect({ x: -10, y: 140, width: 320, height: 22 });
+    const clipped = fixture.run(); assert.ok(clipped.x >= 0 && clipped.x < fixture.width);
+    assert.ok(fixture.hitCalls.every(point => point.x >= 0 && point.y >= 0 && point.x < fixture.width && point.y < fixture.height));
+    fixture.setRect({ x: 10, y: 140, width: 310, height: 22 });
+    for (const node of [fixture.toolbar, fixture.toolbar.parentElement!, fixture.document.querySelector('.float-app')!]) {
+      node.setAttribute('data-app-region', 'drag');
+      assert.throws(fixture.run, /No exposed non-interactive/);
+      node.removeAttribute('data-app-region');
+    }
+    fixture.toolbar.remove(); assert.throws(fixture.run, /Missing outside-dismissal toolbar/);
+  } finally { fixture.dom.window.close(); }
+});
+
+test('Outside dismissal uses a real mouse click and preserves association, selected model and request count', async () => {
+  const source = await readFile(new URL('../tooling/float-group-pilot.mjs', import.meta.url), 'utf8');
+  assert.match(source, /evaluate\(findFloatOutsidePoint, mini \? '\.fa-mini-quick' : '\.fa-surface \.ai-compose-toolbar'\)/);
+  assert.match(source, /await floatPage\.mouse\.click\(outsidePoint\.x, outsidePoint\.y\)/);
+  assert.match(source, /Outside dismissal must retain a real existing selection/);
+  assert.match(source, /Outside pointer must not change association/);
+  assert.match(source, /Outside pointer must not change selected model/);
+  assert.match(source, /Outside pointer must not send a model request/);
+  assert.match(source, /Dismiss\/reopen must preserve picker selection/);
+  assert.doesNotMatch(source, /force:\s*true|dispatchEvent\(|element\.click\(\)|locator\('textarea\[aria-label="AI 对话输入"\]'\)\.click\(\)/);
+});
+
+test('Actual outside-point helper requires exposed two-pixel margins in all four directions', async () => {
+  const fixture = await outsidePointFixture();
+  try {
+    const safe = [[100, 151], [98, 151], [102, 151], [100, 149], [100, 153]];
+    const overlay = fixture.document.querySelector('.fa-picker-list');
+    fixture.setHit((x, y) => safe.some(([px, py]) => px === x && py === y) ? fixture.toolbar : overlay);
+    const point = fixture.run(); assert.equal(point.x, 100); assert.equal(point.y, 151);
+    for (let blocked = 1; blocked < safe.length; blocked++) {
+      fixture.setHit((x, y) => safe.some(([px, py], index) => index !== blocked && px === x && py === y) ? fixture.toolbar : overlay);
+      assert.throws(fixture.run, /No exposed non-interactive/, `Margin ${blocked} is covered despite exposed center`);
+    }
+  } finally { fixture.dom.window.close(); }
 });
