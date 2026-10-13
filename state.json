@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 225,
+  "revision": 226,
   "currentRun": {
     "owner": "ono-root-diagnosis-result-20261013T0436Z",
     "startedAt": "2026-10-13T04:36:52.846Z",
@@ -3006,7 +3006,7 @@
     "pr40-native-evidence-recovered-upload": {
       "operationId": "pr40-native-evidence-recovered-upload",
       "targetIssue": 28,
-      "status": "uploaded-pending-display",
+      "status": "succeeded",
       "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
       "artifactId": 11786408859,
       "summary": "用户要求继续网页；26上传及发布显示成功后，恢复准确同hash16张PR40实测图交付，先单张验证",
@@ -3030,7 +3030,17 @@
         "float-group-warm.png": "https://github.com/user-attachments/assets/79798add-0dfa-4870-ac32-755258354287"
       },
       "nextAction": "已取得单图URL；继续其余15张准确hash证据",
-      "uploadedAt": "2026-10-13T04:53:11.857Z"
+      "uploadedAt": "2026-10-13T04:53:11.857Z",
+      "displayVerifiedAt": "2026-10-13T04:54:13.344Z"
+    },
+    "pr40-final-native-acceptance": {
+      "operationId": "pr40-final-native-acceptance",
+      "targetIssue": 28,
+      "status": "intent",
+      "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
+      "summary": "16张准确实测图及7单验收清单，统一准确head合入/实际main验收后关7单及合规删本组分支批准请求",
+      "body": "【OnO 自动化】悬浮窗组 v2｜PR #40 最终带图验收｜待合入收尾批准\n\n原生网页附件已恢复本次交付：下面16张均来自准确实现版本的 Windows 实装截图，上传后已读回URL并检查显示。此前失败根因仍未证实；没有使用CLI上传，没有把图片存入Git或额外备份。\n\n## 版本与测试\n- PR：[#40](https://github.com/zhshenry/onosan_workbench/pull/40)，head **5a74dbb79469bb0bbc5d681939e8fbe430d44d4f**，仍为Draft。\n- 当前 main/base：**a5659fa5e6dbef6188ec3e34b061bc317d4d7e78**。\n- [Windows CI 38339682689](https://github.com/zhshenry/onosan_workbench/actions/runs/38339682689)：486/486单测通过（0失败/跳过/取消）、84/84安装后验收通过；构建、类型检查、actionlint及文件链接安全检查通过，NSIS安装退出0。\n- 测试集成提交：65c469304680ae426e74728a43d05fb328fd7474，父提交为上述main和head；tree为6c77b70e050aa3a29a8abde1fe29aba0c54625a5。尚未合入，不能将本结果称为合入后main通过。\n\n## 各Issue验收清单\n- [x] #25：展开首页去掉AI建议条，保留AI入口、待办、日程及已有历史。\n- [x] #28：440/330宽度独立于展开/收起；16态实际窗口高度、屏幕边缘、隐藏重显及重启默认440通过。\n- [x] #29：展开AI返回按钮显示“返回首页”。\n- [x] #30：收起首页橙色AI图标及细边框。\n- [x] #31：移除记录计数控件但保留历史，模型按钮与有界滚动菜单可用。\n- [x] #32：收起AI左箭头“返回”，保持原灰色小字样式。\n- [x] #33：关联chip独立行，真实指针选择/更换/删除、键盘、外部取消、类型/业务状态/选中勾区分，模型位置稳定。\n- [x] 已批准的退出缺陷v1：无浮窗、显示/隐藏/反复操作后正常退出和同版本重启数据保留；未把强制终止当作正常退出。\n\n## 实测截图\n### 首页：展开宽／窄\n![home-expanded-wide](https://github.com/user-attachments/assets/dadaafc4-27e3-4bca-a058-6f2198d07aed)\n\n![home-expanded-narrow](https://github.com/user-attachments/assets/2e9eca93-7dee-4b1d-bd4d-79127c2b4ced)\n\n### 首页：收起宽／窄\n![home-mini-wide](https://github.com/user-attachments/assets/9596a8df-0377-41c3-912b-95b719965eed)\n\n![home-mini-narrow](https://github.com/user-attachments/assets/c0873588-7a77-42a8-9559-3ae9fbcc96c4)\n\n### AI：展开宽／窄\n![ai-expanded-wide](https://github.com/user-attachments/assets/8ba1ea00-2635-4723-ab12-e9dad92940df)\n\n![ai-expanded-narrow](https://github.com/user-attachments/assets/61c5f2ce-db49-4630-a6c5-d5891d405665)\n\n### AI：收起宽／窄\n![ai-mini-wide](https://github.com/user-attachments/assets/368b2613-1429-417b-96fb-610ed0d7c99d)\n\n![ai-mini-narrow](https://github.com/user-attachments/assets/b7e83d82-2fa4-4a16-be91-9828ae0bf6bb)\n\n### 关联选择、关联后、模型菜单\n![picker](https://github.com/user-attachments/assets/1afe8260-3af3-48c0-895c-f947fa67931d)\n\n![linked](https://github.com/user-attachments/assets/f1bdfdc8-4133-4787-aae9-53f96e1c348d)\n\n![models](https://github.com/user-attachments/assets/42f4ba27-a6c7-4932-b9a6-2323678a5eb0)\n\n### 空状态、三主题及重启读回\n![empty](https://github.com/user-attachments/assets/0dfdbdf3-d0a3-4f86-998b-0871024f3c83)\n\n![cool](https://github.com/user-attachments/assets/2c577b76-a8ba-467c-a57a-ae5b795616ef)\n\n![mist](https://github.com/user-attachments/assets/d180ddbc-3612-4424-98f0-af0e735a839a)\n\n![warm](https://github.com/user-attachments/assets/79798add-0dfa-4870-ac32-755258354287)\n\n![relaunched](https://github.com/user-attachments/assets/9bf2670f-dcf6-4e89-9686-642580732243)\n\n## 证据与边界\n[完整CI产物](https://github.com/zhshenry/onosan_workbench/actions/runs/38339682689/artifacts/11786408859)：43文件（40 PNG＋3报告），ZIP 8,799,120字节；SHA256 79fe6112115d8feaab82bc3611b6fbc40697cbd1cc53fd5a95670daa967ae590，到期2026-10-16 11:08:32（UTC+08）。本组16张已逐图复核，不声称其余24张都在本轮逐图看过。\nAI请求用本机回环合成服务验证正文/模型及无任务写入，不代表外部模型质量；未覆盖真实跨版本更新、签名/SmartScreen/UAC人工向导。其他主工作台布局和已知畸形旧日程加载问题不在本组。#26及PR #39不在本次合入范围。\n\n## 一次批准的收尾范围\n仅合入上述准确head的PR #40；随后验证实际main完整Windows检查。全部通过后关闭 #25、#28、#29、#30、#31、#32、#33，并按已批准规范核对后清理本组已合入分支。没有需一并关闭的辅助PR；不发版。head或范围变化重新核批准，base变化重新验集成。\n\n同意以上边界和收尾请只在本Issue回复：\n**同意合入收尾 PR #40，版本 5a74dbb；通过后关闭 #25、#28、#29、#30、#31、#32、#33**\n有修改意见直接回复；其余成员Issue无需重复批准。",
+      "createdAt": "2026-10-13T04:54:13.344Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
