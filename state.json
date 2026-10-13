@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 358,
+  "revision": 359,
   "currentRun": {
     "owner": "ono-root-issue26-20261013T1529Z",
     "startedAt": "2026-10-13T15:29:11.440Z",
@@ -401,7 +401,7 @@
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "stage": "v3-corrected-native-validation",
+      "stage": "v3-tested-awaiting-image-delivery",
       "type": [
         "ui",
         "interaction"
@@ -409,7 +409,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T14:27:19.230Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "准确新head Windows终态及5图逐图核验；原生附件失败次数不重置，本次34/35/37聊天例外不自动延伸26",
+      "nextAction": "等待原生附件故障可验证修复或本单明确图片渠道例外；尚无最终合入批准",
       "groupId": "workbench-context-26",
       "groupIssueNumbers": [
         26
@@ -437,7 +437,7 @@
       "prNumber": 39,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/39",
       "implementationBaseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
-      "ciRunId": 38287586027,
+      "ciRunId": 38428449729,
       "ciConclusion": "success",
       "lastCi": {
         "runId": 38286044872,
@@ -505,13 +505,15 @@
         "performedViaApp": null
       },
       "latestRun": {
-        "id": 38425855964,
-        "head": "7f19df9dfccc3d05e8574c57f58db5bec6170c1d",
-        "conclusion": "failure",
-        "unit": "510/510 no skips",
-        "native": "75/76, remaining not run",
-        "artifactId": 11828084947,
-        "failure": "first context radio.check timeout after click; diagnose immediate-close behavior"
+        "id": 38428449729,
+        "head": "f27d982dd2abbdc9d2d730206e318a86ef0dbd26",
+        "base": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
+        "testedMerge": "8809dfd3581f33f329d7a65d1bfb30c868aefb27",
+        "conclusion": "success",
+        "unit": "511/511 no skips",
+        "native": "99/99",
+        "artifactId": 11829803222,
+        "expiresAt": "2026-10-16T16:19:25Z"
       }
     },
     "28": {
@@ -4494,6 +4496,13 @@
       "startedAt": "2026-10-13T16:10:35.848Z",
       "head": "f27d982dd2abbdc9d2d730206e318a86ef0dbd26",
       "verifiedAt": "2026-10-13T16:11:43.704Z"
+    },
+    "issue26-v3-result": {
+      "operationId": "issue26-v3-result",
+      "status": "intent",
+      "target": 26,
+      "body": "【OnO 自动化】#26 v3 已完成实现和新一轮真实 Windows 验收，当前停在新图交付。\n\n[PR #39](https://github.com/zhshenry/onosan_workbench/pull/39)准确 head f27d982dd2abbdc9d2d730206e318a86ef0dbd26。[Windows运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38428449729)511/511单测、99/99原生检查、固定actionlint、构建与真实NSIS安装全部通过。测试base为b276261a90cb60a53626dd2149b0f3cdc6aad0fd，实际合成merge为8809dfd3581f33f329d7a65d1bfb30c868aefb27。\n\n已验证待办轻列表无搜索/类型状态筛选、全列表滚动、单选即关/更换/取消、焦点键盘；其他工作台的搜索和多选、真实IPC与发送快照、历史/会话隔离、普通退出重启后字段保留均通过。首轮旧check等待已卸载radio的问题已修为真实点击后检查准确标签与菜单关闭，未放宽产品要求。\n\n5张新Windows原图已逐张查看：三主题轻列表、保存后历史、同版本重启。右侧本单控件完整；左侧首页1024窄窗仍有此前报告的概览挤压，未修复，不能称整页视觉通过。该问题由#35补充方案处理，本单不搭载。模型响应和业务数据为合成验收，不代表外部模型服务效果；既有待办最新120条基础上下文仍保留。\n\n无GitHub内嵌图：[临时证据](https://github.com/zhshenry/onosan_workbench/actions/runs/38428449729/artifacts/11829803222)含5图，48文件/10,496,140bytes，2026-10-17 00:19:25（UTC+8）到期。原生附件故障尚无已证实修复原因，不重置重试次数。此前仅本次私聊附图已完成于#34/#35/#37，不自动延伸为此新交付的长期规则。\n\n若你希望本单也临时在现有私聊看这5张准确版本的实测图，可回复：同意仅本次将 #26 版本 f27d982 的5张实测图发到私聊。该回复仅批准图片渠道，不含合入；看图后再给出最终准确版本收尾请求。",
+      "startedAt": "2026-10-13T16:22:07.219Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -4509,7 +4518,7 @@
     "finishedAt": "2026-10-13T14:27:19.230Z",
     "summary": "重新分页检查无新需求/评论/批准或版本变化，34/37待批，35方案待附图，36等35；云电脑读取执行配置失败，无法继续本地开发/浏览器，GitHub连接器读取正常。修正34/37旧ciRun摘要。"
   },
-  "updatedAt": "2026-10-13T16:11:43.704Z",
+  "updatedAt": "2026-10-13T16:22:07.219Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
