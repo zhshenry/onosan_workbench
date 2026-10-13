@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 213,
+  "revision": 214,
   "currentRun": {
     "owner": "ono-root-attachment-diagnosis-20261013T0418Z",
     "startedAt": "2026-10-13T04:18:15.948Z",
@@ -2954,6 +2954,13 @@
       "createdAt": "2026-10-13T04:18:45Z",
       "commentId": 6138134955,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6138134955"
+    },
+    "attachment-diagnosis-result-26": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
+      "body": "【OnO 自动化】#26｜附件诊断结果与当前缺口\n\n还没有查明足以恢复上传的根因，因此暂不重新附图。\n\n已核实：\n1. 原PNG可正常解码、大小22–121KB，连单张26KB也失败；它们符合[GitHub官方附件格式和10MB图片限制](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/attaching-files)，不能归因于图片超限。\n2. 我的云端浏览器当前仍有正确账号和正常附件入口，没有可见登录或验证码要求；但这不证明上传认证/传输正常。普通连接器评论成功也不能证明图片上传成功。\n3. 失败只留下 Failed to upload，没有图片URL或具体服务器错误。可用浏览器诊断只有控制台信息，没有那次上传的HTTP状态码/响应体；原失败页面已被清理，无法恢复当时的请求记录。看到的浏览器扩展metadata错误与上传失败没有已证实因果关系。\n4. [官方gh CLI现在确实支持 --attach](https://cli.github.com/manual/gh_issue_comment)。但当前云端安装的是2.46.0，帮助中没有该参数；只读 gh auth status 显示没有已登录账号。因此升级CLI本身不能解决，也不能借用浏览器或连接器凭据冒充CLI认证。\n\n准确缺口是：需要当次上传失败的网络响应或平台侧错误记录，才能区分文件交接、传输、会话或服务端拒绝。我目前拿不到这份证据，不能把某种猜测写成原因已查清，更不能声称已经恢复。\n\n#26 v3高保真和方案草稿已准备；#28的准确实测证据仍在其评论链接中。两处待原生附件问题有明确修复依据后再交付，不重置重试预算、不新增凭据或服务。若你提供该次失败的错误信息，我会据此继续；当前无需批准旧方案。",
+      "createdAt": "2026-10-13T04:19:55.336Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
