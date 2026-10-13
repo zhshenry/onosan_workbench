@@ -1309,7 +1309,31 @@ kbd {
   transition: transform 0.16s var(--ease), background 0.16s var(--ease);
 }
 .set-btn:hover { background: #fff; transform: translateY(-1px); }
-.set-update-progress { width: 100%; height: 6px; margin-top: 12px; accent-color: var(--acc-deep); }
+.settings-about-page { container-type: inline-size; }
+.set-update-row { align-items: flex-start; }
+.set-update-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.set-update-heading > b { white-space: nowrap; }
+.set-row .txt .set-update-status { display: inline-flex; gap: 8px; margin: 0; color: var(--ink); font-size: var(--type-body); line-height: 1.55; white-space: nowrap; }
+.set-update-status::before { content: '·'; color: var(--ink-3); }
+.set-row .txt .set-update-status-full, .set-row .txt .set-update-status-compact { margin: 0; color: inherit; font-size: var(--type-body); line-height: inherit; }
+.set-row .txt .set-update-status-compact { display: none; }
+.set-row .txt .set-update-status[role="alert"] { color: var(--danger); }
+.set-update-details-toggle { padding: 0 2px; color: var(--acc-deep); font-size: var(--type-control); border-radius: 3px; cursor: pointer; }
+.set-update-details-toggle:hover { text-decoration: underline; }
+.set-update-details-toggle:active { color: var(--ink); }
+.set-update-details-toggle:focus-visible { outline: 2px solid var(--acc-deep); outline-offset: 2px; }
+.set-update-details { margin-top: 8px; color: var(--danger); font-size: var(--type-support); line-height: 1.7; overflow-wrap: anywhere; white-space: pre-wrap; }
+.set-update-action { min-width: 106px; white-space: nowrap; }
+.set-update-action:disabled { opacity: .55; cursor: default; }
+.set-update-action:disabled:hover { transform: none; }
+.set-update-progress { display: block; width: 100%; height: 6px; margin-top: 8px; accent-color: var(--acc-deep); }
+@container (max-width: 600px) {
+  .set-update-row { gap: 12px; padding-inline: 14px; }
+  .set-update-heading { column-gap: 6px; }
+  .set-row .txt .set-update-status { gap: 6px; }
+  .set-row .txt .set-update-status-full { display: none; }
+  .set-row .txt .set-update-status-compact { display: block; }
+}
 .set-empty { font-size: var(--type-control); color: var(--ink-3); padding: 14px 4px; }
 .help { font-size: var(--type-support); color: var(--ink-3); margin-top: 12px; padding-left: 4px; line-height: 1.7; }
 

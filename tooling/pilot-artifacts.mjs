@@ -8,9 +8,10 @@ import { YEAR_DROPDOWN_SCREENSHOTS } from './year-dropdown-pilot.mjs';
 import { TOPBAR_DATES_SCREENSHOTS } from './topbar-dates-pilot.mjs';
 
 import { FLOAT_GROUP_SCREENSHOTS } from './float-group-pilot.mjs';
+import { UPDATE_STATUS_SCREENSHOTS } from './update-status-pilot.mjs';
 
 export const MAX_ARTIFACT_BYTES = 19_000_000; // Zip overhead stays within the approved 20 MB ceiling.
-const allowed = new Set(['initial.png', 'created.png', 'edited.png', 'completed.png', 'relaunched.png', 'failure.png', 'install.json', 'report.json', 'report.md', ...YEAR_DROPDOWN_SCREENSHOTS, ...AI_CARDS_SCREENSHOTS, ...TOPBAR_DATES_SCREENSHOTS, ...FLOAT_GROUP_SCREENSHOTS]);
+const allowed = new Set(['initial.png', 'created.png', 'edited.png', 'completed.png', 'relaunched.png', 'failure.png', 'install.json', 'report.json', 'report.md', ...YEAR_DROPDOWN_SCREENSHOTS, ...AI_CARDS_SCREENSHOTS, ...TOPBAR_DATES_SCREENSHOTS, ...FLOAT_GROUP_SCREENSHOTS, ...UPDATE_STATUS_SCREENSHOTS]);
 export async function inspectPilotArtifacts(directory, maxBytes = MAX_ARTIFACT_BYTES) {
   assert.ok(Number.isSafeInteger(maxBytes) && maxBytes > 0);
   const root = path.resolve(directory);

@@ -11,6 +11,7 @@ import { inspectPilotArtifacts } from './pilot-artifacts.mjs';
 import { bounded, exitPilot, failurePage, finalizePilot } from './pilot-cleanup.mjs';
 import { runTopbarDatesPilot, verifyTopbarDatesRelaunch } from './topbar-dates-pilot.mjs';
 import { runYearDropdownPilot, verifyUnboundedDatePicker, verifyYearDropdownRelaunch } from './year-dropdown-pilot.mjs';
+import { runUpdateStatusPilot } from './update-status-pilot.mjs';
 
 assert.equal(process.platform, 'win32', 'Run the acceptance pilot on standard Windows hosted CI');
 const executablePath = process.env.WORKBENCH_PILOT_EXE;
@@ -212,6 +213,7 @@ try {
   topbarDatesFixture = await runTopbarDatesPilot({ application, page, check, screenshot, runId, report });
   aiCardsFixture = await runAiCardsPilot({ application, page, check, screenshot, runId, report });
   floatGroupFixture = await runFloatGroupPilot({ application, page, check, screenshot, runId, report });
+  await runUpdateStatusPilot({ application, page, check, screenshot, report });
   await check('Choose exit-on-close in settings and quit through the window close button', async () => {
     await page.locator('.rail [data-workbench="settings"]').click();
     await page.locator('.tree').getByRole('button', { name: '通用', exact: true }).click();
