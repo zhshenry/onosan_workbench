@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 186,
+  "revision": 187,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -2646,6 +2646,15 @@
       "headSha": "feee2edbd5dcc9162271607ce83dd580e8a043d1",
       "treeSha": "5d76c3e670b2c23c507b66141b9447387b190800",
       "verifiedAt": "2026-10-13T02:14:38.112Z"
+    },
+    "floating-pr40-outside-publish": {
+      "kind": "update-implementation",
+      "status": "intent",
+      "target": "ono/floating-group-v2",
+      "expectedHead": "feee2edbd5dcc9162271607ce83dd580e8a043d1",
+      "patchSha256": "8f8d28141086afb4e7e54d953b7869dd8bffd398b6658fc4a72bef3e6a11986c",
+      "summary": "仅pilot/tests选择真实露出外部空白物理点击，保留已选项/model/request断言，不改产品；478=476pass2skipverify和独立复核通过，84真实Windows待验",
+      "createdAt": "2026-10-13T02:29:27.138Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
