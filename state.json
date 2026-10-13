@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 301,
+  "revision": 302,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1419,7 +1419,7 @@
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "ci-blocked",
+      "stage": "ci-running",
       "type": [
         "ui",
         "bugfix",
@@ -1428,7 +1428,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "修复quit fixture新guest真实click/键盘准备；完整10主专项已通过，正常退出重启未跑",
+      "nextAction": "核quit真实输入/正常退出/同exe重启及全部原生检查，未获合入批准",
       "lastCommentId": 6128766093,
       "groupId": "media-keepalive-35",
       "groupIssueNumbers": [
@@ -1458,9 +1458,9 @@
       "implementationBaseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "pr": 43,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/43",
-      "headSha": "e21898bc2539c6c3ed766668bf29ac94eb23b155",
-      "ciRun": 38377134149,
-      "ciResult": "failure",
+      "headSha": "8fb0300653e27b70032b62ecfd79fd17e02c34e0",
+      "ciRun": 38380172206,
+      "ciResult": null,
       "tests": {
         "windowsUnit": "494/494,0skip",
         "verify": "pass",
@@ -4066,10 +4066,13 @@
     },
     "issue35-quit-input-fix": {
       "operationId": "issue35-quit-input-fix",
-      "status": "intent",
+      "status": "succeeded",
       "expectedHead": "e21898bc2539c6c3ed766668bf29ac94eb23b155",
       "treeSha": "6441bcf34e63e42e665ac8ccd2cd606d7870898f",
-      "summary": "仅2fixture/test文件复用已验证尺寸与实际frame/控件click就绪屏障到新guest输入；不脚本写输入，产品不改"
+      "summary": "仅2fixture/test文件复用已验证尺寸与实际frame/控件click就绪屏障到新guest输入；不脚本写输入，产品不改",
+      "headSha": "8fb0300653e27b70032b62ecfd79fd17e02c34e0",
+      "ciRun": 38380172206,
+      "verifiedAt": "2026-10-13T09:59:04.283Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
