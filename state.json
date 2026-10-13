@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 236,
-  "currentRun": {
-    "owner": "ono-root-reconcile-v3-record-20261013T0601Z",
-    "startedAt": "2026-10-13T06:01:22.936Z",
-    "currentDevelopmentGroup": null,
-    "task": "核对已发布v3回执并修正残留草稿状态，防止重复交付"
-  },
+  "revision": 237,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -446,12 +441,16 @@
       "lastCommentId": 6137668925,
       "draftPlan": {
         "version": "v3",
-        "status": "prepared-unpublished",
+        "status": "published-awaiting-approval",
         "imageSha256": "5a6e1571b8e6e6c613065bcefd7055b03c826e324247392490dcdcccb875f2c0",
         "imageSource": "independent-design",
         "summary": "按实际main轻列表；待办菜单去类型/状态筛选，提议移除该菜单搜索；保留全部事项滚动、状态/选择分离、其他工作台多选及搜索",
         "imageReviewedAt": "2026-10-13T03:38:30.598Z",
-        "deliveryBlocker": "同一原生附件链路明确失败，无核实恢复前不跨Issue盲重试；尚未上传本图，不存在可消费v3请求"
+        "deliveryBlocker": null,
+        "commentId": 6138445292,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6138445292",
+        "imageUrl": "https://github.com/user-attachments/assets/833a6c6c-b43d-4c89-aeff-41a32368369e",
+        "verifiedAt": "2026-10-13T06:01:45.657Z"
       },
       "latestDiagnosticRequest": {
         "commentId": 6137795601,
@@ -3292,11 +3291,11 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-diagnosis-result-20261013T0436Z",
-    "finishedAt": "2026-10-13T04:59:14.165Z",
-    "result": "26 v3图文发布待方案批准；28 PR40准确16张实测图及各成员评论交付待唯一合入批准；所有外写已读回，无产品/合入/关单；临时已交付PNG/ZIP清理"
+    "owner": "ono-root-reconcile-v3-record-20261013T0601Z",
+    "finishedAt": "2026-10-13T06:01:45.657Z",
+    "result": "重新核对26/28原始评论，无新批准；修正26旧draftPlan未发布残留，现与v3真实回执一致。不重复交付，不实施合入。"
   },
-  "updatedAt": "2026-10-13T04:59:14.165Z",
+  "updatedAt": "2026-10-13T06:01:45.657Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
