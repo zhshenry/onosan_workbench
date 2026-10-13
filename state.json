@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 174,
+  "revision": 175,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -934,7 +934,8 @@
     6135343025,
     6135382383,
     6135485302,
-    6136034929
+    6136034929,
+    6136208994
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -2449,10 +2450,12 @@
     },
     "floating-pr40-failure-comment": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
       "body": "【OnO 自动化】悬浮窗组 v2｜Windows 实装发现问题，继续修复\n\n[PR #40 首轮验收](https://github.com/zhshenry/onosan_workbench/actions/runs/38330757284/job/115079705357)的 **447/447 单测、类型/构建、NSIS实际安装通过**，0单测跳过。实装仅完成64项，通过不等于整组完成。\n失败发生在窄窗日程“今天”组的真实点击：被浮窗其他元素拦截，15秒超时；随后失败退出未完成，最终运行被取消。后续关联、重启和最终检查尚未完成，不报80项通过。正在核查边缘位置专项后的窗口状态及实际交互，并修复失败时报告保存/有界退出；不会用强制点击或放宽断言漂绿。\n\n准确head仍为 fbbf76b99733295c6325144c10586a50a7df0a2b，实际tested merge为9561debbbafecf8c83336999257f88c60201c157。[本次部分证据](https://github.com/zhshenry/onosan_workbench/actions/runs/38330757284/artifacts/11783442444)只有30张PNG和安装报告，完整验收报告缺失；到期2026-10-16 09:34:25（UTC+08）。已下载核对并查看相关实际截图，未上传作合格验收。\n我会在当前批准范围内修复后重跑，再发布准确新版本带图验收。当前无需你操作；有意见直接回复本Issue。",
-      "createdAt": "2026-10-13T01:39:26.655Z"
+      "createdAt": "2026-10-13T01:39:54Z",
+      "commentId": 6136208994,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136208994"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
