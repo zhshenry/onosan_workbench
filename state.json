@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 208,
+  "revision": 209,
   "currentRun": {
     "owner": "ono-root-feedback-20261013T0334Z",
     "startedAt": "2026-10-13T03:34:35.918Z",
@@ -420,7 +420,16 @@
         "updatedAt": "2026-10-13T03:14:56Z",
         "authorId": 54107847
       },
-      "lastCommentId": 6137629928
+      "lastCommentId": 6137629928,
+      "draftPlan": {
+        "version": "v3",
+        "status": "prepared-unpublished",
+        "imageSha256": "5a6e1571b8e6e6c613065bcefd7055b03c826e324247392490dcdcccb875f2c0",
+        "imageSource": "independent-design",
+        "summary": "按实际main轻列表；待办菜单去类型/状态筛选，提议移除该菜单搜索；保留全部事项滚动、状态/选择分离、其他工作台多选及搜索",
+        "imageReviewedAt": "2026-10-13T03:38:30.598Z",
+        "deliveryBlocker": "同一原生附件链路明确失败，无核实恢复前不跨Issue盲重试；尚未上传本图，不存在可消费v3请求"
+      }
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
@@ -2909,6 +2918,13 @@
       "createdAt": "2026-10-13T03:35:57Z",
       "commentId": 6137629928,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6137629928"
+    },
+    "issue26-v3-image-chain-blocker": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
+      "body": "【OnO 自动化】#26｜修订准备进度\n\n已按当前 main 的实际悬浮选择器重新核对源码，并准备 v3 局部高保真和修订草稿；产品代码未改。v2不再等待批准，旧PR #39合入请求继续暂停。\n\n现在缺的是新图在本Issue的原生内嵌交付。刚才同一云端GitHub附件链路在[#28实测图交付](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103)中已明确失败，刷新后的有限补试也失败，原因尚未核明；我不会换个Issue重复盲试或把无图草稿当成可审批方案。\n\n待附件链路有可核实恢复后，我会把v3图文一起发到这里供你评价。当前无需批准；如有其他要求可直接回复本Issue。",
+      "createdAt": "2026-10-13T03:38:30.598Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
