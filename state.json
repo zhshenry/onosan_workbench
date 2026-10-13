@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 172,
+  "revision": 173,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -255,7 +255,7 @@
     },
     "25": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/25",
-      "stage": "ci-validation",
+      "stage": "ci-blocked",
       "type": [
         "ui",
         "interaction"
@@ -263,7 +263,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待准确PR40 Windows全套及80项实装，核对报告和实际截图后在28交付",
+      "nextAction": "修复真实Windows日程开合点击被拦及失败退出挂起；新增回归后更新准确head重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -313,7 +313,17 @@
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
       "prNumber": 40,
-      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40"
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
+      "ciRunId": 38330757284,
+      "ciConclusion": "cancelled",
+      "lastCi": {
+        "runId": 38330757284,
+        "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
+        "failure": "日程今天组locator.click被float-body/header拦截，后续退出挂起到25分钟job取消；不视为完整通过",
+        "artifactId": 11783442444,
+        "artifactSha256": "8f059b94a108a01da2180d18dbd84cfa2873cc746f70776ec72dc9be18857c73",
+        "expiresAt": "2026-10-16T01:34:25Z"
+      }
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
@@ -384,7 +394,7 @@
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "stage": "ci-validation",
+      "stage": "ci-blocked",
       "type": [
         "ui",
         "interaction"
@@ -392,7 +402,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待准确PR40 Windows全套及80项实装，核对报告和实际截图后在28交付",
+      "nextAction": "修复真实Windows日程开合点击被拦及失败退出挂起；新增回归后更新准确head重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -445,11 +455,21 @@
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
       "prNumber": 40,
-      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40"
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
+      "ciRunId": 38330757284,
+      "ciConclusion": "cancelled",
+      "lastCi": {
+        "runId": 38330757284,
+        "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
+        "failure": "日程今天组locator.click被float-body/header拦截，后续退出挂起到25分钟job取消；不视为完整通过",
+        "artifactId": 11783442444,
+        "artifactSha256": "8f059b94a108a01da2180d18dbd84cfa2873cc746f70776ec72dc9be18857c73",
+        "expiresAt": "2026-10-16T01:34:25Z"
+      }
     },
     "29": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
-      "stage": "ci-validation",
+      "stage": "ci-blocked",
       "type": [
         "ui",
         "interaction"
@@ -457,7 +477,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待准确PR40 Windows全套及80项实装，核对报告和实际截图后在28交付",
+      "nextAction": "修复真实Windows日程开合点击被拦及失败退出挂起；新增回归后更新准确head重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -507,11 +527,21 @@
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
       "prNumber": 40,
-      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40"
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
+      "ciRunId": 38330757284,
+      "ciConclusion": "cancelled",
+      "lastCi": {
+        "runId": 38330757284,
+        "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
+        "failure": "日程今天组locator.click被float-body/header拦截，后续退出挂起到25分钟job取消；不视为完整通过",
+        "artifactId": 11783442444,
+        "artifactSha256": "8f059b94a108a01da2180d18dbd84cfa2873cc746f70776ec72dc9be18857c73",
+        "expiresAt": "2026-10-16T01:34:25Z"
+      }
     },
     "30": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
-      "stage": "ci-validation",
+      "stage": "ci-blocked",
       "type": [
         "ui",
         "interaction"
@@ -519,7 +549,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待准确PR40 Windows全套及80项实装，核对报告和实际截图后在28交付",
+      "nextAction": "修复真实Windows日程开合点击被拦及失败退出挂起；新增回归后更新准确head重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -569,11 +599,21 @@
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
       "prNumber": 40,
-      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40"
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
+      "ciRunId": 38330757284,
+      "ciConclusion": "cancelled",
+      "lastCi": {
+        "runId": 38330757284,
+        "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
+        "failure": "日程今天组locator.click被float-body/header拦截，后续退出挂起到25分钟job取消；不视为完整通过",
+        "artifactId": 11783442444,
+        "artifactSha256": "8f059b94a108a01da2180d18dbd84cfa2873cc746f70776ec72dc9be18857c73",
+        "expiresAt": "2026-10-16T01:34:25Z"
+      }
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
-      "stage": "ci-validation",
+      "stage": "ci-blocked",
       "type": [
         "ui",
         "interaction"
@@ -581,7 +621,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待准确PR40 Windows全套及80项实装，核对报告和实际截图后在28交付",
+      "nextAction": "修复真实Windows日程开合点击被拦及失败退出挂起；新增回归后更新准确head重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -631,11 +671,21 @@
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
       "prNumber": 40,
-      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40"
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
+      "ciRunId": 38330757284,
+      "ciConclusion": "cancelled",
+      "lastCi": {
+        "runId": 38330757284,
+        "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
+        "failure": "日程今天组locator.click被float-body/header拦截，后续退出挂起到25分钟job取消；不视为完整通过",
+        "artifactId": 11783442444,
+        "artifactSha256": "8f059b94a108a01da2180d18dbd84cfa2873cc746f70776ec72dc9be18857c73",
+        "expiresAt": "2026-10-16T01:34:25Z"
+      }
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
-      "stage": "ci-validation",
+      "stage": "ci-blocked",
       "type": [
         "ui",
         "interaction"
@@ -643,7 +693,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待准确PR40 Windows全套及80项实装，核对报告和实际截图后在28交付",
+      "nextAction": "修复真实Windows日程开合点击被拦及失败退出挂起；新增回归后更新准确head重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -693,11 +743,21 @@
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
       "prNumber": 40,
-      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40"
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
+      "ciRunId": 38330757284,
+      "ciConclusion": "cancelled",
+      "lastCi": {
+        "runId": 38330757284,
+        "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
+        "failure": "日程今天组locator.click被float-body/header拦截，后续退出挂起到25分钟job取消；不视为完整通过",
+        "artifactId": 11783442444,
+        "artifactSha256": "8f059b94a108a01da2180d18dbd84cfa2873cc746f70776ec72dc9be18857c73",
+        "expiresAt": "2026-10-16T01:34:25Z"
+      }
     },
     "33": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
-      "stage": "ci-validation",
+      "stage": "ci-blocked",
       "type": [
         "ui",
         "interaction"
@@ -705,7 +765,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待准确PR40 Windows全套及80项实装，核对报告和实际截图后在28交付",
+      "nextAction": "修复真实Windows日程开合点击被拦及失败退出挂起；新增回归后更新准确head重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -755,7 +815,17 @@
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
       "prNumber": 40,
-      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40"
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
+      "ciRunId": 38330757284,
+      "ciConclusion": "cancelled",
+      "lastCi": {
+        "runId": 38330757284,
+        "headSha": "fbbf76b99733295c6325144c10586a50a7df0a2b",
+        "failure": "日程今天组locator.click被float-body/header拦截，后续退出挂起到25分钟job取消；不视为完整通过",
+        "artifactId": 11783442444,
+        "artifactSha256": "8f059b94a108a01da2180d18dbd84cfa2873cc746f70776ec72dc9be18857c73",
+        "expiresAt": "2026-10-16T01:34:25Z"
+      }
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
