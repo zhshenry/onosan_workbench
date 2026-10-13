@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 287,
+  "revision": 288,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1575,12 +1575,12 @@
       "stateBranchQuestionCommentId": 6137399050
     },
     "closeout-docs": {
-      "stage": "main-verification",
+      "stage": "completed",
       "pr": 42,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/42",
       "headSha": "e550ed2efff06fcbb3d92a340108139743149d08",
       "baseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
-      "nextAction": "核验actual main CI成功后安全清理规范分支并报告",
+      "nextAction": "每轮读取已合main规范；正常收尾不重复关单确认",
       "ciRun": 38361434048,
       "ciResult": "success",
       "tests": {
@@ -1590,7 +1590,9 @@
       },
       "testedMergeSha": "cbdc014566f369c8b1d5a2f0423ec5101f5ae580",
       "mergeSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
-      "mainRun": 38367730590
+      "mainRun": 38367730590,
+      "mainCiResult": "success",
+      "branchDeleted": true
     }
   },
   "ownCommentIds": [
@@ -4017,12 +4019,14 @@
     },
     "pr42-delete-merged-branch": {
       "operationId": "pr42-delete-merged-branch",
-      "status": "intent",
+      "status": "succeeded",
       "branch": "ono/closeout-no-repeat-confirmation",
       "headSha": "e550ed2efff06fcbb3d92a340108139743149d08",
       "mergeSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "ciRun": 38367730590,
-      "summary": "准确head已合入，实际main检查通过，无开放PR依赖，非保护且PR可恢复；仅删分支引用"
+      "summary": "准确head已合入，实际main检查通过，无开放PR依赖，非保护且PR可恢复；仅删分支引用",
+      "verifiedAbsent": true,
+      "verifiedAt": "2026-10-13T08:22:26.507Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
