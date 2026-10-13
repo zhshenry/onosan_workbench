@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 304,
+  "revision": 305,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1419,7 +1419,7 @@
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "visual-regression-blocked",
+      "stage": "ci-running-visual-diagnosis",
       "type": [
         "ui",
         "bugfix",
@@ -1428,7 +1428,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "实际看图发现隐藏后首页日期概览竖排重叠，调查回归/基线并修复必要检查；不请求合入",
+      "nextAction": "待原生同数据同尺寸首页首访/隐藏后对照和实际看图；不能以旧green结果认定新head验收通过",
       "lastCommentId": 6128766093,
       "groupId": "media-keepalive-35",
       "groupIssueNumbers": [
@@ -1458,9 +1458,9 @@
       "implementationBaseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "pr": 43,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/43",
-      "headSha": "8fb0300653e27b70032b62ecfd79fd17e02c34e0",
-      "ciRun": 38380172206,
-      "ciResult": "success",
+      "headSha": "4d7bcacb44562f78e77e113cfdd01f48549ad427",
+      "ciRun": 38383275625,
+      "ciResult": "queued",
       "tests": {
         "windowsUnit": "494/494,0skip",
         "verify": "pass",
@@ -4078,11 +4078,14 @@
     },
     "issue35-home-native-comparison": {
       "operationId": "issue35-home-native-comparison",
-      "status": "intent",
+      "status": "succeeded",
       "expectedHead": "8fb0300653e27b70032b62ecfd79fd17e02c34e0",
       "treeSha": "3d9a82267c45aa56afebb798bc7cb2a7603eb8ff",
       "summary": "仅3测试/文档文件增加同数据同1024x680首页首访与隐藏后原生几何/截图对照；不改产品；坏基线不可判视觉通过",
-      "startedAt": "2026-10-13T10:24:39.087Z"
+      "startedAt": "2026-10-13T10:24:39.087Z",
+      "headSha": "4d7bcacb44562f78e77e113cfdd01f48549ad427",
+      "ciRun": 38383275625,
+      "verifiedAt": "2026-10-13T10:25:55.234Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
