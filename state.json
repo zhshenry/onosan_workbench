@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 193,
+  "revision": 194,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -1041,6 +1041,37 @@
       "lastReadAt": "2026-10-13T01:01:49Z",
       "nextAction": "已解释实际用途，等待用户反馈；未改产品，不自动关单",
       "lastCommentId": 6128522870
+    },
+    "41": {
+      "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/41",
+      "stage": "waiting-dependencies",
+      "type": [
+        "release"
+      ],
+      "sourceAuthorId": 54107847,
+      "sourceIssueId": 5823112890,
+      "groupId": "release-0.2.0-41",
+      "groupIssueNumbers": [
+        41
+      ],
+      "primaryIssue": 41,
+      "targetVersion": "0.2.0",
+      "lastReadAt": "2026-10-13T02:45:44.982Z",
+      "nextAction": "先完成编号41前需求，随后汇总准确候选/变更集合/资产与验收并在41走独立发布批准；当前不打标签不发版",
+      "dependencyIssueNumbers": [
+        25,
+        26,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37
+      ]
     }
   },
   "ownCommentIds": [
@@ -2687,6 +2718,13 @@
       "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
       "treeSha": "ff51573f96be53a87a5ef9b4391efbe91088e2e5",
       "verifiedAt": "2026-10-13T02:44:13.178Z"
+    },
+    "release41-queue-comment": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/41",
+      "body": "【OnO 自动化】#41｜v0.2.0 发布需求已排队\n\n按你的要求，先完成 #41 之前的需求，再推进 v0.2.0。当前未完成的前置是：\n- 悬浮窗组 #25/#28/#29/#30/#31/#32/#33：PR #40 正在真实Windows验收，尚未合入。\n- #26：关联事项 UI v2 等方案确认，PR #39 后续还需集成最新main。\n- #34：设置更新方案等确认；#35：原生附图受阻，尚未形成可批准方案。\n- #36/#37：用途说明已回复，仍等你的意见，不能仅因已解释就认定完成。\n\n#24、#17/#18 已完成的交付不重复实施。Issue编号范围按需求单判断，不把PR编号当成额外需求；如果前置被取消或确认不再需要，会保留你的原始决定，不悄悄跳过。\n\n前置满足后，我会在本Issue集中整理v0.2.0完整改动集合、版本/CHANGELOG、准确候选SHA、Windows安装/更新与五项发行资产核验，以及已知边界，按仓库发布流程请求该准确版本的独立发布批准。当前不创建标签、不发Release，不把普通功能合入批准复用为发布批准。\n\n当前无需操作；如果需要调整发布范围，直接回复本Issue。",
+      "createdAt": "2026-10-13T02:45:44.982Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
