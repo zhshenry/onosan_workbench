@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 298,
+  "revision": 299,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1419,7 +1419,7 @@
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "ci-blocked",
+      "stage": "ci-running",
       "type": [
         "ui",
         "bugfix",
@@ -1428,7 +1428,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "调查隐藏后guest id6仍持有原生焦点，不能弱化断言；在35范围修复后完整回归",
+      "nextAction": "核真实focusedFrame/隐藏输入及正常退出重启完整终态；未获合入批准",
       "lastCommentId": 6128766093,
       "groupId": "media-keepalive-35",
       "groupIssueNumbers": [
@@ -1458,9 +1458,9 @@
       "implementationBaseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "pr": 43,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/43",
-      "headSha": "370874824dea613545ddbf6fc6910b42adf42bea",
-      "ciRun": 38373762029,
-      "ciResult": "failure",
+      "headSha": "e21898bc2539c6c3ed766668bf29ac94eb23b155",
+      "ciRun": 38377134149,
+      "ciResult": null,
       "tests": {
         "windowsUnit": "494/494,0skip",
         "verify": "pass",
@@ -4056,10 +4056,13 @@
     },
     "issue35-native-frame-ownership-fix": {
       "operationId": "issue35-native-frame-ownership-fix",
-      "status": "intent",
+      "status": "succeeded",
       "expectedHead": "370874824dea613545ddbf6fc6910b42adf42bea",
       "treeSha": "e3958a55970cf9de8f62cbb12ba092ad1e7c46e9",
-      "summary": "2fixture/test文件按准确Electron focusedFrame所有权验证隐藏输入；保留旧focus telemetry并新增新guest真实不泄漏断言，产品不改"
+      "summary": "2fixture/test文件按准确Electron focusedFrame所有权验证隐藏输入；保留旧focus telemetry并新增新guest真实不泄漏断言，产品不改",
+      "headSha": "e21898bc2539c6c3ed766668bf29ac94eb23b155",
+      "ciRun": 38377134149,
+      "verifiedAt": "2026-10-13T09:33:28.773Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
