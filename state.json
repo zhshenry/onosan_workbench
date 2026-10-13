@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 284,
+  "revision": 285,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -4002,6 +4002,15 @@
       "mergeSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "treeSha": "14a4feb95974723054d1cf1de4ea6c86759fd434",
       "verifiedAt": "2026-10-13T08:13:28.038Z"
+    },
+    "issue35-modal-fix-main-integration": {
+      "operationId": "issue35-modal-fix-main-integration",
+      "status": "intent",
+      "branch": "ono/issue-35-creator-keepalive",
+      "expectedHead": "ba6b9aeeb6aca2d2887778003b0d5e6e5ca5ec15",
+      "mainSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
+      "treeSha": "e9b8924d0f58df927346cece616e6dd0397df094",
+      "summary": "2fixture文件按真实新增/编辑dialog关闭并不写业务数据；集成3已合main文档；产品不再改，重跑完整Windows"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
