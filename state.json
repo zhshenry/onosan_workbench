@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 247,
+  "revision": 248,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1485,7 +1485,8 @@
     6139419969,
     6139903018,
     6139911535,
-    6139920609
+    6139920609,
+    6139928459
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -3514,10 +3515,13 @@
     },
     "feedback-20261013T0641-36": {
       "operationId": "feedback-20261013T0641-36",
-      "status": "intent",
+      "status": "succeeded",
       "targetIssue": 36,
       "body": "【OnO 自动化】收到，我先核对“找素材”入口和现有功能的依赖，准备精简或移除入口的明确方案并附图。不会把“去掉入口”扩大成删除已有素材数据或整个底层功能；也会说明移除后是否还有其他实际入口，图文对齐后再实施。",
-      "summary": "回应已核原始反馈/批准及当前阶段"
+      "summary": "回应已核原始反馈/批准及当前阶段",
+      "commentId": 6139928459,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/36#issuecomment-6139928459",
+      "verifiedAt": "2026-10-13T06:45:14.575Z"
     },
     "feedback-20261013T0641-37": {
       "operationId": "feedback-20261013T0641-37",
