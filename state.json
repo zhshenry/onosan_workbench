@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 242,
+  "revision": 243,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -3427,9 +3427,20 @@
     "pr40-approved-ready": {
       "operationId": "pr40-approved-ready",
       "targetPR": 40,
-      "status": "intent",
+      "status": "succeeded",
       "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
-      "summary": "准确合入批准后将Draft标为可审阅作为合入前置"
+      "summary": "准确合入批准后将Draft标为可审阅作为合入前置",
+      "verifiedAt": "2026-10-13T06:40:10.046Z"
+    },
+    "pr40-approved-merge": {
+      "operationId": "pr40-approved-merge",
+      "targetPR": 40,
+      "status": "intent",
+      "expectedHead": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
+      "baseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
+      "approvalCommentId": 6139438818,
+      "summary": "merge方法合入准确PR40；实际main验证前不关单",
+      "createdAt": "2026-10-13T06:40:10.046Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
