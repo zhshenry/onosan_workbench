@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 297,
+  "revision": 298,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -4053,6 +4053,13 @@
       "commentId": 6142470863,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6142470863",
       "verifiedAt": "2026-10-13T09:25:17.085Z"
+    },
+    "issue35-native-frame-ownership-fix": {
+      "operationId": "issue35-native-frame-ownership-fix",
+      "status": "intent",
+      "expectedHead": "370874824dea613545ddbf6fc6910b42adf42bea",
+      "treeSha": "e3958a55970cf9de8f62cbb12ba092ad1e7c46e9",
+      "summary": "2fixture/test文件按准确Electron focusedFrame所有权验证隐藏输入；保留旧focus telemetry并新增新guest真实不泄漏断言，产品不改"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
