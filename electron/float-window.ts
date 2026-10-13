@@ -11,6 +11,7 @@ const INITIAL_HEIGHT = 860;
 export class FloatTodoWindow {
   private win: BrowserWindow | null = null;
   private pinned = true;
+  private width = 440;
   private expandedHeight = INITIAL_HEIGHT;
   private collapsed = false;
   private motion: Promise<void> | null = null;
@@ -51,9 +52,9 @@ export class FloatTodoWindow {
     const area = screen.getPrimaryDisplay().workArea;
     const height = Math.min(this.expandedHeight, area.height - 24);
     this.win = new BrowserWindow({
-      width: EXPANDED.width,
+      width: this.width,
       height,
-      x: area.x + area.width - EXPANDED.width - 24,
+      x: area.x + area.width - this.width - 24,
       y: area.y + area.height - height - 24,
       frame: false,
       transparent: true,
@@ -100,7 +101,7 @@ export class FloatTodoWindow {
     const bounds = win.getBounds();
     if (collapsed && !this.collapsed) this.expandedHeight = bounds.height;
     const area = screen.getDisplayMatching(bounds).workArea;
-    const size = collapsed ? MINI : { width: EXPANDED.width, height: Math.min(this.expandedHeight, area.height - 24) };
+    const size = collapsed ? { width: this.width, height: MINI.height } : { width: this.width, height: Math.min(this.expandedHeight, area.height - 24) };
     // 与 To-Do-List 一致:固定上沿,仅在超出屏幕工作区时挪动窗口。
     const target = {
       x: Math.max(area.x, Math.min(bounds.x, area.x + area.width - size.width)),
@@ -143,6 +144,23 @@ export class FloatTodoWindow {
     return this.motion;
   }
 
+  getWidth(): number { return this.width; }
+
+  async setWidth(narrow: boolean): Promise<number> {
+    if (this.motion) await this.motion;
+    const width = narrow ? 330 : 440;
+    this.width = width;
+    if (!this.win || this.win.isDestroyed()) return width;
+    const bounds = this.win.getBounds();
+    const area = screen.getDisplayMatching(bounds).workArea;
+    // Width is independent of height, including temporary question heights.
+    this.win.setBounds({ ...bounds, width,
+      x: Math.max(area.x, Math.min(bounds.x, area.x + area.width - width)),
+      y: Math.max(area.y, Math.min(bounds.y, area.y + area.height - bounds.height)),
+    });
+    return width;
+  }
+
   setExpandedHeight(height: number): void {
     if (!Number.isFinite(height) || this.motion) return;
     const next = Math.max(330, Math.min(EXPANDED.height, Math.round(height)));
@@ -153,7 +171,9 @@ export class FloatTodoWindow {
 
   // 迷你卡 AI 等场景的临时高度(上游 compactHeight 同义):只改当前窗口,不改 expandedHeight 记忆
   setTempHeight(height: number | null): void {
-    if (!this.win || this.motion) return;
+    // A compact renderer effect can arrive after an instant expansion completes.
+    // Temporary question/reset heights belong only to the native collapsed state.
+    if (!this.win || this.motion || !this.collapsed) return;
     const target = height ?? MINI.height;
     const bounds = this.win.getBounds();
     if (bounds.height === target) return;
@@ -197,5 +217,6 @@ export function registerFloatIpc(factory: () => FloatTodoWindow): void {
   ipcMain.on('float:resize', (_event, height: unknown) => {
     if (typeof height === 'number') factory().setExpandedHeight(height);
   });
+  ipcMain.handle('float:width', (_event, narrow: unknown) => typeof narrow === 'boolean' ? factory().setWidth(narrow) : factory().getWidth());
   ipcMain.handle('float:pin', () => factory().togglePin());
 }
