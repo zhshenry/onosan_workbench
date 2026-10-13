@@ -1,7 +1,12 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 148,
-  "currentRun": null,
+  "revision": 149,
+  "currentRun": {
+    "owner": "ono-root-approved-work-20261013T0030Z",
+    "startedAt": "2026-10-13T00:29:39.182Z",
+    "currentDevelopmentGroup": null,
+    "task": "核对24最终批准、悬浮组v2批准及26新视觉反馈；先24合后验证"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
