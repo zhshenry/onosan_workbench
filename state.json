@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 302,
+  "revision": 303,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1419,7 +1419,7 @@
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "ci-running",
+      "stage": "visual-regression-blocked",
       "type": [
         "ui",
         "bugfix",
@@ -1428,7 +1428,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "核quit真实输入/正常退出/同exe重启及全部原生检查，未获合入批准",
+      "nextAction": "实际看图发现隐藏后首页日期概览竖排重叠，调查回归/基线并修复必要检查；不请求合入",
       "lastCommentId": 6128766093,
       "groupId": "media-keepalive-35",
       "groupIssueNumbers": [
@@ -1460,18 +1460,20 @@
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/43",
       "headSha": "8fb0300653e27b70032b62ecfd79fd17e02c34e0",
       "ciRun": 38380172206,
-      "ciResult": null,
+      "ciResult": "success",
       "tests": {
         "windowsUnit": "494/494,0skip",
         "verify": "pass",
         "installed": "75/76,35 Loading workspace switch undefined !== false;后续未执行"
       },
       "nativeProgress": {
-        "run": 38377134149,
-        "passed": "全部10主专项含真实frame/隐藏键鼠/host teardown，协议注册修复生效",
-        "failed": "quit guest7 keys0 clicks0 draft empty; actual frame remains owner",
-        "remaining": "normal quit/relaunch",
-        "artifact": 11802096642
+        "run": 38380172206,
+        "unit": "499/499",
+        "installed": "95/95",
+        "quit": "realinput/normalexit/relaunch pass",
+        "artifact": 11803620580,
+        "visualFinding": "media-keepalive-hidden.png home layout compressed/overlap; other7media screenshots reviewed normal",
+        "zipSha256": "d8b263c298d6502d57fe2f41334a65284d1de28ee4105ad350c96e22401aea0a"
       }
     },
     "36": {
