@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 281,
+  "revision": 282,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1419,7 +1419,7 @@
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "ci-running",
+      "stage": "ci-blocked",
       "type": [
         "ui",
         "bugfix",
@@ -1428,7 +1428,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "等待新head完整Windows原生验收；首轮失败保留，未批准合入",
+      "nextAction": "修复原生hidden creator弹窗返回按钮定位；保留此前真实10轮状态历史输入滚动通过证据，剩余未跑",
       "lastCommentId": 6128766093,
       "groupId": "media-keepalive-35",
       "groupIssueNumbers": [
@@ -1460,11 +1460,22 @@
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/43",
       "headSha": "ba6b9aeeb6aca2d2887778003b0d5e6e5ca5ec15",
       "ciRun": 38366079166,
-      "ciResult": null,
+      "ciResult": "failure",
       "tests": {
         "windowsUnit": "494/494,0skip",
         "verify": "pass",
         "installed": "75/76,35 Loading workspace switch undefined !== false;后续未执行"
+      },
+      "nativeProgress": {
+        "run": 38366079166,
+        "passed": [
+          "security prefs",
+          "loading switch",
+          "real input/scroll",
+          "10 repeated workspace cycles identity/state/history/listeners"
+        ],
+        "failed": "Hidden creator: .task-modal button 返回 exact timeout",
+        "remaining": "geometry/error/restart not completed"
       }
     },
     "36": {
