@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 331,
+  "revision": 332,
   "currentRun": {
     "owner": "ono-root-issue37-20261013T1151Z",
     "startedAt": "2026-10-13T11:51:31.363Z",
@@ -4296,6 +4296,15 @@
       "commentId": 6145874018,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6145874018",
       "verifiedAt": "2026-10-13T12:47:07.418Z"
+    },
+    "issue37-capture-fix-publish": {
+      "operationId": "issue37-capture-fix-publish",
+      "status": "intent",
+      "target": 45,
+      "expectedHead": "64f04ad6da610fda1d9cdc92390adb437ad7e6c6",
+      "candidateTree": "278773dd34981c49b4c32fd099b2dfb3eb7f5e20",
+      "summary": "仅fixture及其测试：真实滚动和同帧可视校验，等待toast消失；不修改产品或图片，四图预算不变。",
+      "startedAt": "2026-10-13T12:49:08.337Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -4311,7 +4320,7 @@
     "endedAt": "2026-10-13T11:33:25.184Z",
     "summary": "35原生500/500+95/95通过但既有首页视觉异常与附件交付阻塞；34PR44实现Windows513/513+95/95及4图实际查看，待内嵌附件；无在途写，释放协调占用"
   },
-  "updatedAt": "2026-10-13T12:47:07.418Z",
+  "updatedAt": "2026-10-13T12:49:08.337Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
