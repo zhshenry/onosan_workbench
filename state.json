@@ -1,7 +1,12 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 217,
-  "currentRun": null,
+  "revision": 218,
+  "currentRun": {
+    "owner": "ono-root-diagnosis-result-20261013T0436Z",
+    "startedAt": "2026-10-13T04:36:52.846Z",
+    "currentDevelopmentGroup": null,
+    "task": "记录CLI能力升级和已确认网络阻碍，保持只读检查"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -2959,6 +2964,13 @@
       "createdAt": "2026-10-13T04:20:11Z",
       "commentId": 6138150575,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6138150575"
+    },
+    "attachment-cli-network-result": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
+      "body": "【OnO 自动化】附件替代链路核查更新\n\n云端 GitHub CLI 已升级到官方2.102.0，并实测确认支持 --attach。登录保存位置的只读目录问题已定位并改用可写私有目录，但认证流程随后仍被当前执行环境的网络策略阻断，明确错误为对 api.github.com 的访问被阻止；因此未形成可用CLI登录，也未通过CLI上传图片。\n\n普通、不带认证的API连通性检查能够返回200，并不能证明认证流程可访问；我已停止重复授权/上传尝试。现有GitHub连接器读写评论仍可用，每小时检查照常。\n\n这项证据解释的是CLI登录阻碍，不能据此宣布此前浏览器原生附件失败也是同一原因。#26新图和#28实测图交付仍待有可验证的可用上传链路；不请求无图批准，不提前合入关单。当前无需重新批准旧方案。",
+      "createdAt": "2026-10-13T04:36:52.846Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -2997,9 +3009,12 @@
       "checksumVerified": true,
       "attachHelpVerified": true,
       "installation": "工作区局部新版，后续显式调用；系统旧版2.46.0未替换",
-      "authentication": "未登录",
-      "nextAction": "等待用户批准启动官方CLI登录授权；不读取或搬运浏览器/连接器凭据",
-      "verifiedAt": "2026-10-13T04:25:35.036Z"
+      "authentication": "未登录；用户网页授权完成但进程API访问被策略阻断，无本地登录文件",
+      "nextAction": "停止重复device授权，不绕网络策略；需受支持的认证API访问条件改善后再诊断",
+      "verifiedAt": "2026-10-13T04:36:52.846Z",
+      "storage": "已选择可写私有目录，目录权限700；没有凭据内容写入状态",
+      "failure": "Network access to https://api.github.com:443 was blocked by policy",
+      "readOnlyConnectivity": "不带认证HEAD一次403匿名限流，窗口后200；不证明认证访问获准"
     }
   }
 }
