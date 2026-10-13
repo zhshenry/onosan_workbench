@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 222,
+  "revision": 223,
   "currentRun": {
     "owner": "ono-root-diagnosis-result-20261013T0436Z",
     "startedAt": "2026-10-13T04:36:52.846Z",
@@ -3002,6 +3002,15 @@
       "commentId": 6138445292,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6138445292",
       "verifiedAt": "2026-10-13T04:47:48.456Z"
+    },
+    "pr40-native-evidence-recovered-upload": {
+      "operationId": "pr40-native-evidence-recovered-upload",
+      "targetIssue": 28,
+      "status": "intent",
+      "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
+      "artifactId": 11786408859,
+      "summary": "用户要求继续网页；26上传及发布显示成功后，恢复准确同hash16张PR40实测图交付，先单张验证",
+      "createdAt": "2026-10-13T04:48:35.088Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
