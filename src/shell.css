@@ -1826,3 +1826,50 @@ html:has(.float-app) {
   .todo-proposal-diff { grid-template-columns: minmax(0, 1fr); }
   .todo-proposal-arrow { justify-self: center; transform: rotate(90deg); }
 }
+
+/* Floating group v2: independent widths and a four-row compact composer. */
+.float-mini-bar { height: 40px; }
+.float-mini-bar .float-brand svg { width: 30px; height: 30px; }
+.float-mini-content { height: 136px; }
+.float-mini-ai { padding: 5px 10px 7px; }
+.fa-mini-surface { height: 124px; grid-template-rows: 22px 20px 32px 22px; gap: 3px; padding: 5px 8px; }
+.fa-mini-surface.is-asking, .fa-mini-surface.is-working, .fa-mini-surface.is-result { grid-template-rows: 22px minmax(0, 1fr) 22px; }
+.fa-mini-compose { height: 32px; }
+.fa-linked-row { flex: none; height: 32px; min-width: 0; display: flex; align-items: center; }
+.fa-mini-surface .fa-linked-row { height: 20px; }
+.fa-linked-row .ai-reference-chip { max-width: 100%; min-width: 0; display: inline-flex; align-items: center; }
+.fa-linked-row .ai-reference-chip > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fa-linked-row .ai-reference-chip > button { flex: none; }
+.fa-mini-quick > .ai-add-reference { flex: none; margin: 0; font-size: var(--type-micro); white-space: nowrap; }
+.fa-mini-quick .fa-model-toggle { flex: 0 0 168px; width: 168px; max-width: 168px; height: 22px; padding: 2px 8px; }
+.fa-mini-quick .fa-model-toggle > span { flex: 1; text-align: left; }
+.fa-model-menu { left: auto; box-sizing: border-box; }
+.fa-model-menu section > button span { white-space: normal; overflow-wrap: anywhere; }
+.fa-mini-surface .fa-mini-picker { bottom: 30px; left: 8px; right: 8px; max-height: 82px; }
+.fa-picker-list { background: var(--todo-white); }
+.fa-task-status { flex: none; white-space: nowrap; color: var(--ink-3); font-size: var(--type-detail); }
+.fa-picker-list .fa-task-status span { display: inline; }
+.float-mini-quick .ai-entry { border-color: var(--ai-accent); color: var(--ai-accent-deep); }
+.float-mini-quick .ai-entry svg { color: var(--ai-accent); }
+.float-mini-quick .ai-entry:hover { border-color: var(--ai-accent-deep); color: var(--ai-accent-deep); background: color-mix(in srgb, var(--ai-accent) 10%, var(--todo-white)); }
+.float-app button:focus-visible, .fa-model-menu button:focus-visible { outline: 2px solid var(--acc-deep); outline-offset: -2px; }
+.float-app.narrow .float-bar { gap: 6px; padding-left: 10px; padding-right: 8px; }
+.float-app.narrow .float-window-actions { gap: 0; }
+.float-app.narrow .float-bar-btn { width: 29px; }
+.float-app.narrow .float-dash { padding-left: 12px; padding-right: 12px; gap: 6px; }
+.float-app.narrow .float-dash h1 { font-size: var(--type-page); }
+.float-app.narrow .float-dash .btn { padding-left: 8px; padding-right: 8px; }
+.float-app.narrow .float-body { padding-left: 12px; padding-right: 12px; }
+.float-app.narrow .float-mini-main { grid-template-columns: minmax(0, 1fr) 86px; gap: 5px; }
+.float-app.narrow .float-mini-quick button { padding: 0 6px; gap: 4px; }
+.float-app.narrow .float-mini-task { height: 86px; padding-top: 19px; }
+.float-app.narrow .float-mini-time { position: static; order: 2; align-self: flex-start; font-size: var(--type-detail); }
+.float-app.narrow .float-mini-task-main { min-height: 22px; }
+.float-app.narrow .float-mini-meta { order: 3; }
+.float-app.narrow .float-mini-main, .float-app.narrow .float-mini-stack { height: 88px; }
+.float-app.narrow .float-mini-stack-back { height: 78px; }
+.float-app.narrow .float-mini-category { flex: 1; }
+.fa-mini-surface .ai-reference-chip { height: 20px; padding: 0 4px 0 6px; }
+.fa-mini-surface .ai-reference-chip button { width: 18px; height: 18px; }
+.fa-mini-quick > .ai-add-reference { height: 22px; }
+.float-mini-content { flex: 1; height: auto; padding-top: 8px; padding-bottom: 9px; }

@@ -6,6 +6,7 @@ import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { _electron as electron } from 'playwright';
 import { runAiCardsPilot, verifyAiCardsRelaunch } from './ai-cards-pilot.mjs';
+import { runFloatEmptyPilot, runFloatGroupPilot, verifyFloatGroupRelaunch } from './float-group-pilot.mjs';
 import { inspectPilotArtifacts } from './pilot-artifacts.mjs';
 import { runTopbarDatesPilot, verifyTopbarDatesRelaunch } from './topbar-dates-pilot.mjs';
 import { runYearDropdownPilot, verifyUnboundedDatePicker, verifyYearDropdownRelaunch } from './year-dropdown-pilot.mjs';
@@ -50,7 +51,7 @@ async function check(name, action) {
     throw error;
   }
 }
-async function screenshot(name) {
+async function screenshot(name, capturePage = page) {
   if (name.startsWith('topbar-dates-') && name.endsWith('-zoom125.png')) {
     // Playwright's Electron viewport screenshot can crop a zoomed window to its
     // CSS viewport size. Capture the complete native surface without resampling.
@@ -65,7 +66,7 @@ async function screenshot(name) {
     (report.screenshotCapture ??= []).push({ name, method: 'Electron webContents.capturePage (unmodified PNG)', imageSize: frame.imageSize,
       contentSize: frame.contentSize, zoom: frame.zoom, pngPixels: { width: png.readUInt32BE(16), height: png.readUInt32BE(20) } });
   } else {
-    await page.screenshot({ path: path.join(reportDirectory, name), animations: 'disabled' });
+    await capturePage.screenshot({ path: path.join(reportDirectory, name), animations: 'disabled' });
   }
   report.screenshots.push(name);
 }
@@ -112,10 +113,12 @@ let taskId;
 let birthdayFixture;
 let aiCardsFixture;
 let topbarDatesFixture;
+let floatGroupFixture;
 try {
   await check('Launch actual installed executable with isolated data and updater disabled', launch);
   await check('Fresh isolated task database is empty', async () => assert.equal((await state()).tasks.length, 0));
   await screenshot('initial.png');
+  await runFloatEmptyPilot({ application, page, check, screenshot, report });
   await check('Collapse default AI overlay through its normal toolbar control', async () => {
     await page.locator('.topbar').getByRole('button', { name: '收起 AI 助手', exact: true }).click();
     await page.locator('#workbench-ai-panel').waitFor({ state: 'hidden' });
@@ -164,6 +167,7 @@ try {
   birthdayFixture = await runYearDropdownPilot({ application, page, check, screenshot, runId, report });
   topbarDatesFixture = await runTopbarDatesPilot({ application, page, check, screenshot, runId, report });
   aiCardsFixture = await runAiCardsPilot({ application, page, check, screenshot, runId, report });
+  floatGroupFixture = await runFloatGroupPilot({ application, page, check, screenshot, runId, report });
   await check('Choose exit-on-close in settings and quit through the window close button', async () => {
     await page.locator('.rail [data-workbench="settings"]').click();
     await page.locator('.tree').getByRole('button', { name: '通用', exact: true }).click();
@@ -190,6 +194,7 @@ try {
   await verifyYearDropdownRelaunch({ page, check, screenshot, fixture: birthdayFixture });
   await verifyAiCardsRelaunch({ page, check, screenshot, fixture: aiCardsFixture });
   await verifyTopbarDatesRelaunch({ page, check, screenshot, fixture: topbarDatesFixture });
+  await verifyFloatGroupRelaunch({ application, page, check, screenshot, fixture: floatGroupFixture });
   await check('No renderer page errors during the core flow', async () => assert.deepEqual(report.errors, []));
   report.status = 'passed';
 } catch (error) {

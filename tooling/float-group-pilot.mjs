@@ -1,0 +1,420 @@
+// Installed Electron acceptance. All task/provider writes use normal visible UI.
+import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
+
+export const FLOAT_GROUP_MATRIX = Object.freeze(['home', 'ai'].flatMap(mode => [false, true].flatMap(mini => [false, true].map(narrow => Object.freeze({ mode, mini, narrow })))));
+export const FLOAT_GROUP_SCREENSHOTS = Object.freeze([
+  ...FLOAT_GROUP_MATRIX.map(({ mode, mini, narrow }) => `float-group-${mode}-${mini ? 'mini' : 'expanded'}-${narrow ? 'narrow' : 'wide'}.png`),
+  'float-group-empty.png', 'float-group-linked.png', 'float-group-models.png', 'float-group-relaunched.png',
+  'float-group-mist.png', 'float-group-cool.png', 'float-group-warm.png',
+]);
+export function assertFloatWidthTransition(before, after, width, area) {
+  for (const rect of [before, after, area]) for (const key of ['x', 'y', 'width', 'height']) assert.ok(Number.isFinite(rect[key]), 'Native bounds must be finite');
+  assert.equal(after.width, width, 'Native width must match the selected mode');
+  assert.equal(after.height, before.height, 'Width-only changes must preserve native height after observers settle');
+  assert.ok(after.x >= area.x && after.y >= area.y && after.x + after.width <= area.x + area.width && after.y + after.height <= area.y + area.height, 'Native bounds must remain inside the work area');
+}
+export function assertFloatModelGeometry(before, after) {
+  for (const key of ['x', 'y', 'width', 'height']) {
+    assert.ok(Number.isFinite(before[key]) && Number.isFinite(after[key]), 'Model geometry must be finite');
+    assert.ok(Math.abs(before[key] - after[key]) <= 1, `Association must not move model ${key}`);
+  }
+  assert.ok(before.width > 0 && before.height > 0, 'Model control must remain visible');
+}
+export function assertFloatMenuGeometry(menu, anchor, viewport) {
+  assert.ok(menu.width > 0 && menu.height > 0, 'Model menu must have usable dimensions');
+  for (const value of [menu.x, menu.y, menu.width, menu.height, anchor.x, anchor.width, viewport.width, viewport.height]) assert.ok(Number.isFinite(value), 'Menu geometry must be finite');
+  assert.ok(menu.x >= 0 && menu.y >= 0 && menu.x + menu.width <= viewport.width + 1 && menu.y + menu.height <= viewport.height + 1, 'Model menu must fit the actual float viewport');
+  assert.ok(Math.abs(menu.x + menu.width - anchor.x - anchor.width) <= 1, 'Compact model menu must align to its anchor right edge');
+}
+export function assertFloatRectInside(rect, container, label) {
+  for (const value of [rect?.x, rect?.y, rect?.width, rect?.height, container?.x, container?.y, container?.width, container?.height]) assert.ok(Number.isFinite(value), `${label}: finite real bounds required`);
+  assert.ok(rect.width > 0 && rect.height > 0, `${label}: nonempty real bounds required`);
+  assert.ok(rect.x >= container.x - 1 && rect.y >= container.y - 1 && rect.x + rect.width <= container.x + container.width + 1 && rect.y + rect.height <= container.y + container.height + 1, `${label}: outside viewport or containing row`);
+}
+export function assertFloatCompactGeometry(value, before) {
+  assert.equal(value.native.height, 176, 'Compact composition must fit native 176px');
+  assert.equal(value.viewport.height, 176, 'Compact viewport must match native 176px');
+  const rows = ['context', 'linkedRow', 'compose', 'bottom'];
+  for (const key of rows) assertFloatRectInside(value[key], value.viewport, key);
+  for (let index = 1; index < rows.length; index++) {
+    const previous = value[rows[index - 1]]; const current = value[rows[index]];
+    assert.ok(previous.y + previous.height <= current.y + 1, `${rows[index - 1]} overlaps ${rows[index]}`);
+  }
+  for (const key of ['textarea', 'send']) assertFloatRectInside(value[key], value.compose, key);
+  for (const key of ['reference', 'model']) assertFloatRectInside(value[key], value.bottom, key);
+  assert.ok(value.textarea.x + value.textarea.width <= value.send.x + 1, 'Input and send button overlap');
+  assert.ok(value.reference.x + value.reference.width <= value.model.x + 1, 'Reference and model buttons overlap');
+  if (value.chip) assertFloatRectInside(value.chip, value.linkedRow, 'Linked chip');
+  if (value.remove) assertFloatRectInside(value.remove, value.linkedRow, 'Remove button');
+  if (before) {
+    assert.equal(value.linkedRow.height, before.linkedRow.height, 'Empty/linked chip row must retain the same measured height');
+    for (const key of rows) assertFloatModelGeometry(before[key], value[key]);
+  }
+}
+async function compactGeometry(application, page, report, before) {
+  const selectors = { context: '.fa-mini-context', linkedRow: '.fa-linked-row', compose: '.fa-mini-compose', bottom: '.fa-mini-quick', textarea: '.fa-mini-compose textarea', send: '.fa-mini-compose button', reference: '.ai-add-reference', model: '.fa-model-toggle', chip: '.fa-linked-row .ai-reference-chip', remove: '.fa-linked-row .ai-reference-chip button' };
+  const value = { native: await bounds(application, page), viewport: await page.evaluate(() => ({ x: 0, y: 0, width: innerWidth, height: innerHeight })) };
+  for (const [key, selector] of Object.entries(selectors)) value[key] = await page.locator(selector).count() ? await page.locator(selector).boundingBox() : null;
+  assertFloatCompactGeometry(value, before);
+  (report.floatGroup.compactGeometry ??= []).push(value);
+  return value;
+}
+async function pickerGeometry(page, report) {
+  const rect = await page.getByRole('listbox', { name: '选择事项', exact: true }).boundingBox();
+  const viewport = await page.evaluate(() => ({ x: 0, y: 0, width: innerWidth, height: innerHeight }));
+  assertFloatRectInside(rect, viewport, 'Task picker');
+  (report.floatGroup.pickerGeometry ??= []).push({ rect, viewport });
+}
+export function expectedFloatMeasuredHeight(requested, areaHeight) {
+  assert.ok(Number.isFinite(requested) && Number.isFinite(areaHeight), 'Height measurement and work area must be finite');
+  return Math.min(Math.max(330, Math.min(1200, Math.round(requested))), areaHeight - 24);
+}
+async function scheduleMeasurement(application, page) {
+  const dom = await page.evaluate(() => {
+    const root = document.querySelector('.float-app'); const board = root.querySelector('.today-board');
+    const today = board.querySelector('.plan-today'); const schedule = board.querySelector('.plan-schedule');
+    const list = today.querySelector('.plan-list, .plan-tiles'); const last = list?.lastElementChild;
+    const contentHeight = list && last ? last.getBoundingClientRect().bottom - list.getBoundingClientRect().top + list.scrollTop + parseFloat(getComputedStyle(list).paddingBottom) : 0;
+    const todayHeight = list ? today.offsetHeight - list.clientHeight + contentHeight : today.offsetHeight;
+    const gap = parseFloat(getComputedStyle(board).rowGap) || 0;
+    const minimum = Math.max(700, Math.round(screen.availHeight - 112));
+    return { rootHeight: root.offsetHeight, boardHeight: board.offsetHeight, todayHeight, scheduleHeight: schedule.offsetHeight, contentHeight, gap, minimum,
+      requested: Math.max(minimum, Math.ceil(root.offsetHeight - board.offsetHeight + todayHeight + gap + schedule.offsetHeight)),
+      viewport: { x: 0, y: 0, width: innerWidth, height: innerHeight } };
+  });
+  return { dom, native: await bounds(application, page), area: await workArea(application, page) };
+}
+async function observeFloatResize(application, page) {
+  const id = await (await application.browserWindow(page)).evaluate(win => win.webContents.id);
+  await application.evaluate(({ ipcMain }, id) => {
+    if (globalThis.__floatPilotResizeObservation) throw new Error('Resize observation already active');
+    const observation = { events: [], listener: null };
+    observation.listener = (event, height) => { if (event.sender.id === id) observation.events.push(height); };
+    globalThis.__floatPilotResizeObservation = observation;
+    ipcMain.on('float:resize', observation.listener);
+  }, id);
+}
+async function resizeEvents(application) {
+  return application.evaluate(() => [...globalThis.__floatPilotResizeObservation.events]);
+}
+async function stopObservingFloatResize(application) {
+  await application.evaluate(({ ipcMain }) => {
+    const observation = globalThis.__floatPilotResizeObservation;
+    if (observation) ipcMain.removeListener('float:resize', observation.listener);
+    delete globalThis.__floatPilotResizeObservation;
+  });
+}
+async function openFloat(application, page) {
+  const open = page.locator('.topbar').getByRole('button', { name: '打开悬浮待办窗', exact: true });
+  if (await open.isVisible()) await open.click();
+  let floatPage; const started = Date.now();
+  while (!floatPage && Date.now() - started < 15000) {
+    floatPage = application.windows().find(candidate => /[?&]window=float(?:&|$)/.test(candidate.url()));
+    if (!floatPage) await page.waitForTimeout(100);
+  }
+  assert.ok(floatPage, 'Normal toolbar must create the real floating page');
+  await floatPage.locator('.float-app').waitFor({ state: 'visible' });
+  await floatPage.bringToFront();
+  floatPage.setDefaultTimeout(15000);
+  return floatPage;
+}
+async function bounds(application, page) { return (await application.browserWindow(page)).evaluate(win => win.getBounds()); }
+async function workArea(application, page) {
+  const id = await (await application.browserWindow(page)).evaluate(win => win.id);
+  return application.evaluate(({ screen, BrowserWindow }, id) => screen.getDisplayMatching(BrowserWindow.fromId(id).getBounds()).workArea, id);
+}
+async function settled(application, page) {
+  await page.waitForFunction(() => document.querySelector('.float-app')?.classList.contains('is-idle'));
+  // Observe well beyond CSS/native animation and consecutive ResizeObserver deliveries.
+  let previous; let stable = 0; const start = Date.now();
+  while (Date.now() - start < 10000) {
+    const next = await bounds(application, page);
+    if (JSON.stringify(next) === JSON.stringify(previous)) stable++; else stable = 0;
+    if (stable >= 6) return next;
+    previous = next; await page.waitForTimeout(100);
+  }
+  throw new Error('Floating native bounds never settled');
+}
+async function setMini(application, page, mini) {
+  const current = await page.locator('.float-app').evaluate(element => element.classList.contains('mini'));
+  if (current !== mini) await page.locator('.float-window-actions').getByRole('button', { name: mini ? '收起为卡片' : '展开主界面', exact: true }).click();
+  return settled(application, page);
+}
+async function setMode(application, page, mode) {
+  const current = await page.locator('.float-app').evaluate(element => element.classList.contains('ai-active'));
+  if (current !== (mode === 'ai')) await page.locator('.float-window-actions').getByRole('button', { name: 'AI 助手', exact: true }).click();
+  return settled(application, page);
+}
+async function setWidth(application, page, narrow, report) {
+  const before = await settled(application, page);
+  const current = await page.locator('.float-app').evaluate(element => element.classList.contains('narrow'));
+  if (current !== narrow) await page.getByRole('button', { name: narrow ? '收窄悬浮窗' : '加宽悬浮窗', exact: true }).click();
+  await page.waitForFunction(narrow => document.querySelector('.float-app')?.classList.contains('narrow') === narrow, narrow);
+  const after = await settled(application, page); const area = await workArea(application, page);
+  assertFloatWidthTransition(before, after, narrow ? 330 : 440, area);
+  report.floatGroup.measurements.push({ before, after, area, narrow });
+  return after;
+}
+async function capture(screenshot, page, name) { await screenshot(name, page); }
+export async function runFloatEmptyPilot({ application, page, check, screenshot, report }) {
+  report.floatGroup = { measurements: [], states: [], associations: [] };
+  await check('Floating group: real empty home mini retains 176px height', async () => {
+    const floatPage = await openFloat(application, page);
+    const native = await setMini(application, floatPage, true);
+    assert.equal(native.height, 176); assert.equal(native.width, 440);
+    await floatPage.getByText('今天还没有安排', { exact: true }).waitFor();
+    await capture(screenshot, floatPage, 'float-group-empty.png');
+    await floatPage.getByRole('button', { name: '隐藏悬浮待办窗', exact: true }).click();
+  });
+}
+async function configureProvider(page, endpoint) {
+  await page.locator('.rail [data-workbench="settings"]').click();
+  await page.locator('.tree').getByRole('button', { name: 'AI 助手', exact: true }).click();
+  await page.getByRole('button', { name: '添加供应商', exact: true }).first().click();
+  const dialog = page.getByRole('dialog', { name: '添加供应商', exact: true });
+  await dialog.getByRole('combobox', { name: '供应商类型', exact: true }).click();
+  await page.getByRole('option', { name: '自定义', exact: true }).click();
+  await dialog.getByRole('textbox', { name: '供应商名称', exact: true }).fill('悬浮窗合成验收');
+  await dialog.getByRole('textbox', { name: '服务地址', exact: true }).fill(endpoint);
+  await dialog.getByRole('button', { name: '保存供应商', exact: true }).click(); await dialog.waitFor({ state: 'hidden' });
+  for (let index = 0; index < 5; index++) {
+    await page.getByRole('article', { name: '悬浮窗合成验收 配置', exact: true }).getByRole('button', { name: '添加模型', exact: true }).click();
+    const model = page.getByRole('dialog').filter({ has: page.locator('#ai-model-name') });
+    await model.getByRole('textbox', { name: '模型名称 / ID', exact: true }).fill(`float-synthetic-long-model-name-${index}`);
+    await model.getByRole('button', { name: '添加模型', exact: true }).click(); await model.waitFor({ state: 'hidden' });
+  }
+  await page.locator('.rail [data-workbench="home"]').click();
+}
+export async function runFloatGroupPilot({ application, page, check, screenshot, report, runId }) {
+  report.floatGroup ??= { measurements: [], states: [], associations: [] };
+  const requests = [];
+  const server = createServer(async (request, response) => {
+    let body = ''; for await (const chunk of request) body += chunk;
+    requests.push(JSON.parse(body));
+    response.writeHead(200, { 'Content-Type': 'text/event-stream' });
+    response.write(`data: ${JSON.stringify({ id: 'float-pilot', choices: [{ index: 0, delta: { content: JSON.stringify({ message: '合成关联验收完成。', actions: [] }) }, finish_reason: null }] })}\n\n`);
+    response.write(`data: ${JSON.stringify({ id: 'float-pilot', choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] })}\n\n`);
+    response.end('data: [DONE]\n\n');
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  let floatPage;
+  try {
+    await check('Floating group: normal UI creates long-title fixture and loopback-only models', async () => {
+      await configureProvider(page, `http://127.0.0.1:${server.address().port}/v1`);
+      await page.locator('#view-home').getByRole('button', { name: '新增', exact: true }).click();
+      const editor = page.getByRole('dialog', { name: '新增事项', exact: true });
+      await editor.getByRole('textbox', { name: '待办名称', exact: true }).fill(`CI floating ${runId} ${'长标题关联与窄屏验收'.repeat(10)}`);
+      await editor.getByRole('button', { name: '创建', exact: true }).click(); await editor.waitFor({ state: 'hidden' });
+      floatPage = await openFloat(application, page);
+      floatPage.on('pageerror', error => report.errors.push(`float: ${error.message}`));
+    });
+    for (const reducedMotion of ['no-preference', 'reduce']) {
+      await floatPage.emulateMedia({ reducedMotion });
+      for (const entry of FLOAT_GROUP_MATRIX) await check(`Floating group: ${entry.mode}/${entry.mini ? 'mini' : 'expanded'}/${entry.narrow ? 'narrow' : 'wide'} ${reducedMotion}`, async () => {
+        await setMode(application, floatPage, entry.mode); await setMini(application, floatPage, entry.mini);
+        await setWidth(application, floatPage, !entry.narrow, report);
+        const native = await setWidth(application, floatPage, entry.narrow, report);
+        if (entry.mini) assert.equal(native.height, 176, 'Idle mini native height must be exactly 176');
+        const geometry = await floatPage.evaluate(() => ({ viewport: { width: innerWidth, height: innerHeight }, scrollWidth: document.documentElement.scrollWidth }));
+        assert.ok(geometry.scrollWidth <= geometry.viewport.width, 'Floating content must not overflow horizontally');
+        assert.equal(await floatPage.locator('.float-insight').count(), 0);
+        if (entry.mode === 'ai') {
+          assert.equal(await floatPage.locator('.fa-mini-answer-toggle').count(), 0);
+          assert.equal((await floatPage.locator('.ai-add-reference').innerText()).trim(), '关联事项');
+          if (entry.mini) {
+            assert.equal((await floatPage.locator('.fa-mini-back').innerText()).trim(), '返回');
+            await compactGeometry(application, floatPage, report);
+          }
+          else await floatPage.getByRole('button', { name: '返回首页', exact: true }).waitFor();
+        }
+        report.floatGroup.states.push({ ...entry, reducedMotion, native, geometry });
+        if (reducedMotion === 'no-preference') await capture(screenshot, floatPage, `float-group-${entry.mode}-${entry.mini ? 'mini' : 'expanded'}-${entry.narrow ? 'narrow' : 'wide'}.png`);
+      });
+    }
+    await check('Floating group: native work-area edge clamp preserves height after repeated width changes', async () => {
+      const window = await application.browserWindow(floatPage); const area = await workArea(application, floatPage); const native = await bounds(application, floatPage);
+      await window.evaluate((win, next) => win.setPosition(next.x, next.y), { x: area.x + area.width - native.width, y: area.y + area.height - native.height });
+      for (let index = 0; index < 3; index++) { await setWidth(application, floatPage, false, report); await setWidth(application, floatPage, true, report); }
+      const beforePoll = await bounds(application, floatPage);
+      await floatPage.waitForTimeout(5500); // Cross the real five-second unchanged-data refresh as well as observers.
+      const afterPoll = await settled(application, floatPage);
+      assertFloatWidthTransition(beforePoll, afterPoll, 330, await workArea(application, floatPage));
+      report.floatGroup.measurements.push({ beforePoll, afterPoll, unchangedPoll: true });
+    });
+    await check('Floating group: narrow schedule child changes remeasure after width switch and AI/home roundtrip', async () => {
+      await setMode(application, floatPage, 'home'); await setMini(application, floatPage, false);
+      await setWidth(application, floatPage, false, report); await setWidth(application, floatPage, true, report);
+      await observeFloatResize(application, floatPage);
+      try {
+        for (const roundtrip of [false, true]) {
+          if (roundtrip) {
+            await setMode(application, floatPage, 'ai'); await setMode(application, floatPage, 'home');
+            await setWidth(application, floatPage, false, report); await setWidth(application, floatPage, true, report);
+          }
+          const tabs = floatPage.locator('.plan-schedule .plan-folder-tab');
+          const ids = await tabs.evaluateAll(elements => elements.map(element => element.getAttribute('aria-controls')));
+          assert.ok(ids.length > 0, 'Existing UI-created schedule fixture must produce a today/tomorrow folder');
+          for (const id of ids) {
+            const tab = floatPage.locator(`.plan-schedule .plan-folder-tab[aria-controls="${id}"]`);
+            for (const expanded of [true, false]) {
+              assert.equal(await tab.getAttribute('aria-expanded'), String(!expanded));
+              await setWidth(application, floatPage, false, report); await setWidth(application, floatPage, true, report);
+              const before = await scheduleMeasurement(application, floatPage);
+              const eventCount = (await resizeEvents(application)).length;
+              await tab.click();
+              await floatPage.waitForFunction(({ id, expanded }) => document.querySelector(`[aria-controls="${id}"]`)?.getAttribute('aria-expanded') === String(expanded), { id, expanded });
+              await settled(application, floatPage);
+              const events = (await resizeEvents(application)).slice(eventCount);
+              assert.ok(events.length > 0, 'Real folder content change must emit native float:resize even when height is clamped');
+              const after = await scheduleMeasurement(application, floatPage);
+              assert.equal(after.native.width, 330);
+              assert.equal(after.native.height, expectedFloatMeasuredHeight(events.at(-1), after.area.height), 'Native height must match the actual emitted measurement and display clamp');
+              assert.ok(Math.abs(events.at(-1) - after.dom.requested) <= 1, 'Latest renderer measurement must agree with actual settled board geometry');
+              const groups = floatPage.locator('.plan-schedule-groups');
+              const overflow = await groups.evaluate(element => ({ scrollWidth: element.scrollWidth, clientWidth: element.clientWidth }));
+              assert.ok(overflow.scrollWidth <= overflow.clientWidth + 1, 'Narrow schedule must fit horizontally');
+              if (expanded) {
+                const rows = floatPage.locator(`#${id} .plan-item`); assert.ok(await rows.count() > 0);
+                for (let index = 0; index < await rows.count(); index++) {
+                  await rows.nth(index).scrollIntoViewIfNeeded();
+                  assertFloatRectInside(await rows.nth(index).boundingBox(), after.dom.viewport, 'Visible schedule row');
+                }
+              } else assert.equal(await floatPage.locator(`#${id}`).count(), 0);
+              (report.floatGroup.childMeasurements ??= []).push({ roundtrip, id, expanded, before, after, events, overflow });
+            }
+          }
+        }
+      } finally { await stopObservingFloatResize(application); }
+    });
+    await check('Floating group: narrow home keeps title tooltip, deadline, pagination and completion cancellation', async () => {
+      await setMode(application, floatPage, 'home'); await setMini(application, floatPage, true);
+      const title = floatPage.locator('.float-mini-task-title'); const first = await title.innerText();
+      assert.equal(await title.getAttribute('title'), `展开编辑：${first}`);
+      await floatPage.locator('.float-mini-time').waitFor({ state: 'visible' });
+      await floatPage.getByRole('button', { name: '下一项', exact: true }).click();
+      assert.notEqual(await title.innerText(), first);
+      await floatPage.getByRole('button', { name: '上一项', exact: true }).click();
+      assert.equal(await title.innerText(), first);
+      const snapshot = await page.evaluate(() => window.workbench.todo.state());
+      const completion = floatPage.locator('.float-mini-check');
+      if (await completion.count()) {
+        await completion.click(); await floatPage.getByRole('button', { name: '取消', exact: true }).click();
+        assert.deepEqual(await page.evaluate(() => window.workbench.todo.state()), snapshot);
+      }
+    });
+    for (const mini of [true, false]) await check(`Floating group: ${mini ? 'mini' : 'expanded'} real pointer association, replace, remove, keyboard and outside dismissal`, async () => {
+      await setMini(application, floatPage, mini); await setMode(application, floatPage, 'ai');
+      const model = floatPage.locator(mini ? '.fa-model-toggle' : '.ai-model-select');
+      const before = await model.boundingBox(); assert.ok(before);
+      const compactBefore = mini ? await compactGeometry(application, floatPage, report) : null;
+      const inspectCompact = async () => { if (mini) await compactGeometry(application, floatPage, report, compactBefore); };
+      const initialCalls = requests.length;
+      const picker = floatPage.getByRole('listbox', { name: '选择事项', exact: true });
+      const open = async () => { await floatPage.locator('.ai-add-reference').click(); await picker.waitFor(); await pickerGeometry(floatPage, report); };
+      await open();
+      const options = picker.getByRole('option'); assert.ok(await options.count() >= 2);
+      const tasks = (await page.evaluate(() => window.workbench.todo.state())).tasks.filter(task => !task.deletedAt);
+      assert.equal(await options.count(), tasks.length, 'Picker must not silently truncate available tasks');
+      const now = Date.now();
+      for (const task of tasks) {
+        const row = options.filter({ hasText: task.title });
+        const deadline = task.kind === 'meeting' ? task.endAt || (task.dueAt ? new Date(Date.parse(task.dueAt) + 3600000).toISOString() : null) : task.dueAt;
+        const overdue = (deadline ? Date.parse(deadline) : new Date(`${task.plannedDate}T23:59:59`).getTime()) < now;
+        const status = task.status === 'done' ? '已完成' : overdue ? '已超期' : task.status === 'doing' ? '进行中' : '待办';
+        assert.ok((await row.locator('.fa-task-status').innerText()).includes(status), `Business status must be independent of selection: ${task.title}`);
+        assert.equal(await row.getAttribute('title'), task.title, 'Picker must expose full title tooltip');
+      }
+      const first = await options.nth(0).getAttribute('title'); assert.ok(first);
+      await options.nth(0).click(); // Playwright dispatches physical pointerdown/up/click, never HTMLElement.click().
+      await picker.waitFor({ state: 'hidden' });
+      const chip = floatPage.locator('.fa-linked-row .ai-reference-chip'); await chip.waitFor();
+      assert.ok((await chip.innerText()).includes(first));
+      assert.equal(await chip.locator('span[title]').getAttribute('title'), first);
+      assertFloatModelGeometry(before, await model.boundingBox());
+      await inspectCompact();
+      await open(); await options.nth(1).click(); await picker.waitFor({ state: 'hidden' });
+      assertFloatModelGeometry(before, await model.boundingBox());
+      await inspectCompact();
+      await chip.getByRole('button').click(); await chip.waitFor({ state: 'hidden' });
+      assertFloatModelGeometry(before, await model.boundingBox());
+      await inspectCompact();
+      await open(); await floatPage.keyboard.press('Escape'); await picker.waitFor({ state: 'hidden' });
+      await open(); await floatPage.locator('textarea[aria-label="AI 对话输入"]').click(); await picker.waitFor({ state: 'hidden' });
+      await open(); await options.nth(0).focus(); await floatPage.keyboard.press('Enter'); await picker.waitFor({ state: 'hidden' });
+      assertFloatModelGeometry(before, await model.boundingBox());
+      await inspectCompact();
+      assert.equal(requests.length, initialCalls, 'Association alone must never call a model');
+      assert.equal((await floatPage.locator('.ai-add-reference').innerText()).trim(), '关联事项');
+      report.floatGroup.associations.push({ mini, modelBefore: before, modelAfter: await model.boundingBox(), requestCount: requests.length });
+      if (mini) {
+        await capture(screenshot, floatPage, 'float-group-linked.png');
+        await model.click(); const menu = floatPage.getByRole('menu', { name: '按供应商选择模型', exact: true }); await menu.waitFor();
+        const menuBox = await menu.boundingBox(); const viewport = await floatPage.evaluate(() => ({ width: innerWidth, height: innerHeight }));
+        assertFloatMenuGeometry(menuBox, await model.boundingBox(), viewport);
+        const scroll = await menu.evaluate(element => ({ scrollHeight: element.scrollHeight, clientHeight: element.clientHeight, overflow: getComputedStyle(element).overflowY }));
+        assert.ok(scroll.scrollHeight > scroll.clientHeight && ['auto', 'scroll'].includes(scroll.overflow), 'Many models must scroll within the compact viewport');
+        await capture(screenshot, floatPage, 'float-group-models.png');
+        await floatPage.keyboard.press('Escape'); await menu.waitFor({ state: 'hidden' });
+        assert.equal(await model.evaluate(element => element === document.activeElement), true, 'Escape must restore model-trigger focus');
+      }
+      await chip.getByRole('button').click();
+    });
+    for (const [theme, label] of [['mist', '雾灰 · 轻雾'], ['cool', '冷灰 · 凝霜'], ['warm', '暖砂 · 柔雾']]) await check(`Floating group: ${theme} narrow compact theme`, async () => {
+      await page.locator('.rail [data-workbench="settings"]').click();
+      await page.locator('.tree').getByRole('button', { name: '外观', exact: true }).click();
+      await page.getByRole('radio', { name: label, exact: true }).click();
+      await floatPage.bringToFront();
+      await floatPage.waitForFunction(theme => document.documentElement.dataset.theme === theme, theme);
+      await setMini(application, floatPage, true);
+      assert.equal((await settled(application, floatPage)).height, 176);
+      await compactGeometry(application, floatPage, report);
+      await capture(screenshot, floatPage, `float-group-${theme}.png`);
+    });
+    await check('Floating group: explicit send uses the exact selected task, no task writes', async () => {
+      await setMini(application, floatPage, true);
+      await floatPage.locator('.fa-model-toggle').click();
+      await floatPage.getByRole('menuitemradio').filter({ has: floatPage.getByText('float-synthetic-long-model-name-0', { exact: true }) }).click();
+      await floatPage.waitForFunction(async () => {
+        const config = await window.workbench.ai.config();
+        return config.models.find(model => model.id === config.activeModelId)?.name === 'float-synthetic-long-model-name-0';
+      });
+      await floatPage.getByRole('button', { name: '切换模型,当前为 float-synthetic-long-model-name-0', exact: true }).waitFor();
+      await floatPage.getByRole('menu', { name: '按供应商选择模型', exact: true }).waitFor({ state: 'hidden' });
+      await floatPage.locator('.ai-add-reference').click();
+      await pickerGeometry(floatPage, report);
+      const option = floatPage.getByRole('listbox', { name: '选择事项', exact: true }).getByRole('option').filter({ hasText: `CI floating ${runId}` });
+      const title = await option.getAttribute('title'); assert.ok(title); await option.click();
+      const before = await page.evaluate(() => window.workbench.todo.state());
+      await floatPage.getByRole('textbox', { name: 'AI 对话输入', exact: true }).fill('仅验证关联，不修改事项');
+      await floatPage.getByRole('button', { name: '发送', exact: true }).click();
+      const start = Date.now(); while (!requests.length && Date.now() - start < 15000) await floatPage.waitForTimeout(100);
+      assert.equal(requests.length, 1);
+      assert.equal(requests[0].model, 'float-synthetic-long-model-name-0', 'Explicit send must use the settled selected model');
+      assert.ok(requests[0].messages.some(message => message.role === 'user' && message.content === `关于事项「${title}」:仅验证关联，不修改事项`), 'Wire prompt must contain exact linked title and explicit user text');
+      await floatPage.locator('.ai-add-reference').waitFor({ state: 'visible' });
+      assert.deepEqual(await page.evaluate(() => window.workbench.todo.state()), before);
+    });
+    await check('Floating group: hide/show retains narrow width on the same native window', async () => {
+      await setWidth(application, floatPage, true, report);
+      const window = await application.browserWindow(floatPage); const id = await window.evaluate(win => win.id);
+      await floatPage.getByRole('button', { name: '隐藏悬浮待办窗', exact: true }).click();
+      assert.equal(await window.evaluate(win => win.isVisible()), false);
+      const shown = await openFloat(application, page);
+      assert.equal(await (await application.browserWindow(shown)).evaluate(win => win.id), id);
+      assert.equal((await settled(application, shown)).width, 330);
+      await shown.getByRole('button', { name: '隐藏悬浮待办窗', exact: true }).click();
+    });
+    return { widthBeforeExit: 330 };
+  } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
+}
+export async function verifyFloatGroupRelaunch({ application, page, check, screenshot, fixture }) {
+  await check('Floating group: full same-installed-executable restart resets session-only width to 440', async () => {
+    assert.equal(fixture.widthBeforeExit, 330);
+    const floatPage = await openFloat(application, page);
+    assert.equal((await settled(application, floatPage)).width, 440);
+    assert.equal(await floatPage.locator('.float-app').evaluate(element => element.classList.contains('narrow')), false);
+    await capture(screenshot, floatPage, 'float-group-relaunched.png');
+    await floatPage.getByRole('button', { name: '隐藏悬浮待办窗', exact: true }).click();
+  });
+}
