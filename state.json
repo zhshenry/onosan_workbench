@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 289,
+  "revision": 290,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -4023,6 +4023,13 @@
       "summary": "准确head已合入，实际main检查通过，无开放PR依赖，非保护且PR可恢复；仅删分支引用",
       "verifiedAbsent": true,
       "verifiedAt": "2026-10-13T08:22:26.507Z"
+    },
+    "issue35-protocol-cleanup-fix": {
+      "operationId": "issue35-protocol-cleanup-fix",
+      "status": "intent",
+      "expectedHead": "224de024fbfe3309ae04b1dbb558ede28bb0bdab",
+      "treeSha": "b2d3979fc9db98f61ce3712094d1b281a1d78894",
+      "summary": "仅修2fixture/test文件Electron evaluate参数契约，严格读回自有handler/listener清理及新fixture可注册；产品不改，完整退出重启重验"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
