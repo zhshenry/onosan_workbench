@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 158,
+  "revision": 159,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -361,7 +361,8 @@
       "imagesVerifiedAt": "2026-10-12T18:07:33.897Z",
       "temporaryEvidenceCleanedAt": "2026-10-12T18:08:33.944Z",
       "lastNotifiedAt": "2026-10-12T18:08:17Z",
-      "feedbackCommentId": 6135158729
+      "feedbackCommentId": 6135158729,
+      "imageDisplayVerifiedAt": "2026-10-13T00:38:05.123Z"
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
@@ -2236,7 +2237,8 @@
       "url": "https://github.com/user-attachments/assets/2c16c9d3-fefa-4d5b-883f-eaf267359a0a",
       "uploadedAt": "2026-10-13T00:36:42.506Z",
       "recovery": "首次filechooser DOM节点失效、草稿空无附件；重新观察就绪节点补试一次成功",
-      "commentId": 6135382383
+      "commentId": 6135382383,
+      "displayVerifiedAt": "2026-10-13T00:38:05.123Z"
     },
     "issue26-v2-plan": {
       "kind": "comment",
@@ -2246,6 +2248,13 @@
       "createdAt": "2026-10-13T00:37:05Z",
       "commentId": 6135382383,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6135382383"
+    },
+    "issue26-v2-pr-metadata": {
+      "kind": "edit-pr-body",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/pull/39",
+      "body": "【OnO 自动化】#26｜按用户反馈修订关联事项视觉，等待局部v2确认\n\n当前实现head仍为2f24f9577c4adb770146fde38c91c3cb2bbc6dac，尚未改v2产品代码；旧最终合入请求暂停。新高保真及唯一方案确认入口：https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6135382383\n\n原实现Windows验证为431/431单测、47/47实装（run38287586027），不代表新视觉或最新main集成已通过。main已合入#24，后续实施需集成并重跑完整验收，再给准确新head实测图请求合入。\n\n不在本PR重复请求审批；保留Draft，不合入、不关单、不发版。",
+      "createdAt": "2026-10-13T00:38:05.123Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
