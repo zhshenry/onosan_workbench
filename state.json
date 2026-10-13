@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 249,
+  "revision": 250,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -3533,6 +3533,15 @@
       "commentId": 6139936671,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6139936671",
       "verifiedAt": "2026-10-13T06:45:49.852Z"
+    },
+    "issue34-v2-upload": {
+      "operationId": "issue34-v2-upload",
+      "status": "intent",
+      "targetIssue": 34,
+      "imageSha256": "138b713165c38f19d5f7fd7699247e791bf47d37811e56241b19d8525928bd51",
+      "bytes": 1676632,
+      "summary": "按用户反馈独立v2高保真：正常状态与标题同行，长错误详情不硬截断；不实施",
+      "createdAt": "2026-10-13T06:49:24.072Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
