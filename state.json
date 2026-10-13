@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 224,
+  "revision": 225,
   "currentRun": {
     "owner": "ono-root-diagnosis-result-20261013T0436Z",
     "startedAt": "2026-10-13T04:36:52.846Z",
@@ -3006,15 +3006,31 @@
     "pr40-native-evidence-recovered-upload": {
       "operationId": "pr40-native-evidence-recovered-upload",
       "targetIssue": 28,
-      "status": "partial",
+      "status": "uploaded-pending-display",
       "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
       "artifactId": 11786408859,
       "summary": "用户要求继续网页；26上传及发布显示成功后，恢复准确同hash16张PR40实测图交付，先单张验证",
       "createdAt": "2026-10-13T04:48:35.088Z",
       "actualImageURLs": {
-        "float-group-ai-mini-narrow.png": "https://github.com/user-attachments/assets/b7e83d82-2fa4-4a16-be91-9828ae0bf6bb"
+        "float-group-ai-mini-narrow.png": "https://github.com/user-attachments/assets/b7e83d82-2fa4-4a16-be91-9828ae0bf6bb",
+        "float-group-ai-expanded-narrow.png": "https://github.com/user-attachments/assets/61c5f2ce-db49-4630-a6c5-d5891d405665",
+        "float-group-ai-expanded-wide.png": "https://github.com/user-attachments/assets/8ba1ea00-2635-4723-ab12-e9dad92940df",
+        "float-group-ai-mini-wide.png": "https://github.com/user-attachments/assets/368b2613-1429-417b-96fb-610ed0d7c99d",
+        "float-group-cool.png": "https://github.com/user-attachments/assets/2c577b76-a8ba-467c-a57a-ae5b795616ef",
+        "float-group-empty.png": "https://github.com/user-attachments/assets/0dfdbdf3-d0a3-4f86-998b-0871024f3c83",
+        "float-group-home-expanded-narrow.png": "https://github.com/user-attachments/assets/2e9eca93-7dee-4b1d-bd4d-79127c2b4ced",
+        "float-group-home-expanded-wide.png": "https://github.com/user-attachments/assets/dadaafc4-27e3-4bca-a058-6f2198d07aed",
+        "float-group-home-mini-narrow.png": "https://github.com/user-attachments/assets/c0873588-7a77-42a8-9559-3ae9fbcc96c4",
+        "float-group-home-mini-wide.png": "https://github.com/user-attachments/assets/9596a8df-0377-41c3-912b-95b719965eed",
+        "float-group-linked.png": "https://github.com/user-attachments/assets/f1bdfdc8-4133-4787-aae9-53f96e1c348d",
+        "float-group-mist.png": "https://github.com/user-attachments/assets/d180ddbc-3612-4424-98f0-af0e735a839a",
+        "float-group-models.png": "https://github.com/user-attachments/assets/42f4ba27-a6c7-4932-b9a6-2323678a5eb0",
+        "float-group-picker.png": "https://github.com/user-attachments/assets/1afe8260-3af3-48c0-895c-f947fa67931d",
+        "float-group-relaunched.png": "https://github.com/user-attachments/assets/9bf2670f-dcf6-4e89-9686-642580732243",
+        "float-group-warm.png": "https://github.com/user-attachments/assets/79798add-0dfa-4870-ac32-755258354287"
       },
-      "nextAction": "已取得单图URL；继续其余15张准确hash证据"
+      "nextAction": "已取得单图URL；继续其余15张准确hash证据",
+      "uploadedAt": "2026-10-13T04:53:11.857Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
