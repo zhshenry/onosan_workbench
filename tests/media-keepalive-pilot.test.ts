@@ -11,7 +11,7 @@ import { JSDOM } from 'jsdom';
 import { TaskEditor } from '../modules/todo/ui/TaskEditor';
 import { newTask, type Task } from '../shared/todo-contracts';
 import { MEDIA_FIXTURE_ORIGIN, MEDIA_FIXTURE_PATHS, MEDIA_KEEPALIVE_SCREENSHOTS, isMediaFixtureUrl, mediaFixtureHtml,
-  assertMediaStatePreserved, assertMediaGeometry, assertMediaGuestSecurity, closeUnchangedMediaTaskEditor } from '../tooling/media-keepalive-pilot.mjs';
+  assertMediaStatePreserved, assertMediaGeometry, assertMediaGuestSecurity, assertMediaHiddenFocus, mediaNativeFocus, closeUnchangedMediaTaskEditor } from '../tooling/media-keepalive-pilot.mjs';
 import { inspectPilotArtifacts, MAX_ARTIFACT_BYTES } from '../tooling/pilot-artifacts.mjs';
 
 test('synthetic creator HTTPS fixture is exact-origin, exact-route and never forwards to the live site', () => {
@@ -71,6 +71,32 @@ test('security requires strict native values and actual post-guard attachment pr
   }
 });
 
+test('hidden native focus checks actual frame ownership while retaining root-view focus telemetry', async () => {
+  const ownerFrame={frameTreeNodeId:1,frameToken:'owner-frame',processId:2,url:'file:///app/index.html'};
+  const guestFrame={frameTreeNodeId:3,frameToken:'guest-frame',processId:4,url:MEDIA_FIXTURE_ORIGIN+'/'};
+  const owner:any={id:2,focusedFrame:ownerFrame,isFocused:()=>true};
+  const guest:any={id:4,hostWebContents:owner,focusedFrame:null,isDestroyed:()=>false,isFocused:()=>true};
+  let requestedId=0;
+  const application={evaluate:async(callback:any,id:number)=>{requestedId=id;return callback({webContents:{
+    fromId:(id:number)=>id===4?guest:null,getFocusedWebContents:()=>guest,fromFrame:(frame:any)=>frame===ownerFrame?owner:frame===guestFrame?guest:null,
+  }},id);}};
+  const hidden=await mediaNativeFocus(application,4);assert.equal(requestedId,4);
+  assert.equal(hidden.focused,true);assert.equal(hidden.focusedId,4,'Legacy getFocusedWebContents may prefer a webview when only the root native window is focused');
+  assert.equal(hidden.guestFocusedFrame,null);assert.equal(hidden.ownerFocusedContentsId,2);assert.equal(hidden.ownerFocusedFrame.frameToken,'owner-frame');
+  assert.doesNotThrow(()=>assertMediaHiddenFocus(hidden,2),'A focused outer window must not be confused with hidden guest keyboard ownership');
+  assert.doesNotThrow(()=>assertMediaHiddenFocus({...hidden,focused:false,focusedId:null,ownerViewFocused:false},2));
+  guest.focusedFrame=guestFrame;const active=await mediaNativeFocus(application,4);
+  assert.equal(active.guestFocusedContentsId,4);assert.throws(()=>assertMediaHiddenFocus(active,2),/must not own keyboard focus/);
+  guest.focusedFrame=null;owner.focusedFrame=guestFrame;
+  const wrongOwnerFrame=await mediaNativeFocus(application,4);assert.throws(()=>assertMediaHiddenFocus(wrongOwnerFrame,2),/actual focused frame/);
+  owner.focusedFrame=null;const none=await mediaNativeFocus(application,4);assert.throws(()=>assertMediaHiddenFocus(none,2),/actual focused frame/);
+  owner.focusedFrame=ownerFrame;assert.throws(()=>assertMediaHiddenFocus(hidden,9),/actual application owner/);
+  for(const missing of [undefined,false,0,'frame',{}]) {guest.focusedFrame=missing;await assert.rejects(mediaNativeFocus(application,4),/actual frame or explicit null/);}
+  guest.focusedFrame=null;
+  assert.equal(await mediaNativeFocus(application,99),null);assert.throws(()=>assertMediaHiddenFocus(null,2),/must remain alive/);
+  guest.isDestroyed=()=>true;assert.equal(await mediaNativeFocus(application,4),null);
+});
+
 test('hidden-input fixture closes actual new and existing TaskEditor controls without submitting or guessing return labels', async () => {
   const existing:Task={...newTask('Synthetic existing task'),id:'fixture-task',createdAt:'2026-10-13T00:00:00Z',updatedAt:'2026-10-13T00:00:00Z',completedAt:null,notifiedFor:null,deletedAt:null};
   const write=async()=>assert.fail('The dismissal fixture must never create, save or delete a task');
@@ -122,7 +148,7 @@ test('navigation wheel waits for requested native geometry and physical focus, o
   const make=(behavior='normal')=>{
     let clock=0;let geometryReads=0;let clicks=0;let wheels=0;let foreground=false;let pendingWheel=false;
     let contentSize=[1024,680];const order:string[]=[];
-    const current:any={...state(),targetClicks:25,focused:false,focusedId:null,documentFocused:true,
+    const current:any={...state(),targetClicks:25,focused:false,focusedId:null,documentFocused:true,guestFocusedFrame:null,guestFocusedContentsId:null,
       guestViewport:{width:948,height:614},wheelEvents:[{deltaY:900,isTrusted:true}]};
     const copy=(value:any)=>JSON.parse(JSON.stringify(value));
     const win={setContentSize(width:number,height:number){order.push('resize');contentSize=[width,height];},
@@ -147,6 +173,7 @@ test('navigation wheel waits for requested native geometry and physical focus, o
         assert.equal(id,current.id);assert.equal(selector,'#click-target');assert.ok(geometryReads>=4);assert.equal(foreground,true);clicks++;order.push('physical-click');
         if(behavior!=='missed-click')current.targetClicks++;current.focused=behavior!=='guest-unfocused';
         current.focusedId=behavior==='wrong-guest'?id+1:behavior==='guest-unfocused'?null:id;
+        current.guestFocusedFrame=behavior==='guest-unfocused'?null:{frameTreeNodeId:3};current.guestFocusedContentsId=current.focusedId;
       }};
     const wait=runInNewContext(`(${source.slice(untilStart,untilEnd)})`,context);context.until=wait;
     const helper=runInNewContext(`(${source.slice(helperStart+'export '.length,helperEnd)})`,context);
@@ -199,9 +226,13 @@ test('installed keepalive acceptance keeps prior suites and exercises physical i
   assert.match(source,/report\.mediaKeepaliveQuit\.exitCode,0/);
   assert.doesNotMatch(source,/\.webRequest\.|ipcMain\.|setContent\(|addInitScript\(|force:\s*true|dispatchEvent\(|--no-sandbox|ignoreCertificateErrors|setCertificateVerifyProc|fetch\(/);
   assert.match(source,/if\(!failure\) throw cleanupError/);
-  const hidden=source.slice(source.indexOf('async function assertHidden('),source.indexOf('export async function runMediaKeepalivePilot('));
+  const hidden=source.slice(source.indexOf('async function assertHidden('),source.indexOf('export async function assertMediaHiddenInput('));
   assert.doesNotMatch(hidden,/executeJavaScript|await nativeState\(/);
-  assert.match(hidden,/getFocusedWebContents/);
+  assert.match(hidden,/await mediaNativeFocus/);assert.match(hidden,/assertMediaHiddenFocus\(native,ownerId\)/);
+  assert.match(source,/guest\.focusedFrame/);assert.match(source,/webContents\.fromFrame\(ownerFocusedFrame\)/);
+  assert.match(source,/getFocusedWebContents\(\)\?\.id/);assert.match(source,/report\.mediaKeepaliveHiddenFocus/);
+  assert.match(source,/label:'renderer host teardown'/);assert.match(source,/label:'normal quit'/);
+  assert.match(source,/Hidden lifecycle input probe must not create or modify tasks/);
   assert.match(source,/guest\.isDestroyed\(\) \|\| guest\.isLoading\(\)/);
   assert.match(source,/5000, 'Synthetic native guest document read'/);
   assert.match(source,/owner\.on\('will-attach-webview', willAttach\)/);
@@ -216,7 +247,7 @@ test('installed keepalive acceptance keeps prior suites and exercises physical i
   assert.doesNotMatch(source,/\bscrollTo\(|\bscrollBy\(|\bscrollTop\s*=/,'Native scrolling must never be replaced with injected document scrolling');
   assert.match(source,/const currentTasks = await page\.evaluate\(\(\) => window\.workbench\.todo\.state\(\)\)/);
   assert.match(source,/Hidden-input acceptance must not create or modify a task/);
-  assert.equal(source.match(/await closeUnchangedMediaTaskEditor\(page\)/g)?.length,2);
+  assert.equal(source.match(/await closeUnchangedMediaTaskEditor\(page\)/g)?.length,5);
   assert.doesNotMatch(source,/\.task-modal'\)\.getByRole\('button', \{ name:'返回'/);
 });
 

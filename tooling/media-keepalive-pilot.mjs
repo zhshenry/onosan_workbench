@@ -62,6 +62,33 @@ export function assertMediaGuestSecurity(id, reported, attachment) {
     }
   }
 }
+export function assertMediaHiddenFocus(value, expectedOwnerId) {
+  assert.ok(value,'Hidden retained guest must remain alive');
+  assert.equal(value.ownerId,expectedOwnerId,'Native focus observation must belong to this actual application owner');
+  assert.equal(typeof value.focused,'boolean','Legacy native view focus must remain observable');
+  assert.equal(value.guestFocusedFrame,null,'Hidden native guest must not own keyboard focus');
+  assert.equal(value.ownerFocusedContentsId,expectedOwnerId,'The actual focused frame must belong to the visible application owner');
+  assert.ok(value.ownerFocusedFrame,'Visible application owner must expose its actual focused frame');
+}
+
+export async function mediaNativeFocus(application,id) {
+  return application.evaluate(({webContents},id)=>{
+    const guest=webContents.fromId(id);
+    if(!guest||guest.isDestroyed())return null;
+    const owner=guest.hostWebContents;
+    const describe=frame=>{
+      if(frame===null)return null;
+      if(!frame||typeof frame!=='object'||!Number.isInteger(frame.frameTreeNodeId)||typeof frame.frameToken!=='string'||!frame.frameToken||!Number.isInteger(frame.processId)||typeof frame.url!=='string') throw new Error('Focused-frame API must expose an actual frame or explicit null');
+      return {frameTreeNodeId:frame.frameTreeNodeId,frameToken:frame.frameToken,processId:frame.processId,url:frame.url};
+    };
+    const guestFocusedFrame=guest.focusedFrame;const ownerFocusedFrame=owner?.focusedFrame;
+    return {id,platform:process.platform,electron:process.versions.electron,chrome:process.versions.chrome,
+      focused:guest.isFocused(),focusedId:webContents.getFocusedWebContents()?.id??null,
+      ownerId:owner?.id??null,ownerViewFocused:owner?.isFocused()??null,
+      guestFocusedFrame:describe(guestFocusedFrame),guestFocusedContentsId:guestFocusedFrame?webContents.fromFrame(guestFocusedFrame)?.id??null:null,
+      ownerFocusedFrame:describe(ownerFocusedFrame),ownerFocusedContentsId:ownerFocusedFrame?webContents.fromFrame(ownerFocusedFrame)?.id??null:null};
+  },id);
+}
 export function assertMediaGeometry(value) {
   const { content, stage, webview, guestViewport, viewport } = value;
   for (const rect of [content, stage, webview]) for (const key of ['x', 'y', 'width', 'height']) assert.ok(Number.isFinite(rect?.[key]), 'Native fixture geometry must exist and be finite');
@@ -143,7 +170,9 @@ export async function prepareMediaKeepaliveQuit({application,page,report}) {
     await aiVisible(page,false);await creator(page,true);const id=await guestId(page);
     await loaded(application,page,id,'/');await clickGuest(application,page,id,'#draft');await page.keyboard.type('Quit-only unsent fixture');
     const retained=await until(page,()=>nativeState(application,id),value=>value?.draft==='Quit-only unsent fixture','Quit fixture input must be real');
-    await page.locator('.rail [data-workbench="home"]').click();await assertHidden(application,page,id);
+    const oldPoint=await clickGuest(application,page,id,'#click-target');
+    await page.locator('.rail [data-workbench="home"]').click();await assertHidden(application,page,id,report);
+    await assertMediaHiddenInput({application,page,id,oldPoint,report,label:'normal quit'});
     assertMediaStatePreserved(retained,await nativeState(application,id));
     report.mediaKeepaliveQuit={guestId:id,nonce:retained.nonce,draft:retained.draft,retainedBeforeQuit:true,statePreservationAcrossRestart:false};
   } catch(error) {
@@ -185,7 +214,8 @@ async function guestId(page) {
   }), value => Number.isInteger(value) && value > 0, 'Creator native guest never attached');
 }
 async function nativeState(application, id) {
-  return bounded(() => application.evaluate(async ({ webContents }, id) => {
+  return bounded(async () => {
+    const value=await application.evaluate(async ({ webContents }, id) => {
     const guest = webContents.fromId(id);
     // executeJavaScript waits for main-frame loading to stop. Never execute it
     // against the deliberately gated initial response, or hold its release hostage.
@@ -201,11 +231,13 @@ async function nativeState(application, id) {
     if (!content) return null;
     const names = ['will-frame-navigate', 'will-redirect', 'will-attach-webview', 'login', 'context-menu', 'did-start-navigation', 'did-navigate', 'destroyed'];
     return { id, url: guest.getURL(), ...content,
-      focused: guest.isFocused(), focusedId: webContents.getFocusedWebContents()?.id ?? null,
       history: { index: guest.navigationHistory.getActiveIndex(), entries: guest.navigationHistory.getAllEntries().map(entry => ({ url: entry.url, title: entry.title })) },
       listeners: Object.fromEntries(names.map(name => [name, guest.listenerCount(name)])),
     };
-  }, id), 5000, 'Synthetic native guest document read');
+    }, id);
+    if(!value)return null;
+    const focus=await mediaNativeFocus(application,id);return focus?{...value,...focus}:null;
+  }, 5000, 'Synthetic native guest document read');
 }
 async function loaded(application, page, id, pathname) {
   return until(page, () => nativeState(application, id), value => value?.url === `${MEDIA_FIXTURE_ORIGIN}${pathname}`, `Synthetic guest did not load ${pathname}`);
@@ -260,7 +292,7 @@ export async function restoreMediaFixtureNavigation({ application, page, native,
   await until(page,()=>native.evaluate(win=>win.isFocused()),value=>value===true,'Creator native window did not regain foreground focus');
   const before=input.before=await nativeState(application,id);
   await clickGuest(application,page,id,'#click-target');
-  const focused=await until(page,()=>nativeState(application,id),value=>value?.targetClicks===before.targetClicks+1&&value.focused&&value.focusedId===id,'Creator physical click did not restore native guest focus');
+  const focused=await until(page,()=>nativeState(application,id),value=>value?.targetClicks===before.targetClicks+1&&value.guestFocusedFrame&&value.guestFocusedContentsId===id,'Creator physical click did not restore native guest focus');
   assertMediaStatePreserved(before,focused);
   const metrics=await geometry(application,page,id);assertMediaGeometry(metrics);
   const point={x:metrics.webview.x+100,y:metrics.webview.y+metrics.webview.height-50};
@@ -279,23 +311,57 @@ export async function restoreMediaFixtureNavigation({ application, page, native,
   assert.deepEqual(after.history,before.history,'Physical wheel must preserve native navigation history');
 }
 
-async function assertHidden(application, page, id) {
+async function assertHidden(application, page, id, report) {
   const value = await page.evaluate(() => {
     const host = document.querySelector('.media-browser-host'); const focus = document.activeElement;
     return { hidden:host.hidden, inert:host.inert, ariaHidden:host.getAttribute('aria-hidden'), display:getComputedStyle(host).display,
       focusInside:host.contains(focus), size:host.getBoundingClientRect().width*host.getBoundingClientRect().height,
-      contentPadding:getComputedStyle(document.querySelector('.content')).padding };
+      contentPadding:getComputedStyle(document.querySelector('.content')).padding,
+      activeElement:{tag:focus?.tagName,id:focus?.id,className:focus?.className,ariaLabel:focus?.getAttribute('aria-label')} };
   });
+  // On Windows Electron's embedded child view HasFocus delegates to the root
+  // view, and getFocusedWebContents prefers any webview reporting that signal.
+  // Keep both as telemetry, but use focusedFrame for exclusive input ownership.
+  // https://github.com/electron/electron/blob/v44.4.4/shell/browser/api/electron_api_web_contents.cc#L4045
+  // https://github.com/chromium/chromium/blob/152.0.7977.130/content/browser/renderer_host/render_widget_host_view_child_frame.cc#L259
+  const owner=await application.browserWindow(page);const ownerId=await owner.evaluate(win=>win.webContents.id);
+  const native=await mediaNativeFocus(application,id);
+  (report.mediaKeepaliveHiddenFocus??=[]).push({at:new Date().toISOString(),id,expectedOwnerId:ownerId,dom:value,native});
   assert.equal(value.hidden, true); assert.equal(value.inert, true); assert.equal(value.ariaHidden, 'true');
   assert.equal(value.display, 'none'); assert.equal(value.size, 0); assert.equal(value.focusInside, false);
-  // This probe is safe even before the first response is released: no document JS.
-  const native = await application.evaluate(({webContents},id)=>{
-    const guest=webContents.fromId(id);
-    return guest&&!guest.isDestroyed()?{focused:guest.isFocused(),focusedId:webContents.getFocusedWebContents()?.id??null}:null;
-  },id);
-  assert.ok(native,'Hidden retained guest must remain alive');
-  assert.equal(native.focused, false, 'Hidden native guest must not own keyboard focus'); assert.notEqual(native.focusedId, id);
+  // Safe before the gated initial response: no guest document script or focus mutation.
+  assertMediaHiddenFocus(native,ownerId);
   return value;
+}
+
+export async function assertMediaHiddenInput({application,page,id,oldPoint,report,label}) {
+  const tasks=await page.evaluate(()=>window.workbench.todo.state());const before=await nativeState(application,id);
+  const probe={label,id,before,after:null,taskStateUnchanged:false,failure:null};(report.mediaKeepaliveHiddenInput??=[]).push(probe);
+  let title;let failure;
+  try {
+  const hit=await page.evaluate(({x,y})=>{const target=document.elementFromPoint(x,y);return Boolean(target&&!target.closest('.media-browser-host'));},oldPoint);
+  assert.equal(hit,true,'Former guest coordinates must hit only the current workspace');
+  await page.mouse.click(oldPoint.x,oldPoint.y);
+  if(await page.locator('.task-modal[open]').count())await closeUnchangedMediaTaskEditor(page);
+  await page.locator('#view-home').getByRole('button',{name:'新增',exact:true}).click();
+  title=page.getByRole('textbox',{name:'待办名称',exact:true});await title.click();
+  await application.evaluate(async({webContents},id)=>webContents.fromId(id).executeJavaScript('window.tryFixtureFocus()',false),id);
+  await assertHidden(application,page,id,report);
+  await title.click();await page.keyboard.type('Hidden creator input probe');assert.equal(await title.inputValue(),'Hidden creator input probe');
+  await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab');await assertHidden(application,page,id,report);
+  const after=probe.after=await nativeState(application,id);assertMediaStatePreserved(before,after);
+  assert.equal(after.focusAttempts,before.focusAttempts+1,'The new guest must actually attempt focus while hidden');
+  for(const key of ['keys','clicks','targetClicks'])assert.equal(after[key],before[key],`Hidden ${label} guest must not receive ${key}`);
+  await title.fill('');await closeUnchangedMediaTaskEditor(page);
+  assert.deepEqual(await page.evaluate(()=>window.workbench.todo.state()),tasks,'Hidden lifecycle input probe must not create or modify tasks');
+  probe.taskStateUnchanged=true;
+  } catch(error) {
+    failure=error;probe.failure=String(error);probe.after=await nativeState(application,id).catch(()=>null);throw error;
+  } finally {
+    try {
+      if(title&&await page.locator('.task-modal[open]').count()) {await title.fill('');await closeUnchangedMediaTaskEditor(page);}
+    } catch(cleanupError) {report.errors.push(`Hidden media input probe cleanup: ${String(cleanupError)}`);if(!failure)throw cleanupError;}
+  }
 }
 
 export async function runMediaKeepalivePilot({ application, page, check, screenshot, report }) {
@@ -369,7 +435,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       await until(page, () => probe(application), value => value.pendingHome, 'Initial fixture response was not gated');
       await page.locator('.rail [data-workbench="home"]').click();
       await page.locator('.media-browser-host[hidden]').waitFor({ state:'attached' });
-      assert.equal(await guestId(page), id); await assertHidden(application, page, id);
+      assert.equal(await guestId(page), id); await assertHidden(application, page, id, report);
       await creator(page, true); assert.equal(await guestId(page), id);
       await application.evaluate(() => globalThis.__onoMediaKeepaliveFixture.releaseHome());
       await loaded(application, page, id, '/');
@@ -395,7 +461,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
     });
     await check('Repeated real workbench navigation keeps DOM/native identity, state, history and listener counts', async () => {
       for (let turn = 0; turn < 2; turn++) for (const workbench of ['home', 'settings', 'life', 'game', 'web']) {
-        await page.locator(`.rail [data-workbench="${workbench}"]`).click(); await assertHidden(application, page, id);
+        await page.locator(`.rail [data-workbench="${workbench}"]`).click(); await assertHidden(application, page, id, report);
         await creator(page, true); assert.equal(await guestId(page), id);
         assert.equal(await page.evaluate(() => window.__onoRetainedWebview === document.querySelector('webview') && window.__onoRetainedMediaHost === document.querySelector('.media-browser-host')), true);
         const next = await nativeState(application, id); assertMediaStatePreserved(preserved, next); assert.deepEqual(next.listeners, preserved.listeners);
@@ -403,7 +469,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       }
     });
     await check('Hidden creator rejects native keyboard/pointer/focus and is excluded from host accessibility', async () => {
-      await page.locator('.rail [data-workbench="home"]').click(); await assertHidden(application, page, id);
+      await page.locator('.rail [data-workbench="home"]').click(); await assertHidden(application, page, id, report);
       const currentTasks = await page.evaluate(() => window.workbench.todo.state());
       const hit = await page.evaluate(({ x,y }) => { const e = document.elementFromPoint(x,y); return Boolean(e && !e.closest('.media-browser-host')); }, retainedPoint);
       assert.equal(hit, true, 'Former guest surface must hit current workspace');
@@ -415,11 +481,11 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       await page.locator('#view-home').getByRole('button', { name:'新增', exact:true }).click();
       const title = page.getByRole('textbox', { name:'待办名称', exact:true }); await title.click();
       await application.evaluate(async ({ webContents }, id) => webContents.fromId(id).executeJavaScript('window.tryFixtureFocus()', false), id);
-      await page.waitForTimeout(150); await assertHidden(application, page, id);
+      await page.waitForTimeout(150); await assertHidden(application, page, id, report);
       await title.click(); await page.keyboard.type('Current workspace input only');
       assert.equal(await title.inputValue(), 'Current workspace input only');
       await page.keyboard.press('Tab'); await page.keyboard.press('Shift+Tab');
-      await assertHidden(application, page, id);
+      await assertHidden(application, page, id, report);
       const after = await nativeState(application, id); assertMediaStatePreserved(before, after);
       assert.equal(after.focusAttempts,before.focusAttempts+1,'The synthetic guest must really attempt focus while hidden');
       assert.equal(after.keys, before.keys); assert.equal(after.clicks, before.clicks); assert.equal(after.targetClicks, before.targetClicks);
@@ -504,7 +570,9 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       assert.equal(await page.locator('.mbp-capbtn').count(),0); assert.equal(await page.locator('[title^="AI 看这页"]').count(),0);
     });
     await check('Actual renderer host teardown destroys the retained guest and reload is lazy again', async () => {
-      const departing=id; await page.locator('.rail [data-workbench="home"]').click(); await assertHidden(application,page,id);
+      const departing=id;const oldPoint=await clickGuest(application,page,id,'#click-target');
+      await page.locator('.rail [data-workbench="home"]').click(); await assertHidden(application,page,id,report);
+      await assertMediaHiddenInput({application,page,id,oldPoint,report,label:'renderer host teardown'});
       await page.reload(); await page.locator('#view-home').waitFor({state:'visible'});
       await until(page,()=>probe(application),value=>value.destroyed.includes(departing),'Actual owner reload must destroy retained guest');
       assert.equal(await page.locator('.media-browser-host').count(),0);
