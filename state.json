@@ -1,11 +1,11 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 160,
+  "revision": 161,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
-    "currentDevelopmentGroup": null,
-    "task": "核对24最终批准、悬浮组v2批准及26新视觉反馈；先24合后验证"
+    "currentDevelopmentGroup": "floating-ui-25-28-33",
+    "task": "悬浮组已批v2开发；24主干成功待关单清理；26局部v2待批准"
   },
   "tasks": {
     "17": {
@@ -162,7 +162,7 @@
     },
     "24": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/24",
-      "stage": "post-merge-verification",
+      "stage": "closeout",
       "type": [
         "ui",
         "interaction"
@@ -170,7 +170,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待真实main完整Windows/51实装与证据终态，通过后按批准关闭24及安全清理",
+      "nextAction": "实际main成功，按已批准范围关闭24并核查分支",
       "groupId": "topbar-date-24",
       "groupIssueNumbers": [
         24
@@ -239,11 +239,13 @@
         "scope": "接受所列畸形旧日程单次边界，合入准确PR38；实际main完整Windows/51实装通过后仅关闭24",
         "verifiedAt": "2026-10-13T00:31:20.532Z"
       },
-      "mergeSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78"
+      "mergeSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
+      "mainCiRunId": 38327784514,
+      "mainCiConclusion": "success"
     },
     "25": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/25",
-      "stage": "queued",
+      "stage": "implementation",
       "type": [
         "ui",
         "interaction"
@@ -251,7 +253,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "24实际main验收后启动一组开发，按完整v2，未批准成员不搭载",
+      "nextAction": "按完整已批准v2开发及真实Windows验证，一个DraftPR交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -297,7 +299,8 @@
         "corroboratingCommentId": 6135126353,
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
         "verifiedAt": "2026-10-13T00:34:00.071Z"
-      }
+      },
+      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78"
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
@@ -368,7 +371,7 @@
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "stage": "queued",
+      "stage": "implementation",
       "type": [
         "ui",
         "interaction"
@@ -376,7 +379,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "24实际main验收后启动一组开发，按完整v2，未批准成员不搭载",
+      "nextAction": "按完整已批准v2开发及真实Windows验证，一个DraftPR交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -425,11 +428,12 @@
         "corroboratingCommentId": 6135126353,
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
         "verifiedAt": "2026-10-13T00:34:00.071Z"
-      }
+      },
+      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78"
     },
     "29": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
-      "stage": "queued",
+      "stage": "implementation",
       "type": [
         "ui",
         "interaction"
@@ -437,7 +441,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "24实际main验收后启动一组开发，按完整v2，未批准成员不搭载",
+      "nextAction": "按完整已批准v2开发及真实Windows验证，一个DraftPR交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -483,11 +487,12 @@
         "corroboratingCommentId": 6135126353,
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
         "verifiedAt": "2026-10-13T00:34:00.071Z"
-      }
+      },
+      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78"
     },
     "30": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
-      "stage": "queued",
+      "stage": "implementation",
       "type": [
         "ui",
         "interaction"
@@ -495,7 +500,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "24实际main验收后启动一组开发，按完整v2，未批准成员不搭载",
+      "nextAction": "按完整已批准v2开发及真实Windows验证，一个DraftPR交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -541,11 +546,12 @@
         "corroboratingCommentId": 6135126353,
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
         "verifiedAt": "2026-10-13T00:34:00.071Z"
-      }
+      },
+      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78"
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
-      "stage": "queued",
+      "stage": "implementation",
       "type": [
         "ui",
         "interaction"
@@ -553,7 +559,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "24实际main验收后启动一组开发，按完整v2，未批准成员不搭载",
+      "nextAction": "按完整已批准v2开发及真实Windows验证，一个DraftPR交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -599,11 +605,12 @@
         "corroboratingCommentId": 6135126353,
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
         "verifiedAt": "2026-10-13T00:34:00.071Z"
-      }
+      },
+      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78"
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
-      "stage": "queued",
+      "stage": "implementation",
       "type": [
         "ui",
         "interaction"
@@ -611,7 +618,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "24实际main验收后启动一组开发，按完整v2，未批准成员不搭载",
+      "nextAction": "按完整已批准v2开发及真实Windows验证，一个DraftPR交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -657,11 +664,12 @@
         "corroboratingCommentId": 6135126353,
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
         "verifiedAt": "2026-10-13T00:34:00.071Z"
-      }
+      },
+      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78"
     },
     "33": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
-      "stage": "queued",
+      "stage": "implementation",
       "type": [
         "ui",
         "interaction"
@@ -669,7 +677,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "24实际main验收后启动一组开发，按完整v2，未批准成员不搭载",
+      "nextAction": "按完整已批准v2开发及真实Windows验证，一个DraftPR交付",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -715,7 +723,8 @@
         "corroboratingCommentId": 6135126353,
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
         "verifiedAt": "2026-10-13T00:34:00.071Z"
-      }
+      },
+      "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78"
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
