@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 258,
+  "revision": 259,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -931,7 +931,7 @@
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
-      "stage": "blocked-closeout",
+      "stage": "completed",
       "type": [
         "ui",
         "interaction"
@@ -939,7 +939,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T06:05:41Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "产品已合入且真实main验收成功；仅关单工具授权阻碍，等待用户聊天明确关闭7单，不重做产品",
+      "nextAction": "已完成；仅新反馈/重开时重核范围，不自动恢复旧批准",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -1071,7 +1071,8 @@
         "installed": "84/84",
         "actualMain": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
         "verifiedAt": "2026-10-13T06:50:51.221Z"
-      }
+      },
+      "closedAt": "2026-10-13T06:57:50Z"
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
@@ -3663,10 +3664,12 @@
     "pr40-close-issue-31": {
       "operationId": "pr40-close-issue-31",
       "targetIssue": 31,
-      "status": "intent",
+      "status": "succeeded",
       "summary": "用户在2026-10-13明确指令关闭25/28/29/30/31/32/33；实际main486/84及图文交付已通过，继续同一关闭操作",
       "approvalCommentId": 6139438818,
-      "blocker": null
+      "blocker": null,
+      "closedAt": "2026-10-13T06:57:50Z",
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/31"
     },
     "pr40-close-issue-32": {
       "operationId": "pr40-close-issue-32",
