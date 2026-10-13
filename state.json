@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 291,
+  "revision": 292,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1419,7 +1419,7 @@
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "ci-running",
+      "stage": "ci-blocked",
       "type": [
         "ui",
         "bugfix",
@@ -1428,7 +1428,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "等待准确head完整原生退出重启验收及真实图；不合入",
+      "nextAction": "修复真实wheel在尺寸切换后的时序/输入定位；新head完整回归",
       "lastCommentId": 6128766093,
       "groupId": "media-keepalive-35",
       "groupIssueNumbers": [
@@ -1460,18 +1460,18 @@
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/43",
       "headSha": "a1e12c5761bbe8176ba4635ab31ede3198840a14",
       "ciRun": 38371216970,
-      "ciResult": null,
+      "ciResult": "failure",
       "tests": {
         "windowsUnit": "494/494,0skip",
         "verify": "pass",
         "installed": "75/76,35 Loading workspace switch undefined !== false;后续未执行"
       },
       "nativeProgress": {
-        "run": 38368255458,
-        "passed": "35全部10主专项，包括24组合几何/隐藏焦点输入AX/历史恢复/模式边界/host销毁",
-        "failed": "prepare quit fixture Failed to register protocol:https",
-        "remaining": "real quit and restart",
-        "artifact": 11797688317
+        "run": 38371216970,
+        "passed": "保活/隐藏焦点输入AX/24几何组合",
+        "failed": "Explicit navigation physical wheel no scroll, viewport still compact",
+        "remaining": "navigation/recovery/quit/restart not completed",
+        "artifact": 11799636665
       }
     },
     "36": {
