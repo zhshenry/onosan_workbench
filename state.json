@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 334,
+  "revision": 335,
   "currentRun": {
     "owner": "ono-root-issue37-20261013T1151Z",
     "startedAt": "2026-10-13T11:51:31.363Z",
@@ -1754,7 +1754,9 @@
     6144599897,
     6144934226,
     6145667898,
-    6145874018
+    6145874018,
+    6146026117,
+    6146027415
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -4323,17 +4325,23 @@
     },
     "issue34-image-feedback-reply": {
       "operationId": "issue34-image-feedback-reply",
-      "status": "intent",
+      "status": "succeeded",
       "target": 34,
       "body": "【OnO 自动化】已看到你的截图意见。红字反复出现来自测试夹具：为检查超长错误能完整换行，测试数据将同一句重复了30次；这张压力测试图不适合作为正常错误示例交付。\n\n我会核对当前产品显示逻辑，将正常错误截图与超长文本压力检查分开，重新跑 Windows 并交付新的实际截图。当前最终验收请求暂停，不合入旧版本。完成后在这里给出准确新 head。当前无需回复。",
-      "startedAt": "2026-10-13T12:54:54.853Z"
+      "startedAt": "2026-10-13T12:54:54.853Z",
+      "commentId": 6146026117,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6146026117",
+      "verifiedAt": "2026-10-13T12:55:35.508Z"
     },
     "issue35-image-feedback-reply": {
       "operationId": "issue35-image-feedback-reply",
-      "status": "intent",
+      "status": "succeeded",
       "target": 35,
       "body": "【OnO 自动化】你图中的问题是首页窄窗布局：本周概览被挤成细长的一列，与待办内容重叠。源码中窄窗改为单列后，子项仍保留原来的双列位置，导致额外生成一列。这是当前视觉验收失败、PR #43 尚未合入的原因。\n\n补充方案准备为：窄窗按待办/日程 → 本周概览 → 更多工作台上下排列，同时重置子项列、行定位；宽窗保留原来的排列。会先提供高保真供你确认，再实施。当前这条回复只解释问题，不作为方案批准；无需回复。",
-      "startedAt": "2026-10-13T12:54:54.853Z"
+      "startedAt": "2026-10-13T12:54:54.853Z",
+      "commentId": 6146027415,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6146027415",
+      "verifiedAt": "2026-10-13T12:55:35.508Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -4349,7 +4357,7 @@
     "endedAt": "2026-10-13T11:33:25.184Z",
     "summary": "35原生500/500+95/95通过但既有首页视觉异常与附件交付阻塞；34PR44实现Windows513/513+95/95及4图实际查看，待内嵌附件；无在途写，释放协调占用"
   },
-  "updatedAt": "2026-10-13T12:54:54.853Z",
+  "updatedAt": "2026-10-13T12:55:35.508Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
