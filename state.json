@@ -1,11 +1,11 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 311,
+  "revision": 312,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
-    "currentDevelopmentGroup": "media-keepalive-35",
-    "task": "35已批v1独立实施；40按用户明确关7单指令完成收尾；34/36/37准备"
+    "currentDevelopmentGroup": "settings-update-34",
+    "task": "35已冻结待视觉范围/附件问题；切换至已批准34v2单组实施"
   },
   "tasks": {
     "17": {
@@ -1385,15 +1385,15 @@
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
-      "stage": "approved-queued",
+      "stage": "implementing",
       "type": [
         "ui",
         "investigation"
       ],
       "sourceAuthorId": 54107847,
-      "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
+      "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "一次开发一组；待35推进到安全关口后刷新基线按已批方案实施",
+      "nextAction": "仅按34v2应用更新同行展示实施测试；不修改真实更新流程",
       "groupId": "settings-update-34",
       "groupIssueNumbers": [
         34
@@ -1415,7 +1415,8 @@
         "createdAt": "2026-10-13T07:34:44Z",
         "updatedAt": "2026-10-13T07:34:44Z",
         "performedViaApp": null
-      }
+      },
+      "approvalReverifiedAt": "2026-10-13T10:58:39.185Z"
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
