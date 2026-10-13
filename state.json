@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 269,
+  "revision": 270,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1504,6 +1504,14 @@
         "interpretation": "发布前核对全部目标功能已合入main、无未处理需求分支；清理无用分支，必要进度分支单列用途，不误合过时实验，不因发布需求推定批准具体合入"
       },
       "stateBranchQuestionCommentId": 6137399050
+    },
+    "closeout-docs": {
+      "stage": "ci-running",
+      "pr": 42,
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/42",
+      "headSha": "e550ed2efff06fcbb3d92a340108139743149d08",
+      "baseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
+      "nextAction": "等待准确head CI，向用户请求合入准确版本；不影响35开发组"
     }
   },
   "ownCommentIds": [
@@ -3790,7 +3798,7 @@
     },
     "closeout-docs-publish": {
       "operationId": "closeout-docs-publish",
-      "status": "branch-published-pr-intent",
+      "status": "succeeded",
       "branch": "ono/closeout-no-repeat-confirmation",
       "baseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "summary": "用户要求修改正常收尾规范；独立3文件文档Draft PR，16增12删，不合入",
@@ -3806,7 +3814,9 @@
         "additions": 16,
         "deletions": 12
       },
-      "verifiedAt": "2026-10-13T07:14:16.828Z"
+      "verifiedAt": "2026-10-13T07:14:58.373Z",
+      "pr": 42,
+      "url": "https://github.com/zhshenry/onosan_workbench/pull/42"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
