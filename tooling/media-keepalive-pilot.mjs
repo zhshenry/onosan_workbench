@@ -9,6 +9,9 @@ export const MEDIA_KEEPALIVE_SCREENSHOTS = Object.freeze([
 ]);
 export const MEDIA_FIXTURE_ORIGIN = 'https://creator.xiaohongshu.com';
 export const MEDIA_FIXTURE_PATHS = Object.freeze(['/', '/note/keepalive', '/note/next', '/offline']);
+const MEDIA_GUEST_SECURITY = Object.freeze({ contextIsolation:true, sandbox:true, webSecurity:true,
+  nodeIntegration:false, nodeIntegrationInWorker:false, nodeIntegrationInSubFrames:false,
+  webviewTag:false, plugins:false, allowRunningInsecureContent:false });
 export function isMediaFixtureUrl(value) {
   if (!URL.canParse(value)) return false;
   const url = new URL(value);
@@ -38,6 +41,23 @@ export function assertMediaStatePreserved(before, after) {
   for (const key of ['id', 'url', 'nonce', 'draft']) assert.equal(after[key], before[key], `Workspace switch must preserve ${key}`);
   assert.ok(Number.isFinite(after.scrollY) && Math.abs(after.scrollY - before.scrollY) <= 2, 'Workspace switch must preserve scroll');
   assert.deepEqual(after.history, before.history, 'Workspace switch must preserve the real native navigation history');
+}
+export function assertMediaGuestSecurity(id, reported, attachment) {
+  assert.ok(reported && typeof reported === 'object', 'Native preferences must be an actual reported object');
+  assert.equal(attachment?.id, id, 'Security observations must belong to this native guest');
+  assert.equal(attachment?.partition, 'persist:wb-browser-xhs-creator', 'Security observations must use the creator partition');
+  assert.equal(attachment?.matchingRequests, 1, 'Each native attachment must correlate with exactly one observed request');
+  assert.ok(attachment?.requestedSrc?.startsWith('about:blank#'), 'Observed attachment must use the actual reservation route');
+  assert.equal(attachment?.initialUrl, attachment?.requestedSrc, 'The native initial route must match the observed attachment request');
+  for (const [key, expected] of Object.entries(MEDIA_GUEST_SECURITY)) {
+    assert.equal(attachment?.preferences?.[key], expected, `Actual post-guard will-attach preference ${key} must be ${expected}`);
+    // Electron 44.4.4 SaveLastPreferences does not expose plugins. Do not
+    // interpret an omitted key as false: prove it in the real will-attach event.
+    // https://github.com/electron/electron/blob/v44.4.4/shell/browser/web_contents_preferences.cc
+    if (key !== 'plugins' || Object.hasOwn(reported, key)) {
+      assert.equal(reported[key], expected, `Native reported preference ${key} must be ${expected}`);
+    }
+  }
 }
 export function assertMediaGeometry(value) {
   const { content, stage, webview, guestViewport, viewport } = value;
@@ -223,7 +243,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
         const creatorSession = session.fromPartition('persist:wb-browser-xhs-creator');
         const materialSession = session.fromPartition('persist:wb-browser-media');
         const fixture = { token, owner, creatorSession, materialSession, requests:[], navigations:[], attachments:[], destroyed:[],
-          gateHome:true, releaseHome:null, failOffline:true, observations:[], ownerListeners:[], creatorHandled:false, materialHandled:false };
+          gateHome:true, releaseHome:null, failOffline:true, observations:[], attachmentRequests:[], ownerListeners:[], creatorHandled:false, materialHandled:false };
         globalThis.__onoMediaKeepaliveFixture = fixture;
         const serve = async (request) => {
           const url = new URL(request.url);
@@ -240,12 +260,30 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
         // Never replace onBeforeRequest: the real BrowserGuests guard remains registered.
         creatorSession.protocol.handle('https', serve); fixture.creatorHandled = true;
         materialSession.protocol.handle('https', serve); fixture.materialHandled = true;
+        // BrowserGuests.bind registers the production guard when the window is
+        // created, before this observer and before any fixture guest exists.
+        if (owner.listenerCount('will-attach-webview') < 1) throw new Error('Production attachment guard must precede the fixture observer');
+        const willAttach = (event, preferences, params) => {
+          if (event.defaultPrevented || !['persist:wb-browser-xhs-creator','persist:wb-browser-media'].includes(params.partition)) return;
+          const keys = ['contextIsolation','sandbox','webSecurity','nodeIntegration','nodeIntegrationInWorker','nodeIntegrationInSubFrames','webviewTag','plugins','allowRunningInsecureContent'];
+          fixture.attachmentRequests.push({ id:null, partition:params.partition, requestedSrc:params.src,
+            preferences:Object.fromEntries(keys.map(key => [key, preferences[key]])) });
+        };
+        owner.on('will-attach-webview', willAttach); fixture.ownerListeners.push({ name:'will-attach-webview', listener:willAttach });
         const attach = (_event, guest) => {
-          fixture.attachments.push({ id:guest.id, creator:guest.session === creatorSession, material:guest.session === materialSession });
+          const partition = guest.session === creatorSession ? 'persist:wb-browser-xhs-creator'
+            : guest.session === materialSession ? 'persist:wb-browser-media' : null;
+          const pending = fixture.attachmentRequests.filter(value => value.id === null && value.partition === partition);
+          const request = pending.length === 1 ? pending[0] : null;
+          if (request) request.id = guest.id;
+          const attachment = { id:guest.id, creator:guest.session === creatorSession, material:guest.session === materialSession,
+            partition, matchingRequests:pending.length, requestedSrc:request?.requestedSrc ?? null, preferences:request?.preferences ?? null, initialUrl:null };
+          fixture.attachments.push(attachment);
+          const ready = () => { attachment.initialUrl = guest.getURL(); };
           const started = (_event, url, _inPlace, mainFrame) => { if (mainFrame) fixture.navigations.push({ id:guest.id, url }); };
           const destroyed = () => fixture.destroyed.push(guest.id);
-          guest.on('did-start-navigation', started); guest.once('destroyed', destroyed);
-          fixture.observations.push({ guest, started, destroyed });
+          guest.once('dom-ready', ready); guest.on('did-start-navigation', started); guest.once('destroyed', destroyed);
+          fixture.observations.push({ guest, ready, started, destroyed });
         };
         owner.on('did-attach-webview', attach); fixture.ownerListeners.push({ name:'did-attach-webview', listener:attach });
       }, { html, origin:MEDIA_FIXTURE_ORIGIN, paths:MEDIA_FIXTURE_PATHS, token });
@@ -264,8 +302,10 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       const value = await probe(application);
       assert.equal(value.attachments.length, 1); assert.equal(value.requests.filter(value => value.path === '/').length, 1);
       const prefs = await application.evaluate(({ webContents }, id) => webContents.fromId(id).getLastWebPreferences(), id);
-      for (const key of ['contextIsolation', 'sandbox', 'webSecurity']) assert.equal(prefs[key], true);
-      for (const key of ['nodeIntegration', 'nodeIntegrationInWorker', 'nodeIntegrationInSubFrames', 'webviewTag', 'plugins', 'allowRunningInsecureContent']) assert.equal(prefs[key], false);
+      const attachment = value.attachments.find(value => value.id === id);
+      report.mediaKeepalive.security = { id, reported:prefs, reportedKeys:Object.keys(prefs), attachment,
+        pluginsReported:Object.hasOwn(prefs,'plugins') ? prefs.plugins : 'not exposed by getLastWebPreferences' };
+      assertMediaGuestSecurity(id, prefs, attachment);
       assert.equal(await page.locator('webview').getAttribute('partition'), 'persist:wb-browser-xhs-creator');
     });
     await check('Real nested navigation, unsent keyboard input and wheel scroll form the preservation baseline', async () => {
@@ -397,7 +437,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       assert.equal(await page.locator('.media-browser-host').count(),0);
       assert.equal(await application.evaluate(({webContents})=>webContents.getAllWebContents().filter(value=>value.getType()==='webview').length),0);
     });
-    report.mediaKeepalive={ fixture:'local synthetic HTTPS responses in unchanged creator/material partitions', rows,
+    report.mediaKeepalive={ fixture:'local synthetic HTTPS responses in unchanged creator/material partitions', rows, security:report.mediaKeepalive.security,
       observations:await probe(application), exactBridgeLeaseAccounting:'tests/media-keepalive.test.ts',
       limitations:['No live account/site automation','No restart/crash unsent-state guarantee','Materials cross-workspace and cross-mode keepalive excluded','No background freezing/muting/CPU or network guarantee'] };
   } catch (error) {
@@ -412,8 +452,8 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       const fixture=globalThis.__onoMediaKeepaliveFixture;if(!fixture||fixture.token!==token)return;
       fixture.releaseHome?.();
       for(const {name,listener} of fixture.ownerListeners) fixture.owner.removeListener(name,listener);
-      for(const {guest,started,destroyed} of fixture.observations) {
-        if(!guest.isDestroyed()) { guest.removeListener('did-start-navigation',started);guest.removeListener('destroyed',destroyed);guest.close({waitForBeforeUnload:false}); }
+      for(const {guest,ready,started,destroyed} of fixture.observations) {
+        if(!guest.isDestroyed()) { guest.removeListener('dom-ready',ready);guest.removeListener('did-start-navigation',started);guest.removeListener('destroyed',destroyed);guest.close({waitForBeforeUnload:false}); }
       }
       if(fixture.creatorHandled) fixture.creatorSession.protocol.unhandle('https');
       if(fixture.materialHandled) fixture.materialSession.protocol.unhandle('https');
