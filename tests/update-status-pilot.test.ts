@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import {
-  UPDATE_STATUS_MATRIX, UPDATE_STATUS_SCREENSHOTS, UPDATE_STATUS_LONG_ERROR,
+  UPDATE_STATUS_MATRIX, UPDATE_STATUS_SCREENSHOTS, UPDATE_STATUS_ERROR, UPDATE_STATUS_LONG_ERROR,
   updaterStatusFixtures, assertUpdateStatusGeometry, injectUpdaterFixture,
   inspectUpdaterFixture, settleUpdaterActions, restoreUpdaterFixture,
 } from '../tooling/update-status-pilot.mjs';
@@ -62,14 +62,17 @@ test('Updater screenshots add only four exact names to the existing aggregate ar
   await assert.rejects(inspectPilotArtifacts(directory), /unapproved artifact/);
 });
 
-test('Updater fixtures cover all unchanged backend phases plus disabled with bounded long error detail', () => {
+test('Updater fixtures cover all unchanged backend phases plus disabled with representative error and separate bounded stress detail', () => {
   const entries = updaterStatusFixtures();
   assert.deepEqual(entries.map(value => value.key), ['disabled', 'idle', 'checking', 'latest', 'downloading', 'ready', 'error']);
   assert.deepEqual([...new Set(entries.map(value => value.status.phase))].sort(), ['checking', 'downloading', 'error', 'idle', 'latest', 'ready']);
   assert.equal(entries.filter(value => !value.status.enabled).length, 1);
   assert.equal(entries.find(value => value.key === 'downloading')!.status.progress, 42);
   assert.equal(entries.find(value => value.key === 'ready')!.action, '重启并安装');
-  assert.equal(entries.find(value => value.key === 'error')!.status.message, UPDATE_STATUS_LONG_ERROR);
+  assert.equal(entries.find(value => value.key === 'error')!.status.message, UPDATE_STATUS_ERROR);
+  assert.equal(UPDATE_STATUS_ERROR, '连接更新服务失败，请检查网络或代理后重试。');
+  assert.ok(!UPDATE_STATUS_ERROR.includes('SYNTHETIC_'));
+  assert.notEqual(UPDATE_STATUS_ERROR, UPDATE_STATUS_LONG_ERROR);
   assert.match(UPDATE_STATUS_LONG_ERROR, /^SYNTHETIC_UPDATER_DETAIL:/);
   assert.ok(UPDATE_STATUS_LONG_ERROR.length > 1000 && UPDATE_STATUS_LONG_ERROR.length < 12_000);
   assert.match(UPDATE_STATUS_LONG_ERROR, /\nSYNTHETIC_UNBROKEN_DETAIL_(?:SYNTHETIC_UNBROKEN_DETAIL_){20}/);

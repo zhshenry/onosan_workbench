@@ -72,6 +72,20 @@ test('应用更新 v2 真实 React 行内展示、错误详情及现有动作隔
     await click(action()); assert.equal(checks, 0); assert.equal(installs, 0);
   });
 
+  await t.test('同一更新失败事件重复到达只保留一份完整详情，不累加消息', async () => {
+    const message = '连接更新服务失败，请检查网络或代理后重试。';
+    await emit(snapshot('error', { message }));
+    await click(row().querySelector<HTMLElement>('.set-update-details-toggle')!);
+    for (let repeat = 0; repeat < 3; repeat++) {
+      await emit(snapshot('error', { message }));
+      const details = row().querySelectorAll<HTMLElement>('.set-update-details');
+      assert.equal(details.length, 1);
+      assert.equal(details[0].textContent, message);
+      assert.equal(details[0].textContent?.length, message.length);
+      assert.equal(details[0].hidden, false);
+    }
+  });
+
   await t.test('长错误完整展开，详情按钮语义/焦点正确，Escape 可收起后重开', async () => {
     const message = '连接更新服务器失败，请检查网络和代理。\n' + '完整错误说明与恢复建议。'.repeat(40);
     await emit(snapshot('error', { message }));

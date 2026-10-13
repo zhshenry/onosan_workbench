@@ -13,6 +13,8 @@ export const UPDATE_STATUS_MATRIX = Object.freeze([
 ].flatMap(([theme, label]) => [[1280, 820], [1024, 680]].map(([width, height]) => Object.freeze({
   theme, label, width, height, reducedMotion: width === 1024 ? 'reduce' : 'no-preference',
 }))));
+// Representative failure matches AppUpdates.fail; stress data is never a delivery screenshot.
+export const UPDATE_STATUS_ERROR = '连接更新服务失败，请检查网络或代理后重试。';
 export const UPDATE_STATUS_LONG_ERROR = 'SYNTHETIC_UPDATER_DETAIL: 合成验收错误，仅验证完整文本与换行，不来自服务或个人数据。\n'
   + '连接更新服务失败，请检查网络或代理后重试。'.repeat(30)
   + '\n' + 'SYNTHETIC_UNBROKEN_DETAIL_'.repeat(32);
@@ -25,7 +27,7 @@ export function updaterStatusFixtures() {
     { key: 'latest', status: value('latest', '当前已是最新版本。'), labels: ['当前已是最新版本', '已是最新版本'], action: '检查更新', disabled: false },
     { key: 'downloading', status: value('downloading', '正在下载 v0.1.1（42%）', { version: '0.1.1', progress: 42 }), labels: ['正在下载 42%', '下载 42%'], action: '下载中…', disabled: true },
     { key: 'ready', status: value('ready', 'v0.1.1 已下载，可重启安装；退出应用时也会安装。', { version: '0.1.1', progress: 100 }), labels: ['已下载，待重启', '待重启'], action: '重启并安装', disabled: false },
-    { key: 'error', status: value('error', UPDATE_STATUS_LONG_ERROR), labels: ['更新失败'], action: '检查更新', disabled: false },
+    { key: 'error', status: value('error', UPDATE_STATUS_ERROR), labels: ['更新失败'], action: '检查更新', disabled: false },
   ];
 }
 
@@ -271,6 +273,7 @@ export async function runUpdateStatusPilot({ application, page, check, screensho
   const fixtures = updaterStatusFixtures();
   const byKey = key => fixtures.find(value => value.key === key);
   const inject = (key, options = {}) => injectUpdaterFixture(application, { senderId, originalStatus, status: { ...byKey(key).status }, ...options });
+  const injectLongError = () => inject('error', { status: { ...byKey('error').status, message: UPDATE_STATUS_LONG_ERROR } });
   report.updateStatus = { synthetic: true, transport: 'Installed preload API with bounded main-frame IPC read/action/event fixture', matrix: [] };
   report.limitations.push('Updater status/read errors and action routing use temporary synthetic updater:status/check/install handlers, restored by exact function identity; no real feed, download, install, restart or cross-version updater coverage');
   try {
@@ -325,11 +328,22 @@ export async function runUpdateStatusPilot({ application, page, check, screensho
       assert.equal(after.install, before.install + 1); assert.equal(after.check, before.check);
       assert.equal(page.isClosed(), false); assert.equal(await native.evaluate(win => win.isDestroyed()), false);
     });
-    await check('Update status: long error detail is complete, keyboard-accessible and keeps focus across close/reopen', async () => {
+    await check('Update status: representative error detail stays single after repeated status events', async () => {
       await inject('error'); await inspectGeometry(page, byKey('error'));
+      const { toggle, detail } = await assertFullDetail(page, UPDATE_STATUS_ERROR);
+      for (let repeat = 0; repeat < 3; repeat++) {
+        await inject('error');
+        assert.equal(await detail.count(), 1, 'Repeated error events cannot duplicate the detail element');
+        assert.equal(await detail.textContent(), UPDATE_STATUS_ERROR, 'Repeated error events replace, never append, the message');
+        assert.equal(await detail.isVisible(), true);
+      }
+      await screenshot(UPDATE_STATUS_SCREENSHOTS[3]);
+      await toggle.press('Escape'); await detail.waitFor({ state: 'hidden' });
+    });
+    await check('Update status: long error detail is complete, keyboard-accessible and keeps focus across close/reopen', async () => {
+      await injectLongError(); await inspectGeometry(page, byKey('error'));
       assert.equal(await updaterRow(page).getByText(UPDATE_STATUS_LONG_ERROR, { exact: true }).isVisible(), false);
       const { toggle, detail } = await assertFullDetail(page, UPDATE_STATUS_LONG_ERROR);
-      await screenshot(UPDATE_STATUS_SCREENSHOTS[3]);
       await toggle.press('Escape'); await detail.waitFor({ state: 'hidden' });
       assert.equal(await toggle.evaluate(element => element === document.activeElement), true, 'Escape closes updater details without losing focus');
     });
@@ -339,7 +353,7 @@ export async function runUpdateStatusPilot({ application, page, check, screensho
       await search.fill('应用数据目录'); await updaterRow(page).waitFor({ state: 'hidden' });
       assert.equal(await page.locator('.set-update-progress').count(), 0);
       await search.fill('应用更新'); await inspectGeometry(page, byKey('downloading'));
-      await inject('error'); const { detail } = await assertFullDetail(page, UPDATE_STATUS_LONG_ERROR);
+      await injectLongError(); const { detail } = await assertFullDetail(page, UPDATE_STATUS_LONG_ERROR);
       await search.fill('SYNTHETIC_UPDATER_DETAIL'); await updaterRow(page).waitFor({ state: 'hidden' });
       assert.equal(await detail.count(), 0, 'Unmatched rows cannot leak expanded updater detail');
       await search.fill(''); await updaterRow(page).waitFor({ state: 'visible' });
