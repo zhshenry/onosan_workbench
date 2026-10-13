@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 233,
+  "revision": 234,
   "currentRun": {
     "owner": "ono-root-diagnosis-result-20261013T0436Z",
     "startedAt": "2026-10-13T04:36:52.846Z",
@@ -3257,6 +3257,14 @@
       "commentId": 6138559936,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/33#issuecomment-6138559936",
       "verifiedAt": "2026-10-13T04:57:14.653Z"
+    },
+    "pr40-evidence-body-update": {
+      "operationId": "pr40-evidence-body-update",
+      "status": "intent",
+      "targetPR": 40,
+      "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
+      "body": "【OnO 自动化】悬浮窗组 v2｜Windows验收及原生附图交付完成，待合入审批\n\n关联 #25、#28、#29、#30、#31、#32、#33，统一讨论/审批在#28。\n最终16张实测图、逐单清单及唯一合入收尾请求：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6138529868\n方案批准：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217\n退出修复追加批准：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484\n\nhead 5a74dbb79469bb0bbc5d681939e8fbe430d44d4f\nbase a5659fa5e6dbef6188ec3e34b061bc317d4d7e78\ntested merge 65c469304680ae426e74728a43d05fb328fd7474\ntree 6c77b70e050aa3a29a8abde1fe29aba0c54625a5\n最终run38339682689 attempt1成功：486/486 Windows单测0skip、84/84实装、类型/构建/actionlint/安全/NSIS安装通过。\nhttps://github.com/zhshenry/onosan_workbench/actions/runs/38339682689\n\n准确本组16张实测截图已通过云端网页原生附件上传，在#28完整内嵌并读回验证；各成员Issue已附本单实测图和验收清单。等待#28唯一准确head合入收尾批准，保持Draft/open。此前上传失败原因仍未证实，CLI认证阻碍尚在。旧失败运行已被本次准确版本验收替代。\n不包含#26，尚未合入main、不关单、不发版；真实外部AI质量、跨版本更新/签名及人工UAC验证未覆盖。完整边界见Issue评论。",
+      "summary": "更新已完成附图交付与统一待审批链接"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
