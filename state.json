@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 184,
+  "revision": 185,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -255,7 +255,7 @@
     },
     "25": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/25",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -263,7 +263,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "修复减少动画下展开窗收到迟到mini临时高度回176的竞态；强化每态真实高度断言，完成回归后重验",
+      "nextAction": "等待展开高度竞态修复准确head Windows84项实装及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -311,7 +311,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "c2ed2e0db07529deb7f7313050ba56d887a9c390",
+      "headSha": "feee2edbd5dcc9162271607ce83dd580e8a043d1",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38334505107,
@@ -325,7 +325,8 @@
         "failure": "expanded DOM仍native176，今天tab中心超viewport被裁切；本轮报告/失败清理已正常完成",
         "artifactId": 11784288580,
         "artifactSha256": "2d36e66d1aa76e636785ceabbdaba50b385534c1683fdbaed81fac1ad4f67bee",
-        "expiresAt": "2026-10-16T02:02:59Z"
+        "expiresAt": "2026-10-16T02:02:59Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:11:33Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -415,7 +416,7 @@
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -423,7 +424,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "修复减少动画下展开窗收到迟到mini临时高度回176的竞态；强化每态真实高度断言，完成回归后重验",
+      "nextAction": "等待展开高度竞态修复准确head Windows84项实装及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -474,7 +475,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "c2ed2e0db07529deb7f7313050ba56d887a9c390",
+      "headSha": "feee2edbd5dcc9162271607ce83dd580e8a043d1",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38334505107,
@@ -488,7 +489,8 @@
         "failure": "expanded DOM仍native176，今天tab中心超viewport被裁切；本轮报告/失败清理已正常完成",
         "artifactId": 11784288580,
         "artifactSha256": "2d36e66d1aa76e636785ceabbdaba50b385534c1683fdbaed81fac1ad4f67bee",
-        "expiresAt": "2026-10-16T02:02:59Z"
+        "expiresAt": "2026-10-16T02:02:59Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:11:33Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -511,7 +513,7 @@
     },
     "29": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -519,7 +521,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "修复减少动画下展开窗收到迟到mini临时高度回176的竞态；强化每态真实高度断言，完成回归后重验",
+      "nextAction": "等待展开高度竞态修复准确head Windows84项实装及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -567,7 +569,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "c2ed2e0db07529deb7f7313050ba56d887a9c390",
+      "headSha": "feee2edbd5dcc9162271607ce83dd580e8a043d1",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38334505107,
@@ -581,7 +583,8 @@
         "failure": "expanded DOM仍native176，今天tab中心超viewport被裁切；本轮报告/失败清理已正常完成",
         "artifactId": 11784288580,
         "artifactSha256": "2d36e66d1aa76e636785ceabbdaba50b385534c1683fdbaed81fac1ad4f67bee",
-        "expiresAt": "2026-10-16T02:02:59Z"
+        "expiresAt": "2026-10-16T02:02:59Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:11:33Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -604,7 +607,7 @@
     },
     "30": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -612,7 +615,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "修复减少动画下展开窗收到迟到mini临时高度回176的竞态；强化每态真实高度断言，完成回归后重验",
+      "nextAction": "等待展开高度竞态修复准确head Windows84项实装及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -660,7 +663,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "c2ed2e0db07529deb7f7313050ba56d887a9c390",
+      "headSha": "feee2edbd5dcc9162271607ce83dd580e8a043d1",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38334505107,
@@ -674,7 +677,8 @@
         "failure": "expanded DOM仍native176，今天tab中心超viewport被裁切；本轮报告/失败清理已正常完成",
         "artifactId": 11784288580,
         "artifactSha256": "2d36e66d1aa76e636785ceabbdaba50b385534c1683fdbaed81fac1ad4f67bee",
-        "expiresAt": "2026-10-16T02:02:59Z"
+        "expiresAt": "2026-10-16T02:02:59Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:11:33Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -697,7 +701,7 @@
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -705,7 +709,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "修复减少动画下展开窗收到迟到mini临时高度回176的竞态；强化每态真实高度断言，完成回归后重验",
+      "nextAction": "等待展开高度竞态修复准确head Windows84项实装及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -753,7 +757,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "c2ed2e0db07529deb7f7313050ba56d887a9c390",
+      "headSha": "feee2edbd5dcc9162271607ce83dd580e8a043d1",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38334505107,
@@ -767,7 +771,8 @@
         "failure": "expanded DOM仍native176，今天tab中心超viewport被裁切；本轮报告/失败清理已正常完成",
         "artifactId": 11784288580,
         "artifactSha256": "2d36e66d1aa76e636785ceabbdaba50b385534c1683fdbaed81fac1ad4f67bee",
-        "expiresAt": "2026-10-16T02:02:59Z"
+        "expiresAt": "2026-10-16T02:02:59Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:11:33Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -790,7 +795,7 @@
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -798,7 +803,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "修复减少动画下展开窗收到迟到mini临时高度回176的竞态；强化每态真实高度断言，完成回归后重验",
+      "nextAction": "等待展开高度竞态修复准确head Windows84项实装及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -846,7 +851,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "c2ed2e0db07529deb7f7313050ba56d887a9c390",
+      "headSha": "feee2edbd5dcc9162271607ce83dd580e8a043d1",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38334505107,
@@ -860,7 +865,8 @@
         "failure": "expanded DOM仍native176，今天tab中心超viewport被裁切；本轮报告/失败清理已正常完成",
         "artifactId": 11784288580,
         "artifactSha256": "2d36e66d1aa76e636785ceabbdaba50b385534c1683fdbaed81fac1ad4f67bee",
-        "expiresAt": "2026-10-16T02:02:59Z"
+        "expiresAt": "2026-10-16T02:02:59Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:11:33Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -883,7 +889,7 @@
     },
     "33": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -891,7 +897,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "修复减少动画下展开窗收到迟到mini临时高度回176的竞态；强化每态真实高度断言，完成回归后重验",
+      "nextAction": "等待展开高度竞态修复准确head Windows84项实装及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -939,7 +945,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "c2ed2e0db07529deb7f7313050ba56d887a9c390",
+      "headSha": "feee2edbd5dcc9162271607ce83dd580e8a043d1",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38334505107,
@@ -953,7 +959,8 @@
         "failure": "expanded DOM仍native176，今天tab中心超viewport被裁切；本轮报告/失败清理已正常完成",
         "artifactId": 11784288580,
         "artifactSha256": "2d36e66d1aa76e636785ceabbdaba50b385534c1683fdbaed81fac1ad4f67bee",
-        "expiresAt": "2026-10-16T02:02:59Z"
+        "expiresAt": "2026-10-16T02:02:59Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:11:33Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -2637,12 +2644,15 @@
     },
     "floating-pr40-tempheight-publish": {
       "kind": "update-implementation",
-      "status": "intent",
+      "status": "succeeded",
       "target": "ono/floating-group-v2",
       "expectedHead": "c2ed2e0db07529deb7f7313050ba56d887a9c390",
       "patchSha256": "0c8a1ebfacc316fb5af4bff768d9f021124d86e732b6aaec0878b76362e2fffe",
       "summary": "修复已批组内展开/减少动画竞态：拒绝迟到mini高度覆盖expanded；真实React和原生红绿回归，强化matrix高度，473=471pass2skipverify和独立复核通过；84真实Windows待验",
-      "createdAt": "2026-10-13T02:13:21.430Z"
+      "createdAt": "2026-10-13T02:13:21.430Z",
+      "headSha": "feee2edbd5dcc9162271607ce83dd580e8a043d1",
+      "treeSha": "5d76c3e670b2c23c507b66141b9447387b190800",
+      "verifiedAt": "2026-10-13T02:14:38.112Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
