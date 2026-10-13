@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 316,
+  "revision": 317,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1385,7 +1385,7 @@
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
-      "stage": "ci-running",
+      "stage": "tested-awaiting-image-delivery",
       "type": [
         "ui",
         "investigation"
@@ -1393,7 +1393,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "核验准确head真实Windows验收及实际4图；附件失败未恢复，不请求无图批准",
+      "nextAction": "原生附图交付尚未完成；共享上传故障根因未知，勿合入或请求无图批准",
       "groupId": "settings-update-34",
       "groupIssueNumbers": [
         34
@@ -1420,7 +1420,14 @@
       "pr": 44,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/44",
       "headSha": "cbe2a25da8c5a209adbf031bcef0684836963a2d",
-      "ciRun": 38389670397
+      "ciRun": 38389670397,
+      "ciResult": "success",
+      "tests": {
+        "windowsUnit": "513/513,0skip",
+        "installed": "95/95",
+        "visual": "4 actual screenshots viewed; correct inline status, fullerror wraps, no productlayout issue"
+      },
+      "artifactId": 11808447592
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
@@ -4147,6 +4154,13 @@
       "url": "https://github.com/zhshenry/onosan_workbench/pull/44",
       "ciRun": 38389670397,
       "verifiedAt": "2026-10-13T11:22:00.279Z"
+    },
+    "issue34-tested-comment": {
+      "operationId": "issue34-tested-comment",
+      "status": "intent",
+      "target": 34,
+      "body": "【OnO 自动化】#34 v2 已完成实现与真实 Windows 验证，暂待附图交付。\n\n[Draft PR #44](https://github.com/zhshenry/onosan_workbench/pull/44)，准确 head cbe2a25da8c5a209adbf031bcef0684836963a2d；[Windows 运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38389670397)513/513 单测、95/95 原生检查、真实安装、普通退出重启及附件预算检查全部通过。\n\n我已实际查看4张未修改的原生截图：最新版本、下载中、待重启、完整错误详情；三主题、两种尺寸、7种状态及键盘/焦点/忙碌重复操作检查通过。更新状态通过安装后应用的安全合成IPC呈现，没有实际下载或安装新发布版本。版本号来自测试应用，不代表已发版。\n\n无图：4张截图已在[本次CI证据](https://github.com/zhshenry/onosan_workbench/actions/runs/38389670397/artifacts/11808447592)生成并查看。当前原生网页附件链路在#35连续失败，统一排查尚未确认根因；本单暂未再次尝试上传，不用CI附件代替这里应有的内嵌图。\n\nPR保持Draft，未合入、未关单。图片交付完成后再请求准确版本及关单范围的最终批准。当前无需回复。",
+      "startedAt": "2026-10-13T11:32:19.380Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
