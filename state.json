@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 288,
+  "revision": 289,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1419,7 +1419,7 @@
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "ci-running",
+      "stage": "ci-blocked",
       "type": [
         "ui",
         "bugfix",
@@ -1428,7 +1428,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "核新head对最新main完整原生验收和实际图；仍未批准合入",
+      "nextAction": "修复退出fixture HTTPS重复注册，保留已通过全部10主专项；完整原生退出重启仍未跑",
       "lastCommentId": 6128766093,
       "groupId": "media-keepalive-35",
       "groupIssueNumbers": [
@@ -1460,22 +1460,18 @@
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/43",
       "headSha": "224de024fbfe3309ae04b1dbb558ede28bb0bdab",
       "ciRun": 38368255458,
-      "ciResult": null,
+      "ciResult": "failure",
       "tests": {
         "windowsUnit": "494/494,0skip",
         "verify": "pass",
         "installed": "75/76,35 Loading workspace switch undefined !== false;后续未执行"
       },
       "nativeProgress": {
-        "run": 38366079166,
-        "passed": [
-          "security prefs",
-          "loading switch",
-          "real input/scroll",
-          "10 repeated workspace cycles identity/state/history/listeners"
-        ],
-        "failed": "Hidden creator: .task-modal button 返回 exact timeout",
-        "remaining": "geometry/error/restart not completed"
+        "run": 38368255458,
+        "passed": "35全部10主专项，包括24组合几何/隐藏焦点输入AX/历史恢复/模式边界/host销毁",
+        "failed": "prepare quit fixture Failed to register protocol:https",
+        "remaining": "real quit and restart",
+        "artifact": 11797688317
       }
     },
     "36": {
