@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 196,
+  "revision": 197,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -1072,7 +1072,14 @@
         36,
         37
       ],
-      "lastCommentId": 6137073860
+      "lastCommentId": 6137073860,
+      "preReleaseRequirements": {
+        "sourceCommentId": 6137177280,
+        "sourceUrl": "https://github.com/zhshenry/onosan_workbench/issues/41#issuecomment-6137177280",
+        "updatedAt": "2026-10-13T02:57:04Z",
+        "body": "没问题，在发布版本前你需要确认几个事情：\n1、所有功能和分支都已经合入主分支\n2、除了主分支外没有多余的其他分支",
+        "interpretation": "发布前核对全部目标功能已合入main、无未处理需求分支；清理无用分支，必要进度分支单列用途，不误合过时实验，不因发布需求推定批准具体合入"
+      }
     }
   },
   "ownCommentIds": [
@@ -2729,6 +2736,15 @@
       "createdAt": "2026-10-13T02:46:04Z",
       "commentId": 6137073860,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/41#issuecomment-6137073860"
+    },
+    "floating-pr40-toolbar-publish": {
+      "kind": "update-implementation",
+      "status": "intent",
+      "target": "ono/floating-group-v2",
+      "expectedHead": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
+      "patchSha256": "73a387b8aa7cc5e9c1a7e54c82e4bcfcf61eaef6c9e49d001fe42e8eb4266250",
+      "summary": "真实看图修330expanded关联入口换行，仅narrowCSS及本调用tooltip；补实际picker图，486=484pass2skipverify和独立复核通过；84checks40PNG待真实验收",
+      "createdAt": "2026-10-13T03:00:21.061Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
