@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 294,
+  "revision": 295,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1419,7 +1419,7 @@
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "ci-running",
+      "stage": "ci-blocked",
       "type": [
         "ui",
         "bugfix",
@@ -1428,7 +1428,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "等待完整真实原生退出重启检查并实际看图；未获合入批准",
+      "nextAction": "调查隐藏后guest id6仍持有原生焦点，不能弱化断言；在35范围修复后完整回归",
       "lastCommentId": 6128766093,
       "groupId": "media-keepalive-35",
       "groupIssueNumbers": [
@@ -1460,18 +1460,18 @@
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/43",
       "headSha": "370874824dea613545ddbf6fc6910b42adf42bea",
       "ciRun": 38373762029,
-      "ciResult": null,
+      "ciResult": "failure",
       "tests": {
         "windowsUnit": "494/494,0skip",
         "verify": "pass",
         "installed": "75/76,35 Loading workspace switch undefined !== false;后续未执行"
       },
       "nativeProgress": {
-        "run": 38371216970,
-        "passed": "保活/隐藏焦点输入AX/24几何组合",
-        "failed": "Explicit navigation physical wheel no scroll, viewport still compact",
-        "remaining": "navigation/recovery/quit/restart not completed",
-        "artifact": 11799636665
+        "run": 38373762029,
+        "passed": "前9项keepalive含wheel/历史/错误崩溃/模式边界",
+        "failed": "new guest id6 hidden native focus true",
+        "remaining": "host final teardown and normal quit/restart",
+        "artifact": 11800284391
       }
     },
     "36": {
