@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 204,
-  "currentRun": {
-    "owner": "ono-root-approved-work-20261013T0030Z",
-    "startedAt": "2026-10-13T00:29:39.182Z",
-    "currentDevelopmentGroup": "floating-ui-25-28-33",
-    "task": "悬浮组已批v2实现与回归复核；24已完成；26局部v2待批准"
-  },
+  "revision": 205,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -344,7 +339,8 @@
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
         "verifiedAt": "2026-10-13T01:47:40.010Z"
       },
-      "testedSha": "65c469304680ae426e74728a43d05fb328fd7474"
+      "testedSha": "65c469304680ae426e74728a43d05fb328fd7474",
+      "blockerCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103"
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
@@ -507,7 +503,8 @@
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
         "verifiedAt": "2026-10-13T01:47:40.010Z"
       },
-      "testedSha": "65c469304680ae426e74728a43d05fb328fd7474"
+      "testedSha": "65c469304680ae426e74728a43d05fb328fd7474",
+      "blockerCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103"
     },
     "29": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
@@ -600,7 +597,8 @@
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
         "verifiedAt": "2026-10-13T01:47:40.010Z"
       },
-      "testedSha": "65c469304680ae426e74728a43d05fb328fd7474"
+      "testedSha": "65c469304680ae426e74728a43d05fb328fd7474",
+      "blockerCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103"
     },
     "30": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
@@ -693,7 +691,8 @@
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
         "verifiedAt": "2026-10-13T01:47:40.010Z"
       },
-      "testedSha": "65c469304680ae426e74728a43d05fb328fd7474"
+      "testedSha": "65c469304680ae426e74728a43d05fb328fd7474",
+      "blockerCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103"
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
@@ -786,7 +785,8 @@
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
         "verifiedAt": "2026-10-13T01:47:40.010Z"
       },
-      "testedSha": "65c469304680ae426e74728a43d05fb328fd7474"
+      "testedSha": "65c469304680ae426e74728a43d05fb328fd7474",
+      "blockerCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103"
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
@@ -879,7 +879,8 @@
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
         "verifiedAt": "2026-10-13T01:47:40.010Z"
       },
-      "testedSha": "65c469304680ae426e74728a43d05fb328fd7474"
+      "testedSha": "65c469304680ae426e74728a43d05fb328fd7474",
+      "blockerCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103"
     },
     "33": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
@@ -972,7 +973,8 @@
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
         "verifiedAt": "2026-10-13T01:47:40.010Z"
       },
-      "testedSha": "65c469304680ae426e74728a43d05fb328fd7474"
+      "testedSha": "65c469304680ae426e74728a43d05fb328fd7474",
+      "blockerCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103"
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
@@ -2853,7 +2855,8 @@
       "retryExhausted": true,
       "urls": [],
       "verifiedAt": "2026-10-13T03:17:35.107Z",
-      "result": "批量16图及刷新后单张26KB补试均明确Failed to upload，无URL，无评论提交。原因未明，不重试。"
+      "result": "批量16图及刷新后单张26KB补试均明确Failed to upload，无URL，无评论提交。原因未明，不重试。",
+      "temporaryFilesDeletedAt": "2026-10-13T03:19:35.279Z"
     },
     "floating-pr40-attachment-blocker": {
       "kind": "comment",
@@ -2866,10 +2869,12 @@
     },
     "pr40-final-ci-metadata": {
       "kind": "edit-pr-body",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "body": "【OnO 自动化】悬浮窗组 v2｜Windows验收通过，原生附图交付阻塞\n\n关联 #25、#28、#29、#30、#31、#32、#33，统一讨论/审批在#28。\n最新逐单结果及附件阻碍：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103\n方案批准：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217\n退出修复追加批准：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484\n\nhead 5a74dbb79469bb0bbc5d681939e8fbe430d44d4f\nbase a5659fa5e6dbef6188ec3e34b061bc317d4d7e78\ntested merge 65c469304680ae426e74728a43d05fb328fd7474\ntree 6c77b70e050aa3a29a8abde1fe29aba0c54625a5\n最终run38339682689 attempt1成功：486/486 Windows单测0skip、84/84实装、类型/构建/actionlint/安全/NSIS安装通过。\nhttps://github.com/zhshenry/onosan_workbench/actions/runs/38339682689\n\n准确本组16张实测截图已逐张查看，但原生附件批量及单图补试均明确失败，无URL。仍缺Issue实嵌图和最终合入收尾批准，保持Draft/open。旧失败运行已被本次准确版本验收替代，不能将此前通过截图混为当前head。\n不包含#26，尚未合入main、不关单、不发版；真实外部AI质量、跨版本更新/签名及人工UAC验证未覆盖。完整边界见Issue评论。",
-      "createdAt": "2026-10-13T03:18:35.297Z"
+      "createdAt": "2026-10-13T03:18:35.297Z",
+      "updatedAt": "2026-10-13T03:19:06Z",
+      "verifiedAt": "2026-10-13T03:19:35.279Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -2881,9 +2886,14 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-audit-20261012T2248Z",
-    "finishedAt": "2026-10-12T22:49:03.987Z",
-    "result": "全量分页13开放ono及记录17/18、原始评论、main、PR38/39与准确SHA Actions均无变化；无新批准。待审批与已报告35附件阻碍保持，不重试、不重复通知。无在途写，释放。"
+    "owner": "ono-root-approved-work-20261013T0030Z",
+    "finishedAt": "2026-10-13T03:19:35.280Z",
+    "result": "全量13开放ono及记录单/原始评论/main/PR/CI已复核；PR40最终486/84通过，16实图已查看。原生附件批量和唯一单图补试均明确失败，无URL、无在途写；Issue28已报告，PR元数据已更新；其余待批/既有阻塞无变化。不重复试附件。"
   },
-  "updatedAt": "2026-10-13T01:02:59.632Z"
+  "updatedAt": "2026-10-13T01:02:59.632Z",
+  "lastNotification": {
+    "at": "2026-10-13T03:18:53Z",
+    "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
+    "summary": "PR40 final486/84passed; new native attachment failure, no mergeclose; Issue28 blocker link"
+  }
 }
