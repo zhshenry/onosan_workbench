@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 268,
+  "revision": 269,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -3752,7 +3752,8 @@
       "url": "https://github.com/user-attachments/assets/98143cf7-77bc-41a9-8ab7-74ce39d8e59a",
       "verifiedAt": "2026-10-13T07:10:52.498Z",
       "width": 1630,
-      "height": 965
+      "height": 965,
+      "publishedImageVerified": true
     },
     "issue37-v1-upload": {
       "operationId": "issue37-v1-upload",
@@ -3765,7 +3766,8 @@
       "verifiedAt": "2026-10-13T07:12:01.720Z",
       "width": 1630,
       "height": 965,
-      "retryNote": "首轮stale DOM未上传；空草稿确认后新chooser一次重试成功"
+      "retryNote": "首轮stale DOM未上传；空草稿确认后新chooser一次重试成功",
+      "publishedImageVerified": true
     },
     "issue36-v1-comment": {
       "operationId": "issue36-v1-comment",
@@ -3788,7 +3790,7 @@
     },
     "closeout-docs-publish": {
       "operationId": "closeout-docs-publish",
-      "status": "intent",
+      "status": "branch-published-pr-intent",
       "branch": "ono/closeout-no-repeat-confirmation",
       "baseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "summary": "用户要求修改正常收尾规范；独立3文件文档Draft PR，16增12删，不合入",
@@ -3796,7 +3798,15 @@
         "docs/ONO-ISSUE-WORKFLOW.md",
         "docs/templates/ONO-COMMENTS.md",
         "docs/templates/ONO-EXECUTION-CHECKLIST.md"
-      ]
+      ],
+      "headSha": "e550ed2efff06fcbb3d92a340108139743149d08",
+      "treeSha": "14a4feb95974723054d1cf1de4ea6c86759fd434",
+      "verifiedDiff": {
+        "files": 3,
+        "additions": 16,
+        "deletions": 12
+      },
+      "verifiedAt": "2026-10-13T07:14:16.828Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
