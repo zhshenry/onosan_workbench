@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 278,
+  "revision": 279,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1658,7 +1658,11 @@
     6140309803,
     6140325358,
     6140721933,
-    6140847650
+    6140847650,
+    6140984176,
+    6140985662,
+    6140987611,
+    6140988850
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -3930,27 +3934,39 @@
     },
     "issue37-v1-approval-ack": {
       "operationId": "issue37-v1-approval-ack",
-      "status": "intent",
+      "status": "succeeded",
       "targetIssue": 37,
-      "body": "【OnO 自动化】已核对你对 #37 v1 的原始方案批准，已排入实施队列。当前 #35 正在修复真实 Windows 验收失败，一次只开发一组；轮到本单时会重新核对最新主干和批准范围，独立提交实现 PR，并在这里附实测结果请求最终准确版本合入。\n\n当前无需重复回复。"
+      "body": "【OnO 自动化】已核对你对 #37 v1 的原始方案批准，已排入实施队列。当前 #35 正在修复真实 Windows 验收失败，一次只开发一组；轮到本单时会重新核对最新主干和批准范围，独立提交实现 PR，并在这里附实测结果请求最终准确版本合入。\n\n当前无需重复回复。",
+      "commentId": 6140984176,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6140984176",
+      "verifiedAt": "2026-10-13T07:55:43.259Z"
     },
     "issue36-v1-approval-ack": {
       "operationId": "issue36-v1-approval-ack",
-      "status": "intent",
+      "status": "succeeded",
       "targetIssue": 36,
-      "body": "【OnO 自动化】已核对你对 #36 v1 的原始方案批准，已排入实施队列。当前 #35 正在修复真实 Windows 验收失败，一次只开发一组；轮到本单时会重新核对最新主干和批准范围，独立提交实现 PR，并在这里附实测结果请求最终准确版本合入。本单会回归 #35 的网页保活，不混入其当前实现。\n\n当前无需重复回复。"
+      "body": "【OnO 自动化】已核对你对 #36 v1 的原始方案批准，已排入实施队列。当前 #35 正在修复真实 Windows 验收失败，一次只开发一组；轮到本单时会重新核对最新主干和批准范围，独立提交实现 PR，并在这里附实测结果请求最终准确版本合入。本单会回归 #35 的网页保活，不混入其当前实现。\n\n当前无需重复回复。",
+      "commentId": 6140985662,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/36#issuecomment-6140985662",
+      "verifiedAt": "2026-10-13T07:55:43.771Z"
     },
     "issue34-v2-approval-ack": {
       "operationId": "issue34-v2-approval-ack",
-      "status": "intent",
+      "status": "succeeded",
       "targetIssue": 34,
-      "body": "【OnO 自动化】已核对你对 #34 v2 的原始方案批准，已排入实施队列。当前 #35 正在修复真实 Windows 验收失败，一次只开发一组；轮到本单时会重新核对最新主干和批准范围，独立提交实现 PR，并在这里附实测结果请求最终准确版本合入。\n\n当前无需重复回复。"
+      "body": "【OnO 自动化】已核对你对 #34 v2 的原始方案批准，已排入实施队列。当前 #35 正在修复真实 Windows 验收失败，一次只开发一组；轮到本单时会重新核对最新主干和批准范围，独立提交实现 PR，并在这里附实测结果请求最终准确版本合入。\n\n当前无需重复回复。",
+      "commentId": 6140987611,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6140987611",
+      "verifiedAt": "2026-10-13T07:55:44.197Z"
     },
     "issue26-v3-approval-ack": {
       "operationId": "issue26-v3-approval-ack",
-      "status": "intent",
+      "status": "succeeded",
       "targetIssue": 26,
-      "body": "【OnO 自动化】已核对你对 #26 v3 的原始方案批准，已排入实施队列。当前 #35 正在修复真实 Windows 验收失败，一次只开发一组；轮到本单时会重新核对最新主干和批准范围，独立提交实现 PR，并在这里附实测结果请求最终准确版本合入。\n\n当前无需重复回复。"
+      "body": "【OnO 自动化】已核对你对 #26 v3 的原始方案批准，已排入实施队列。当前 #35 正在修复真实 Windows 验收失败，一次只开发一组；轮到本单时会重新核对最新主干和批准范围，独立提交实现 PR，并在这里附实测结果请求最终准确版本合入。\n\n当前无需重复回复。",
+      "commentId": 6140988850,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6140988850",
+      "verifiedAt": "2026-10-13T07:55:44.601Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
