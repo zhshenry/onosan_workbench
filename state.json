@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 315,
+  "revision": 316,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1385,7 +1385,7 @@
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
-      "stage": "implementing",
+      "stage": "ci-running",
       "type": [
         "ui",
         "investigation"
@@ -1393,7 +1393,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "仅按34v2应用更新同行展示实施测试；不修改真实更新流程",
+      "nextAction": "核验准确head真实Windows验收及实际4图；附件失败未恢复，不请求无图批准",
       "groupId": "settings-update-34",
       "groupIssueNumbers": [
         34
@@ -1416,7 +1416,11 @@
         "updatedAt": "2026-10-13T07:34:44Z",
         "performedViaApp": null
       },
-      "approvalReverifiedAt": "2026-10-13T10:58:39.185Z"
+      "approvalReverifiedAt": "2026-10-13T10:58:39.185Z",
+      "pr": 44,
+      "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/44",
+      "headSha": "cbe2a25da8c5a209adbf031bcef0684836963a2d",
+      "ciRun": 38389670397
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
@@ -4132,12 +4136,17 @@
     },
     "issue34-publish-v2": {
       "operationId": "issue34-publish-v2",
-      "status": "intent",
+      "status": "succeeded",
       "target": "ono/issue-34-update-status-inline",
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "treeSha": "117c7c7a826f1399d8537ace4eb3039af6be6a15",
       "summary": "已批34v2独立9文件应用更新同行展示及真实Windows夹具，DraftPR；不含35或新发布行为",
-      "startedAt": "2026-10-13T11:18:29.500Z"
+      "startedAt": "2026-10-13T11:18:29.500Z",
+      "headSha": "cbe2a25da8c5a209adbf031bcef0684836963a2d",
+      "pr": 44,
+      "url": "https://github.com/zhshenry/onosan_workbench/pull/44",
+      "ciRun": 38389670397,
+      "verifiedAt": "2026-10-13T11:22:00.279Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
