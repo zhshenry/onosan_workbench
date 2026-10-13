@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 234,
-  "currentRun": {
-    "owner": "ono-root-diagnosis-result-20261013T0436Z",
-    "startedAt": "2026-10-13T04:36:52.846Z",
-    "currentDevelopmentGroup": null,
-    "task": "用户明确要求继续网页端，有针对性核文件交接/可见错误；单张26v3诊断上传"
-  },
+  "revision": 235,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -321,7 +316,7 @@
         "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
         "unitTests": "486/486通过0skip",
         "installed": "84/84通过",
-        "visual": "本组16张准确实现PNG逐图复核通过；原生内嵌失败，交付未完成",
+        "visual": "本组16张准确实现PNG复核及原生附件交付通过",
         "artifactId": 11786408859,
         "artifactSha256": "79fe6112115d8feaab82bc3611b6fbc40697cbd1cc53fd5a95670daa967ae590",
         "expiresAt": "2026-10-16T03:08:32Z"
@@ -366,7 +361,9 @@
         "float-group-relaunched.png": "https://github.com/user-attachments/assets/9bf2670f-dcf6-4e89-9686-642580732243",
         "float-group-warm.png": "https://github.com/user-attachments/assets/79798add-0dfa-4870-ac32-755258354287"
       },
-      "memberAcceptanceCommentId": 6138544104
+      "memberAcceptanceCommentId": 6138544104,
+      "imagesVerifiedAt": "2026-10-13T04:59:14.165Z",
+      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z"
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
@@ -432,7 +429,7 @@
       "lastNotifiedAt": "2026-10-13T00:44:46Z",
       "feedbackCommentId": 6137391347,
       "imageDisplayVerifiedAt": "2026-10-13T04:47:48.456Z",
-      "temporaryImageCleanedAt": "2026-10-13T00:38:35.156Z",
+      "temporaryImageCleanedAt": "2026-10-13T04:59:14.165Z",
       "integrationNote": "main已合入24；PR39当前冲突待局部v2批准后在授权实现中集成并重验，不沿用旧CI",
       "latestFeedback": {
         "body": "还是不对，参考当前to-do-list悬浮框的选择，那选择框里面就不需要有筛选器这些，你再看看呢",
@@ -529,7 +526,7 @@
         "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
         "unitTests": "486/486通过0skip",
         "installed": "84/84通过",
-        "visual": "本组16张准确实现PNG逐图复核通过；原生内嵌失败，交付未完成",
+        "visual": "本组16张准确实现PNG复核及原生附件交付通过",
         "artifactId": 11786408859,
         "artifactSha256": "79fe6112115d8feaab82bc3611b6fbc40697cbd1cc53fd5a95670daa967ae590",
         "expiresAt": "2026-10-16T03:08:32Z"
@@ -573,7 +570,9 @@
         "float-group-picker.png": "https://github.com/user-attachments/assets/1afe8260-3af3-48c0-895c-f947fa67931d",
         "float-group-relaunched.png": "https://github.com/user-attachments/assets/9bf2670f-dcf6-4e89-9686-642580732243",
         "float-group-warm.png": "https://github.com/user-attachments/assets/79798add-0dfa-4870-ac32-755258354287"
-      }
+      },
+      "imagesVerifiedAt": "2026-10-13T04:59:14.165Z",
+      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z"
     },
     "29": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
@@ -643,7 +642,7 @@
         "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
         "unitTests": "486/486通过0skip",
         "installed": "84/84通过",
-        "visual": "本组16张准确实现PNG逐图复核通过；原生内嵌失败，交付未完成",
+        "visual": "本组16张准确实现PNG复核及原生附件交付通过",
         "artifactId": 11786408859,
         "artifactSha256": "79fe6112115d8feaab82bc3611b6fbc40697cbd1cc53fd5a95670daa967ae590",
         "expiresAt": "2026-10-16T03:08:32Z"
@@ -688,7 +687,9 @@
         "float-group-relaunched.png": "https://github.com/user-attachments/assets/9bf2670f-dcf6-4e89-9686-642580732243",
         "float-group-warm.png": "https://github.com/user-attachments/assets/79798add-0dfa-4870-ac32-755258354287"
       },
-      "memberAcceptanceCommentId": 6138547683
+      "memberAcceptanceCommentId": 6138547683,
+      "imagesVerifiedAt": "2026-10-13T04:59:14.165Z",
+      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z"
     },
     "30": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
@@ -758,7 +759,7 @@
         "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
         "unitTests": "486/486通过0skip",
         "installed": "84/84通过",
-        "visual": "本组16张准确实现PNG逐图复核通过；原生内嵌失败，交付未完成",
+        "visual": "本组16张准确实现PNG复核及原生附件交付通过",
         "artifactId": 11786408859,
         "artifactSha256": "79fe6112115d8feaab82bc3611b6fbc40697cbd1cc53fd5a95670daa967ae590",
         "expiresAt": "2026-10-16T03:08:32Z"
@@ -803,7 +804,9 @@
         "float-group-relaunched.png": "https://github.com/user-attachments/assets/9bf2670f-dcf6-4e89-9686-642580732243",
         "float-group-warm.png": "https://github.com/user-attachments/assets/79798add-0dfa-4870-ac32-755258354287"
       },
-      "memberAcceptanceCommentId": 6138549759
+      "memberAcceptanceCommentId": 6138549759,
+      "imagesVerifiedAt": "2026-10-13T04:59:14.165Z",
+      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z"
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
@@ -873,7 +876,7 @@
         "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
         "unitTests": "486/486通过0skip",
         "installed": "84/84通过",
-        "visual": "本组16张准确实现PNG逐图复核通过；原生内嵌失败，交付未完成",
+        "visual": "本组16张准确实现PNG复核及原生附件交付通过",
         "artifactId": 11786408859,
         "artifactSha256": "79fe6112115d8feaab82bc3611b6fbc40697cbd1cc53fd5a95670daa967ae590",
         "expiresAt": "2026-10-16T03:08:32Z"
@@ -918,7 +921,9 @@
         "float-group-relaunched.png": "https://github.com/user-attachments/assets/9bf2670f-dcf6-4e89-9686-642580732243",
         "float-group-warm.png": "https://github.com/user-attachments/assets/79798add-0dfa-4870-ac32-755258354287"
       },
-      "memberAcceptanceCommentId": 6138553530
+      "memberAcceptanceCommentId": 6138553530,
+      "imagesVerifiedAt": "2026-10-13T04:59:14.165Z",
+      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z"
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
@@ -988,7 +993,7 @@
         "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
         "unitTests": "486/486通过0skip",
         "installed": "84/84通过",
-        "visual": "本组16张准确实现PNG逐图复核通过；原生内嵌失败，交付未完成",
+        "visual": "本组16张准确实现PNG复核及原生附件交付通过",
         "artifactId": 11786408859,
         "artifactSha256": "79fe6112115d8feaab82bc3611b6fbc40697cbd1cc53fd5a95670daa967ae590",
         "expiresAt": "2026-10-16T03:08:32Z"
@@ -1033,7 +1038,9 @@
         "float-group-relaunched.png": "https://github.com/user-attachments/assets/9bf2670f-dcf6-4e89-9686-642580732243",
         "float-group-warm.png": "https://github.com/user-attachments/assets/79798add-0dfa-4870-ac32-755258354287"
       },
-      "memberAcceptanceCommentId": 6138557538
+      "memberAcceptanceCommentId": 6138557538,
+      "imagesVerifiedAt": "2026-10-13T04:59:14.165Z",
+      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z"
     },
     "33": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
@@ -1103,7 +1110,7 @@
         "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
         "unitTests": "486/486通过0skip",
         "installed": "84/84通过",
-        "visual": "本组16张准确实现PNG逐图复核通过；原生内嵌失败，交付未完成",
+        "visual": "本组16张准确实现PNG复核及原生附件交付通过",
         "artifactId": 11786408859,
         "artifactSha256": "79fe6112115d8feaab82bc3611b6fbc40697cbd1cc53fd5a95670daa967ae590",
         "expiresAt": "2026-10-16T03:08:32Z"
@@ -1148,7 +1155,9 @@
         "float-group-relaunched.png": "https://github.com/user-attachments/assets/9bf2670f-dcf6-4e89-9686-642580732243",
         "float-group-warm.png": "https://github.com/user-attachments/assets/79798add-0dfa-4870-ac32-755258354287"
       },
-      "memberAcceptanceCommentId": 6138559936
+      "memberAcceptanceCommentId": 6138559936,
+      "imagesVerifiedAt": "2026-10-13T04:59:14.165Z",
+      "temporaryEvidenceCleanedAt": "2026-10-13T04:59:14.165Z"
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
@@ -1174,7 +1183,7 @@
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "blocked-image-upload",
+      "stage": "pending-plan-delivery",
       "type": [
         "ui",
         "investigation"
@@ -1182,7 +1191,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "lastReadAt": "2026-10-13T04:16:50Z",
-      "nextAction": "附件两次明确失败，停止盲重试；完整带图方案尚未发布，无方案批准，不实施",
+      "nextAction": "网页附件已由26/28真实验证恢复；重新核需求/基线/现有草稿后准备35带图方案，未批准不实施",
       "lastCommentId": 6128766093
     },
     "36": {
@@ -3260,11 +3269,13 @@
     },
     "pr40-evidence-body-update": {
       "operationId": "pr40-evidence-body-update",
-      "status": "intent",
+      "status": "succeeded",
       "targetPR": 40,
       "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
       "body": "【OnO 自动化】悬浮窗组 v2｜Windows验收及原生附图交付完成，待合入审批\n\n关联 #25、#28、#29、#30、#31、#32、#33，统一讨论/审批在#28。\n最终16张实测图、逐单清单及唯一合入收尾请求：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6138529868\n方案批准：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217\n退出修复追加批准：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484\n\nhead 5a74dbb79469bb0bbc5d681939e8fbe430d44d4f\nbase a5659fa5e6dbef6188ec3e34b061bc317d4d7e78\ntested merge 65c469304680ae426e74728a43d05fb328fd7474\ntree 6c77b70e050aa3a29a8abde1fe29aba0c54625a5\n最终run38339682689 attempt1成功：486/486 Windows单测0skip、84/84实装、类型/构建/actionlint/安全/NSIS安装通过。\nhttps://github.com/zhshenry/onosan_workbench/actions/runs/38339682689\n\n准确本组16张实测截图已通过云端网页原生附件上传，在#28完整内嵌并读回验证；各成员Issue已附本单实测图和验收清单。等待#28唯一准确head合入收尾批准，保持Draft/open。此前上传失败原因仍未证实，CLI认证阻碍尚在。旧失败运行已被本次准确版本验收替代。\n不包含#26，尚未合入main、不关单、不发版；真实外部AI质量、跨版本更新/签名及人工UAC验证未覆盖。完整边界见Issue评论。",
-      "summary": "更新已完成附图交付与统一待审批链接"
+      "summary": "更新已完成附图交付与统一待审批链接",
+      "verifiedAt": "2026-10-13T04:59:14.165Z",
+      "url": "https://github.com/zhshenry/onosan_workbench/pull/40"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -3276,11 +3287,11 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-cli-upgrade-20261013T0423Z",
-    "finishedAt": "2026-10-13T04:25:35.036Z",
-    "result": "用户要求升级CLI，官方2.102.0已局部安装校验运行，attach可用；仍未登录，已请求官方登录流程批准。保留每小时检查；浏览器历史上传根因仍未知。无在途外写释放。"
+    "owner": "ono-root-diagnosis-result-20261013T0436Z",
+    "finishedAt": "2026-10-13T04:59:14.165Z",
+    "result": "26 v3图文发布待方案批准；28 PR40准确16张实测图及各成员评论交付待唯一合入批准；所有外写已读回，无产品/合入/关单；临时已交付PNG/ZIP清理"
   },
-  "updatedAt": "2026-10-13T01:02:59.632Z",
+  "updatedAt": "2026-10-13T04:59:14.165Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
@@ -3289,14 +3300,14 @@
   "attachmentDiagnosis": {
     "at": "2026-10-13T04:20:39.499Z",
     "sourceCommentId": 6138150575,
-    "status": "blocked-missing-error-evidence",
-    "rootCause": "unknown",
+    "status": "browser-delivery-restored",
+    "rootCause": "历史网页失败根因仍未知；当前网页26 v3及28全部16张成功上传并实际显示",
     "verified": "PNG符合限制；正确云浏览器账号/入口；旧失败tab已清理，当前工具无历史上传HTTP响应；gh2.46.0无attach且auth status无登录",
     "required": "失败上传网络响应或平台侧错误记录；有可核修复依据后再附图",
-    "retryBudgetExhausted": true,
+    "retryBudgetExhausted": false,
     "pauseQuestionAskedAt": "2026-10-13T04:20:39.499Z",
     "pauseDecision": "用户已明确保留每小时检查，不再询问暂停",
-    "nextAction": "按用户要求升级CLI能力并核验，浏览器旧失败根因仍未明，不把CLI升级当根因修复",
+    "nextAction": "已可用网页原生附件；不重复CLI登录或改网络策略。后续每次上传仍需核验真实URL和实际图",
     "cli": {
       "version": "2.102.0",
       "officialSource": "https://github.com/cli/cli/releases/tag/v2.102.0",
@@ -3309,6 +3320,11 @@
       "storage": "已选择可写私有目录，目录权限700；没有凭据内容写入状态",
       "failure": "Network access to https://api.github.com:443 was blocked by policy",
       "readOnlyConnectivity": "不带认证HEAD一次403匿名限流，窗口后200；不证明认证访问获准"
-    }
+    },
+    "verifiedAt": "2026-10-13T04:59:14.165Z",
+    "recoveryEvidence": [
+      "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6138445292",
+      "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6138529868"
+    ]
   }
 }
