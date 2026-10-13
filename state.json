@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 280,
+  "revision": 281,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1419,7 +1419,7 @@
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "ci-blocked",
+      "stage": "ci-running",
       "type": [
         "ui",
         "bugfix",
@@ -1428,7 +1428,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "修复原生加载切换断言失败后发布新head重验；不请求合入",
+      "nextAction": "等待新head完整Windows原生验收；首轮失败保留，未批准合入",
       "lastCommentId": 6128766093,
       "groupId": "media-keepalive-35",
       "groupIssueNumbers": [
@@ -1458,9 +1458,9 @@
       "implementationBaseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "pr": 43,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/43",
-      "headSha": "e9292af2a7764413faf78347ecebdad9e4b30e1e",
-      "ciRun": 38363794558,
-      "ciResult": "failure",
+      "headSha": "ba6b9aeeb6aca2d2887778003b0d5e6e5ca5ec15",
+      "ciRun": 38366079166,
+      "ciResult": null,
       "tests": {
         "windowsUnit": "494/494,0skip",
         "verify": "pass",
@@ -3970,11 +3970,14 @@
     },
     "issue35-native-pref-fix": {
       "operationId": "issue35-native-pref-fix",
-      "status": "intent",
+      "status": "succeeded",
       "branch": "ono/issue-35-creator-keepalive",
       "expectedHead": "e9292af2a7764413faf78347ecebdad9e4b30e1e",
       "treeSha": "15962cd29ac3b18cb1d69fe20bc952218d5754eb",
-      "summary": "仅2测试文件修复Electron prefs观测边界，真实will-attach严格9项+native8项，保留失败及缺省说明；产品不改"
+      "summary": "仅2测试文件修复Electron prefs观测边界，真实will-attach严格9项+native8项，保留失败及缺省说明；产品不改",
+      "headSha": "ba6b9aeeb6aca2d2887778003b0d5e6e5ca5ec15",
+      "verifiedAt": "2026-10-13T07:58:21.217Z",
+      "ciRun": 38366079166
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
