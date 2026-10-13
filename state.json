@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 303,
+  "revision": 304,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -4075,6 +4075,14 @@
       "headSha": "8fb0300653e27b70032b62ecfd79fd17e02c34e0",
       "ciRun": 38380172206,
       "verifiedAt": "2026-10-13T09:59:04.283Z"
+    },
+    "issue35-home-native-comparison": {
+      "operationId": "issue35-home-native-comparison",
+      "status": "intent",
+      "expectedHead": "8fb0300653e27b70032b62ecfd79fd17e02c34e0",
+      "treeSha": "3d9a82267c45aa56afebb798bc7cb2a7603eb8ff",
+      "summary": "仅3测试/文档文件增加同数据同1024x680首页首访与隐藏后原生几何/截图对照；不改产品；坏基线不可判视觉通过",
+      "startedAt": "2026-10-13T10:24:39.087Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
