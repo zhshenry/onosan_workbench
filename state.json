@@ -1,7 +1,12 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 215,
-  "currentRun": null,
+  "revision": 216,
+  "currentRun": {
+    "owner": "ono-root-cli-upgrade-20261013T0423Z",
+    "startedAt": "2026-10-13T04:23:45.135Z",
+    "currentDevelopmentGroup": null,
+    "task": "用户要求升级现有云端CLI，验证attach和只读认证状态；不配置凭据"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -2988,6 +2993,8 @@
     "verified": "PNG符合限制；正确云浏览器账号/入口；旧失败tab已清理，当前工具无历史上传HTTP响应；gh2.46.0无attach且auth status无登录",
     "required": "失败上传网络响应或平台侧错误记录；有可核修复依据后再附图",
     "retryBudgetExhausted": true,
-    "pauseQuestionAskedAt": "2026-10-13T04:20:39.499Z"
+    "pauseQuestionAskedAt": "2026-10-13T04:20:39.499Z",
+    "pauseDecision": "用户已明确保留每小时检查，不再询问暂停",
+    "nextAction": "按用户要求升级CLI能力并核验，浏览器旧失败根因仍未明，不把CLI升级当根因修复"
   }
 }
