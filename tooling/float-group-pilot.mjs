@@ -161,10 +161,58 @@ async function settled(application, page) {
   }
   throw new Error('Floating native bounds never settled');
 }
+const expandedHeightMemory = new WeakMap();
+export function assertFloatStateHeight(native, mini, expectedExpandedHeight) {
+  assert.ok(Number.isFinite(native.height), 'Native state height must be finite');
+  if (mini) { assert.equal(native.height, 176, 'Idle mini native height must be exactly 176'); return; }
+  assert.ok(native.height >= 330, 'Expanded native state must never retain compact height');
+  assert.ok(Number.isFinite(expectedExpandedHeight) && expectedExpandedHeight >= 330, 'Expanded state needs a valid previously measured height');
+  assert.equal(native.height, expectedExpandedHeight, 'Expanded native state must restore its measured expanded height');
+}
+export function resolveFloatExpandedHeight(remembered, areaHeight, mode, native, resizeRequests = [], measuredRequest = null) {
+  assert.ok(Number.isFinite(remembered) && remembered >= 330, 'Remembered expanded height must come from a real expanded window');
+  const restored = Math.min(remembered, areaHeight - 24);
+  if (mode === 'home' && resizeRequests.length) {
+    const request = resizeRequests.at(-1);
+    assert.ok(Number.isFinite(request) && Number.isFinite(measuredRequest) && Math.abs(request - measuredRequest) <= 1, 'Home height changes need fresh resize IPC matching settled DOM measurement');
+    const expected = expectedFloatMeasuredHeight(request, areaHeight);
+    assertFloatStateHeight(native, false, expected);
+    return expected;
+  }
+  assertFloatStateHeight(native, false, restored);
+  return restored;
+}
 async function setMini(application, page, mini) {
   const current = await page.locator('.float-app').evaluate(element => element.classList.contains('mini'));
-  if (current !== mini) await page.locator('.float-window-actions').getByRole('button', { name: mini ? '收起为卡片' : '展开主界面', exact: true }).click();
-  return settled(application, page);
+  const before = await settled(application, page);
+  if (!current) {
+    // Refresh only from a genuine expanded surface, never from an accidentally
+    // compact native height paired with an expanded renderer class.
+    assertFloatStateHeight(before, false, before.height);
+    expandedHeightMemory.set(page, before.height);
+  }
+  if (current !== mini) {
+    const remembered = expandedHeightMemory.get(page);
+    if (!mini) await observeFloatResize(application, page);
+    try {
+      await page.locator('.float-window-actions').getByRole('button', { name: mini ? '收起为卡片' : '展开主界面', exact: true }).click();
+      const after = await settled(application, page);
+      assert.equal(await page.locator('.float-app').evaluate(element => element.classList.contains('mini')), mini, 'Renderer mini class must match the requested native state');
+      if (mini) assertFloatStateHeight(after, true);
+      else {
+        const area = await workArea(application, page);
+        const mode = await page.locator('.float-app').evaluate(element => element.classList.contains('ai-active') ? 'ai' : 'home');
+        const requests = await resizeEvents(application);
+        const measurement = mode === 'home' && requests.length ? await scheduleMeasurement(application, page) : null;
+        const expected = resolveFloatExpandedHeight(remembered, area.height, mode, after, requests, measurement?.dom.requested);
+        expandedHeightMemory.set(page, expected);
+      }
+      return after;
+    } finally { if (!mini) await stopObservingFloatResize(application); }
+  }
+  assert.equal(await page.locator('.float-app').evaluate(element => element.classList.contains('mini')), mini, 'Renderer mini class must match the requested native state');
+  assertFloatStateHeight(before, mini, expandedHeightMemory.get(page));
+  return before;
 }
 async function setMode(application, page, mode) {
   const current = await page.locator('.float-app').evaluate(element => element.classList.contains('ai-active'));
@@ -237,11 +285,17 @@ export async function runFloatGroupPilot({ application, page, check, screenshot,
     for (const reducedMotion of ['no-preference', 'reduce']) {
       await floatPage.emulateMedia({ reducedMotion });
       for (const entry of FLOAT_GROUP_MATRIX) await check(`Floating group: ${entry.mode}/${entry.mini ? 'mini' : 'expanded'}/${entry.narrow ? 'narrow' : 'wide'} ${reducedMotion}`, async () => {
-        await setMode(application, floatPage, entry.mode); await setMini(application, floatPage, entry.mini);
-        await setWidth(application, floatPage, !entry.narrow, report);
+        await setMode(application, floatPage, entry.mode);
+        const restored = await setMini(application, floatPage, entry.mini);
+        const expectedExpandedHeight = expandedHeightMemory.get(floatPage);
+        assertFloatStateHeight(restored, entry.mini, expectedExpandedHeight);
+        const intermediate = await setWidth(application, floatPage, !entry.narrow, report);
+        assertFloatStateHeight(intermediate, entry.mini, expectedExpandedHeight);
         const native = await setWidth(application, floatPage, entry.narrow, report);
-        if (entry.mini) assert.equal(native.height, 176, 'Idle mini native height must be exactly 176');
+        assertFloatStateHeight(native, entry.mini, expectedExpandedHeight);
+        assert.deepEqual(await floatPage.locator('.float-app').evaluate(element => ({ mini: element.classList.contains('mini'), narrow: element.classList.contains('narrow'), mode: element.classList.contains('ai-active') ? 'ai' : 'home' })), entry, 'Renderer classes must match the complete requested matrix state');
         const geometry = await floatPage.evaluate(() => ({ viewport: { width: innerWidth, height: innerHeight }, scrollWidth: document.documentElement.scrollWidth }));
+        assert.equal(geometry.viewport.height, native.height, 'Renderer and native state heights must agree');
         assert.ok(geometry.scrollWidth <= geometry.viewport.width, 'Floating content must not overflow horizontally');
         assert.equal(await floatPage.locator('.float-insight').count(), 0);
         if (entry.mode === 'ai') {
@@ -253,7 +307,7 @@ export async function runFloatGroupPilot({ application, page, check, screenshot,
           }
           else await floatPage.getByRole('button', { name: '返回首页', exact: true }).waitFor();
         }
-        report.floatGroup.states.push({ ...entry, reducedMotion, native, geometry });
+        report.floatGroup.states.push({ ...entry, reducedMotion, native, geometry, expectedExpandedHeight, expectedHeight: entry.mini ? 176 : expectedExpandedHeight });
         if (reducedMotion === 'no-preference') await capture(screenshot, floatPage, `float-group-${entry.mode}-${entry.mini ? 'mini' : 'expanded'}-${entry.narrow ? 'narrow' : 'wide'}.png`);
       });
     }

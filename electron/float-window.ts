@@ -171,7 +171,9 @@ export class FloatTodoWindow {
 
   // 迷你卡 AI 等场景的临时高度(上游 compactHeight 同义):只改当前窗口,不改 expandedHeight 记忆
   setTempHeight(height: number | null): void {
-    if (!this.win || this.motion) return;
+    // A compact renderer effect can arrive after an instant expansion completes.
+    // Temporary question/reset heights belong only to the native collapsed state.
+    if (!this.win || this.motion || !this.collapsed) return;
     const target = height ?? MINI.height;
     const bounds = this.win.getBounds();
     if (bounds.height === target) return;

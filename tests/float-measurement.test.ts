@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import { act, createElement } from 'react';
 
-test('width-only reflow keeps height, child schedule changes remeasure, AI return reattaches observers', async () => {
+test('width reflow, schedule remounts and real compact effects preserve native lifecycle contracts', async () => {
   const dom = new JSDOM('<div id="root"></div>', { pretendToBeVisual: true });
   const names = ['window', 'document', 'HTMLElement', 'Node', 'navigator', 'MutationObserver', 'ResizeObserver', 'getComputedStyle', 'IS_REACT_ACT_ENVIRONMENT'] as const;
   const descriptors = names.map(name => Object.getOwnPropertyDescriptor(globalThis, name));
@@ -25,6 +25,8 @@ test('width-only reflow keeps height, child schedule changes remeasure, AI retur
     return 0;
   } });
   const heights: number[] = []; let width = 440;
+  let nativeCollapsed = false;
+  const compactDeliveries: { collapsed: boolean; height: number | null }[] = [];
   const now = new Date(); const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   const nextDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
   const tomorrow = `${nextDay.getFullYear()}-${String(nextDay.getMonth()+1).padStart(2,'0')}-${String(nextDay.getDate()).padStart(2,'0')}`;
@@ -32,7 +34,7 @@ test('width-only reflow keeps height, child schedule changes remeasure, AI retur
   Object.assign(dom.window, { matchMedia: () => ({ matches: true }), workbench: {
     settings: { get: async () => ({ uiTheme: 'mist' }) },
     todo: { state: async () => ({ tasks: [task, { ...task, id: 'tomorrow', title: '明日会议', plannedDate: tomorrow, dueAt: `${tomorrow}T12:00:00`, endAt: `${tomorrow}T13:00:00` }], categories: [] }), onChanged: () => () => {} },
-    float: { resize: (height: number) => heights.push(height), width: async (narrow?: boolean) => {
+    float: { collapse: async (next: boolean) => { nativeCollapsed = next; }, tempHeight: (height: number | null) => compactDeliveries.push({ collapsed: nativeCollapsed, height }), resize: (height: number) => heights.push(height), width: async (narrow?: boolean) => {
       if (narrow !== undefined) { width = narrow ? 330 : 440; dom.window.innerWidth = width; dom.window.dispatchEvent(new dom.window.Event('resize')); }
       return width;
     } },
@@ -61,5 +63,13 @@ test('width-only reflow keeps height, child schedule changes remeasure, AI retur
     assert.equal(heights.length, afterWidth);
     await click('.plan-folder-tab'); assert.equal(heights.at(-1), 840);
     await click('.plan-folder-tab'); assert.equal(heights.at(-1), 740);
+    await click('.float-window-actions [aria-label="AI 助手"]');
+    await click('.float-window-actions [title="收起为卡片"]');
+    assert.equal(nativeCollapsed, true);
+    assert.ok(compactDeliveries.some(value => value.collapsed && value.height === null));
+    compactDeliveries.length = 0;
+    await click('.float-window-actions [title="展开主界面"]');
+    assert.equal(nativeCollapsed, false);
+    assert.ok(compactDeliveries.some(value => !value.collapsed && value.height === null), 'Actual mini React effect may send its reset after reduced-motion expansion; native state must reject it');
   } finally { await act(async () => root.unmount()); dom.window.close(); names.forEach((name, index) => descriptors[index] ? Object.defineProperty(globalThis, name, descriptors[index]!) : Reflect.deleteProperty(globalThis, name)); }
 });

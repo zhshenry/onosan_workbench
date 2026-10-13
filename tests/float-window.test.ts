@@ -109,3 +109,38 @@ test('application before-quit owns float destruction without changing ordinary c
   }
   assert.ok(source.indexOf("app.once('before-quit'") > source.indexOf('const floatTodo = new FloatTodoWindow'));
 });
+
+test('late compact IPC after instant expansion cannot overwrite expanded height or memory', async () => {
+  const { owner, win } = fixture();
+  owner.setExpandedHeight(704);
+  for (const narrow of [false, true]) {
+    await owner.setWidth(narrow);
+    await owner.setCollapsed(true, false);
+    owner.setTempHeight(300);
+    assert.equal(win.bounds.height, 300, 'A real compact question retains its temporary height');
+    owner.setTempHeight(null);
+    assert.equal(win.bounds.height, 176);
+    await owner.setCollapsed(false, false);
+    assert.equal(win.bounds.height, 704);
+    // The old mini React effect can enqueue a send behind the synchronous collapse invoke.
+    await Promise.resolve();
+    owner.setTempHeight(null);
+    owner.setTempHeight(300);
+    assert.equal(win.bounds.height, 704, 'Late mini effects must not resize an expanded native window');
+    await owner.setCollapsed(true, false);
+    await owner.setCollapsed(false, false);
+    assert.equal(win.bounds.height, 704, 'A late mini reset must never poison remembered expanded height');
+  }
+});
+
+test('animated expansion ignores compact height deliveries during and after motion', async () => {
+  const { owner, win } = fixture();
+  owner.setExpandedHeight(704);
+  await owner.setCollapsed(true, false);
+  owner.setTempHeight(300);
+  const expanded = owner.setCollapsed(false, true);
+  owner.setTempHeight(null);
+  await expanded;
+  owner.setTempHeight(null);
+  assert.equal(win.bounds.height, 704);
+});

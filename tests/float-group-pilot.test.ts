@@ -3,7 +3,7 @@ import test from 'node:test';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
-import { FLOAT_GROUP_MATRIX, FLOAT_GROUP_SCREENSHOTS, assertFloatWidthTransition, assertFloatModelGeometry, assertFloatMenuGeometry, assertFloatCompactGeometry, assertFloatRectInside, expectedFloatMeasuredHeight } from '../tooling/float-group-pilot.mjs';
+import { FLOAT_GROUP_MATRIX, FLOAT_GROUP_SCREENSHOTS, assertFloatWidthTransition, assertFloatModelGeometry, assertFloatMenuGeometry, assertFloatCompactGeometry, assertFloatRectInside, expectedFloatMeasuredHeight, assertFloatStateHeight, resolveFloatExpandedHeight } from '../tooling/float-group-pilot.mjs';
 import { inspectPilotArtifacts, MAX_ARTIFACT_BYTES } from '../tooling/pilot-artifacts.mjs';
 
 test('Floating acceptance covers exactly eight mode/size/width states with immutable bounded screenshots', () => {
@@ -146,4 +146,37 @@ test('Schedule clicks retain real pointer action and bounded diagnostic evidence
   assert.match(source, /try \{ await tab\.click\(\); \}/);
   assert.match(source, /recordFolderHit\(application, floatPage, tab, report, 'click-failed'\)/);
   assert.doesNotMatch(source, /force:\s*true|element\.click\(\)/);
+});
+
+test('Every mode/width/motion state rejects wrong native height including expanded176 Windows regression', () => {
+  for (const motion of ['no-preference', 'reduce']) for (const entry of FLOAT_GROUP_MATRIX) {
+    const expectedExpanded = 812; const native = { x: 0, y: 0, width: entry.narrow ? 330 : 440, height: entry.mini ? 176 : expectedExpanded };
+    assert.doesNotThrow(() => assertFloatStateHeight(native, entry.mini, expectedExpanded), `${entry.mode}/${entry.narrow}/${motion}`);
+    assert.throws(() => assertFloatStateHeight({ ...native, height: entry.mini ? 812 : 176 }, entry.mini, expectedExpanded));
+    if (!entry.mini) assert.throws(() => assertFloatStateHeight({ ...native, height: 813 }, false, expectedExpanded), /restore its measured/);
+  }
+  // Exact failing state from Windows review2: reduce/AI/expanded retained 176.
+  assert.throws(() => resolveFloatExpandedHeight(704, 816, 'ai', { height: 176 }), /never retain compact/);
+  assert.throws(() => assertFloatStateHeight({ height: 176 }, false, 176), /never retain compact/);
+});
+test('Expanded restoration uses captured memory/display clamp and permits only evidenced home remeasurement', () => {
+  assert.equal(resolveFloatExpandedHeight(812, 1040, 'ai', { height: 812 }), 812);
+  assert.equal(resolveFloatExpandedHeight(1000, 900, 'ai', { height: 876 }), 876);
+  assert.equal(resolveFloatExpandedHeight(812, 1040, 'home', { height: 900 }, [900], 900), 900);
+  assert.equal(resolveFloatExpandedHeight(812, 1040, 'home', { height: 1016 }, [1300], 1300), 1016);
+  assert.throws(() => resolveFloatExpandedHeight(812, 1040, 'ai', { height: 900 }, [900], 900), /restore its measured/);
+  assert.throws(() => resolveFloatExpandedHeight(812, 1040, 'home', { height: 900 }), /restore its measured/);
+  assert.throws(() => resolveFloatExpandedHeight(812, 1040, 'home', { height: 900 }, [900], 812), /fresh resize IPC/);
+  assert.throws(() => resolveFloatExpandedHeight(176, 1040, 'home', { height: 900 }, [900], 900), /real expanded/);
+  assert.throws(() => resolveFloatExpandedHeight(812, 1040, 'home', { height: 176 }, [176], 176), /never retain compact/);
+});
+test('State matrix verifies restoration and both settled width results without adding Windows checks/screenshots', async () => {
+  const source = await readFile(new URL('../tooling/float-group-pilot.mjs', import.meta.url), 'utf8');
+  assert.match(source, /expandedHeightMemory\.set\(page, before\.height\)/);
+  for (const step of ['restored', 'intermediate', 'native']) assert.match(source, new RegExp(`assertFloatStateHeight\\(${step}, entry\\.mini, expectedExpandedHeight\\)`));
+  assert.match(source, /expectedHeight: entry\.mini \? 176 : expectedExpandedHeight/);
+  assert.match(source, /finally \{ if \(!mini\) await stopObservingFloatResize\(application\); \}/);
+  assert.match(source, /Renderer mini class must match the requested native state/);
+  assert.match(source, /Renderer classes must match the complete requested matrix state/);
+  assert.equal(FLOAT_GROUP_SCREENSHOTS.length, 15);
 });
