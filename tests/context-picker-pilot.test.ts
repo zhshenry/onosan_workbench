@@ -4,9 +4,10 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
+import { act, createElement, useRef, useState } from 'react';
 import {
   CONTEXT_PICKER_MATRIX, CONTEXT_PICKER_SCREENSHOTS, assertContextPickerGeometry,
-  assertReferenceTurn, assertSavedReferenceTurn, assertTransmittedReferenceSnapshots, referencePromptBubble, assertContextPilotConfig,
+  assertReferenceTurn, assertSavedReferenceTurn, assertTransmittedReferenceSnapshots, referencePromptBubble, assertContextPilotConfig, selectReference,
 } from '../tooling/context-picker-pilot.mjs';
 import { inspectPilotArtifacts, MAX_ARTIFACT_BYTES } from '../tooling/pilot-artifacts.mjs';
 
@@ -20,6 +21,85 @@ function chatFixture() {
   ] };
 }
 const turn = () => assertReferenceTurn(chatFixture(), 'synthetic prompt', reference, 'original synthetic note');
+
+test('Installed selection helper clicks an immediately unmounted todo radio and verifies its exact committed chip, while other modes retain check/confirm or Escape', async () => {
+  const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost', pretendToBeVisual: true });
+  const globals = ['window', 'document', 'HTMLElement', 'Node', 'navigator', 'IS_REACT_ACT_ENVIRONMENT'] as const;
+  const previous = globals.map(name => Object.getOwnPropertyDescriptor(globalThis, name));
+  globals.forEach(name => Object.defineProperty(globalThis, name, { configurable: true,
+    value: name === 'IS_REACT_ACT_ENVIRONMENT' ? true : name === 'window' ? dom.window : dom.window[name] }));
+  const { createRoot } = await import('react-dom/client');
+  const { AiReferencePicker } = await import('../src/views/AiReferencePicker');
+  const root = createRoot(dom.window.document.getElementById('root')!);
+  const actions: string[] = [];
+  let mode: 'todo' | 'reading' | 'copy' | 'bazi' = 'todo';
+  let broken: '' | 'no-close' | 'no-focus' | 'wrong-title' | 'wrong-remove' | 'duplicate-chip' = '';
+  const options = () => ['Alpha', 'Beta'].map((title, index) => ({ title, detail: 'Synthetic saved source',
+    reference: mode === 'todo' ? { module: mode, taskId: `task-${index}` } : mode === 'copy' ? { module: mode, draftId: `draft-${index}` } : { module: mode, profileId: `profile-${index}` } }));
+  function Fixture() {
+    const anchor = useRef<HTMLDivElement>(null), trigger = useRef<HTMLButtonElement>(null);
+    const [open, setOpen] = useState(false), [selected, setSelected] = useState<any[]>([]);
+    const close = () => { if (broken === 'no-close') return; setOpen(false); if (broken !== 'no-focus') trigger.current?.focus(); };
+    const chips = selected.flatMap(item => {
+      const title = options().find(option => JSON.stringify(option.reference) === JSON.stringify(item))!.title;
+      const chip = createElement('span', { className: 'ai-reference-chip', key: title },
+        createElement('span', { title: broken === 'wrong-title' ? `${title} extra` : title }, title),
+        createElement('button', { 'aria-label': `移除参考：${broken === 'wrong-remove' ? 'Other source' : title}` }, 'Remove'));
+      return broken === 'duplicate-chip' ? [chip, createElement('span', { className: 'ai-reference-chip', key: `${title}-duplicate` }, title)] : [chip];
+    });
+    return createElement('aside', { id: 'workbench-ai-panel' }, createElement('div', { ref: anchor },
+      createElement('button', { ref: trigger, className: 'ai-add-reference', 'aria-expanded': open, onClick: () => setOpen(true) }, 'Add'), ...chips),
+      open && createElement(AiReferencePicker, { id: 'selection-regression', mode, unavailable: '', options: options() as any,
+        selected, loading: false, error: '', notice: '', anchor, trigger, onChange: setSelected, onRetry: () => undefined, onClose: close }));
+  }
+  // DOM-backed Playwright adapter runs the actual React picker. check() models
+  // Playwright's post-click checked-state requirement; this is not Electron coverage.
+  const locator = (read: () => Element[]): any => {
+    const one = () => { const elements = read(); assert.equal(elements.length, 1, 'A real locator must resolve exactly once'); return elements[0]; };
+    return {
+      locator: (selector: string) => locator(() => read().flatMap(element => [...element.querySelectorAll(selector)])),
+      filter: ({ hasText }: { hasText: string }) => locator(() => read().filter(element => element.textContent?.includes(hasText))),
+      getByRole: (role: string) => { assert.equal(role, 'button'); return locator(() => read().flatMap(element => [...element.querySelectorAll('button')])); },
+      count: async () => read().length,
+      getAttribute: async (name: string) => one().getAttribute(name),
+      evaluate: async (callback: (element: Element) => unknown) => callback(one()),
+      waitFor: async ({ state }: { state: string }) => { assert.equal(read().length, state === 'hidden' ? 0 : 1, `Expected ${state} locator`); },
+      click: async () => { const element = one() as HTMLElement; actions.push(`click:${element.tagName}:${element.tagName === 'INPUT' ? element.getAttribute('type') : element.className}`); await act(async () => element.click()); },
+      check: async () => {
+        const element = one() as HTMLInputElement; actions.push(`check:${element.type}`);
+        if (!element.checked) await act(async () => element.click());
+        assert.ok(element.isConnected && element.checked, 'check cannot observe a radio synchronously unmounted by selection');
+      },
+      fill: async (value: string) => { const element = one() as HTMLInputElement; await act(async () => {
+        Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value')!.set!.call(element, value);
+        element.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+      }); },
+    };
+  };
+  const page = { locator: (selector: string) => locator(() => [...dom.window.document.querySelectorAll(selector)]),
+    keyboard: { press: async (key: string) => { actions.push(`key:${key}`); await act(async () => dom.window.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))); } } };
+  const render = async () => { actions.length = 0; await act(async () => root.render(createElement(Fixture, { key: `${mode}:${broken}` }))); };
+  try {
+    await render(); await selectReference(page, 'Alpha'); await selectReference(page, 'Beta');
+    assert.equal(dom.window.document.querySelectorAll('.ai-reference-chip').length, 1, 'Replacement must not append');
+    assert.equal(dom.window.document.querySelector('.ai-reference-chip span')!.getAttribute('title'), 'Beta');
+    assert.equal(actions.filter(action => action === 'click:INPUT:radio').length, 2);
+    assert.ok(!actions.some(action => action.startsWith('check:') || action === 'key:Escape'), 'Todo requires an actual click and immediate closure, never check or fallback Escape');
+    for (const failure of ['no-close', 'no-focus', 'wrong-title', 'wrong-remove', 'duplicate-chip'] as const) {
+      broken = failure; await render(); await assert.rejects(selectReference(page, 'Alpha'), failure === 'no-close' ? /Expected hidden/ : failure === 'no-focus' ? /return focus/ : failure === 'wrong-title' ? /exact chosen source title/ : failure === 'wrong-remove' ? /same exact chosen source/ : /strictly equal/);
+    }
+    broken = '';
+    for (const other of ['reading', 'copy', 'bazi'] as const) {
+      mode = other; await render(); await selectReference(page, 'Alpha', other !== 'reading');
+      assert.ok(actions.includes(`check:${other === 'reading' ? 'radio' : 'checkbox'}`), 'Non-closing radios and multiple selections keep check');
+      assert.equal(actions.includes('key:Escape'), other === 'reading');
+      assert.equal(actions.some(action => action.startsWith('click:BUTTON:primary')), other !== 'reading', 'Multiple selections still require the actual confirm button');
+    }
+  } finally {
+    await act(async () => root.unmount()); dom.window.close();
+    globals.forEach((name, index) => { if (previous[index]) Object.defineProperty(globalThis, name, previous[index]!); else delete (globalThis as any)[name]; });
+  }
+});
 
 test('Reference acceptance rejects a floating-pilot active model, stale loopback endpoint and any saved key', () => {
   const endpoint = 'http://127.0.0.1:12345/v1';

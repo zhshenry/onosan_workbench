@@ -60,7 +60,7 @@ async function dismiss(page) {
   await page.keyboard.press('Escape');
   await picker(page).waitFor({ state: 'hidden' });
 }
-async function selectReference(page, name, multiple = false) {
+export async function selectReference(page, name, multiple = false) {
   await add(page).click();
   await picker(page).waitFor({ state: 'visible' });
   const search = picker(page).locator('.ai-reference-search input');
@@ -68,12 +68,22 @@ async function selectReference(page, name, multiple = false) {
   const option = picker(page).locator('.ai-reference-option').filter({ hasText: name });
   await option.waitFor({ state: 'visible' });
   assert.equal(await option.count(), 1, 'Reference fixture must resolve to one actual option');
-  await option.locator('input').check();
+  const closesOnSelection = (await picker(page).getAttribute('class')).split(/\s+/).includes('ai-reference-light-list');
+  if (closesOnSelection) {
+    assert.equal(multiple, false, 'The todo light list must remain single-select');
+    // check() verifies the radio's checked state after clicking. Todo v3
+    // synchronously unmounts that radio, so verify the actual committed UI instead.
+    await option.locator('input').click();
+    await picker(page).waitFor({ state: 'hidden' });
+    assert.equal(await add(page).getAttribute('aria-expanded'), 'false', 'Todo selection must close its menu without Escape');
+    assert.equal(await add(page).evaluate(element => element === document.activeElement), true, 'Todo selection must return focus to the reference trigger');
+  } else await option.locator('input').check();
   if (multiple) await picker(page).locator('.primary').click();
-  else if (await picker(page).count()) await dismiss(page);
+  else if (!closesOnSelection) await dismiss(page);
   await picker(page).waitFor({ state: 'hidden' });
   assert.equal(await chips(page).count(), 1);
-  assert.ok((await chips(page).innerText()).includes(name));
+  assert.equal(await chips(page).locator('span[title]').getAttribute('title'), name, 'The exact chosen source title must reach the committed chip');
+  assert.equal(await chips(page).getByRole('button').getAttribute('aria-label'), `移除参考：${name}`, 'The remove control must address the same exact chosen source');
 }
 async function openChat(page, title) {
   await panel(page).locator('.ai-context-select > .select-trigger').click();
