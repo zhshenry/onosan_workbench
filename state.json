@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 187,
+  "revision": 188,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -255,7 +255,7 @@
     },
     "25": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/25",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -263,7 +263,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "原生16态高度与日程开合已通过；修复outside-dismissal测试误点被popover遮盖输入框，改真实可見外部空白命中验证后重验",
+      "nextAction": "等待真实外部点击验收修订准确head Windows84项及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -311,7 +311,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "feee2edbd5dcc9162271607ce83dd580e8a043d1",
+      "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38335937893,
@@ -325,7 +325,8 @@
         "failure": "mini picker遮盖输入框，outside-dismissal误选被遮盖目标；真正关闭/保持选择与请求计数待有效物理点击重验",
         "artifactId": 11785476485,
         "artifactSha256": "c393b939a47516944aa38a88e9fe510f5dcb3254054bb41f23b2096719fafabc",
-        "expiresAt": "2026-10-16T02:21:47Z"
+        "expiresAt": "2026-10-16T02:21:47Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:28:58Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -415,7 +416,7 @@
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -423,7 +424,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "原生16态高度与日程开合已通过；修复outside-dismissal测试误点被popover遮盖输入框，改真实可見外部空白命中验证后重验",
+      "nextAction": "等待真实外部点击验收修订准确head Windows84项及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -474,7 +475,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "feee2edbd5dcc9162271607ce83dd580e8a043d1",
+      "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38335937893,
@@ -488,7 +489,8 @@
         "failure": "mini picker遮盖输入框，outside-dismissal误选被遮盖目标；真正关闭/保持选择与请求计数待有效物理点击重验",
         "artifactId": 11785476485,
         "artifactSha256": "c393b939a47516944aa38a88e9fe510f5dcb3254054bb41f23b2096719fafabc",
-        "expiresAt": "2026-10-16T02:21:47Z"
+        "expiresAt": "2026-10-16T02:21:47Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:28:58Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -511,7 +513,7 @@
     },
     "29": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -519,7 +521,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "原生16态高度与日程开合已通过；修复outside-dismissal测试误点被popover遮盖输入框，改真实可見外部空白命中验证后重验",
+      "nextAction": "等待真实外部点击验收修订准确head Windows84项及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -567,7 +569,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "feee2edbd5dcc9162271607ce83dd580e8a043d1",
+      "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38335937893,
@@ -581,7 +583,8 @@
         "failure": "mini picker遮盖输入框，outside-dismissal误选被遮盖目标；真正关闭/保持选择与请求计数待有效物理点击重验",
         "artifactId": 11785476485,
         "artifactSha256": "c393b939a47516944aa38a88e9fe510f5dcb3254054bb41f23b2096719fafabc",
-        "expiresAt": "2026-10-16T02:21:47Z"
+        "expiresAt": "2026-10-16T02:21:47Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:28:58Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -604,7 +607,7 @@
     },
     "30": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -612,7 +615,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "原生16态高度与日程开合已通过；修复outside-dismissal测试误点被popover遮盖输入框，改真实可見外部空白命中验证后重验",
+      "nextAction": "等待真实外部点击验收修订准确head Windows84项及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -660,7 +663,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "feee2edbd5dcc9162271607ce83dd580e8a043d1",
+      "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38335937893,
@@ -674,7 +677,8 @@
         "failure": "mini picker遮盖输入框，outside-dismissal误选被遮盖目标；真正关闭/保持选择与请求计数待有效物理点击重验",
         "artifactId": 11785476485,
         "artifactSha256": "c393b939a47516944aa38a88e9fe510f5dcb3254054bb41f23b2096719fafabc",
-        "expiresAt": "2026-10-16T02:21:47Z"
+        "expiresAt": "2026-10-16T02:21:47Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:28:58Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -697,7 +701,7 @@
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -705,7 +709,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "原生16态高度与日程开合已通过；修复outside-dismissal测试误点被popover遮盖输入框，改真实可見外部空白命中验证后重验",
+      "nextAction": "等待真实外部点击验收修订准确head Windows84项及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -753,7 +757,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "feee2edbd5dcc9162271607ce83dd580e8a043d1",
+      "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38335937893,
@@ -767,7 +771,8 @@
         "failure": "mini picker遮盖输入框，outside-dismissal误选被遮盖目标；真正关闭/保持选择与请求计数待有效物理点击重验",
         "artifactId": 11785476485,
         "artifactSha256": "c393b939a47516944aa38a88e9fe510f5dcb3254054bb41f23b2096719fafabc",
-        "expiresAt": "2026-10-16T02:21:47Z"
+        "expiresAt": "2026-10-16T02:21:47Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:28:58Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -790,7 +795,7 @@
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -798,7 +803,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "原生16态高度与日程开合已通过；修复outside-dismissal测试误点被popover遮盖输入框，改真实可見外部空白命中验证后重验",
+      "nextAction": "等待真实外部点击验收修订准确head Windows84项及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -846,7 +851,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "feee2edbd5dcc9162271607ce83dd580e8a043d1",
+      "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38335937893,
@@ -860,7 +865,8 @@
         "failure": "mini picker遮盖输入框，outside-dismissal误选被遮盖目标；真正关闭/保持选择与请求计数待有效物理点击重验",
         "artifactId": 11785476485,
         "artifactSha256": "c393b939a47516944aa38a88e9fe510f5dcb3254054bb41f23b2096719fafabc",
-        "expiresAt": "2026-10-16T02:21:47Z"
+        "expiresAt": "2026-10-16T02:21:47Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:28:58Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -883,7 +889,7 @@
     },
     "33": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -891,7 +897,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "原生16态高度与日程开合已通过；修复outside-dismissal测试误点被popover遮盖输入框，改真实可見外部空白命中验证后重验",
+      "nextAction": "等待真实外部点击验收修订准确head Windows84项及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -939,7 +945,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "feee2edbd5dcc9162271607ce83dd580e8a043d1",
+      "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38335937893,
@@ -953,7 +959,8 @@
         "failure": "mini picker遮盖输入框，outside-dismissal误选被遮盖目标；真正关闭/保持选择与请求计数待有效物理点击重验",
         "artifactId": 11785476485,
         "artifactSha256": "c393b939a47516944aa38a88e9fe510f5dcb3254054bb41f23b2096719fafabc",
-        "expiresAt": "2026-10-16T02:21:47Z"
+        "expiresAt": "2026-10-16T02:21:47Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:28:58Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -2649,12 +2656,15 @@
     },
     "floating-pr40-outside-publish": {
       "kind": "update-implementation",
-      "status": "intent",
+      "status": "succeeded",
       "target": "ono/floating-group-v2",
       "expectedHead": "feee2edbd5dcc9162271607ce83dd580e8a043d1",
       "patchSha256": "8f8d28141086afb4e7e54d953b7869dd8bffd398b6658fc4a72bef3e6a11986c",
       "summary": "仅pilot/tests选择真实露出外部空白物理点击，保留已选项/model/request断言，不改产品；478=476pass2skipverify和独立复核通过，84真实Windows待验",
-      "createdAt": "2026-10-13T02:29:27.138Z"
+      "createdAt": "2026-10-13T02:29:27.138Z",
+      "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
+      "treeSha": "ce41db3253032675c13fb70208c56c70855b2d77",
+      "verifiedAt": "2026-10-13T02:30:17.290Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
