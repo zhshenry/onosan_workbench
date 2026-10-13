@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 271,
+  "revision": 272,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -3825,6 +3825,26 @@
       "verifiedAt": "2026-10-13T07:14:58.373Z",
       "pr": 42,
       "url": "https://github.com/zhshenry/onosan_workbench/pull/42"
+    },
+    "issue35-v1-implementation-publish": {
+      "operationId": "issue35-v1-implementation-publish",
+      "status": "intent",
+      "branch": "ono/issue-35-creator-keepalive",
+      "baseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
+      "treeSha": "22caf9dbaff8ea638bb336b5da45988954b1bbf7",
+      "paths": [
+        "UX-CONTRACT.md",
+        "docs/WINDOWS-CLOUD-PILOT.md",
+        "src/App.tsx",
+        "src/shell.css",
+        "src/views/MediaBrowserHost.tsx",
+        "tests/media-keepalive-pilot.test.ts",
+        "tests/media-keepalive.test.ts",
+        "tooling/media-keepalive-pilot.mjs",
+        "tooling/pilot-artifacts.mjs",
+        "tooling/windows-pilot.mjs"
+      ],
+      "summary": "已批35v1云端实施：本地verify/actionlint与上海时区全套492pass2skip；UTC3旧失败精确main复现；真实Windows待PR验收"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
