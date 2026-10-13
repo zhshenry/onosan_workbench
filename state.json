@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 170,
+  "revision": 171,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -2366,6 +2366,13 @@
       "prNumber": 40,
       "url": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "verifiedAt": "2026-10-13T01:09:37.958Z"
+    },
+    "floating-pr40-progress": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
+      "body": "【OnO 自动化】悬浮窗组 v2｜已提交实现，正在验收\n\n#25、#28、#29、#30、#31、#32、#33 的统一实现已提交 [Draft PR #40](https://github.com/zhshenry/onosan_workbench/pull/40)，head **fbbf76b99733295c6325144c10586a50a7df0a2b**，基于已验收 main a5659fa5e6dbef6188ec3e34b061bc317d4d7e78。\n本地完整测试447项：445通过、2项既有Windows-only跳过；类型与生产构建通过。交叉检查发现的切宽后日程开合测高回归已修复，并补修前失败/修后通过测试。\n[真实 Windows 验收](https://github.com/zhshenry/onosan_workbench/actions/runs/38330757284)已通过单测、构建、安装，仍在执行实装UI/同版本重启检查，尚未出最终结论。预期80项和实际截图都须读回核验，不能提前算通过。\n\n下一步我继续检查实装结果、修复本组范围内问题，并在这里提供真实带图验收，再请求准确版本的最终合入收尾。当前无需重复批准；有新增意见直接回复本Issue。",
+      "createdAt": "2026-10-13T01:23:41.240Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
