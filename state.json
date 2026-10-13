@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 308,
+  "revision": 309,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1419,7 +1419,7 @@
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "ci-running-visual-diagnosis",
+      "stage": "visual-blocker-awaiting-scope",
       "type": [
         "ui",
         "bugfix",
@@ -1428,7 +1428,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "等待等侧栏卸载后的同状态原生首页对照；不以相同坏布局视为视觉验收通过",
+      "nextAction": "Issue35附实际对照图请求首页问题修复范围决定；无准确最终合入批准",
       "lastCommentId": 6128766093,
       "groupId": "media-keepalive-35",
       "groupIssueNumbers": [
@@ -1460,10 +1460,11 @@
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/43",
       "headSha": "4098f131a2ab17cb77c57df9f1119df0c15c898b",
       "ciRun": 38384962098,
-      "ciResult": "in_progress",
+      "ciResult": "success",
       "tests": {
         "windowsUnit": "500/500,0skip",
-        "installed": "78/79; same viewport comparison grid columns0px639px vs0px879px; environment difference under investigation"
+        "installed": "95/95",
+        "visual": "FAIL homepage baseline overview width0 overflow166 overlap; unchanged before/after hidden guest"
       },
       "nativeProgress": {
         "run": 38380172206,
@@ -4096,6 +4097,13 @@
       "headSha": "4098f131a2ab17cb77c57df9f1119df0c15c898b",
       "ciRun": 38384962098,
       "verifiedAt": "2026-10-13T10:41:03.121Z"
+    },
+    "issue35-home-blocker-images": {
+      "operationId": "issue35-home-blocker-images",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/35",
+      "summary": "上传真实Windows run38384962098首访与保活隐藏后两张首页异常图，用于说明超出35保活范围的视觉问题并请求修复范围决策",
+      "startedAt": "2026-10-13T10:52:10.585Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
