@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 248,
+  "revision": 249,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1486,7 +1486,8 @@
     6139903018,
     6139911535,
     6139920609,
-    6139928459
+    6139928459,
+    6139936671
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -3525,10 +3526,13 @@
     },
     "feedback-20261013T0641-37": {
       "operationId": "feedback-20261013T0641-37",
-      "status": "intent",
+      "status": "succeeded",
       "targetIssue": 37,
       "body": "【OnO 自动化】对，上方是发布前准备；下方是手动记录这篇本地博客对应的已发布作品链接，不会自动修改或优化线上作品。\n\n关联会保存在这台电脑的该篇博客记录中。已用当前源码验证真实落盘、重新打开存储、编辑标题/正文后仍保留；手动移除关联或删除博客会清除。本轮验证是存储级测试，不冒充完整应用重启实测。清除本地数据也会影响它；线上作品删除或链接失效不会自动同步检测，不能承诺永久有效。\n\n我会再把这两个区域的用途写清楚，附上对应高保真让你确认；这次先答复事实，尚未修改界面。",
-      "summary": "回应已核原始反馈/批准及当前阶段"
+      "summary": "回应已核原始反馈/批准及当前阶段",
+      "commentId": 6139936671,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6139936671",
+      "verifiedAt": "2026-10-13T06:45:49.852Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
