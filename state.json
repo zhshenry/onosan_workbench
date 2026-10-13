@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 325,
+  "revision": 326,
   "currentRun": {
     "owner": "ono-root-issue37-20261013T1151Z",
     "startedAt": "2026-10-13T11:51:31.363Z",
@@ -1529,7 +1529,7 @@
     },
     "37": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/37",
-      "stage": "ci-running",
+      "stage": "evidence-framing",
       "type": [
         "ui",
         "investigation"
@@ -1537,7 +1537,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-13T11:51:31.363Z",
-      "nextAction": "核验真实Windows实际关联持久化与重启及4图；缺原生附图时不请求最终批准",
+      "nextAction": "仅修原生截图取景及toast消失等待，重新实际Windows；产品冻结",
       "lastCommentId": 6144934226,
       "planVersion": "v1",
       "planCommentId": 6140325358,
@@ -1562,7 +1562,13 @@
       "pr": 45,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/45",
       "headSha": "64f04ad6da610fda1d9cdc92390adb437ad7e6c6",
-      "ciRun": 38396752842
+      "ciRun": 38396752842,
+      "ciResult": "success",
+      "tests": {
+        "windowsUnit": "512/512,0skip",
+        "installed": "96/96",
+        "visual": "关键pending确认按钮与unlinked输入未完整进入截图视口，需要仅修复证据取景"
+      }
     },
     "41": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/41",
@@ -4219,6 +4225,13 @@
       "startedAt": "2026-10-13T12:31:12.845Z",
       "result": "重建已被清理标签页后单张217172字节PNG明确Failed to upload，未返回URL；草稿已清",
       "verifiedAt": "2026-10-13T12:33:13.069Z"
+    },
+    "issue35-home-plan-ack": {
+      "operationId": "issue35-home-plan-ack",
+      "status": "intent",
+      "target": 35,
+      "body": "【OnO 自动化】收到，会补充首页窄屏修复方案，先准备相关高保真与最小改动范围，再在这里与你对齐；这条要求不视为实施或合入批准。\n\n另外，按你刚才的要求已重新打开网页，单独重试一张真实截图，仍明确显示 Failed to upload，未得到附件URL。当前先完成方案准备，不把未能内嵌的图当作可审阅交付。当前无需回复。",
+      "startedAt": "2026-10-13T12:34:54.536Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
