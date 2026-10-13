@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 290,
+  "revision": 291,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1419,7 +1419,7 @@
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "ci-blocked",
+      "stage": "ci-running",
       "type": [
         "ui",
         "bugfix",
@@ -1428,7 +1428,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "修复退出fixture HTTPS重复注册，保留已通过全部10主专项；完整原生退出重启仍未跑",
+      "nextAction": "等待准确head完整原生退出重启验收及真实图；不合入",
       "lastCommentId": 6128766093,
       "groupId": "media-keepalive-35",
       "groupIssueNumbers": [
@@ -1458,9 +1458,9 @@
       "implementationBaseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "pr": 43,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/43",
-      "headSha": "224de024fbfe3309ae04b1dbb558ede28bb0bdab",
-      "ciRun": 38368255458,
-      "ciResult": "failure",
+      "headSha": "a1e12c5761bbe8176ba4635ab31ede3198840a14",
+      "ciRun": 38371216970,
+      "ciResult": null,
       "tests": {
         "windowsUnit": "494/494,0skip",
         "verify": "pass",
@@ -4026,10 +4026,13 @@
     },
     "issue35-protocol-cleanup-fix": {
       "operationId": "issue35-protocol-cleanup-fix",
-      "status": "intent",
+      "status": "succeeded",
       "expectedHead": "224de024fbfe3309ae04b1dbb558ede28bb0bdab",
       "treeSha": "b2d3979fc9db98f61ce3712094d1b281a1d78894",
-      "summary": "仅修2fixture/test文件Electron evaluate参数契约，严格读回自有handler/listener清理及新fixture可注册；产品不改，完整退出重启重验"
+      "summary": "仅修2fixture/test文件Electron evaluate参数契约，严格读回自有handler/listener清理及新fixture可注册；产品不改，完整退出重启重验",
+      "headSha": "a1e12c5761bbe8176ba4635ab31ede3198840a14",
+      "ciRun": 38371216970,
+      "verifiedAt": "2026-10-13T08:43:55.135Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
