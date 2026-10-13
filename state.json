@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 319,
+  "revision": 320,
   "currentRun": {
     "owner": "ono-root-issue37-20261013T1151Z",
     "startedAt": "2026-10-13T11:51:31.363Z",
@@ -4171,6 +4171,13 @@
       "commentId": 6144599897,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6144599897",
       "verifiedAt": "2026-10-13T11:33:25.183Z"
+    },
+    "issue37-start-comment": {
+      "operationId": "issue37-start-comment",
+      "status": "intent",
+      "target": 37,
+      "body": "【OnO 自动化】已重新核对本 Issue 方案 v1 的原始批准及完整后续讨论，开始基于最新 main b276261a90cb60a53626dd2149b0f3cdc6aad0fd 独立实施。\n\n这次只处理“发布前准备／发布后关联”的说明和确认流程，重点验证取消、更换、切换博客不串记录，以及真实本地保存和正常退出重启后的字段读回；不会操作线上发布或删除作品。\n\n#34、#35 当前停在已报告的附图/视觉关口，产品代码均已冻结；本轮一次只开发 #37。附件上传问题不重置重试次数，也不把缺图当作已交付。完成后在这里报告准确 PR/head 和实测结果。当前无需回复。",
+      "startedAt": "2026-10-13T11:52:45.223Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
