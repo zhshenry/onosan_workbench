@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 340,
+  "revision": 341,
   "currentRun": {
     "owner": "ono-root-issue37-20261013T1151Z",
     "startedAt": "2026-10-13T11:51:31.363Z",
@@ -1385,7 +1385,7 @@
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
-      "stage": "revised-error-screenshot-windows-validation",
+      "stage": "revised-tested-awaiting-final-approval",
       "type": [
         "ui",
         "investigation"
@@ -1432,8 +1432,8 @@
       "imageDelivery": {
         "channel": "one-time-private-chat",
         "imageCount": 4,
-        "acceptedAt": "2026-10-13T12:45:00Z",
-        "scope": "current tested head only; no merge approval"
+        "head": "71416bb20380c013960d005f53b281340e97caa2",
+        "acceptedAt": "2026-10-13T13:13:59Z"
       },
       "finalApprovalRequest": {
         "commentId": 6145874018,
@@ -4376,12 +4376,20 @@
     },
     "issue34-revised-image-chat": {
       "operationId": "issue34-revised-image-chat",
-      "status": "intent",
+      "status": "succeeded",
       "head": "71416bb20380c013960d005f53b281340e97caa2",
       "runId": 38401742953,
       "imageCount": 4,
       "summary": "延续本次明确聊天交付范围，发送用户要求修正后的4张真实Windows图",
-      "startedAt": "2026-10-13T13:13:19.541Z"
+      "startedAt": "2026-10-13T13:13:19.541Z",
+      "acceptedAt": "2026-10-13T13:13:59Z"
+    },
+    "issue34-revised-final-gate": {
+      "operationId": "issue34-revised-final-gate",
+      "status": "intent",
+      "target": 34,
+      "body": "【OnO 自动化】已按你的反馈修正交付图。旧图中的重复文字来自超长文本压力测试；产品原本仅显示一次消息，没有累加。现在普通错误使用与后端一致的一句提示，长文本压力场景独立保留，并新增重复错误事件不产生重复节点、不增加文本的检查。\n\n新准确 head：71416bb20380c013960d005f53b281340e97caa2，[PR #44](https://github.com/zhshenry/onosan_workbench/pull/44)。[Windows运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38401742953)514/514单测、96/96原生检查、安装及普通退出重启全部通过。4张新原生图已实际查看，并按你仅本次允许的渠道于21:13（UTC+8）发送到现有私聊，替代旧图。更新状态为合成测试，不代表实际下载安装更新。\n\n旧版本 cbe2a25 的验收请求已失效，本次以71416bb为准。请求范围仍为合入此准确head、实际main必要验收通过后关闭#34、按规范核查清理本需求分支，不包含其他需求或发布。\n\n可复制回复：同意合入 PR #44，版本 71416bb，并在 main 验收通过后关闭 #34、按规范清理该需求分支。",
+      "startedAt": "2026-10-13T13:14:26.938Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -4397,7 +4405,7 @@
     "endedAt": "2026-10-13T11:33:25.184Z",
     "summary": "35原生500/500+95/95通过但既有首页视觉异常与附件交付阻塞；34PR44实现Windows513/513+95/95及4图实际查看，待内嵌附件；无在途写，释放协调占用"
   },
-  "updatedAt": "2026-10-13T13:13:19.541Z",
+  "updatedAt": "2026-10-13T13:14:26.938Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
