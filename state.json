@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 195,
+  "revision": 196,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -255,7 +255,7 @@
     },
     "25": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/25",
-      "stage": "ci-validation",
+      "stage": "visual-review",
       "type": [
         "ui",
         "interaction"
@@ -263,7 +263,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T02:44:55Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待真实text-block精确验收修订准确head Windows84项及真实附图",
+      "nextAction": "84实装全过，真实看15张浮窗图发现330展开关联入口被压换行，修窄宽适配并补实际picker图后完整重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -314,19 +314,18 @@
       "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
-      "ciRunId": 38337172824,
-      "ciConclusion": "failure",
+      "ciRunId": 38338289863,
+      "ciConclusion": "success",
       "lastCi": {
-        "runId": 38337172824,
-        "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
-        "testedSha": "7a5b79913f1e3ad2af0228b3b15020f871e01b08",
-        "unitTests": "478/478通过，0skip",
-        "installed": "72通过/73已执行，84计划未完成",
-        "failure": "explicit send已有1请求且model正确，但Wire prompt exact string断言失败，实际payload需进一步核实",
-        "artifactId": 11785670095,
-        "artifactSha256": "cbeaf2fd66452f86bd66bcd63e5c462f30c44ff6a30d64e6f72159601d0b11da",
-        "expiresAt": "2026-10-16T02:37:34Z",
-        "temporaryEvidenceCleanedAt": "2026-10-13T02:42:37Z"
+        "runId": 38338289863,
+        "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
+        "testedSha": "6ee76c01ffac8c24bbf57058dfdcdfc8487711d8",
+        "unitTests": "481/481通过，0skip",
+        "installed": "84/84通过",
+        "visual": "逐张看15张新浮窗PNG，330expanded关联入口换行需修；尚未最终交付",
+        "artifactId": 11785956897,
+        "artifactSha256": "70c1de589e5908f600d3d9cd26b2afa22e16bc25564feee2a646961612eb9d77",
+        "expiresAt": "2026-10-16T02:51:30Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -345,7 +344,8 @@
         "version": "float-quit-v1",
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
         "verifiedAt": "2026-10-13T01:47:40.010Z"
-      }
+      },
+      "testedSha": "6ee76c01ffac8c24bbf57058dfdcdfc8487711d8"
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
@@ -416,7 +416,7 @@
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "stage": "ci-validation",
+      "stage": "visual-review",
       "type": [
         "ui",
         "interaction"
@@ -424,7 +424,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T02:44:55Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待真实text-block精确验收修订准确head Windows84项及真实附图",
+      "nextAction": "84实装全过，真实看15张浮窗图发现330展开关联入口被压换行，修窄宽适配并补实际picker图后完整重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -478,19 +478,18 @@
       "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
-      "ciRunId": 38337172824,
-      "ciConclusion": "failure",
+      "ciRunId": 38338289863,
+      "ciConclusion": "success",
       "lastCi": {
-        "runId": 38337172824,
-        "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
-        "testedSha": "7a5b79913f1e3ad2af0228b3b15020f871e01b08",
-        "unitTests": "478/478通过，0skip",
-        "installed": "72通过/73已执行，84计划未完成",
-        "failure": "explicit send已有1请求且model正确，但Wire prompt exact string断言失败，实际payload需进一步核实",
-        "artifactId": 11785670095,
-        "artifactSha256": "cbeaf2fd66452f86bd66bcd63e5c462f30c44ff6a30d64e6f72159601d0b11da",
-        "expiresAt": "2026-10-16T02:37:34Z",
-        "temporaryEvidenceCleanedAt": "2026-10-13T02:42:37Z"
+        "runId": 38338289863,
+        "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
+        "testedSha": "6ee76c01ffac8c24bbf57058dfdcdfc8487711d8",
+        "unitTests": "481/481通过，0skip",
+        "installed": "84/84通过",
+        "visual": "逐张看15张新浮窗PNG，330expanded关联入口换行需修；尚未最终交付",
+        "artifactId": 11785956897,
+        "artifactSha256": "70c1de589e5908f600d3d9cd26b2afa22e16bc25564feee2a646961612eb9d77",
+        "expiresAt": "2026-10-16T02:51:30Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -509,11 +508,12 @@
         "version": "float-quit-v1",
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
         "verifiedAt": "2026-10-13T01:47:40.010Z"
-      }
+      },
+      "testedSha": "6ee76c01ffac8c24bbf57058dfdcdfc8487711d8"
     },
     "29": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
-      "stage": "ci-validation",
+      "stage": "visual-review",
       "type": [
         "ui",
         "interaction"
@@ -521,7 +521,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T02:44:55Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待真实text-block精确验收修订准确head Windows84项及真实附图",
+      "nextAction": "84实装全过，真实看15张浮窗图发现330展开关联入口被压换行，修窄宽适配并补实际picker图后完整重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -572,19 +572,18 @@
       "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
-      "ciRunId": 38337172824,
-      "ciConclusion": "failure",
+      "ciRunId": 38338289863,
+      "ciConclusion": "success",
       "lastCi": {
-        "runId": 38337172824,
-        "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
-        "testedSha": "7a5b79913f1e3ad2af0228b3b15020f871e01b08",
-        "unitTests": "478/478通过，0skip",
-        "installed": "72通过/73已执行，84计划未完成",
-        "failure": "explicit send已有1请求且model正确，但Wire prompt exact string断言失败，实际payload需进一步核实",
-        "artifactId": 11785670095,
-        "artifactSha256": "cbeaf2fd66452f86bd66bcd63e5c462f30c44ff6a30d64e6f72159601d0b11da",
-        "expiresAt": "2026-10-16T02:37:34Z",
-        "temporaryEvidenceCleanedAt": "2026-10-13T02:42:37Z"
+        "runId": 38338289863,
+        "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
+        "testedSha": "6ee76c01ffac8c24bbf57058dfdcdfc8487711d8",
+        "unitTests": "481/481通过，0skip",
+        "installed": "84/84通过",
+        "visual": "逐张看15张新浮窗PNG，330expanded关联入口换行需修；尚未最终交付",
+        "artifactId": 11785956897,
+        "artifactSha256": "70c1de589e5908f600d3d9cd26b2afa22e16bc25564feee2a646961612eb9d77",
+        "expiresAt": "2026-10-16T02:51:30Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -603,11 +602,12 @@
         "version": "float-quit-v1",
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
         "verifiedAt": "2026-10-13T01:47:40.010Z"
-      }
+      },
+      "testedSha": "6ee76c01ffac8c24bbf57058dfdcdfc8487711d8"
     },
     "30": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
-      "stage": "ci-validation",
+      "stage": "visual-review",
       "type": [
         "ui",
         "interaction"
@@ -615,7 +615,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T02:44:55Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待真实text-block精确验收修订准确head Windows84项及真实附图",
+      "nextAction": "84实装全过，真实看15张浮窗图发现330展开关联入口被压换行，修窄宽适配并补实际picker图后完整重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -666,19 +666,18 @@
       "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
-      "ciRunId": 38337172824,
-      "ciConclusion": "failure",
+      "ciRunId": 38338289863,
+      "ciConclusion": "success",
       "lastCi": {
-        "runId": 38337172824,
-        "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
-        "testedSha": "7a5b79913f1e3ad2af0228b3b15020f871e01b08",
-        "unitTests": "478/478通过，0skip",
-        "installed": "72通过/73已执行，84计划未完成",
-        "failure": "explicit send已有1请求且model正确，但Wire prompt exact string断言失败，实际payload需进一步核实",
-        "artifactId": 11785670095,
-        "artifactSha256": "cbeaf2fd66452f86bd66bcd63e5c462f30c44ff6a30d64e6f72159601d0b11da",
-        "expiresAt": "2026-10-16T02:37:34Z",
-        "temporaryEvidenceCleanedAt": "2026-10-13T02:42:37Z"
+        "runId": 38338289863,
+        "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
+        "testedSha": "6ee76c01ffac8c24bbf57058dfdcdfc8487711d8",
+        "unitTests": "481/481通过，0skip",
+        "installed": "84/84通过",
+        "visual": "逐张看15张新浮窗PNG，330expanded关联入口换行需修；尚未最终交付",
+        "artifactId": 11785956897,
+        "artifactSha256": "70c1de589e5908f600d3d9cd26b2afa22e16bc25564feee2a646961612eb9d77",
+        "expiresAt": "2026-10-16T02:51:30Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -697,11 +696,12 @@
         "version": "float-quit-v1",
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
         "verifiedAt": "2026-10-13T01:47:40.010Z"
-      }
+      },
+      "testedSha": "6ee76c01ffac8c24bbf57058dfdcdfc8487711d8"
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
-      "stage": "ci-validation",
+      "stage": "visual-review",
       "type": [
         "ui",
         "interaction"
@@ -709,7 +709,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T02:44:55Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待真实text-block精确验收修订准确head Windows84项及真实附图",
+      "nextAction": "84实装全过，真实看15张浮窗图发现330展开关联入口被压换行，修窄宽适配并补实际picker图后完整重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -760,19 +760,18 @@
       "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
-      "ciRunId": 38337172824,
-      "ciConclusion": "failure",
+      "ciRunId": 38338289863,
+      "ciConclusion": "success",
       "lastCi": {
-        "runId": 38337172824,
-        "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
-        "testedSha": "7a5b79913f1e3ad2af0228b3b15020f871e01b08",
-        "unitTests": "478/478通过，0skip",
-        "installed": "72通过/73已执行，84计划未完成",
-        "failure": "explicit send已有1请求且model正确，但Wire prompt exact string断言失败，实际payload需进一步核实",
-        "artifactId": 11785670095,
-        "artifactSha256": "cbeaf2fd66452f86bd66bcd63e5c462f30c44ff6a30d64e6f72159601d0b11da",
-        "expiresAt": "2026-10-16T02:37:34Z",
-        "temporaryEvidenceCleanedAt": "2026-10-13T02:42:37Z"
+        "runId": 38338289863,
+        "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
+        "testedSha": "6ee76c01ffac8c24bbf57058dfdcdfc8487711d8",
+        "unitTests": "481/481通过，0skip",
+        "installed": "84/84通过",
+        "visual": "逐张看15张新浮窗PNG，330expanded关联入口换行需修；尚未最终交付",
+        "artifactId": 11785956897,
+        "artifactSha256": "70c1de589e5908f600d3d9cd26b2afa22e16bc25564feee2a646961612eb9d77",
+        "expiresAt": "2026-10-16T02:51:30Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -791,11 +790,12 @@
         "version": "float-quit-v1",
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
         "verifiedAt": "2026-10-13T01:47:40.010Z"
-      }
+      },
+      "testedSha": "6ee76c01ffac8c24bbf57058dfdcdfc8487711d8"
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
-      "stage": "ci-validation",
+      "stage": "visual-review",
       "type": [
         "ui",
         "interaction"
@@ -803,7 +803,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T02:44:55Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待真实text-block精确验收修订准确head Windows84项及真实附图",
+      "nextAction": "84实装全过，真实看15张浮窗图发现330展开关联入口被压换行，修窄宽适配并补实际picker图后完整重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -854,19 +854,18 @@
       "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
-      "ciRunId": 38337172824,
-      "ciConclusion": "failure",
+      "ciRunId": 38338289863,
+      "ciConclusion": "success",
       "lastCi": {
-        "runId": 38337172824,
-        "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
-        "testedSha": "7a5b79913f1e3ad2af0228b3b15020f871e01b08",
-        "unitTests": "478/478通过，0skip",
-        "installed": "72通过/73已执行，84计划未完成",
-        "failure": "explicit send已有1请求且model正确，但Wire prompt exact string断言失败，实际payload需进一步核实",
-        "artifactId": 11785670095,
-        "artifactSha256": "cbeaf2fd66452f86bd66bcd63e5c462f30c44ff6a30d64e6f72159601d0b11da",
-        "expiresAt": "2026-10-16T02:37:34Z",
-        "temporaryEvidenceCleanedAt": "2026-10-13T02:42:37Z"
+        "runId": 38338289863,
+        "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
+        "testedSha": "6ee76c01ffac8c24bbf57058dfdcdfc8487711d8",
+        "unitTests": "481/481通过，0skip",
+        "installed": "84/84通过",
+        "visual": "逐张看15张新浮窗PNG，330expanded关联入口换行需修；尚未最终交付",
+        "artifactId": 11785956897,
+        "artifactSha256": "70c1de589e5908f600d3d9cd26b2afa22e16bc25564feee2a646961612eb9d77",
+        "expiresAt": "2026-10-16T02:51:30Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -885,11 +884,12 @@
         "version": "float-quit-v1",
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
         "verifiedAt": "2026-10-13T01:47:40.010Z"
-      }
+      },
+      "testedSha": "6ee76c01ffac8c24bbf57058dfdcdfc8487711d8"
     },
     "33": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
-      "stage": "ci-validation",
+      "stage": "visual-review",
       "type": [
         "ui",
         "interaction"
@@ -897,7 +897,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T02:44:55Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待真实text-block精确验收修订准确head Windows84项及真实附图",
+      "nextAction": "84实装全过，真实看15张浮窗图发现330展开关联入口被压换行，修窄宽适配并补实际picker图后完整重验",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -948,19 +948,18 @@
       "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
-      "ciRunId": 38337172824,
-      "ciConclusion": "failure",
+      "ciRunId": 38338289863,
+      "ciConclusion": "success",
       "lastCi": {
-        "runId": 38337172824,
-        "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
-        "testedSha": "7a5b79913f1e3ad2af0228b3b15020f871e01b08",
-        "unitTests": "478/478通过，0skip",
-        "installed": "72通过/73已执行，84计划未完成",
-        "failure": "explicit send已有1请求且model正确，但Wire prompt exact string断言失败，实际payload需进一步核实",
-        "artifactId": 11785670095,
-        "artifactSha256": "cbeaf2fd66452f86bd66bcd63e5c462f30c44ff6a30d64e6f72159601d0b11da",
-        "expiresAt": "2026-10-16T02:37:34Z",
-        "temporaryEvidenceCleanedAt": "2026-10-13T02:42:37Z"
+        "runId": 38338289863,
+        "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
+        "testedSha": "6ee76c01ffac8c24bbf57058dfdcdfc8487711d8",
+        "unitTests": "481/481通过，0skip",
+        "installed": "84/84通过",
+        "visual": "逐张看15张新浮窗PNG，330expanded关联入口换行需修；尚未最终交付",
+        "artifactId": 11785956897,
+        "artifactSha256": "70c1de589e5908f600d3d9cd26b2afa22e16bc25564feee2a646961612eb9d77",
+        "expiresAt": "2026-10-16T02:51:30Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -979,7 +978,8 @@
         "version": "float-quit-v1",
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
         "verifiedAt": "2026-10-13T01:47:40.010Z"
-      }
+      },
+      "testedSha": "6ee76c01ffac8c24bbf57058dfdcdfc8487711d8"
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
