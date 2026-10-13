@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 327,
+  "revision": 328,
   "currentRun": {
     "owner": "ono-root-issue37-20261013T1151Z",
     "startedAt": "2026-10-13T11:51:31.363Z",
@@ -4236,6 +4236,17 @@
       "commentId": 6145667898,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6145667898",
       "verifiedAt": "2026-10-13T12:35:38.007Z"
+    },
+    "actual-images-chat-once-20261013": {
+      "operationId": "actual-images-chat-once-20261013",
+      "status": "in_progress",
+      "targets": [
+        34,
+        35,
+        37
+      ],
+      "summary": "用户明确要求仅此次将当前需求实测图在现有私聊交付；34四图、35八图先交付，37修正取景且新CI通过后交付。图片不入Git；不替代方案或合入批准。",
+      "startedAt": "2026-10-13T12:44:18.645Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -4251,7 +4262,7 @@
     "endedAt": "2026-10-13T11:33:25.184Z",
     "summary": "35原生500/500+95/95通过但既有首页视觉异常与附件交付阻塞；34PR44实现Windows513/513+95/95及4图实际查看，待内嵌附件；无在途写，释放协调占用"
   },
-  "updatedAt": "2026-10-13T06:09:58.364Z",
+  "updatedAt": "2026-10-13T12:44:18.645Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
