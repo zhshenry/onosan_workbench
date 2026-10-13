@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 295,
+  "revision": 296,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -4043,6 +4043,12 @@
       "headSha": "370874824dea613545ddbf6fc6910b42adf42bea",
       "ciRun": 38373762029,
       "verifiedAt": "2026-10-13T09:05:08.350Z"
+    },
+    "issue35-native-acceptance-progress": {
+      "operationId": "issue35-native-acceptance-progress",
+      "status": "intent",
+      "targetIssue": 35,
+      "body": "【OnO 自动化】#35 验收进展\n\n[最新运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38373762029)的 Windows 单测 498/498、构建及真实安装通过；网页保活、真实输入/滚动、重复跨工作台、24组主题/尺寸/AI组合、历史导航、错误/崩溃恢复和模式释放已在原生检查中通过。\n\n尚未全部完成：在新建网页再次隐藏后，旧原生焦点判据报错，最后宿主销毁、正常退出和重启因此未执行。正在对照准确 Electron/Chromium 版本核对“窗口有焦点”与“网页实际接收输入”的区别，并补严格的真实聚焦frame及隐藏输入不泄漏检查；不直接删断言或把缺项写成通过。\n\n此前已修复三处测试夹具问题：preferences未暴露字段的观测方式、新增/编辑弹窗不同关闭按钮、Electron evaluate清理参数契约；真实滚轮前也已补尺寸与输入准备检查。这些失败运行都保留，当前仍是 Draft PR #43，未合入、未关单。\n\n完成准确新版本全套验收及实测图后，我再在这里请求最终收尾批准。当前无需回复。"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
