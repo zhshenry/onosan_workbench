@@ -22,7 +22,14 @@ test('synthetic creator HTTPS fixture is exact-origin, exact-route and never for
     const html = mediaFixtureHtml(route);
     assert.match(html, /本地合成网页/); assert.match(html, /无账号、无发布、无外部网络/);
     assert.match(html, /crypto\.randomUUID/); assert.match(html, /tryFixtureFocus/);
+    assert.match(html, /document\.addEventListener\('wheel'/);assert.match(html,/passive:true/);
     assert.doesNotMatch(html, /fetch\(|https?:\/\/|document\.cookie|localStorage|sessionStorage|src=/);
+    const dom=new JSDOM(html,{url:MEDIA_FIXTURE_ORIGIN+route,runScripts:'dangerously'});
+    const wheel=new dom.window.WheelEvent('wheel',{deltaY:-5000,clientX:100,clientY:564,bubbles:true,cancelable:true});
+    dom.window.document.dispatchEvent(wheel);
+    const events=Reflect.get(dom.window,'__mediaFixture').wheelEvents;
+    assert.equal(events.length,1);assert.equal(events[0].deltaY,-5000);assert.equal(events[0].clientX,100);assert.equal(events[0].clientY,564);
+    assert.equal(wheel.defaultPrevented,false,'Read-only routing observation must not consume native wheel input');dom.window.close();
   }
   assert.throws(() => mediaFixtureHtml('/unknown'));
 });
@@ -104,6 +111,67 @@ test('native geometry assertions reject missing, offscreen, stale, collapsed and
   ]) {const value=metrics();mutate(value);assert.throws(()=>assertMediaGeometry(value));}
 });
 
+test('navigation wheel waits for requested native geometry and physical focus, observes routed input and bounds its retries', async () => {
+  const source=await readFile(new URL('../tooling/media-keepalive-pilot.mjs',import.meta.url),'utf8');
+  const helperStart=source.indexOf('export async function restoreMediaFixtureNavigation(');
+  const helperEnd=source.indexOf('\nasync function assertHidden(',helperStart);
+  const untilStart=source.indexOf('async function until(');const untilEnd=source.indexOf('\nasync function aiVisible(',untilStart);
+  const old=()=>({ content:{x:50,y:40,width:960,height:640},stage:{x:50,y:56,width:948,height:614},
+    webview:{x:50,y:56,width:948,height:614},guestViewport:{width:948,height:614},viewport:{width:1024,height:680},contentOverflow:0 });
+  assert.doesNotThrow(()=>assertMediaGeometry(old()),'Coherent old bounds alone must not imply the requested resized viewport');
+  const make=(behavior='normal')=>{
+    let clock=0;let geometryReads=0;let clicks=0;let wheels=0;let foreground=false;let pendingWheel=false;
+    let contentSize=[1024,680];const order:string[]=[];
+    const current:any={...state(),targetClicks:25,focused:false,focusedId:null,documentFocused:true,
+      guestViewport:{width:948,height:614},wheelEvents:[{deltaY:900,isTrusted:true}]};
+    const copy=(value:any)=>JSON.parse(JSON.stringify(value));
+    const win={setContentSize(width:number,height:number){order.push('resize');contentSize=[width,height];},
+      getContentSize:()=>[...contentSize],isFocused:()=>foreground,focus(){order.push('window-focus');if(behavior!=='window-unfocused')foreground=true;}};
+    const page={emulateMedia:async()=>{order.push('motion');},waitForTimeout:async(ms:number)=>{
+      clock+=ms;if(pendingWheel){pendingWheel=false;current.scrollY=0;current.wheelEvents.push({deltaY:-5000,isTrusted:true});if(behavior==='changed-document')current.nonce='changed';}
+    },mouse:{move:async(x:number,y:number)=>{assert.equal(x,metrics().webview.x+100);assert.equal(y,metrics().webview.y+metrics().webview.height-50);order.push('move');},
+      wheel:async(x:number,y:number)=>{
+        assert.equal(x,0);assert.equal(y,-5000);assert.equal(foreground,true);assert.equal(current.focusedId,current.id);wheels++;order.push('wheel');
+        if(behavior==='no-wheel')return;if(behavior==='scroll-without-event'){current.scrollY=0;return;}if(wheels>1)pendingWheel=true;
+      }} };
+    const native={evaluate:async(callback:any,argument:any)=>callback(win,argument)};
+    const context:any={assert,Date:{now:()=>clock},assertMediaGeometry,assertMediaStatePreserved,
+      aiVisible:async()=>{order.push('ai-close');},
+      geometry:async()=>{
+        geometryReads++;clock+=350;order.push('geometry');
+        if(behavior==='old-host'||geometryReads===1)return old();
+        const next=metrics();if(behavior==='old-guest'||geometryReads===2)next.guestViewport=old().guestViewport;
+        else current.guestViewport=next.guestViewport;
+        return next;
+      },nativeState:async()=>copy(current),clickGuest:async(_application:any,_page:any,id:number,selector:string)=>{
+        assert.equal(id,current.id);assert.equal(selector,'#click-target');assert.ok(geometryReads>=4);assert.equal(foreground,true);clicks++;order.push('physical-click');
+        if(behavior!=='missed-click')current.targetClicks++;current.focused=behavior!=='guest-unfocused';
+        current.focusedId=behavior==='wrong-guest'?id+1:behavior==='guest-unfocused'?null:id;
+      }};
+    const wait=runInNewContext(`(${source.slice(untilStart,untilEnd)})`,context);context.until=wait;
+    const helper=runInNewContext(`(${source.slice(helperStart+'export '.length,helperEnd)})`,context);
+    const report:any={};const run=()=>helper({application:{},page,native,id:current.id,report});
+    return {run,report,order,current,clicks:()=>clicks,wheels:()=>wheels};
+  };
+  const normal=make();await normal.run();assert.equal(normal.clicks(),1);assert.equal(normal.wheels(),2,'A dropped first wheel must receive only bounded further physical input');
+  assert.equal(normal.current.scrollY,0);assert.equal(normal.report.mediaKeepaliveNavigationInput.attempts.length,2);
+  assert.equal(normal.report.mediaKeepaliveNavigationInput.readiness.metrics.viewport.width,1280);
+  assert.equal(normal.report.mediaKeepaliveNavigationInput.after.wheelEvents.at(-1).deltaY,-5000);
+  assert.ok(normal.order.indexOf('window-focus')>normal.order.indexOf('geometry'));
+  assert.ok(normal.order.indexOf('wheel')>normal.order.indexOf('physical-click'));
+  for(const behavior of ['old-host','old-guest']) {
+    const failed=make(behavior);await assert.rejects(failed.run(),/Native resize and creator input surface did not settle/);
+    assert.equal(failed.clicks(),0);assert.equal(failed.wheels(),0);
+  }
+  const unfocused=make('window-unfocused');await assert.rejects(unfocused.run(),/did not regain foreground focus/);assert.equal(unfocused.clicks(),0);assert.equal(unfocused.wheels(),0);
+  for(const behavior of ['guest-unfocused','wrong-guest','missed-click']) {
+    const failed=make(behavior);await assert.rejects(failed.run(),/physical click did not restore native guest focus/);assert.equal(failed.clicks(),1);assert.equal(failed.wheels(),0);
+  }
+  const dropped=make('no-wheel');await assert.rejects(dropped.run(),/Guest did not return to fixture navigation/);assert.equal(dropped.wheels(),3);
+  const unrouted=make('scroll-without-event');await assert.rejects(unrouted.run(),/Guest did not return to fixture navigation/);assert.equal(unrouted.wheels(),1,'Unobserved scrolling cannot count as actual guest wheel routing');
+  const changed=make('changed-document');await assert.rejects(changed.run(),/Physical wheel must preserve nonce/);
+});
+
 test('keepalive screenshots share existing raw/ZIP ceilings and three-day single-upload policy', async t => {
   assert.equal(MEDIA_KEEPALIVE_SCREENSHOTS.length,8);assert.ok(Object.isFrozen(MEDIA_KEEPALIVE_SCREENSHOTS));
   assert.equal(new Set(MEDIA_KEEPALIVE_SCREENSHOTS).size,8);
@@ -144,6 +212,8 @@ test('installed keepalive acceptance keeps prior suites and exercises physical i
   assert.match(source,/cleaned\?\.token,token/);
   assert.match(source,/report\.mediaKeepalive\.cleanup=cleaned/);
   assert.match(source,/partition\.protocol\.isProtocolHandled\('https'\)/);
+  assert.match(source,/await restoreMediaFixtureNavigation\(\{ application,page,native,id,report \}\)/);
+  assert.doesNotMatch(source,/\bscrollTo\(|\bscrollBy\(|\bscrollTop\s*=/,'Native scrolling must never be replaced with injected document scrolling');
   assert.match(source,/const currentTasks = await page\.evaluate\(\(\) => window\.workbench\.todo\.state\(\)\)/);
   assert.match(source,/Hidden-input acceptance must not create or modify a task/);
   assert.equal(source.match(/await closeUnchangedMediaTaskEditor\(page\)/g)?.length,2);

@@ -30,9 +30,12 @@ h1{font-size:24px;margin:0}nav{display:flex;gap:24px;margin:16px 0}textarea{disp
 <main><nav><a id="nested" href="/note/keepalive">进入未发布草稿</a><a id="next" href="/note/next">另一个草稿</a><a id="offline" href="/offline">本地失败反例</a></nav>
 <label for="draft">本地未提交草稿</label><textarea id="draft" aria-label="本地未提交草稿"></textarea>
 <button id="click-target">点击定位</button><div class="long"><p>下面的长页面用于核对原滚动位置。</p><p class="line">位置一</p><p class="line">位置二</p><p class="line">位置三</p></div></main>
-<script>window.__mediaFixture={nonce:crypto.randomUUID(),keys:0,clicks:0,targetClicks:0,focusAttempts:0};
+<script>window.__mediaFixture={nonce:crypto.randomUUID(),keys:0,clicks:0,targetClicks:0,focusAttempts:0,wheelEvents:[]};
 document.addEventListener('keydown',()=>window.__mediaFixture.keys++);
 document.addEventListener('click',()=>window.__mediaFixture.clicks++);
+document.addEventListener('wheel',event=>{const events=window.__mediaFixture.wheelEvents;
+events.push({deltaX:event.deltaX,deltaY:event.deltaY,clientX:event.clientX,clientY:event.clientY,isTrusted:event.isTrusted,targetId:event.target?.id??null});
+if(events.length>12)events.shift()},{passive:true});
 document.getElementById('click-target').addEventListener('click',()=>window.__mediaFixture.targetClicks++);
 window.tryFixtureFocus=()=>{window.__mediaFixture.focusAttempts++;document.getElementById('draft').focus({preventScroll:true});window.focus()};</script></html>`;
 }
@@ -233,6 +236,49 @@ async function probe(application) {
     return { requests: [...probe.requests], navigations: [...probe.navigations], attachments: [...probe.attachments], destroyed: [...probe.destroyed], pendingHome: Boolean(probe.releaseHome) };
   });
 }
+
+export async function restoreMediaFixtureNavigation({ application, page, native, id, report }) {
+  const input = report.mediaKeepaliveNavigationInput = { id, expectedContentSize:[1280,820], readiness:null, before:null, attempts:[], after:null };
+  await aiVisible(page,false); await page.emulateMedia({ reducedMotion:'no-preference' });
+  await native.evaluate(win=>win.setContentSize(1280,820));
+  let previousGeometry;
+  await until(page,async()=>{
+    const window = await native.evaluate(win=>({ contentSize:win.getContentSize(), focused:win.isFocused() }));
+    const metrics = await geometry(application,page,id);
+    return input.readiness = { window, metrics };
+  },value=>{
+    try { assertMediaGeometry(value.metrics); } catch { previousGeometry=undefined;return false; }
+    if(value.window.contentSize[0]!==1280||value.window.contentSize[1]!==820||value.metrics.viewport.width!==1280||value.metrics.viewport.height!==820) {
+      previousGeometry=undefined;return false;
+    }
+    const signature=JSON.stringify([value.metrics.stage,value.metrics.webview,value.metrics.guestViewport]);
+    const stable=signature===previousGeometry;previousGeometry=signature;return stable;
+  },'Native resize and creator input surface did not settle');
+  // Native resizing, DOM layout and the guest render widget settle separately.
+  // Restore actual foreground focus, then prove a real click reached this guest.
+  await native.evaluate(win=>win.focus());
+  await until(page,()=>native.evaluate(win=>win.isFocused()),value=>value===true,'Creator native window did not regain foreground focus');
+  const before=input.before=await nativeState(application,id);
+  await clickGuest(application,page,id,'#click-target');
+  const focused=await until(page,()=>nativeState(application,id),value=>value?.targetClicks===before.targetClicks+1&&value.focused&&value.focusedId===id,'Creator physical click did not restore native guest focus');
+  assertMediaStatePreserved(before,focused);
+  const metrics=await geometry(application,page,id);assertMediaGeometry(metrics);
+  const point={x:metrics.webview.x+100,y:metrics.webview.y+metrics.webview.height-50};
+  // mouse.wheel dispatches input without waiting for scrolling to finish. A
+  // bounded repeat is a further physical wheel, never injected document scroll.
+  // https://playwright.dev/docs/api/class-mouse#mouse-wheel
+  for(let attempt=0;attempt<3;attempt++) {
+    await page.mouse.move(point.x,point.y);await page.mouse.wheel(0,-5000);
+    await page.waitForTimeout(300);
+    const observed=await nativeState(application,id);input.attempts.push({ attempt:attempt+1, point, observed });
+    if(observed?.scrollY===0)break;
+  }
+  const after=input.after=await until(page,()=>nativeState(application,id),value=>value?.scrollY===0&&value.wheelEvents.length>before.wheelEvents.length&&value.wheelEvents.slice(before.wheelEvents.length).some(event=>event.deltaY<0),'Guest did not return to fixture navigation');
+  assert.equal(after.scrollY,0);
+  for(const key of ['id','url','nonce','draft']) assert.equal(after[key],before[key],`Physical wheel must preserve ${key}`);
+  assert.deepEqual(after.history,before.history,'Physical wheel must preserve native navigation history');
+}
+
 async function assertHidden(application, page, id) {
   const value = await page.evaluate(() => {
     const host = document.querySelector('.media-browser-host'); const focus = document.activeElement;
@@ -414,10 +460,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       const observations = await probe(application); assert.equal(observations.attachments.length, 1); assert.deepEqual(observations.navigations, preservedProbe.navigations);
     });
     await check('Explicit back, forward and reload retain their normal navigation behavior', async () => {
-      await aiVisible(page, false); await native.evaluate(win => win.setContentSize(1280,820)); await page.emulateMedia({ reducedMotion:'no-preference' });
-      // Return the synthetic document to its link area with a physical wheel.
-      const surface = await page.locator('webview').boundingBox(); await page.mouse.move(surface.x+100,surface.y+100); await page.mouse.wheel(0,-5000);
-      await until(page, () => nativeState(application,id), value => value?.scrollY === 0, 'Guest did not return to fixture navigation');
+      await restoreMediaFixtureNavigation({ application,page,native,id,report });
       await clickGuest(application,page,id,'#next'); await loaded(application,page,id,'/note/next');
       await page.locator('.media-browser-host').getByRole('button',{name:'后退',exact:true}).click(); await loaded(application,page,id,'/note/keepalive');
       await page.locator('.media-browser-host').getByRole('button',{name:'前进',exact:true}).click(); const before = await loaded(application,page,id,'/note/next');
