@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 285,
+  "revision": 286,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1419,16 +1419,16 @@
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "ci-blocked",
+      "stage": "ci-running",
       "type": [
         "ui",
         "bugfix",
         "lifecycle"
       ],
       "sourceAuthorId": 54107847,
-      "baseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
+      "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "修复原生hidden creator弹窗返回按钮定位；保留此前真实10轮状态历史输入滚动通过证据，剩余未跑",
+      "nextAction": "核新head对最新main完整原生验收和实际图；仍未批准合入",
       "lastCommentId": 6128766093,
       "groupId": "media-keepalive-35",
       "groupIssueNumbers": [
@@ -1458,9 +1458,9 @@
       "implementationBaseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "pr": 43,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/43",
-      "headSha": "ba6b9aeeb6aca2d2887778003b0d5e6e5ca5ec15",
-      "ciRun": 38366079166,
-      "ciResult": "failure",
+      "headSha": "224de024fbfe3309ae04b1dbb558ede28bb0bdab",
+      "ciRun": 38368255458,
+      "ciResult": null,
       "tests": {
         "windowsUnit": "494/494,0skip",
         "verify": "pass",
@@ -4005,12 +4005,15 @@
     },
     "issue35-modal-fix-main-integration": {
       "operationId": "issue35-modal-fix-main-integration",
-      "status": "intent",
+      "status": "succeeded",
       "branch": "ono/issue-35-creator-keepalive",
       "expectedHead": "ba6b9aeeb6aca2d2887778003b0d5e6e5ca5ec15",
       "mainSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "treeSha": "e9b8924d0f58df927346cece616e6dd0397df094",
-      "summary": "2fixture文件按真实新增/编辑dialog关闭并不写业务数据；集成3已合main文档；产品不再改，重跑完整Windows"
+      "summary": "2fixture文件按真实新增/编辑dialog关闭并不写业务数据；集成3已合main文档；产品不再改，重跑完整Windows",
+      "headSha": "224de024fbfe3309ae04b1dbb558ede28bb0bdab",
+      "verifiedAt": "2026-10-13T08:17:53.062Z",
+      "ciRun": 38368255458
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
