@@ -8,6 +8,7 @@ import { _electron as electron } from 'playwright';
 import { runAiCardsPilot, verifyAiCardsRelaunch } from './ai-cards-pilot.mjs';
 import { runFloatEmptyPilot, runFloatGroupPilot, verifyFloatGroupRelaunch } from './float-group-pilot.mjs';
 import { inspectPilotArtifacts } from './pilot-artifacts.mjs';
+import { bounded, exitPilot, failurePage, finalizePilot } from './pilot-cleanup.mjs';
 import { runTopbarDatesPilot, verifyTopbarDatesRelaunch } from './topbar-dates-pilot.mjs';
 import { runYearDropdownPilot, verifyUnboundedDatePicker, verifyYearDropdownRelaunch } from './year-dropdown-pilot.mjs';
 
@@ -101,6 +102,40 @@ async function launch() {
   const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight, devicePixelRatio }));
   report.launch.push({ ...metadata, viewport, todoDbPath: about.todoDbPath, updaterEnabled: updater.enabled });
 }
+// Acceptance shutdown is a normal app quit or visible window control, never cleanup.
+async function normalExit(label, trigger) {
+  const child = application.process(); const started = Date.now();
+  let timer; let onExit;
+  const exited = new Promise((resolve, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label}: installed process did not exit within 20000ms`)), 20000);
+    onExit = (code, signal) => {
+      clearTimeout(timer);
+      if (code === 0 && signal === null) resolve();
+      else reject(new Error(`${label}: exit code ${code}, signal ${signal}`));
+    };
+    child.once('exit', onExit);
+  });
+  try {
+    await Promise.all([exited, trigger()]);
+    (report.normalExits ??= []).push({ label, exitCode: 0, durationMs: Date.now() - started });
+    application = undefined; page = undefined;
+  } finally { clearTimeout(timer); child.removeListener('exit', onExit); }
+}
+async function showLifecycleFloat() {
+  await page.locator('.topbar').getByRole('button', { name: '打开悬浮待办窗', exact: true }).click();
+  const started = Date.now(); let floating;
+  while (!floating && Date.now() - started < 15000) {
+    floating = application.windows().find(candidate => !candidate.isClosed() && /[?&]window=float(?:&|$)/.test(candidate.url()));
+    if (!floating) await page.waitForTimeout(100);
+  }
+  assert.ok(floating, 'Normal toolbar must create the real floating page');
+  floating.setDefaultTimeout(15000);
+  floating.on('pageerror', error => report.errors.push(`float lifecycle: ${error.message}`));
+  await floating.locator('.float-app').waitFor({ state: 'visible' });
+  const native = await application.browserWindow(floating);
+  assert.equal(await native.evaluate(win => win.isVisible()), true, 'Floating native window must be shown at exit');
+  return { floating, native };
+}
 async function doneLibrary() {
   const home = page.locator('#view-home');
   await home.getByRole('button', { name: '事项库', exact: true }).click();
@@ -117,6 +152,15 @@ let floatGroupFixture;
 try {
   await check('Launch actual installed executable with isolated data and updater disabled', launch);
   await check('Fresh isolated task database is empty', async () => assert.equal((await state()).tasks.length, 0));
+  await check('Normal quit without any floating window exits cleanly and relaunches empty', async () => {
+    assert.equal(application.windows().some(candidate => /[?&]window=float(?:&|$)/.test(candidate.url())), false);
+    await normalExit('never-opened floating window', () => application.evaluate(({ app }) => {
+      // Return the evaluation first, then invoke the real public application quit lifecycle.
+      setTimeout(() => app.quit(), 0);
+    }));
+    await launch();
+    assert.equal((await state()).tasks.length, 0);
+  });
   await screenshot('initial.png');
   await runFloatEmptyPilot({ application, page, check, screenshot, report });
   await check('Collapse default AI overlay through its normal toolbar control', async () => {
@@ -195,16 +239,69 @@ try {
   await verifyAiCardsRelaunch({ page, check, screenshot, fixture: aiCardsFixture });
   await verifyTopbarDatesRelaunch({ page, check, screenshot, fixture: topbarDatesFixture });
   await verifyFloatGroupRelaunch({ application, page, check, screenshot, fixture: floatGroupFixture });
+  await check('Floating group: visible native window permits normal main-window exit', async () => {
+    const { floating, native } = await showLifecycleFloat();
+    await floating.getByRole('button', { name: '收窄悬浮窗', exact: true }).click();
+    await floating.waitForFunction(() => document.querySelector('.float-app')?.classList.contains('narrow'));
+    assert.equal(await native.evaluate(win => win.getBounds().width), 330);
+    assert.equal(await native.evaluate(win => win.isVisible()), true);
+    await page.bringToFront();
+    await normalExit('visible floating window', () => page.locator('.wbtn.close').click());
+  });
+  await check('Floating group: repeated same-version relaunch preserves task and resets width to 440', async () => {
+    await launch();
+    const persisted = (await state()).tasks.filter(task => task.id === taskId);
+    assert.equal(persisted.length, 1);
+    assert.equal(persisted[0].title, editedTitle); assert.equal(persisted[0].note, note); assert.equal(persisted[0].status, 'done');
+    assert.equal((await page.evaluate(() => window.workbench.settings.get())).closeAction, 'exit');
+    const { native } = await showLifecycleFloat();
+    assert.equal(await native.evaluate(win => win.getBounds().width), 440);
+  });
+  await check('Floating group: repeated hide-show lifecycle still permits normal main-window exit', async () => {
+    for (let cycle = 0; cycle < 2; cycle++) {
+      const floating = application.windows().find(candidate => /[?&]window=float(?:&|$)/.test(candidate.url()));
+      assert.ok(floating);
+      const native = await application.browserWindow(floating);
+      await floating.getByRole('button', { name: '隐藏悬浮待办窗', exact: true }).click();
+      assert.equal(await native.evaluate(win => win.isVisible()), false);
+      await showLifecycleFloat();
+    }
+    await page.bringToFront();
+    await normalExit('repeated floating lifecycle', () => page.locator('.wbtn.close').click());
+  });
   await check('No renderer page errors during the core flow', async () => assert.deepEqual(report.errors, []));
   report.status = 'passed';
 } catch (error) {
   report.status = 'failed'; report.failure = String(error).slice(0, 6000);
   console.error(report.failure);
-  if (page && !page.isClosed()) await screenshot('failure.png').catch(() => {});
+  // Save even if screenshot capture or Electron shutdown subsequently fails.
+  await saveReport().catch(saveError => {
+    report.errors.push(`Initial failure report write: ${String(saveError)}`);
+    console.error(`Initial failure report write failed: ${String(saveError)}`);
+  });
+  const capturePage = failurePage(application, page, report.checks.at(-1)?.name);
+  if (capturePage && !capturePage.isClosed()) {
+    report.failureCapture = { name: 'failure.png', window: capturePage === page ? 'main' : 'float' };
+    await bounded(() => screenshot('failure.png', capturePage), 5000, 'Failure screenshot').catch(captureError => {
+      report.errors.push(`Failure screenshot: ${String(captureError)}`);
+    });
+  }
   process.exitCode = 1;
 } finally {
-  if (application) await application.close().catch(error => { report.errors.push(String(error)); report.status = 'failed'; process.exitCode = 1; });
-  report.finishedAt = new Date().toISOString();
+  try {
+    await finalizePilot({ report, saveReport, application, executablePath });
+    console.log(`PILOT_RESULT ${report.status} checks=${report.checks.filter(value => value.status === 'passed').length}/${report.checks.length}`);
+    console.log(JSON.stringify(await inspectPilotArtifacts(reportDirectory)));
+  } catch (error) {
+    report.status = 'failed';
+    report.errors.push(`Pilot finalization: ${String(error)}`);
+    console.error(`Pilot finalization failed: ${String(error)}`);
+    await saveReport().catch(saveError => console.error(`Report write failed: ${String(saveError)}`));
+  }
+  // Explicit exit prevents a pending Playwright close from retaining this runner.
+  exitPilot(report.status);
+}
+async function saveReport() {
   await writeFile(path.join(reportDirectory, 'report.json'), JSON.stringify(report, null, 2));
   const markdown = [
     '# Windows installed-app cloud pilot', '', `Status: ${report.status}`, `Tested commit: ${report.commit}`, `Head commit: ${report.headCommit}`, `Base commit: ${report.baseCommit ?? 'not a PR'}`, `Event: ${report.event ?? 'local'}`, `Run: ${runId}`, `Attempt: ${report.runAttempt}`, `Version: ${report.version}`, '',
@@ -212,9 +309,8 @@ try {
     '## Screenshots', ...report.screenshots.map(name => `- [${name}](${name})`), '',
     '## Coverage boundaries', ...report.limitations.map(value => `- ${value}`), '',
     ...(report.failure ? ['## Failure', report.failure] : []),
+    ...(report.errors.length ? ['## Errors', ...report.errors.map(error => `- ${error}`)] : []),
   ].join('\n');
   await writeFile(path.join(reportDirectory, 'report.md'), markdown);
   if (process.env.GITHUB_STEP_SUMMARY) await writeFile(process.env.GITHUB_STEP_SUMMARY, markdown);
-  console.log(`PILOT_RESULT ${report.status} checks=${report.checks.filter(value => value.status === 'passed').length}/${report.checks.length}`);
-  console.log(JSON.stringify(await inspectPilotArtifacts(reportDirectory)));
 }

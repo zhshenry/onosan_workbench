@@ -127,3 +127,23 @@ test('Narrow child-content acceptance observes real resize IPC without replacing
   assert.match(source, /after\.dom\.requested/);
   assert.doesNotMatch(source, /ipcMain\.removeHandler|ipcMain\.handle\(/);
 });
+
+test('Native edge fixture restores original position on pass/failure without changing dimensions', async () => {
+  const { withFloatPositionRestored } = await import('../tooling/float-group-pilot.mjs');
+  let bounds = { x: 80, y: 30, width: 330, height: 176 };
+  const native = { getBounds: () => ({ ...bounds }), setPosition: (x: number, y: number) => { bounds = { ...bounds, x, y }; } };
+  const window = { evaluate: async (action: (win: typeof native, argument?: any) => any, argument?: any) => action(native, argument) };
+  const result = await withFloatPositionRestored(window, async () => { native.setPosition(900, 700); return 'checked'; });
+  assert.equal(result.value, 'checked'); assert.deepEqual(result.restored, { x: 80, y: 30, width: 330, height: 176 });
+  const failure = new Error('real assertion failed');
+  await assert.rejects(withFloatPositionRestored(window, async () => { native.setPosition(900, 700); throw failure; }), error => error === failure);
+  assert.deepEqual(bounds, { x: 80, y: 30, width: 330, height: 176 });
+});
+test('Schedule clicks retain real pointer action and bounded diagnostic evidence after edge isolation', async () => {
+  const source = await readFile(new URL('../tooling/float-group-pilot.mjs', import.meta.url), 'utf8');
+  assert.match(source, /edgePosition = await withFloatPositionRestored/);
+  assert.match(source, /document\.elementFromPoint\(x, y\)/);
+  assert.match(source, /try \{ await tab\.click\(\); \}/);
+  assert.match(source, /recordFolderHit\(application, floatPage, tab, report, 'click-failed'\)/);
+  assert.doesNotMatch(source, /force:\s*true|element\.click\(\)/);
+});

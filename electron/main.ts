@@ -391,6 +391,8 @@ if (!app.requestSingleInstanceLock()) {
       }
     });
     const floatTodo = new FloatTodoWindow(DEV_URL || undefined, join(__dirname, 'preload.cjs'));
+    // A normal window close only hides the float; application quit must release it.
+    app.once('before-quit', () => floatTodo.destroy());
     floatTodoFactory = () => floatTodo;
     registerFloatIpc(floatTodoFactory);
     aiStore = new AiStore(app.getPath('userData'));

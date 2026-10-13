@@ -105,6 +105,31 @@ async function stopObservingFloatResize(application) {
     delete globalThis.__floatPilotResizeObservation;
   });
 }
+// Edge-placement is a scoped test fixture, not a position preference for later flows.
+export async function withFloatPositionRestored(window, action) {
+  const original = await window.evaluate(win => win.getBounds());
+  let failure; let value;
+  try { value = await action(); } catch (error) { failure = error; }
+  try { await window.evaluate((win, position) => win.setPosition(position.x, position.y), original); }
+  catch (error) { if (failure) throw new AggregateError([failure, error], `Edge test failed: ${String(failure)}; position restore failed: ${String(error)}`); throw error; }
+  if (failure) throw failure;
+  return { value, original, restored: await window.evaluate(win => win.getBounds()) };
+}
+async function recordFolderHit(application, page, tab, report, phase) {
+  const native = await bounds(application, page);
+  const geometry = await tab.evaluate(element => {
+    const rect = element.getBoundingClientRect(); const x = rect.x + rect.width / 2; const y = rect.y + rect.height / 2;
+    const hit = document.elementFromPoint(x, y);
+    const describe = node => node ? { tag: node.tagName, className: node.className, id: node.id } : null;
+    return { rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height }, center: { x, y },
+      viewport: { width: innerWidth, height: innerHeight }, devicePixelRatio, targetReceivesCenter: hit === element || element.contains(hit),
+      hit: describe(hit), ancestors: Array.from((function* () { for (let node = element.parentElement; node; node = node.parentElement) yield node; })()).map(node => {
+        const box = node.getBoundingClientRect(); const style = getComputedStyle(node);
+        return { ...describe(node), x: box.x, y: box.y, width: box.width, height: box.height, scrollTop: node.scrollTop, scrollHeight: node.scrollHeight, clientHeight: node.clientHeight, overflow: style.overflow, position: style.position };
+      }) };
+  });
+  (report.floatGroup.folderHitTests ??= []).push({ phase, native, geometry });
+}
 async function openFloat(application, page) {
   const open = page.locator('.topbar').getByRole('button', { name: '打开悬浮待办窗', exact: true });
   if (await open.isVisible()) await open.click();
@@ -234,13 +259,20 @@ export async function runFloatGroupPilot({ application, page, check, screenshot,
     }
     await check('Floating group: native work-area edge clamp preserves height after repeated width changes', async () => {
       const window = await application.browserWindow(floatPage); const area = await workArea(application, floatPage); const native = await bounds(application, floatPage);
-      await window.evaluate((win, next) => win.setPosition(next.x, next.y), { x: area.x + area.width - native.width, y: area.y + area.height - native.height });
-      for (let index = 0; index < 3; index++) { await setWidth(application, floatPage, false, report); await setWidth(application, floatPage, true, report); }
-      const beforePoll = await bounds(application, floatPage);
-      await floatPage.waitForTimeout(5500); // Cross the real five-second unchanged-data refresh as well as observers.
-      const afterPoll = await settled(application, floatPage);
-      assertFloatWidthTransition(beforePoll, afterPoll, 330, await workArea(application, floatPage));
-      report.floatGroup.measurements.push({ beforePoll, afterPoll, unchangedPoll: true });
+      report.floatGroup.edgePosition = await withFloatPositionRestored(window, async () => {
+        await window.evaluate((win, next) => win.setPosition(next.x, next.y), { x: area.x + area.width - native.width, y: area.y + area.height - native.height });
+        for (let index = 0; index < 3; index++) { await setWidth(application, floatPage, false, report); await setWidth(application, floatPage, true, report); }
+        const beforePoll = await bounds(application, floatPage);
+        await floatPage.waitForTimeout(5500); // Cross the real five-second unchanged-data refresh as well as observers.
+        const afterPoll = await settled(application, floatPage);
+        assertFloatWidthTransition(beforePoll, afterPoll, 330, await workArea(application, floatPage));
+        report.floatGroup.measurements.push({ beforePoll, afterPoll, unchangedPoll: true });
+      });
+      await settled(application, floatPage);
+      assert.equal(report.floatGroup.edgePosition.restored.x, native.x);
+      assert.equal(report.floatGroup.edgePosition.restored.y, native.y);
+      assert.equal(report.floatGroup.edgePosition.restored.width, native.width, 'Position restoration must not change width');
+      assert.equal(report.floatGroup.edgePosition.restored.height, native.height, 'Position restoration must not change height');
     });
     await check('Floating group: narrow schedule child changes remeasure after width switch and AI/home roundtrip', async () => {
       await setMode(application, floatPage, 'home'); await setMini(application, floatPage, false);
@@ -262,7 +294,10 @@ export async function runFloatGroupPilot({ application, page, check, screenshot,
               await setWidth(application, floatPage, false, report); await setWidth(application, floatPage, true, report);
               const before = await scheduleMeasurement(application, floatPage);
               const eventCount = (await resizeEvents(application)).length;
-              await tab.click();
+              await tab.scrollIntoViewIfNeeded();
+              await recordFolderHit(application, floatPage, tab, report, 'before-click');
+              try { await tab.click(); }
+              catch (error) { await recordFolderHit(application, floatPage, tab, report, 'click-failed').catch(diagnosticError => report.errors.push(`Folder diagnostics: ${String(diagnosticError)}`)); throw error; }
               await floatPage.waitForFunction(({ id, expanded }) => document.querySelector(`[aria-controls="${id}"]`)?.getAttribute('aria-expanded') === String(expanded), { id, expanded });
               await settled(application, floatPage);
               const events = (await resizeEvents(application)).slice(eventCount);
