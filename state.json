@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 353,
+  "revision": 354,
   "currentRun": {
     "owner": "ono-root-issue26-20261013T1529Z",
     "startedAt": "2026-10-13T15:29:11.440Z",
@@ -401,7 +401,7 @@
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "stage": "v3-windows-validation",
+      "stage": "v3-native-fixture-diagnosis",
       "type": [
         "ui",
         "interaction"
@@ -503,6 +503,15 @@
         "createdAt": "2026-10-13T07:35:24Z",
         "updatedAt": "2026-10-13T07:35:24Z",
         "performedViaApp": null
+      },
+      "latestRun": {
+        "id": 38425855964,
+        "head": "7f19df9dfccc3d05e8574c57f58db5bec6170c1d",
+        "conclusion": "failure",
+        "unit": "510/510 no skips",
+        "native": "75/76, remaining not run",
+        "artifactId": 11828084947,
+        "failure": "first context radio.check timeout after click; diagnose immediate-close behavior"
       }
     },
     "28": {
@@ -4479,7 +4488,7 @@
     "finishedAt": "2026-10-13T14:27:19.230Z",
     "summary": "重新分页检查无新需求/评论/批准或版本变化，34/37待批，35方案待附图，36等35；云电脑读取执行配置失败，无法继续本地开发/浏览器，GitHub连接器读取正常。修正34/37旧ciRun摘要。"
   },
-  "updatedAt": "2026-10-13T15:53:26.389Z",
+  "updatedAt": "2026-10-13T16:02:03.486Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
