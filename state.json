@@ -1,11 +1,11 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 252,
+  "revision": 253,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
-    "currentDevelopmentGroup": null,
-    "task": "PR40产品完成关单授权阻碍待用户；继续独立设计及35已批实施准备"
+    "currentDevelopmentGroup": "media-keepalive-35",
+    "task": "35已批v1独立云端实施；40关单工具授权阻碍待明确确认；34/36/37独立设计"
   },
   "tasks": {
     "17": {
@@ -1381,7 +1381,7 @@
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "queued",
+      "stage": "implementation",
       "type": [
         "ui",
         "bugfix",
@@ -1390,7 +1390,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "PR40合后收尾后以最新main实施35已批v1，一次一组",
+      "nextAction": "按v1本地实施/测试/真实Electron专项，外部发布仍根统一记账",
       "lastCommentId": 6128766093,
       "groupId": "media-keepalive-35",
       "groupIssueNumbers": [
@@ -1416,7 +1416,8 @@
         "planVersion": "v1",
         "allowedActions": "35 v1独立实现/测试/一个Draft PR，不含合入关单",
         "verifiedAt": "2026-10-13T06:42:20.661Z"
-      }
+      },
+      "implementationBaseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702"
     },
     "36": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/36",
