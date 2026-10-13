@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 192,
+  "revision": 193,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -255,7 +255,7 @@
     },
     "25": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/25",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -263,7 +263,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "关联真实选择/取消和三主题已通过；核对合成loopback wire文本结构精确断言，不能改业务语义漂绿",
+      "nextAction": "等待真实text-block精确验收修订准确head Windows84项及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -311,7 +311,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
+      "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38337172824,
@@ -325,7 +325,8 @@
         "failure": "explicit send已有1请求且model正确，但Wire prompt exact string断言失败，实际payload需进一步核实",
         "artifactId": 11785670095,
         "artifactSha256": "cbeaf2fd66452f86bd66bcd63e5c462f30c44ff6a30d64e6f72159601d0b11da",
-        "expiresAt": "2026-10-16T02:37:34Z"
+        "expiresAt": "2026-10-16T02:37:34Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:42:37Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -415,7 +416,7 @@
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -423,7 +424,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "关联真实选择/取消和三主题已通过；核对合成loopback wire文本结构精确断言，不能改业务语义漂绿",
+      "nextAction": "等待真实text-block精确验收修订准确head Windows84项及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -474,7 +475,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
+      "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38337172824,
@@ -488,7 +489,8 @@
         "failure": "explicit send已有1请求且model正确，但Wire prompt exact string断言失败，实际payload需进一步核实",
         "artifactId": 11785670095,
         "artifactSha256": "cbeaf2fd66452f86bd66bcd63e5c462f30c44ff6a30d64e6f72159601d0b11da",
-        "expiresAt": "2026-10-16T02:37:34Z"
+        "expiresAt": "2026-10-16T02:37:34Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:42:37Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -511,7 +513,7 @@
     },
     "29": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -519,7 +521,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "关联真实选择/取消和三主题已通过；核对合成loopback wire文本结构精确断言，不能改业务语义漂绿",
+      "nextAction": "等待真实text-block精确验收修订准确head Windows84项及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -567,7 +569,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
+      "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38337172824,
@@ -581,7 +583,8 @@
         "failure": "explicit send已有1请求且model正确，但Wire prompt exact string断言失败，实际payload需进一步核实",
         "artifactId": 11785670095,
         "artifactSha256": "cbeaf2fd66452f86bd66bcd63e5c462f30c44ff6a30d64e6f72159601d0b11da",
-        "expiresAt": "2026-10-16T02:37:34Z"
+        "expiresAt": "2026-10-16T02:37:34Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:42:37Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -604,7 +607,7 @@
     },
     "30": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -612,7 +615,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "关联真实选择/取消和三主题已通过；核对合成loopback wire文本结构精确断言，不能改业务语义漂绿",
+      "nextAction": "等待真实text-block精确验收修订准确head Windows84项及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -660,7 +663,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
+      "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38337172824,
@@ -674,7 +677,8 @@
         "failure": "explicit send已有1请求且model正确，但Wire prompt exact string断言失败，实际payload需进一步核实",
         "artifactId": 11785670095,
         "artifactSha256": "cbeaf2fd66452f86bd66bcd63e5c462f30c44ff6a30d64e6f72159601d0b11da",
-        "expiresAt": "2026-10-16T02:37:34Z"
+        "expiresAt": "2026-10-16T02:37:34Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:42:37Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -697,7 +701,7 @@
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -705,7 +709,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "关联真实选择/取消和三主题已通过；核对合成loopback wire文本结构精确断言，不能改业务语义漂绿",
+      "nextAction": "等待真实text-block精确验收修订准确head Windows84项及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -753,7 +757,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
+      "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38337172824,
@@ -767,7 +771,8 @@
         "failure": "explicit send已有1请求且model正确，但Wire prompt exact string断言失败，实际payload需进一步核实",
         "artifactId": 11785670095,
         "artifactSha256": "cbeaf2fd66452f86bd66bcd63e5c462f30c44ff6a30d64e6f72159601d0b11da",
-        "expiresAt": "2026-10-16T02:37:34Z"
+        "expiresAt": "2026-10-16T02:37:34Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:42:37Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -790,7 +795,7 @@
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -798,7 +803,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "关联真实选择/取消和三主题已通过；核对合成loopback wire文本结构精确断言，不能改业务语义漂绿",
+      "nextAction": "等待真实text-block精确验收修订准确head Windows84项及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -846,7 +851,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
+      "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38337172824,
@@ -860,7 +865,8 @@
         "failure": "explicit send已有1请求且model正确，但Wire prompt exact string断言失败，实际payload需进一步核实",
         "artifactId": 11785670095,
         "artifactSha256": "cbeaf2fd66452f86bd66bcd63e5c462f30c44ff6a30d64e6f72159601d0b11da",
-        "expiresAt": "2026-10-16T02:37:34Z"
+        "expiresAt": "2026-10-16T02:37:34Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:42:37Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -883,7 +889,7 @@
     },
     "33": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
-      "stage": "ci-blocked",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "interaction"
@@ -891,7 +897,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T01:01:49Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "关联真实选择/取消和三主题已通过；核对合成loopback wire文本结构精确断言，不能改业务语义漂绿",
+      "nextAction": "等待真实text-block精确验收修订准确head Windows84项及真实附图",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -939,7 +945,7 @@
         "verifiedAt": "2026-10-13T00:34:00.071Z"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
-      "headSha": "cf9b2c67217830fbaa8aac557975527e4597383e",
+      "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
       "prNumber": 40,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/40",
       "ciRunId": 38337172824,
@@ -953,7 +959,8 @@
         "failure": "explicit send已有1请求且model正确，但Wire prompt exact string断言失败，实际payload需进一步核实",
         "artifactId": 11785670095,
         "artifactSha256": "cbeaf2fd66452f86bd66bcd63e5c462f30c44ff6a30d64e6f72159601d0b11da",
-        "expiresAt": "2026-10-16T02:37:34Z"
+        "expiresAt": "2026-10-16T02:37:34Z",
+        "temporaryEvidenceCleanedAt": "2026-10-13T02:42:37Z"
       },
       "additionalScopeRequest": {
         "commentId": 6136264679,
@@ -2671,12 +2678,15 @@
     },
     "floating-pr40-wire-publish": {
       "kind": "update-implementation",
-      "status": "intent",
+      "status": "succeeded",
       "target": "ono/floating-group-v2",
       "expectedHead": "cf9b2c67217830fbaa8aac557975527e4597383e",
       "patchSha256": "114876c30ba1f984630fccd5b4a404b62735f3650a986102d9b15138fee4f796",
       "summary": "仅pilot/tests严格支持实际text-block传输最新user全文exact，不改产品payload；真实loopback已复现形态，481=479pass2skipverify和独立复核通过",
-      "createdAt": "2026-10-13T02:42:58.233Z"
+      "createdAt": "2026-10-13T02:42:58.233Z",
+      "headSha": "79b8bf87268587f1efe9f7c9e0fa41f0f645eddf",
+      "treeSha": "ff51573f96be53a87a5ef9b4391efbe91088e2e5",
+      "verifiedAt": "2026-10-13T02:44:13.178Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
