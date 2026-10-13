@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 216,
-  "currentRun": {
-    "owner": "ono-root-cli-upgrade-20261013T0423Z",
-    "startedAt": "2026-10-13T04:23:45.135Z",
-    "currentDevelopmentGroup": null,
-    "task": "用户要求升级现有云端CLI，验证attach和只读认证状态；不配置凭据"
-  },
+  "revision": 217,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -2975,9 +2970,9 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-attachment-diagnosis-20261013T0418Z",
-    "finishedAt": "2026-10-13T04:20:39.499Z",
-    "result": "全量分页13open+0及记录单/评论/PR/main/CI读取；回复26查因与28恢复询问。诊断具体根因未明，缺HTTP/平台错误记录；没有再上传/改凭据。暂停定时询问已发，未改任务。无在途写释放。"
+    "owner": "ono-root-cli-upgrade-20261013T0423Z",
+    "finishedAt": "2026-10-13T04:25:35.036Z",
+    "result": "用户要求升级CLI，官方2.102.0已局部安装校验运行，attach可用；仍未登录，已请求官方登录流程批准。保留每小时检查；浏览器历史上传根因仍未知。无在途外写释放。"
   },
   "updatedAt": "2026-10-13T01:02:59.632Z",
   "lastNotification": {
@@ -2995,6 +2990,16 @@
     "retryBudgetExhausted": true,
     "pauseQuestionAskedAt": "2026-10-13T04:20:39.499Z",
     "pauseDecision": "用户已明确保留每小时检查，不再询问暂停",
-    "nextAction": "按用户要求升级CLI能力并核验，浏览器旧失败根因仍未明，不把CLI升级当根因修复"
+    "nextAction": "按用户要求升级CLI能力并核验，浏览器旧失败根因仍未明，不把CLI升级当根因修复",
+    "cli": {
+      "version": "2.102.0",
+      "officialSource": "https://github.com/cli/cli/releases/tag/v2.102.0",
+      "checksumVerified": true,
+      "attachHelpVerified": true,
+      "installation": "工作区局部新版，后续显式调用；系统旧版2.46.0未替换",
+      "authentication": "未登录",
+      "nextAction": "等待用户批准启动官方CLI登录授权；不读取或搬运浏览器/连接器凭据",
+      "verifiedAt": "2026-10-13T04:25:35.036Z"
+    }
   }
 }
