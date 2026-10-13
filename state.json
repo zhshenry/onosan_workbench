@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 345,
-  "currentRun": {
-    "owner": "ono-root-issue37-20261013T1151Z",
-    "startedAt": "2026-10-13T11:51:31.363Z",
-    "currentDevelopmentGroup": "publish-association-37",
-    "task": "已批37v1独立实施，34/35停于附图/视觉门，36等待35，26排队"
-  },
+  "revision": 346,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -4442,11 +4437,11 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-pr40-closeout-20261013T0637Z",
-    "endedAt": "2026-10-13T11:33:25.184Z",
-    "summary": "35原生500/500+95/95通过但既有首页视觉异常与附件交付阻塞；34PR44实现Windows513/513+95/95及4图实际查看，待内嵌附件；无在途写，释放协调占用"
+    "owner": "ono-root-issue37-20261013T1151Z",
+    "finishedAt": "2026-10-13T13:24:21.378Z",
+    "summary": "34修正正常错误截图并新Windows514/514+96/96通过，37完整截图新Windows514/514+96/96通过；按用户仅本次聊天例外交付34/35/37原图，34与37准确最终请求待批。35补充方案准备、未实施；无未知写。"
   },
-  "updatedAt": "2026-10-13T13:23:45.235Z",
+  "updatedAt": "2026-10-13T13:24:21.378Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
