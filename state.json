@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 293,
+  "revision": 294,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1419,7 +1419,7 @@
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "ci-blocked",
+      "stage": "ci-running",
       "type": [
         "ui",
         "bugfix",
@@ -1428,7 +1428,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "修复真实wheel在尺寸切换后的时序/输入定位；新head完整回归",
+      "nextAction": "等待完整真实原生退出重启检查并实际看图；未获合入批准",
       "lastCommentId": 6128766093,
       "groupId": "media-keepalive-35",
       "groupIssueNumbers": [
@@ -1458,9 +1458,9 @@
       "implementationBaseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "pr": 43,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/43",
-      "headSha": "a1e12c5761bbe8176ba4635ab31ede3198840a14",
-      "ciRun": 38371216970,
-      "ciResult": "failure",
+      "headSha": "370874824dea613545ddbf6fc6910b42adf42bea",
+      "ciRun": 38373762029,
+      "ciResult": null,
       "tests": {
         "windowsUnit": "494/494,0skip",
         "verify": "pass",
@@ -4036,10 +4036,13 @@
     },
     "issue35-wheel-handoff-fix": {
       "operationId": "issue35-wheel-handoff-fix",
-      "status": "intent",
+      "status": "succeeded",
       "expectedHead": "a1e12c5761bbe8176ba4635ab31ede3198840a14",
       "treeSha": "2771c82cd3443f3364d809bf63cf5301b50b4c5b",
-      "summary": "仅2fixture文件增加真实native/DOM/guest尺寸稳定和输入焦点屏障，最多3真实wheel并读回事件/scroll；产品不改"
+      "summary": "仅2fixture文件增加真实native/DOM/guest尺寸稳定和输入焦点屏障，最多3真实wheel并读回事件/scroll；产品不改",
+      "headSha": "370874824dea613545ddbf6fc6910b42adf42bea",
+      "ciRun": 38373762029,
+      "verifiedAt": "2026-10-13T09:05:08.350Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
