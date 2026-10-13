@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 317,
-  "currentRun": {
-    "owner": "ono-root-pr40-closeout-20261013T0637Z",
-    "startedAt": "2026-10-13T06:37:50.475Z",
-    "currentDevelopmentGroup": "settings-update-34",
-    "task": "35已冻结待视觉范围/附件问题；切换至已批准34v2单组实施"
-  },
+  "revision": 318,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -1427,7 +1422,8 @@
         "installed": "95/95",
         "visual": "4 actual screenshots viewed; correct inline status, fullerror wraps, no productlayout issue"
       },
-      "artifactId": 11808447592
+      "artifactId": 11808447592,
+      "lastCommentId": 6144599897
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
@@ -1690,7 +1686,8 @@
     6140988850,
     6142470863,
     6144006182,
-    6144073288
+    6144073288,
+    6144599897
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -4157,10 +4154,13 @@
     },
     "issue34-tested-comment": {
       "operationId": "issue34-tested-comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": 34,
       "body": "【OnO 自动化】#34 v2 已完成实现与真实 Windows 验证，暂待附图交付。\n\n[Draft PR #44](https://github.com/zhshenry/onosan_workbench/pull/44)，准确 head cbe2a25da8c5a209adbf031bcef0684836963a2d；[Windows 运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38389670397)513/513 单测、95/95 原生检查、真实安装、普通退出重启及附件预算检查全部通过。\n\n我已实际查看4张未修改的原生截图：最新版本、下载中、待重启、完整错误详情；三主题、两种尺寸、7种状态及键盘/焦点/忙碌重复操作检查通过。更新状态通过安装后应用的安全合成IPC呈现，没有实际下载或安装新发布版本。版本号来自测试应用，不代表已发版。\n\n无图：4张截图已在[本次CI证据](https://github.com/zhshenry/onosan_workbench/actions/runs/38389670397/artifacts/11808447592)生成并查看。当前原生网页附件链路在#35连续失败，统一排查尚未确认根因；本单暂未再次尝试上传，不用CI附件代替这里应有的内嵌图。\n\nPR保持Draft，未合入、未关单。图片交付完成后再请求准确版本及关单范围的最终批准。当前无需回复。",
-      "startedAt": "2026-10-13T11:32:19.380Z"
+      "startedAt": "2026-10-13T11:32:19.380Z",
+      "commentId": 6144599897,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6144599897",
+      "verifiedAt": "2026-10-13T11:33:25.183Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -4172,9 +4172,9 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-issue35-design-20261013T0606Z",
-    "finishedAt": "2026-10-13T06:09:58.364Z",
-    "result": "分页全量13+0及已完成单原始评论重核，无新批准；35原生图及方案交付待批，26/28/34等待已有请求，36/37待反馈，41等前置。无产品实施/合入/关单，无未知外写。"
+    "owner": "ono-root-pr40-closeout-20261013T0637Z",
+    "endedAt": "2026-10-13T11:33:25.184Z",
+    "summary": "35原生500/500+95/95通过但既有首页视觉异常与附件交付阻塞；34PR44实现Windows513/513+95/95及4图实际查看，待内嵌附件；无在途写，释放协调占用"
   },
   "updatedAt": "2026-10-13T06:09:58.364Z",
   "lastNotification": {
