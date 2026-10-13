@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 154,
+  "revision": 155,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -816,7 +816,9 @@
     6129209014,
     6129501941,
     6129851935,
-    6135301815
+    6135301815,
+    6135342273,
+    6135343025
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -2207,17 +2209,21 @@
     },
     "issue24-main-progress": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
       "body": "【OnO 自动化】已核对你的最终批准，PR #38 的 b54528e 已合入 main（a5659fa5e6dbef6188ec3e34b061bc317d4d7e78），合入树与已验收版本一致。接下来验证这次真实 main 的完整 Windows 检查；全部通过后按批准关闭 #24 并核查需求分支清理。当前不提前关单，无需再次批准。",
-      "createdAt": "2026-10-13T00:34:00.071Z"
+      "createdAt": "2026-10-13T00:34:09Z",
+      "commentId": 6135342273,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6135342273"
     },
     "floating-v2-approved-progress": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
       "body": "【OnO 自动化】已核对你在本 Issue 对 v2 的确认；#25 的同文回复作为旁证，不重复记成另一单。按完整 v2 统一处理 #25、#28、#29、#30、#31、#32、#33，提交一个实现 Draft PR。先完成 #24 的实际主干验收，再开始本组；#26 的新视觉反馈单独出图对齐，不混入本组。最终在这里给实测图和准确版本供你一次审阅合入，现在无需重复批准方案。",
-      "createdAt": "2026-10-13T00:34:00.071Z"
+      "createdAt": "2026-10-13T00:34:12Z",
+      "commentId": 6135343025,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135343025"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
