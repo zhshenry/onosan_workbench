@@ -1,11 +1,11 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 251,
+  "revision": 252,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
-    "currentDevelopmentGroup": "floating-ui-25-28-33",
-    "task": "核实28原始准确合入收尾批准，合入后真实main验收通过再收尾"
+    "currentDevelopmentGroup": null,
+    "task": "PR40产品完成关单授权阻碍待用户；继续独立设计及35已批实施准备"
   },
   "tasks": {
     "17": {
@@ -255,7 +255,7 @@
     },
     "25": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/25",
-      "stage": "post-merge-validation",
+      "stage": "blocked-closeout",
       "type": [
         "ui",
         "interaction"
@@ -263,7 +263,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T06:05:41Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待实际main完整Windows终态并核证据；通过后按已批包收尾",
+      "nextAction": "产品已合入且真实main验收成功；仅关单工具授权阻碍，等待用户聊天明确关闭7单，不重做产品",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -493,7 +493,7 @@
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "stage": "post-merge-validation",
+      "stage": "blocked-closeout",
       "type": [
         "ui",
         "interaction"
@@ -501,7 +501,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T06:05:41Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待实际main完整Windows终态并核证据；通过后按已批包收尾",
+      "nextAction": "产品已合入且真实main验收成功；仅关单工具授权阻碍，等待用户聊天明确关闭7单，不重做产品",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -639,7 +639,7 @@
     },
     "29": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/29",
-      "stage": "post-merge-validation",
+      "stage": "blocked-closeout",
       "type": [
         "ui",
         "interaction"
@@ -647,7 +647,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T06:05:41Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待实际main完整Windows终态并核证据；通过后按已批包收尾",
+      "nextAction": "产品已合入且真实main验收成功；仅关单工具授权阻碍，等待用户聊天明确关闭7单，不重做产品",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -783,7 +783,7 @@
     },
     "30": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/30",
-      "stage": "post-merge-validation",
+      "stage": "blocked-closeout",
       "type": [
         "ui",
         "interaction"
@@ -791,7 +791,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T06:05:41Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待实际main完整Windows终态并核证据；通过后按已批包收尾",
+      "nextAction": "产品已合入且真实main验收成功；仅关单工具授权阻碍，等待用户聊天明确关闭7单，不重做产品",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -927,7 +927,7 @@
     },
     "31": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/31",
-      "stage": "post-merge-validation",
+      "stage": "blocked-closeout",
       "type": [
         "ui",
         "interaction"
@@ -935,7 +935,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T06:05:41Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待实际main完整Windows终态并核证据；通过后按已批包收尾",
+      "nextAction": "产品已合入且真实main验收成功；仅关单工具授权阻碍，等待用户聊天明确关闭7单，不重做产品",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -1071,7 +1071,7 @@
     },
     "32": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/32",
-      "stage": "post-merge-validation",
+      "stage": "blocked-closeout",
       "type": [
         "ui",
         "interaction"
@@ -1079,7 +1079,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T06:05:41Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待实际main完整Windows终态并核证据；通过后按已批包收尾",
+      "nextAction": "产品已合入且真实main验收成功；仅关单工具授权阻碍，等待用户聊天明确关闭7单，不重做产品",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -1215,7 +1215,7 @@
     },
     "33": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/33",
-      "stage": "post-merge-validation",
+      "stage": "blocked-closeout",
       "type": [
         "ui",
         "interaction"
@@ -1223,7 +1223,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-13T06:05:41Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待实际main完整Windows终态并核证据；通过后按已批包收尾",
+      "nextAction": "产品已合入且真实main验收成功；仅关单工具授权阻碍，等待用户聊天明确关闭7单，不重做产品",
       "groupId": "floating-ui-25-28-33",
       "groupIssueNumbers": [
         25,
@@ -3618,61 +3618,68 @@
     "pr40-close-issue-25": {
       "operationId": "pr40-close-issue-25",
       "targetIssue": 25,
-      "status": "intent",
+      "status": "denied",
       "summary": "已批准包，PR40真实merged，准确实际main完整Windows486/84通过，图文交付完成，仅关闭本Issue",
-      "approvalCommentId": 6139438818
+      "approvalCommentId": 6139438818,
+      "blocker": "关闭25被执行审批器拒绝，原始GitHub批准重新核验后同调用一次仍拒绝；不换路径。其余关闭暂停，已向用户请求可信聊天明确授权"
     },
     "pr40-close-issue-28": {
       "operationId": "pr40-close-issue-28",
       "targetIssue": 28,
-      "status": "intent",
+      "status": "paused",
       "summary": "已批准包，PR40真实merged，准确实际main完整Windows486/84通过，图文交付完成，仅关闭本Issue",
-      "approvalCommentId": 6139438818
+      "approvalCommentId": 6139438818,
+      "blocker": "关闭25被执行审批器拒绝，原始GitHub批准重新核验后同调用一次仍拒绝；不换路径。其余关闭暂停，已向用户请求可信聊天明确授权"
     },
     "pr40-close-issue-29": {
       "operationId": "pr40-close-issue-29",
       "targetIssue": 29,
-      "status": "intent",
+      "status": "paused",
       "summary": "已批准包，PR40真实merged，准确实际main完整Windows486/84通过，图文交付完成，仅关闭本Issue",
-      "approvalCommentId": 6139438818
+      "approvalCommentId": 6139438818,
+      "blocker": "关闭25被执行审批器拒绝，原始GitHub批准重新核验后同调用一次仍拒绝；不换路径。其余关闭暂停，已向用户请求可信聊天明确授权"
     },
     "pr40-close-issue-30": {
       "operationId": "pr40-close-issue-30",
       "targetIssue": 30,
-      "status": "intent",
+      "status": "paused",
       "summary": "已批准包，PR40真实merged，准确实际main完整Windows486/84通过，图文交付完成，仅关闭本Issue",
-      "approvalCommentId": 6139438818
+      "approvalCommentId": 6139438818,
+      "blocker": "关闭25被执行审批器拒绝，原始GitHub批准重新核验后同调用一次仍拒绝；不换路径。其余关闭暂停，已向用户请求可信聊天明确授权"
     },
     "pr40-close-issue-31": {
       "operationId": "pr40-close-issue-31",
       "targetIssue": 31,
-      "status": "intent",
+      "status": "paused",
       "summary": "已批准包，PR40真实merged，准确实际main完整Windows486/84通过，图文交付完成，仅关闭本Issue",
-      "approvalCommentId": 6139438818
+      "approvalCommentId": 6139438818,
+      "blocker": "关闭25被执行审批器拒绝，原始GitHub批准重新核验后同调用一次仍拒绝；不换路径。其余关闭暂停，已向用户请求可信聊天明确授权"
     },
     "pr40-close-issue-32": {
       "operationId": "pr40-close-issue-32",
       "targetIssue": 32,
-      "status": "intent",
+      "status": "paused",
       "summary": "已批准包，PR40真实merged，准确实际main完整Windows486/84通过，图文交付完成，仅关闭本Issue",
-      "approvalCommentId": 6139438818
+      "approvalCommentId": 6139438818,
+      "blocker": "关闭25被执行审批器拒绝，原始GitHub批准重新核验后同调用一次仍拒绝；不换路径。其余关闭暂停，已向用户请求可信聊天明确授权"
     },
     "pr40-close-issue-33": {
       "operationId": "pr40-close-issue-33",
       "targetIssue": 33,
-      "status": "intent",
+      "status": "paused",
       "summary": "已批准包，PR40真实merged，准确实际main完整Windows486/84通过，图文交付完成，仅关闭本Issue",
-      "approvalCommentId": 6139438818
+      "approvalCommentId": 6139438818,
+      "blocker": "关闭25被执行审批器拒绝，原始GitHub批准重新核验后同调用一次仍拒绝；不换路径。其余关闭暂停，已向用户请求可信聊天明确授权"
     },
     "pr40-delete-merged-branch": {
       "operationId": "pr40-delete-merged-branch",
-      "status": "intent",
+      "status": "paused",
       "branch": "ono/floating-group-v2",
       "expectedHead": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
       "prNumber": 40,
       "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "mainCiRunId": 38358108575,
-      "summary": "已合入分支无新增head/unmerged，非保护，无开放PR依赖；单协调者UI非原子删除，保留PR恢复"
+      "summary": "已合入分支无新增head/unmerged，非保护，无开放PR依赖；单协调者UI非原子删除，保留PR恢复；先暂停至关单授权阻碍处理，不改变已验收产品结果"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
