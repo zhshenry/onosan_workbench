@@ -1,7 +1,12 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 235,
-  "currentRun": null,
+  "revision": 236,
+  "currentRun": {
+    "owner": "ono-root-reconcile-v3-record-20261013T0601Z",
+    "startedAt": "2026-10-13T06:01:22.936Z",
+    "currentDevelopmentGroup": null,
+    "task": "核对已发布v3回执并修正残留草稿状态，防止重复交付"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
