@@ -1,11 +1,11 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 218,
+  "revision": 219,
   "currentRun": {
     "owner": "ono-root-diagnosis-result-20261013T0436Z",
     "startedAt": "2026-10-13T04:36:52.846Z",
     "currentDevelopmentGroup": null,
-    "task": "记录CLI能力升级和已确认网络阻碍，保持只读检查"
+    "task": "用户明确要求继续网页端，有针对性核文件交接/可见错误；单张26v3诊断上传"
   },
   "tasks": {
     "17": {
@@ -1163,7 +1163,8 @@
     6137668925,
     6138131366,
     6138134955,
-    6138150575
+    6138150575,
+    6138334987
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -2967,10 +2968,21 @@
     },
     "attachment-cli-network-result": {
       "kind": "comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
       "body": "【OnO 自动化】附件替代链路核查更新\n\n云端 GitHub CLI 已升级到官方2.102.0，并实测确认支持 --attach。登录保存位置的只读目录问题已定位并改用可写私有目录，但认证流程随后仍被当前执行环境的网络策略阻断，明确错误为对 api.github.com 的访问被阻止；因此未形成可用CLI登录，也未通过CLI上传图片。\n\n普通、不带认证的API连通性检查能够返回200，并不能证明认证流程可访问；我已停止重复授权/上传尝试。现有GitHub连接器读写评论仍可用，每小时检查照常。\n\n这项证据解释的是CLI登录阻碍，不能据此宣布此前浏览器原生附件失败也是同一原因。#26新图和#28实测图交付仍待有可验证的可用上传链路；不请求无图批准，不提前合入关单。当前无需重新批准旧方案。",
-      "createdAt": "2026-10-13T04:36:52.846Z"
+      "createdAt": "2026-10-13T04:37:08Z",
+      "commentId": 6138334987,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6138334987"
+    },
+    "issue26-v3-browser-diagnostic-upload": {
+      "kind": "upload-image",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
+      "imageSha256": "5a6e1571b8e6e6c613065bcefd7055b03c826e324247392490dcdcccb875f2c0",
+      "bytes": 1507132,
+      "summary": "用户新明确要求继续网页；单次针对FileList元数据/控制台错误取证，已知原图有效；不把旧预算自动重置，不循环",
+      "createdAt": "2026-10-13T04:39:30.820Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
