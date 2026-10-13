@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 149,
+  "revision": 150,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -264,7 +264,7 @@
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "stage": "awaiting-final-approval",
+      "stage": "plan-revision",
       "type": [
         "ui",
         "interaction"
@@ -272,7 +272,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-12T22:48:32.753Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "核对准确head及所列窄屏首页/基础上下文边界批准；未获批准不合入关单",
+      "nextAction": "按用户反馈参照悬浮事项选择器准备独立v2高保真，Issue对齐；PR39保持Draft，不消费旧最终请求",
       "groupId": "workbench-context-26",
       "groupIssueNumbers": [
         26
@@ -323,7 +323,8 @@
       },
       "imagesVerifiedAt": "2026-10-12T18:07:33.897Z",
       "temporaryEvidenceCleanedAt": "2026-10-12T18:08:33.944Z",
-      "lastNotifiedAt": "2026-10-12T18:08:17Z"
+      "lastNotifiedAt": "2026-10-12T18:08:17Z",
+      "feedbackCommentId": 6135158729
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
@@ -1996,6 +1997,13 @@
       "createdAt": "2026-10-12T18:07:33.897Z",
       "updatedAt": "2026-10-12T18:07:52Z",
       "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac"
+    },
+    "issue26-v2-feedback-ack": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
+      "body": "【OnO 自动化】收到，这次按你的意见把关联事项选择框的整体视觉向 To-Do-List 悬浮框对齐。我先补 v2 高保真和与当前版本的差异，在本 Issue 给你看图确认，再改实现；已有引用、会话隔离和只读边界保持。PR #39 暂不合入，上一条最终请求先暂停。现在无需重复确认这条反馈。",
+      "createdAt": "2026-10-13T00:30:41.086Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
