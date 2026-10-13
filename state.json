@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 310,
+  "revision": 311,
   "currentRun": {
     "owner": "ono-root-pr40-closeout-20261013T0637Z",
     "startedAt": "2026-10-13T06:37:50.475Z",
@@ -1419,7 +1419,7 @@
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "visual-blocker-awaiting-scope",
+      "stage": "blocked-visual-and-attachment",
       "type": [
         "ui",
         "bugfix",
@@ -1428,8 +1428,8 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-13T06:05:41Z",
-      "nextAction": "Issue35附实际对照图请求首页问题修复范围决定；无准确最终合入批准",
-      "lastCommentId": 6128766093,
+      "nextAction": "附件上传两次明确失败；需原生图内嵌后准备额外首页窄屏修复范围，不消费旧批准或合入；当前PR43冻结4098f131",
+      "lastCommentId": 6144006182,
       "groupId": "media-keepalive-35",
       "groupIssueNumbers": [
         35
@@ -1676,7 +1676,8 @@
     6140985662,
     6140987611,
     6140988850,
-    6142470863
+    6142470863,
+    6144006182
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -4109,10 +4110,13 @@
     },
     "issue35-home-blocker-comment": {
       "operationId": "issue35-home-blocker-comment",
-      "status": "intent",
+      "status": "succeeded",
       "target": 35,
       "body": "【OnO 自动化】#35｜原生验收结果与新发现\n\n准确版本：4098f131a2ab17cb77c57df9f1119df0c15c898b；[Windows 运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38384962098)单测500/500、原生95/95、安装、正常退出与重启全部通过。网页保活检查使用真实 Electron 内的合成测试页面，不冒充真实登录的小红书实测。\n\n实际看图发现首页窄屏布局异常：在1024×680、相同7条任务（含长标题）、AI关闭及侧栏完全卸载时，首次打开首页与隐藏创作者网页后，两者几何完全相同，概览栏均为0宽并与待办重叠。因此可确认这次保活切换没有改变该布局，但不能把现有异常说成视觉验收通过；报告明确 visualAcceptance=false。当前没有直接在main相同条件实跑，不能用其他状态的main截图代替这一证明。\n\n无图：两张实际PNG已生成并由我查看，但GitHub网页原生附件上传明确失败，刷新后单张补试仍失败，未取得图片地址。已停止重试，没有将图片存入Git。[本次原生证据附件](https://github.com/zhshenry/onosan_workbench/actions/runs/38384962098/artifacts/11805621829)含before/hidden与完整8张media截图（CI保留3天）；这不替代Issue内嵌图交付。\n\nPR #43保持Draft，尚未请求合入。首页布局修复超出本单已批的网页保活范围，需补充带图方案后再确认，不会静默扩大实施。\n\n当前无需批准。若你希望首页问题也纳入后续方案，可回复：请补充首页窄屏修复方案。该回复只要求准备方案，不代表批准实施或合入。",
-      "startedAt": "2026-10-13T10:55:42.705Z"
+      "startedAt": "2026-10-13T10:55:42.705Z",
+      "commentId": 6144006182,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6144006182",
+      "verifiedAt": "2026-10-13T10:57:00.670Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
