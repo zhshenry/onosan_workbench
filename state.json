@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 175,
+  "revision": 176,
   "currentRun": {
     "owner": "ono-root-approved-work-20261013T0030Z",
     "startedAt": "2026-10-13T00:29:39.182Z",
@@ -2456,6 +2456,13 @@
       "createdAt": "2026-10-13T01:39:54Z",
       "commentId": 6136208994,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136208994"
+    },
+    "floating-quit-scope-request": {
+      "kind": "comment",
+      "status": "intent",
+      "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
+      "body": "【OnO 自动化】悬浮窗组｜需确认一项原有退出缺陷的最小修复\n\n排查首轮实装中断时，确认当前main的[浮窗关闭处理](https://github.com/zhshenry/onosan_workbench/blob/a5659fa5e6dbef6188ec3e34b061bc317d4d7e78/electron/float-window.ts#L84-L90)始终阻止关闭并改为隐藏；[主进程退出链](https://github.com/zhshenry/onosan_workbench/blob/a5659fa5e6dbef6188ec3e34b061bc317d4d7e78/electron/main.ts#L492-L529)没有在真正退出前销毁浮窗，现有destroy方法也未接入。此缺口在本组修改前已存在。\n这会阻挡打开过浮窗后的正常退出，且与本次失败清理挂起相符；本轮尚未运行到正式退出/重启检查，因此不把因果推测写成已完成的实机证明。\n\n建议追加的最小范围：仅在应用真正before-quit时销毁本浮窗，普通关闭/隐藏仍保持原行为；补“未开浮窗、浮窗显示/隐藏后正常退出、重复退出、同版本重启和宽度重置”回归。纳入当前PR #40，不改退出偏好、不动数据格式、权限或其他工作台；失败清理的强制结束不能当正常退出成功。\n已有授权内的测试位置恢复和失败报告保存继续完成；这一原有产品退出缺陷修复等你确认后实施。纯生命周期修复，无新增视觉方案或高保真变化。最终仍需准确新head的带图验收及合入批准。\n\n同意追加该范围请回复：**同意修复浮窗退出缺陷 v1**",
+      "createdAt": "2026-10-13T01:44:36.212Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
