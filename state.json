@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 399,
+  "revision": 400,
   "currentRun": {
     "owner": "ono-root-check-20261014T0628Z",
     "startedAt": "2026-10-14T06:28:20Z",
@@ -4665,6 +4665,22 @@
         "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6162410448",
         "readBack": true
       }
+    },
+    "issue34-ready-pr44": {
+      "operationId": "issue34-ready-pr44",
+      "status": "intent",
+      "target": "PR44 Draft -> Ready",
+      "head": "71416bb20380c013960d005f53b281340e97caa2",
+      "summary": "用户明确要求对其他已批准需求尝试Ready及合入；本操作仅Ready，新main集成验收另行核对",
+      "startedAt": "2026-10-14T06:34:15Z"
+    },
+    "issue37-ready-pr45": {
+      "operationId": "issue37-ready-pr45",
+      "status": "intent",
+      "target": "PR45 Draft -> Ready",
+      "head": "42733f0bcfcb1155f0f03145b8ffd0ace2001882",
+      "summary": "用户明确要求对其他已批准需求尝试Ready及合入；本操作仅Ready，新main集成验收另行核对",
+      "startedAt": "2026-10-14T06:34:15Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
