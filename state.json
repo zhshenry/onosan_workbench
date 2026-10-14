@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 407,
+  "revision": 408,
   "currentRun": {
     "owner": "ono-root-check-20261014T0628Z",
     "startedAt": "2026-10-14T06:28:20Z",
@@ -4775,14 +4775,27 @@
     },
     "issue34-integration-commit-main661bee0": {
       "operationId": "issue34-integration-commit-main661bee0",
-      "status": "intent",
+      "status": "succeeded",
       "target": "PR44 integration commit",
       "tree": "e1a6f9893f782fcd7085aaf2e5c79292b248f4c3",
       "parents": [
         "71416bb20380c013960d005f53b281340e97caa2",
         "661bee0ba7262098a31ef96efa1c3b4ba63d9f80"
       ],
-      "startedAt": "2026-10-14T06:48:55Z"
+      "startedAt": "2026-10-14T06:48:55Z",
+      "finishedAt": "2026-10-14T06:49:35Z",
+      "receipt": {
+        "sha": "9b5c910e1a664e59fa27d826acdb277bc4579246"
+      }
+    },
+    "issue34-publish-integration-9b5c910": {
+      "operationId": "issue34-publish-integration-9b5c910",
+      "status": "intent",
+      "target": "refs/heads/ono/issue-34-update-status-inline",
+      "expectedHead": "71416bb20380c013960d005f53b281340e97caa2",
+      "newHead": "9b5c910e1a664e59fa27d826acdb277bc4579246",
+      "summary": "快进追加双亲集成提交，不force；新head需真实CI及最终批准",
+      "startedAt": "2026-10-14T06:49:40Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
