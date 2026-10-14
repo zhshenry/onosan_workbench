@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 437,
+  "revision": 438,
   "currentRun": {
     "id": "ono-close34-20261014T151700Z",
     "startedAt": "2026-10-14T15:17:00Z",
@@ -1590,7 +1590,18 @@
         "delivery": "当前准确版本未原生内嵌；请求单次artifact例外与最终审批一并处理"
       },
       "mergeSha": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
-      "mainCiRunId": 38588207977
+      "mainCiRunId": 38588207977,
+      "mainCiConclusion": "success",
+      "mainEvidence": {
+        "runId": 38588207977,
+        "attempt": 1,
+        "head": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
+        "artifactId": 11906344198,
+        "digest": "sha256:3dfb0ab0a155e39be968519371b81b59c9c8f73494859002ca9d281a8ade760f",
+        "native": "111/111",
+        "imagesReverifiedAt": "2026-10-14T15:23:13Z",
+        "imageVerification": "Four delivered fixed Git image URLs viewed again in cloud browser; main tree equals approved implementation"
+      }
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
@@ -5002,6 +5013,16 @@
         "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6171752092",
         "readBack": true
       }
+    },
+    "issue34-close-main45d8580": {
+      "operationId": "issue34-close-main45d8580",
+      "status": "intent",
+      "target": "Issue34 closed/completed",
+      "head": "d959836c26553efaef310ed2841585ffb7d82700",
+      "main": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
+      "approvalCommentId": 6171681690,
+      "summary": "Exact approved PR merged; actual main full Windows acceptance success and all four delivered images reverified; only close34",
+      "startedAt": "2026-10-14T15:27:31.577Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
