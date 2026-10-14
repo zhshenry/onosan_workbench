@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 446,
+  "revision": 447,
   "currentRun": {
     "id": "ono-integrate37-20261014T153100Z",
     "startedAt": "2026-10-14T15:31:01.738Z",
@@ -1734,7 +1734,7 @@
     },
     "37": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/37",
-      "stage": "integration",
+      "stage": "ci-validation",
       "type": [
         "ui",
         "investigation"
@@ -1742,7 +1742,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-14T06:35:25Z",
-      "nextAction": "完成候选审查后发布准确集成head并运行Windows验收",
+      "nextAction": "跟踪新集成head真实Windows验收及图；最终准确head重新请求批准",
       "lastCommentId": 6144934226,
       "planVersion": "v1",
       "planCommentId": 6140325358,
@@ -1766,7 +1766,7 @@
       "primaryIssue": 37,
       "pr": 45,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/45",
-      "headSha": "42733f0bcfcb1155f0f03145b8ffd0ace2001882",
+      "headSha": "6dd374c35a13ab6ebda5daa26fc4e18c48c5fde1",
       "ciRun": 38402967190,
       "ciResult": "success",
       "tests": {
@@ -1820,7 +1820,8 @@
         "verify": "passed",
         "native": "not run locally; requires real Windows CI",
         "status": "final candidate tested"
-      }
+      },
+      "integrationBaseSha": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e"
     },
     "41": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/41",
@@ -5111,12 +5112,17 @@
     },
     "issue37-publish-6dd374c": {
       "operationId": "issue37-publish-6dd374c",
-      "status": "intent",
+      "status": "succeeded",
       "target": "refs/heads/ono/issue-37-publish-association",
       "expectedHead": "42733f0bcfcb1155f0f03145b8ffd0ace2001882",
       "newHead": "6dd374c35a13ab6ebda5daa26fc4e18c48c5fde1",
       "summary": "Fast-forward approved-scope integration for exact Windows CI; not merge approval",
-      "startedAt": "2026-10-14T16:06:55.424Z"
+      "startedAt": "2026-10-14T16:06:55.424Z",
+      "receipt": {
+        "head": "6dd374c35a13ab6ebda5daa26fc4e18c48c5fde1",
+        "readBack": true
+      },
+      "finishedAt": "2026-10-14T16:07:36.007Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
