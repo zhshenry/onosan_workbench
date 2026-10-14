@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 428,
+  "revision": 429,
   "currentRun": {
     "runId": "ono-resume-20261014T141049Z",
     "startedAt": "2026-10-14T14:10:49Z",
@@ -1548,16 +1548,16 @@
       },
       "nextStep": "等当前准确head最终请求6146391991原始用户批准",
       "latestRun": {
-        "id": 38524589463,
-        "head": "9b5c910e1a664e59fa27d826acdb277bc4579246",
+        "id": 38579554510,
+        "head": "d959836c26553efaef310ed2841585ffb7d82700",
         "base": "661bee0ba7262098a31ef96efa1c3b4ba63d9f80",
-        "testedMerge": "ca8bcb801b5e3ddc3fb726adcbfd28c8d7e308fe",
+        "testedMerge": "68b1de083277a0f8ff2fe218d4121bef809bedb7",
         "tree": "e1a6f9893f782fcd7085aaf2e5c79292b248f4c3",
         "conclusion": "success",
         "unit": "539/539;failed0 skipped0",
         "native": "111/111",
-        "artifactId": 11875154830,
-        "expiresAt": "2026-10-17T06:57:33Z"
+        "artifactId": 11901559998,
+        "expiresAt": "2026-10-17T14:28:45Z"
       },
       "closeoutApproval": {
         "commentId": 6159879982,
@@ -1580,7 +1580,7 @@
         "native": "not run locally"
       },
       "ciRunId": 38579554510,
-      "ciConclusion": "in_progress",
+      "ciConclusion": "success",
       "actualImageReview": {
         "head": "9b5c910e1a664e59fa27d826acdb277bc4579246",
         "reviewedAt": "2026-10-14T06:59:48Z",
@@ -4924,6 +4924,15 @@
         "success": true
       },
       "finishedAt": "2026-10-14T14:19:50.593Z"
+    },
+    "issue34-final-request-d959836": {
+      "operationId": "issue34-final-request-d959836",
+      "status": "pending",
+      "target": "Issue34 final approval comment",
+      "head": "d959836c26553efaef310ed2841585ffb7d82700",
+      "bodySha256": "fc60d0df738aa29933e834a584bbd7f9145ab4ecdaf2def998572fe3753d3d87",
+      "summary": "正式交付四图固定链接、准确清理后head通过539单测111原生检查，单次请求Ready合入/main验收/仅关34/合格分支清理",
+      "startedAt": "2026-10-14T14:30:10.018Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
