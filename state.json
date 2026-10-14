@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 403,
+  "revision": 404,
   "currentRun": {
     "owner": "ono-root-check-20261014T0628Z",
     "startedAt": "2026-10-14T06:28:20Z",
@@ -4727,6 +4727,20 @@
       "receipt": {
         "readBackState": "open"
       }
+    },
+    "issue26-main-result-close-block": {
+      "operationId": "issue26-main-result-close-block",
+      "status": "intent",
+      "target": "Issue26 comment",
+      "summary": "实际main验收成功，关单执行审批拒绝，保留开放",
+      "startedAt": "2026-10-14T06:43:20Z"
+    },
+    "issue34-new-main-integration": {
+      "operationId": "issue34-new-main-integration",
+      "status": "intent",
+      "target": "Issue34 comment",
+      "summary": "新main冲突定位为两个验收脚本，开始授权内集成，newhead重批",
+      "startedAt": "2026-10-14T06:43:20Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
