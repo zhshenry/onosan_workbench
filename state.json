@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 397,
+  "revision": 398,
   "currentRun": {
     "owner": "ono-root-check-20261014T0628Z",
     "startedAt": "2026-10-14T06:28:20Z",
@@ -4650,6 +4650,13 @@
         "mainSha": "661bee0ba7262098a31ef96efa1c3b4ba63d9f80",
         "tree": "a0196dd81b1aff07897f2d359d73b166b014c49c"
       }
+    },
+    "issue26-main-validation-progress": {
+      "operationId": "issue26-main-validation-progress",
+      "status": "intent",
+      "target": "Issue26 comment",
+      "summary": "记录准确合入回执及main验收进行中，不提前关单",
+      "startedAt": "2026-10-14T06:32:00Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
