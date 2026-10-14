@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 426,
+  "revision": 427,
   "currentRun": {
     "runId": "ono-resume-20261014T141049Z",
     "startedAt": "2026-10-14T14:10:49Z",
@@ -1477,7 +1477,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-14T06:35:25Z",
-      "nextAction": "用户明确取消所有需求临时只读限制；补齐Git临时截图，清理最终树后请求准确head最终批准",
+      "nextAction": "最终树已清图且等同9b5c910产品树；核对不可变图片链接并等新head Actions，通过后Issue最终审批",
       "groupId": "settings-update-34",
       "groupIssueNumbers": [
         34
@@ -1503,7 +1503,7 @@
       "approvalReverifiedAt": "2026-10-13T10:58:39.185Z",
       "pr": 44,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/44",
-      "headSha": "9b5c910e1a664e59fa27d826acdb277bc4579246",
+      "headSha": "d959836c26553efaef310ed2841585ffb7d82700",
       "ciRun": 38401742953,
       "ciResult": "success",
       "tests": {
@@ -4876,7 +4876,7 @@
     },
     "issue34-git-images-20261014": {
       "operationId": "issue34-git-images-20261014",
-      "status": "pending",
+      "status": "succeeded",
       "target": "ono/issue-34-update-status-inline:.ono-evidence/issue-34/9b5c910/",
       "head": "9b5c910e1a664e59fa27d826acdb277bc4579246",
       "summary": "Upload four reviewed Windows screenshot PNG blobs, record each receipt; create evidence commit then cleanup commit with original product tree; publish only cleanup head and immutable image links",
@@ -4907,7 +4907,11 @@
       },
       "cleanupCommitReceipt": {
         "sha": "d959836c26553efaef310ed2841585ffb7d82700"
-      }
+      },
+      "refReceipt": {
+        "success": true
+      },
+      "finishedAt": "2026-10-14T14:19:50.593Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
