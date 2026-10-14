@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 471,
-  "currentRun": {
-    "id": "ono-check-20261014T220146Z",
-    "startedAt": "2026-10-14T21:58:34.443Z",
-    "currentTask": null,
-    "stage": "read-only-review"
-  },
+  "revision": 472,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -1622,7 +1617,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
-      "lastReadAt": "2026-10-14T20:40:45Z",
+      "lastReadAt": "2026-10-14T21:58:52.251Z",
       "nextAction": "调查已中断图片入Git调用；预期blob404且无成功回执，不盲重试。补齐三图固定链接后发布补充方案v2；未获追加实施批准。",
       "lastCommentId": 6144006182,
       "groupId": "media-keepalive-35",
@@ -1733,7 +1728,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
-      "lastReadAt": "2026-10-14T20:40:45Z",
+      "lastReadAt": "2026-10-14T21:58:52.251Z",
       "nextAction": "35完成后基于最新main独立实施并回归保活",
       "lastCommentId": 6128520395,
       "planVersion": "v1",
@@ -1761,7 +1756,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
-      "lastReadAt": "2026-10-14T20:40:45Z",
+      "lastReadAt": "2026-10-14T21:58:52.251Z",
       "nextAction": "等待本次准确head0f313ee的最终合入收尾批准",
       "lastCommentId": 6144934226,
       "planVersion": "v1",
@@ -1862,7 +1857,7 @@
       ],
       "primaryIssue": 41,
       "targetVersion": "0.2.0",
-      "lastReadAt": "2026-10-14T20:40:45Z",
+      "lastReadAt": "2026-10-14T21:58:52.251Z",
       "nextAction": "先完成编号41前需求，随后汇总准确候选/变更集合/资产与验收并在41走独立发布批准；当前不打标签不发版",
       "dependencyIssueNumbers": [
         25,
@@ -5246,12 +5241,12 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "id": "ono-check-20261014T210146Z",
-    "finishedAt": "2026-10-14T20:41:59.463Z",
-    "result": "Reused just-completed full read-only review: all open ono Issues/raw comment pages, PRs and main unchanged; no new authenticated approval, review or reaction. PR45 final CI remains successful; Issue35 blocker unchanged; no product writes, retries or notifications.",
-    "nextAction": "Wait Issue37 exact final approval; Issue35 delivery needs missing diagnostics before retry;36 waits35;41 waits prerequisites."
+    "id": "ono-check-20261014T220146Z",
+    "finishedAt": "2026-10-14T21:58:52.251Z",
+    "result": "Current main workflow and checklists reread; all open ono Issues and complete raw comment pages unchanged. No new approval. Main45d8580/PR45head0f313ee CI remain successful; PR43head4098f13 unchanged. Existing design upload blocker remains; no blind retry or duplicate notification.",
+    "nextAction": "Await exact PR45 final approval; Issue35 delivery requires diagnosed recovery before retry;36 waits35;41 waits prerequisites."
   },
-  "updatedAt": "2026-10-14T20:41:59.463Z",
+  "updatedAt": "2026-10-14T21:58:52.251Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
