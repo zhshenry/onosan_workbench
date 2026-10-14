@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 409,
+  "revision": 410,
   "currentRun": {
     "owner": "ono-root-check-20261014T0628Z",
     "startedAt": "2026-10-14T06:28:20Z",
@@ -1554,7 +1554,9 @@
         ],
         "verify": "passed",
         "native": "not run locally"
-      }
+      },
+      "ciRunId": 38524589463,
+      "ciConclusion": "in_progress"
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
@@ -4815,6 +4817,14 @@
         "tree": "e1a6f9893f782fcd7085aaf2e5c79292b248f4c3",
         "readBack": true
       }
+    },
+    "issue34-refresh-pr44-description-9b5c910": {
+      "operationId": "issue34-refresh-pr44-description-9b5c910",
+      "status": "intent",
+      "target": "PR44 body",
+      "head": "9b5c910e1a664e59fa27d826acdb277bc4579246",
+      "summary": "同步实际新head/main和验收进行中，明确旧head批准不消费",
+      "startedAt": "2026-10-14T06:52:00Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
