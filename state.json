@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 420,
+  "revision": 421,
   "currentRun": {
     "runId": "ono-resume-20261014T141049Z",
     "startedAt": "2026-10-14T14:10:49Z",
@@ -23,7 +23,6 @@
       "approval": {
         "commentId": 6122337511,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6122337511",
-        "body": "同意 https://github.com/zhshenry/onosan_workbench/issues/17+https://github.com/zhshenry/onosan_workbench/issues/18 组方案 v2",
         "authorId": 54107847,
         "createdAt": "2026-10-12T10:22:57Z",
         "updatedAt": "2026-10-12T10:22:57Z",
@@ -32,7 +31,8 @@
         "planVersion": "group-v2",
         "allowedActions": "组方案v2产品实现、测试、回归、Draft PR交付；不含最终合入或关单",
         "corroboratingCommentId": 6122339723,
-        "verifiedAt": "2026-10-12T10:37:06.479Z"
+        "verifiedAt": "2026-10-12T10:37:06.479Z",
+        "bodySha256": "a2f5d0ec814d69ccdb97de81b47e5906532ad2156763392fec1fb05bd4429aad"
       },
       "nextAction": "已完成；重开或新反馈时重新核对范围，不自动恢复旧授权",
       "planCommentId": 6122171698,
@@ -58,7 +58,6 @@
       "mergeApproval": {
         "commentId": 6123701226,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6123701226",
-        "body": "同意合入收尾 PR https://github.com/zhshenry/onosan_workbench/pull/23，版本 https://github.com/zhshenry/onosan_workbench/commit/bff0ff5f949c4870ae31817739a119f82dbd3f40",
         "authorId": 54107847,
         "createdAt": "2026-10-12T11:51:41Z",
         "updatedAt": "2026-10-12T11:51:41Z",
@@ -66,7 +65,8 @@
         "requestCommentId": 6122991026,
         "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
         "scope": "准确PR23合入、真实main全部检查通过后关闭17/18；不发版删分支",
-        "verifiedAt": "2026-10-12T12:38:17.202Z"
+        "verifiedAt": "2026-10-12T12:38:17.202Z",
+        "bodySha256": "55357fd17550710c7cfcda8c7f25509c399feb7f5233c8d9952b1646e5e00e61"
       },
       "ciRunId": 38239284361,
       "ciConclusion": "success",
@@ -99,7 +99,6 @@
       "approval": {
         "commentId": 6122337511,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6122337511",
-        "body": "同意 https://github.com/zhshenry/onosan_workbench/issues/17+https://github.com/zhshenry/onosan_workbench/issues/18 组方案 v2",
         "authorId": 54107847,
         "createdAt": "2026-10-12T10:22:57Z",
         "updatedAt": "2026-10-12T10:22:57Z",
@@ -108,7 +107,8 @@
         "planVersion": "group-v2",
         "allowedActions": "组方案v2产品实现、测试、回归、Draft PR交付；不含最终合入或关单",
         "corroboratingCommentId": 6122339723,
-        "verifiedAt": "2026-10-12T10:37:06.479Z"
+        "verifiedAt": "2026-10-12T10:37:06.479Z",
+        "bodySha256": "a2f5d0ec814d69ccdb97de81b47e5906532ad2156763392fec1fb05bd4429aad"
       },
       "nextAction": "已完成；重开或新反馈时重新核对范围，不自动恢复旧授权",
       "planCommentId": 6122190320,
@@ -134,7 +134,6 @@
       "mergeApproval": {
         "commentId": 6123701226,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6123701226",
-        "body": "同意合入收尾 PR https://github.com/zhshenry/onosan_workbench/pull/23，版本 https://github.com/zhshenry/onosan_workbench/commit/bff0ff5f949c4870ae31817739a119f82dbd3f40",
         "authorId": 54107847,
         "createdAt": "2026-10-12T11:51:41Z",
         "updatedAt": "2026-10-12T11:51:41Z",
@@ -142,7 +141,8 @@
         "requestCommentId": 6122991026,
         "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
         "scope": "准确PR23合入、真实main全部检查通过后关闭17/18；不发版删分支",
-        "verifiedAt": "2026-10-12T12:38:17.202Z"
+        "verifiedAt": "2026-10-12T12:38:17.202Z",
+        "bodySha256": "55357fd17550710c7cfcda8c7f25509c399feb7f5233c8d9952b1646e5e00e61"
       },
       "ciRunId": 38239284361,
       "ciConclusion": "success",
@@ -185,7 +185,6 @@
       "approval": {
         "commentId": 6128003916,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6128003916",
-        "body": "同意 https://github.com/zhshenry/onosan_workbench/issues/24 方案 v1",
         "authorId": 54107847,
         "createdAt": "2026-10-12T16:07:44Z",
         "updatedAt": "2026-10-12T16:07:44Z",
@@ -194,7 +193,8 @@
         "planVersion": "v1",
         "verifiedAt": "2026-10-12T16:36:31.561Z",
         "allowedActions": "本单v1方案产品实现、测试、回归和DraftPR交付；不含合入关单",
-        "sourceAssessment": "明确绑定唯一v1方案请求"
+        "sourceAssessment": "明确绑定唯一v1方案请求",
+        "bodySha256": "5398d636d1bb3c0abc4a3ddf7fb27beb4e69d17a4f89cb939970bea68d3d0291"
       },
       "prNumber": 38,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/38",
@@ -231,7 +231,6 @@
       "mergeApproval": {
         "commentId": 6135120268,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6135120268",
-        "body": "同意所列验收边界并合入收尾 PR #38，版本 b54528e；通过后关闭 #24",
         "authorId": 54107847,
         "createdAt": "2026-10-13T00:15:16Z",
         "updatedAt": "2026-10-13T00:15:16Z",
@@ -239,7 +238,8 @@
         "requestCommentId": 6129172271,
         "headSha": "b54528e849bec6549aec8ec78b67da3eb02e34e9",
         "scope": "接受所列畸形旧日程单次边界，合入准确PR38；实际main完整Windows/51实装通过后仅关闭24",
-        "verifiedAt": "2026-10-13T00:31:20.532Z"
+        "verifiedAt": "2026-10-13T00:31:20.532Z",
+        "bodySha256": "c504be40d2193adbe0ccede031a43c6d566d2df655ee5e9dbd0684ee840c304c"
       },
       "mergeSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "mainCiRunId": 38327784514,
@@ -292,7 +292,6 @@
       "approval": {
         "commentId": 6135137217,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217",
-        "body": "同意悬浮窗组 v2 的收起布局调整",
         "authorId": 54107847,
         "createdAt": "2026-10-13T00:16:46Z",
         "updatedAt": "2026-10-13T00:16:46Z",
@@ -310,7 +309,8 @@
         ],
         "corroboratingCommentId": 6135126353,
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
-        "verifiedAt": "2026-10-13T00:34:00.071Z"
+        "verifiedAt": "2026-10-13T00:34:00.071Z",
+        "bodySha256": "96f7126c9849d555a860a5a1dc0a621af70ee776983c0f216d709bbb40cdecc1"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
@@ -337,14 +337,14 @@
       "additionalScopeApproval": {
         "commentId": 6136285484,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484",
-        "body": "同意修复浮窗退出缺陷 v1",
         "authorId": 54107847,
         "createdAt": "2026-10-13T01:47:12Z",
         "updatedAt": "2026-10-13T01:47:12Z",
         "requestCommentId": 6136264679,
         "version": "float-quit-v1",
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
-        "verifiedAt": "2026-10-13T01:47:40.010Z"
+        "verifiedAt": "2026-10-13T01:47:40.010Z",
+        "bodySha256": "1d2a1aa67d938dfa56c8e3e8e6adc1b85fc014ff9496e578e87c21b738d31cc0"
       },
       "testedSha": "65c469304680ae426e74728a43d05fb328fd7474",
       "blockerCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103",
@@ -374,7 +374,6 @@
       "mergeApproval": {
         "commentId": 6139438818,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6139438818",
-        "body": "同意",
         "authorId": 54107847,
         "performedViaGithubApp": null,
         "createdAt": "2026-10-13T06:10:10Z",
@@ -383,7 +382,8 @@
         "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
         "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
         "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
-        "verifiedAt": "2026-10-13T06:37:50.475Z"
+        "verifiedAt": "2026-10-13T06:37:50.475Z",
+        "bodySha256": "905819e2e3a059a02087855e9f326d05c877c1767ec31dc012c5c44652840230"
       },
       "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "mainCiRunId": 38358108575,
@@ -424,7 +424,6 @@
       "approval": {
         "commentId": 6128082959,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6128082959",
-        "body": "同意上述视觉、各工作台映射和只读引用范围请回复：同意 https://github.com/zhshenry/onosan_workbench/issues/26 方案 v1",
         "authorId": 54107847,
         "createdAt": "2026-10-12T16:12:26Z",
         "updatedAt": "2026-10-12T16:12:26Z",
@@ -433,7 +432,8 @@
         "planVersion": "v1",
         "verifiedAt": "2026-10-12T16:36:31.561Z",
         "allowedActions": "本单v1方案产品实现、测试、回归和DraftPR交付；不含合入关单",
-        "sourceAssessment": "紧接唯一方案请求的明确v1肯定，虽复制请求前缀，完整语境无引用/提问/否定；独立核对自发日志排除"
+        "sourceAssessment": "紧接唯一方案请求的明确v1肯定，虽复制请求前缀，完整语境无引用/提问/否定；独立核对自发日志排除",
+        "bodySha256": "0894faf249dea04547307227e803ab3c4a5b508ec0e087b227966f3a9a1e5e78"
       },
       "headSha": "f27d982dd2abbdc9d2d730206e318a86ef0dbd26",
       "prNumber": 39,
@@ -468,11 +468,11 @@
       "temporaryImageCleanedAt": "2026-10-13T04:59:14.165Z",
       "integrationNote": "main已合入24；PR39当前冲突待局部v2批准后在授权实现中集成并重验，不沿用旧CI",
       "latestFeedback": {
-        "body": "还是不对，参考当前to-do-list悬浮框的选择，那选择框里面就不需要有筛选器这些，你再看看呢",
         "commentId": 6137391347,
         "createdAt": "2026-10-13T03:14:56Z",
         "updatedAt": "2026-10-13T03:14:56Z",
-        "authorId": 54107847
+        "authorId": 54107847,
+        "bodySha256": "49b546a02f00afdce4180a77df4aae2f032460b0926376fb7ecc2f3bd757ce5a"
       },
       "lastCommentId": 6137668925,
       "draftPlan": {
@@ -490,9 +490,9 @@
       },
       "latestDiagnosticRequest": {
         "commentId": 6137795601,
-        "body": "先把失败原因查清楚，然后再把图重新给我附上",
         "authorId": 54107847,
-        "createdAt": "2026-10-13T03:48:52Z"
+        "createdAt": "2026-10-13T03:48:52Z",
+        "bodySha256": "7b63190efdb949bcc5149a2c9ca20fa781ce1246bdddcf331e92962e59db029d"
       },
       "planApproval": {
         "n": 26,
@@ -500,11 +500,11 @@
         "requestCommentId": 6138445292,
         "commentId": 6140670324,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6140670324",
-        "body": "同意 https://github.com/zhshenry/onosan_workbench/issues/26 关联事项 UI v3",
         "authorId": 54107847,
         "createdAt": "2026-10-13T07:35:24Z",
         "updatedAt": "2026-10-13T07:35:24Z",
-        "performedViaApp": null
+        "performedViaApp": null,
+        "bodySha256": "efa762e266836575d2c993bf7bd636fa9f33aa253eca5c9e9961e047aae33873"
       },
       "latestRun": {
         "id": 38428449729,
@@ -542,23 +542,23 @@
       "latestAcceptance": {
         "commentId": 6158715372,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6158715372",
-        "body": "临时证据我已经看了，同意最终版本",
         "authorId": 54107847,
         "createdAt": "2026-10-14T01:18:29Z",
         "updatedAt": "2026-10-14T01:18:29Z",
         "performedViaGithubApp": null,
         "head": "f27d982dd2abbdc9d2d730206e318a86ef0dbd26",
-        "scope": "已查看临时证据并认可当前最终版本；新head合入/关闭范围及单次内嵌例外待最终澄清"
+        "scope": "已查看临时证据并认可当前最终版本；新head合入/关闭范围及单次内嵌例外待最终澄清",
+        "bodySha256": "446a0a16af8b8df70e153d026335e20a8176a3f807b0273ff750ba127a8c165b"
       },
       "closeoutApproval": {
         "commentId": 6159873721,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6159873721",
-        "body": "同意合入 PR https://github.com/zhshenry/onosan_workbench/pull/39（f27d982），接受本单临时附图例外，main 验收通过后关闭 https://github.com/zhshenry/onosan_workbench/issues/26。",
         "authorId": 54107847,
         "createdAt": "2026-10-14T02:58:07Z",
         "updatedAt": "2026-10-14T02:58:07Z",
         "performedViaGithubApp": null,
-        "head": "f27d982dd2abbdc9d2d730206e318a86ef0dbd26"
+        "head": "f27d982dd2abbdc9d2d730206e318a86ef0dbd26",
+        "bodySha256": "5cacccfb0a63d62a62121a18c5deccad1ae62eeabcf7cbaf2aae0fe56cc16d2c"
       },
       "readyObservation": {
         "draft": false,
@@ -629,7 +629,6 @@
       "approval": {
         "commentId": 6135137217,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217",
-        "body": "同意悬浮窗组 v2 的收起布局调整",
         "authorId": 54107847,
         "createdAt": "2026-10-13T00:16:46Z",
         "updatedAt": "2026-10-13T00:16:46Z",
@@ -647,7 +646,8 @@
         ],
         "corroboratingCommentId": 6135126353,
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
-        "verifiedAt": "2026-10-13T00:34:00.071Z"
+        "verifiedAt": "2026-10-13T00:34:00.071Z",
+        "bodySha256": "96f7126c9849d555a860a5a1dc0a621af70ee776983c0f216d709bbb40cdecc1"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
@@ -674,14 +674,14 @@
       "additionalScopeApproval": {
         "commentId": 6136285484,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484",
-        "body": "同意修复浮窗退出缺陷 v1",
         "authorId": 54107847,
         "createdAt": "2026-10-13T01:47:12Z",
         "updatedAt": "2026-10-13T01:47:12Z",
         "requestCommentId": 6136264679,
         "version": "float-quit-v1",
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
-        "verifiedAt": "2026-10-13T01:47:40.010Z"
+        "verifiedAt": "2026-10-13T01:47:40.010Z",
+        "bodySha256": "1d2a1aa67d938dfa56c8e3e8e6adc1b85fc014ff9496e578e87c21b738d31cc0"
       },
       "testedSha": "65c469304680ae426e74728a43d05fb328fd7474",
       "blockerCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103",
@@ -710,7 +710,6 @@
       "mergeApproval": {
         "commentId": 6139438818,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6139438818",
-        "body": "同意",
         "authorId": 54107847,
         "performedViaGithubApp": null,
         "createdAt": "2026-10-13T06:10:10Z",
@@ -719,7 +718,8 @@
         "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
         "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
         "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
-        "verifiedAt": "2026-10-13T06:37:50.475Z"
+        "verifiedAt": "2026-10-13T06:37:50.475Z",
+        "bodySha256": "905819e2e3a059a02087855e9f326d05c877c1767ec31dc012c5c44652840230"
       },
       "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "mainCiRunId": 38358108575,
@@ -774,7 +774,6 @@
       "approval": {
         "commentId": 6135137217,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217",
-        "body": "同意悬浮窗组 v2 的收起布局调整",
         "authorId": 54107847,
         "createdAt": "2026-10-13T00:16:46Z",
         "updatedAt": "2026-10-13T00:16:46Z",
@@ -792,7 +791,8 @@
         ],
         "corroboratingCommentId": 6135126353,
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
-        "verifiedAt": "2026-10-13T00:34:00.071Z"
+        "verifiedAt": "2026-10-13T00:34:00.071Z",
+        "bodySha256": "96f7126c9849d555a860a5a1dc0a621af70ee776983c0f216d709bbb40cdecc1"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
@@ -819,14 +819,14 @@
       "additionalScopeApproval": {
         "commentId": 6136285484,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484",
-        "body": "同意修复浮窗退出缺陷 v1",
         "authorId": 54107847,
         "createdAt": "2026-10-13T01:47:12Z",
         "updatedAt": "2026-10-13T01:47:12Z",
         "requestCommentId": 6136264679,
         "version": "float-quit-v1",
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
-        "verifiedAt": "2026-10-13T01:47:40.010Z"
+        "verifiedAt": "2026-10-13T01:47:40.010Z",
+        "bodySha256": "1d2a1aa67d938dfa56c8e3e8e6adc1b85fc014ff9496e578e87c21b738d31cc0"
       },
       "testedSha": "65c469304680ae426e74728a43d05fb328fd7474",
       "blockerCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103",
@@ -856,7 +856,6 @@
       "mergeApproval": {
         "commentId": 6139438818,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6139438818",
-        "body": "同意",
         "authorId": 54107847,
         "performedViaGithubApp": null,
         "createdAt": "2026-10-13T06:10:10Z",
@@ -865,7 +864,8 @@
         "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
         "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
         "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
-        "verifiedAt": "2026-10-13T06:37:50.475Z"
+        "verifiedAt": "2026-10-13T06:37:50.475Z",
+        "bodySha256": "905819e2e3a059a02087855e9f326d05c877c1767ec31dc012c5c44652840230"
       },
       "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "mainCiRunId": 38358108575,
@@ -920,7 +920,6 @@
       "approval": {
         "commentId": 6135137217,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217",
-        "body": "同意悬浮窗组 v2 的收起布局调整",
         "authorId": 54107847,
         "createdAt": "2026-10-13T00:16:46Z",
         "updatedAt": "2026-10-13T00:16:46Z",
@@ -938,7 +937,8 @@
         ],
         "corroboratingCommentId": 6135126353,
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
-        "verifiedAt": "2026-10-13T00:34:00.071Z"
+        "verifiedAt": "2026-10-13T00:34:00.071Z",
+        "bodySha256": "96f7126c9849d555a860a5a1dc0a621af70ee776983c0f216d709bbb40cdecc1"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
@@ -965,14 +965,14 @@
       "additionalScopeApproval": {
         "commentId": 6136285484,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484",
-        "body": "同意修复浮窗退出缺陷 v1",
         "authorId": 54107847,
         "createdAt": "2026-10-13T01:47:12Z",
         "updatedAt": "2026-10-13T01:47:12Z",
         "requestCommentId": 6136264679,
         "version": "float-quit-v1",
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
-        "verifiedAt": "2026-10-13T01:47:40.010Z"
+        "verifiedAt": "2026-10-13T01:47:40.010Z",
+        "bodySha256": "1d2a1aa67d938dfa56c8e3e8e6adc1b85fc014ff9496e578e87c21b738d31cc0"
       },
       "testedSha": "65c469304680ae426e74728a43d05fb328fd7474",
       "blockerCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103",
@@ -1002,7 +1002,6 @@
       "mergeApproval": {
         "commentId": 6139438818,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6139438818",
-        "body": "同意",
         "authorId": 54107847,
         "performedViaGithubApp": null,
         "createdAt": "2026-10-13T06:10:10Z",
@@ -1011,7 +1010,8 @@
         "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
         "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
         "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
-        "verifiedAt": "2026-10-13T06:37:50.475Z"
+        "verifiedAt": "2026-10-13T06:37:50.475Z",
+        "bodySha256": "905819e2e3a059a02087855e9f326d05c877c1767ec31dc012c5c44652840230"
       },
       "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "mainCiRunId": 38358108575,
@@ -1066,7 +1066,6 @@
       "approval": {
         "commentId": 6135137217,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217",
-        "body": "同意悬浮窗组 v2 的收起布局调整",
         "authorId": 54107847,
         "createdAt": "2026-10-13T00:16:46Z",
         "updatedAt": "2026-10-13T00:16:46Z",
@@ -1084,7 +1083,8 @@
         ],
         "corroboratingCommentId": 6135126353,
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
-        "verifiedAt": "2026-10-13T00:34:00.071Z"
+        "verifiedAt": "2026-10-13T00:34:00.071Z",
+        "bodySha256": "96f7126c9849d555a860a5a1dc0a621af70ee776983c0f216d709bbb40cdecc1"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
@@ -1111,14 +1111,14 @@
       "additionalScopeApproval": {
         "commentId": 6136285484,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484",
-        "body": "同意修复浮窗退出缺陷 v1",
         "authorId": 54107847,
         "createdAt": "2026-10-13T01:47:12Z",
         "updatedAt": "2026-10-13T01:47:12Z",
         "requestCommentId": 6136264679,
         "version": "float-quit-v1",
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
-        "verifiedAt": "2026-10-13T01:47:40.010Z"
+        "verifiedAt": "2026-10-13T01:47:40.010Z",
+        "bodySha256": "1d2a1aa67d938dfa56c8e3e8e6adc1b85fc014ff9496e578e87c21b738d31cc0"
       },
       "testedSha": "65c469304680ae426e74728a43d05fb328fd7474",
       "blockerCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103",
@@ -1148,7 +1148,6 @@
       "mergeApproval": {
         "commentId": 6139438818,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6139438818",
-        "body": "同意",
         "authorId": 54107847,
         "performedViaGithubApp": null,
         "createdAt": "2026-10-13T06:10:10Z",
@@ -1157,7 +1156,8 @@
         "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
         "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
         "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
-        "verifiedAt": "2026-10-13T06:37:50.475Z"
+        "verifiedAt": "2026-10-13T06:37:50.475Z",
+        "bodySha256": "905819e2e3a059a02087855e9f326d05c877c1767ec31dc012c5c44652840230"
       },
       "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "mainCiRunId": 38358108575,
@@ -1212,7 +1212,6 @@
       "approval": {
         "commentId": 6135137217,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217",
-        "body": "同意悬浮窗组 v2 的收起布局调整",
         "authorId": 54107847,
         "createdAt": "2026-10-13T00:16:46Z",
         "updatedAt": "2026-10-13T00:16:46Z",
@@ -1230,7 +1229,8 @@
         ],
         "corroboratingCommentId": 6135126353,
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
-        "verifiedAt": "2026-10-13T00:34:00.071Z"
+        "verifiedAt": "2026-10-13T00:34:00.071Z",
+        "bodySha256": "96f7126c9849d555a860a5a1dc0a621af70ee776983c0f216d709bbb40cdecc1"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
@@ -1257,14 +1257,14 @@
       "additionalScopeApproval": {
         "commentId": 6136285484,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484",
-        "body": "同意修复浮窗退出缺陷 v1",
         "authorId": 54107847,
         "createdAt": "2026-10-13T01:47:12Z",
         "updatedAt": "2026-10-13T01:47:12Z",
         "requestCommentId": 6136264679,
         "version": "float-quit-v1",
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
-        "verifiedAt": "2026-10-13T01:47:40.010Z"
+        "verifiedAt": "2026-10-13T01:47:40.010Z",
+        "bodySha256": "1d2a1aa67d938dfa56c8e3e8e6adc1b85fc014ff9496e578e87c21b738d31cc0"
       },
       "testedSha": "65c469304680ae426e74728a43d05fb328fd7474",
       "blockerCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103",
@@ -1294,7 +1294,6 @@
       "mergeApproval": {
         "commentId": 6139438818,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6139438818",
-        "body": "同意",
         "authorId": 54107847,
         "performedViaGithubApp": null,
         "createdAt": "2026-10-13T06:10:10Z",
@@ -1303,7 +1302,8 @@
         "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
         "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
         "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
-        "verifiedAt": "2026-10-13T06:37:50.475Z"
+        "verifiedAt": "2026-10-13T06:37:50.475Z",
+        "bodySha256": "905819e2e3a059a02087855e9f326d05c877c1767ec31dc012c5c44652840230"
       },
       "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "mainCiRunId": 38358108575,
@@ -1358,7 +1358,6 @@
       "approval": {
         "commentId": 6135137217,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217",
-        "body": "同意悬浮窗组 v2 的收起布局调整",
         "authorId": 54107847,
         "createdAt": "2026-10-13T00:16:46Z",
         "updatedAt": "2026-10-13T00:16:46Z",
@@ -1376,7 +1375,8 @@
         ],
         "corroboratingCommentId": 6135126353,
         "allowedActions": "完整v2统一产品实现/测试/一个Draft PR，不含合入关单",
-        "verifiedAt": "2026-10-13T00:34:00.071Z"
+        "verifiedAt": "2026-10-13T00:34:00.071Z",
+        "bodySha256": "96f7126c9849d555a860a5a1dc0a621af70ee776983c0f216d709bbb40cdecc1"
       },
       "implementationBaseSha": "a5659fa5e6dbef6188ec3e34b061bc317d4d7e78",
       "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
@@ -1403,14 +1403,14 @@
       "additionalScopeApproval": {
         "commentId": 6136285484,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484",
-        "body": "同意修复浮窗退出缺陷 v1",
         "authorId": 54107847,
         "createdAt": "2026-10-13T01:47:12Z",
         "updatedAt": "2026-10-13T01:47:12Z",
         "requestCommentId": 6136264679,
         "version": "float-quit-v1",
         "allowedActions": "仅应用before-quit销毁浮窗，普通关闭隐藏不变；正常退出/重复退出/重启等回归，不含合入关单",
-        "verifiedAt": "2026-10-13T01:47:40.010Z"
+        "verifiedAt": "2026-10-13T01:47:40.010Z",
+        "bodySha256": "1d2a1aa67d938dfa56c8e3e8e6adc1b85fc014ff9496e578e87c21b738d31cc0"
       },
       "testedSha": "65c469304680ae426e74728a43d05fb328fd7474",
       "blockerCommentUrl": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103",
@@ -1440,7 +1440,6 @@
       "mergeApproval": {
         "commentId": 6139438818,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6139438818",
-        "body": "同意",
         "authorId": 54107847,
         "performedViaGithubApp": null,
         "createdAt": "2026-10-13T06:10:10Z",
@@ -1449,7 +1448,8 @@
         "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
         "scope": "仅PR40准确head合入→实际main完整Windows通过→关闭25/28/29/30/31/32/33，按已有安全规范清理本组已合入分支，不含发布",
         "sourceAssessment": "原始用户本人紧接唯一明确最终包请求的短肯定，排除自发标识/App/日志/引用，后续无撤回",
-        "verifiedAt": "2026-10-13T06:37:50.475Z"
+        "verifiedAt": "2026-10-13T06:37:50.475Z",
+        "bodySha256": "905819e2e3a059a02087855e9f326d05c877c1767ec31dc012c5c44652840230"
       },
       "mergeSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "mainCiRunId": 38358108575,
@@ -1494,11 +1494,11 @@
         "requestCommentId": 6140182883,
         "commentId": 6140660225,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6140660225",
-        "body": "同意 https://github.com/zhshenry/onosan_workbench/issues/34 方案 v2",
         "authorId": 54107847,
         "createdAt": "2026-10-13T07:34:44Z",
         "updatedAt": "2026-10-13T07:34:44Z",
-        "performedViaApp": null
+        "performedViaApp": null,
+        "bodySha256": "d8f750bfa0da3e53ede81fbff293747574f5bcb06526cd6e9bca3860ba977027"
       },
       "approvalReverifiedAt": "2026-10-13T10:58:39.185Z",
       "pr": 44,
@@ -1550,12 +1550,12 @@
       "closeoutApproval": {
         "commentId": 6159879982,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6159879982",
-        "body": "同意合入 PR https://github.com/zhshenry/onosan_workbench/pull/44，版本 https://github.com/zhshenry/onosan_workbench/commit/71416bb20380c013960d005f53b281340e97caa2，并在 main 验收通过后关闭 https://github.com/zhshenry/onosan_workbench/issues/34、按规范清理该需求分支。",
         "authorId": 54107847,
         "createdAt": "2026-10-14T02:58:41Z",
         "updatedAt": "2026-10-14T02:58:41Z",
         "performedViaGithubApp": null,
-        "head": "71416bb20380c013960d005f53b281340e97caa2"
+        "head": "71416bb20380c013960d005f53b281340e97caa2",
+        "bodySha256": "361ebb2e6630167183a001b49220466f7684485cd3dd47139a0f02782577f13a"
       },
       "integrationBaseSha": "661bee0ba7262098a31ef96efa1c3b4ba63d9f80",
       "localIntegrationTests": {
@@ -1605,7 +1605,6 @@
       "approval": {
         "commentId": 6139474532,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6139474532",
-        "body": "同意 https://github.com/zhshenry/onosan_workbench/issues/35 方案 v1。",
         "authorId": 54107847,
         "createdAt": "2026-10-13T06:12:59Z",
         "updatedAt": "2026-10-13T06:12:59Z",
@@ -1613,7 +1612,8 @@
         "requestCommentId": 6139419969,
         "planVersion": "v1",
         "allowedActions": "35 v1独立实现/测试/一个Draft PR，不含合入关单",
-        "verifiedAt": "2026-10-13T06:42:20.661Z"
+        "verifiedAt": "2026-10-13T06:42:20.661Z",
+        "bodySha256": "f39d7c78a299e95833d696e3c5ad94d012ee29414ebfc899f75d93f851520bb6"
       },
       "implementationBaseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
       "pr": 43,
@@ -1638,12 +1638,12 @@
       "additionalPlanRequest": {
         "commentId": 6145544905,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6145544905",
-        "body": "请补充首页窄屏修复方案",
         "authorId": 54107847,
         "app": null,
         "createdAt": "2026-10-13T12:28:27Z",
         "updatedAt": "2026-10-13T12:28:27Z",
-        "allowedActions": "准备补充方案，不含产品实施或合入"
+        "allowedActions": "准备补充方案，不含产品实施或合入",
+        "bodySha256": "0d18c10e77736f2133cfbf0e2b1e577c53b00ec33508609cba0873851068bd46"
       },
       "imageDelivery": {
         "channel": "one-time-private-chat",
@@ -1690,11 +1690,11 @@
         "requestCommentId": 6140309803,
         "commentId": 6140656456,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/36#issuecomment-6140656456",
-        "body": "同意 https://github.com/zhshenry/onosan_workbench/issues/36 方案 v1",
         "authorId": 54107847,
         "createdAt": "2026-10-13T07:34:28Z",
         "updatedAt": "2026-10-13T07:34:28Z",
-        "performedViaApp": null
+        "performedViaApp": null,
+        "bodySha256": "fc034d200fe040071227e5552d099f4b54a139da5a92a601c3025c1926256451"
       }
     },
     "37": {
@@ -1718,11 +1718,11 @@
         "requestCommentId": 6140325358,
         "commentId": 6140651596,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6140651596",
-        "body": "同意 https://github.com/zhshenry/onosan_workbench/issues/37 方案 v1",
         "authorId": 54107847,
         "createdAt": "2026-10-13T07:34:09Z",
         "updatedAt": "2026-10-13T07:34:09Z",
-        "performedViaApp": null
+        "performedViaApp": null,
+        "bodySha256": "0a7b49f9a4bb6c8c56fbb584fdae1266e67436b598bbe6ede9740baae4fffb4f"
       },
       "groupId": "publish-association-37",
       "groupIssueNumbers": [
@@ -1768,12 +1768,12 @@
       "closeoutApproval": {
         "commentId": 6159876764,
         "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6159876764",
-        "body": "同意合入 PR https://github.com/zhshenry/onosan_workbench/pull/45，版本 https://github.com/zhshenry/onosan_workbench/commit/42733f0bcfcb1155f0f03145b8ffd0ace2001882，并在 main 验收通过后关闭 https://github.com/zhshenry/onosan_workbench/issues/37、按规范清理该需求分支。",
         "authorId": 54107847,
         "createdAt": "2026-10-14T02:58:23Z",
         "updatedAt": "2026-10-14T02:58:23Z",
         "performedViaGithubApp": null,
-        "head": "42733f0bcfcb1155f0f03145b8ffd0ace2001882"
+        "head": "42733f0bcfcb1155f0f03145b8ffd0ace2001882",
+        "bodySha256": "67e12c1c1b0448cd9eea01060c4d6bc0985e5d6662e2643b17354c19c6378cbd"
       }
     },
     "41": {
@@ -1811,8 +1811,8 @@
         "sourceCommentId": 6137177280,
         "sourceUrl": "https://github.com/zhshenry/onosan_workbench/issues/41#issuecomment-6137177280",
         "updatedAt": "2026-10-13T02:57:04Z",
-        "body": "没问题，在发布版本前你需要确认几个事情：\n1、所有功能和分支都已经合入主分支\n2、除了主分支外没有多余的其他分支",
-        "interpretation": "发布前核对全部目标功能已合入main、无未处理需求分支；清理无用分支，必要进度分支单列用途，不误合过时实验，不因发布需求推定批准具体合入"
+        "interpretation": "发布前核对全部目标功能已合入main、无未处理需求分支；清理无用分支，必要进度分支单列用途，不误合过时实验，不因发布需求推定批准具体合入",
+        "bodySha256": "1381171d6bbd3227e3a594aacd2904f8b800655dbe83727ae8c91d7d458c1100"
       },
       "stateBranchQuestionCommentId": 6137399050
     },
@@ -1999,31 +1999,31 @@
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
-      "body": "【OnO 自动化】#17｜方案 v1｜待方案批准\n\n![#17 方案 v1：AI 修改建议待确认高保真](https://github.com/user-attachments/assets/5d1ae396-9b29-4ba4-a028-42401a9f79ce)\n\n上图是独立高保真设计稿，不是已实现截图。示例沿用你提供的事项，展示待确认状态；本单尚未修改产品功能。\n\n方案\n- 将 AI 修改建议呈现为独立卡片，使用浅蓝背景和侧边强调，与普通聊天区分。\n- 卡片自己显示事项名称、中文字段名和真实“修改前 → 修改后”，不用依赖上方聊天，也不裸露 dueAt 等内部字段。\n- 保留现有逐项选择与确认后才写入；按钮为“保留原内容”“应用所选”，未选择任何项时不能应用。\n- 示例仅修改截止时间，其余字段保持不变。旧值来自提案生成时的真实数据快照，不能从 AI 回复文字猜测。\n\n验收\n1. 单看卡片即可识别目标和改动；清空值显示“未设置”，日期可读。\n2. 现有新增、删除、标签操作使用一致的可读摘要，危险操作有明确文字提示。\n3. 长标题、长备注、窄面板、多项选择及取消均可操作，不截断关键内容。\n4. 测试与最终实际截图另行提供；此阶段是设计确认。\n\n边界\n本单批准的是修改前的可读性和确认卡样式；#18 的应用后卡片保留单独审阅。不新增撤销或历史记录产品能力。\n设计来源：基于你的问题截图和 main 673febb3 的实际交互，用独立绘图生成；无需先合入辅助 PR。\n图 SHA256：24f5d3419bf12464b421380a7476fd11a6bcaf3133951e391f3a4bbc443a1d38。\n\n有意见直接在本 Issue 回复；同意这版方案并进入实现，请回复：同意 #17 方案 v1\n（这不包含最终 PR 合入；实现和测试完成后再请你验收。）",
       "createdAt": "2026-10-12T09:41:10Z",
       "commentId": 6121701478,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6121701478",
-      "updatedAt": "2026-10-12T09:41:44Z"
+      "updatedAt": "2026-10-12T09:41:44Z",
+      "bodySha256": "3b55314e92e9a345fb5a3bec479f615d8c3b312577d08e92e6c42a11bae768e8"
     },
     "issue18-plan-v1-comment": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/18",
-      "body": "【OnO 自动化】#18｜方案 v1｜待方案批准\n\n![#18 方案 v1：应用后保留建议卡高保真](https://github.com/user-attachments/assets/98e79b3c-310e-4f75-b33e-8997edc799fa)\n\n上图是独立高保真设计稿，不是已实现截图。展示应用成功后保留原卡的效果；本单尚未修改产品功能。\n\n方案\n- 成功应用后，原 AI 修改建议卡留在原位置，卡片框架、事项名称和变更明细不消失。\n- “已应用”作为标签放在卡内，底部显示已应用数量；结束后的选择框和按钮转为只读结果，避免重复提交。\n- 不再显示“待确认后写入”等矛盾状态说明，不能仅在聊天底部孤立显示结果。\n\n边界状态与验收\n1. 全部选中成功：保留准确改动和卡内“已应用”，不能再次应用同一建议。\n2. 只选部分成功：标明“已应用 1 项／未选择 1 项，本轮未应用”。整个建议 token 已消费，未选项不能再点击应用。\n3. 失败：保留卡和明细，显示原因与“本次未应用”，不得出现成功标签。当前执行是事务，失败全回滚，不新增“部分失败继续执行”机制。\n4. 不新增撤销、历史页面或跨会话持久化功能；实际应用项取自真实执行结果，不根据已清空的选择状态猜测。\n\n独立审批\n图中借用 #17 的拟议样式展示前后连贯性；若只批准 #18、未批准 #17，就在现有卡片样式上实现本单的保留和状态行为，不视作一并批准外观改版。\n设计来源：你的问题截图及 main 673febb3 的实际执行语义，独立绘图生成。\n图 SHA256：5e506a6437b9f1a61f964f61feda084f7c762418069cbee25e41d61d05fc5264。\n\n有意见直接在本 Issue 回复；同意这版方案并进入实现，请回复：同意 #18 方案 v1\n（这不包含最终 PR 合入；实现和测试完成后再请你验收。）",
       "createdAt": "2026-10-12T09:43:09Z",
       "commentId": 6121730958,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/18#issuecomment-6121730958",
-      "updatedAt": "2026-10-12T09:43:42Z"
+      "updatedAt": "2026-10-12T09:43:42Z",
+      "bodySha256": "758a41b2f32886226cdea4a3be18ee7c7dce74ea91c782bcb4ff522e67b213a2"
     },
     "pr21-final-report-v1": {
       "kind": "update-pr-body",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/pull/21",
       "headSha": "b426820c2efe92b0b50c70fa90e0c726d064d9dd",
-      "body": "【OnO 自动化】\n\n## 范围\n\n按已确认的精简方案，将日常执行收敛为一个正式任务唤醒 dot，按规范和简短任务状态连续推进。普通需求仍是方案批准、最终准确版本合入两个关口。此 PR 为流程/CI/文档维护，无产品功能或 UI 设计改动。\n\n- 退役原型渲染、附件上传两个历史手动 Actions 入口；保留脚本及独立安全回归。过时操作说明改为简短退役记录，完整历史仍可从固定 Git 版本读取。\n- 删除无生产调用的旧模拟 core、专属测试和 policy fixture；保留独立、有界的 PNG 解码器并增加安全负例，不把历史模拟核心当作 dot 的运行依赖。\n- 将 actionlint 1.7.12 迁入真实 Windows 验收：下载官方 Windows 包、核对固定 SHA256 后执行；仍要求当前工作流通过和历史非法上下文反例被明确拒绝。\n- Windows 增加必须实际创建并拒绝的文件 symlink 和父目录 junction 用例，无跳过、无提权。仅在本 PR 准确版本的 Windows CI 证明它们通过后，接受移除重复 Linux job；不能运行则保留最小 Linux 兜底。\n- 保留真实 Electron/NSIS 构建、安装、UI/保存/同版本重启验收，以及证据白名单、总量上限、3 天保留约束。\n- 更新原流程、准备清单与模板，删除自建调度器/分布式锁/迁 pin 的硬前置；保留来源核验、唯一协调者、准确版本、条件更新和未知写入先查回执。\n\n## 验证\n\n基线：main `673febb3ba2e24d17772092bc7d8956642574bee`。准确 head：`b426820c2efe92b0b50c70fa90e0c726d064d9dd`。本次 25 文件，新增 423 行、删除 1734 行；测试数量下降来自删除已退役模拟功能及专属测试，没有跳过独立安全用例。\n\n- 本地 UTC 全量：396 tests，394 通过、0 失败、2 个既有 Windows 专属测试在 Linux 跳过。\n- `npm run verify`：排版检查、类型检查、生产构建通过。保留既有 bundle 体积提示。\n- 实际 actionlint：唯一剩余 workflow 通过，独立 9 行历史错误反例被精确拒绝；官方 Windows ZIP 的实际字节已核对 SHA256。\n- 默认云宿主 PDT 环境有 3 个既有 todo 日期测试失败，在未改基线同样复现；本 PR 不改变产品日期逻辑。UTC 全量及下列真实 Windows CI 均已通过。\n- 独立审阅完成，无阻塞发现；源码/测试全仓引用检查未留下被删除 core/API 的调用。\n- [准确版本 Windows CI run 38231597490](https://github.com/zhshenry/onosan_workbench/actions/runs/38231597490)：attempt 1，2026-10-12 09:47:11 UTC completed/success。唯一 check run 与 check suite 均 success；无额外 legacy status。\n- Windows 全量 396/396 通过，0 失败、0 跳过。日志明确记录 `Rejected a real evidence file symlink on win32` 及 `Rejected a real parent directory junction on win32`；actionlint 与精确历史反例也通过。因此本版本已满足 Linux 重复 job 的移除条件，无需权限变更或跳过补偿。\n- Windows verify、真实 NSIS 构建、静默安装、实际 UI/保存/同版本重启全部通过，`PILOT_RESULT passed checks=25/25`。\n- 实际 checkout merge SHA `a9c0a5fc0311b10a33f863bcaaa90946fff07b0b`，父提交为上述 base/head；tree `4e39955f59d990ca2cd2dc66232448753df0d41b` 与本地审阅和发布内容相同。\n- 本轮只有一个临时证据包，2,943,041 bytes，artifact `11738703038`，到期 2026-10-15 09:47:06 UTC；未另存截图、未将 PNG 入 Git。此流程维护 PR 无产品 UI 改动，不用设计图冒充运行证据。\n\n## 边界\n\n没有更改保护规则、权限、凭据、安全设置、产品功能，也不发布或合入 PR #20 的原型/新协调器。普通 main 分支摘要显示 `protected=false`、required status checks 为 off/空，规则集读取为空；管理级 protection 详情返回 403，未绕过限制或修改设置。当前 PR `mergeable_state=clean`，未见旧 `linux-baseline` 等待状态；最终合入前仍须重读，不将摘要冒充管理配置核验。\n\n目前保持 Draft，检查已完成，等待用户对上述准确 head 的最终合入批准；未合入、未发版、未删除分支。新 head 或 base 漂移须重新核验，不能套用本次旧结果。\n\n审阅后，如同意合入，请在本 PR 回复：同意合入 PR #21，版本 b426820。\n",
       "createdAt": "2026-10-12T09:48:48Z",
       "updatedAt": "2026-10-12T09:49:35Z",
-      "runId": 38231597490
+      "runId": 38231597490,
+      "bodySha256": "d0cf570cd173a2f9b43d2e49eaa35f8bf4dd16397382743c694abd3bad21bacb"
     },
     "pr21-merge-b426820": {
       "kind": "merge-pr",
@@ -2094,12 +2094,12 @@
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
-      "body": "【OnO 自动化】#17 + #18｜AI 建议卡组方案 v2｜待整组方案批准\n\n已按你在两单的意见调整：去掉左侧粗强调线，四边使用一致的浅蓝细边框。#17 与 #18 合为同一交互组，共用一个实现 PR；本 Issue（#17）集中对齐方案，#18 保留对应图及逐项验收。\n\n### 高保真：确认前（#17）\n![组方案 v2：确认前，四边一致细边框](https://github.com/user-attachments/assets/93fb3681-bfa4-4257-8446-f6baf1497d17)\n\n### 高保真：应用后（#18）\n![组方案 v2：应用后保留卡片，四边一致细边框](https://github.com/user-attachments/assets/9f2bcb64-a500-45fd-b64e-e96944abe866)\n\n以上是设计稿，不是已实现或实测截图。此前两单各自 v1 由本组方案 v2 替代，尚未开始产品实现。\n\n### #17：看清改动再确认\n- 保留浅蓝背景与独立圆角卡片，与普通聊天区分；四边同样粗细，不再有左侧强调条。\n- 卡片直接显示目标事项、中文字段名及真实“修改前 → 修改后”；不裸露 dueAt 等内部标识。\n- 旧值来自生成建议时的实际数据快照，不能猜测或由 AI 聊天文本反推。未设置/清空值明确显示，日期可读。\n- 保留逐项选择；“保留原内容”不写数据，“应用所选”只执行所选项，未选任何项时禁用。\n- 新增、删除、标签操作保留可读摘要；危险操作明确提示。长标题、长备注、窄面板及多选均须可用。\n\n### #18：应用后保留结果卡\n- 原卡在原位置保留目标和变更明细，卡内标注“已应用”，完成后选择框/按钮转为只读结果，避免重复执行。\n- 全部选择成功：显示实际应用数量；部分选择成功：逐项区分已应用和未选择（本轮未应用）。原建议 token 已消费，未选项不能再次点击执行。\n- 失败时保留卡及明细，显示原因与“本次未应用”，不显示成功标签。现有事务失败全回滚，不新增部分失败续跑机制。\n- 结果必须来自真实执行回执，不从已清空的选择状态猜测；成功后不再显示“待确认后写入”。\n\n### 范围和验收\n- 一个实现 PR 同时关联 #17、#18，分别验证上述各项，不用一个总“通过”代替逐项验收。\n- 不新增撤销、历史页面或跨会话记录持久化功能，不改待办之外的其他功能入口。\n- 基线 main 94938ee1cc94a652d3b9fdc4c7ef3e75d74e298f；实施前重查基线，完成后提供当前配置的 Windows 测试、构建、实际操作/保存/重启结果及真实截图。\n- 此次只批准整组方案并进入实现；最终准确 PR/head 的合入与逐项关单另作第二次验收确认，不需要分两单重复批准。\n\n修改意见可以继续在 #17 或 #18 留下，我会汇总到这里。若同意以上两单整组方案并进入实现，请在本 Issue 回复：\n同意 #17+#18 组方案 v2",
       "createdAt": "2026-10-12T10:12:01Z",
       "commentId": 6122171698,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6122171698",
       "updatedAt": "2026-10-12T10:12:01Z",
-      "reconciledAt": "2026-10-12T10:13:48.163Z"
+      "reconciledAt": "2026-10-12T10:13:48.163Z",
+      "bodySha256": "ed0ce073a6ff87931d67502f3323c61ae66c8356b714e021fbb847b5b7979f94"
     },
     "group-v2-comment18": {
       "kind": "comment",
@@ -2107,11 +2107,11 @@
       "target": "https://github.com/zhshenry/onosan_workbench/issues/18",
       "commentId": 6122190320,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/18#issuecomment-6122190320",
-      "body": "【OnO 自动化】#17 + #18｜组方案 v2｜应用后状态\n\n已收到你的边框意见：去掉左侧粗线，四边保持一致。#17 与 #18 按你确认的方式合为一组，共用一个实现 PR；尚未开始产品实施。\n\n![组方案 v2：应用后保留卡片，四边一致细边框](https://github.com/user-attachments/assets/9f2bcb64-a500-45fd-b64e-e96944abe866)\n\n上图是高保真设计稿，不是实测截图。本单仍逐项验收：原卡和变更明细保留、卡内已应用标签、只读防重复、部分选择标明未选项本轮未应用、失败不得显示成功；不新增撤销或跨会话历史。\n\n整组两态图、#17/#18 的完整范围和逐项验收集中在[主方案 v2](https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6122171698)。原两份 v1 已由该整组方案替代。意见仍可在本 Issue 回复，我会汇总；批准只需在 #17 的主方案下回复一次：\n同意 #17+#18 组方案 v2\n\n此次仅批准整组方案进入实现，不含最终 PR 合入。",
       "createdAt": "2026-10-12T10:13:14Z",
       "updatedAt": "2026-10-12T10:13:14Z",
       "reconciledAt": "2026-10-12T10:13:48.163Z",
-      "reconciliationNote": "前置状态写被中断，后续评论已发送；已停止依赖推进并通过服务端原始ID/正文/App来源核对回执，未重发。"
+      "reconciliationNote": "前置状态写被中断，后续评论已发送；已停止依赖推进并通过服务端原始ID/正文/App来源核对回执，未重发。",
+      "bodySha256": "0475b0aab7eb45c1a0d76b2674e0813e82e1a1723e2f230c78f8871ccf8f991d"
     },
     "pr22-ready-0b8e2b3": {
       "kind": "mark-ready",
@@ -2142,11 +2142,11 @@
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
-      "body": "【OnO 自动化】#17 + #18｜组方案 v2 已批准，开始实施\n\n已核对你的整组 v2 批准（本 Issue 评论 6122337511；#18 评论 6122339723 为同组确认）。两单按一个实现 PR 推进，基线为 main ebc21504080900fa6fb1d7f6f1f237e55e6d5575。\n\n接下来按已确认的四边一致细边框设计，完成可读的修改前后对照、确认应用及应用后保留结果卡，并逐项测试。完成后在这里附真实截图和准确 PR/head 供最终验收，不自动合入。\n\n本条为进度通知，无需重复批准；有补充直接回复本 Issue。",
       "createdAt": "2026-10-12T10:37:06.479Z",
       "commentId": 6122575647,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6122575647",
-      "updatedAt": "2026-10-12T10:37:56.382Z"
+      "updatedAt": "2026-10-12T10:37:56.382Z",
+      "bodySha256": "9598c9bb6c77aa8b58f760b0ceeadbeddbf8be3c2f02cdc47b66e201f06b1d29"
     },
     "cleanup-branch-docs/ono-issue-workflow-v1": {
       "kind": "delete-merged-branch",
@@ -2430,21 +2430,21 @@
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
       "headSha": "bff0ff5f949c4870ae31817739a119f82dbd3f40",
-      "body": "【OnO 自动化】#17 + #18｜PR #23｜整组 v2 实现完成，待最终合入收尾批准\n\n本组成员：#17（确认前看清改动）、#18（应用后保留卡片）。依据你的[整组方案 v2 批准](https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6122337511)，共同交付 [PR #23](https://github.com/zhshenry/onosan_workbench/pull/23)。以下全部为本实现的真实 Windows 安装应用截图，使用隔离的合成测试数据；不是设计图。\n\n### #17：确认前\n![PR23 bff0ff5 实测：确认前]( https://github.com/user-attachments/assets/c26f5d73-49fa-4b97-96d2-8628751a317d )\n\n### #18：应用后\n![PR23 bff0ff5 实测：应用后保留卡片]( https://github.com/user-attachments/assets/45ed28f4-6461-436a-b668-aeb46e68e9ee )\n\n已逐图对照 v2：浅蓝独立圆角卡、四边一致细框、真实目标/中文字段/修改前后、待确认与已应用状态、结束后只读结果均落实。截图测试改的是备注，设计示例改的是截止时间，二者属于同一卡片字段展示；日期/空值/新增删除标签同时有单测覆盖。\n\n### 逐单验收\n- #17 通过：快照取自提案时真实数据，不从模型回复猜测；空值明确、中文字段/目标和危险操作摘要；逐项选择、键盘取消选择、零选禁用、保留原内容不写数据；长内容、窄面板与三种现有主题。\n- #18 通过：全选成功保留原卡与明细，结果来自主进程事务回执；部分选择准确标未选项、整枚 token 消费且不可重放；失败真实回滚先前写入，不显示成功；关闭重开面板保留运行内卡片状态。\n- 保存/重启通过：实际修改后读回同一事项 ID、业务字段与创建时间等元数据，真实退出后重新启动同一安装版本再核对。\n- 重启边界：按方案“不新增跨会话明细持久化”，新快照/逐项回执仅当前进程内保留；重新启动后既有聊天状态仍保留，无法恢复的明细明确提示“原始快照不可用”，旧建议不能再次执行。本次没有新增撤销或历史页面。\n\n<details>\n<summary>其他真实截图：部分选择、失败、窄窗口、重启</summary>\n\n部分选择成功，未选项明确“本轮未应用”：\n![PR23 bff0ff5 实测：部分选择]( https://github.com/user-attachments/assets/5f564ab1-4449-42f0-b5d5-632fee28ec57 )\n\n故意省略标签依赖触发失败；这是回滚负例通过，不是 CI 失败：\n![PR23 bff0ff5 实测：失败不假报成功]( https://github.com/user-attachments/assets/cc1b6af6-c7d1-4d86-b950-e6b277ffefc8 )\n\n窄窗口 / 长内容滚动；截图仅显示当前视窗，长字段与无横向溢出另有实际断言：\n![PR23 bff0ff5 实测：窄窗口]( https://github.com/user-attachments/assets/85b4aab8-db2e-4c09-9d19-468c1029a3bd )\n\n真实重启后旧卡只读、快照缺失明确提示：\n![PR23 bff0ff5 实测：重启边界]( https://github.com/user-attachments/assets/e714e2c7-6374-47ed-9536-2f3bfeba98f2 )\n</details>\n\n### 准确版本和测试\n- PR head：bff0ff5f949c4870ae31817739a119f82dbd3f40（短写 bff0ff5）。\n- base：ebc21504080900fa6fb1d7f6f1f237e55e6d5575。\n- 实际 tested merge：01262b1e5d27f5aab76f2840c0b12aa551f6be47；父提交与上述 base/head 一致，tree b96ce54a308b7001067cf62e22d88b0f7f3abc57。\n- [Windows CI 38239284361](https://github.com/zhshenry/onosan_workbench/actions/runs/38239284361)，attempt 1：408/408 测试通过、0失败、0跳过；verify、actionlint、真实文件 symlink/父目录 junction 安全反例、NSIS 构建和安装通过。\n- 真实安装应用验收 32/32，包括新增 AI 卡专项、保存读回与同版本重启。\n- 本地同一全量：406通过、2个既有 Windows-only 跳过；npm test 包装器因云宿主 IPC 权限报错，改由 Node tsx loader 跑同一集合，未删断言或放宽测试。\n- 六张图已逐张查看并通过原生附件上传；首次文件选择器失效，确认未产生上传后换当前选择器补试一次成功。PNG 未入 Git，不额外备份。\n- 临时 Actions 原始证据 artifact 11742551151，约4.91MB，2026-10-15 18:59:38（UTC+08）到期；本评论展示复用原生附件。未核实原生附件永久保留保证。\n\n未覆盖：安装向导/UAC/SmartScreen、跨版本升级和真实外部 AI 服务质量；本次以无凭据 loopback 固定回复驱动真实 UI/IPC/SQLite，未发送个人数据给模型。没有新增权限、费用、自动更新配置或发布。\n\n### 本次合入收尾包\n唯一关联实现 PR 为 #23；本组没有需要关闭的旧设计/试验 PR。PR #16、#20 属于其他历史工作，不在本包内。\n请求一次批准：\n1. 合入 PR #23 的上述准确 head。\n2. 验证实际 main 的完整 Windows CI、408项测试及32项安装/操作/保存/重启验收；失败停止收尾并报告。\n3. 仅全部通过且本组交付无新缺口后，分别关闭 #17 和 #18；任何单项不满足就保留开放。\n不包含发版、删除本实现分支、权限变更或范围外修复。新 head 须重新批准，base 变化重新集成验证。\n\n有意见直接回复本 Issue；同意上述整包请回复：\n同意合入收尾 PR #23，版本 bff0ff5；通过后关闭 #17、#18",
       "createdAt": "2026-10-12T11:04:19.937Z",
       "commentId": 6122991026,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6122991026",
-      "updatedAt": "2026-10-12T11:04:57.376Z"
+      "updatedAt": "2026-10-12T11:04:57.376Z",
+      "bodySha256": "d35407737664c29f372ecbc2c76b5976cbe234d41e928202210560c49629dbe6"
     },
     "cards-final-comment18-bff0ff5": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/18",
-      "body": "【OnO 自动化】#17 + #18｜PR #23｜应用后卡片实测已完成\n\n![PR23 bff0ff5 实测：应用后保留卡片](https://github.com/user-attachments/assets/45ed28f4-6461-436a-b668-aeb46e68e9ee)\n\n上图为准确 head bff0ff5f949c4870ae31817739a119f82dbd3f40 的真实 Windows 安装应用截图（隔离合成数据），不是设计稿。#18 的原卡保留、卡内已应用、逐项回执、部分选择、防重复、失败回滚和运行内关闭重开均已验证；Windows408/408、安装/操作/保存重启32/32通过。\n\n重启边界：按已批准方案不新增跨会话明细持久化，重新启动后旧卡只读，无法恢复的快照明确提示不可用。\n\n完整两单验收、六张实图、准确 SHA 和合入后分别关闭 #17/#18 的条件见[主 Issue 最终验收请求](https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6122991026)。无需在两单重复批准；请只在 #17 回复一次：\n同意合入收尾 PR #23，版本 bff0ff5；通过后关闭 #17、#18",
       "createdAt": "2026-10-12T11:05:06Z",
       "commentId": 6123000879,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/18#issuecomment-6123000879",
-      "updatedAt": "2026-10-12T11:05:06Z"
+      "updatedAt": "2026-10-12T11:05:06Z",
+      "bodySha256": "91d461f3a844ad17fdc69b593b608a43e05b57b1337b7255663ae29b44f13fa5"
     },
     "pr23-ready-bff0ff5": {
       "kind": "mark-ready",
@@ -2498,21 +2498,21 @@
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/17",
-      "body": "【OnO 自动化】#17 + #18｜PR #23 合入与收尾完成\n\n依据你的[准确版本合入收尾批准](https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6123701226)（2026-10-12 11:51:41 UTC），已合入 PR #23 的 bff0ff5f949c4870ae31817739a119f82dbd3f40。\n\n实际 main：41dccc749f8ddeb5ab6aab7eac41537a1406e2a9；tree b96ce54a308b7001067cf62e22d88b0f7f3abc57，与已验收版本一致。[合后 main 检查](https://github.com/zhshenry/onosan_workbench/actions/runs/38250363482)为 push / attempt 1，于2026-10-12 20:44:26（UTC+08）全部成功：\n- Windows 408/408，零失败、零跳过；actionlint、verify、真实 symlink/junction 安全反例通过。\n- NSIS 构建/实际安装、32/32 实装操作通过，包含两单 AI 卡专项、保存业务字段读回及真实退出重启。\n\n逐项收尾：\n- #17 可读的目标/中文字段/修改前后与四边一致细框已交付，已于20:46:00（UTC+08）关闭为 completed。\n- #18 原卡保留、卡内已应用/部分选择/失败回滚/防重复已交付，已于20:46:04（UTC+08）关闭为 completed。\n- 本组唯一实现 PR #23 已 merged；没有需要关闭的本组辅助 PR。未发版，当前实现分支保留。\n\n[六张真实截图及验收边界](https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6122991026)仍在上方原生内嵌，来源为 PR run38239284361，合后树一致；没有把这些图片改称 main 新截图。main 临时证据 artifact11747103945于2026-10-15 20:44:20（UTC+08）到期，未另行下载或备份。\n\n保留已说明的边界：新快照/逐项回执不跨进程持久化；旧卡重启只读且缺明细明确提示。真实外部 AI 服务质量、跨版本升级及 UAC/SmartScreen 未覆盖。\n\n无需再次批准；后续实测若发现问题，可在对应 Issue 反馈或重开，届时重新核对范围。",
       "createdAt": "2026-10-12T12:46:34.006Z",
       "commentId": 6124547994,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6124547994",
-      "updatedAt": "2026-10-12T12:46:58.188Z"
+      "updatedAt": "2026-10-12T12:46:58.188Z",
+      "bodySha256": "6de12b5d13c048a7c7c0167fa3d6e90cf6e080913a89a7ac69ac61a2a92792ae"
     },
     "cards-closeout-comment18": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/18",
-      "body": "【OnO 自动化】#17 + #18｜已完成\n\n已按主 Issue 的准确版本合入收尾批准合入 PR #23；真实 main 41dccc749f8ddeb5ab6aab7eac41537a1406e2a9 的 Windows408/408与32/32实装、保存、重启检查全部通过，#18已关闭为 completed。\n\n完整结果、证据来源及边界见[主 Issue 收尾记录](https://github.com/zhshenry/onosan_workbench/issues/17#issuecomment-6124547994)。未发版、未删除本实现分支。无需再次批准；有实测问题可在这里反馈或重开。",
       "createdAt": "2026-10-12T12:46:58.188Z",
       "commentId": 6124556681,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/18#issuecomment-6124556681",
-      "updatedAt": "2026-10-12T12:47:35.469Z"
+      "updatedAt": "2026-10-12T12:47:35.469Z",
+      "bodySha256": "bac42674caf6e02beaa1d8be135bd454a7319e79200ccf1bb27fc64513ac8643"
     },
     "pr23-delete-merged-branch": {
       "kind": "delete-branch",
@@ -2605,11 +2605,11 @@
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
-      "body": "【OnO 自动化】#24｜顶栏日期显示｜方案 v1，待你确认\n\n![#24方案v1：待办和日程日期高保真](https://github.com/user-attachments/assets/0a5b4f88-1bc3-4489-8b7a-ad2f6969ada5)\n\n上图是独立高保真设计预览，使用示例数据，不是已实现截图。此单单独成组，与悬浮窗改版及主工作台“+”入口分开，避免扩大范围。\n\n已核对当前 main：待办展开行确实只显示 HH:mm；日程顶栏摘要和展开行也缺事项日期。本次一起补齐，保留现有白色磨砂、圆角、勾选和新增入口。\n\n方案：\n- 待办补“月-日 时:分”；非当前年补年份。\n- 日程摘要及展开行显示日期；同日时间段只重复结束时间，跨日补结束日期，跨年两端补年份。\n- 有计划日期但没设时间：待办显示日期＋“不限时”，日程显示日期＋“时间待定”。不补假的00:00，也不把缺时间误判为全天；确有全天语义才显示“全天”。\n- 日期缺失显示“未设置”，非法值不显示 Invalid Date。\n- 日期不截断；跨日日程必要时换两行，长标题省略并保留完整提示。图为放大审阅排版，实际保持现有顶栏/面板尺寸并验证窄窗口适配。\n\n不改变：事项筛选、排序、日期数据、完成操作，以及其他日期入口。此方案只改变上述显示和相应布局。\n\n实施后验收：同日/跨日/跨年、无时间/缺日期/异常值；窄窗口和缩放、主题、长标题；待办完成和日程新增回归。完整 Windows 测试、构建、实装及实际截图按主流程执行。当前基线 main 6850a4fb7acc10ac1d04468297b70ebd63cfa0a0，[主干检查已通过](https://github.com/zhshenry/onosan_workbench/actions/runs/38262423630)。\n\n图片来源：独立设计；PNG SHA256 46dcbe7a4d65aec75f7204f00fb1ff6e04f428d3f82d0845152827328240c79b。图片不进仓库、不额外备份。方案批准前不改产品；批准后实现、测试并提交一个 Draft PR，最终合入另请你确认准确版本。\n\n有意见直接回复这里；同意请回复：同意 #24 方案 v1",
       "createdAt": "2026-10-12T14:44:17Z",
       "commentId": 6126565074,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6126565074",
-      "displayVerifiedAt": "2026-10-12T14:45:08.900Z"
+      "displayVerifiedAt": "2026-10-12T14:45:08.900Z",
+      "bodySha256": "9110d9d68ed525924dd2c6162a0e0f3acbe8b9573196b1fe8d1f01fb13bd2b8b"
     },
     "issue26-plan-v1-image": {
       "kind": "upload-image",
@@ -2625,11 +2625,11 @@
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "body": "【OnO 自动化】#26｜主工作台 AI 的“+ 添加上下文”｜方案 v1\n\n![#26方案v1：工作台AI添加上下文高保真](https://github.com/user-attachments/assets/6b0f0758-af76-4df9-b461-3eead6bf6ab1)\n\n这是独立高保真设计预览，不是产品实测。审阅重点是右侧输入框下方的 +、事项选择浮层与已关联标签；原页面与旧聊天内容只作背景，本次不改首页其他卡片或已交付建议卡。\n\n我把你说的“新增事项内容”理解为“把已有事项加入本次 AI 对话上下文”：点击 + 选择已有内容，不直接创建待办。若你希望的是另一种含义，直接在这里指出，我先改方案。\n\n### 交互\n- + 固定在输入框左下角；模型选择及发送按钮保持现位。\n- 待办模式打开可搜索的事项选择器，显示待办/日程类型和已完成、已逾期等状态。首版单选，支持更换、取消；选后在输入区域显示可移除标签，不挤压模型按钮。\n- 空列表、对象被删除/失效均明确提示；支持 Esc、点击外部关闭及键盘选择/焦点返回。\n- 上下文随会话及工作台隔离；切换后不把不可见的旧引用带入发送。发送时记录选中对象的必要内容快照，不能只画标签却没有真正传给 AI。\n\n### 不同工作台的 + 内容\n1. 首页 / To-Do-List：关联已有待办或日程，排除已删除项；选中本身不写业务数据，修改仍走建议卡确认。\n2. 自媒体：博客编辑沿用已有博文只读参考与最多8项限制，主协助博文/修改目标不变；图文发布和我的小红书也提供已有博文参考，需要补现有引用传递。不会抓取登录态、浏览器页面，不新增素材库或发布动作。\n3. 小工具：命理沿用当前已有命例只读参考/盘型及最多8项；阅读清单可关联已有书目，仅使用现有书名、作者等明确记录字段，不声称有书籍全文/附件。切换命理与阅读不混用引用。\n4. 设置：保留 +，点击说明“当前没有可关联内容”；不读取或发送配置、API Key、账户信息。\n5. 游戏 / 网页：目前还是规划入口，保留 + 的统一设计，明确“工作台尚未开放，暂无可关联内容”，不虚构可用选择器。\n\n只把用户选中的业务内容交给其当前已配置的 AI 模型用于这次对话；不新建服务、凭据或费用配置，不自动收集未选择的数据。\n\n### 分组与实现边界\n此单单独一个方案/实现 PR，因为它涉及跨工作台引用契约，不只是按钮样式。可复用 #33 的事项行和状态呈现，但不把 #33 或其他需求的批准混用。当前 todo scope 还不能表达单个事项ID，需要补明确引用参数和读取链路；原有主对象、聊天身份、建议卡写入确认保持不变。\n\n实施验收：各工作台选中/取消/切换与空态、选中内容实际进入正确请求、对象失效、会话隔离、长标题/窄面板/主题、键盘和模型按钮位置；现有 copy/bazi 参考与建议卡回归。完整 Windows 测试、构建、实装、保存读回/重启按涉及范围验证，交付时附准确实现版本实测图。\n\n基线 main 6850a4fb7acc10ac1d04468297b70ebd63cfa0a0 已通过；本图独立生成，PNG SHA256 7ecdba7904ab3d4c44e650261f023b84cc35ff574cd973547a5de706b8cb32ba。图片不进Git、不额外备份。批准前未开始产品实施；最终合入另请你批准准确 head。\n\n有意见直接回复这里；同意上述视觉、各工作台映射和只读引用范围请回复：同意 #26 方案 v1",
       "createdAt": "2026-10-12T14:46:51Z",
       "commentId": 6126607129,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6126607129",
-      "displayVerifiedAt": "2026-10-12T14:47:39.798Z"
+      "displayVerifiedAt": "2026-10-12T14:47:39.798Z",
+      "bodySha256": "6f09b251edfaf509ce2b849dd447b999c6d717bd89c945334ed049290372817a"
     },
     "float-group-v1-image-home": {
       "kind": "upload-image",
@@ -2665,116 +2665,116 @@
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "body": "【OnO 自动化】主方案 #28｜悬浮窗组方案 v1｜待方案批准\n\n本组成员：#25、#28、#29、#30、#31、#32、#33。它们都修改同一个待办悬浮窗，宽度会直接影响返回、模型菜单和关联事项反馈，适合一起设计、开发和测试，最终一个实现 PR。各单保留各自验收；#24 顶栏日期、#26 主工作台入口不在本组。\n\n以下是独立高保真设计预览，不是已实现或实测图。保留原有磨砂、圆角、蓝色置顶与橙色 AI 风格。\n\n### 首页：宽窄与展开/收起独立\n![悬浮窗组v1：首页四态](https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4)\n\n### AI：关联反馈不挤压按钮\n![悬浮窗组v1：AI四态](https://github.com/user-attachments/assets/54375109-1de8-4135-84bb-ce34279e5fad)\n\n### 模型菜单及事项状态\n![悬浮窗组v1：交互细节](https://github.com/user-attachments/assets/995767ea-0562-40ce-b878-04c884f95be2)\n\n### 逐单范围和验收\n- #25：仅移除展开首页的“AI建议”整条区域并收回空白，保留显式 AI 入口、待办/日程内容及已交付的 AI 建议确认卡。\n- #28：顶栏增加独立宽窄切换。宽约440、窄约330是本版建议逻辑像素值；默认宽。首页/AI × 宽窄 × 展开/收起都适配。宽窄切换只改宽度，不改当前展开或收起状态的高度；折叠/展开继续使用原高度机制，二者不混为一个按钮。保留当前显示位置，必要时仅做屏幕工作区安全夹紧。本次窗口会话内记住选择，隐藏/显示不重置；应用重启默认宽，本版不新增跨重启偏好持久化。\n- #29：展开 AI 页“返回”改为“返回首页”。\n- #30：收起首页 AI 助手按钮的图标和细边框统一使用现有橙色 AI 色值，兼顾主题、hover与键盘焦点。\n- #31：收起 AI 页去掉“记录1”计数控件，不删除聊天记录或执行中的必要状态。模型按钮右对齐，适当加宽显示名称；菜单贴按钮右边，略宽于按钮，不再铺满窗口。图中约168/196只是排版建议，按实际字体/长名称适配并限制在窗口内；超长名称允许换行/完整提示，菜单过高滚动。展开页现有模型控件几何保持。\n- #32：收起 AI 返回按钮改为左箭头，和展开页一致，作用是返回首页，不改变宽窄或折叠态。\n- #33：选择事项后两形态立即显示可移除的关联 chip，放对话区域，不占模型按钮横向空间；“+ 关联事项”仍在原左下角，不改成挤占空间的“更换关联”。更换/取消仍从同一入口完成；关联前后模型按钮位置和宽度相同。选择器展示类型/标题、状态图标及状态文字，已完成优先于逾期；当前选择勾与事项业务状态分开。复用既有状态语义，不新增虚构业务状态。\n\n### 边界与图稿说明\n- 图为放大审阅排版，不能拿生成图片像素当实机尺寸；细节图是局部放大。同状态宽窄高度不变是必须实测的要求，不照图重设展开高度。\n- 首页窄收起示意图省略了截止时间文案；实施仍须保留截止时间与分页功能，只重排/合理省略长标题，不借收窄删除信息或操作。\n- “已关联”的反馈是本地状态提示，不为反馈额外调用模型；AI聊天示例不是本次改写建议卡样式的批准。\n- #31 的第二张原图实际上传失败；文字和现有代码已足够确定菜单宽度问题，不要求你为了启动方案补图。\n- 当前源码显示收起选择器可能受外部点击关闭逻辑影响，尚未实测确认根因；实施时先复现“选择无反馈”，修正选中事件和显示链路，不用只加静态标签掩盖。\n\n### 实施与验证\n仅在你批准本组方案后修改产品。一次开发本组，完成后提交一个 Draft PR。\n验收覆盖：每个成员以上目标；四种宽窄/收起状态的首页与 AI；空/长事项、长模型名、关联/替换/取消、状态组合；模型位置前后测量；重复切换、点击弹层、Esc/键盘焦点、屏幕边缘、主题与减少动画；实际窗口 bounds 证明切宽不意外触发自动改高。保存/读回和重启按实际涉及数据核对，原待办完成、分页、事项库、AI确认写入保持回归。\n基线 main 6850a4fb7acc10ac1d04468297b70ebd63cfa0a0，[Windows主干检查](https://github.com/zhshenry/onosan_workbench/actions/runs/38262423630)已通过；交付时运行完整测试/构建/安装并附准确实现版本实测图。\n\n图片来源：独立设计，三张已逐张查看；只用原生附件、不入Git、不另备份。\nPNG SHA256：\n- 首页：85fb15262817ee25eed8b44cf99e4bd841eac676d1a4b4fb0fd4a0ae742c2c13\n- AI：3b61ea52d77124cbd2c66ad8eca2c0e3386e905316f9ef602553c056cf4c5b5d\n- 细节：211c12b95844c30c129196bc31c407ce1aa26a40ab1a9e9969e2c963e03c0308\n\n这次只批准方案及所列实现/测试范围，不是合入或关单批准；完成后按准确 PR/head 请求一次最终合入收尾。\n意见直接在本 Issue 回复；无需七个单重复批准。同意请回复：同意悬浮窗组方案 v1（#25、#28–#33）",
       "createdAt": "2026-10-12T14:55:39Z",
       "commentId": 6126770999,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999",
-      "displayVerifiedAt": "2026-10-12T14:56:42.579Z"
+      "displayVerifiedAt": "2026-10-12T14:56:42.579Z",
+      "bodySha256": "723b130ed9110baa36050bb7a07a3c71d06a7c1829f77da7bc5ca7348adcf17f"
     },
     "float-group-v1-member-25": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/25",
-      "body": "【OnO 自动化】#25｜纳入悬浮窗组方案 v1\n\n![悬浮窗组v1：首页四态](https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4)\n\n以上为独立高保真设计预览，不是实测截图。本单范围与验收：展开首页移除“AI建议”整条区域并收回空白，保留顶栏AI入口和待办/日程操作；不删除已交付建议确认卡。\n\n本组为 #25、#28、#29、#30、#31、#32、#33，因共用同一悬浮窗且宽窄适配互相影响，统一一个方案、后续一个实现PR。完整三张图、逐单边界和验收见[主方案评论](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)；#24、#26不包含在内。\n\n图稿是审阅排版，非实际窗口尺寸。宽窄与展开/收起独立；同状态切宽只改宽度、不改高度。首页窄收起图省略的截止文案不代表删除该功能，实际仍保留截止信息和分页。方案批准前不改产品。\n\n意见可在这里补充；整组批准只需在 #28 回复一次：同意悬浮窗组方案 v1（#25、#28–#33）",
       "createdAt": "2026-10-12T14:57:24Z",
       "commentId": 6126800886,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/25#issuecomment-6126800886",
-      "displayVerifiedAt": "2026-10-12T14:59:40.749Z"
+      "displayVerifiedAt": "2026-10-12T14:59:40.749Z",
+      "bodySha256": "e9e4ca71d88fd6a6e7a2f7fe57a6fdddda54b17cf15619034b6bf68763617edd"
     },
     "float-group-v1-member-29": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/29",
-      "body": "【OnO 自动化】#29｜纳入悬浮窗组方案 v1\n\n![悬浮窗组v1：AI四态](https://github.com/user-attachments/assets/54375109-1de8-4135-84bb-ce34279e5fad)\n\n以上为独立高保真设计预览，不是实测截图。本单范围与验收：展开AI页返回文案统一为“返回首页”，使用左箭头；返回只切页面，不改变宽窄或折叠态。\n\n本组为 #25、#28、#29、#30、#31、#32、#33，因共用同一悬浮窗且宽窄适配互相影响，统一一个方案、后续一个实现PR。完整三张图、逐单边界和验收见[主方案评论](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)；#24、#26不包含在内。\n\n图稿是审阅排版，非实际窗口尺寸。宽窄与展开/收起独立；同状态切宽只改宽度、不改高度。首页窄收起图省略的截止文案不代表删除该功能，实际仍保留截止信息和分页。方案批准前不改产品。\n\n意见可在这里补充；整组批准只需在 #28 回复一次：同意悬浮窗组方案 v1（#25、#28–#33）",
       "createdAt": "2026-10-12T14:57:36Z",
       "commentId": 6126804287,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/29#issuecomment-6126804287",
-      "displayVerifiedAt": "2026-10-12T14:59:40.749Z"
+      "displayVerifiedAt": "2026-10-12T14:59:40.749Z",
+      "bodySha256": "91c1c809eadd502b657cb64573a29935a94928c0497afc92d1db9096f78ad555"
     },
     "float-group-v1-member-30": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/30",
-      "body": "【OnO 自动化】#30｜纳入悬浮窗组方案 v1\n\n![悬浮窗组v1：首页四态](https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4)\n\n以上为独立高保真设计预览，不是实测截图。本单范围与验收：收起首页AI助手按钮用现有橙色AI图标和橙色细边框，保留主题、hover和键盘焦点反馈。\n\n本组为 #25、#28、#29、#30、#31、#32、#33，因共用同一悬浮窗且宽窄适配互相影响，统一一个方案、后续一个实现PR。完整三张图、逐单边界和验收见[主方案评论](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)；#24、#26不包含在内。\n\n图稿是审阅排版，非实际窗口尺寸。宽窄与展开/收起独立；同状态切宽只改宽度、不改高度。首页窄收起图省略的截止文案不代表删除该功能，实际仍保留截止信息和分页。方案批准前不改产品。\n\n意见可在这里补充；整组批准只需在 #28 回复一次：同意悬浮窗组方案 v1（#25、#28–#33）",
       "createdAt": "2026-10-12T14:57:45Z",
       "commentId": 6126806731,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/30#issuecomment-6126806731",
-      "displayVerifiedAt": "2026-10-12T14:59:40.749Z"
+      "displayVerifiedAt": "2026-10-12T14:59:40.749Z",
+      "bodySha256": "22e3fd96a50e126906564d736ac6224ae6ef1a46d0e499d325168394fa2d13f6"
     },
     "float-group-v1-member-31": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/31",
-      "body": "【OnO 自动化】#31｜纳入悬浮窗组方案 v1\n\n![悬浮窗组v1：交互细节](https://github.com/user-attachments/assets/995767ea-0562-40ce-b878-04c884f95be2)\n\n以上为独立高保真设计预览，不是实测截图。本单范围与验收：收起AI页去掉“记录1”计数控件（不删聊天/必要运行状态），模型按钮右对齐加宽，菜单略宽于按钮且锚定右边、限制在窗口内。第二张原图上传失败已确认，方案按文字与现有代码形成，无需为此先补图。\n\n本组为 #25、#28、#29、#30、#31、#32、#33，因共用同一悬浮窗且宽窄适配互相影响，统一一个方案、后续一个实现PR。完整三张图、逐单边界和验收见[主方案评论](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)；#24、#26不包含在内。\n\n图稿是审阅排版，非实际窗口尺寸。宽窄与展开/收起独立；同状态切宽只改宽度、不改高度。首页窄收起图省略的截止文案不代表删除该功能，实际仍保留截止信息和分页。方案批准前不改产品。\n\n意见可在这里补充；整组批准只需在 #28 回复一次：同意悬浮窗组方案 v1（#25、#28–#33）",
       "createdAt": "2026-10-12T14:57:53Z",
       "commentId": 6126809136,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/31#issuecomment-6126809136",
-      "displayVerifiedAt": "2026-10-12T14:59:40.749Z"
+      "displayVerifiedAt": "2026-10-12T14:59:40.749Z",
+      "bodySha256": "7ec3f3345e63df9fef9425f283e2f021b3bd2c259d2c83dc4ee4f0997205441b"
     },
     "float-group-v1-member-32": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/32",
-      "body": "【OnO 自动化】#32｜纳入悬浮窗组方案 v1\n\n![悬浮窗组v1：AI四态](https://github.com/user-attachments/assets/54375109-1de8-4135-84bb-ce34279e5fad)\n\n以上为独立高保真设计预览，不是实测截图。本单范围与验收：收起AI页返回图标改为左箭头，和展开页一致；作用为返回首页，不是展开/折叠。\n\n本组为 #25、#28、#29、#30、#31、#32、#33，因共用同一悬浮窗且宽窄适配互相影响，统一一个方案、后续一个实现PR。完整三张图、逐单边界和验收见[主方案评论](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)；#24、#26不包含在内。\n\n图稿是审阅排版，非实际窗口尺寸。宽窄与展开/收起独立；同状态切宽只改宽度、不改高度。首页窄收起图省略的截止文案不代表删除该功能，实际仍保留截止信息和分页。方案批准前不改产品。\n\n意见可在这里补充；整组批准只需在 #28 回复一次：同意悬浮窗组方案 v1（#25、#28–#33）",
       "createdAt": "2026-10-12T14:58:15Z",
       "commentId": 6126814796,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/32#issuecomment-6126814796",
-      "displayVerifiedAt": "2026-10-12T14:59:40.750Z"
+      "displayVerifiedAt": "2026-10-12T14:59:40.750Z",
+      "bodySha256": "c5fe5444bf27b397e787126da3109b7c8cb0d5dc3673ce5533c0524f8625a2cc"
     },
     "float-group-v1-member-33": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/33",
-      "body": "【OnO 自动化】#33｜纳入悬浮窗组方案 v1\n\n![悬浮窗组v1：交互细节](https://github.com/user-attachments/assets/995767ea-0562-40ce-b878-04c884f95be2)\n\n以上为独立高保真设计预览，不是实测截图。本单范围与验收：两形态关联后在对话区域显示可移除chip，“+ 关联事项”保持左下，模型按钮位置/宽度不被挤压。选择列表补状态图标+文字，业务状态和选中勾分开；先实测并修复选择事件/反馈链路，不能只画静态标签。\n\n本组为 #25、#28、#29、#30、#31、#32、#33，因共用同一悬浮窗且宽窄适配互相影响，统一一个方案、后续一个实现PR。完整三张图、逐单边界和验收见[主方案评论](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)；#24、#26不包含在内。\n\n图稿是审阅排版，非实际窗口尺寸。宽窄与展开/收起独立；同状态切宽只改宽度、不改高度。首页窄收起图省略的截止文案不代表删除该功能，实际仍保留截止信息和分页。方案批准前不改产品。\n\n意见可在这里补充；整组批准只需在 #28 回复一次：同意悬浮窗组方案 v1（#25、#28–#33）",
       "createdAt": "2026-10-12T14:58:25Z",
       "commentId": 6126817506,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/33#issuecomment-6126817506",
-      "displayVerifiedAt": "2026-10-12T14:59:40.750Z"
+      "displayVerifiedAt": "2026-10-12T14:59:40.750Z",
+      "bodySha256": "8045949a605c3fef41824617a6f75d044e5bd90cd3f9e7ef220e54e23279c346"
     },
     "issue24-start-v1": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
-      "body": "【OnO 自动化】#24｜方案 v1 已确认，开始实施\n\n已核对你的[方案批准](https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6128003916)。本次只补顶栏待办/日程日期及必要显示适配，按v1处理跨日、跨年和缺失时间，不改筛选、排序或日期数据。\n\n接下来完成实现、测试和真实 Windows 验收，再在这里贴实测图并请求准确 PR/head 的最终合入。无需重复批准当前方案。",
       "createdAt": "2026-10-12T16:37:49Z",
       "commentId": 6128488842,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6128488842"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6128488842",
+      "bodySha256": "3548ab3e9b621a682f178c8326e1fde42756d362dd809a66b1392078e76fd2f6"
     },
     "issue26-queued-v1": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "body": "【OnO 自动化】#26｜方案 v1 已确认，排队实施\n\n已核对你的[回复](https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6128082959)，理解为同意本单v1视觉、工作台映射和只读引用范围。多复制的提示前缀不需要重发。\n\n当前先做已批准的 #24，随后推进本单，保持一次开发一组。本单不包含悬浮窗修订或新提的其他需求；完成后在这里提供实测和准确版本供最终合入审阅。无需再次批准v1。",
       "createdAt": "2026-10-12T16:37:57Z",
       "commentId": 6128490909,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6128490909"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6128490909",
+      "bodySha256": "366591497277a94d0547b13b4fe453526a09cdeab48c146a8bc2fd97bcc8f9ff"
     },
     "float-v2-feedback-ack": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "body": "【OnO 自动化】悬浮窗组｜已收到修改意见，先调整设计\n\n已汇总 #28/#29 的“收起布局太挤”，以及 #32 的“返回按钮颜色、字体保持原来，只换小图标”。我会重排宽/窄两个收起AI状态，保留原高度；返回按钮沿用原字体和颜色，仅改左箭头。\n\n其余已认可范围保留。各成员里的“同意v1”不会覆盖这些具体修改；本组先不实施，下一条补修订高保真，只请你确认有变化的部分，不让你重批未变内容。",
       "createdAt": "2026-10-12T16:38:06Z",
       "commentId": 6128492997,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128492997"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128492997",
+      "bodySha256": "fbdd110fbebc394a1e2a71d84b809651da2c6b3c098ec2b82dfd53cc23f2b746"
     },
     "issue36-usage-answer": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/36",
-      "body": "【OnO 自动化】#36｜“找素材”目前仍有实际功能\n\n它会从小红书创作者后台切到独立的素材浏览器，提供多标签浏览、平台快捷入口、采集链接/标题/整页截图、查看和备注已采集素材，以及让 AI 总结当前网页。\n\n因此它与“我的小红书”创作者后台不是同一个入口；当前不能判断为无用按钮。这里先说明现状，没有替你删除或调整界面。\n\n源码依据：[模式切换与功能入口](https://github.com/zhshenry/onosan_workbench/blob/6850a4fb7acc10ac1d04468297b70ebd63cfa0a0/src/views/MediaBrowserView.tsx#L35-L81)。这是代码用途核对，不代表本轮实测了外部网站采集成功。\n\n此说明无需批准；如果你的目标是精简入口，可回复：我想精简“找素材”入口。",
       "createdAt": "2026-10-12T16:39:55Z",
       "commentId": 6128520395,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/36#issuecomment-6128520395"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/36#issuecomment-6128520395",
+      "bodySha256": "e54e10de2cd64bc66e9f3578cd77936906a06020d7ca12ec6ef0f76c13a31420"
     },
     "issue37-linking-answer": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/37",
-      "body": "【OnO 自动化】#37｜这里关联的是已发布的小红书作品\n\n我看了原图，红框在“图文发布 → 已发布作品”，与 AI 的关联事项不是一回事。当前需要手动操作：\n1. 先选中左侧对应的博客。\n2. 在输入框粘贴该博客对应的小红书笔记完整作品链接。\n3. 点“核对链接”。\n4. 核对后会出现“确认关联”，再点它完成保存。\n\n支持包含 /explore/作品ID 或 /discovery/item/作品ID 的完整作品直链；创作者后台首页和分享短链不支持。截图里输入框还是空的，因此仍显示“尚未关联”。仅登录小红书不会自动完成关联，目前也没有作品自动同步。\n\n成功后显示“用户手动确认”，表示你确认了这条对应关系，不代表工作台已经从小红书后台核验作品。这次只解释用法，没有修改关联或发布内容。\n\n源码依据：[核对和确认关联入口](https://github.com/zhshenry/onosan_workbench/blob/6850a4fb7acc10ac1d04468297b70ebd63cfa0a0/modules/copywriting/ui/PublishView.tsx#L247-L273)、[链接校验](https://github.com/zhshenry/onosan_workbench/blob/6850a4fb7acc10ac1d04468297b70ebd63cfa0a0/modules/copywriting/xhs-publish.ts#L3-L17)。\n\n如果按这四步仍不行，回复：核对链接后仍无法关联（附界面提示）。",
       "createdAt": "2026-10-12T16:40:04Z",
       "commentId": 6128522870,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6128522870"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6128522870",
+      "bodySha256": "01c9a1da90bf55bbd4eb07c8f030678b27468cd6e84ecb715418751e9023acf3"
     },
     "float-v2-image-dual": {
       "kind": "upload-image",
@@ -2816,57 +2816,56 @@
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "body": "【OnO 自动化】悬浮窗组方案 v2｜只重排收起 AI 布局\n\n已采纳 #28/#29 的“太挤”和 #32 的“只换图标”。本组仍为 #25、#28、#29、#30、#31、#32、#33；#24、#26不在其中。\n\n![v2：宽窄两种收起AI布局](https://github.com/user-attachments/assets/efcadc8c-6cfc-4314-adad-d12431670b73)\n![v2：关联前后与模型菜单细节](https://github.com/user-attachments/assets/630377fc-2885-4649-bb69-dd15f2557efa)\n\n### 这次改动\n- 已关联事项独占一行，输入框另起一行，发送放在输入框右端；取消关联后保留这一行空间，避免内容跳动。\n- 底部左边固定“+ 关联事项”，右边固定模型按钮；关联前后模型位置和宽度不变。长事项和模型名省略时仍可查看完整内容，移除按钮保持可见。\n- 收起页“返回”沿用当前灰色、原字体字号及原悬停样式，只把小图标换成左箭头，不套用展开页蓝色加粗样式。展开页“返回首页”沿用已认可方案。\n- 为在现有176高度里留出分层空间，收起顶栏从52压缩到约40；宽/窄仍为440/330，同状态切宽不改高度，展开高度不变。这个顶栏调整也包含在本次v2确认里。\n- 模型按钮建议168、菜单196并右侧对齐，菜单不撑满窗口。最终按真实窗口可用范围约束，避免遮挡或溢出。\n\n### 不变部分与逐单验收\n沿用[完整v1范围和验收](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6126770999)，以上变更替代其中收起AI布局和#32样式：\n- #25：仅移除展开首页AI建议条，保留入口与原待办/日程操作。\n- #28：宽窄独立于展开/收起；同状态切宽高度不变，位置安全约束，当前窗口会话记忆宽度。\n- #29：展开页返回文案为“返回首页”。\n- #30：收起首页AI图标与细边框使用现有橙色。\n- #31：去掉“记录1”控件，不删除历史/必要运行状态；模型按钮和菜单按上图。\n- #32：收起返回只换左箭头，颜色和字体不变。\n- #33：关联chip、可移除反馈、固定模型位置；状态文字/图标与选中勾分开，实际修复选择事件链路。\n\n首页设计未变，复用原图：\n![v2沿用的首页设计](https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4)\n\n这些是独立高保真设计，不是运行截图；图中局部按审阅需要放大，比例不能作为实际像素测量。实际宽高、溢出、焦点、重复切换和模型位置均用实现后的真实Windows测试验证。首页窄收起图省略的截止文案仍须保留，不代表删除功能。仅本次两张新图上传，图片不入Git、不额外备份。\n新图SHA256：97ee892e637f6b30cfaf546ab06af17f86270ed5859aac2eff4e30f333f1d5e0；c6903083f1ae5813a6c13758b35f9110142de943708eda7ade52b0601d036d05。\n\n你已认可的不变范围无需重批。确认本次变化后，本组按完整v2范围统一开发、测试并提交一个Draft PR；最终合入仍另请你确认准确版本。\n只需在本Issue回复一次：同意悬浮窗组 v2 的收起布局调整",
       "createdAt": "2026-10-12T16:46:48Z",
       "commentId": 6128626525,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525",
-      "displayVerifiedAt": "2026-10-12T16:48:20.260Z"
+      "displayVerifiedAt": "2026-10-12T16:48:20.260Z",
+      "bodySha256": "40b833741b958aab0c8287dd34462211ddc344d3e163c5913f0177c282855952"
     },
     "float-v2-member-25": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/25",
-      "body": "【OnO 自动化】#25｜悬浮窗组方案 v2 同步\n\n![本单对应v2高保真](https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4)\n\n本单移除展开首页AI建议条，原范围未变；原截止信息和分页保留。\n\n完整修订、两张新图及逐单验收见[主方案v2](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525)。本组仍为 #25、#28–#33；本次收起顶栏约52→40、总高度176不变，宽窄440/330，展开高度不变。图片是独立设计，局部放大并非实测像素；本单未变设计复用原图，不重复上传。\n\n无需各单重复批准；修改意见可在这里补充，只在 #28 确认变化一次：同意悬浮窗组 v2 的收起布局调整",
       "createdAt": "2026-10-12T16:48:56Z",
       "commentId": 6128658297,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/25#issuecomment-6128658297",
-      "displayVerifiedAt": "2026-10-12T16:59:40.157Z"
+      "displayVerifiedAt": "2026-10-12T16:59:40.157Z",
+      "bodySha256": "5e2eb740ada9be1cf036978370438b206b30a764b697f27e59e2c90fb49b74d4"
     },
     "float-v2-member-29": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/29",
-      "body": "【OnO 自动化】#29｜悬浮窗组方案 v2 同步\n\n![本单对应v2高保真](https://github.com/user-attachments/assets/efcadc8c-6cfc-4314-adad-d12431670b73)\n\n采纳你说的收起布局拥挤，关联、输入与底部控件分行；展开页“返回首页”保持原方案。\n\n完整修订、两张新图及逐单验收见[主方案v2](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525)。本组仍为 #25、#28–#33；本次收起顶栏约52→40、总高度176不变，宽窄440/330，展开高度不变。图片是独立设计，局部放大并非实测像素；本单未变设计复用原图，不重复上传。\n\n无需各单重复批准；修改意见可在这里补充，只在 #28 确认变化一次：同意悬浮窗组 v2 的收起布局调整",
       "createdAt": "2026-10-12T16:49:07Z",
       "commentId": 6128660999,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/29#issuecomment-6128660999",
-      "displayVerifiedAt": "2026-10-12T16:59:40.157Z"
+      "displayVerifiedAt": "2026-10-12T16:59:40.157Z",
+      "bodySha256": "bd592644c3045d85b9a10763d804c5eda950e6b8619c6c0b621cbaad9b4b6e1c"
     },
     "float-v2-member-30": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/30",
-      "body": "【OnO 自动化】#30｜悬浮窗组方案 v2 同步\n\n![本单对应v2高保真](https://github.com/user-attachments/assets/597bfc5e-3c29-426d-9f84-67aacd1df5c4)\n\n本单收起首页橙色AI图标与细边框范围未变。\n\n完整修订、两张新图及逐单验收见[主方案v2](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525)。本组仍为 #25、#28–#33；本次收起顶栏约52→40、总高度176不变，宽窄440/330，展开高度不变。图片是独立设计，局部放大并非实测像素；本单未变设计复用原图，不重复上传。\n\n无需各单重复批准；修改意见可在这里补充，只在 #28 确认变化一次：同意悬浮窗组 v2 的收起布局调整",
       "createdAt": "2026-10-12T16:49:18Z",
       "commentId": 6128663571,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/30#issuecomment-6128663571",
-      "displayVerifiedAt": "2026-10-12T16:59:40.157Z"
+      "displayVerifiedAt": "2026-10-12T16:59:40.157Z",
+      "bodySha256": "db4f030b3edfe5815dd14449ce86ef594c165385ecb8e4901208a72973ffc4aa"
     },
     "float-v2-member-31": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/31",
-      "body": "【OnO 自动化】#31｜悬浮窗组方案 v2 同步\n\n![本单对应v2高保真](https://github.com/user-attachments/assets/630377fc-2885-4649-bb69-dd15f2557efa)\n\n模型按钮固定右下，关联前后不挤动；菜单贴右且略宽于按钮，移除记录计数不删历史。\n\n完整修订、两张新图及逐单验收见[主方案v2](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525)。本组仍为 #25、#28–#33；本次收起顶栏约52→40、总高度176不变，宽窄440/330，展开高度不变。图片是独立设计，局部放大并非实测像素；本单未变设计复用原图，不重复上传。\n\n无需各单重复批准；修改意见可在这里补充，只在 #28 确认变化一次：同意悬浮窗组 v2 的收起布局调整",
       "createdAt": "2026-10-12T16:49:40Z",
       "commentId": 6128669197,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/31#issuecomment-6128669197",
-      "displayVerifiedAt": "2026-10-12T16:59:40.157Z"
+      "displayVerifiedAt": "2026-10-12T16:59:40.157Z",
+      "bodySha256": "ddd7be9c1670db7c932063bd126ffe136d7af8513bcec046cdc6cf25269deace"
     },
     "float-v2-member-32": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/32",
-      "body": "【OnO 自动化】#32｜悬浮窗组方案 v2 同步\n\n![本单对应v2高保真](https://github.com/user-attachments/assets/efcadc8c-6cfc-4314-adad-d12431670b73)\n\n采纳你的要求：返回沿用原灰色、原字体字号和悬停样式，只换左箭头；文案仍为“返回”。\n\n完整修订、两张新图及逐单验收见[主方案v2](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525)。本组仍为 #25、#28–#33；本次收起顶栏约52→40、总高度176不变，宽窄440/330，展开高度不变。图片是独立设计，局部放大并非实测像素；本单未变设计复用原图，不重复上传。\n\n无需各单重复批准；修改意见可在这里补充，只在 #28 确认变化一次：同意悬浮窗组 v2 的收起布局调整",
       "createdAt": "2026-10-12T16:50:59Z",
       "recovery": {
         "error": "MCP internal error",
@@ -2875,17 +2874,18 @@
       },
       "commentId": 6128687458,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/32#issuecomment-6128687458",
-      "displayVerifiedAt": "2026-10-12T16:59:40.157Z"
+      "displayVerifiedAt": "2026-10-12T16:59:40.157Z",
+      "bodySha256": "fa5e2837c48557d968092437f0c110f77503b0ce93abcbae40ecf67602ee6218"
     },
     "float-v2-member-33": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/33",
-      "body": "【OnO 自动化】#33｜悬浮窗组方案 v2 同步\n\n![本单对应v2高保真](https://github.com/user-attachments/assets/630377fc-2885-4649-bb69-dd15f2557efa)\n\n关联chip独占对话行，可移除；关联/取消后模型位置宽度不变，选择状态反馈要求保留。\n\n完整修订、两张新图及逐单验收见[主方案v2](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525)。本组仍为 #25、#28–#33；本次收起顶栏约52→40、总高度176不变，宽窄440/330，展开高度不变。图片是独立设计，局部放大并非实测像素；本单未变设计复用原图，不重复上传。\n\n无需各单重复批准；修改意见可在这里补充，只在 #28 确认变化一次：同意悬浮窗组 v2 的收起布局调整",
       "createdAt": "2026-10-12T16:51:21Z",
       "commentId": 6128693051,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/33#issuecomment-6128693051",
-      "displayVerifiedAt": "2026-10-12T16:59:40.157Z"
+      "displayVerifiedAt": "2026-10-12T16:59:40.157Z",
+      "bodySha256": "4279be6c5abbec447ac1a0b7f44f3c50f4a46252f42c0e2cd18c603f7de9facd"
     },
     "issue35-v1-image": {
       "kind": "upload-image",
@@ -2927,50 +2927,50 @@
       "status": "succeeded",
       "target": "ono/issue-24-topbar-dates -> main",
       "headSha": "ef76cd47db128222f88f5d9f6201dd8325a62213",
-      "body": "【OnO 自动化】#24 顶栏日期显示，方案v1实现（Draft）\n\n关联需求 #24；方案及用户审批留在 [Issue原始请求](https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6126565074) / [批准](https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6128003916)。\n\n## 改动\n待办日期、日程摘要及展开行补日期；跨日/跨年、无时间/缺失值显示；320px面板保留，标题省略有完整提示。1181–1440窗口仅隐藏冗余“今日”前缀，腾出事项日期空间。筛选、排序、存储及其他日期入口不改。\n\n## 已运行\n- 本地同测试集：424项，422通过，2项已有Windows专用测试在Linux跳过（node --import tsx --test，Asia/Shanghai）。\n- npm run verify通过；六项格式化测试在五时区通过。\n- 原始npm test入口受当前shell IPC限制；UTC的三项todo-store旧失败在未改基线复现。\n- 独立代码审查未发现新增阻断问题。\n\n## 仍需Windows真实验收\n完整test/verify、actionlint、NSIS安装、原32项+新18项实装检查、真实截图及19MB证据守卫。当前未运行，不把脚本等同验收通过。\n新测试以真实UI创建及保存/重启为主；跨日跨年等当前输入schema不支持的边界用临时只读renderer fixtures，明确不是持久化证据。\n\n已知范围外限制：非法meeting dueAt且无endAt会在既有shared逻辑先崩溃；本PR只保证本显示helper回退，不声称整条畸形记录流程通过。AI任务占用顶栏时的几何尚未专项覆盖。\n不自动关闭Issue。完整实测完成后，在#24贴图请求准确head合入收尾。",
       "createdAt": "2026-10-12T16:54:45Z",
       "number": 38,
-      "url": "https://github.com/zhshenry/onosan_workbench/pull/38"
+      "url": "https://github.com/zhshenry/onosan_workbench/pull/38",
+      "bodySha256": "3ad4be6e583798dfc64c4d67b38e30ab20304efb0d4a6ff4099317fd7e13f16b"
     },
     "issue34-v1-comment": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/34",
-      "body": "【OnO 自动化】#34｜应用更新状态位置｜方案 v1\n\n![应用更新栏目内展示最新版本和检查状态](https://github.com/user-attachments/assets/41e9e253-8a6c-4129-ab78-aab06849ae9e)\n\n这是独立高保真设计，上方“当前已是最新版本”，下方“正在检查更新”，不是实测截图。按你的要求，状态放回“应用更新”栏目说明下方，不再挤在整张设置卡底部。\n\n范围：\n- 只调整设置页状态/进度的展示位置，现有检查更新、下载及重启安装按钮位置和逻辑不变。\n- 检查中、已是最新、下载进度、准备安装及更新失败等现有状态都在同一栏目展示，长提示自动换行；不新增更新流程。\n- 目录、共享库和应用信息读取错误各自保留，不把它们误当更新状态；底部独立提醒保留。\n\n本单单独一个实现PR，不与小红书页面保留等无关需求合包。批准后实施、测试、完整Windows构建/安装及实测图；重点验收状态切换、下载进度、错误长文、窄窗口/主题/键盘与按钮可用性，确保其他设置项目不受影响。不会为测试实际安装未获批准的新发布版本。\n基线 main 6850a4fb7acc10ac1d04468297b70ebd63cfa0a0，当前主干检查已通过。图片为独立绘图，无源码渲染SHA；SHA256 a0b7a9c77dd0d8cebc52387d0e77f14214cd15a4471a77cf6e83495dfba9637c。原生附件不入Git、不额外备份。\n\n本次确认只授权此方案实施及测试交付，最终合入另审准确版本。\n直接在这里回复：同意 #34 方案 v1",
       "createdAt": "2026-10-12T16:55:16Z",
       "commentId": 6128752017,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6128752017",
       "displayVerifiedAt": "2026-10-12T16:56:23.948Z",
-      "updatedAt": "2026-10-12T16:57:09Z"
+      "updatedAt": "2026-10-12T16:57:09Z",
+      "bodySha256": "93dad084c0e7d10702b054308fb3f403c2fe4fa38147863edeee9c663d0fdd24"
     },
     "issue35-upload-blocker-comment": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "body": "【OnO 自动化】#35｜高保真已准备，附件上传暂时失败\n\n已完成原图与代码核查并准备独立高保真，但本次GitHub原生附件两次均明确显示“Failed to upload”，没有返回图片地址。文件格式和大小检查正常，刷新页面后只补试了一次，具体原因尚未确认。\n\n目前不把无图方案当作可审阅版本，也不启动产品修改。其他需求照常推进；这张图的上传问题先单独保留，不需要你开电脑或手动传图。\n\n本条是阻碍说明，无需批准；待图片能实际显示后，再在本Issue提交完整方案。",
       "createdAt": "2026-10-12T16:56:12Z",
       "commentId": 6128766093,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6128766093"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6128766093",
+      "bodySha256": "538a8ce72a128f760bf7e558503388accafe28dbd7bb0c46e48d85d3042d0fc7"
     },
     "issue34-v1-caption-correction": {
       "kind": "edit-comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6128752017",
-      "body": "【OnO 自动化】#34｜应用更新状态位置｜方案 v1\n\n![应用更新栏目内展示最新版本和检查状态](https://github.com/user-attachments/assets/41e9e253-8a6c-4129-ab78-aab06849ae9e)\n\n这是独立高保真设计，上方“当前已是最新版本”，下方“正在检查更新”，不是实测截图。按你的要求，状态放回“应用更新”栏目说明下方，不再挤在整张设置卡底部。\n\n范围：\n- 只调整设置页状态/进度的展示位置，现有检查更新、下载及重启安装按钮位置和逻辑不变。\n- 检查中、已是最新、下载进度、准备安装及更新失败等现有状态都在同一栏目展示，长提示自动换行；不新增更新流程。\n- 目录、共享库和应用信息读取错误各自保留，不把它们误当更新状态；底部独立提醒保留。\n\n本单单独一个实现PR，不与小红书页面保留等无关需求合包。批准后实施、测试、完整Windows构建/安装及实测图；重点验收状态切换、下载进度、错误长文、窄窗口/主题/键盘与按钮可用性，确保其他设置项目不受影响。不会为测试实际安装未获批准的新发布版本。\n基线 main 6850a4fb7acc10ac1d04468297b70ebd63cfa0a0，当前主干检查已通过。图片为独立绘图，无源码渲染SHA；SHA256 a0b7a9c77dd0d8cebc52387d0e77f14214cd15a4471a77cf6e83495dfba9637c。原生附件不入Git、不额外备份。\n\n本次确认只授权此方案实施及测试交付，最终合入另审准确版本。\n直接在这里回复：同意 #34 方案 v1",
       "reason": "校正图中上下位置描述，无方案范围变化",
       "createdAt": "2026-10-12T16:56:39.940Z",
       "commentId": 6128752017,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6128752017",
-      "updatedAt": "2026-10-12T16:57:09Z"
+      "updatedAt": "2026-10-12T16:57:09Z",
+      "bodySha256": "93dad084c0e7d10702b054308fb3f403c2fe4fa38147863edeee9c663d0fdd24"
     },
     "issue24-pr38-progress": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
-      "body": "【OnO 自动化】#24｜实现已提交 Draft PR #38，正在真实 Windows 验收\n\n[PR #38](https://github.com/zhshenry/onosan_workbench/pull/38)，当前 head ef76cd47db128222f88f5d9f6201dd8325a62213；[Windows检查](https://github.com/zhshenry/onosan_workbench/actions/runs/38280682735)正在运行。\n\n本地同测试集424项：422通过、2项已有Windows专用测试在Linux跳过；构建/类型检查通过。Windows安装、真实界面和新增专项仍需以该次运行结果为准，尚未交付实测图，不请求合入。\n\n另发现一个基线旧问题：日程日期为非法值且缺结束时间时，共享逻辑可能先报错；本次顶栏显示处理不会修整条旧数据链路。正常可创建记录和边界显示会分别验明，不能把只读测试示例当成实际保存成功。\n\n下一步继续看检查结果并修复本单范围内问题，通过后在本Issue附实测图和准确版本供最终审阅。现在无需回复。",
       "createdAt": "2026-10-12T16:59:01Z",
       "commentId": 6128811148,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6128811148"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6128811148",
+      "bodySha256": "69ed0d50bb4db52eeeeb229f35ca56c0289737035b369d4b6f00032ccc0132f9"
     },
     "issue24-fix-overlap-publish": {
       "kind": "update-implementation",
@@ -2996,10 +2996,10 @@
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
-      "body": "【OnO 自动化】#24｜已修复首轮实测发现的布局重叠，重新验收\n\n首轮[Windows运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38280682735)单测424项、构建和真实安装通过；实装界面27项通过，第28项在1024×680、125%缩放时发现日程入口被待办遮挡，后续未执行，未当作整体通过。\n\n已修正实际布局占位，保留正常点击，增加入口命中、左右控件不重叠及AI任务可见状态检查。125%实测截图改用Electron原生完整内容区采集，避免截图工具自身裁边；没有裁剪、重绘或放宽证据体积限制。\n\n同一[PR #38](https://github.com/zhshenry/onosan_workbench/pull/38)已更新至 b54528e849bec6549aec8ec78b67da3eb02e34e9；本地431项：429通过、2项既有平台跳过，verify通过。[新Windows运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38282656112)正在检查，预计51项实装验收，以真实结果为准。\n\n仍在本单已批准范围内修复，无需你重复批准；完整通过并补齐实测图后，再请求最终合入。",
       "createdAt": "2026-10-12T17:13:02Z",
       "commentId": 6129026111,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6129026111"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6129026111",
+      "bodySha256": "578fdcb0e67ea797b9a5f2af28d61b72a4321537682b7d9693f6996f654e9aff"
     },
     "issue24-actual-topbar-dates-cool-schedule-1024-zoom125.png": {
       "kind": "upload-image",
@@ -3118,29 +3118,29 @@
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
       "headSha": "b54528e849bec6549aec8ec78b67da3eb02e34e9",
-      "body": "【OnO 自动化】#24｜PR #38 最终合入收尾待确认\n\n已按[方案v1](https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6126565074)及你的[原始批准](https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6128003916)完成。首轮缩放重叠已修复，下面均为修复版实际Windows运行截图，不是设计图。\n\n### 准确版本与检查\n- [PR #38](https://github.com/zhshenry/onosan_workbench/pull/38)，head **b54528e849bec6549aec8ec78b67da3eb02e34e9**，简写 **b54528e**。\n- base：6850a4fb7acc10ac1d04468297b70ebd63cfa0a0。\n- [Windows真实验收](https://github.com/zhshenry/onosan_workbench/actions/runs/38282656112)：**431项单测全部通过，0跳过；51/51实装检查通过**。actionlint、类型/生产构建、NSIS安装和证据守卫通过，安装文件与构建一致。\n- 实际测试的是PR合成merge **0e8f7b6d7274199bd3cb78e5ed37cde2a6c761d1**；父提交就是上述base/head，tree a71b4486cedec49f3d84d286ed0d1162abb830f7与head一致。\n- 覆盖日期显示、完成/取消/新增回归、真实保存读回与同版本重启、三主题×两窗口×100%/125%缩放、最拥挤AI状态占位、入口正常点击/命中和不重叠。筛选、排序、存储和其他日期入口未变。\n\n### 真实新增、保存和重启\n以下两图来自正常界面创建并持久化的记录；保存后读取具体字段/身份，并重启同一安装版本再核对。\n![真实UI新增并保存后的顶栏日期](https://github.com/user-attachments/assets/c1ee94bf-ad9f-4e73-826e-23278b261fd3)\n![真实持久化记录重启后的日程日期](https://github.com/user-attachments/assets/c5f87d36-bf57-4bc8-89ee-b260e2bb7d73)\n\n### 小窗口125%缩放：边界显示实测\n以下六图来自已安装应用，使用**临时只读测试记录**展示跨年、跨日、无时间和缺日期；测试结束恢复原读取并确认真实存储未变。它们证明真实渲染和操作，不代表产品输入已经支持创建跨日日程。\n图中“助手请求失败”是合成UI状态，用于验证右侧空间，不是真实模型调用失败。\n\n雾灰：\n![雾灰待办边界日期实测](https://github.com/user-attachments/assets/bec8275d-4bdd-4e72-96b7-e3de8a18a285)\n![雾灰跨年跨日日程实测](https://github.com/user-attachments/assets/76acd5ee-4bf3-43b9-82ac-ab93b16f3105)\n冷灰：\n![冷灰待办边界日期实测](https://github.com/user-attachments/assets/0790a3d0-fc01-446e-8114-2806d3c6d327)\n![冷灰跨年跨日日程实测](https://github.com/user-attachments/assets/ba55247b-7ab0-445d-a62d-3f88c1d6e1b4)\n暖砂：\n![暖砂待办边界日期实测](https://github.com/user-attachments/assets/c2bfe1bc-bd05-4eb5-84ba-9c0fee36f8f3)\n![暖砂跨年跨日日程实测](https://github.com/user-attachments/assets/3997d147-2306-47ed-87e6-e342edeb05e5)\n\n所有图已逐张查看。125%图用Electron原生完整内容区PNG采集，1024×680，无重绘/裁剪；其余为实际应用截图。日期完整可读，标题长时省略，320逻辑像素面板保留。修复的响应式布局按实际控件宽度分配空间，避免日期及右侧按钮互相遮挡。\n[临时验收产物](https://github.com/zhshenry/onosan_workbench/actions/runs/38282656112/artifacts/11761639184)：27文件、原始8,243,878 bytes，2026-10-16 01:17:17（UTC+08）到期。图另以本评论原生附件展示，不进Git、不额外备份。ZIP SHA256：2082c0f0a25553ce43c9350dd60cbe1afcbfd340b29ac182a9c62b95ca34a9b3。\n\n### 明确验收边界与遗留问题\n- **既有畸形日程“非法开始日期且缺结束时间”的完整加载链路仍可能在共享逻辑报错，本PR未修复。** 本次显示helper对非法值有回退测试；不能据此声称该畸形记录整条流程通过。本次请求同时请你确认：接受这一明确的、仅限本单的验收缺口后交付正常数据日期显示；不把它变成今后豁免。\n- 跨日/跨年保存输入schema不改，本次只验已有/只读记录的显示；真实正常数据已单独验证保存和重启。\n- Windows为当前主干正式验收平台；Linux本地测试有2个既有平台跳过，未冒充Windows结果。外部模型、跨版本升级与发版不在本单范围。\n\n### 本次一次确认的收尾范围\n本单只有实现PR #38，没有需要关闭的旧设计/试验PR。\n确认后：合入上述准确head → 验证实际main的完整Windows测试、构建、安装、51项实装及证据检查 → 全部通过后关闭 **#24**；任何失败保持开放并报告。合格需求分支按你已批准的安全清理规范检查后删除，历史保留。其他Issue不关闭，不发版。\n\n请在本Issue回复：\n**同意所列验收边界并合入收尾 PR #38，版本 b54528e；通过后关闭 #24**",
       "createdAt": "2026-10-12T17:22:54Z",
       "commentId": 6129172271,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6129172271",
-      "displayVerifiedAt": "2026-10-12T17:25:58.536Z"
+      "displayVerifiedAt": "2026-10-12T17:25:58.536Z",
+      "bodySha256": "4077fdbdb77fae684169325818f18beaa8909dffd1ca2e462c643b0d8670684b"
     },
     "issue24-pr38-final-metadata": {
       "kind": "edit-pr-body",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/pull/38",
-      "body": "【OnO 自动化】#24 顶栏日期显示｜实现与真实Windows验收完成，等待Issue审批\n\n[完整实测图、准确版本、验收边界和最终收尾请求](https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6129172271)。请在Issue沟通和批准，不需要在本PR重复审批。\n\nhead b54528e849bec6549aec8ec78b67da3eb02e34e9；base6850a4fb7acc10ac1d04468297b70ebd63cfa0a0。\n[Windows run38282656112](https://github.com/zhshenry/onosan_workbench/actions/runs/38282656112)：431/431单测，0skip；51/51真实安装UI/持久化/重启检查，verify、actionlint、NSIS及证据守卫通过。实际tested merge0e8f7b6d7274199bd3cb78e5ed37cde2a6c761d1，父提交base/head、treea71b4486cedec49f3d84d286ed0d1162abb830f7均已核对。\n\n仅改顶栏日期显示与必要响应式适配，320面板保留，筛选排序存储不变。首轮1024/125%入口重叠已修复，补正常点击/命中/AI状态占位几何检查；125%图原生capturePage不裁剪重绘。\n\n已知边界：畸形旧日程非法dueAt且无endAt可在既有共享逻辑崩溃，未修复/未通过完整链路；跨日跨年schema不改，截图边界用只读fixtures，与真实UI保存重启证据分列。该边界已在Issue最终请求明确，未自动豁免。\n等待用户批准准确head及所列边界/关闭#24范围；不自动合入、关单或发版。",
       "createdAt": "2026-10-12T17:23:53.987Z",
       "updatedAt": "2026-10-12T17:24:12Z",
-      "headSha": "b54528e849bec6549aec8ec78b67da3eb02e34e9"
+      "headSha": "b54528e849bec6549aec8ec78b67da3eb02e34e9",
+      "bodySha256": "99f911bb5ffb31435ff040a723717d853e56eaac71b87820602d9229bdd9d835"
     },
     "issue26-start-v1": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "body": "【OnO 自动化】#26｜开始实施已批准方案 v1\n\n#24 已完成实现和真实Windows验收，进入最终审阅；现在轮到本单，继续按你已批准的v1实施“+ 添加上下文”、各工作台只读引用和会话隔离。\n\n保持一个独立实现PR，完成后在本Issue补实测图、检查结果及准确head，届时再请你确认合入。当前方案无需重复批准。",
       "createdAt": "2026-10-12T17:25:21Z",
       "commentId": 6129209014,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6129209014"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6129209014",
+      "bodySha256": "903ed69997ec189951b6c276fa37e6a31c0456dcc16a082670399472ec14869d"
     },
     "issue26-publish-v1": {
       "kind": "publish-code",
@@ -3181,19 +3181,19 @@
       "status": "succeeded",
       "target": "ono/issue-26-context-picker -> main",
       "headSha": "c3c3911f31aa664a86d058ad7ad462c3b481ca32",
-      "body": "【OnO 自动化】#26｜主工作台“+ 添加上下文”方案v1实现（Draft）\n\n方案与审批在[原Issue](https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6126607129)和[用户原始批准](https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6128082959)，完成后仍在Issue看图审阅，不在本PR重复要求批准。\n\n## 实现\n- 固定左下+入口、搜索/类型状态、待办单选、copy/bazi最多8、阅读书目只读字段。\n- ID-only后端校验、必要内容冻结快照、实际传入模型和read_reference；快照随聊天保存/重启。\n- 会话/页面隔离，设置及规划页只解释无可关联内容，不读配置/密钥/浏览器网页。\n- 保留主写入对象和建议确认；后台页博客参考不授予写博客工具；阅读引用无vault/全文/附件。\n- 既有todo120条基础上下文不改，新引用路径只添加所选必要内容。不是全局selected-only改造。\n\n## 本地验证\n430项：428通过、2已有Windows包装测试在Linux跳过；npm verify通过。标准tsx包装受本地IPC限制，同测试集使用node --import tsx --test执行；UTC三项旧时区假设失败在原main复现，完整验证使用Asia/Shanghai。独立代码/边界审查未发现阻断问题。\n\n## 待执行\n本准确head的Windows全量测试/构建/NSIS安装、预期47项实装检查及实际截图。已添加孤立loopback合成传输验收，不调用外部真实模型；未运行不能写成已通过。新增5张截图、总量19MB守卫不变。现有年份重启fixture改为按姓名唯一匹配，保留ID/createdAt/日期断言，允许引用测试新增第二命例。\n\n本PR只含#26，不搭载未合入#24；两者同动App/CSS/验收脚本，合入前按最新main重新集成验证。无自动关单、合入或发版。",
       "createdAt": "2026-10-12T17:42:53Z",
       "number": 39,
-      "url": "https://github.com/zhshenry/onosan_workbench/pull/39"
+      "url": "https://github.com/zhshenry/onosan_workbench/pull/39",
+      "bodySha256": "d421cbb404a708fbd4a75d12d18611a40cf45c5b7fa589ac843f94801d8f29de"
     },
     "issue26-pr39-progress": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "body": "【OnO 自动化】#26｜实现已提交 Draft PR #39，开始真实 Windows 验收\n\n[PR #39](https://github.com/zhshenry/onosan_workbench/pull/39)，当前head c3c3911f31aa664a86d058ad7ad462c3b481ca32；[Windows运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38286044872)正在执行。\n\n本地430项：428通过、2项已有Windows包装测试在Linux跳过；类型/构建检查通过。已验证新引用路径的实际请求快照、会话/页面隔离、阅读字段限制和原主对象写入边界；外部模型服务效果不以合成测试代替。\n\n接下来核对真实安装界面、保存/重启及截图，失败按本单范围修复；通过后在这里给准确版本和实测图，再请你确认最终合入。现在无需重复批准方案。",
       "createdAt": "2026-10-12T17:44:01Z",
       "commentId": 6129501941,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6129501941"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6129501941",
+      "bodySha256": "a80adb02b608d5dcf15c35986cce1c731fd78ad93e120601d0c0cba9efd745d3"
     },
     "issue26-relaunch-fix": {
       "kind": "publish-code",
@@ -3282,28 +3282,28 @@
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
       "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac",
-      "body": "【OnO 自动化】#26｜PR #39 实现与实测图，最终合入收尾待确认\n\n已完成[方案v1](https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6126607129)及你的[批准](https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6128082959)。下面是真实 Windows 安装版本截图，使用隔离合成业务数据，不是设计图。\n\n### 准确版本与结果\n- [PR #39](https://github.com/zhshenry/onosan_workbench/pull/39)：head **2f24f9577c4adb770146fde38c91c3cb2bbc6dac**（**2f24f95**）。\n- base：6850a4fb7acc10ac1d04468297b70ebd63cfa0a0。\n- [Windows验收](https://github.com/zhshenry/onosan_workbench/actions/runs/38287586027)：**431/431单测，0失败、0跳过；47/47实装检查通过**。actionlint、类型/构建、真实文件symlink与父目录junction安全反例、NSIS静默安装、证据守卫通过。\n- 实际测试PR合成merge **08dd78f6645e86be3a6105452ef534ca82696f66**，父提交即上述base/head，tree **98f655674aea95b982f89c5502969c3194e3f048** 与head一致。\n- 首轮失败是重启检查把历史标题与用户消息同时匹配；已改为精确用户气泡并补重复/缺失回归。没有放宽快照、保存或重启断言。\n\n### 本单交付\n- 左下固定 +，搜索、类型/状态、待办单选/更换/取消、可移除标签；Esc、外部关闭、焦点返回。\n- copy/bazi保留最多8项；阅读仅已记录书目字段。设置/规划页只解释无可关联内容，不读配置和密钥。媒体页可参考已有博文，不抓取网页、登录态或新增发布能力。\n- 后端校验ID与权限范围，发送时冻结必要内容快照；真实IPC/请求传输、保存读回、源内容修改后历史不变、同版本退出重启已验证。原协助对象、聊天身份与建议卡确认不变。\n- 主题mist/cool/warm、1280×820与1024×680、长标题、模型/发送位置均已检查。系统深浅偏好覆盖不代表应用新增深色主题。\n\n### 真实截图\n冷灰选择器：\n![冷灰上下文选择器实测](https://github.com/user-attachments/assets/545a86de-eb72-4932-8451-c6e0f20643c6)\n雾灰选择器：\n![雾灰上下文选择器实测](https://github.com/user-attachments/assets/28873631-12c2-4722-aa70-d504d81219ed)\n暖砂选择器：\n![暖砂上下文选择器实测](https://github.com/user-attachments/assets/a7f7f146-1006-482d-9a98-71a57871d971)\n真实发送并保存后的历史参考：\n![上下文真实发送保存实测](https://github.com/user-attachments/assets/9fe9bc8f-3c49-46d9-b177-8bac0d985423)\n同版本重启后历史快照保留，新输入不自动恢复旧引用：\n![上下文重启快照实测](https://github.com/user-attachments/assets/1555cc46-3466-4de2-b313-279cd2ce449b)\n\n以上五图已逐张查看，右侧本单控件无重叠。截图中的模型回复为孤立loopback合成响应，用于检验真实应用传输与持久化，不证明外部模型质量或服务可用。\n\n### 必须说明的边界\n1. 截图左侧首页在1024宽度下“本周概览”等挤成竖排，**未修复，不能称首页整体响应式通过**。已用6850基线源码及diff确认：窄屏改单列却保留子项固定列位置，本单未改HomeView或这些规则；未另跑基线像素对照。本次仅交付右侧上下文功能，请同时确认接受这项已知、限本单的范围边界；若希望一起修，请在这里指出，先补范围。\n2. 原方案“只把选中内容交给模型”仅适用于新增引用路径。**既有待办最新120条及分类基础上下文仍保留**，不是全局仅发送所选数据的改造。这里明确纠正，避免误解。\n3. 未覆盖真实外部模型效果、跨版本升级、安装向导/UAC/SmartScreen、真实更新和发版。未合入的#24日期功能不搭载；main变化后重新集成与验收，head改变重新请你批准。\n\n[临时验收产物](https://github.com/zhshenry/onosan_workbench/actions/runs/38287586027/artifacts/11764576260)：24文件，展开6,107,875 bytes；2026-10-16 02:01:55（UTC+08）到期。ZIP SHA256：ed93d5baa4861696e55869b9484c26c4aeb06407af7bb24e271e5ec2e62fc88e。图片只用本评论原生附件展示，不进Git、不额外备份。\n\n### 一次确认的收尾范围\n本单仅有实现PR #39，无需关闭旧辅助PR。确认后合入上述准确head → 核验实际main完整Windows单测、构建、安装、47项实装及证据 → 全部通过才关闭 **#26**。失败保留开放；符合已批准安全条件后清理该需求分支。其他Issue/PR不关闭，不发版。\n\n请在本Issue回复：**同意所列边界并合入收尾 PR #39，版本 2f24f95；通过后关闭 #26**",
       "createdAt": "2026-10-12T18:06:31Z",
       "commentId": 6129851935,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6129851935"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6129851935",
+      "bodySha256": "fe3aa77ea7806f1a97735ddb59b4f8c9202ac1491f8d13b0dc64e7a0a8e9dadf"
     },
     "issue26-pr39-final-metadata": {
       "kind": "edit-pr-body",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/pull/39",
-      "body": "【OnO 自动化】#26 主工作台添加上下文｜实现和Windows验收完成，等待Issue最终审批\n\n完整实测图、准确版本、已知边界及合入收尾请求：https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6129851935\n\nhead 2f24f9577c4adb770146fde38c91c3cb2bbc6dac；base 6850a4fb7acc10ac1d04468297b70ebd63cfa0a0。\nWindows run38287586027成功：431/431单测、0跳过，47/47实装检查，NSIS安装、真实保存/重启、路径安全反例和证据守卫通过。实际tested merge08dd78f6645e86be3a6105452ef534ca82696f66，父提交base/head，tree98f655674aea95b982f89c5502969c3194e3f048一致。\n\n实现左下+、工作台对应只读引用、后端ID校验与冻结快照、会话/页面隔离，保留主写入对象和确认机制。重启测试定位歧义已修复并补回归。\n\n边界：既有latest120待办基础上下文仍保留；截图左侧1024首页旧网格挤压未修复，已明确请用户接受限本单范围边界；外部模型用loopback合成响应，不代表真实模型质量。#24未搭载，main变化必须重验集成。\n\n保持Draft；请在Issue审阅，未批准前不合入、不关单、不发版。",
       "createdAt": "2026-10-12T18:07:33.897Z",
       "updatedAt": "2026-10-12T18:07:52Z",
-      "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac"
+      "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac",
+      "bodySha256": "1df2dfd242399954385cc2e0c5f542a61e77c90d0645ad42179a1e528032d2c5"
     },
     "issue26-v2-feedback-ack": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "body": "【OnO 自动化】收到，这次按你的意见把关联事项选择框的整体视觉向 To-Do-List 悬浮框对齐。我先补 v2 高保真和与当前版本的差异，在本 Issue 给你看图确认，再改实现；已有引用、会话隔离和只读边界保持。PR #39 暂不合入，上一条最终请求先暂停。现在无需重复确认这条反馈。",
       "createdAt": "2026-10-13T00:30:58Z",
       "commentId": 6135301815,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6135301815"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6135301815",
+      "bodySha256": "7fbc7e21579ab3d058107c67e803639feefeebacd1077a296a237adc257cf695"
     },
     "issue24-pr38-ready": {
       "kind": "mark-pr-ready",
@@ -3331,19 +3331,19 @@
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
-      "body": "【OnO 自动化】已核对你的最终批准，PR #38 的 b54528e 已合入 main（a5659fa5e6dbef6188ec3e34b061bc317d4d7e78），合入树与已验收版本一致。接下来验证这次真实 main 的完整 Windows 检查；全部通过后按批准关闭 #24 并核查需求分支清理。当前不提前关单，无需再次批准。",
       "createdAt": "2026-10-13T00:34:09Z",
       "commentId": 6135342273,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6135342273"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6135342273",
+      "bodySha256": "8e00938c1f315b40129e9f9f85d68ba6eb7951d8ab2e2f8974bbd3c7dfc76f46"
     },
     "floating-v2-approved-progress": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "body": "【OnO 自动化】已核对你在本 Issue 对 v2 的确认；#25 的同文回复作为旁证，不重复记成另一单。按完整 v2 统一处理 #25、#28、#29、#30、#31、#32、#33，提交一个实现 Draft PR。先完成 #24 的实际主干验收，再开始本组；#26 的新视觉反馈单独出图对齐，不混入本组。最终在这里给实测图和准确版本供你一次审阅合入，现在无需重复批准方案。",
       "createdAt": "2026-10-13T00:34:12Z",
       "commentId": 6135343025,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135343025"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135343025",
+      "bodySha256": "56fff369caffc19e15feac2da9435aa78aaa183088568607464f351475db5da5"
     },
     "issue26-v2-design-upload": {
       "kind": "upload-image",
@@ -3363,19 +3363,19 @@
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "body": "【OnO 自动化】#26｜关联事项 UI 修订方案 v2\n\n按你的[反馈](https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6135158729)，把主工作台的关联事项选择器向 To-Do-List 悬浮窗的选择框统一。这次只改关联区域的视觉与信息层级。\n\n![关联事项UI v2高保真](https://github.com/user-attachments/assets/2c16c9d3-fefa-4d5b-883f-eaf267359a0a)\n\n这是独立高保真设计预览，**不是产品实测**。图中为示例事项，局部放大，不作为实际尺寸或窄屏验收证据。主图、窄面板和关联前后展示同一方案。\n\n### 本次变化\n- 事项行统一为“类型图标＋标题及次要信息＋事项状态＋最右选中勾”，待办和日程使用不同图标。\n- 选中用浅蓝行背景和最右独立勾；已逾期、已完成等状态保留各自图标、文字和颜色，不再随选中一起染蓝。\n- 保留搜索、类型/状态筛选及已有日期/分类信息，间距、边框向悬浮选择菜单靠齐，不删功能。\n- 关联标签继续单独呈现，长标题省略但悬停/焦点可看完整标题，取消按钮始终可见。图中“查看全文”指完整标题，不增加数据读取范围。\n- 左下＋、右侧模型和发送保持主工作台原位置关系，不套用悬浮窗收起高度，也不重排整个主面板。\n\n参考[悬浮窗组v2](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525)的事项行和关联反馈方向，但两组实现范围不合并。\n\n### 沿用范围与边界\n以[PR #39](https://github.com/zhshenry/onosan_workbench/pull/39) 的现有 head **2f24f9577c4adb770146fde38c91c3cb2bbc6dac** 为视觉修订起点；实施时还需集成最新main。保留单选/替换/取消、键盘、空态和失效提示。其他工作台仅沿用通用容器样式，博文/命例最多8项及确认操作、阅读字段边界不变。\n\n后端ID校验、请求快照、会话/工作台隔离、历史保存/重启、原协助对象和建议卡确认均不变。**既有待办最新120条及分类基础上下文仍保留**；本次不新增读取数据，也不修首页窄屏布局。\n\n### 实施验收\n1. 类型、标题、状态和选中四层清楚；“已完成但未选中”“已逾期且已选中”可区分。\n2. 真实主面板、1024×680/1280×820、三主题、长标题/模型名、筛选菜单和滚动无溢出；关闭/移除可操作。\n3. 回归单选/更换/取消、搜索/筛选、无结果/空列表/加载失败/对象失效，以及Esc、外部关闭、方向键、Enter和焦点返回。\n4. 回归其他工作台选择上限、确认/取消、会话切换及无可关联内容说明。\n5. 保留真实请求/快照/保存读回/重启及原写入确认测试；准确新head完整Windows构建、安装和专项通过后再附实测图请求合入。\n\nPNG SHA256：f5661383d2a79ed45e075b0014aba7a92c72af1fa29a627da931c6cda97e8cdd。图片不进Git、不额外备份。未变范围无需重复批准；请只确认本次局部视觉修订。批准后继续在PR #39修订，最终合入另请确认准确新版本，上一条2f24f95最终请求暂停。\n\n请在本Issue回复：**同意 #26 关联事项 UI v2**",
       "createdAt": "2026-10-13T00:37:05Z",
       "commentId": 6135382383,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6135382383"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6135382383",
+      "bodySha256": "644656421a5f25c62384c7d2ef24c56ca9a05ea741f94dfc09330fcb32a5abf3"
     },
     "issue26-v2-pr-metadata": {
       "kind": "edit-pr-body",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/pull/39",
-      "body": "【OnO 自动化】#26｜按用户反馈修订关联事项视觉，等待局部v2确认\n\n当前实现head仍为2f24f9577c4adb770146fde38c91c3cb2bbc6dac，尚未改v2产品代码；旧最终合入请求暂停。新高保真及唯一方案确认入口：https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6135382383\n\n原实现Windows验证为431/431单测、47/47实装（run38287586027），不代表新视觉或最新main集成已通过。main已合入#24，后续实施需集成并重跑完整验收，再给准确新head实测图请求合入。\n\n不在本PR重复请求审批；保留Draft，不合入、不关单、不发版。",
       "createdAt": "2026-10-13T00:38:05.123Z",
       "updatedAt": "2026-10-13T00:38:17Z",
-      "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac"
+      "headSha": "2f24f9577c4adb770146fde38c91c3cb2bbc6dac",
+      "bodySha256": "a69ebfa7886978019f3cbe16e4161e15ef5fc2fb7cafc3421d3fd492617540d7"
     },
     "issue24-close-after-main": {
       "kind": "close-issue",
@@ -3405,18 +3405,18 @@
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/24",
-      "body": "【OnO 自动化】#24｜已合入、主干验收通过并完成收尾\n\n依据你的[原始批准](https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6135120268)，[PR #38](https://github.com/zhshenry/onosan_workbench/pull/38) 的 b54528e849bec6549aec8ec78b67da3eb02e34e9 已合入。\n- 实际main：**a5659fa5e6dbef6188ec3e34b061bc317d4d7e78**，tree a71b4486cedec49f3d84d286ed0d1162abb830f7，与已审阅实现树一致。\n- [合入后真实main Windows运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38327784514)（push，attempt 1）：**431/431单测，0跳过；51/51实装检查通过**。actionlint、类型/生产构建、NSIS安装、保存读回/同版本重启、文件路径安全及证据守卫均通过，不是沿用PR结果。\n- 已下载核对本次main报告与ZIP hash，并逐张查看8张日期相关主干截图；原审阅图仍在[带图验收评论](https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6129172271)，不把旧图冒称这次main图。\n- [本次main临时证据](https://github.com/zhshenry/onosan_workbench/actions/runs/38327784514/artifacts/11781621380)：27文件，8,235,703 bytes；到期 **2026-10-16 08:37:15（UTC+08）**。ZIP SHA256：1f4eb52e7b6871a4e744b960f2d31281bd670ae4ee42779a1f59cafc6283f554。临时下载图片/ZIP已清除，不进Git、不备份。\n\n#24 已于2026-10-13 08:41:59（UTC+08）按批准关闭。本单只有实现PR38，已merged，无旧辅助PR需要关闭。\n需求分支 **ono/issue-24-topbar-dates** 已按安全清理规范删除：删除前head仍是上述b54528e，无新提交、无其他开放PR引用、未受保护且无活动用途；删除后API确认引用不存在，PR保留正常Restore branch入口。此次为单协调者UI清理，不声称原子CAS。\n\n已接受的本单边界继续保留：畸形旧日程“非法开始日期且缺结束时间”的加载链路未修复；跨日输入schema、真实更新/跨版本升级不在本次范围。不发版。若实际使用发现问题，可在本Issue重新反馈或重开。",
       "createdAt": "2026-10-13T00:44:25Z",
       "commentId": 6135485302,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6135485302"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6135485302",
+      "bodySha256": "bb8fda77992ff41b118415605b0e19cc19ed87e8de163cf39eb85a3d7fc69087"
     },
     "issue24-pr38-closed-metadata": {
       "kind": "edit-pr-body",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/pull/38",
-      "body": "【OnO 自动化】#24 顶栏日期显示｜已合入并完成收尾\n\n完整结果与保留边界：https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6135485302\n用户原始批准：https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6135120268\n原带图验收：https://github.com/zhshenry/onosan_workbench/issues/24#issuecomment-6129172271\n\n已批准head b54528e849bec6549aec8ec78b67da3eb02e34e9；实际merge/main a5659fa5e6dbef6188ec3e34b061bc317d4d7e78，treea71b4486cedec49f3d84d286ed0d1162abb830f7与已验收树一致。main push run38327784514成功431/431单测、0skip，51/51实装检查；NSIS安装、持久化/重启、路径安全和证据守卫通过。\n#24按批准关闭；合格需求分支已安全清理，可从本PR恢复。仅本单畸形旧日程加载缺口仍按用户明确接受边界保留，未修复；不发版。",
       "createdAt": "2026-10-13T00:45:43.677Z",
-      "updatedAt": "2026-10-13T00:45:52Z"
+      "updatedAt": "2026-10-13T00:45:52Z",
+      "bodySha256": "9928716ab632793c9ffaf42714e0c0029bf548e08617e967efb74e5dc6f63113"
     },
     "floating-v2-publish": {
       "kind": "publish-implementation",
@@ -3446,28 +3446,28 @@
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "body": "【OnO 自动化】悬浮窗组 v2｜已提交实现，正在验收\n\n#25、#28、#29、#30、#31、#32、#33 的统一实现已提交 [Draft PR #40](https://github.com/zhshenry/onosan_workbench/pull/40)，head **fbbf76b99733295c6325144c10586a50a7df0a2b**，基于已验收 main a5659fa5e6dbef6188ec3e34b061bc317d4d7e78。\n本地完整测试447项：445通过、2项既有Windows-only跳过；类型与生产构建通过。交叉检查发现的切宽后日程开合测高回归已修复，并补修前失败/修后通过测试。\n[真实 Windows 验收](https://github.com/zhshenry/onosan_workbench/actions/runs/38330757284)已通过单测、构建、安装，仍在执行实装UI/同版本重启检查，尚未出最终结论。预期80项和实际截图都须读回核验，不能提前算通过。\n\n下一步我继续检查实装结果、修复本组范围内问题，并在这里提供真实带图验收，再请求准确版本的最终合入收尾。当前无需重复批准；有新增意见直接回复本Issue。",
       "createdAt": "2026-10-13T01:23:58Z",
       "commentId": 6136034929,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136034929"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136034929",
+      "bodySha256": "6328e0189f09d9aa189739c4c0abd3b01b4edd52c1bdc7d44c796097cab32841"
     },
     "floating-pr40-failure-comment": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "body": "【OnO 自动化】悬浮窗组 v2｜Windows 实装发现问题，继续修复\n\n[PR #40 首轮验收](https://github.com/zhshenry/onosan_workbench/actions/runs/38330757284/job/115079705357)的 **447/447 单测、类型/构建、NSIS实际安装通过**，0单测跳过。实装仅完成64项，通过不等于整组完成。\n失败发生在窄窗日程“今天”组的真实点击：被浮窗其他元素拦截，15秒超时；随后失败退出未完成，最终运行被取消。后续关联、重启和最终检查尚未完成，不报80项通过。正在核查边缘位置专项后的窗口状态及实际交互，并修复失败时报告保存/有界退出；不会用强制点击或放宽断言漂绿。\n\n准确head仍为 fbbf76b99733295c6325144c10586a50a7df0a2b，实际tested merge为9561debbbafecf8c83336999257f88c60201c157。[本次部分证据](https://github.com/zhshenry/onosan_workbench/actions/runs/38330757284/artifacts/11783442444)只有30张PNG和安装报告，完整验收报告缺失；到期2026-10-16 09:34:25（UTC+08）。已下载核对并查看相关实际截图，未上传作合格验收。\n我会在当前批准范围内修复后重跑，再发布准确新版本带图验收。当前无需你操作；有意见直接回复本Issue。",
       "createdAt": "2026-10-13T01:39:54Z",
       "commentId": 6136208994,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136208994"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136208994",
+      "bodySha256": "4835f7944505c6542fec93b2f324f6d6e2fa0f7647e6a36eb0f473a19f43425e"
     },
     "floating-quit-scope-request": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "body": "【OnO 自动化】悬浮窗组｜需确认一项原有退出缺陷的最小修复\n\n排查首轮实装中断时，确认当前main的[浮窗关闭处理](https://github.com/zhshenry/onosan_workbench/blob/a5659fa5e6dbef6188ec3e34b061bc317d4d7e78/electron/float-window.ts#L84-L90)始终阻止关闭并改为隐藏；[主进程退出链](https://github.com/zhshenry/onosan_workbench/blob/a5659fa5e6dbef6188ec3e34b061bc317d4d7e78/electron/main.ts#L492-L529)没有在真正退出前销毁浮窗，现有destroy方法也未接入。此缺口在本组修改前已存在。\n这会阻挡打开过浮窗后的正常退出，且与本次失败清理挂起相符；本轮尚未运行到正式退出/重启检查，因此不把因果推测写成已完成的实机证明。\n\n建议追加的最小范围：仅在应用真正before-quit时销毁本浮窗，普通关闭/隐藏仍保持原行为；补“未开浮窗、浮窗显示/隐藏后正常退出、重复退出、同版本重启和宽度重置”回归。纳入当前PR #40，不改退出偏好、不动数据格式、权限或其他工作台；失败清理的强制结束不能当正常退出成功。\n已有授权内的测试位置恢复和失败报告保存继续完成；这一原有产品退出缺陷修复等你确认后实施。纯生命周期修复，无新增视觉方案或高保真变化。最终仍需准确新head的带图验收及合入批准。\n\n同意追加该范围请回复：**同意修复浮窗退出缺陷 v1**",
       "createdAt": "2026-10-13T01:45:15Z",
       "commentId": 6136264679,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136264679"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136264679",
+      "bodySha256": "952d10ac8aab8155c3e084632572b92105855bd026f9e057dc085854e025ce03"
     },
     "floating-pr40-quit-fix-publish": {
       "kind": "update-implementation",
@@ -3486,9 +3486,9 @@
       "kind": "edit-pr-body",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/pull/40",
-      "body": "【OnO 自动化】悬浮窗组 v2｜已补退出修复，真实Windows重验中\n\n关联 #25、#28、#29、#30、#31、#32、#33，统一讨论/审批在#28。\n方案：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6128626525\n方案批准：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217\n追加退出修复批准：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484\n\n当前head c2ed2e0db07529deb7f7313050ba56d887a9c390，base a5659fa5e6dbef6188ec3e34b061bc317d4d7e78。\n已实现440/330独立宽度、176紧凑AI布局、关联真实指针选择、返回/模型/业务状态样式；保留截止/分页/历史。追加仅before-quit销毁本浮窗，普通关闭隐藏不变；修复验收边缘位置泄漏与失败报告/清理。不含#26。\n\n首run38330757284单测447/447通过，实装64项后日程今天组点击拦截，清理挂起最终cancelled，未完整通过。\n新修订本地468项=466pass+2既有Windows-onlyskip，完整verify及独立审查通过。\n新run：https://github.com/zhshenry/onosan_workbench/actions/runs/38334505107\n尚待准确版本Windows真实安装/84项实装、截图及逐图检查，不提前当通过。19MB原始证据守卫/3天保留不变。完成后在#28带图请求准确head合入收尾；当前保持Draft，不合入、不关单、不发版。",
       "createdAt": "2026-10-13T01:57:44.744Z",
-      "updatedAt": "2026-10-13T01:57:56Z"
+      "updatedAt": "2026-10-13T01:57:56Z",
+      "bodySha256": "3db06d2f7fa16316d3ffcd31c2b46f5d5d176dc3d90db16e8b71ced8aa9015f1"
     },
     "floating-pr40-tempheight-publish": {
       "kind": "update-implementation",
@@ -3518,10 +3518,10 @@
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "body": "【OnO 自动化】悬浮窗组｜已按追加批准修复退出，继续最终验收\n\n已核对你的[退出修复批准](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484)，最小修复已进入PR #40。随后定位并修复了减少动画下迟到的迷你高度事件把展开窗改回176的竞态；加强断言后，真实16态宽窄/展开矩阵、日程组开合均通过。\n\n当前head **cf9b2c67217830fbaa8aac557975527e4597383e** 的[最新Windows运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38337172824)为 **478/478单测，0跳过；实装72项通过/73项已执行**。真实关联选择、替换、删除、键盘、已有选择的外部取消，以及三主题已通过；无浮窗正常退出也已通过。\n还卡在合成AI请求正文的精确核对：请求数量和模型已匹配，正文断言未通过，正在按实际传输格式排查；不会改业务内容或放宽为模糊匹配。其余退出/重启等尚未执行完，所以仍未满足84项完整验收。\n\n我继续完成当前授权范围内修复及真实带图交付。当前不用重复批准；如有新意见直接回复本Issue。",
       "createdAt": "2026-10-13T02:40:03Z",
       "commentId": 6137005006,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137005006"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137005006",
+      "bodySha256": "03c5823c56e94a6d73c6d75e78afaf9806f26f9aeb94bc2aa7a3253b2b871260"
     },
     "floating-pr40-wire-publish": {
       "kind": "update-implementation",
@@ -3539,10 +3539,10 @@
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/41",
-      "body": "【OnO 自动化】#41｜v0.2.0 发布需求已排队\n\n按你的要求，先完成 #41 之前的需求，再推进 v0.2.0。当前未完成的前置是：\n- 悬浮窗组 #25/#28/#29/#30/#31/#32/#33：PR #40 正在真实Windows验收，尚未合入。\n- #26：关联事项 UI v2 等方案确认，PR #39 后续还需集成最新main。\n- #34：设置更新方案等确认；#35：原生附图受阻，尚未形成可批准方案。\n- #36/#37：用途说明已回复，仍等你的意见，不能仅因已解释就认定完成。\n\n#24、#17/#18 已完成的交付不重复实施。Issue编号范围按需求单判断，不把PR编号当成额外需求；如果前置被取消或确认不再需要，会保留你的原始决定，不悄悄跳过。\n\n前置满足后，我会在本Issue集中整理v0.2.0完整改动集合、版本/CHANGELOG、准确候选SHA、Windows安装/更新与五项发行资产核验，以及已知边界，按仓库发布流程请求该准确版本的独立发布批准。当前不创建标签、不发Release，不把普通功能合入批准复用为发布批准。\n\n当前无需操作；如果需要调整发布范围，直接回复本Issue。",
       "createdAt": "2026-10-13T02:46:04Z",
       "commentId": 6137073860,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/41#issuecomment-6137073860"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/41#issuecomment-6137073860",
+      "bodySha256": "df6f875dcb0f2b7705fa8ea340a1226ae985d0e8631d59a766e5110433f3738b"
     },
     "floating-pr40-toolbar-publish": {
       "kind": "update-implementation",
@@ -3560,10 +3560,10 @@
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/41",
-      "body": "【OnO 自动化】#41｜已补入发布前检查\n\n按你[最新要求](https://github.com/zhshenry/onosan_workbench/issues/41#issuecomment-6137177280)，发布前会逐项核对：\n1. 本次发布范围内的所有功能及对应实现PR都已合入main，实际main验收通过，没有仍停在需求分支上的遗漏功能。\n2. 全量分页检查远端分支，已合入且无其他用途的需求分支清理干净；未合入或含独有提交的分支不强删，也不为清理而误合过时试验代码，先在这里列明。\n\n有一个必要保留项会明确列出：ono-pipeline-state 是当前自动流程的进度记录分支，不是多余的功能分支，按现有约定保留；main也保留。最终发布清单会列出实际剩余分支及用途，确保没有不明或多余的分支。\n当前仍先推进前置需求；这条要求不替代具体PR/head的合入批准。若你指的是最终严格只留main、连进度分支也不要，请回复“只保留 main”，我会先说明进度记录迁移方案，避免丢失续接记录。",
       "createdAt": "2026-10-13T03:02:23Z",
       "commentId": 6137253601,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/41#issuecomment-6137253601"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/41#issuecomment-6137253601",
+      "bodySha256": "f8aa0974650506bc596926b7ccaa255eebec6dfbb5d9c35f6dbe28b510f4f700"
     },
     "floating-pr40-final-images": {
       "kind": "upload-images",
@@ -3672,82 +3672,82 @@
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "body": "【OnO 自动化】悬浮窗组｜测试已通过，实测附图交付受阻\n\nPR #40 当前准确 head **5a74dbb79469bb0bbc5d681939e8fbe430d44d4f**。\n[最终 Windows 验收](https://github.com/zhshenry/onosan_workbench/actions/runs/38339682689/job/115107626110) attempt 1 成功：**486/486 单测，0失败/0跳过；84/84 实装检查通过**，类型、构建、actionlint、路径安全检查和 NSIS 0.1.0 安装通过。实际 checkout merge 为 65c469304680ae426e74728a43d05fb328fd7474，父提交是当前 main a5659fa5e6dbef6188ec3e34b061bc317d4d7e78 与上述 head，tree 6c77b70e050aa3a29a8abde1fe29aba0c54625a5。\n\n逐单结果：\n- #25：展开首页已去掉 AI 建议条，保留 AI 入口、待办和日程。\n- #28：440/330 宽度独立切换、16态实际窗口高度、屏幕边缘、隐藏重显及重启默认440通过。\n- #29/#32：展开“返回首页”、收起左箭头“返回”及原灰色小字样式通过。\n- #30：收起首页橙色 AI 图标/细边框通过。\n- #31：移除记录计数控件，保留历史；模型按钮与有界滚动菜单通过。\n- #33：关联 chip 独立行、真实指针选择/替换/删除、键盘、外部取消、业务状态与选中勾分开、模型位置不变均通过。\n- 已追加批准的退出修复：无浮窗、显示/隐藏/反复操作后的正常退出，以及同版本重启数据保留均通过；未把强制清理当正常退出。\n\n已下载准确本轮证据、核对 SHA256，并逐张查看16张本组实际截图，包括宽窄首页/AI、关联选择器、模型菜单、空状态、三主题及重启结果。上一版330展开入口换行问题已修复，本版实图已复核。\n但在我的云端 GitHub 浏览器上传原生附件时，16张均明确返回 Failed to upload、没有图片URL；清空失败草稿、刷新表单后只补试一张26KB小图，也明确失败。页面未给出具体原因，不能归因为权限、登录或文件大小。目前没有图片成功内嵌，故**尚未完成可审阅的带图验收，不请求合入、不关单**。已停止重试，未把失败占位发成图片，也不把设计图冒充实测图。\n\n暂可查看[本轮实测证据](https://github.com/zhshenry/onosan_workbench/actions/runs/38339682689/artifacts/11786408859)：43文件（40 PNG＋3报告），ZIP 8,799,120 字节，SHA256 `79fe6112115d8feaab82bc3611b6fbc40697cbd1cc53fd5a95670daa967ae590`。到期 **2026-10-16 11:08:32（UTC+08）**；不额外备份、不把图放进代码仓。\n\n测试边界：AI请求使用本机回环合成服务验证精确正文/模型及无任务写入，不代表真实外部模型质量；未覆盖真实跨版本更新、签名/SmartScreen/UAC人工向导。其他主工作台布局和已知畸形旧日程加载问题未纳入本组修复。#26及其PR #39不在本组；本组只有实现PR #40，仍为Draft。\n\n下一步需恢复原生附件链路，再补齐本组各Issue实嵌图和准确head的统一合入收尾请求。当前有意见请直接回复本Issue；无需重复批准已完成的开发。",
       "createdAt": "2026-10-13T03:18:07Z",
       "commentId": 6137427103,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103",
+      "bodySha256": "cc37a124ed7f1dbe4663efe1054ddbf4cf19a4cd5a621c58a11604b169d937c3"
     },
     "pr40-final-ci-metadata": {
       "kind": "edit-pr-body",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/pull/40",
-      "body": "【OnO 自动化】悬浮窗组 v2｜Windows验收通过，原生附图交付阻塞\n\n关联 #25、#28、#29、#30、#31、#32、#33，统一讨论/审批在#28。\n最新逐单结果及附件阻碍：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103\n方案批准：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217\n退出修复追加批准：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484\n\nhead 5a74dbb79469bb0bbc5d681939e8fbe430d44d4f\nbase a5659fa5e6dbef6188ec3e34b061bc317d4d7e78\ntested merge 65c469304680ae426e74728a43d05fb328fd7474\ntree 6c77b70e050aa3a29a8abde1fe29aba0c54625a5\n最终run38339682689 attempt1成功：486/486 Windows单测0skip、84/84实装、类型/构建/actionlint/安全/NSIS安装通过。\nhttps://github.com/zhshenry/onosan_workbench/actions/runs/38339682689\n\n准确本组16张实测截图已逐张查看，但原生附件批量及单图补试均明确失败，无URL。仍缺Issue实嵌图和最终合入收尾批准，保持Draft/open。旧失败运行已被本次准确版本验收替代，不能将此前通过截图混为当前head。\n不包含#26，尚未合入main、不关单、不发版；真实外部AI质量、跨版本更新/签名及人工UAC验证未覆盖。完整边界见Issue评论。",
       "createdAt": "2026-10-13T03:18:35.297Z",
       "updatedAt": "2026-10-13T03:19:06Z",
-      "verifiedAt": "2026-10-13T03:19:35.279Z"
+      "verifiedAt": "2026-10-13T03:19:35.279Z",
+      "bodySha256": "7921283ef83d3a738787a527090a472b95d03054ea2cd2b329bd3ca909cda457"
     },
     "release41-state-explanation": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/41",
-      "body": "【OnO 自动化】不需要合入 main。ono-pipeline-state 只保存每单进度、当前方案/PR版本和操作回执，供我下次继续处理；它不包含待发布功能，也不参与产品构建。\n\n按当前约定，这个分支单独保留即可。发布前我会确认所有目标功能都已合入 main，并清理无用需求分支；最终清单会明确列出 main 和这个必要的进度记录分支。\n\n这条是说明，无需批准或执行合入。",
       "createdAt": "2026-10-13T03:35:28Z",
       "commentId": 6137624093,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/41#issuecomment-6137624093"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/41#issuecomment-6137624093",
+      "bodySha256": "c6badaa4869ef3c6a347295d16e854d67f224f17fb7306f0dc84cb0718e9e450"
     },
     "issue26-v3-feedback-ack": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "body": "【OnO 自动化】明白了，上一版把“参考悬浮框”理解成只调整行样式，仍保留类型/状态筛选，没对齐你要的简洁选择方式。\n\n我先重新核对当前待办悬浮框的实际选择器，再修订 #26 的局部高保真；v2 暂停待审，PR #39 也不继续实施或合入。修订只针对这里的关联事项选择框，不据此删除其他工作台的功能。\n\n新图和完整范围准备好后继续在本 Issue 对齐；当前无需批准旧版。",
       "createdAt": "2026-10-13T03:35:57Z",
       "commentId": 6137629928,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6137629928"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6137629928",
+      "bodySha256": "6881697ff231edbc403d16019bf0019b306a4b9044120771add53a2961879bdb"
     },
     "issue26-v3-image-chain-blocker": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "body": "【OnO 自动化】#26｜修订准备进度\n\n已按当前 main 的实际悬浮选择器重新核对源码，并准备 v3 局部高保真和修订草稿；产品代码未改。v2不再等待批准，旧PR #39合入请求继续暂停。\n\n现在缺的是新图在本Issue的原生内嵌交付。刚才同一云端GitHub附件链路在[#28实测图交付](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6137427103)中已明确失败，刷新后的有限补试也失败，原因尚未核明；我不会换个Issue重复盲试或把无图草稿当成可审批方案。\n\n待附件链路有可核实恢复后，我会把v3图文一起发到这里供你评价。当前无需批准；如有其他要求可直接回复本Issue。",
       "createdAt": "2026-10-13T03:38:52Z",
       "commentId": 6137668925,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6137668925"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6137668925",
+      "bodySha256": "1c4bad62e2e6b05016cd4ce7e1081d2d3c370cf11fd8f22344c97ef61f94f460"
     },
     "issue26-diagnosis-ack": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "body": "【OnO 自动化】收到，先定位失败原因，再补图。我已重新核对：云端浏览器仍登录在正确账号，Issue评论和附件入口正常；此前小PNG也失败，现有提示不足以把原因归为文件大小或账号未登录。\n\n正在继续核对原生上传支持和能取得的错误证据，暂不再次上传。v3设计图已准备，但只有上传成功并读回实际图片后才发正式方案。",
       "createdAt": "2026-10-13T04:18:25Z",
       "commentId": 6138131366,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6138131366"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6138131366",
+      "bodySha256": "bfb02028c1856cffccdf345454371f48badbcc4cce2eebed33e3c87ceb2540d6"
     },
     "issue28-diagnosis-ack": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/28",
-      "body": "【OnO 自动化】还没有恢复成功。目前没有取得任何新图片URL，不能把“页面能打开/已经登录”当成附件恢复。\n\n我已看到你在 #26 要求先查清原因，正在按这个顺序诊断；不会靠重复上传碰运气。PR #40 的486项单测和84项实装通过结果仍有效，待附件交付完成后再请求最终合入。",
       "createdAt": "2026-10-13T04:18:45Z",
       "commentId": 6138134955,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6138134955"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6138134955",
+      "bodySha256": "cd4f18d4cd8a270403469a20886752f2ff1e6f8dd7250f25c3c2141b4225b7d8"
     },
     "attachment-diagnosis-result-26": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "body": "【OnO 自动化】#26｜附件诊断结果与当前缺口\n\n还没有查明足以恢复上传的根因，因此暂不重新附图。\n\n已核实：\n1. 原PNG可正常解码、大小22–121KB，连单张26KB也失败；它们符合[GitHub官方附件格式和10MB图片限制](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/attaching-files)，不能归因于图片超限。\n2. 我的云端浏览器当前仍有正确账号和正常附件入口，没有可见登录或验证码要求；但这不证明上传认证/传输正常。普通连接器评论成功也不能证明图片上传成功。\n3. 失败只留下 Failed to upload，没有图片URL或具体服务器错误。可用浏览器诊断只有控制台信息，没有那次上传的HTTP状态码/响应体；原失败页面已被清理，无法恢复当时的请求记录。看到的浏览器扩展metadata错误与上传失败没有已证实因果关系。\n4. [官方gh CLI现在确实支持 --attach](https://cli.github.com/manual/gh_issue_comment)。但当前云端安装的是2.46.0，帮助中没有该参数；只读 gh auth status 显示没有已登录账号。因此升级CLI本身不能解决，也不能借用浏览器或连接器凭据冒充CLI认证。\n\n准确缺口是：需要当次上传失败的网络响应或平台侧错误记录，才能区分文件交接、传输、会话或服务端拒绝。我目前拿不到这份证据，不能把某种猜测写成原因已查清，更不能声称已经恢复。\n\n#26 v3高保真和方案草稿已准备；#28的准确实测证据仍在其评论链接中。两处待原生附件问题有明确修复依据后再交付，不重置重试预算、不新增凭据或服务。若你提供该次失败的错误信息，我会据此继续；当前无需批准旧方案。",
       "createdAt": "2026-10-13T04:20:11Z",
       "commentId": 6138150575,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6138150575"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6138150575",
+      "bodySha256": "0e1f155e1c0e765325f8e76f8f0519cf1dec4c6f48a04a1ef4392a3a32d70c97"
     },
     "attachment-cli-network-result": {
       "kind": "comment",
       "status": "succeeded",
       "target": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "body": "【OnO 自动化】附件替代链路核查更新\n\n云端 GitHub CLI 已升级到官方2.102.0，并实测确认支持 --attach。登录保存位置的只读目录问题已定位并改用可写私有目录，但认证流程随后仍被当前执行环境的网络策略阻断，明确错误为对 api.github.com 的访问被阻止；因此未形成可用CLI登录，也未通过CLI上传图片。\n\n普通、不带认证的API连通性检查能够返回200，并不能证明认证流程可访问；我已停止重复授权/上传尝试。现有GitHub连接器读写评论仍可用，每小时检查照常。\n\n这项证据解释的是CLI登录阻碍，不能据此宣布此前浏览器原生附件失败也是同一原因。#26新图和#28实测图交付仍待有可验证的可用上传链路；不请求无图批准，不提前合入关单。当前无需重新批准旧方案。",
       "createdAt": "2026-10-13T04:37:08Z",
       "commentId": 6138334987,
-      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6138334987"
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6138334987",
+      "bodySha256": "566f90246aeb0228c87062787f8762e7a83abd97e59c462ca6da2772436ba65c"
     },
     "issue26-v3-browser-diagnostic-upload": {
       "kind": "upload-image",
@@ -3770,11 +3770,11 @@
       "targetIssue": 26,
       "status": "succeeded",
       "summary": "发布v3完整轻列表方案及已验证原生图，等待明确方案批准，不实施",
-      "body": "【OnO 自动化】#26｜关联事项 UI v3｜待方案批准\n\n这版替代 v2：当前 main 的待办悬浮框点击关联入口后，直接展开事项轻列表，没有搜索栏、类型/状态筛选。我上一版保留了这些控件，没有对齐你的意思。\n\n![关联事项 UI v3 高保真：轻列表、选中反馈、关联后及窄面板](https://github.com/user-attachments/assets/833a6c6c-b43d-4c89-aeff-41a32368369e)\n\n经你要求继续网页尝试，本次原生附件上传及预览已成功。此前失败的根因仍未确认，CLI认证仍受网络策略阻断；本图通过云端浏览器上传。\n\n参考基线 main：a5659fa5e6dbef6188ec3e34b061bc317d4d7e78。设计PNG SHA256：5a6e1571b8e6e6c613065bcefd7055b03c826e324247392490dcdcccb875f2c0。\n\n局部范围：\n- 首页/To-Do-List 的关联菜单改为输入区上方轻列表，去掉标题栏、类型/状态筛选和说明页脚；本版同时建议撤下该待办菜单搜索栏，作为明确待批准变化。\n- 保留类型小标识、标题、必要状态和独立选中勾；长标题合理省略并可查看完整信息，同名事项仍可辨识日期/分类。\n- 单选后立即关联并收起；重新点＋更换，标签×取消。列表滚动覆盖全部合资格事项，不照搬当前浮窗8/20条截断。\n- 保留键盘、Esc、外部关闭、焦点返回、空/加载/失败/失效反馈。\n- 图片只展示右侧关联输入区，采用轻列表交互；不重排整个主工作台、不承诺逐像素复制生成图中的模型/＋按钮尺寸。\n- 其他工作台现有映射、博文/命例多选最多8项及确认/取消、书目单选和既有搜索保持。设置/规划入口仍无可读数据，不能借此读取配置或密钥。\n- 主协助对象、只读ID验证、发送快照、历史/会话隔离、建议卡写入确认保持；既有To-Do-List基础上下文不移除，不能声称只向AI发送所选事项。\n\n这是独立设计预览，非产品实测。新意见6137391347不是实施批准；PR39旧head2f24f9577c4adb770146fde38c91c3cb2bbc6dac和旧合入请求暂停。\n图文确认后再修PR39、集成最新main、跑完整Windows测试/安装/真实操作与读回重启，最终按准确新head请求一次合入收尾。\n\n请看上图，在本 Issue 回复：同意 #26 关联事项 UI v3\n\n",
       "createdAt": "2026-10-13T04:46:19.380Z",
       "commentId": 6138445292,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6138445292",
-      "verifiedAt": "2026-10-13T04:47:48.456Z"
+      "verifiedAt": "2026-10-13T04:47:48.456Z",
+      "bodySha256": "ad55b6cddca8fae1dab9f5e05066b17b37b04fb1307490f8f61f0be7a70db347"
     },
     "pr40-native-evidence-recovered-upload": {
       "operationId": "pr40-native-evidence-recovered-upload",
@@ -3812,81 +3812,81 @@
       "status": "succeeded",
       "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
       "summary": "16张准确实测图及7单验收清单，统一准确head合入/实际main验收后关7单及合规删本组分支批准请求",
-      "body": "【OnO 自动化】悬浮窗组 v2｜PR #40 最终带图验收｜待合入收尾批准\n\n原生网页附件已恢复本次交付：下面16张均来自准确实现版本的 Windows 实装截图，上传后已读回URL并检查显示。此前失败根因仍未证实；没有使用CLI上传，没有把图片存入Git或额外备份。\n\n## 版本与测试\n- PR：[#40](https://github.com/zhshenry/onosan_workbench/pull/40)，head **5a74dbb79469bb0bbc5d681939e8fbe430d44d4f**，仍为Draft。\n- 当前 main/base：**a5659fa5e6dbef6188ec3e34b061bc317d4d7e78**。\n- [Windows CI 38339682689](https://github.com/zhshenry/onosan_workbench/actions/runs/38339682689)：486/486单测通过（0失败/跳过/取消）、84/84安装后验收通过；构建、类型检查、actionlint及文件链接安全检查通过，NSIS安装退出0。\n- 测试集成提交：65c469304680ae426e74728a43d05fb328fd7474，父提交为上述main和head；tree为6c77b70e050aa3a29a8abde1fe29aba0c54625a5。尚未合入，不能将本结果称为合入后main通过。\n\n## 各Issue验收清单\n- [x] #25：展开首页去掉AI建议条，保留AI入口、待办、日程及已有历史。\n- [x] #28：440/330宽度独立于展开/收起；16态实际窗口高度、屏幕边缘、隐藏重显及重启默认440通过。\n- [x] #29：展开AI返回按钮显示“返回首页”。\n- [x] #30：收起首页橙色AI图标及细边框。\n- [x] #31：移除记录计数控件但保留历史，模型按钮与有界滚动菜单可用。\n- [x] #32：收起AI左箭头“返回”，保持原灰色小字样式。\n- [x] #33：关联chip独立行，真实指针选择/更换/删除、键盘、外部取消、类型/业务状态/选中勾区分，模型位置稳定。\n- [x] 已批准的退出缺陷v1：无浮窗、显示/隐藏/反复操作后正常退出和同版本重启数据保留；未把强制终止当作正常退出。\n\n## 实测截图\n### 首页：展开宽／窄\n![home-expanded-wide](https://github.com/user-attachments/assets/dadaafc4-27e3-4bca-a058-6f2198d07aed)\n\n![home-expanded-narrow](https://github.com/user-attachments/assets/2e9eca93-7dee-4b1d-bd4d-79127c2b4ced)\n\n### 首页：收起宽／窄\n![home-mini-wide](https://github.com/user-attachments/assets/9596a8df-0377-41c3-912b-95b719965eed)\n\n![home-mini-narrow](https://github.com/user-attachments/assets/c0873588-7a77-42a8-9559-3ae9fbcc96c4)\n\n### AI：展开宽／窄\n![ai-expanded-wide](https://github.com/user-attachments/assets/8ba1ea00-2635-4723-ab12-e9dad92940df)\n\n![ai-expanded-narrow](https://github.com/user-attachments/assets/61c5f2ce-db49-4630-a6c5-d5891d405665)\n\n### AI：收起宽／窄\n![ai-mini-wide](https://github.com/user-attachments/assets/368b2613-1429-417b-96fb-610ed0d7c99d)\n\n![ai-mini-narrow](https://github.com/user-attachments/assets/b7e83d82-2fa4-4a16-be91-9828ae0bf6bb)\n\n### 关联选择、关联后、模型菜单\n![picker](https://github.com/user-attachments/assets/1afe8260-3af3-48c0-895c-f947fa67931d)\n\n![linked](https://github.com/user-attachments/assets/f1bdfdc8-4133-4787-aae9-53f96e1c348d)\n\n![models](https://github.com/user-attachments/assets/42f4ba27-a6c7-4932-b9a6-2323678a5eb0)\n\n### 空状态、三主题及重启读回\n![empty](https://github.com/user-attachments/assets/0dfdbdf3-d0a3-4f86-998b-0871024f3c83)\n\n![cool](https://github.com/user-attachments/assets/2c577b76-a8ba-467c-a57a-ae5b795616ef)\n\n![mist](https://github.com/user-attachments/assets/d180ddbc-3612-4424-98f0-af0e735a839a)\n\n![warm](https://github.com/user-attachments/assets/79798add-0dfa-4870-ac32-755258354287)\n\n![relaunched](https://github.com/user-attachments/assets/9bf2670f-dcf6-4e89-9686-642580732243)\n\n## 证据与边界\n[完整CI产物](https://github.com/zhshenry/onosan_workbench/actions/runs/38339682689/artifacts/11786408859)：43文件（40 PNG＋3报告），ZIP 8,799,120字节；SHA256 79fe6112115d8feaab82bc3611b6fbc40697cbd1cc53fd5a95670daa967ae590，到期2026-10-16 11:08:32（UTC+08）。本组16张已逐图复核，不声称其余24张都在本轮逐图看过。\nAI请求用本机回环合成服务验证正文/模型及无任务写入，不代表外部模型质量；未覆盖真实跨版本更新、签名/SmartScreen/UAC人工向导。其他主工作台布局和已知畸形旧日程加载问题不在本组。#26及PR #39不在本次合入范围。\n\n## 一次批准的收尾范围\n仅合入上述准确head的PR #40；随后验证实际main完整Windows检查。全部通过后关闭 #25、#28、#29、#30、#31、#32、#33，并按已批准规范核对后清理本组已合入分支。没有需一并关闭的辅助PR；不发版。head或范围变化重新核批准，base变化重新验集成。\n\n同意以上边界和收尾请只在本Issue回复：\n**同意合入收尾 PR #40，版本 5a74dbb；通过后关闭 #25、#28、#29、#30、#31、#32、#33**\n有修改意见直接回复；其余成员Issue无需重复批准。",
       "createdAt": "2026-10-13T04:54:13.344Z",
       "commentId": 6138529868,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6138529868",
-      "verifiedAt": "2026-10-13T04:55:19.042Z"
+      "verifiedAt": "2026-10-13T04:55:19.042Z",
+      "bodySha256": "164aaee8d855ab421848944d11625fcd1f924bf3bb76e23061a8c1c333d0e41f"
     },
     "pr40-member-final-25": {
       "operationId": "pr40-member-final-25",
       "status": "succeeded",
       "targetIssue": 25,
-      "body": "【OnO 自动化】本单实现验收已补实测图，归属悬浮窗组 PR #40（head 5a74dbb79469bb0bbc5d681939e8fbe430d44d4f）。\n\n- [x] 展开首页去掉AI建议条，保留AI入口、待办、日程及历史。\n- [x] 准确版本Windows CI：486/486单测、84/84安装后验收通过。\n\n![本单Windows实测图](https://github.com/user-attachments/assets/dadaafc4-27e3-4bca-a058-6f2198d07aed)\n\n完整16图、逐单清单、测试边界及统一收尾范围见 [#28 最终验收](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6138529868)。本单尚未合入或关闭，审批只在#28进行一次。\n\n如需调整，直接在本单回复修改意见；同意整组时按#28评论末尾的完整短句回复即可，无需逐单批准。",
       "summary": "本单实际图片与验收清单，链接28统一审批",
       "commentId": 6138544104,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/25#issuecomment-6138544104",
-      "verifiedAt": "2026-10-13T04:55:54.185Z"
+      "verifiedAt": "2026-10-13T04:55:54.185Z",
+      "bodySha256": "1d92b7025bf8fd04e7c0bd5baedeb60e492898ada94b9d42b8da285ac0577f12"
     },
     "pr40-member-final-29": {
       "operationId": "pr40-member-final-29",
       "status": "succeeded",
       "targetIssue": 29,
-      "body": "【OnO 自动化】本单实现验收已补实测图，归属悬浮窗组 PR #40（head 5a74dbb79469bb0bbc5d681939e8fbe430d44d4f）。\n\n- [x] 展开AI返回按钮为“返回首页”。\n- [x] 准确版本Windows CI：486/486单测、84/84安装后验收通过。\n\n![本单Windows实测图](https://github.com/user-attachments/assets/8ba1ea00-2635-4723-ab12-e9dad92940df)\n\n完整16图、逐单清单、测试边界及统一收尾范围见 [#28 最终验收](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6138529868)。本单尚未合入或关闭，审批只在#28进行一次。\n\n如需调整，直接在本单回复修改意见；同意整组时按#28评论末尾的完整短句回复即可，无需逐单批准。",
       "summary": "本单实际图片与验收清单，链接28统一审批",
       "commentId": 6138547683,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/29#issuecomment-6138547683",
-      "verifiedAt": "2026-10-13T04:56:13.892Z"
+      "verifiedAt": "2026-10-13T04:56:13.892Z",
+      "bodySha256": "36cbc5f670265788c1b4a9f9d805b8046216023ee9666f53110586b472a6717f"
     },
     "pr40-member-final-30": {
       "operationId": "pr40-member-final-30",
       "status": "succeeded",
       "targetIssue": 30,
-      "body": "【OnO 自动化】本单实现验收已补实测图，归属悬浮窗组 PR #40（head 5a74dbb79469bb0bbc5d681939e8fbe430d44d4f）。\n\n- [x] 收起首页使用橙色AI图标及细边框。\n- [x] 准确版本Windows CI：486/486单测、84/84安装后验收通过。\n\n![本单Windows实测图](https://github.com/user-attachments/assets/c0873588-7a77-42a8-9559-3ae9fbcc96c4)\n\n完整16图、逐单清单、测试边界及统一收尾范围见 [#28 最终验收](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6138529868)。本单尚未合入或关闭，审批只在#28进行一次。\n\n如需调整，直接在本单回复修改意见；同意整组时按#28评论末尾的完整短句回复即可，无需逐单批准。",
       "summary": "本单实际图片与验收清单，链接28统一审批",
       "commentId": 6138549759,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/30#issuecomment-6138549759",
-      "verifiedAt": "2026-10-13T04:56:24.174Z"
+      "verifiedAt": "2026-10-13T04:56:24.174Z",
+      "bodySha256": "18e9ee3797adf402166f6365574da66e1c400d35e9ec9aa4f287d063a119feff"
     },
     "pr40-member-final-31": {
       "operationId": "pr40-member-final-31",
       "status": "succeeded",
       "targetIssue": 31,
-      "body": "【OnO 自动化】本单实现验收已补实测图，归属悬浮窗组 PR #40（head 5a74dbb79469bb0bbc5d681939e8fbe430d44d4f）。\n\n- [x] 收起AI移除记录计数控件但保留历史，模型按钮及有界滚动菜单可用。\n- [x] 准确版本Windows CI：486/486单测、84/84安装后验收通过。\n\n![本单Windows实测图](https://github.com/user-attachments/assets/42f4ba27-a6c7-4932-b9a6-2323678a5eb0)\n\n完整16图、逐单清单、测试边界及统一收尾范围见 [#28 最终验收](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6138529868)。本单尚未合入或关闭，审批只在#28进行一次。\n\n如需调整，直接在本单回复修改意见；同意整组时按#28评论末尾的完整短句回复即可，无需逐单批准。",
       "summary": "本单实际图片与验收清单，链接28统一审批",
       "commentId": 6138553530,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/31#issuecomment-6138553530",
-      "verifiedAt": "2026-10-13T04:56:43.147Z"
+      "verifiedAt": "2026-10-13T04:56:43.147Z",
+      "bodySha256": "a159f2b2a0032c404adf21c62acba62d0776168026c43af3ee1b69d51c226b9b"
     },
     "pr40-member-final-32": {
       "operationId": "pr40-member-final-32",
       "status": "succeeded",
       "targetIssue": 32,
-      "body": "【OnO 自动化】本单实现验收已补实测图，归属悬浮窗组 PR #40（head 5a74dbb79469bb0bbc5d681939e8fbe430d44d4f）。\n\n- [x] 收起AI使用左箭头“返回”，保留灰色小字样式。\n- [x] 准确版本Windows CI：486/486单测、84/84安装后验收通过。\n\n![本单Windows实测图](https://github.com/user-attachments/assets/b7e83d82-2fa4-4a16-be91-9828ae0bf6bb)\n\n完整16图、逐单清单、测试边界及统一收尾范围见 [#28 最终验收](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6138529868)。本单尚未合入或关闭，审批只在#28进行一次。\n\n如需调整，直接在本单回复修改意见；同意整组时按#28评论末尾的完整短句回复即可，无需逐单批准。",
       "summary": "本单实际图片与验收清单，链接28统一审批",
       "commentId": 6138557538,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/32#issuecomment-6138557538",
-      "verifiedAt": "2026-10-13T04:57:03.222Z"
+      "verifiedAt": "2026-10-13T04:57:03.222Z",
+      "bodySha256": "1902d6d0bd0a092076cd0edadcf2e8a07fc6f92a86429c016b61ac36deb08863"
     },
     "pr40-member-final-33": {
       "operationId": "pr40-member-final-33",
       "status": "succeeded",
       "targetIssue": 33,
-      "body": "【OnO 自动化】本单实现验收已补实测图，归属悬浮窗组 PR #40（head 5a74dbb79469bb0bbc5d681939e8fbe430d44d4f）。\n\n- [x] 关联标签独立行，选中勾与业务状态区分；真实指针选择/替换/删除、键盘、外部关闭及模型位置稳定通过。\n- [x] 准确版本Windows CI：486/486单测、84/84安装后验收通过。\n\n![本单Windows实测图](https://github.com/user-attachments/assets/1afe8260-3af3-48c0-895c-f947fa67931d)\n\n完整16图、逐单清单、测试边界及统一收尾范围见 [#28 最终验收](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6138529868)。本单尚未合入或关闭，审批只在#28进行一次。\n\n如需调整，直接在本单回复修改意见；同意整组时按#28评论末尾的完整短句回复即可，无需逐单批准。",
       "summary": "本单实际图片与验收清单，链接28统一审批",
       "commentId": 6138559936,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/33#issuecomment-6138559936",
-      "verifiedAt": "2026-10-13T04:57:14.653Z"
+      "verifiedAt": "2026-10-13T04:57:14.653Z",
+      "bodySha256": "ba1b0888f831474a842b9b6ffe07c5d78fdc1af17c0ad5b522e5a6286cddd1f2"
     },
     "pr40-evidence-body-update": {
       "operationId": "pr40-evidence-body-update",
       "status": "succeeded",
       "targetPR": 40,
       "headSha": "5a74dbb79469bb0bbc5d681939e8fbe430d44d4f",
-      "body": "【OnO 自动化】悬浮窗组 v2｜Windows验收及原生附图交付完成，待合入审批\n\n关联 #25、#28、#29、#30、#31、#32、#33，统一讨论/审批在#28。\n最终16张实测图、逐单清单及唯一合入收尾请求：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6138529868\n方案批准：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6135137217\n退出修复追加批准：https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6136285484\n\nhead 5a74dbb79469bb0bbc5d681939e8fbe430d44d4f\nbase a5659fa5e6dbef6188ec3e34b061bc317d4d7e78\ntested merge 65c469304680ae426e74728a43d05fb328fd7474\ntree 6c77b70e050aa3a29a8abde1fe29aba0c54625a5\n最终run38339682689 attempt1成功：486/486 Windows单测0skip、84/84实装、类型/构建/actionlint/安全/NSIS安装通过。\nhttps://github.com/zhshenry/onosan_workbench/actions/runs/38339682689\n\n准确本组16张实测截图已通过云端网页原生附件上传，在#28完整内嵌并读回验证；各成员Issue已附本单实测图和验收清单。等待#28唯一准确head合入收尾批准，保持Draft/open。此前上传失败原因仍未证实，CLI认证阻碍尚在。旧失败运行已被本次准确版本验收替代。\n不包含#26，尚未合入main、不关单、不发版；真实外部AI质量、跨版本更新/签名及人工UAC验证未覆盖。完整边界见Issue评论。",
       "summary": "更新已完成附图交付与统一待审批链接",
       "verifiedAt": "2026-10-13T04:59:14.165Z",
-      "url": "https://github.com/zhshenry/onosan_workbench/pull/40"
+      "url": "https://github.com/zhshenry/onosan_workbench/pull/40",
+      "bodySha256": "0d825a7376a34eff62d43601b7027393782e05e81b057e076a22f6e4440fe08f"
     },
     "issue35-v1-recovered-native-upload": {
       "operationId": "issue35-v1-recovered-native-upload",
@@ -3908,11 +3908,11 @@
       "targetIssue": 35,
       "status": "succeeded",
       "summary": "仅跨工作台保留网页实例，明确后台资源及不含跨媒体模式/重启，真实Electron验收；等待方案批准",
-      "body": "【OnO 自动化】#35｜方案 v1｜待方案批准\n\n本组仅 #35，分类：UI交互、缺陷修复、生命周期/资源管理。与当前悬浮窗组及关联事项组独立，不合并实施。\n\n![切换工作台后继续原网页：行为设计高保真](https://github.com/user-attachments/assets/dc2ec277-889d-4a78-948d-bb0c6f9ebf09)\n\n目标：打开“我的小红书”后，切到其他工作台，再回到自媒体工作台并选择“我的小红书”，继续显示原来的网页，不因这次工作台切换重新加载首页。\n\n本方案沿用当前界面和导航，不增加按钮或状态条。上图为同一页面离开前、返回后的行为设计示意，不是产品实测截图。\n\n实现范围：\n1. 首次打开时才创建网页宿主；离开工作台时隐藏并保留同一个网页实例，返回时重新显示。保留当前地址、浏览历史、滚动位置和网页内尚未提交的输入，不强制跳回创作者首页。\n2. 隐藏网页不能覆盖其他页面、抢焦点、拦截鼠标或键盘，也不进入当前页面的辅助功能导航。重新显示时，尺寸与当前内容区对齐，包括窗口缩放、二级目录和 AI 侧栏变化。\n3. 工作台切换不重复创建网页、事件监听或浏览器租约；真正退出或销毁时正常释放。继续沿用现有网站分区、登录态、权限和 URL 安全限制。\n\n边界：\n- 本次只解决跨工作台离开与返回；“找素材”与“我的小红书”之间的模式切换仍沿用现有行为，不承诺跨模式保活。普通工作台切换回到默认子页的规则不改。\n- 主动刷新、后退、前进和网页自身导航照常工作。应用重启、网页崩溃、登录过期、网站主动跳转或刷新不保证保留原状态。\n- 保留网页意味着会继续占用一份网页资源；网页自身计时器、网络活动或音视频仍可能继续。本次不增加后台冻结、自动休眠、静音或新的权限，也不宣称隐藏后零 CPU/网络占用。\n\n验收：\n- 使用本地测试网页进入子路径，滚动并输入未提交文字；连续切到多个工作台再返回，核对同一个 guest 身份、原 URL/历史、滚动与输入，没有因切换新增首页主框架导航。加载过程中切走再回也不能重复创建。\n- 真实 Electron 运行中检查隐藏页面无法接收鼠标/键盘或抢焦点，焦点留在当前工作台；检查窗口调整、AI 侧栏开合、二级导航变化后的显示和点击位置。\n- 重复往返检查 guest、监听器和租约数量不增长；真实关闭/销毁能释放资源。回归刷新、前进/后退、错误及崩溃后的正常恢复，但不把恢复加载称为状态保留。\n- 明确回归“找素材↔我的小红书”，确保现有分区、权限和功能不被破坏，不将其列为跨模式保活已交付。覆盖三主题、相关窗口尺寸、减少动画和键盘操作；以真实运行截图对照设计，并完成仓库要求的公共检查。\n\n共同检查：Windows npm test、npm run verify、actionlint、真实NSIS安装及真实文件symlink/父目录junction安全反例；专项需真实Electron证据，React挂载测试不能替代。不自动操作或发布真实小红书账号内容，测试使用本地合成网页。\n\n设计来源：参考原Issue界面独立绘图，原准备基线6850a4fb7acc10ac1d04468297b70ebd63cfa0a0；当前相关媒体代码已重核未变。图片不对应产品实现SHA或CI run。PNG SHA256：49262c18cb3e1bd51411512e3d8dc2f9564f677529938e55e0b51ced1df93aa2；不入Git、不额外备份。网页附件现已成功上传并实际查看，旧失败原因仍未知。\n\n当前基线：a5659fa5e6dbef6188ec3e34b061bc317d4d7e78。产品尚未修改。批准后单独实现和测试，完成后提交一个 Draft PR；合入、关单另按准确版本请求。\n\n有意见直接回复本 Issue；同意上述范围请回复：同意 #35 方案 v1。",
       "createdAt": "2026-10-13T06:08:12.110Z",
       "commentId": 6139419969,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6139419969",
-      "verifiedAt": "2026-10-13T06:09:58.364Z"
+      "verifiedAt": "2026-10-13T06:09:58.364Z",
+      "bodySha256": "6305b6b4420c1226b64abdb8c414237bde617c6d6e444efadbd18b65f2e8950a"
     },
     "pr40-approved-ready": {
       "operationId": "pr40-approved-ready",
@@ -3939,51 +3939,51 @@
       "operationId": "feedback-20261013T0641-28",
       "status": "succeeded",
       "targetIssue": 28,
-      "body": "【OnO 自动化】已核对你在本条最终请求后的“同意”，对应 PR #40 的准确版本 5a74dbb 及列明收尾范围。\n\nPR #40 已合入，实际 main 为 9bf6d06ae509dec4d8648b5cdc481813b20f0702，合入树与已验收集成树一致。[实际主干 Windows 检查](https://github.com/zhshenry/onosan_workbench/actions/runs/38358108575)正在运行；成功并核对证据后才关闭本组7单及安全清理分支，不发版。现在无需重复批准。",
       "summary": "回应已核原始反馈/批准及当前阶段",
       "commentId": 6139903018,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6139903018",
-      "verifiedAt": "2026-10-13T06:43:23.546Z"
+      "verifiedAt": "2026-10-13T06:43:23.546Z",
+      "bodySha256": "8254f2efed2d5a08ee3ad0615dbab000d6de6cde1f8d97299b8b2526826b5670"
     },
     "feedback-20261013T0641-34": {
       "operationId": "feedback-20261013T0641-34",
       "status": "succeeded",
       "targetIssue": 34,
-      "body": "【OnO 自动化】收到，v1 暂停待审。我会把正常更新状态文字尽量改成单行，再附 v2 高保真供你看；窄窗口和较长错误信息会保留可读的完整说明，不把文字硬截掉。当前不用批准旧图。",
       "summary": "回应已核原始反馈/批准及当前阶段",
       "commentId": 6139920609,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6139920609",
-      "verifiedAt": "2026-10-13T06:44:41.856Z"
+      "verifiedAt": "2026-10-13T06:44:41.856Z",
+      "bodySha256": "45e72b2e855443a4a16bdbd7c929b04bd85d0eb3357677777f5944f018018292"
     },
     "feedback-20261013T0641-35": {
       "operationId": "feedback-20261013T0641-35",
       "status": "succeeded",
       "targetIssue": 35,
-      "body": "【OnO 自动化】已收到并核对你对方案 v1 的明确批准，范围按上面的完整图文方案执行。先完成当前悬浮窗组的合后验收，再以最新主干开始本单实施、测试和 Draft PR；一次只开发一组，不需要你重复确认开发步骤。最终合入仍会在本 Issue 按准确版本请你审阅。",
       "summary": "回应已核原始反馈/批准及当前阶段",
       "commentId": 6139911535,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6139911535",
-      "verifiedAt": "2026-10-13T06:44:00.365Z"
+      "verifiedAt": "2026-10-13T06:44:00.365Z",
+      "bodySha256": "7ae2964ea55b9a9037db9c33bd8b6e2990ee7d1acdf695d01d9c4ee8e14e5973"
     },
     "feedback-20261013T0641-36": {
       "operationId": "feedback-20261013T0641-36",
       "status": "succeeded",
       "targetIssue": 36,
-      "body": "【OnO 自动化】收到，我先核对“找素材”入口和现有功能的依赖，准备精简或移除入口的明确方案并附图。不会把“去掉入口”扩大成删除已有素材数据或整个底层功能；也会说明移除后是否还有其他实际入口，图文对齐后再实施。",
       "summary": "回应已核原始反馈/批准及当前阶段",
       "commentId": 6139928459,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/36#issuecomment-6139928459",
-      "verifiedAt": "2026-10-13T06:45:14.575Z"
+      "verifiedAt": "2026-10-13T06:45:14.575Z",
+      "bodySha256": "50aff570bfccf9889227c0a1cbadbc9da051a6e7e21c334fb516f3b204b7d631"
     },
     "feedback-20261013T0641-37": {
       "operationId": "feedback-20261013T0641-37",
       "status": "succeeded",
       "targetIssue": 37,
-      "body": "【OnO 自动化】对，上方是发布前准备；下方是手动记录这篇本地博客对应的已发布作品链接，不会自动修改或优化线上作品。\n\n关联会保存在这台电脑的该篇博客记录中。已用当前源码验证真实落盘、重新打开存储、编辑标题/正文后仍保留；手动移除关联或删除博客会清除。本轮验证是存储级测试，不冒充完整应用重启实测。清除本地数据也会影响它；线上作品删除或链接失效不会自动同步检测，不能承诺永久有效。\n\n我会再把这两个区域的用途写清楚，附上对应高保真让你确认；这次先答复事实，尚未修改界面。",
       "summary": "回应已核原始反馈/批准及当前阶段",
       "commentId": 6139936671,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6139936671",
-      "verifiedAt": "2026-10-13T06:45:49.852Z"
+      "verifiedAt": "2026-10-13T06:45:49.852Z",
+      "bodySha256": "960e1172818b7225cac22055f3d6d72acd8a7c4725c4d3840605dd313d255e9b"
     },
     "issue34-v2-upload": {
       "operationId": "issue34-v2-upload",
@@ -4085,18 +4085,18 @@
       "summary": "报告实际main完整验收通过、7单已关闭、准确需求分支已删且PR历史可恢复，不发版",
       "commentId": 6140152943,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6140152943",
-      "body": "【OnO 自动化】悬浮窗组已完成收尾\n\n[PR #40](https://github.com/zhshenry/onosan_workbench/pull/40) 已合入，实际 main 为 9bf6d06ae509dec4d8648b5cdc481813b20f0702，tree 6c77b70e050aa3a29a8abde1fe29aba0c54625a5，与已验收集成树一致。\n\n[本次实际主干 Windows 检查](https://github.com/zhshenry/onosan_workbench/actions/runs/38358108575)通过：486/486单测，0失败/跳过/取消；84/84实装验收，NSIS exit0、安装内容与构建一致；正常退出、重启数据保留和宽度复位均通过。不是沿用旧PR结果。\n\n[本次主干证据](https://github.com/zhshenry/onosan_workbench/actions/runs/38358108575/artifacts/11794033018)：43文件（40PNG＋3报告），ZIP8,659,867字节，SHA256 660d678471ceb4aceeca0a8b51c867e03b7402cf07c7f09a32918a8ef7e8902a，到期2026-10-16 14:48:58（UTC+08）。[此前16张实嵌验收图](https://github.com/zhshenry/onosan_workbench/issues/28#issuecomment-6138529868)继续保留准确PR来源，不冒充本次main新截图；测试边界不变。\n\n依照本Issue准确收尾批准及后续明确关单指令，已逐项关闭 #25、#28、#29、#30、#31、#32、#33 并读回完成状态。需求分支 ono/floating-group-v2 也已清理：删除前head 5a74dbb79469bb0bbc5d681939e8fbe430d44d4f，与已合入head一致，非保护、无其他开放PR依赖或活动写入；删除后已确认远端不存在，PR保留正常恢复入口。未删除历史或用户本地分支。\n\n#26/PR #39及其他需求保留；没有附带关闭其他PR，没有发版。若实际使用发现问题，可在相关Issue反馈或重开；无需再批准本组收尾。",
-      "verifiedAt": "2026-10-13T07:00:53.075Z"
+      "verifiedAt": "2026-10-13T07:00:53.075Z",
+      "bodySha256": "51317b2a2d2612fd98a270038138220572be091b15eb84a7d113af9741f45e87"
     },
     "issue34-v2-plan-comment": {
       "operationId": "issue34-v2-plan-comment",
       "status": "succeeded",
       "targetIssue": 34,
-      "body": "【OnO 自动化】#34｜应用更新状态｜方案 v2，待批准\n\n这版采纳你“尽量都在一行”的意见：把短状态与“应用更新”标题并排，例如“应用更新 · 当前已是最新版本”，不再把状态另起一行。右侧操作按钮位置保持不变。\n\n![应用更新状态v2：常规状态同行与错误详情](https://github.com/user-attachments/assets/5ce38d40-c410-4c48-a836-bd953c5ad874)\n\n图中上方是“最新版本”和“检查中”两种状态，下方是下载、待重启和失败的行内展示示例；均为独立设计，不是已实现的实测截图。图中版本号沿用参考画面，不代表本轮读取的实际安装版本。\n\n本版范围：\n- 最新、检查中、下载百分比、待重启等短状态优先与标题保持一行，说明文字继续留在栏目内；不再在整张设置卡底部重复显示更新状态。\n- 下载进度仍归属“应用更新”栏目。错误先显示简短状态，通过可键盘操作的“详情”查看完整说明，不截掉重要错误、不要求悬停才能阅读。\n- 窄窗口优先缩短非必要文字并调整间距，保留清楚的标题、状态与按钮；完整错误详情允许换行，不为强行单行缩小字体或挤出按钮。\n- 仅调整状态展示。检查、下载、重启安装的现有流程及按钮动作不变；应用信息、目录、共享库读取错误与底部独立说明保持各自归属。\n\n实施后重点验收：各更新状态切换、重复点击与忙碌态、进度和错误详情、搜索过滤、三主题、窄窗口、键盘与焦点；完成仓库公共检查及真实 Windows 运行截图对照。不为测试实际安装未经批准的新发布版本。\n\n本单独立一个实现 PR。当前主干已推进到 9bf6d06ae509dec4d8648b5cdc481813b20f0702，实施前会重新核对准确基线；产品尚未因本方案修改。图片为独立绘图，无源码渲染 SHA；SHA256：138b713165c38f19d5f7fd7699247e791bf47d37811e56241b19d8525928bd51。\n\n本次批准仅覆盖上述实施、测试和交付；最终合入另审准确版本。\n直接在本 Issue 回复：同意 #34 方案 v2",
       "summary": "原生图已验证，按反馈发布单行状态v2，等待批准不实施",
       "commentId": 6140182883,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6140182883",
-      "verifiedAt": "2026-10-13T07:03:32.342Z"
+      "verifiedAt": "2026-10-13T07:03:32.342Z",
+      "bodySha256": "c4fd000ae44478cb7a194f7ea47387a184a2c1429a3b563bf6b06f498dbba291"
     },
     "issue36-v1-upload": {
       "operationId": "issue36-v1-upload",
@@ -4129,20 +4129,20 @@
       "operationId": "issue36-v1-comment",
       "targetIssue": 36,
       "status": "succeeded",
-      "body": "【OnO 自动化】#36｜精简“找素材”入口｜方案 v1，待批准\n\n按你“精简，或者去掉也行”的意见，我建议直接移除“我的小红书”右上角的“找素材”，让这一页只保留创作者后台。\n\n![精简找素材入口方案v1](https://github.com/user-attachments/assets/98143cf7-77bc-41a9-8ab7-74ce39d8e59a)\n\n图为独立设计示意，不是产品实测截图。只改应用自己的入口，不改网页内部按钮。\n\n范围与影响：\n- 移除右上角“找素材”，不新增替代入口。原先通过它进入素材浏览器的路径将不可用；不会用新菜单把同一入口藏到别处。\n- 保留已有素材数据、采集模块和共享浏览器能力，不删除文件、不清理登录分区、不改权限或网页安全规则。\n- 保留“我的小红书”的地址栏、刷新、前进/后退及创作者网页内容。从“图文发布”打开创作者中心仍可用。\n- 核对模式初始化及导航，避免出现没有返回入口的遗留“找素材”界面；不顺带扩大为整个素材模块删除或数据迁移。\n\n验收：入口移除后标题区排版自然；正常进入、跨工作台返回、从图文发布打开均正确；没有隐藏的孤立模式或无效按钮；已有素材记录和分区不受影响；共享浏览器回归、三主题/窗口/键盘检查及真实 Windows 截图对照。\n\n本单单独一个实现 PR。它与 #35 共用媒体页面源文件，实施会在前项结束后的最新主干上进行并回归网页保活，不将本单范围混入 #35 已有批准。当前基线 9bf6d06ae509dec4d8648b5cdc481813b20f0702，具体实施前重新读取。\n\n产品尚未按本方案修改。图由独立绘图生成，无源码渲染 SHA；SHA256：80d88f83a0908afa4317b1eba72f2c332739f122919739839116d3f380e72d81。\n本次批准覆盖此方案实施、测试和交付，最终合入另审准确版本。\n请直接在本 Issue 回复：同意 #36 方案 v1\n",
       "summary": "已验证原生高保真，发布入口移除方案v1待审批",
       "commentId": 6140309803,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/36#issuecomment-6140309803",
-      "verifiedAt": "2026-10-13T07:12:01.720Z"
+      "verifiedAt": "2026-10-13T07:12:01.720Z",
+      "bodySha256": "5d5f9f9dcddfb35c16f6e84000ba758ccc93a467c82fc107a66ac061bbe372c2"
     },
     "issue37-v1-comment": {
       "operationId": "issue37-v1-comment",
       "targetIssue": 37,
       "status": "succeeded",
-      "body": "【OnO 自动化】#37｜发布前准备与发布后关联｜方案 v1，待批准\n\n这版把两块用途明确分开：上方准备新笔记的发布内容，下方登记当前博客与一条已发布作品的对应关系。关联不会优化或修改线上作品，也不代表平台已核验。\n\n![发布前准备与发布后关联方案v1](https://github.com/user-attachments/assets/7bcf6821-32e2-4b18-8875-c94411d028da)\n\n图为独立设计示意，展示未关联、格式检查通过待确认、已关联及格式错误四种状态；示例博客、作品 ID 和时间只用于展示，不是本轮产生的真实关联。\n\n范围：\n- 上方改为“发布前准备”，说明“准备新笔记内容，复制后前往小红书手动发布”；原有标题/正文、检查项、复制及人工去发布流程保留。\n- 下方改为“发布后关联”，说明关联当前博客与已发布作品直链，方便查找。“核对链接”改为“检查链接格式”，清楚提示这只是本地格式校验，不访问平台核验作品。\n- 未关联时显示“尚未关联作品”；有效链接显示当前本地博客和待确认目标，点“确认关联”后才保存；“取消”退出本轮待确认，不改已有记录。输入变化必须重新检查。\n- 已关联时显示“已关联 · 手动确认”、本地博客、作品 ID、确认时间及复制链接。“更换关联”明确进入新的检查/确认步骤，确认前旧关联保持不变；“移除关联”只清除此博客的关联，不删除博客正文或线上作品。\n- 格式错误在本栏目就地显示，说明需要完整作品直链，不支持创作者后台首页或分享短链。完整错误可读、键盘可达。\n- 页面写明关联保存在本机，切页、正常重启后仍保留；修改本地博客不会修改线上作品。不增加账号同步、抓取作品信息、缩略图或自动发布，也不承诺链接永久有效。手动移除、删除博客或清理应用数据会影响保留状态。\n\n已核事实：当前持久化源码会把关联字段随博客写入本地。独立临时库测试已通过字段落盘、关闭/重开数据存储、编辑后重载保留、移除/删除后重载消失；这是存储层验证，尚不等同完整应用端到端验收。\n\n实施后验收：四种状态、取消/更换/重复点击、切换博客不串记录；检查真实 ID/URL/来源/确认时间的保存及应用退出重启后读回；移除不改正文，取消不写入；错误路径、三主题/窗口/键盘、真实 Windows 图对照及仓库公共检查。不为测试操作真实平台发布或删除。\n\n本单独立一个实现 PR，当前基线 9bf6d06ae509dec4d8648b5cdc481813b20f0702，实施前重新读取。产品尚未按本方案修改。图为独立绘图，无源码渲染 SHA；SHA256：c2a8e69a369f2494fbca04f5c9fa7e6006c530fd124731ef1a05cd0710fecbb3。\n本次批准覆盖上述界面与确认流程调整、测试和交付；合入另审准确版本。\n请直接在本 Issue 回复：同意 #37 方案 v1\n",
       "commentId": 6140325358,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6140325358",
-      "verifiedAt": "2026-10-13T07:12:53.607Z"
+      "verifiedAt": "2026-10-13T07:12:53.607Z",
+      "bodySha256": "5a2134cad526fec95e7b788b1e816f7e41db7a298632456d13abb568ef7c4d46"
     },
     "closeout-docs-publish": {
       "operationId": "closeout-docs-publish",
@@ -4194,55 +4194,55 @@
       "operationId": "issue35-draft-progress-comment",
       "status": "succeeded",
       "targetIssue": 35,
-      "body": "【OnO 自动化】#35 v1 已完成本地实现并提交 [Draft PR #43](https://github.com/zhshenry/onosan_workbench/pull/43)，准确 head e9292af2a7764413faf78347ecebdad9e4b30e1e。\n\n创作者网页现在跨工作台保留同一宿主，返回后恢复当前会话；不改变默认子页、素材模式释放或网站权限。仅实施你已批准的本单范围。\n\n本地 verify、actionlint及8项专项通过；上海时区全套492通过、2个既有Windows打包fixture跳过。UTC有3项原有待办测试失败，在准确main复现相同结果，未改待办代码。真实Windows安装、原生网页状态/焦点/几何、退出重启及截图正在跑，暂不算可验收交付。\n\n下一步我核查CI与实际截图，完成后在这里附图请求一次准确版本合入收尾。当前无需回复。",
       "commentId": 6140721933,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6140721933",
-      "verifiedAt": "2026-10-13T07:39:03.676Z"
+      "verifiedAt": "2026-10-13T07:39:03.676Z",
+      "bodySha256": "fc8c79a43c091f9044147be34f160037cff442239f35de93d119f5770ed3c782"
     },
     "issue35-ci-first-failure-comment": {
       "operationId": "issue35-ci-first-failure-comment",
       "status": "succeeded",
       "targetIssue": 35,
-      "body": "【OnO 自动化】#35 Windows 首轮结果：494/494 单测、verify、构建和真实安装均通过；原生验收在“加载中切换工作台”处失败，断言收到 undefined 而预期 false。后面的网页输入/滚动保留、焦点矩阵和重启尚未执行，不能算验收通过。\n\n[失败运行与日志](https://github.com/zhshenry/onosan_workbench/actions/runs/38363794558)，对应 e9292af2a7764413faf78347ecebdad9e4b30e1e。我正在定位并修复本单范围内的问题，完成后用新版本重跑，保留失败记录，不跳过断言。当前无需回复。",
       "commentId": 6140847650,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6140847650",
-      "verifiedAt": "2026-10-13T07:47:00.421Z"
+      "verifiedAt": "2026-10-13T07:47:00.421Z",
+      "bodySha256": "b3761e6cab88844e9086d72822987c4f1e43c81e410b3a2006e8b4ead7ad5d1a"
     },
     "issue37-v1-approval-ack": {
       "operationId": "issue37-v1-approval-ack",
       "status": "succeeded",
       "targetIssue": 37,
-      "body": "【OnO 自动化】已核对你对 #37 v1 的原始方案批准，已排入实施队列。当前 #35 正在修复真实 Windows 验收失败，一次只开发一组；轮到本单时会重新核对最新主干和批准范围，独立提交实现 PR，并在这里附实测结果请求最终准确版本合入。\n\n当前无需重复回复。",
       "commentId": 6140984176,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6140984176",
-      "verifiedAt": "2026-10-13T07:55:43.259Z"
+      "verifiedAt": "2026-10-13T07:55:43.259Z",
+      "bodySha256": "44a03cc7563673a19a6ffceee59eb3ea569d292f2898aed9ee37257b434b3e7b"
     },
     "issue36-v1-approval-ack": {
       "operationId": "issue36-v1-approval-ack",
       "status": "succeeded",
       "targetIssue": 36,
-      "body": "【OnO 自动化】已核对你对 #36 v1 的原始方案批准，已排入实施队列。当前 #35 正在修复真实 Windows 验收失败，一次只开发一组；轮到本单时会重新核对最新主干和批准范围，独立提交实现 PR，并在这里附实测结果请求最终准确版本合入。本单会回归 #35 的网页保活，不混入其当前实现。\n\n当前无需重复回复。",
       "commentId": 6140985662,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/36#issuecomment-6140985662",
-      "verifiedAt": "2026-10-13T07:55:43.771Z"
+      "verifiedAt": "2026-10-13T07:55:43.771Z",
+      "bodySha256": "683ab05f933f05047a15a4b2d2ae52035f59ab8bb45c7c54d5f49c2eee79d8cc"
     },
     "issue34-v2-approval-ack": {
       "operationId": "issue34-v2-approval-ack",
       "status": "succeeded",
       "targetIssue": 34,
-      "body": "【OnO 自动化】已核对你对 #34 v2 的原始方案批准，已排入实施队列。当前 #35 正在修复真实 Windows 验收失败，一次只开发一组；轮到本单时会重新核对最新主干和批准范围，独立提交实现 PR，并在这里附实测结果请求最终准确版本合入。\n\n当前无需重复回复。",
       "commentId": 6140987611,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6140987611",
-      "verifiedAt": "2026-10-13T07:55:44.197Z"
+      "verifiedAt": "2026-10-13T07:55:44.197Z",
+      "bodySha256": "32f7a03b015069438d1c5a6a09e3ca62a5f2db51c3f54238f3033efa9521133d"
     },
     "issue26-v3-approval-ack": {
       "operationId": "issue26-v3-approval-ack",
       "status": "succeeded",
       "targetIssue": 26,
-      "body": "【OnO 自动化】已核对你对 #26 v3 的原始方案批准，已排入实施队列。当前 #35 正在修复真实 Windows 验收失败，一次只开发一组；轮到本单时会重新核对最新主干和批准范围，独立提交实现 PR，并在这里附实测结果请求最终准确版本合入。\n\n当前无需重复回复。",
       "commentId": 6140988850,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6140988850",
-      "verifiedAt": "2026-10-13T07:55:44.601Z"
+      "verifiedAt": "2026-10-13T07:55:44.601Z",
+      "bodySha256": "e34dea05a510899bd22fbdb44daa8eafbab9952d0d7811d2289d0586a62bad67"
     },
     "issue35-native-pref-fix": {
       "operationId": "issue35-native-pref-fix",
@@ -4313,10 +4313,10 @@
       "operationId": "issue35-native-acceptance-progress",
       "status": "succeeded",
       "targetIssue": 35,
-      "body": "【OnO 自动化】#35 验收进展\n\n[最新运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38373762029)的 Windows 单测 498/498、构建及真实安装通过；网页保活、真实输入/滚动、重复跨工作台、24组主题/尺寸/AI组合、历史导航、错误/崩溃恢复和模式释放已在原生检查中通过。\n\n尚未全部完成：在新建网页再次隐藏后，旧原生焦点判据报错，最后宿主销毁、正常退出和重启因此未执行。正在对照准确 Electron/Chromium 版本核对“窗口有焦点”与“网页实际接收输入”的区别，并补严格的真实聚焦frame及隐藏输入不泄漏检查；不直接删断言或把缺项写成通过。\n\n此前已修复三处测试夹具问题：preferences未暴露字段的观测方式、新增/编辑弹窗不同关闭按钮、Electron evaluate清理参数契约；真实滚轮前也已补尺寸与输入准备检查。这些失败运行都保留，当前仍是 Draft PR #43，未合入、未关单。\n\n完成准确新版本全套验收及实测图后，我再在这里请求最终收尾批准。当前无需回复。",
       "commentId": 6142470863,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6142470863",
-      "verifiedAt": "2026-10-13T09:25:17.085Z"
+      "verifiedAt": "2026-10-13T09:25:17.085Z",
+      "bodySha256": "876a34ec48a155e0b842fc050a39b6faf334f4a39bb3cd4ca2499307c24a84ed"
     },
     "issue35-native-frame-ownership-fix": {
       "operationId": "issue35-native-frame-ownership-fix",
@@ -4373,21 +4373,21 @@
       "operationId": "issue35-home-blocker-comment",
       "status": "succeeded",
       "target": 35,
-      "body": "【OnO 自动化】#35｜原生验收结果与新发现\n\n准确版本：4098f131a2ab17cb77c57df9f1119df0c15c898b；[Windows 运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38384962098)单测500/500、原生95/95、安装、正常退出与重启全部通过。网页保活检查使用真实 Electron 内的合成测试页面，不冒充真实登录的小红书实测。\n\n实际看图发现首页窄屏布局异常：在1024×680、相同7条任务（含长标题）、AI关闭及侧栏完全卸载时，首次打开首页与隐藏创作者网页后，两者几何完全相同，概览栏均为0宽并与待办重叠。因此可确认这次保活切换没有改变该布局，但不能把现有异常说成视觉验收通过；报告明确 visualAcceptance=false。当前没有直接在main相同条件实跑，不能用其他状态的main截图代替这一证明。\n\n无图：两张实际PNG已生成并由我查看，但GitHub网页原生附件上传明确失败，刷新后单张补试仍失败，未取得图片地址。已停止重试，没有将图片存入Git。[本次原生证据附件](https://github.com/zhshenry/onosan_workbench/actions/runs/38384962098/artifacts/11805621829)含before/hidden与完整8张media截图（CI保留3天）；这不替代Issue内嵌图交付。\n\nPR #43保持Draft，尚未请求合入。首页布局修复超出本单已批的网页保活范围，需补充带图方案后再确认，不会静默扩大实施。\n\n当前无需批准。若你希望首页问题也纳入后续方案，可回复：请补充首页窄屏修复方案。该回复只要求准备方案，不代表批准实施或合入。",
       "startedAt": "2026-10-13T10:55:42.705Z",
       "commentId": 6144006182,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6144006182",
-      "verifiedAt": "2026-10-13T10:57:00.670Z"
+      "verifiedAt": "2026-10-13T10:57:00.670Z",
+      "bodySha256": "a5b9445517c7be72a880ef23eae82fdcced16c6feaf224ca47451b9dce2fbecf"
     },
     "issue34-start-comment": {
       "operationId": "issue34-start-comment",
       "status": "succeeded",
       "target": 34,
-      "body": "【OnO 自动化】已重新核对你对 #34 方案 v2 的原始批准和最新 main b276261a90cb60a53626dd2149b0f3cdc6aad0fd，开始独立实施应用更新状态同行展示。\n\n#35 已停在首页视觉问题与附件上传阻塞，当前不再修改它；本轮仅开发 #34，不混入其他需求。更新检查、下载和重启安装行为保持原样，完成后在本 Issue 提供真实 Windows 检查与截图，再请求准确 PR/head 的最终批准。\n\n当前无需回复。",
       "startedAt": "2026-10-13T10:59:48.813Z",
       "commentId": 6144073288,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6144073288",
-      "verifiedAt": "2026-10-13T11:01:25.202Z"
+      "verifiedAt": "2026-10-13T11:01:25.202Z",
+      "bodySha256": "2408cc09e507b0a9f2eb05056f2bdf0a82e5448ffef739d6b6b7567c05e4df07"
     },
     "issue34-publish-v2": {
       "operationId": "issue34-publish-v2",
@@ -4407,21 +4407,21 @@
       "operationId": "issue34-tested-comment",
       "status": "succeeded",
       "target": 34,
-      "body": "【OnO 自动化】#34 v2 已完成实现与真实 Windows 验证，暂待附图交付。\n\n[Draft PR #44](https://github.com/zhshenry/onosan_workbench/pull/44)，准确 head cbe2a25da8c5a209adbf031bcef0684836963a2d；[Windows 运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38389670397)513/513 单测、95/95 原生检查、真实安装、普通退出重启及附件预算检查全部通过。\n\n我已实际查看4张未修改的原生截图：最新版本、下载中、待重启、完整错误详情；三主题、两种尺寸、7种状态及键盘/焦点/忙碌重复操作检查通过。更新状态通过安装后应用的安全合成IPC呈现，没有实际下载或安装新发布版本。版本号来自测试应用，不代表已发版。\n\n无图：4张截图已在[本次CI证据](https://github.com/zhshenry/onosan_workbench/actions/runs/38389670397/artifacts/11808447592)生成并查看。当前原生网页附件链路在#35连续失败，统一排查尚未确认根因；本单暂未再次尝试上传，不用CI附件代替这里应有的内嵌图。\n\nPR保持Draft，未合入、未关单。图片交付完成后再请求准确版本及关单范围的最终批准。当前无需回复。",
       "startedAt": "2026-10-13T11:32:19.380Z",
       "commentId": 6144599897,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6144599897",
-      "verifiedAt": "2026-10-13T11:33:25.183Z"
+      "verifiedAt": "2026-10-13T11:33:25.183Z",
+      "bodySha256": "407227b5778876a5e5e363726e045861f7c773f183e58b9e83dac776789b78ab"
     },
     "issue37-start-comment": {
       "operationId": "issue37-start-comment",
       "status": "succeeded",
       "target": 37,
-      "body": "【OnO 自动化】已重新核对本 Issue 方案 v1 的原始批准及完整后续讨论，开始基于最新 main b276261a90cb60a53626dd2149b0f3cdc6aad0fd 独立实施。\n\n这次只处理“发布前准备／发布后关联”的说明和确认流程，重点验证取消、更换、切换博客不串记录，以及真实本地保存和正常退出重启后的字段读回；不会操作线上发布或删除作品。\n\n#34、#35 当前停在已报告的附图/视觉关口，产品代码均已冻结；本轮一次只开发 #37。附件上传问题不重置重试次数，也不把缺图当作已交付。完成后在这里报告准确 PR/head 和实测结果。当前无需回复。",
       "startedAt": "2026-10-13T11:52:45.223Z",
       "commentId": 6144934226,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6144934226",
-      "verifiedAt": "2026-10-13T11:53:17.421Z"
+      "verifiedAt": "2026-10-13T11:53:17.421Z",
+      "bodySha256": "cf6daad15e8b8a116fe7d698cce06dcfe8770157148814c5744958caf461951b"
     },
     "issue37-publish-v1": {
       "operationId": "issue37-publish-v1",
@@ -4450,11 +4450,11 @@
       "operationId": "issue35-home-plan-ack",
       "status": "succeeded",
       "target": 35,
-      "body": "【OnO 自动化】收到，会补充首页窄屏修复方案，先准备相关高保真与最小改动范围，再在这里与你对齐；这条要求不视为实施或合入批准。\n\n另外，按你刚才的要求已重新打开网页，单独重试一张真实截图，仍明确显示 Failed to upload，未得到附件URL。当前先完成方案准备，不把未能内嵌的图当作可审阅交付。当前无需回复。",
       "startedAt": "2026-10-13T12:34:54.536Z",
       "commentId": 6145667898,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6145667898",
-      "verifiedAt": "2026-10-13T12:35:38.007Z"
+      "verifiedAt": "2026-10-13T12:35:38.007Z",
+      "bodySha256": "d73ed89bf5e20e5a16062336d1134d5dd327061caeafdef1654ccea93195b0f7"
     },
     "actual-images-chat-once-20261013": {
       "operationId": "actual-images-chat-once-20261013",
@@ -4488,11 +4488,11 @@
       "operationId": "issue34-final-gate-once-chat",
       "status": "succeeded",
       "target": 34,
-      "body": "【OnO 自动化】按你本次明确允许的临时交付方式，#34 的4张原始 Windows 实测图已于今日20:45（UTC+8）发送到我们的现有私聊，仅此一次。这里没有 GitHub 内嵌图，后续需求仍按原规则交付。\n\n待验收：[PR #44](https://github.com/zhshenry/onosan_workbench/pull/44)，准确 head cbe2a25da8c5a209adbf031bcef0684836963a2d。[Windows 检查](https://github.com/zhshenry/onosan_workbench/actions/runs/38389670397)通过：513/513 单测、95/95 原生检查，安装、普通退出重启及4张截图已核对。更新状态使用合成测试数据，没有实际下载安装更新。\n\n本次请求的收尾范围：合入上述准确版本，验证实际 main 必要检查通过后关闭 Issue #34，并按规范核查、清理本需求分支。不包含其他 Issue、PR 或发布。\n\n看完图后可复制回复：同意合入 PR #44，版本 cbe2a25，并在 main 验收通过后关闭 #34、按规范清理该需求分支。若需要调整，直接写修改意见即可。",
       "startedAt": "2026-10-13T12:46:17.926Z",
       "commentId": 6145874018,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6145874018",
-      "verifiedAt": "2026-10-13T12:47:07.418Z"
+      "verifiedAt": "2026-10-13T12:47:07.418Z",
+      "bodySha256": "5999d48c2ba05e1f5b82f901f63e91cf5cb449939d8f36182c46a445163bff7a"
     },
     "issue37-capture-fix-publish": {
       "operationId": "issue37-capture-fix-publish",
@@ -4509,21 +4509,21 @@
       "operationId": "issue34-image-feedback-reply",
       "status": "succeeded",
       "target": 34,
-      "body": "【OnO 自动化】已看到你的截图意见。红字反复出现来自测试夹具：为检查超长错误能完整换行，测试数据将同一句重复了30次；这张压力测试图不适合作为正常错误示例交付。\n\n我会核对当前产品显示逻辑，将正常错误截图与超长文本压力检查分开，重新跑 Windows 并交付新的实际截图。当前最终验收请求暂停，不合入旧版本。完成后在这里给出准确新 head。当前无需回复。",
       "startedAt": "2026-10-13T12:54:54.853Z",
       "commentId": 6146026117,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6146026117",
-      "verifiedAt": "2026-10-13T12:55:35.508Z"
+      "verifiedAt": "2026-10-13T12:55:35.508Z",
+      "bodySha256": "57d6225f96d5a0077796e8360412d8232eae359488ee346244a7fb6a86aba417"
     },
     "issue35-image-feedback-reply": {
       "operationId": "issue35-image-feedback-reply",
       "status": "succeeded",
       "target": 35,
-      "body": "【OnO 自动化】你图中的问题是首页窄窗布局：本周概览被挤成细长的一列，与待办内容重叠。源码中窄窗改为单列后，子项仍保留原来的双列位置，导致额外生成一列。这是当前视觉验收失败、PR #43 尚未合入的原因。\n\n补充方案准备为：窄窗按待办/日程 → 本周概览 → 更多工作台上下排列，同时重置子项列、行定位；宽窗保留原来的排列。会先提供高保真供你确认，再实施。当前这条回复只解释问题，不作为方案批准；无需回复。",
       "startedAt": "2026-10-13T12:54:54.853Z",
       "commentId": 6146027415,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6146027415",
-      "verifiedAt": "2026-10-13T12:55:35.508Z"
+      "verifiedAt": "2026-10-13T12:55:35.508Z",
+      "bodySha256": "4866c223ee4964cdd0fe4c7106dcf11783e55269886333591e07640eb6d934ad"
     },
     "issue34-error-fixture-publish": {
       "operationId": "issue34-error-fixture-publish",
@@ -4560,11 +4560,11 @@
       "operationId": "issue34-revised-final-gate",
       "status": "succeeded",
       "target": 34,
-      "body": "【OnO 自动化】已按你的反馈修正交付图。旧图中的重复文字来自超长文本压力测试；产品原本仅显示一次消息，没有累加。现在普通错误使用与后端一致的一句提示，长文本压力场景独立保留，并新增重复错误事件不产生重复节点、不增加文本的检查。\n\n新准确 head：71416bb20380c013960d005f53b281340e97caa2，[PR #44](https://github.com/zhshenry/onosan_workbench/pull/44)。[Windows运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38401742953)514/514单测、96/96原生检查、安装及普通退出重启全部通过。4张新原生图已实际查看，并按你仅本次允许的渠道于21:13（UTC+8）发送到现有私聊，替代旧图。更新状态为合成测试，不代表实际下载安装更新。\n\n旧版本 cbe2a25 的验收请求已失效，本次以71416bb为准。请求范围仍为合入此准确head、实际main必要验收通过后关闭#34、按规范核查清理本需求分支，不包含其他需求或发布。\n\n可复制回复：同意合入 PR #44，版本 71416bb，并在 main 验收通过后关闭 #34、按规范清理该需求分支。",
       "startedAt": "2026-10-13T13:14:26.938Z",
       "commentId": 6146391991,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6146391991",
-      "verifiedAt": "2026-10-13T13:15:14.341Z"
+      "verifiedAt": "2026-10-13T13:15:14.341Z",
+      "bodySha256": "77cf68c94fcb5990be0dfa62c4f6624f60b8cdccfc5a9226dc055ae5661da7d7"
     },
     "issue37-complete-images-chat": {
       "operationId": "issue37-complete-images-chat",
@@ -4580,21 +4580,21 @@
       "operationId": "issue37-final-gate",
       "status": "succeeded",
       "target": 37,
-      "body": "【OnO 自动化】#37 方案v1已实现并完成真实Windows验收。[Draft PR #45](https://github.com/zhshenry/onosan_workbench/pull/45)，准确 head 42733f0bcfcb1155f0f03145b8ffd0ace2001882。\n\n[Windows运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38402967190)514/514单测、96/96原生检查全部通过。覆盖链接格式检查与线上核验区别、取消不写入、更换确认前保留旧关联、博客切换隔离、保存失败保留原记录、真实本地JSON读回，以及普通退出后同版本重启仍保留。三主题、两尺寸和减少动画组合均检查。\n\n此前截图取景不完整，已仅修正采集fixture并重新跑完整Windows。四张最终原图（未关联／待确认／已关联／格式错误）均已实际查看，同帧关键字段、确认取消按钮完整且无遮挡。按你本次明确允许的临时渠道，已于21:22（UTC+8）发送到现有私聊；仅此次交付例外，这里没有GitHub内嵌图。测试使用合成本地博客与作品链接，没有线上发布、抓取或登录账号验证。\n\n请求范围：合入上述准确head，验证实际main必要检查通过后关闭Issue #37，并按规范核查、清理本需求分支。不包含其他Issue、PR或发布。主干若先变化，会先重验集成结果。\n\n可复制回复：同意合入 PR #45，版本 42733f0，并在 main 验收通过后关闭 #37、按规范清理该需求分支。",
       "startedAt": "2026-10-13T13:22:52.937Z",
       "commentId": 6146554493,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6146554493",
-      "verifiedAt": "2026-10-13T13:23:45.235Z"
+      "verifiedAt": "2026-10-13T13:23:45.235Z",
+      "bodySha256": "bb492fd901ad201206e215fc30b15d4366fb2e1d6a4438128903f7034541b99a"
     },
     "issue26-v3-start-1529": {
       "operationId": "issue26-v3-start-1529",
       "status": "succeeded",
       "target": 26,
-      "body": "【OnO 自动化】已重新核对你对关联事项 UI v3 的原始批准和全部后续评论，现在继续修订 PR #39，并集成最新 main b276261a90cb60a53626dd2149b0f3cdc6aad0fd。\n\n待办关联菜单按已批v3改为简洁轻列表，去掉搜索与筛选；其他工作台搜索、多选及既有只读快照/会话边界保持。首页窄窗问题不混入本单。#34、#37已完成当前交付停在最终审批，#35停在补充方案；本轮仅开发#26。\n\n完成后重新跑完整Windows、核对实际截图，再在这里请求准确新版本合入。旧head与旧最终请求不再适用，当前无需重复批准方案。",
       "startedAt": "2026-10-13T15:30:18.717Z",
       "commentId": 6149123195,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6149123195",
-      "verifiedAt": "2026-10-13T15:31:18.756Z"
+      "verifiedAt": "2026-10-13T15:31:18.756Z",
+      "bodySha256": "c8a81905ec4b114989a790905c840687803e6b487096009fcd50b24fa13cd477"
     },
     "issue26-v3-publish": {
       "operationId": "issue26-v3-publish",
@@ -4612,11 +4612,11 @@
       "operationId": "issue26-v3-native-progress",
       "status": "succeeded",
       "target": 26,
-      "body": "【OnO 自动化】v3 已更新到原 Draft PR #39，当前 head 7f19df9dfccc3d05e8574c57f58db5bec6170c1d，并保留最新 main 的既有专项。\n\n[本轮Windows](https://github.com/zhshenry/onosan_workbench/actions/runs/38425855964)510/510单测、类型/构建、固定actionlint和安装通过；原生检查75/76，在单选步骤暂停，后续保存/重启尚未跑到，不能称完整通过。\n\n已查看失败原图：点击后菜单确实收起、正确事项标签已出现。失败来自旧测试仍用check等待已卸载的radio保持选中，和v3“单选即收起”行为冲突。正在只修验收操作为真实点击，并继续严格核对菜单关闭、焦点、标签及发送快照，不放宽产品断言。完成后重新跑准确新版本。\n\n当前无需回复，不请求合入；新实测图仍须按本单交付规则核验。",
       "startedAt": "2026-10-13T16:04:06.360Z",
       "commentId": 6149778667,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6149778667",
-      "verifiedAt": "2026-10-13T16:04:50.403Z"
+      "verifiedAt": "2026-10-13T16:04:50.403Z",
+      "bodySha256": "f9d62f22bc22df418d266d27d81ddd76ce823e3c0288910af80e318a2939df79"
     },
     "issue26-check-fix-publish": {
       "operationId": "issue26-check-fix-publish",
@@ -4632,21 +4632,21 @@
       "operationId": "issue26-v3-result",
       "status": "succeeded",
       "target": 26,
-      "body": "【OnO 自动化】#26 v3 已完成实现和新一轮真实 Windows 验收，当前停在新图交付。\n\n[PR #39](https://github.com/zhshenry/onosan_workbench/pull/39)准确 head f27d982dd2abbdc9d2d730206e318a86ef0dbd26。[Windows运行](https://github.com/zhshenry/onosan_workbench/actions/runs/38428449729)511/511单测、99/99原生检查、固定actionlint、构建与真实NSIS安装全部通过。测试base为b276261a90cb60a53626dd2149b0f3cdc6aad0fd，实际合成merge为8809dfd3581f33f329d7a65d1bfb30c868aefb27。\n\n已验证待办轻列表无搜索/类型状态筛选、全列表滚动、单选即关/更换/取消、焦点键盘；其他工作台的搜索和多选、真实IPC与发送快照、历史/会话隔离、普通退出重启后字段保留均通过。首轮旧check等待已卸载radio的问题已修为真实点击后检查准确标签与菜单关闭，未放宽产品要求。\n\n5张新Windows原图已逐张查看：三主题轻列表、保存后历史、同版本重启。右侧本单控件完整；左侧首页1024窄窗仍有此前报告的概览挤压，未修复，不能称整页视觉通过。该问题由#35补充方案处理，本单不搭载。模型响应和业务数据为合成验收，不代表外部模型服务效果；既有待办最新120条基础上下文仍保留。\n\n无GitHub内嵌图：[临时证据](https://github.com/zhshenry/onosan_workbench/actions/runs/38428449729/artifacts/11829803222)含5图，48文件/10,496,140bytes，2026-10-17 00:19:25（UTC+8）到期。原生附件故障尚无已证实修复原因，不重置重试次数。此前仅本次私聊附图已完成于#34/#35/#37，不自动延伸为此新交付的长期规则。\n\n若你希望本单也临时在现有私聊看这5张准确版本的实测图，可回复：同意仅本次将 #26 版本 f27d982 的5张实测图发到私聊。该回复仅批准图片渠道，不含合入；看图后再给出最终准确版本收尾请求。",
       "startedAt": "2026-10-13T16:22:07.219Z",
       "commentId": 6150122550,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6150122550",
-      "verifiedAt": "2026-10-13T16:23:13.626Z"
+      "verifiedAt": "2026-10-13T16:23:13.626Z",
+      "bodySha256": "73ee245805591e5ace7a5fa684417f502d2c99ef9f73435ae23945fc0b5094ab"
     },
     "issue26-v3-closeout-request": {
       "operationId": "issue26-v3-closeout-request",
       "status": "succeeded",
       "target": 26,
-      "body": "【OnO 自动化】收到，你已查看临时证据并认可 #26 当前最终版本；无需再重复看图或批准设计。\n\n补齐上一条尚未提出的最终收尾范围，一次确认即可：\n- 合入 [PR #39](https://github.com/zhshenry/onosan_workbench/pull/39)，准确 head f27d982dd2abbdc9d2d730206e318a86ef0dbd26（f27d982）。本单关联实现 PR 仅 #39，无需关闭其他辅助 PR。\n- 当前 base b276261a90cb60a53626dd2149b0f3cdc6aad0fd；[Windows验收](https://github.com/zhshenry/onosan_workbench/actions/runs/38428449729)实际 tested merge 8809dfd3581f33f329d7a65d1bfb30c868aefb27，511/511单测及99/99原生检查通过，包含构建、actionlint、NSIS安装、真实保存读回与同版本重启。\n- 仅本单使用你已查看的[5张临时实测图](https://github.com/zhshenry/onosan_workbench/actions/runs/38428449729/artifacts/11829803222)代替 Issue 内嵌交付；2026-10-17 00:19:25（UTC+8）到期，届时该临时来源不可持续复核。该例外不成为长期规则，也不把未内嵌记成已内嵌。\n- 合入后验证实际 main 的完整 Windows 与本单专项检查；全部通过后仅关闭 #26，并按现有规范核验后清理该已合入需求分支。失败则保留开放并报告。\n- 已知首页1024窄窗概览挤压仍由 #35 补充方案处理，本单不修复、不关闭 #35；合成模型/业务数据验收不代表外部模型效果。本次不发版。\n\n请在本 Issue 回复：同意合入 PR #39（f27d982），接受本单临时附图例外，main 验收通过后关闭 #26。",
       "startedAt": "2026-10-14T01:30:10Z",
       "commentId": 6158878464,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6158878464",
-      "verifiedAt": "2026-10-14T01:32:22Z"
+      "verifiedAt": "2026-10-14T01:32:22Z",
+      "bodySha256": "e6c14f3dd2c41dc8e6e06fb0692703c3b03776fb01d5fd1b23e4fd8b657ab78c"
     },
     "issue26-ready-v3": {
       "operationId": "issue26-ready-v3",
@@ -4661,11 +4661,11 @@
       "operationId": "issue35-design-status-20261014",
       "status": "succeeded",
       "target": 35,
-      "body": "【OnO 自动化】补充方案的布局分析此前已完成，但还没有可供你审阅的新高保真图。云电脑恢复后，之前的本地图文件已不在当前工作区，我正在重新准备可交付的设计图；完成后仍在本 Issue 对齐。原生附件故障尚未确认修复，不能承诺已附图，也不会沿用旧图冒充新方案。本条仅说明实际进度，不请求实施批准。",
       "startedAt": "2026-10-14T03:32:10Z",
       "commentId": 6160270446,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6160270446",
-      "verifiedAt": "2026-10-14T03:32:44Z"
+      "verifiedAt": "2026-10-14T03:32:44Z",
+      "bodySha256": "1f816f39ced2083c3cc2824d84b9737d6165c2378689a6978677590bb0967a1b"
     },
     "issue26-refresh-pr39-description-f27d982": {
       "operationId": "issue26-refresh-pr39-description-f27d982",
@@ -4885,6 +4885,10 @@
         {
           "file": "update-status-cool-downloading-1024x680.png",
           "blobSha": "3f7dfa6978428796961ca2033691bd19ade317f5"
+        },
+        {
+          "file": "update-status-error-details-1024x680.png",
+          "blobSha": "3de6ef95802240105cb4de530c8fb8c31f699326"
         }
       ]
     }
@@ -4902,7 +4906,7 @@
     "finishedAt": "2026-10-14T07:08:10Z",
     "summary": "恢复评论前收到用户先诊断再讨论流程指令；未发出评论，所有操作终态，停止需求写入推进"
   },
-  "updatedAt": "2026-10-13T16:23:13.626Z",
+  "updatedAt": "2026-10-14T14:16:05.080Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
