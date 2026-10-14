@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 436,
+  "revision": 437,
   "currentRun": {
     "id": "ono-close34-20261014T151700Z",
     "startedAt": "2026-10-14T15:17:00Z",
@@ -1954,7 +1954,8 @@
     6162410448,
     6162574658,
     6162575588,
-    6170763307
+    6170763307,
+    6171752092
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -4991,10 +4992,16 @@
     },
     "issue34-main-progress-45d8580": {
       "operationId": "issue34-main-progress-45d8580",
-      "status": "intent",
+      "status": "succeeded",
       "target": "Issue34 comment",
       "summary": "准确批准head合入成功，实际main38588207977验收中，未提前关单",
-      "startedAt": "2026-10-14T15:19:17.727Z"
+      "startedAt": "2026-10-14T15:19:17.727Z",
+      "finishedAt": "2026-10-14T15:19:46Z",
+      "receipt": {
+        "commentId": 6171752092,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6171752092",
+        "readBack": true
+      }
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
