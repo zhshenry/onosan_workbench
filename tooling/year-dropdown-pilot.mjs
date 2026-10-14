@@ -116,8 +116,9 @@ async function profileDate(page, name, expected) {
     await new Promise(resolve => setTimeout(resolve, 100));
     data = await store(page);
   }
-  assert.equal(data.profiles.length, 1, 'Synthetic fixture must never duplicate profiles');
-  const profile = data.profiles[0];
+  const matches = data.profiles.filter(profile => profile.name === name);
+  assert.equal(matches.length, 1, 'Synthetic fixture must never duplicate its profile');
+  const profile = matches[0];
   assert.equal(profile.name, name);
   assert.equal(profile.date, expected, 'Read-back must match the saved birthday, not just profile count');
   return profile;

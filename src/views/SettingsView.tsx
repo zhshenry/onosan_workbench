@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { X } from '@phosphor-icons/react';
 import type { AppSettings, AppSettingsPatch, AvatarColor, TodoDbInfo, UiTheme, UpdateStatus, ViewId } from '../../shared/contracts';
 import { errorText, IconButton, Select as TodoSelect } from '../../modules/todo/ui/ui';
@@ -23,6 +23,9 @@ interface RowSpec {
   desc: string;
   /** 状态展示行可不挂控件 */
   control?: ReactNode;
+  heading?: ReactNode;
+  content?: ReactNode;
+  className?: string;
 }
 
 const matches = (query: string, row: { title: string; desc: string }): boolean =>
@@ -34,9 +37,10 @@ function Rows({ rows, query }: { rows: RowSpec[]; query: string }) {
   return (
     <div className="set-rows">
       {visible.map((row) => (
-        <div key={row.key} className="set-row">
+        <div key={row.key} className={row.className ? `set-row ${row.className}` : 'set-row'} data-setting-key={row.key}>
           <div className="txt">
-            <b>{row.title}</b>
+            {row.heading ?? <b>{row.title}</b>}
+            {row.content}
             <span>{row.desc}</span>
           </div>
           {row.control != null && <div className="ctl">{row.control}</div>}
@@ -336,27 +340,48 @@ function AboutSection({ query }: { query: string }) {
   const [info, setInfo] = useState<AboutInfo | null>(null);
   const [update, setUpdate] = useState<UpdateStatus | null>(null);
   const [error, setError] = useState('');
+  const [updateError, setUpdateError] = useState('');
+  const [acting, setActing] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const actionPending = useRef(false);
+  const updateRevision = useRef(0);
+  const detailsButton = useRef<HTMLButtonElement>(null);
+  const detailsId = useId();
 
   useEffect(() => {
     let active = true;
     let receivedStatus = false;
     const off = wb.updater.onStatus(status => {
       receivedStatus = true;
-      if (active) setUpdate(status);
+      updateRevision.current++;
+      if (active) { setUpdate(status); setUpdateError(''); }
     });
     void wb.appInfo.about().then(value => { if (active) setInfo(value); }, e => { if (active) setError(errorText(e)); });
     void wb.updater.status().then(status => {
       if (active && !receivedStatus) setUpdate(status);
-    }, e => { if (active) setError(errorText(e)); });
+    }, e => { if (active && !receivedStatus) setUpdateError(errorText(e)); });
     return () => { active = false; off(); };
   }, []);
 
-  const busy = update?.phase === 'checking' || update?.phase === 'downloading';
+  const fullError = updateError || (update?.phase === 'error' ? update.message : '');
+  useEffect(() => setShowDetails(false), [fullError]);
+  const busy = acting || update?.phase === 'checking' || update?.phase === 'downloading';
   const updateAction = (): void => {
-    setError('');
+    if (!update?.enabled || busy || actionPending.current) return;
+    actionPending.current = true;
+    setActing(true);
+    setUpdateError('');
+    const revision = updateRevision.current;
     void (update?.phase === 'ready' ? wb.updater.install() : wb.updater.check())
-      .catch(e => setError(errorText(e)));
+      .catch(e => { if (updateRevision.current === revision) setUpdateError(errorText(e)); })
+      .finally(() => { actionPending.current = false; setActing(false); });
   };
+  const statusLabel = fullError ? (update ? '更新失败' : '读取失败') : !update ? '读取中…' : !update.enabled ? '不可自动更新'
+    : update.phase === 'latest' ? '当前已是最新版本' : update.phase === 'checking' ? '正在检查更新…'
+      : update.phase === 'downloading' ? `正在下载 ${update.progress}%` : update.phase === 'ready' ? '已下载，待重启' : '待检查';
+  const compactLabel = fullError || !update?.enabled ? statusLabel : update.phase === 'latest' ? '已是最新版本'
+    : update.phase === 'checking' ? '检查中…' : update.phase === 'downloading' ? `下载 ${update.progress}%`
+      : update.phase === 'ready' ? '待重启' : statusLabel;
   const rows: RowSpec[] = info ? [
     {
       key: 'version',
@@ -366,8 +391,24 @@ function AboutSection({ query }: { query: string }) {
     {
       key: 'update',
       title: '应用更新',
-      desc: update?.enabled ? '自动检查并后台下载，下载完成后可重启安装；退出应用时也会安装。' : update?.message ?? '正在读取更新状态…',
-      control: <button type="button" className="set-btn" disabled={!update?.enabled || busy} aria-busy={busy} onClick={updateAction}>
+      className: 'set-update-row',
+      heading: <div className="set-update-heading">
+        <b>应用更新</b>
+        <span className="set-update-status" role={fullError ? 'alert' : 'status'} aria-atomic="true">
+          <span className="set-update-status-full">{statusLabel}</span>
+          <span className="set-update-status-compact">{compactLabel}</span>
+        </span>
+        {fullError && <button ref={detailsButton} type="button" className="set-update-details-toggle" aria-expanded={showDetails} aria-controls={detailsId}
+          onClick={() => setShowDetails(value => !value)} onKeyDown={event => { if (event.key === 'Escape' && showDetails) { event.preventDefault(); setShowDetails(false); } }}>
+          {showDetails ? '收起详情' : '详情'}
+        </button>}
+      </div>,
+      desc: update?.enabled ? '自动检查并后台下载，下载完成后可重启安装；退出应用时也会安装。' : update?.message ?? (updateError ? '无法读取更新状态，请稍后重新打开此页。' : '正在读取更新状态…'),
+      content: <>
+        {update?.phase === 'downloading' && <progress className="set-update-progress" aria-label="更新下载进度" value={update.progress} max={100} />}
+        {fullError && <p id={detailsId} className="set-update-details" hidden={!showDetails}>{fullError}</p>}
+      </>,
+      control: <button type="button" className="set-btn set-update-action" disabled={!update?.enabled || busy} aria-busy={busy} onClick={updateAction}>
         {update?.phase === 'ready' ? '重启并安装' : update?.phase === 'checking' ? '检查中…' : update?.phase === 'downloading' ? '下载中…' : '检查更新'}
       </button>,
     },
@@ -375,21 +416,19 @@ function AboutSection({ query }: { query: string }) {
       key: 'userData',
       title: '应用数据目录',
       desc: 'AI 配置、对话库与八字命例库都在这里',
-      control: <button className="set-btn" onClick={() => void wb.appInfo.openUserDataDir()}>打开</button>,
+      control: <button className="set-btn" onClick={() => void wb.appInfo.openUserDataDir().catch(e => setError(`应用数据目录：${errorText(e)}`))}>打开</button>,
     },
     {
       key: 'todoDb',
       title: '待办共享库',
       desc: '与 To-Do-List 同库互通,两侧数据实时一致',
-      control: <button className="set-btn" onClick={() => void wb.appInfo.openTodoDir()}>打开</button>,
+      control: <button className="set-btn" onClick={() => void wb.appInfo.openTodoDir().catch(e => setError(`待办共享库：${errorText(e)}`))}>打开</button>,
     },
   ] : [];
 
   return (
     <>
       <Rows rows={rows} query={query} />
-      {update?.enabled && <p className={update.phase === 'error' ? 'error' : 'help'} role={update.phase === 'error' ? 'alert' : 'status'}>{update.message}</p>}
-      {update?.phase === 'downloading' && <progress className="set-update-progress" aria-label="更新下载进度" value={update.progress} max={100} />}
       {error && <p className="error" role="alert">{error}</p>}
       {info && <p className="help">待办模块与上游 To-Do-List 保持零漂移,上游发版后经同步清单移植并跑一致性测试。</p>}
       {!info && !error && <p className="help" role="status">正在读取应用信息…</p>}
@@ -411,7 +450,7 @@ export function SettingsView({ view, uiTheme, onUiThemeChange, onAvatarColorChan
   const meta = SECTION_META[view] ?? { title: '设置', sub: '' };
 
   return (
-    <div className={view === 'settings-ai' ? 'settings-page settings-ai-page' : 'settings-page'}>
+    <div className={view === 'settings-ai' ? 'settings-page settings-ai-page' : view === 'settings-about' ? 'settings-page settings-about-page' : 'settings-page'}>
       <div className="page-head">
         <div>
           <h1>{meta.title}</h1>

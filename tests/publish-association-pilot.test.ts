@@ -5,7 +5,8 @@ import path from 'node:path';
 import test from 'node:test';
 import {
   PUBLISH_ASSOCIATION_MATRIX, PUBLISH_ASSOCIATION_SCREENSHOTS,
-  assertPublishAssociationRecord, assertPublishAssociationGeometry,
+  assertPublishAssociationRecord, assertPublishAssociationGeometry, assertPublishAssociationInventory,
+  waitForPublishCopyState,
   assertPublishAssociationFrame,
   installPublishWriteFixture, configurePublishWriteFixture, releasePublishWriteFixture,
   restorePublishWriteFixture, publishWriteFixtureCalls,
@@ -71,6 +72,80 @@ test('Association persistence assertions retain every original field and require
   assert.throws(() => assertPublishAssociationRecord({ ...original, xhsPublished: invalid }, original, invalid), /ISO confirmation time/);
   const extra = { ...published, platformVerified: true };
   assert.throws(() => assertPublishAssociationRecord({ ...original, xhsPublished: extra }, original, extra));
+});
+
+test('Association inventory composes empty or populated earlier pilots with only captured owned IDs', () => {
+  assert.deepEqual(assertPublishAssociationInventory({ drafts: [] }, { drafts: [] }, []), []);
+  const earlier = { drafts: [{ ...blog(), id: 'earlier-reference', title: 'Earlier reference', xhsPublished: association() }, { ...blog(), id: 'earlier-primary', title: 'Earlier primary' }] };
+  const owned = [{ ...blog(), id: 'owned-a' }, { ...blog(), id: 'owned-b' }];
+  const actual = { drafts: [owned[1], owned[0], ...structuredClone(earlier.drafts)] };
+  const before = structuredClone(actual);
+  assert.deepEqual(assertPublishAssociationInventory(actual, earlier, ['owned-a', 'owned-b']), owned);
+  assert.deepEqual(actual, before, 'Inventory assertions must never write or rearrange the actual store');
+  const linked = { drafts: [{ ...owned[1] }, { ...owned[0], xhsPublished: association() }, ...structuredClone(earlier.drafts)] };
+  assert.doesNotThrow(() => assertPublishAssociationInventory(linked, earlier, ['owned-a', 'owned-b']));
+  assertPublishAssociationRecord(linked.drafts[1], owned[0], association());
+  assertPublishAssociationRecord(linked.drafts[0], owned[1], undefined);
+});
+
+test('Association inventory rejects missing, extra, duplicate, overlapping or changed earlier records', () => {
+  const earlier = { drafts: [{ ...blog(), id: 'earlier-reference', xhsPublished: association() }, { ...blog(), id: 'earlier-primary' }] };
+  const actual = { drafts: [{ ...blog(), id: 'owned-a' }, { ...blog(), id: 'owned-b' }, ...structuredClone(earlier.drafts)] };
+  const owned = ['owned-a', 'owned-b'];
+  for (const key of ['id', 'title', 'body', 'createdAt', 'updatedAt', 'platform'] as const) {
+    const changed = structuredClone(actual); changed.drafts[2][key] = 'changed earlier field';
+    assert.throws(() => assertPublishAssociationInventory(changed, earlier, owned));
+  }
+  const changedAssociation = structuredClone(actual); changedAssociation.drafts[2].xhsPublished!.confirmedAt = '2026-10-13T04:00:00.000Z';
+  assert.throws(() => assertPublishAssociationInventory(changedAssociation, earlier, owned), /Every earlier blog field/);
+  assert.throws(() => assertPublishAssociationInventory({ drafts: actual.drafts.slice(0, -1) }, earlier, owned), /Only the exact/);
+  assert.throws(() => assertPublishAssociationInventory({ drafts: [...actual.drafts, { ...blog(), id: 'unexpected-third' }] }, earlier, owned), /Only the exact/);
+  assert.throws(() => assertPublishAssociationInventory({ drafts: [...actual.drafts, actual.drafts[0]] }, earlier, owned), /duplicate blog IDs/);
+  assert.throws(() => assertPublishAssociationInventory(actual, earlier, ['owned-a', 'owned-a']), /Owned IDs/);
+  assert.throws(() => assertPublishAssociationInventory(actual, earlier, ['owned-a', 'earlier-primary']), /Owned IDs/);
+  const reordered = structuredClone(actual); [reordered.drafts[2], reordered.drafts[3]] = [reordered.drafts[3], reordered.drafts[2]];
+  assert.throws(() => assertPublishAssociationInventory(reordered, earlier, owned), /relative order/);
+  assert.throws(() => assertPublishAssociationInventory({ drafts: [{ ...blog(), id: '' }] }, { drafts: [] }, ['']), /nonempty blog IDs/);
+});
+
+test('Association restart inventory requires the entire final snapshot including all owned and earlier fields and order', () => {
+  const earlier = { drafts: [{ ...blog(), id: 'earlier-reference', xhsPublished: association() }] };
+  const finalState = { drafts: [{ ...blog(), id: 'owned-a', xhsPublished: association() }, { ...blog(), id: 'owned-b' }, ...structuredClone(earlier.drafts)] };
+  const owned = ['owned-a', 'owned-b'];
+  assert.doesNotThrow(() => assertPublishAssociationInventory(structuredClone(finalState), earlier, owned, finalState));
+  for (const index of [0, 1, 2]) for (const key of ['title', 'body', 'createdAt', 'updatedAt', 'platform'] as const) {
+    const changed = structuredClone(finalState); changed.drafts[index][key] = 'restart drift';
+    assert.throws(() => assertPublishAssociationInventory(changed, earlier, owned, finalState));
+  }
+  const changedAssociation = structuredClone(finalState); changedAssociation.drafts[0].xhsPublished!.url += '/unexpected';
+  assert.throws(() => assertPublishAssociationInventory(changedAssociation, earlier, owned, finalState), /complete persisted blog snapshot/);
+  const reordered = structuredClone(finalState); [reordered.drafts[0], reordered.drafts[1]] = [reordered.drafts[1], reordered.drafts[0]];
+  assert.throws(() => assertPublishAssociationInventory(reordered, earlier, owned, finalState), /complete persisted blog snapshot/);
+  assert.throws(() => assertPublishAssociationInventory({ drafts: finalState.drafts.slice(1) }, earlier, owned, finalState), /Only the exact/);
+  assert.throws(() => assertPublishAssociationInventory({ drafts: [...finalState.drafts, { ...blog(), id: 'restart-extra' }] }, earlier, owned, finalState), /Only the exact/);
+});
+
+test('Host copy readback retries false IPC results until the exact new association is present', async () => {
+  let reads = 0;
+  const previous = { ...blog(), xhsPublished: { ...association(), remoteId: 'wrong-existing-id' } };
+  const expected = { ...blog(), xhsPublished: association() };
+  const page = { evaluate: async () => ({ drafts: [++reads < 3 ? previous : expected] }) };
+  const result = await waitForPublishCopyState(page, value =>
+    value.drafts[0].xhsPublished.remoteId === expected.xhsPublished.remoteId, 'Expected association was not saved');
+  assert.equal(reads, 3, 'False IPC results must cause genuine later reads, never a truthy Promise shortcut');
+  assert.deepEqual(result, { drafts: [expected] });
+});
+
+test('Host copy readback has a five-second deadline even when an IPC read never settles', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 1000 });
+  const page = { evaluate: () => new Promise(() => {}) };
+  const failed = assert.rejects(waitForPublishCopyState(page, () => false, 'Synthetic hung copy read'), /Synthetic hung copy read timed out after 5000ms/);
+  await Promise.resolve(); t.mock.timers.tick(5000); await failed;
+});
+
+test('Host copy readback propagates read failures and rejects async readiness predicates', async () => {
+  await assert.rejects(waitForPublishCopyState({ evaluate: async () => { throw new Error('Synthetic copy read failure'); } }, () => true, 'Read failure'), /Synthetic copy read failure/);
+  await assert.rejects(waitForPublishCopyState({ evaluate: async () => ({ drafts: [] }) }, async () => false, 'Async predicate'), /synchronous boolean/);
 });
 
 test('Association geometry supports natural vertical scrolling but rejects missing, clipped or intercepted fields', () => {
@@ -302,20 +377,22 @@ test('Four association evidence files share the unchanged aggregate artifact bud
   await assert.rejects(inspectPilotArtifacts(directory), /unapproved artifact/);
 });
 
-test('Complete installed pilot keeps one aggregate allowlist of 44 success PNGs and 47/48 files', async t => {
+test('Complete installed pilot keeps one aggregate allowlist of 53 success PNGs and 56/57 files', async t => {
   const { YEAR_DROPDOWN_SCREENSHOTS } = await import('../tooling/year-dropdown-pilot.mjs');
   const { TOPBAR_DATES_SCREENSHOTS } = await import('../tooling/topbar-dates-pilot.mjs');
   const { AI_CARDS_SCREENSHOTS } = await import('../tooling/ai-cards-pilot.mjs');
   const { FLOAT_GROUP_SCREENSHOTS } = await import('../tooling/float-group-pilot.mjs');
-  const names = ['initial.png', 'created.png', 'edited.png', 'completed.png', 'relaunched.png', ...YEAR_DROPDOWN_SCREENSHOTS, ...TOPBAR_DATES_SCREENSHOTS, ...AI_CARDS_SCREENSHOTS, ...FLOAT_GROUP_SCREENSHOTS, ...PUBLISH_ASSOCIATION_SCREENSHOTS];
-  assert.equal(names.length, 44); assert.equal(new Set(names).size, 44);
+  const { CONTEXT_PICKER_SCREENSHOTS } = await import('../tooling/context-picker-pilot.mjs');
+  const { UPDATE_STATUS_SCREENSHOTS } = await import('../tooling/update-status-pilot.mjs');
+  const names = ['initial.png', 'created.png', 'edited.png', 'completed.png', 'relaunched.png', ...YEAR_DROPDOWN_SCREENSHOTS, ...TOPBAR_DATES_SCREENSHOTS, ...AI_CARDS_SCREENSHOTS, ...FLOAT_GROUP_SCREENSHOTS, ...CONTEXT_PICKER_SCREENSHOTS, ...UPDATE_STATUS_SCREENSHOTS, ...PUBLISH_ASSOCIATION_SCREENSHOTS];
+  assert.equal(names.length, 53); assert.equal(new Set(names).size, 53);
   const directory = await mkdtemp(path.join(tmpdir(), 'ono-publish-complete-evidence-')); t.after(() => rm(directory, { recursive: true, force: true }));
   for (const name of names) await writeFile(path.join(directory, name), Buffer.from('89504e470d0a1a0a', 'hex'));
   for (const name of ['install.json', 'report.json']) await writeFile(path.join(directory, name), '{}');
   await writeFile(path.join(directory, 'report.md'), 'Synthetic unit evidence');
-  assert.equal((await inspectPilotArtifacts(directory)).files.length, 47);
+  assert.equal((await inspectPilotArtifacts(directory)).files.length, 56);
   await writeFile(path.join(directory, 'failure.png'), Buffer.from('89504e470d0a1a0a', 'hex'));
-  assert.equal((await inspectPilotArtifacts(directory)).files.length, 48);
+  assert.equal((await inspectPilotArtifacts(directory)).files.length, 57);
 });
 
 test('Installed association pilot uses twelve checks, real UI storage writes, bounded readback, cleanup and existing full-app restart', async () => {
@@ -338,10 +415,20 @@ test('Installed association pilot uses twelve checks, real UI storage writes, bo
   assert.match(source, /\.content > \.view-fade > \.copy-wrap \.copy-editor/);
   assert.match(source, /innerWidth === width && innerHeight === height/);
   assert.match(source, /assert\.deepEqual\(await state\(page\), fixture\.finalState/);
+  assert.match(source, /assertPublishAssociationInventory\(result\.disk, existingState, ownedIds\)/);
+  assert.match(source, /assertPublishAssociationInventory\(await state\(page\), fixture\.existingState, fixture\.ownedIds, fixture\.finalState\)/);
+  assert.match(source, /draft\.id === newIds\[0\] && draft\.title === titles\[index\] && draft\.body === bodies\[index\]/);
+  assert.equal((source.match(/await waitForPublishCopyState\(page,/g) ?? []).length, 4, 'Every IPC readiness path uses bounded host polling');
+  assert.doesNotMatch(source, /page\.waitForFunction\([^;]*workbench\.copy\.list/s);
+  assert.match(source, /originals = assertPublishAssociationInventory\(createdState, existingState, ownedIds\)/);
+  assert.equal(source.split('assert.deepEqual(await state(page), createdState)').length - 1, 3, 'All pre-confirmation no-write checks retain the complete earlier plus owned store');
+  assert.doesNotMatch(source, /originals = \(await state\(page\)\)\.drafts|assert\.deepEqual\(await state\(page\), \{ drafts: \[\] \}\)/);
   assert.ok(entry.indexOf('floatGroupFixture = await runFloatGroupPilot(') < entry.indexOf('publishAssociationFixture = await runPublishAssociationPilot('));
+  assert.ok(entry.indexOf('contextPickerFixture = await runContextPickerPilot(') < entry.indexOf('publishAssociationFixture = await runPublishAssociationPilot('));
+  assert.ok(entry.indexOf('publishAssociationFixture = await runPublishAssociationPilot(') < entry.indexOf('await runUpdateStatusPilot('));
   assert.ok(entry.indexOf('publishAssociationFixture = await runPublishAssociationPilot(') < entry.indexOf("await check('Choose exit-on-close"));
   assert.ok(entry.indexOf('await verifyPublishAssociationRelaunch(') > entry.indexOf("await check('Relaunch same installed executable"));
-  for (const older of ['verifyAiCardsRelaunch', 'verifyYearDropdownRelaunch', 'verifyTopbarDatesRelaunch', 'verifyFloatGroupRelaunch']) assert.match(entry, new RegExp(`await ${older}\\(`));
+  for (const older of ['verifyAiCardsRelaunch', 'verifyYearDropdownRelaunch', 'verifyTopbarDatesRelaunch', 'verifyFloatGroupRelaunch', 'verifyContextPickerRelaunch']) assert.match(entry, new RegExp(`await ${older}\\(`));
   for (const name of PUBLISH_ASSOCIATION_SCREENSHOTS) assert.equal(source.split(`name: '${name}'`).length - 1, 1, 'Each approved screenshot is captured once through the frame guard');
   assert.equal(source.split('await screenshot(name)').length - 1, 1, 'One unchanged full-page screenshot call captures only guarded frames');
   const capture = source.slice(source.indexOf('async function captureAssociationFrame'), source.indexOf('// Bounded main-frame-only'));

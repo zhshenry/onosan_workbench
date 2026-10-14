@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { bounded } from './pilot-cleanup.mjs';
 
 export const PUBLISH_ASSOCIATION_SCREENSHOTS = Object.freeze([
   'publish-association-unlinked.png', 'publish-association-pending.png',
@@ -14,6 +15,21 @@ export const PUBLISH_ASSOCIATION_MATRIX = Object.freeze(['mist', 'cool', 'warm']
 const MARK = 'copy:markXhsPublished';
 const CLEAR = 'copy:clearXhsPublished';
 const state = page => page.evaluate(() => window.workbench.copy.list());
+
+// Playwright's browser poller treats an IPC Promise as truthy before resolution.
+// Await actual business reads in the host, with one deadline for reads and retries.
+export async function waitForPublishCopyState(page, ready, message) {
+  const deadline = Date.now() + 5000;
+  for (;;) {
+    const remaining = deadline - Date.now();
+    assert.ok(remaining > 0, message);
+    const data = await bounded(() => state(page), remaining, message);
+    const matched = ready(data);
+    assert.equal(typeof matched, 'boolean', 'Copy readiness must be a synchronous boolean');
+    if (matched) return data;
+    await new Promise(resolve => setTimeout(resolve, Math.min(50, Math.max(1, deadline - Date.now()))));
+  }
+}
 const section = page => page.getByRole('region', { name: '发布后关联', exact: true });
 const input = page => section(page).getByRole('textbox', { name: '小红书已发布作品直链', exact: true });
 const button = (page, name) => section(page).getByRole('button', { name, exact: true });
@@ -34,6 +50,30 @@ export function assertPublishAssociationRecord(actual, original, expectedAssocia
   assert.equal(actual.xhsPublished.source, 'manual');
   assert.ok(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(actual.xhsPublished.confirmedAt)
     && Number.isFinite(Date.parse(actual.xhsPublished.confirmedAt)), 'Real ISO confirmation time is required');
+}
+
+/** Keep earlier pilots' blogs exact, and allow only this pilot's captured new IDs. */
+export function assertPublishAssociationInventory(actual, existing, ownedIds, expectedSnapshot) {
+  const ids = (data, label) => {
+    assert.ok(Array.isArray(data?.drafts), `${label}: actual blog records are required`);
+    const values = data.drafts.map(draft => {
+      assert.ok(typeof draft?.id === 'string' && draft.id.trim(), `${label}: nonempty blog IDs are required`);
+      return draft.id;
+    });
+    assert.equal(new Set(values).size, values.length, `${label}: duplicate blog IDs are forbidden`);
+    return values;
+  };
+  const existingIds = ids(existing, 'Earlier pilot');
+  const actualIds = ids(actual, 'Association pilot');
+  assert.ok(Array.isArray(ownedIds) && ownedIds.every(id => typeof id === 'string' && id.trim()), 'Captured owned blog IDs are required');
+  const expectedIds = [...existingIds, ...ownedIds];
+  assert.equal(new Set(expectedIds).size, expectedIds.length, 'Owned IDs must be unique and separate from earlier blogs');
+  assert.deepEqual([...actualIds].sort(), [...expectedIds].sort(), 'Only the exact earlier and UI-created owned blogs may exist');
+  const earlier = new Set(existingIds);
+  assert.deepEqual(actual.drafts.filter(draft => earlier.has(draft.id)), existing.drafts,
+    'Every earlier blog field and its relative order must remain unchanged');
+  if (expectedSnapshot !== undefined) assert.deepEqual(actual, expectedSnapshot, 'The complete persisted blog snapshot must remain exact');
+  return ownedIds.map(id => actual.drafts.find(draft => draft.id === id));
 }
 
 export function assertPublishAssociationGeometry(value) {
@@ -303,9 +343,10 @@ async function readDisk(application, page, dataRoot) {
   return { file, disk };
 }
 async function waitAssociation(page, id, remoteId) {
-  await page.waitForFunction(({ id, remoteId }) => window.workbench.copy.list().then(value =>
-    value.drafts.find(draft => draft.id === id)?.xhsPublished?.remoteId === remoteId), { id, remoteId });
-  return (await state(page)).drafts.find(draft => draft.id === id);
+  const data = await waitForPublishCopyState(page, value =>
+    value.drafts.find(draft => draft.id === id)?.xhsPublished?.remoteId === remoteId,
+  'Exact UI-confirmed blog association did not reach the real store');
+  return data.drafts.find(draft => draft.id === id);
 }
 async function inspectGeometry(page) {
   const root = section(page);
@@ -347,23 +388,42 @@ export async function runPublishAssociationPilot({ application, page, check, scr
     second: 'https://www.xiaohongshu.com/discovery/item/64abcdef1234567800000002',
     third: 'https://xiaohongshu.com/explore/64abcdef1234567800000003',
   };
-  let originals; let finalState;
+  let existingState; let createdState; let originals; let finalState;
+  const ownedIds = [];
+  const readAssociationDisk = async () => {
+    const result = await readDisk(application, page, dataRoot);
+    assertPublishAssociationInventory(result.disk, existingState, ownedIds);
+    return result;
+  };
   report.publishAssociation = { synthetic: true, scope: 'UI-created local blogs; no platform verification, publication, update or deletion', geometry: [], fixtureOnly: [] };
   await check('Publish association: create two synthetic blogs through normal editor UI and read exact disk fields', async () => {
     await (await application.browserWindow(page)).evaluate(win => { win.webContents.setZoomFactor(1); win.setContentSize(1280, 820); });
-    await openCopy(page, '博客编辑'); assert.deepEqual(await state(page), { drafts: [] });
+    await openCopy(page, '博客编辑'); existingState = await state(page);
+    assertPublishAssociationInventory(existingState, existingState, ownedIds);
+    assert.ok(existingState.drafts.every(draft => !titles.includes(draft.title)), 'Owned fixture titles must not collide with earlier blogs');
+    if (existingState.drafts.length) await readAssociationDisk();
     for (let index = 0; index < titles.length; index++) {
-      const count = (await state(page)).drafts.length;
+      const before = await state(page);
+      const count = before.drafts.length;
+      const beforeIds = new Set(before.drafts.map(draft => draft.id));
       await page.getByRole('region', { name: '博客列表', exact: true }).getByRole('button', { name: '新建', exact: true }).click();
-      await page.waitForFunction(count => window.workbench.copy.list().then(value => value.drafts.length === count + 1), count);
+      const created = await waitForPublishCopyState(page, value => value.drafts.length === count + 1,
+        'Normal UI blog creation did not persist exactly one new record');
+      const newIds = created.drafts.filter(draft => !beforeIds.has(draft.id)).map(draft => draft.id);
+      assert.equal(newIds.length, 1, 'Each normal UI creation must produce exactly one new identity');
+      ownedIds.push(newIds[0]);
+      assertPublishAssociationInventory(created, existingState, ownedIds);
       await page.waitForFunction(() => document.querySelector('#copy-title')?.value === '' && document.querySelector('#copy-body')?.value === '');
       await page.getByRole('textbox', { name: '标题', exact: true }).fill(titles[index]);
       await page.getByRole('textbox', { name: '正文', exact: true }).fill(bodies[index]);
-      await page.waitForFunction(({ title, body }) => window.workbench.copy.list().then(value =>
-        value.drafts.some(draft => draft.title === title && draft.body === body)), { title: titles[index], body: bodies[index] });
+      await waitForPublishCopyState(page, value => value.drafts.some(draft =>
+        draft.id === newIds[0] && draft.title === titles[index] && draft.body === bodies[index]),
+      'Exact UI-created blog identity, title and body did not finish autosaving');
       await page.getByRole('status').filter({ hasText: '已保存' }).waitFor({ state: 'visible' });
+      await readAssociationDisk();
     }
-    originals = (await state(page)).drafts;
+    createdState = await state(page);
+    originals = assertPublishAssociationInventory(createdState, existingState, ownedIds);
     assert.equal(originals.length, 2); assert.equal(new Set(originals.map(draft => draft.id)).size, 2);
     for (let index = 0; index < titles.length; index++) {
       const blog = originals.find(draft => draft.title === titles[index]); assert.ok(blog);
@@ -371,7 +431,9 @@ export async function runPublishAssociationPilot({ application, page, check, scr
       assert.ok(blog.id && Number.isFinite(Date.parse(blog.createdAt)) && Number.isFinite(Date.parse(blog.updatedAt)));
       assertPublishAssociationRecord(blog, blog, undefined);
     }
-    await readDisk(application, page, dataRoot);
+    report.publishAssociation.existingBlogIds = existingState.drafts.map(draft => draft.id);
+    report.publishAssociation.ownedBlogIds = [...ownedIds];
+    await readAssociationDisk();
   });
   const originalA = originals.find(draft => draft.title === titles[0]);
   const originalB = originals.find(draft => draft.title === titles[1]);
@@ -389,7 +451,7 @@ export async function runPublishAssociationPilot({ application, page, check, scr
     await waitStatus(page, '尚未关联作品');
     assert.match(await section(page).innerText(), /本机/); assert.match(await section(page).innerText(), /不.*核验/);
     await captureAssociationFrame({ application, page, screenshot, report, name: 'publish-association-unlinked.png', expectedState: '尚未关联作品' });
-    assert.deepEqual(await state(page), { drafts: originals });
+    assert.deepEqual(await state(page), createdState);
   });
   await check('Publish association: inline format errors, keyboard check/cancel, changed input and blog switches never write', async () => {
     for (const value of ['not-a-url', 'https://creator.xiaohongshu.com/', 'https://xhslink.com/a/synthetic']) {
@@ -398,7 +460,7 @@ export async function runPublishAssociationPilot({ application, page, check, scr
       assert.match(await section(page).getByRole('alert').innerText(), /直链/);
       await input(page).focus(); await page.keyboard.press('Tab'); await page.keyboard.press('Tab');
       assert.equal(await section(page).getByRole('alert').evaluate(element => element === document.activeElement), true, 'Full inline error must be keyboard reachable');
-      assert.equal(await button(page, '确认关联').count(), 0); assert.deepEqual(await state(page), { drafts: originals });
+      assert.equal(await button(page, '确认关联').count(), 0); assert.deepEqual(await state(page), createdState);
     }
     await captureAssociationFrame({ application, page, screenshot, report, name: 'publish-association-error.png', expectedState: '链接格式不正确' });
     await candidate(page, urls.first, true);
@@ -413,7 +475,7 @@ export async function runPublishAssociationPilot({ application, page, check, scr
     await waitStatus(page, '尚未关联作品'); assert.equal(await input(page).inputValue(), '');
     assert.equal(await button(page, '确认关联').count(), 0);
     await selectBlog(page, originalA.title); assert.equal(await button(page, '确认关联').count(), 0);
-    assert.deepEqual(await state(page), { drafts: originals }); await readDisk(application, page, dataRoot);
+    assert.deepEqual(await state(page), createdState); await readAssociationDisk();
   });
   await check('Publish association: first real confirmation persists exact target and metadata, then normal navigation/reload retains it', async () => {
     await candidate(page, urls.first); await captureAssociationFrame({ application, page, screenshot, report, name: 'publish-association-pending.png', expectedState: '待确认' });
@@ -427,11 +489,11 @@ export async function runPublishAssociationPilot({ application, page, check, scr
     assert.ok(record.includes(originalA.title) && record.includes(expected.url) && record.includes(expected.remoteId)); assert.match(record, /手动确认/);
     await button(page, '复制作品链接').click(); await waitCopyResult(page, '作品链接已复制');
     assert.equal(await application.evaluate(({ clipboard }) => clipboard.readText()), expected.url);
-    const savedState = await state(page); await readDisk(application, page, dataRoot);
+    const savedState = await state(page); await readAssociationDisk();
     await page.locator('.rail [data-workbench="home"]').click(); await openCopy(page, '图文发布');
     await waitStatus(page, '已关联 · 手动确认'); assert.deepEqual(await state(page), savedState);
     await page.reload(); await openCopy(page, '图文发布'); await selectBlog(page, originalA.title);
-    await waitStatus(page, '已关联 · 手动确认'); assert.deepEqual(await state(page), savedState); await readDisk(application, page, dataRoot);
+    await waitStatus(page, '已关联 · 手动确认'); assert.deepEqual(await state(page), savedState); await readAssociationDisk();
   });
   await check('Publish association: changing/cancelling replacement and cancelling two-stage removal preserve old association exactly', async () => {
     const before = await state(page);
@@ -441,7 +503,7 @@ export async function runPublishAssociationPilot({ application, page, check, scr
     await button(page, '移除关联').click(); await button(page, '确认移除关联').waitFor({ state: 'visible' });
     assert.deepEqual(await state(page), before); await button(page, '取消').click();
     await button(page, '确认移除关联').waitFor({ state: 'hidden' }); assert.deepEqual(await state(page), before);
-    await readDisk(application, page, dataRoot);
+    await readAssociationDisk();
   });
   const webContentsId = await (await application.browserWindow(page)).evaluate(win => win.webContents.id);
   await installPublishWriteFixture(application, webContentsId);
@@ -451,11 +513,11 @@ export async function runPublishAssociationPilot({ application, page, check, scr
       await configurePublishWriteFixture(application, MARK, 'fail');
       await button(page, '更换关联').click(); await candidate(page, urls.second); await button(page, '确认关联').click();
       await section(page).getByRole('alert').filter({ hasText: 'Synthetic association write failure' }).waitFor({ state: 'visible' });
-      assert.deepEqual(await state(page), before); await readDisk(application, page, dataRoot); await cancel(page);
+      assert.deepEqual(await state(page), before); await readAssociationDisk(); await cancel(page);
       await configurePublishWriteFixture(application, CLEAR, 'fail');
       await button(page, '移除关联').click(); await button(page, '确认移除关联').click();
       await section(page).getByRole('alert').filter({ hasText: 'Synthetic association write failure' }).waitFor({ state: 'visible' });
-      assert.deepEqual(await state(page), before); await readDisk(application, page, dataRoot);
+      assert.deepEqual(await state(page), before); await readAssociationDisk();
       await selectBlog(page, originalB.title); await selectBlog(page, originalA.title);
       report.publishAssociation.fixtureOnly.push({ case: 'mark/clear failure', preservedExactData: true });
     });
@@ -480,7 +542,7 @@ export async function runPublishAssociationPilot({ application, page, check, scr
       assertPublishAssociationRecord(saved, originalA, saved.xhsPublished);
       assertPublishAssociationRecord((await state(page)).drafts.find(draft => draft.id === originalB.id), originalB, undefined);
       assert.equal((await publishWriteFixtureCalls(application)).length - callsBefore, 1);
-      await readDisk(application, page, dataRoot); await cancel(page); await waitStatus(page, '已关联 · 手动确认');
+      await readAssociationDisk(); await cancel(page); await waitStatus(page, '已关联 · 手动确认');
       await selectBlog(page, originalB.title); await waitStatus(page, '尚未关联作品');
       assert.equal(await button(page, '确认关联').count(), 0); await selectBlog(page, originalA.title);
       report.publishAssociation.fixtureOnly.push({ case: 'delayed double confirmation and blog switch', calls: 1, target: originalA.id });
@@ -495,13 +557,15 @@ export async function runPublishAssociationPilot({ application, page, check, scr
       await page.locator('.rail [data-workbench="home"]').click();
       await page.locator('#view-home').waitFor({ state: 'visible' });
       await releasePublishWriteFixture(application);
-      await page.waitForFunction(id => window.workbench.copy.list().then(value =>
-        !value.drafts.find(draft => draft.id === id)?.xhsPublished), originalA.id);
+      await waitForPublishCopyState(page, value => {
+        const draft = value.drafts.find(draft => draft.id === originalA.id);
+        return Boolean(draft && !Object.hasOwn(draft, 'xhsPublished'));
+      }, 'Delayed removal did not clear only the captured existing blog association');
       await openCopy(page, '图文发布'); await selectBlog(page, originalA.title); await waitStatus(page, '尚未关联作品');
       assert.equal(await button(page, '确认移除关联').count(), 0); assert.equal(await section(page).getByRole('alert').count(), 0);
       assertPublishAssociationRecord((await state(page)).drafts.find(draft => draft.id === originalA.id), originalA, undefined);
       assertPublishAssociationRecord((await state(page)).drafts.find(draft => draft.id === originalB.id), originalB, undefined);
-      assert.equal((await publishWriteFixtureCalls(application)).length - callsBefore, 1); await readDisk(application, page, dataRoot);
+      assert.equal((await publishWriteFixtureCalls(application)).length - callsBefore, 1); await readAssociationDisk();
       report.publishAssociation.fixtureOnly.push({ case: 'delayed double removal and page navigation', calls: 1, target: originalA.id });
     });
   } finally { await restorePublishWriteFixture(application); }
@@ -517,7 +581,7 @@ export async function runPublishAssociationPilot({ application, page, check, scr
     await button(page, '移除关联').click(); await button(page, '确认移除关联').click(); await waitStatus(page, '尚未关联作品');
     assertPublishAssociationRecord((await state(page)).drafts.find(draft => draft.id === originalB.id), originalB, undefined);
     assertPublishAssociationRecord((await state(page)).drafts.find(draft => draft.id === originalA.id), originalA, saved.xhsPublished);
-    await readDisk(application, page, dataRoot);
+    await readAssociationDisk();
   });
   await check('Publish association: all four states remain readable and keyboard/pointer reachable in three themes, both native sizes and reduced motion', async () => {
     const before = await state(page);
@@ -542,12 +606,12 @@ export async function runPublishAssociationPilot({ application, page, check, scr
       await selectBlog(page, originalA.title, true); await waitStatus(page, '已关联 · 手动确认'); states.linked = await inspectGeometry(page);
       report.publishAssociation.geometry.push({ ...entry, states });
     }
-    assert.deepEqual(await state(page), before); await readDisk(application, page, dataRoot);
+    assert.deepEqual(await state(page), before); await readAssociationDisk();
     await captureAssociationFrame({ application, page, screenshot, report, name: 'publish-association-linked.png', expectedState: '已关联 · 手动确认' });
     await page.emulateMedia({ reducedMotion: 'no-preference' });
   });
   await check('Publish association: authoritative store and actual JSON still match before full application quit', async () => {
-    finalState = await state(page); const disk = await readDisk(application, page, dataRoot);
+    finalState = await state(page); const disk = await readAssociationDisk();
     for (const original of originals) {
       const actual = finalState.drafts.find(draft => draft.id === original.id);
       assertPublishAssociationRecord(actual, original, original.id === originalA.id ? actual.xhsPublished : undefined);
@@ -556,12 +620,13 @@ export async function runPublishAssociationPilot({ application, page, check, scr
     report.publishAssociation.diskFile = path.basename(disk.file);
     report.publishAssociation.sameVersionRelaunch = 'pending real full application quit and installed executable relaunch';
   });
-  return { originals, finalState, selectedTitle: originalA.title, dataRoot };
+  return { existingState, ownedIds: [...ownedIds], originals, finalState, selectedTitle: originalA.title, dataRoot };
 }
 
 export async function verifyPublishAssociationRelaunch({ application, page, check, fixture, report }) {
   await check('Publish association: full same-installed-executable restart preserves exact association, absent removed link, identities and every blog field', async () => {
     assert.deepEqual(await state(page), fixture.finalState, 'Real relaunched CopyStore must preserve exact pre-exit JSON');
+    assertPublishAssociationInventory(await state(page), fixture.existingState, fixture.ownedIds, fixture.finalState);
     await readDisk(application, page, fixture.dataRoot);
     await openCopy(page, '图文发布'); await selectBlog(page, fixture.selectedTitle);
     await waitStatus(page, '已关联 · 手动确认');

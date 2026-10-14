@@ -18,8 +18,12 @@ export function parsePlan(text: string): AIPlan {
   try { return aiPlanSchema.parse(JSON.parse(trimmed)); }
   catch { throw new Error('AI 返回的事项格式不正确,未修改任何数据,请重试'); }
 }
-export function taskSnapshot(tasks: Task[], categories: Category[]) {
-  const context = [...tasks].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 120)
+export function taskSnapshot(tasks: Task[], categories: Category[], selectedTaskIds: readonly string[] = []) {
+  const recent = [...tasks].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 120);
+  const recentIds = new Set(recent.map(task => task.id));
+  const selected = new Set(selectedTaskIds);
+  // Keep the established latest-120 baseline; explicitly selected older tasks are additive.
+  const context = [...recent, ...tasks.filter(task => !task.deletedAt && selected.has(task.id) && !recentIds.has(task.id))]
     .map(({ id, title, kind, status, priority, plannedDate, dueAt, endAt, remindAt, categoryId, progress, note }) => ({ id, title, kind, status, priority, plannedDate, dueAt, endAt, remindAt, categoryId, progress, note: note.slice(0, 1000) }));
   return {
     context,
@@ -48,7 +52,7 @@ priority 只能是 high、medium 或 low。
 存在歧义时用中文提问,不要调用修改类工具。查询、复盘和建议安排可以直接回答。未经用户明确要求不修改事项或标签。
 新增或修改日程时必须同时给出开始时间 dueAt 和结束时间 endAt,结束时间需晚于开始时间且与日程在同一天;信息不完整时先询问。信息不足时调用 ask_user 工具一次性问清(question 简短,尽量给 2-4 个候选选项让用户直接选);同一问题只问一次,用户回答后立即据此生成建议,不要重复追问。以下情况必须先问:分类有歧义(存在多个标签且用户未指明)、日程缺少开始或结束时间、指向不明("把它改掉"但本轮有多个事项)。用户明确说了"不设标签""随便"或此前对话已回答过时,不得再问。
 最近对话只是上下文,不代表建议已经应用;以最新事项数据和用户在对话中明确说明的应用或放弃状态为准。
-这是最近 ${snapshot.context.length} 条事项,不能声称覆盖未提供的数据:${JSON.stringify(snapshot.context)}`;
+${snapshot.context.length > 120 ? `这是最近120条及本轮明确选择的更早事项，共 ${snapshot.context.length} 条` : `这是最近 ${snapshot.context.length} 条事项`},不能声称覆盖未提供的数据:${JSON.stringify(snapshot.context)}`;
 }
 export function planFromReply(text: string, actions: AIPlan['actions'], knownTasks: Set<string>, knownCategories: Set<string> = new Set()): AIPlan {
   const trimmed = text.trim();
@@ -71,8 +75,8 @@ export function planFromReply(text: string, actions: AIPlan['actions'], knownTas
 
 /** 构建待办模块的一次性贡献(工具闭包持有快照与建议收集器) */
 export type AskUser = (ask: { id: string; question: string; options: { label: string; description?: string }[] }) => Promise<string>;
-export function buildTodoContribution(tasks: Task[], categories: Category[], onAskUser?: AskUser): AiModuleContribution & { collect(): AIPlan['actions'] } {
-  const snapshot = taskSnapshot(tasks, categories);
+export function buildTodoContribution(tasks: Task[], categories: Category[], onAskUser?: AskUser, selectedTaskIds: readonly string[] = []): AiModuleContribution & { collect(): AIPlan['actions'] } {
+  const snapshot = taskSnapshot(tasks, categories, selectedTaskIds);
   const actions: AIAction[] = [];
   return {
     toolNames: ['list_tasks', 'propose_create', 'propose_update', 'propose_remove', 'propose_create_category', 'propose_update_category', 'propose_remove_category', 'ask_user'],

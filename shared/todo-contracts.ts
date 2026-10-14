@@ -114,7 +114,9 @@ export interface ChatEntry {
   copySource?: CopySource;
   contextScope?: import('./ai-scope').AiScope;
   pageScope?: import('./ai-scope').AiScope;
-  references?: import('./ai-scope').AiScope[];
+  references?: import('./ai-reference').AiReference[];
+  /** Server-resolved content captured for this turn, never trusted renderer data. */
+  referenceSnapshots?: import('./ai-reference').AiReferenceSnapshot[];
   baziSystem?: 'bazi' | 'ziwei' | 'astro';
   actionState?: 'pending' | 'applied' | 'discarded' | 'expired' | 'revised' | 'undone'; streaming?: boolean;
   tools?: AIToolEvent[]; thinking?: string; thinkingActive?: boolean; error?: string;

@@ -422,19 +422,22 @@ test('Selected mini picker screenshot supplements existing evidence and distingu
   assert.match(source, /capture\(screenshot, floatPage, 'float-group-picker\.png'\)/);
 });
 
-test('Complete evidence enumerates40 success PNGs43 success files44 allowlisted files without raising budget', async t => {
+test('Complete evidence enumerates 53 success PNGs, 56 success files and 57 allowlisted files without raising budget', async t => {
   const { YEAR_DROPDOWN_SCREENSHOTS } = await import('../tooling/year-dropdown-pilot.mjs');
   const { TOPBAR_DATES_SCREENSHOTS } = await import('../tooling/topbar-dates-pilot.mjs');
   const { AI_CARDS_SCREENSHOTS } = await import('../tooling/ai-cards-pilot.mjs');
-  const screenshots = ['initial.png', 'created.png', 'edited.png', 'completed.png', 'relaunched.png', ...YEAR_DROPDOWN_SCREENSHOTS, ...TOPBAR_DATES_SCREENSHOTS, ...AI_CARDS_SCREENSHOTS, ...FLOAT_GROUP_SCREENSHOTS];
-  assert.equal(screenshots.length, 40); assert.equal(new Set(screenshots).size, 40);
+  const { CONTEXT_PICKER_SCREENSHOTS } = await import('../tooling/context-picker-pilot.mjs');
+  const { UPDATE_STATUS_SCREENSHOTS } = await import('../tooling/update-status-pilot.mjs');
+  const { PUBLISH_ASSOCIATION_SCREENSHOTS } = await import('../tooling/publish-association-pilot.mjs');
+  const screenshots = ['initial.png', 'created.png', 'edited.png', 'completed.png', 'relaunched.png', ...YEAR_DROPDOWN_SCREENSHOTS, ...TOPBAR_DATES_SCREENSHOTS, ...AI_CARDS_SCREENSHOTS, ...FLOAT_GROUP_SCREENSHOTS, ...CONTEXT_PICKER_SCREENSHOTS, ...UPDATE_STATUS_SCREENSHOTS, ...PUBLISH_ASSOCIATION_SCREENSHOTS];
+  assert.equal(screenshots.length, 53); assert.equal(new Set(screenshots).size, 53);
   const directory = await mkdtemp(path.join(tmpdir(), 'ono-float-complete-evidence-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   for (const name of screenshots) await writeFile(path.join(directory, name), Buffer.from('89504e470d0a1a0a', 'hex'));
   await writeFile(path.join(directory, 'install.json'), '{}'); await writeFile(path.join(directory, 'report.json'), '{}'); await writeFile(path.join(directory, 'report.md'), 'Synthetic unit evidence');
-  assert.equal((await inspectPilotArtifacts(directory)).files.length, 43);
+  assert.equal((await inspectPilotArtifacts(directory)).files.length, 56);
   await writeFile(path.join(directory, 'failure.png'), Buffer.from('89504e470d0a1a0a', 'hex'));
   const all = await inspectPilotArtifacts(directory);
-  assert.equal(all.files.length, 44); assert.equal(all.retentionDays, 3); assert.equal(all.uploadCeilingBytes, 20_000_000);
+  assert.equal(all.files.length, 57); assert.equal(all.retentionDays, 3); assert.equal(all.uploadCeilingBytes, 20_000_000);
   assert.equal(MAX_ARTIFACT_BYTES, 19_000_000);
 });

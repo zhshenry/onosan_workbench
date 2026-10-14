@@ -4,8 +4,8 @@ import { CaretDown, DotsThree, GearSix, Info, MagnifyingGlass, PaperPlaneRight, 
 import { IconCheckSquare, IconGamepad, IconHome, IconMoon, IconVideo, IconWeb } from '../icons';
 import type { AIModel, AIProvider, ChatSession, ChatSummary, CopySource, RlcdModel, RlcdProvider } from '../../shared/todo-contracts';
 import { aiScopeKey, chatContextScope, chatScope, defaultAiScopeForWorkbench, sameAiWorkbench, TODO_AI_WORKBENCH_NAME, workbenchForScope, type AiScope } from '../../shared/ai-scope';
-import type { CopyStoreData } from '../../shared/copy-contracts';
-import type { BaziStoreData } from '../../shared/bazi-contracts';
+import { aiReferenceKey, aiReferenceMode, validateAiReferences, type AiReference } from '../../shared/ai-reference';
+import { AiReferencePicker, loadReferenceOptions, REFERENCE_LABELS, type ReferenceOption } from './AiReferencePicker';
 import { errorText, Modal, Select as TodoSelect } from '../../modules/todo/ui/ui';
 import { TodoProposalCard } from './TodoProposalCard';
 import { AiResponse } from './AiResponse';
@@ -41,7 +41,6 @@ const COPY_QUICK_ACTIONS = [
 ];
 type ChatChoice = { id: string; title: string; group: string; detail: string; updatedAt: string; status?: 'running' | 'done'; streaming?: boolean };
 type ChatGroup = { id: string; label: string; emptyScope: AiScope | null };
-type ReferenceOption = { scope: AiScope; title: string; detail: string };
 
 function ChatDeleteButton({ title, streaming, className, showLabel, onDelete }: { title: string; streaming?: boolean; className: string; showLabel?: boolean; onDelete(): Promise<void> }) {
   const button = useRef<HTMLButtonElement>(null);
@@ -176,13 +175,13 @@ function chatSummary(chat: ChatSession): ChatSummary {
     streaming: chat.entries.some(entry => entry.streaming), completed: !!lastReply && !lastReply.streaming && !lastReply.error };
 }
 
-export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, onActiveChatChange, onOpenSettings, onLocateCopySource, onLocateBaziDay, onQuickAsk, context, width, onWidthChange, copySaveState }: {
+export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, onActiveChatChange, onOpenSettings, onLocateCopySource, onLocateBaziDay, onQuickAsk, context, width, onWidthChange, copySaveState, plannedWorkbench = false }: {
   open: boolean; onClose(): void; seed?: AiSeed | null; requestedChatId?: string | null; onChatLocated(): void; onOpenSettings(): void;
   onActiveChatChange(id: string | null): void;
   onLocateCopySource(source: CopySource): void;
   onLocateBaziDay(profileId: string): void;
   onQuickAsk(prompt: string, scope: AiScope): void;
-  context: AiPanelContext; width: number; onWidthChange(width: number): void; copySaveState?: { id: string | null; status: 'saved' | 'saving' | 'error' };
+  plannedWorkbench?: boolean; context: AiPanelContext; width: number; onWidthChange(width: number): void; copySaveState?: { id: string | null; status: 'saved' | 'saving' | 'error' };
 }) {
   const [config, setConfig] = useState<AiConfig | null>(null);
   const [chats, setChats] = useState<ChatSummary[]>([]);
@@ -190,10 +189,14 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
   const [activeContext, setActiveContext] = useState<AiPanelContext>(context);
   const [fixedContexts, setFixedContexts] = useState<Record<string, AiPanelContext>>({});
   const [objectNames, setObjectNames] = useState<Record<string, string>>({});
-  const [referenceOptions, setReferenceOptions] = useState<ReferenceOption[]>([]);
-  const [referenceContexts, setReferenceContexts] = useState<Record<string, AiScope[]>>({});
+  const [referenceSelection, setReferenceSelection] = useState<{ key: string; values: AiReference[] }>({ key: '', values: [] });
+  const [referenceList, setReferenceList] = useState<{ key: string; options: ReferenceOption[]; loading: boolean; error: string }>({ key: '', options: [], loading: false, error: '' });
   const [referenceDialogOpen, setReferenceDialogOpen] = useState(false);
-  const [pendingReferences, setPendingReferences] = useState<AiScope[]>([]);
+  const [referenceNotice, setReferenceNotice] = useState('');
+  const [referenceReload, setReferenceReload] = useState(0);
+  const referenceTrigger = useRef<HTMLButtonElement>(null);
+  const composeAnchor = useRef<HTMLDivElement>(null);
+  const referencePickerId = useId();
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
@@ -220,9 +223,45 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
   const activeScopeKey = aiScopeKey(activeContext.scope);
   const contextKey = current?.id ?? workspaceKey(activeContext.scope);
   const fixedContext = fixedContexts[contextKey];
-  const savedReferences = referenceContexts[contextKey] ?? [...(current?.entries ?? [])].reverse().find(entry => entry.references)?.references ?? [];
-  const references = savedReferences.filter(scope => scope.module === activeContext.scope.module && aiScopeKey(scope) !== activeScopeKey);
-  const selectableReferences = referenceOptions.filter(option => option.scope.module === activeContext.scope.module && aiScopeKey(option.scope) !== activeScopeKey);
+  const pageReferenceMode = plannedWorkbench ? null : aiReferenceMode(context.scope);
+  const referenceMode = pageReferenceMode && pageWorkbench === workbenchForScope(activeContext.scope)
+    && (activeContext.scope.module === 'workbench' || activeContext.scope.module === pageReferenceMode) ? pageReferenceMode : null;
+  const referencePageKey = `${plannedWorkbench ? 'planned' : pageScopeKey}:${context.baziSystem ?? ''}`;
+  const referenceKeyForChat = (id: string | null): string => `${id ?? `new:${workspaceKey(activeContext.scope)}`}|${referencePageKey}`;
+  const referenceContextKey = referenceKeyForChat(current?.id ?? null);
+  const references = referenceSelection.key === referenceContextKey ? referenceSelection.values.filter(reference =>
+    reference.module === referenceMode && aiReferenceKey(reference) !== activeScopeKey) : [];
+  const selectableReferences = referenceList.key === referenceContextKey ? referenceList.options.filter(option =>
+    option.reference.module === referenceMode && aiReferenceKey(option.reference) !== activeScopeKey) : [];
+  const referenceContextKeyRef = useRef(referenceContextKey);
+  referenceContextKeyRef.current = referenceContextKey;
+  const referencesRef = useRef(references);
+  referencesRef.current = references;
+  const closeReferences = (restoreFocus = true): void => {
+    setReferenceDialogOpen(false);
+    if (restoreFocus) referenceTrigger.current?.focus();
+  };
+  const updateReferences = (values: AiReference[]): void => {
+    setReferenceSelection({ key: referenceContextKey, values });
+    setReferenceNotice('');
+  };
+  const rememberReferenceNames = (options: ReferenceOption[]): void => setObjectNames(previous => ({ ...previous,
+    ...Object.fromEntries(options.map(option => [aiReferenceKey(option.reference), option.title])) }));
+  const checkedReferences = async (values: AiReference[], pageScope: AiScope, scope: AiScope, selectionKey: string): Promise<AiReference[]> => {
+    const checked = validateAiReferences(values, pageScope, scope);
+    if (!checked.length) return checked;
+    const options = await loadReferenceOptions(checked[0].module);
+    const available = new Set(options.map(option => aiReferenceKey(option.reference)));
+    if (checked.some(reference => !available.has(aiReferenceKey(reference)))) {
+      if (referenceContextKeyRef.current === selectionKey) {
+        setReferenceSelection({ key: selectionKey, values: checked.filter(reference => available.has(aiReferenceKey(reference))) });
+        setReferenceNotice('所选内容已删除或失效，请重新选择。');
+      }
+      throw new Error('所选上下文已删除或失效，请重新选择后发送。');
+    }
+    rememberReferenceNames(options);
+    return checked;
+  };
   const activeScopeKeyRef = useRef(activeScopeKey);
   currentRef.current = current;
   pageContextRef.current = context;
@@ -243,7 +282,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
     const page = pageContextRef.current;
     if (workspaceKey(page.scope) !== workspaceKey(previous.scope)) return previous;
     if (page.scope.module === 'workbench' && previous.scope.module !== 'workbench'
-      && page.scope.viewId !== 'copy' && page.scope.viewId !== 'bazi') return previous;
+      && page.scope.viewId !== 'copy' && page.scope.viewId !== 'bazi' && page.scope.viewId !== 'reading') return previous;
     return page;
   };
   const showChat = (chat: ChatSession): void => {
@@ -302,29 +341,45 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
     });
     return () => cancelAnimationFrame(frame);
   }, [managing]);
+  // A visible page or chat transition starts a fresh selection. Saved turns remain historical only.
+  useLayoutEffect(() => {
+    setReferenceSelection(previous => previous.key === referenceContextKey ? previous : { key: referenceContextKey, values: [] });
+    setReferenceDialogOpen(false);
+    setReferenceNotice('');
+  }, [referenceContextKey]);
+  useLayoutEffect(() => {
+    setReferenceSelection(previous => previous.key !== referenceContextKey ? previous : { ...previous,
+      values: previous.values.filter(reference => reference.module === referenceMode && aiReferenceKey(reference) !== activeScopeKey) });
+    setReferenceDialogOpen(false);
+  }, [activeScopeKey, referenceMode]);
+  useEffect(() => { if (!open) setReferenceDialogOpen(false); }, [open]);
+  useEffect(() => { setReferenceDialogOpen(false); }, [width]);
   useEffect(() => {
-    if (!open) return;
+    if (!open || !referenceMode || (!referenceDialogOpen && references.length === 0)) return;
     let live = true;
-    void Promise.all([wb.copy.list(), wb.bazi.list()]).then(([copy, bazi]) => {
-      if (!live) return;
-      const names: Record<string, string> = {};
-      const options: ReferenceOption[] = [];
-      for (const draft of (copy as CopyStoreData).drafts) {
-        const scope: AiScope = { module: 'copy', draftId: draft.id };
-        const title = draft.title || '未命名博客';
-        names[aiScopeKey(scope)] = title;
-        options.push({ scope, title, detail: draft.updatedAt ? `更新于 ${new Date(draft.updatedAt).toLocaleDateString('zh-CN')}` : '博客草稿' });
-      }
-      for (const profile of (bazi as BaziStoreData).profiles) {
-        const scope: AiScope = { module: 'bazi', profileId: profile.id };
-        names[aiScopeKey(scope)] = profile.name;
-        options.push({ scope, title: profile.name, detail: `${profile.date} ${profile.time} · ${profile.gender === 1 ? '男' : '女'}${profile.tag ? ` · ${profile.tag}` : ''}` });
-      }
-      setObjectNames(names);
-      setReferenceOptions(options);
-    }).catch(() => undefined);
-    return () => { live = false; };
-  }, [open, referenceDialogOpen]);
+    let sequence = 0;
+    const refresh = (): void => {
+      const request = ++sequence;
+      setReferenceList(previous => ({ key: referenceContextKey, options: previous.key === referenceContextKey ? previous.options : [], loading: true, error: '' }));
+      void loadReferenceOptions(referenceMode).then(options => {
+        if (!live || request !== sequence || referenceContextKeyRef.current !== referenceContextKey) return;
+        rememberReferenceNames(options);
+        setReferenceList({ key: referenceContextKey, options, loading: false, error: '' });
+        const available = new Set(options.map(option => aiReferenceKey(option.reference)));
+        const stale = referencesRef.current.some(reference => !available.has(aiReferenceKey(reference)));
+        if (stale) {
+          setReferenceSelection(previous => previous.key === referenceContextKey ? { ...previous, values: previous.values.filter(reference => available.has(aiReferenceKey(reference))) } : previous);
+          setReferenceNotice('所选内容已删除或失效，请重新选择。');
+        }
+      }, error => {
+        if (live && request === sequence && referenceContextKeyRef.current === referenceContextKey) setReferenceList({ key: referenceContextKey, options: [], loading: false, error: `无法读取可关联内容：${errorText(error)}` });
+      });
+    };
+    refresh();
+    const unsubscribe = referenceMode === 'todo' ? wb.todo.onChanged?.(refresh) : referenceMode === 'copy' ? wb.copy.onChanged?.(refresh) : undefined;
+    window.addEventListener('focus', refresh);
+    return () => { live = false; unsubscribe?.(); window.removeEventListener('focus', refresh); };
+  }, [open, referenceMode, referenceContextKey, referenceDialogOpen, referenceReload, references.length > 0]);
   useEffect(() => {
     if (fixedContext && aiScopeKey(fixedContext.scope) === pageScopeKey && fixedContext.object !== context.object) {
       setFixedContexts(previous => ({ ...previous, [contextKey]: { ...fixedContext, object: context.object } }));
@@ -372,10 +427,11 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
       setSending(true);
       try {
         const unsentDraft = existing?.id === chat.id ? input : chat.draft;
-        const chosen = referenceContexts[chat.id] ?? (!existing ? savedReferences : [...chat.entries].reverse().find(entry => entry.references)?.references ?? []);
-        const seedReferences = chosen.filter(scope => scope.module === seed.scope.module && aiScopeKey(scope) !== aiScopeKey(seed.scope));
-        if (!existing && seedReferences.length) setReferenceContexts(previous => ({ ...previous, [chat.id]: seedReferences }));
-        const request = wb.ai.ask(chat.id, seed.text, { scope: seed.scope, pageScope: workbenchForScope(seed.scope) === pageWorkbench ? context.scope : seed.scope, references: seedReferences, baziSystem: seed.baziSystem, copySource: seed.copySource });
+        const chosen = existing?.id === chat.id || !existing ? references : [];
+        const seedPageScope = workbenchForScope(seed.scope) === pageWorkbench ? context.scope : seed.scope;
+        const seedReferences = await checkedReferences(chosen, seedPageScope, seed.scope, referenceContextKey);
+        if (!existing && sequence === loadSequence.current && seedReferences.length) setReferenceSelection({ key: referenceKeyForChat(chat.id), values: seedReferences });
+        const request = wb.ai.ask(chat.id, seed.text, { scope: seed.scope, pageScope: seedPageScope, references: seedReferences, baziSystem: seed.baziSystem, copySource: seed.copySource });
         if (unsentDraft) void wb.ai.chatDraft(chat.id, unsentDraft).catch(() => undefined);
         await request;
       } catch (e) { if (sequence === loadSequence.current) setError(errorText(e)); }
@@ -469,8 +525,8 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
     return next;
   });
   const editReferences = (): void => {
-    setPendingReferences(references);
-    setReferenceDialogOpen(true);
+    if (referenceDialogOpen) closeReferences();
+    else setReferenceDialogOpen(true);
   };
   const selectModel = (id: string): void => {
     if (id === config?.activeModelId) return;
@@ -523,15 +579,19 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
       const chat = visibleCurrent ?? await wb.ai.chatNew(activeContext.scope) as ChatSession;
       if (!visibleCurrent && sequence === loadSequence.current && activeScopeKeyRef.current === targetKey) {
         if (fixedContext) setFixedContexts(previous => ({ ...previous, [chat.id]: fixedContext }));
-        if (references.length) setReferenceContexts(previous => ({ ...previous, [chat.id]: references }));
+        if (references.length) setReferenceSelection({ key: referenceKeyForChat(chat.id), values: references });
         selectedChats.current.set(workspaceKey(chatScope(chat)), chat.id);
         setCurrent(chat);        void refreshChats();
       }
-      try { await wb.ai.ask(chat.id, text, { scope: activeContext.scope, pageScope: linkedPageScope, references, baziSystem: activeContext.scope.module === 'bazi' ? activeContext.baziSystem : undefined }); }
+      const sentReferenceKey = visibleCurrent ? referenceContextKey : referenceKeyForChat(chat.id);
+      try {
+        const sendReferences = await checkedReferences(references, linkedPageScope, activeContext.scope, sentReferenceKey);
+        await wb.ai.ask(chat.id, text, { scope: activeContext.scope, pageScope: linkedPageScope, references: sendReferences, baziSystem: activeContext.scope.module === 'bazi' ? activeContext.baziSystem : undefined });
+      }
       catch (e) {
-        if (activeScopeKeyRef.current === targetKey) { setError(errorText(e)); setInput(previous => previous || text); }
+        if (sequence === loadSequence.current && referenceContextKeyRef.current === sentReferenceKey && activeScopeKeyRef.current === targetKey) { setError(errorText(e)); setInput(previous => previous || text); }
       } finally { setSending(false); }
-    })().catch(e => { if (activeScopeKeyRef.current === targetKey) { setError(errorText(e)); setInput(previous => previous || text); } setSending(false); });
+    })().catch(e => { if (sequence === loadSequence.current && referenceContextKeyRef.current === referenceContextKey && activeScopeKeyRef.current === targetKey) { setError(errorText(e)); setInput(previous => previous || text); } setSending(false); });
   };
   const closePanel = (): void => {
     flushDraft(); onClose();
@@ -613,6 +673,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
                 {entry.role === 'user' && entry.contextScope && (aiScopeKey(entry.contextScope) !== activeScopeKey || (entry.pageScope && aiScopeKey(entry.pageScope) !== aiScopeKey(entry.contextScope))) &&
                   <span className="ai-message-tag">关联：{contextForScope(entry.contextScope).object}{entry.pageScope && aiScopeKey(entry.pageScope) !== aiScopeKey(entry.contextScope) ? ` · ${contextForScope(entry.pageScope).object}` : ''}</span>}
                 {entry.baziSystem && entry.role === 'user' && <span className="ai-message-tag">{entry.baziSystem === 'ziwei' ? '紫微斗数' : entry.baziSystem === 'astro' ? '占星' : '八字'}</span>}
+                {entry.role === 'user' && entry.referenceSnapshots?.length ? <span className="ai-message-tag">当时参考：{entry.referenceSnapshots.map(snapshot => snapshot.name).join('、')}</span> : null}
                 {entry.copySource && <button className="ai-source-chip" title={entry.copySource.text} onClick={() => onLocateCopySource(entry.copySource!)}>引用原文 · 定位</button>}
                 {entry.role === 'assistant' && entry.baziSystem === 'bazi' && entry.content.includes('日主') && (entry.contextScope ?? chatScope(visibleCurrent)).module === 'bazi' && <button className="ai-source-chip" onClick={() => { const scope = entry.contextScope ?? chatScope(visibleCurrent); if (scope.module === 'bazi') onLocateBaziDay(scope.profileId); }}>在盘面中定位日主</button>}
                 {entry.role === 'assistant' ? <AiResponse entry={entry} /> : <div className="ai-bubble">{entry.content}</div>}
@@ -639,22 +700,23 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
             {error && <div className="ai-error" role="alert">{error}</div>}
           </div>
           <div className="ai-compose-wrap">
-            {(activeContext.scope.module === 'copy' || activeContext.scope.module === 'bazi') && <div className="ai-reference-row" aria-label="本轮只读参考资料">
-              {references.map(scope => <span className="ai-reference-chip" key={aiScopeKey(scope)}><span title={objectNames[aiScopeKey(scope)]}>参考 · {objectNames[aiScopeKey(scope)] ?? '已删除的参考'}</span><button type="button" aria-label={`移除参考：${objectNames[aiScopeKey(scope)] ?? '已删除的参考'}`} onClick={() => setReferenceContexts(previous => ({ ...previous, [contextKey]: savedReferences.filter(item => aiScopeKey(item) !== aiScopeKey(scope)) }))}><X size={12} /></button></span>)}
-              <button type="button" className="ai-add-reference" onClick={editReferences}><Plus size={13} />添加参考</button>
-            </div>}
             {activeChat && activeChat.id !== visibleCurrent?.id && <div className="ai-busy-hint">“{activeChat.title}”正在生成，可继续输入，完成后再发送。</div>}
             {activeCopyWriteBlocked && <div className="ai-busy-hint">{copySaveHint}</div>}
             {activeContext.scope.module === 'copy' && <div className="ai-copy-actions" aria-label="博客写作快捷指令">
               {COPY_QUICK_ACTIONS.map(action => <button key={action.label} type="button" className="ai-copy-action" title={activeCopyWriteBlocked ? copySaveHint : action.prompt}
                 disabled={!config?.aiEnabled || busy || switchingModel || activeCopyWriteBlocked} onClick={() => onQuickAsk(action.prompt, activeContext.scope)}>{action.label}</button>)}
             </div>}
-            <div className="ai-compose">
+            <div className="ai-compose" ref={composeAnchor}>
               <div className="ai-compose-input">
+                {references.length > 0 && <div className="ai-reference-row" aria-label="本轮只读参考资料">
+                  {references.map(reference => <span className="ai-reference-chip" key={aiReferenceKey(reference)}><span title={objectNames[aiReferenceKey(reference)]}>{REFERENCE_LABELS[reference.module]} · {objectNames[aiReferenceKey(reference)] ?? '已关联内容'}</span><button type="button" aria-label={`移除参考：${objectNames[aiReferenceKey(reference)] ?? '已关联内容'}`} onClick={() => updateReferences(references.filter(item => aiReferenceKey(item) !== aiReferenceKey(reference)))}><X size={12} /></button></span>)}
+                </div>}
+                {referenceNotice && <p className="ai-reference-notice" role="status">{referenceNotice}</p>}
                 <textarea aria-label="发送给当前对话的 AI 助手" value={input} placeholder={config?.aiEnabled ? '围绕正在协助的对象继续聊聊…' : '请先在 AI 设置中配置并启用'} disabled={!config?.aiEnabled}
                   onChange={event => setInput(event.target.value)}
                   onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); send(); } }} />
                 <div className="ai-compose-toolbar">
+                  <button ref={referenceTrigger} type="button" className="ai-add-reference" aria-label="添加上下文" title="添加上下文" aria-haspopup="dialog" aria-controls={referencePickerId} aria-expanded={referenceDialogOpen} onClick={editReferences}><Plus size={19} /></button>
                   {config?.models.length ? <TodoSelect aria-label="选择大模型" className="ai-model-select" menuClassName="ai-model-menu" value={model?.id ?? ''} onChange={selectModel}
                     options={modelOptions}
                     disabled={!open || busy || switchingModel} />
@@ -666,19 +728,11 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
             </div>
             {modelError && <div className="ai-model-error" role="alert">{modelError}</div>}
           </div>
-      {referenceDialogOpen && <Modal title={activeContext.scope.module === 'copy' ? '添加参考博文' : '添加参考命例'} className="ai-reference-dialog" close={() => setReferenceDialogOpen(false)}>
-        <div className="form-body">
-          <p className="ai-reference-help">AI 按需读取所选参考。{activeContext.scope.module === 'copy' ? `修改仍应用到《${activeObjectName}》。` : '参考命例使用本次协助对象的盘型。'}最多选择 8 个。</p>
-          <div className="ai-reference-options">
-            {selectableReferences.map(option => {
-              const checked = pendingReferences.some(scope => aiScopeKey(scope) === aiScopeKey(option.scope));
-              return <label className="ai-reference-option" key={aiScopeKey(option.scope)}><input type="checkbox" checked={checked} disabled={!checked && pendingReferences.length >= 8} onChange={event => setPendingReferences(previous => event.target.checked ? [...previous, option.scope] : previous.filter(scope => aiScopeKey(scope) !== aiScopeKey(option.scope)))} /><span><strong>{option.title}</strong><small>{option.detail}</small></span></label>;
-            })}
-            {!selectableReferences.length && <p className="ai-reference-help">暂无其他可选的{activeContext.scope.module === 'copy' ? '博文' : '命例'}。</p>}
-          </div>
-          <div className="actions"><button type="button" onClick={() => setReferenceDialogOpen(false)}>取消</button><button type="button" className="primary" onClick={() => { setReferenceContexts(previous => ({ ...previous, [contextKey]: pendingReferences })); setReferenceDialogOpen(false); }}>使用所选参考</button></div>
-        </div>
-      </Modal>}
+      {referenceDialogOpen && open && <AiReferencePicker id={referencePickerId} mode={referenceMode}
+        unavailable={plannedWorkbench ? '工作台尚未开放，暂无可关联内容' : pageReferenceMode ? '当前协助对象与此页面不同，请先取消固定或切换对话后添加上下文。' : '当前没有可关联内容'}
+        options={selectableReferences} selected={references} loading={referenceMode !== null && (referenceList.key !== referenceContextKey || referenceList.loading)}
+        error={referenceList.key === referenceContextKey ? referenceList.error : ''} notice={referenceNotice} anchor={composeAnchor} trigger={referenceTrigger}
+        onChange={updateReferences} onRetry={() => setReferenceReload(value => value + 1)} onClose={closeReferences} />}
       {managing && <Modal title="重命名对话" className="ai-chat-manage-dialog" close={() => { if (!manageBusy) setManaging(null); }}>
         <form noValidate onSubmit={event => { event.preventDefault(); confirmManage(); }}>
           <label htmlFor="ai-chat-rename">对话名称</label><input ref={renameInput} id="ai-chat-rename" value={renameDraft} maxLength={80} disabled={manageBusy} onChange={event => setRenameDraft(event.target.value)} />
