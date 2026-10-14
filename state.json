@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 458,
+  "revision": 459,
   "currentRun": {
     "id": "ono-integrate37-20261014T153100Z",
     "startedAt": "2026-10-14T15:31:01.738Z",
@@ -5171,12 +5171,20 @@
     },
     "issue35-design-v2-images": {
       "operationId": "issue35-design-v2-images",
-      "status": "intent",
+      "status": "blocked",
       "target": "ono/issue-35-creator-keepalive:.ono-evidence/issue-35/design-v2/",
-      "summary": "Upload three reviewed independent layout designs only; immutable commit links; no product change or implementation approval",
+      "summary": "Upload three reviewed independent layout designs only; immutable commit links; no product change or implementation approval; upload call interrupted twice, exact expected blob404 on readback, no receipt, no further retry; do not attribute cancellation to user",
       "expectedHead": "4098f131a2ab17cb77c57df9f1119df0c15c898b",
       "startedAt": "2026-10-14T16:29:19.257Z",
-      "receipts": []
+      "receipts": [],
+      "finishedAt": "2026-10-14T17:52:12.133Z"
+    },
+    "issue37-final-request-0f313ee": {
+      "operationId": "issue37-final-request-0f313ee",
+      "status": "intent",
+      "target": "Issue37",
+      "summary": "Deliver final head0f313ee Windows573/123 and verified four immutable screenshot links; request merge/main acceptance/close37/conditional branch cleanup",
+      "startedAt": "2026-10-14T17:52:12.133Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
