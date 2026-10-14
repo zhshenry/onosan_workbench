@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 460,
+  "revision": 461,
   "currentRun": {
     "id": "ono-integrate37-20261014T153100Z",
     "startedAt": "2026-10-14T15:31:01.738Z",
@@ -5194,9 +5194,21 @@
     },
     "issue37-pr-body-0f313ee": {
       "operationId": "issue37-pr-body-0f313ee",
-      "status": "intent",
+      "status": "succeeded",
       "target": "PR45 body",
-      "summary": "Replace stale version and test text with current final head/evidence and Issue37 request link"
+      "summary": "Replace stale version and test text with current final head/evidence and Issue37 request link",
+      "receipt": {
+        "url": "https://github.com/zhshenry/onosan_workbench/pull/45",
+        "head": "0f313ee5fc1177ace4831a3c6524f06ac1497c28",
+        "updatedAt": "2026-10-14T17:54:02Z",
+        "readBack": true
+      }
+    },
+    "issue35-upload-interruption-report": {
+      "operationId": "issue35-upload-interruption-report",
+      "status": "intent",
+      "target": "Issue35",
+      "summary": "Report design upload interrupted twice, exact blob404 and unchanged PR43; not user cancellation attribution; no plan approval requested"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
