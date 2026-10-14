@@ -1,11 +1,11 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 408,
+  "revision": 409,
   "currentRun": {
     "owner": "ono-root-check-20261014T0628Z",
     "startedAt": "2026-10-14T06:28:20Z",
     "currentTask": 34,
-    "phase": "local-integration-pr44"
+    "phase": "awaiting-pr44-current-base-actions"
   },
   "tasks": {
     "17": {
@@ -1459,7 +1459,7 @@
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
-      "stage": "integrating-current-main",
+      "stage": "integration-windows-validation",
       "type": [
         "ui",
         "investigation"
@@ -1467,7 +1467,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-14T06:35:25Z",
-      "nextAction": "本地最小解决两个验收脚本冲突，发布新head后真实Windows验收并请求准确新head最终批准",
+      "nextAction": "等待新head9b5c910真实Windows验收，完成后图与准确最终批准；旧71416bb批准不覆盖新head",
       "groupId": "settings-update-34",
       "groupIssueNumbers": [
         34
@@ -1493,7 +1493,7 @@
       "approvalReverifiedAt": "2026-10-13T10:58:39.185Z",
       "pr": 44,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/44",
-      "headSha": "71416bb20380c013960d005f53b281340e97caa2",
+      "headSha": "9b5c910e1a664e59fa27d826acdb277bc4579246",
       "ciRun": 38401742953,
       "ciResult": "success",
       "tests": {
@@ -1545,7 +1545,16 @@
         "performedViaGithubApp": null,
         "head": "71416bb20380c013960d005f53b281340e97caa2"
       },
-      "integrationBaseSha": "661bee0ba7262098a31ef96efa1c3b4ba63d9f80"
+      "integrationBaseSha": "661bee0ba7262098a31ef96efa1c3b4ba63d9f80",
+      "localIntegrationTests": {
+        "unitPerTimezone": "537 pass / 2 platform skips / 0 fail (539 total)",
+        "timezones": [
+          "UTC",
+          "Asia/Shanghai"
+        ],
+        "verify": "passed",
+        "native": "not run locally"
+      }
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
@@ -4790,12 +4799,22 @@
     },
     "issue34-publish-integration-9b5c910": {
       "operationId": "issue34-publish-integration-9b5c910",
-      "status": "intent",
+      "status": "succeeded",
       "target": "refs/heads/ono/issue-34-update-status-inline",
       "expectedHead": "71416bb20380c013960d005f53b281340e97caa2",
       "newHead": "9b5c910e1a664e59fa27d826acdb277bc4579246",
       "summary": "快进追加双亲集成提交，不force；新head需真实CI及最终批准",
-      "startedAt": "2026-10-14T06:49:40Z"
+      "startedAt": "2026-10-14T06:49:40Z",
+      "finishedAt": "2026-10-14T06:50:22Z",
+      "receipt": {
+        "head": "9b5c910e1a664e59fa27d826acdb277bc4579246",
+        "parents": [
+          "71416bb20380c013960d005f53b281340e97caa2",
+          "661bee0ba7262098a31ef96efa1c3b4ba63d9f80"
+        ],
+        "tree": "e1a6f9893f782fcd7085aaf2e5c79292b248f4c3",
+        "readBack": true
+      }
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
