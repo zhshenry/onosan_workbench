@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 447,
+  "revision": 448,
   "currentRun": {
     "id": "ono-integrate37-20261014T153100Z",
     "startedAt": "2026-10-14T15:31:01.738Z",
@@ -1776,14 +1776,16 @@
       },
       "nextStep": "等当前最终请求原始用户批准；批准后fresh核base并重验集成",
       "latestRun": {
-        "id": 38402967190,
-        "head": "42733f0bcfcb1155f0f03145b8ffd0ace2001882",
-        "testedMerge": "5e1c16d473805109e0538f5bedcd9612bc5de313",
-        "base": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
+        "id": 38595349200,
+        "head": "6dd374c35a13ab6ebda5daa26fc4e18c48c5fde1",
+        "base": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
+        "testedMerge": "433f5fdb83ecd0edf5ea0deb4ec05b6b7ffcdcd2",
+        "tree": "eb935a7b3fb9736bd8fdd357c66a86051c589f7c",
         "conclusion": "success",
-        "unit": "514/514",
-        "native": "96/96",
-        "artifactId": 11815824829
+        "unit": "573/573;0fail0skip",
+        "native": "123/123",
+        "artifactId": 11908784463,
+        "digest": "0c153beaf6e9e56f6137850a06b734ab7ed90f076b69fd8fc0093fba2a918556"
       },
       "imageDelivery": {
         "channel": "one-time-private-chat",
@@ -5123,6 +5125,14 @@
         "readBack": true
       },
       "finishedAt": "2026-10-14T16:07:36.007Z"
+    },
+    "issue37-images-6dd374c": {
+      "operationId": "issue37-images-6dd374c",
+      "status": "intent",
+      "target": "ono/issue-37-publish-association:.ono-evidence/issue-37/6dd374c/",
+      "summary": "Upload four reviewed actual Windows screenshots; evidence commit then cleanup to identical product tree; immutable links in Issue",
+      "startedAt": "2026-10-14T16:18:39.162Z",
+      "receipts": []
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
