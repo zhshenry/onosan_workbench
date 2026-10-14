@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 448,
+  "revision": 449,
   "currentRun": {
     "id": "ono-integrate37-20261014T153100Z",
     "startedAt": "2026-10-14T15:31:01.738Z",
@@ -5132,7 +5132,12 @@
       "target": "ono/issue-37-publish-association:.ono-evidence/issue-37/6dd374c/",
       "summary": "Upload four reviewed actual Windows screenshots; evidence commit then cleanup to identical product tree; immutable links in Issue",
       "startedAt": "2026-10-14T16:18:39.162Z",
-      "receipts": []
+      "receipts": [
+        {
+          "file": "publish-association-unlinked.png",
+          "blobSha": "93b52c7c7ac67f5c55cc05e17ef9e10c758b77c7"
+        }
+      ]
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
