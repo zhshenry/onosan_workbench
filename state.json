@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 388,
-  "currentRun": {
-    "owner": "ono-root-closeout-20261014T0330Z",
-    "startedAt": "2026-10-14T03:30:28Z",
-    "currentDevelopmentGroup": "workbench-context-26",
-    "mode": "approved-closeout"
-  },
+  "revision": 389,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -409,7 +404,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-14T02:43:27Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "用户已认可当前最终版本；等待本单临时内嵌例外及准确PR39 f27d982合入/main验收/仅关闭26收尾包确认",
+      "nextAction": "等待本聊天明确允许Draft转Ready，工具已两次拒绝，禁止换路；既有准确合入收尾批准保留",
       "groupId": "workbench-context-26",
       "groupIssueNumbers": [
         26
@@ -1605,7 +1600,8 @@
         "createdAt": "2026-10-13T12:52:55Z",
         "authorId": 54107847,
         "summary": "询问窄窗截图问题，不是实施或合入批准"
-      }
+      },
+      "latestStatusCommentId": 6160270446
     },
     "36": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/36",
@@ -1872,7 +1868,8 @@
     6149123195,
     6149778667,
     6150122550,
-    6158878464
+    6158878464,
+    6160270446
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -4593,10 +4590,13 @@
     },
     "issue35-design-status-20261014": {
       "operationId": "issue35-design-status-20261014",
-      "status": "intent",
+      "status": "succeeded",
       "target": 35,
       "body": "【OnO 自动化】补充方案的布局分析此前已完成，但还没有可供你审阅的新高保真图。云电脑恢复后，之前的本地图文件已不在当前工作区，我正在重新准备可交付的设计图；完成后仍在本 Issue 对齐。原生附件故障尚未确认修复，不能承诺已附图，也不会沿用旧图冒充新方案。本条仅说明实际进度，不请求实施批准。",
-      "startedAt": "2026-10-14T03:32:10Z"
+      "startedAt": "2026-10-14T03:32:10Z",
+      "commentId": 6160270446,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6160270446",
+      "verifiedAt": "2026-10-14T03:32:44Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -4608,9 +4608,8 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-check-20261014T0241Z",
-    "finishedAt": "2026-10-14T02:43:40Z",
-    "summary": "完整实时核查规范/模板、6开放单67条原始评论、4个Draft PR准确head/main及Actions/check/job。01:48后无变化，26最终收尾请求6158878464后无新回复，26/34/37待最终批准，35附图阻塞，36/41等依赖。Windows检查均成功，无未知写入，未执行产品/通信/合入/收尾操作。"
+    "finishedAt": "2026-10-14T03:32:44Z",
+    "summary": "核实26/34/37准确收尾批准。PR39转Ready被执行审批拒绝，原始批准复核后重试仍拒绝，已请求用户明确许可；无PR变更。35已回复新方案进度6160270446，独立设计继续准备，未实施。"
   },
   "updatedAt": "2026-10-13T16:23:13.626Z",
   "lastNotification": {
