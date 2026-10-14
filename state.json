@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 379,
+  "revision": 380,
   "currentRun": {
     "owner": "ono-root-issue26-closeout-20261014T0129Z",
     "startedAt": "2026-10-14T01:29:31Z",
@@ -535,6 +535,17 @@
         "head": "f27d982dd2abbdc9d2d730206e318a86ef0dbd26",
         "count": 5,
         "scope": "one-time private chat delivery only; no merge"
+      },
+      "latestAcceptance": {
+        "commentId": 6158715372,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6158715372",
+        "body": "临时证据我已经看了，同意最终版本",
+        "authorId": 54107847,
+        "createdAt": "2026-10-14T01:18:29Z",
+        "updatedAt": "2026-10-14T01:18:29Z",
+        "performedViaGithubApp": null,
+        "head": "f27d982dd2abbdc9d2d730206e318a86ef0dbd26",
+        "scope": "已查看临时证据并认可当前最终版本；新head合入/关闭范围及单次内嵌例外待最终澄清"
       }
     },
     "28": {
@@ -4528,6 +4539,13 @@
       "commentId": 6150122550,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6150122550",
       "verifiedAt": "2026-10-13T16:23:13.626Z"
+    },
+    "issue26-v3-closeout-request": {
+      "operationId": "issue26-v3-closeout-request",
+      "status": "intent",
+      "target": 26,
+      "body": "【OnO 自动化】收到，你已查看临时证据并认可 #26 当前最终版本；无需再重复看图或批准设计。\n\n补齐上一条尚未提出的最终收尾范围，一次确认即可：\n- 合入 [PR #39](https://github.com/zhshenry/onosan_workbench/pull/39)，准确 head f27d982dd2abbdc9d2d730206e318a86ef0dbd26（f27d982）。本单关联实现 PR 仅 #39，无需关闭其他辅助 PR。\n- 当前 base b276261a90cb60a53626dd2149b0f3cdc6aad0fd；[Windows验收](https://github.com/zhshenry/onosan_workbench/actions/runs/38428449729)实际 tested merge 8809dfd3581f33f329d7a65d1bfb30c868aefb27，511/511单测及99/99原生检查通过，包含构建、actionlint、NSIS安装、真实保存读回与同版本重启。\n- 仅本单使用你已查看的[5张临时实测图](https://github.com/zhshenry/onosan_workbench/actions/runs/38428449729/artifacts/11829803222)代替 Issue 内嵌交付；2026-10-17 00:19:25（UTC+8）到期，届时该临时来源不可持续复核。该例外不成为长期规则，也不把未内嵌记成已内嵌。\n- 合入后验证实际 main 的完整 Windows 与本单专项检查；全部通过后仅关闭 #26，并按现有规范核验后清理该已合入需求分支。失败则保留开放并报告。\n- 已知首页1024窄窗概览挤压仍由 #35 补充方案处理，本单不修复、不关闭 #35；合成模型/业务数据验收不代表外部模型效果。本次不发版。\n\n请在本 Issue 回复：同意合入 PR #39（f27d982），接受本单临时附图例外，main 验收通过后关闭 #26。",
+      "startedAt": "2026-10-14T01:30:10Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
