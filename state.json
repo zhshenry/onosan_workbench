@@ -1,7 +1,12 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 464,
-  "currentRun": null,
+  "revision": 465,
+  "currentRun": {
+    "id": "ono-check-20261014T190146Z",
+    "startedAt": "2026-10-14T18:50:16.941Z",
+    "currentTask": null,
+    "stage": "review-complete"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
