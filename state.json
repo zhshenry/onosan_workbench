@@ -1,7 +1,12 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 432,
-  "currentRun": null,
+  "revision": 433,
+  "currentRun": {
+    "id": "ono-close34-20261014T151700Z",
+    "startedAt": "2026-10-14T15:17:00Z",
+    "currentTask": 34,
+    "stage": "verify-final-approval"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -1462,7 +1467,7 @@
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
-      "stage": "awaiting-final-current-head",
+      "stage": "final-approval-verified",
       "type": [
         "ui",
         "investigation"
@@ -1555,14 +1560,15 @@
         "expiresAt": "2026-10-17T14:28:45Z"
       },
       "closeoutApproval": {
-        "commentId": 6159879982,
-        "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6159879982",
+        "commentId": 6171681690,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6171681690",
         "authorId": 54107847,
-        "createdAt": "2026-10-14T02:58:41Z",
-        "updatedAt": "2026-10-14T02:58:41Z",
+        "createdAt": "2026-10-14T15:16:04Z",
+        "updatedAt": "2026-10-14T15:16:04Z",
         "performedViaGithubApp": null,
-        "head": "71416bb20380c013960d005f53b281340e97caa2",
-        "bodySha256": "361ebb2e6630167183a001b49220466f7684485cd3dd47139a0f02782577f13a"
+        "requestCommentId": 6170763307,
+        "head": "d959836c26553efaef310ed2841585ffb7d82700",
+        "scope": "Ready;merge;actual main acceptance;close only34;conditional requirement branch cleanup"
       },
       "integrationBaseSha": "661bee0ba7262098a31ef96efa1c3b4ba63d9f80",
       "localIntegrationTests": {
