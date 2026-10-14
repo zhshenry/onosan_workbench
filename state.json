@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 412,
+  "revision": 413,
   "currentRun": {
     "owner": "ono-root-check-20261014T0628Z",
     "startedAt": "2026-10-14T06:28:20Z",
@@ -1467,7 +1467,7 @@
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
-      "stage": "integration-windows-validation",
+      "stage": "awaiting-final-current-head",
       "type": [
         "ui",
         "investigation"
@@ -1534,14 +1534,16 @@
       },
       "nextStep": "等当前准确head最终请求6146391991原始用户批准",
       "latestRun": {
-        "id": 38401742953,
-        "head": "71416bb20380c013960d005f53b281340e97caa2",
-        "testedMerge": "97fc8be0613a80efb52ae0bf2e8dff743859084c",
-        "base": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
+        "id": 38524589463,
+        "head": "9b5c910e1a664e59fa27d826acdb277bc4579246",
+        "base": "661bee0ba7262098a31ef96efa1c3b4ba63d9f80",
+        "testedMerge": "ca8bcb801b5e3ddc3fb726adcbfd28c8d7e308fe",
+        "tree": "e1a6f9893f782fcd7085aaf2e5c79292b248f4c3",
         "conclusion": "success",
-        "unit": "514/514",
-        "native": "96/96",
-        "artifactId": 11815388192
+        "unit": "539/539;failed0 skipped0",
+        "native": "111/111",
+        "artifactId": 11875154830,
+        "expiresAt": "2026-10-17T06:57:33Z"
       },
       "closeoutApproval": {
         "commentId": 6159879982,
@@ -1564,7 +1566,14 @@
         "native": "not run locally"
       },
       "ciRunId": 38524589463,
-      "ciConclusion": "in_progress"
+      "ciConclusion": "success",
+      "actualImageReview": {
+        "head": "9b5c910e1a664e59fa27d826acdb277bc4579246",
+        "reviewedAt": "2026-10-14T06:59:48Z",
+        "count": 4,
+        "result": "同行状态、42%进度、短错误详情、最新/待重启，主题及1024/1280无覆盖；正常错误未重复",
+        "delivery": "当前准确版本未原生内嵌；请求单次artifact例外与最终审批一并处理"
+      }
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
@@ -4839,6 +4848,14 @@
         "updatedAt": "2026-10-14T06:52:50Z",
         "readBack": true
       }
+    },
+    "issue34-final-request-9b5c910": {
+      "operationId": "issue34-final-request-9b5c910",
+      "status": "intent",
+      "target": "Issue34 final approval comment",
+      "head": "9b5c910e1a664e59fa27d826acdb277bc4579246",
+      "summary": "新head验收通过；一次列Ready合入main验收关34和分支核验；新实图artifact一次替代内嵌待批准",
+      "startedAt": "2026-10-14T07:00:00Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
