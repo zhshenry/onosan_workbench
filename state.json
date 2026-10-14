@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 439,
-  "currentRun": {
-    "id": "ono-close34-20261014T151700Z",
-    "startedAt": "2026-10-14T15:17:00Z",
-    "currentTask": 34,
-    "stage": "verify-final-approval"
-  },
+  "revision": 440,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -1975,7 +1970,8 @@
     6162574658,
     6162575588,
     6170763307,
-    6171752092
+    6171752092,
+    6171949721
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -5042,10 +5038,16 @@
     },
     "issue34-completion-main45d8580": {
       "operationId": "issue34-completion-main45d8580",
-      "status": "intent",
+      "status": "succeeded",
       "target": "Issue34 result comment",
       "summary": "实际main539单测111原生通过、四图读回、34已关闭；分支保留缺已认证删除入口",
-      "startedAt": "2026-10-14T15:29:02.134Z"
+      "startedAt": "2026-10-14T15:29:02.134Z",
+      "finishedAt": "2026-10-14T15:29:17Z",
+      "receipt": {
+        "commentId": 6171949721,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6171949721",
+        "readBack": true
+      }
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -5057,9 +5059,9 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-resume-20261014T141049Z",
-    "finishedAt": "2026-10-14T14:32:57.415Z",
-    "summary": "Issue34 clean head CI passed, four Git image links verified, final request6170763307 published; awaiting exact user approval"
+    "owner": "ono-close34-20261014T151700Z",
+    "finishedAt": "2026-10-14T15:29:35.255Z",
+    "summary": "PR44 merged; actual main539/111 passed; four image links reverified; Issue34 closed; branch retained no authenticated delete entry"
   },
   "updatedAt": "2026-10-14T14:16:05.080Z",
   "lastNotification": {
