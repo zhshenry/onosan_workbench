@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 419,
+  "revision": 420,
   "currentRun": {
     "runId": "ono-resume-20261014T141049Z",
     "startedAt": "2026-10-14T14:10:49Z",
@@ -4880,7 +4880,13 @@
       "target": "ono/issue-34-update-status-inline:.ono-evidence/issue-34/9b5c910/",
       "head": "9b5c910e1a664e59fa27d826acdb277bc4579246",
       "summary": "Upload four reviewed Windows screenshot PNG blobs, record each receipt; create evidence commit then cleanup commit with original product tree; publish only cleanup head and immutable image links",
-      "startedAt": "2026-10-14T14:12:07.518Z"
+      "startedAt": "2026-10-14T14:12:07.518Z",
+      "receipts": [
+        {
+          "file": "update-status-cool-downloading-1024x680.png",
+          "blobSha": "3f7dfa6978428796961ca2033691bd19ade317f5"
+        }
+      ]
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
