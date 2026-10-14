@@ -1,11 +1,11 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 442,
+  "revision": 443,
   "currentRun": {
     "id": "ono-integrate37-20261014T153100Z",
     "startedAt": "2026-10-14T15:31:01.738Z",
     "currentTask": 37,
-    "stage": "approved-scope-integration"
+    "stage": "integration-review"
   },
   "tasks": {
     "17": {
@@ -1742,7 +1742,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-14T06:35:25Z",
-      "nextAction": "将已批准v1最小集成至main45d8580，保留26/34验收，组合测试后新head请求最终批准",
+      "nextAction": "完成候选审查后发布准确集成head并运行Windows验收",
       "lastCommentId": 6144934226,
       "planVersion": "v1",
       "planCommentId": 6140325358,
@@ -1809,6 +1809,17 @@
         "performedViaGithubApp": null,
         "head": "42733f0bcfcb1155f0f03145b8ffd0ace2001882",
         "bodySha256": "67e12c1c1b0448cd9eea01060c4d6bc0985e5d6662e2643b17354c19c6378cbd"
+      },
+      "localIntegrationTests": {
+        "base": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
+        "unitPerTimezone": "570 total;568 pass;0 fail;2 platform skips",
+        "timezones": [
+          "UTC",
+          "Asia/Shanghai"
+        ],
+        "verify": "passed",
+        "native": "not run locally; requires real Windows CI",
+        "status": "candidate awaiting final review"
       }
     },
     "41": {
