@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 386,
+  "revision": 387,
   "currentRun": {
     "owner": "ono-root-closeout-20261014T0330Z",
     "startedAt": "2026-10-14T03:30:28Z",
@@ -547,6 +547,16 @@
         "performedViaGithubApp": null,
         "head": "f27d982dd2abbdc9d2d730206e318a86ef0dbd26",
         "scope": "已查看临时证据并认可当前最终版本；新head合入/关闭范围及单次内嵌例外待最终澄清"
+      },
+      "closeoutApproval": {
+        "commentId": 6159873721,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6159873721",
+        "body": "同意合入 PR https://github.com/zhshenry/onosan_workbench/pull/39（f27d982），接受本单临时附图例外，main 验收通过后关闭 https://github.com/zhshenry/onosan_workbench/issues/26。",
+        "authorId": 54107847,
+        "createdAt": "2026-10-14T02:58:07Z",
+        "updatedAt": "2026-10-14T02:58:07Z",
+        "performedViaGithubApp": null,
+        "head": "f27d982dd2abbdc9d2d730206e318a86ef0dbd26"
       }
     },
     "28": {
@@ -1504,6 +1514,16 @@
         "unit": "514/514",
         "native": "96/96",
         "artifactId": 11815388192
+      },
+      "closeoutApproval": {
+        "commentId": 6159879982,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6159879982",
+        "body": "同意合入 PR https://github.com/zhshenry/onosan_workbench/pull/44，版本 https://github.com/zhshenry/onosan_workbench/commit/71416bb20380c013960d005f53b281340e97caa2，并在 main 验收通过后关闭 https://github.com/zhshenry/onosan_workbench/issues/34、按规范清理该需求分支。",
+        "authorId": 54107847,
+        "createdAt": "2026-10-14T02:58:41Z",
+        "updatedAt": "2026-10-14T02:58:41Z",
+        "performedViaGithubApp": null,
+        "head": "71416bb20380c013960d005f53b281340e97caa2"
       }
     },
     "35": {
@@ -1682,6 +1702,16 @@
           37
         ],
         "cleanupBranch": "ono/issue-37-publish-association"
+      },
+      "closeoutApproval": {
+        "commentId": 6159876764,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6159876764",
+        "body": "同意合入 PR https://github.com/zhshenry/onosan_workbench/pull/45，版本 https://github.com/zhshenry/onosan_workbench/commit/42733f0bcfcb1155f0f03145b8ffd0ace2001882，并在 main 验收通过后关闭 https://github.com/zhshenry/onosan_workbench/issues/37、按规范清理该需求分支。",
+        "authorId": 54107847,
+        "createdAt": "2026-10-14T02:58:23Z",
+        "updatedAt": "2026-10-14T02:58:23Z",
+        "performedViaGithubApp": null,
+        "head": "42733f0bcfcb1155f0f03145b8ffd0ace2001882"
       }
     },
     "41": {
@@ -4551,6 +4581,13 @@
       "commentId": 6158878464,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6158878464",
       "verifiedAt": "2026-10-14T01:32:22Z"
+    },
+    "issue26-ready-v3": {
+      "operationId": "issue26-ready-v3",
+      "status": "intent",
+      "target": "PR39",
+      "head": "f27d982dd2abbdc9d2d730206e318a86ef0dbd26",
+      "startedAt": "2026-10-14T03:31:12Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
