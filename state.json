@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 398,
+  "revision": 399,
   "currentRun": {
     "owner": "ono-root-check-20261014T0628Z",
     "startedAt": "2026-10-14T06:28:20Z",
@@ -564,7 +564,8 @@
         "actorId": 54107847,
         "createdAt": "2026-10-14T06:18:59Z"
       },
-      "mergeSha": "661bee0ba7262098a31ef96efa1c3b4ba63d9f80"
+      "mergeSha": "661bee0ba7262098a31ef96efa1c3b4ba63d9f80",
+      "mainRunId": 38522674072
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
@@ -1891,7 +1892,8 @@
     6149778667,
     6150122550,
     6158878464,
-    6160270446
+    6160270446,
+    6162410448
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -4653,10 +4655,16 @@
     },
     "issue26-main-validation-progress": {
       "operationId": "issue26-main-validation-progress",
-      "status": "intent",
+      "status": "succeeded",
       "target": "Issue26 comment",
       "summary": "记录准确合入回执及main验收进行中，不提前关单",
-      "startedAt": "2026-10-14T06:32:00Z"
+      "startedAt": "2026-10-14T06:32:00Z",
+      "finishedAt": "2026-10-14T06:32:43Z",
+      "receipt": {
+        "commentId": 6162410448,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6162410448",
+        "readBack": true
+      }
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
