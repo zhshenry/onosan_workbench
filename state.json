@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 404,
+  "revision": 405,
   "currentRun": {
     "owner": "ono-root-check-20261014T0628Z",
     "startedAt": "2026-10-14T06:28:20Z",
@@ -1459,7 +1459,7 @@
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
-      "stage": "revised-tested-awaiting-final-approval",
+      "stage": "integrating-current-main",
       "type": [
         "ui",
         "investigation"
@@ -1467,7 +1467,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-14T06:35:25Z",
-      "nextAction": "Ready调用被取消且读回仍Draft，停止该动作；另外需验证新main集成",
+      "nextAction": "本地最小解决两个验收脚本冲突，发布新head后真实Windows验收并请求准确新head最终批准",
       "groupId": "settings-update-34",
       "groupIssueNumbers": [
         34
@@ -1544,7 +1544,8 @@
         "updatedAt": "2026-10-14T02:58:41Z",
         "performedViaGithubApp": null,
         "head": "71416bb20380c013960d005f53b281340e97caa2"
-      }
+      },
+      "integrationBaseSha": "661bee0ba7262098a31ef96efa1c3b4ba63d9f80"
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
@@ -1905,7 +1906,9 @@
     6150122550,
     6158878464,
     6160270446,
-    6162410448
+    6162410448,
+    6162574658,
+    6162575588
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -4730,17 +4733,31 @@
     },
     "issue26-main-result-close-block": {
       "operationId": "issue26-main-result-close-block",
-      "status": "intent",
+      "status": "succeeded",
       "target": "Issue26 comment",
       "summary": "实际main验收成功，关单执行审批拒绝，保留开放",
-      "startedAt": "2026-10-14T06:43:20Z"
+      "startedAt": "2026-10-14T06:43:20Z",
+      "finishedAt": "2026-10-14T06:44:39Z",
+      "receipt": {
+        "key": "issue26-main-result-close-block",
+        "id": 6162574658,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6162574658",
+        "createdAt": "2026-10-14T06:44:39Z"
+      }
     },
     "issue34-new-main-integration": {
       "operationId": "issue34-new-main-integration",
-      "status": "intent",
+      "status": "succeeded",
       "target": "Issue34 comment",
       "summary": "新main冲突定位为两个验收脚本，开始授权内集成，newhead重批",
-      "startedAt": "2026-10-14T06:43:20Z"
+      "startedAt": "2026-10-14T06:43:20Z",
+      "finishedAt": "2026-10-14T06:44:43Z",
+      "receipt": {
+        "key": "issue34-new-main-integration",
+        "id": 6162575588,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6162575588",
+        "createdAt": "2026-10-14T06:44:43Z"
+      }
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
