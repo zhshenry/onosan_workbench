@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 394,
+  "revision": 395,
   "currentRun": {
     "owner": "ono-root-check-20261014T0628Z",
     "startedAt": "2026-10-14T06:28:20Z",
@@ -409,7 +409,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-14T04:34:54Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待本聊天明确允许Draft转Ready，工具已两次拒绝，禁止换路；既有准确合入收尾批准保留",
+      "nextAction": "用户已自行完成Ready；重新核验准确合入批准和当前CI后执行已批准合入收尾",
       "groupId": "workbench-context-26",
       "groupIssueNumbers": [
         26
@@ -557,6 +557,12 @@
         "updatedAt": "2026-10-14T02:58:07Z",
         "performedViaGithubApp": null,
         "head": "f27d982dd2abbdc9d2d730206e318a86ef0dbd26"
+      },
+      "readyObservation": {
+        "draft": false,
+        "observedAt": "2026-10-14T06:20:07Z",
+        "prUpdatedAt": "2026-10-14T06:18:59Z",
+        "source": "https://github.com/zhshenry/onosan_workbench/pull/39"
       }
     },
     "28": {
@@ -4612,6 +4618,14 @@
       "commentId": 6160270446,
       "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6160270446",
       "verifiedAt": "2026-10-14T03:32:44Z"
+    },
+    "issue26-refresh-pr39-description-f27d982": {
+      "operationId": "issue26-refresh-pr39-description-f27d982",
+      "status": "intent",
+      "target": "PR39 body",
+      "head": "f27d982dd2abbdc9d2d730206e318a86ef0dbd26",
+      "summary": "纠正旧版本说明，链接当前v3验收及原始最终批准；不改变代码或范围",
+      "startedAt": "2026-10-14T06:29:20Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
