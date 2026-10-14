@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 401,
+  "revision": 402,
   "currentRun": {
     "owner": "ono-root-check-20261014T0628Z",
     "startedAt": "2026-10-14T06:28:20Z",
@@ -565,7 +565,19 @@
         "createdAt": "2026-10-14T06:18:59Z"
       },
       "mergeSha": "661bee0ba7262098a31ef96efa1c3b4ba63d9f80",
-      "mainRunId": 38522674072
+      "mainRunId": 38522674072,
+      "mainValidation": {
+        "sha": "661bee0ba7262098a31ef96efa1c3b4ba63d9f80",
+        "runId": 38522674072,
+        "jobId": 115715738359,
+        "conclusion": "success",
+        "unit": "511/511; failed0 skipped0",
+        "native": "99/99",
+        "finishedAt": "2026-10-14T06:38:34Z",
+        "artifactId": 11875301093,
+        "artifactExpiresAt": "2026-10-17T06:38:27Z",
+        "imageReview": "本轮新截图未重新逐像素审阅；树与已查看及用户接受的准确版本一致，单次临时图例外有效"
+      }
     },
     "28": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/28",
@@ -4702,6 +4714,14 @@
         "state": "dirty",
         "updatedAt": "2026-10-14T06:35:19Z"
       }
+    },
+    "issue26-close-after-main661bee0": {
+      "operationId": "issue26-close-after-main661bee0",
+      "status": "intent",
+      "target": "Issue26 closed/completed",
+      "approvalCommentId": 6159873721,
+      "summary": "准确批准PR39已合入，实际main511/511及99/99成功；本单准确图片例外已批准，仅关闭26",
+      "startedAt": "2026-10-14T06:40:40Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
