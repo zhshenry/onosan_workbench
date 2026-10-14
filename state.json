@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 445,
+  "revision": 446,
   "currentRun": {
     "id": "ono-integrate37-20261014T153100Z",
     "startedAt": "2026-10-14T15:31:01.738Z",
@@ -5095,7 +5095,7 @@
     },
     "issue37-commit-main45d8580": {
       "operationId": "issue37-commit-main45d8580",
-      "status": "intent",
+      "status": "succeeded",
       "target": "PR45 integration commit",
       "tree": "eb935a7b3fb9736bd8fdd357c66a86051c589f7c",
       "parents": [
@@ -5103,7 +5103,20 @@
         "45d8580119bb9c22dcbf117e2bbf96df16e2d26e"
       ],
       "summary": "双亲最小集成提交，后续新head真实Windows验收和最终批准",
-      "startedAt": "2026-10-14T16:06:17.001Z"
+      "startedAt": "2026-10-14T16:06:17.001Z",
+      "receipt": {
+        "sha": "6dd374c35a13ab6ebda5daa26fc4e18c48c5fde1"
+      },
+      "finishedAt": "2026-10-14T16:06:55.424Z"
+    },
+    "issue37-publish-6dd374c": {
+      "operationId": "issue37-publish-6dd374c",
+      "status": "intent",
+      "target": "refs/heads/ono/issue-37-publish-association",
+      "expectedHead": "42733f0bcfcb1155f0f03145b8ffd0ace2001882",
+      "newHead": "6dd374c35a13ab6ebda5daa26fc4e18c48c5fde1",
+      "summary": "Fast-forward approved-scope integration for exact Windows CI; not merge approval",
+      "startedAt": "2026-10-14T16:06:55.424Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
