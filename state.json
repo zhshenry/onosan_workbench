@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 424,
+  "revision": 425,
   "currentRun": {
     "runId": "ono-resume-20261014T141049Z",
     "startedAt": "2026-10-14T14:10:49Z",
@@ -4901,6 +4901,9 @@
       ],
       "treeReceipt": {
         "sha": "53c5a03616fc1cdd9a439a906be970cd46af263a"
+      },
+      "imageCommitReceipt": {
+        "sha": "f3a1d53613269af75c1492d37715f99f581821d0"
       }
     }
   },
