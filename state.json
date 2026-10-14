@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 406,
+  "revision": 407,
   "currentRun": {
     "owner": "ono-root-check-20261014T0628Z",
     "startedAt": "2026-10-14T06:28:20Z",
@@ -4761,13 +4761,28 @@
     },
     "issue34-integration-tree-main661bee0": {
       "operationId": "issue34-integration-tree-main661bee0",
-      "status": "intent",
+      "status": "succeeded",
       "target": "Git tree PR44 integration",
       "summary": "9文件对main差异，保留两组验收入口和截图，原产品范围不变",
       "expectedTree": "e1a6f9893f782fcd7085aaf2e5c79292b248f4c3",
       "base": "661bee0ba7262098a31ef96efa1c3b4ba63d9f80",
       "head": "71416bb20380c013960d005f53b281340e97caa2",
-      "startedAt": "2026-10-14T06:48:00Z"
+      "startedAt": "2026-10-14T06:48:00Z",
+      "finishedAt": "2026-10-14T06:48:52Z",
+      "receipt": {
+        "treeSha": "e1a6f9893f782fcd7085aaf2e5c79292b248f4c3"
+      }
+    },
+    "issue34-integration-commit-main661bee0": {
+      "operationId": "issue34-integration-commit-main661bee0",
+      "status": "intent",
+      "target": "PR44 integration commit",
+      "tree": "e1a6f9893f782fcd7085aaf2e5c79292b248f4c3",
+      "parents": [
+        "71416bb20380c013960d005f53b281340e97caa2",
+        "661bee0ba7262098a31ef96efa1c3b4ba63d9f80"
+      ],
+      "startedAt": "2026-10-14T06:48:55Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
