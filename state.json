@@ -1,7 +1,14 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 417,
-  "currentRun": null,
+  "revision": 418,
+  "currentRun": {
+    "runId": "ono-resume-20261014T141049Z",
+    "startedAt": "2026-10-14T14:10:49Z",
+    "coordinator": "OnO",
+    "issue": 34,
+    "groupId": "settings-update-34",
+    "phase": "deliver-git-image-evidence"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -1470,7 +1477,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-14T06:35:25Z",
-      "nextAction": "用户要求先排查再讨论自动化流程；新head验收完成，最终请求未发布，不消费旧批准",
+      "nextAction": "用户明确取消所有需求临时只读限制；补齐Git临时截图，清理最终树后请求准确head最终批准",
       "groupId": "settings-update-34",
       "groupIssueNumbers": [
         34
