@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 444,
+  "revision": 445,
   "currentRun": {
     "id": "ono-integrate37-20261014T153100Z",
     "startedAt": "2026-10-14T15:31:01.738Z",
@@ -5081,13 +5081,29 @@
     },
     "issue37-tree-main45d8580": {
       "operationId": "issue37-tree-main45d8580",
-      "status": "intent",
+      "status": "succeeded",
       "target": "PR45 integration tree",
       "expectedTree": "eb935a7b3fb9736bd8fdd357c66a86051c589f7c",
       "base": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
       "head": "42733f0bcfcb1155f0f03145b8ffd0ace2001882",
       "summary": "14 files approved v1 integration; preserve26/34; fix bounded async test readback without new product scope",
-      "startedAt": "2026-10-14T16:05:21.385Z"
+      "startedAt": "2026-10-14T16:05:21.385Z",
+      "receipt": {
+        "tree": "eb935a7b3fb9736bd8fdd357c66a86051c589f7c"
+      },
+      "finishedAt": "2026-10-14T16:06:17.001Z"
+    },
+    "issue37-commit-main45d8580": {
+      "operationId": "issue37-commit-main45d8580",
+      "status": "intent",
+      "target": "PR45 integration commit",
+      "tree": "eb935a7b3fb9736bd8fdd357c66a86051c589f7c",
+      "parents": [
+        "42733f0bcfcb1155f0f03145b8ffd0ace2001882",
+        "45d8580119bb9c22dcbf117e2bbf96df16e2d26e"
+      ],
+      "summary": "双亲最小集成提交，后续新head真实Windows验收和最终批准",
+      "startedAt": "2026-10-14T16:06:17.001Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
