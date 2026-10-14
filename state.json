@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 400,
+  "revision": 401,
   "currentRun": {
     "owner": "ono-root-check-20261014T0628Z",
     "startedAt": "2026-10-14T06:28:20Z",
@@ -1454,8 +1454,8 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
-      "lastReadAt": "2026-10-14T04:34:54Z",
-      "nextAction": "原生附图交付尚未完成；共享上传故障根因未知，勿合入或请求无图批准",
+      "lastReadAt": "2026-10-14T06:35:25Z",
+      "nextAction": "Ready调用被取消且读回仍Draft，停止该动作；另外需验证新main集成",
       "groupId": "settings-update-34",
       "groupIssueNumbers": [
         34
@@ -1663,8 +1663,8 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
-      "lastReadAt": "2026-10-14T04:34:54Z",
-      "nextAction": "仅修原生截图取景及toast消失等待，重新实际Windows；产品冻结",
+      "lastReadAt": "2026-10-14T06:35:25Z",
+      "nextAction": "Ready成功；需验证新main集成，旧baseCI不沿用",
       "lastCommentId": 6144934226,
       "planVersion": "v1",
       "planCommentId": 6140325358,
@@ -4668,19 +4668,40 @@
     },
     "issue34-ready-pr44": {
       "operationId": "issue34-ready-pr44",
-      "status": "intent",
+      "status": "failed",
       "target": "PR44 Draft -> Ready",
       "head": "71416bb20380c013960d005f53b281340e97caa2",
       "summary": "用户明确要求对其他已批准需求尝试Ready及合入；本操作仅Ready，新main集成验收另行核对",
-      "startedAt": "2026-10-14T06:34:15Z"
+      "startedAt": "2026-10-14T06:34:15Z",
+      "finishedAt": "2026-10-14T06:35:25Z",
+      "receipt": {
+        "pr": 44,
+        "draft": true,
+        "head": "71416bb20380c013960d005f53b281340e97caa2",
+        "base": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
+        "mergeable": false,
+        "state": "dirty",
+        "updatedAt": "2026-10-13T13:01:43Z"
+      },
+      "reason": "tool returned user cancelled; readback still Draft; not retried"
     },
     "issue37-ready-pr45": {
       "operationId": "issue37-ready-pr45",
-      "status": "intent",
+      "status": "succeeded",
       "target": "PR45 Draft -> Ready",
       "head": "42733f0bcfcb1155f0f03145b8ffd0ace2001882",
       "summary": "用户明确要求对其他已批准需求尝试Ready及合入；本操作仅Ready，新main集成验收另行核对",
-      "startedAt": "2026-10-14T06:34:15Z"
+      "startedAt": "2026-10-14T06:34:15Z",
+      "finishedAt": "2026-10-14T06:35:25Z",
+      "receipt": {
+        "pr": 45,
+        "draft": false,
+        "head": "42733f0bcfcb1155f0f03145b8ffd0ace2001882",
+        "base": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
+        "mergeable": false,
+        "state": "dirty",
+        "updatedAt": "2026-10-14T06:35:19Z"
+      }
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
