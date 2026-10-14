@@ -1,11 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 380,
-  "currentRun": {
-    "owner": "ono-root-issue26-closeout-20261014T0129Z",
-    "startedAt": "2026-10-14T01:29:31Z",
-    "currentDevelopmentGroup": null
-  },
+  "revision": 381,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -400,15 +396,15 @@
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "stage": "v3-tested-awaiting-image-delivery",
+      "stage": "accepted-version-awaiting-closeout-confirmation",
       "type": [
         "ui",
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-14T00:34:35Z",
+      "lastReadAt": "2026-10-14T01:32:22Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "等待原生附件故障可验证修复或本单明确图片渠道例外；尚无最终合入批准",
+      "nextAction": "用户已认可当前最终版本；等待本单临时内嵌例外及准确PR39 f27d982合入/main验收/仅关闭26收尾包确认",
       "groupId": "workbench-context-26",
       "groupIssueNumbers": [
         26
@@ -448,8 +444,8 @@
         "expiresAt": "2026-10-15T17:48:36Z"
       },
       "testedSha": "08dd78f6645e86be3a6105452ef534ca82696f66",
-      "finalRequestCommentId": 6129851935,
-      "finalRequestUrl": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6129851935",
+      "finalRequestCommentId": 6158878464,
+      "finalRequestUrl": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6158878464",
       "actualImageURLs": {
         "context-picker-cool-1024x680.png": "https://github.com/user-attachments/assets/545a86de-eb72-4932-8451-c6e0f20643c6",
         "context-picker-mist-1024x680.png": "https://github.com/user-attachments/assets/28873631-12c2-4722-aa70-d504d81219ed",
@@ -1840,7 +1836,8 @@
     6146554493,
     6149123195,
     6149778667,
-    6150122550
+    6150122550,
+    6158878464
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -4542,10 +4539,13 @@
     },
     "issue26-v3-closeout-request": {
       "operationId": "issue26-v3-closeout-request",
-      "status": "intent",
+      "status": "succeeded",
       "target": 26,
       "body": "【OnO 自动化】收到，你已查看临时证据并认可 #26 当前最终版本；无需再重复看图或批准设计。\n\n补齐上一条尚未提出的最终收尾范围，一次确认即可：\n- 合入 [PR #39](https://github.com/zhshenry/onosan_workbench/pull/39)，准确 head f27d982dd2abbdc9d2d730206e318a86ef0dbd26（f27d982）。本单关联实现 PR 仅 #39，无需关闭其他辅助 PR。\n- 当前 base b276261a90cb60a53626dd2149b0f3cdc6aad0fd；[Windows验收](https://github.com/zhshenry/onosan_workbench/actions/runs/38428449729)实际 tested merge 8809dfd3581f33f329d7a65d1bfb30c868aefb27，511/511单测及99/99原生检查通过，包含构建、actionlint、NSIS安装、真实保存读回与同版本重启。\n- 仅本单使用你已查看的[5张临时实测图](https://github.com/zhshenry/onosan_workbench/actions/runs/38428449729/artifacts/11829803222)代替 Issue 内嵌交付；2026-10-17 00:19:25（UTC+8）到期，届时该临时来源不可持续复核。该例外不成为长期规则，也不把未内嵌记成已内嵌。\n- 合入后验证实际 main 的完整 Windows 与本单专项检查；全部通过后仅关闭 #26，并按现有规范核验后清理该已合入需求分支。失败则保留开放并报告。\n- 已知首页1024窄窗概览挤压仍由 #35 补充方案处理，本单不修复、不关闭 #35；合成模型/业务数据验收不代表外部模型效果。本次不发版。\n\n请在本 Issue 回复：同意合入 PR #39（f27d982），接受本单临时附图例外，main 验收通过后关闭 #26。",
-      "startedAt": "2026-10-14T01:30:10Z"
+      "startedAt": "2026-10-14T01:30:10Z",
+      "commentId": 6158878464,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/26#issuecomment-6158878464",
+      "verifiedAt": "2026-10-14T01:32:22Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -4557,9 +4557,8 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-check-20261014T0033Z",
-    "finishedAt": "2026-10-14T00:34:35Z",
-    "summary": "完整重读当前main规范及配套模板/清单、6个ono开放Issue/65条原始评论、4个Draft PR准确head/base及讨论/review、Actions/check/job。23:45后无变化、无新批准/撤回，Windows均成功，无未知写。26待图片许可，34/37待最终批准，35附图阻塞，36/41等依赖；未进行产品/通信/合入/收尾写入。"
+    "finishedAt": "2026-10-14T01:32:22Z",
+    "summary": "核实26用户6158715372已看临时证据并认可当前最终版本；补充唯一准确合入/26关闭/本单内嵌例外收尾请求6158878464。未合入，其余队列无变化。"
   },
   "updatedAt": "2026-10-13T16:23:13.626Z",
   "lastNotification": {
