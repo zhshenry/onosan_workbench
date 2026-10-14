@@ -1,11 +1,11 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 413,
+  "revision": 414,
   "currentRun": {
     "owner": "ono-root-check-20261014T0628Z",
     "startedAt": "2026-10-14T06:28:20Z",
     "currentTask": 34,
-    "phase": "awaiting-pr44-current-base-actions"
+    "phase": "reconcile-cancelled-comment"
   },
   "tasks": {
     "17": {
@@ -1475,7 +1475,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-14T06:35:25Z",
-      "nextAction": "等待新head9b5c910真实Windows验收，完成后图与准确最终批准；旧71416bb批准不覆盖新head",
+      "nextAction": "新head验收及4张图已查看；最终请求评论调用被取消且读回未发出，待明确恢复该写入",
       "groupId": "settings-update-34",
       "groupIssueNumbers": [
         34
@@ -4851,11 +4851,16 @@
     },
     "issue34-final-request-9b5c910": {
       "operationId": "issue34-final-request-9b5c910",
-      "status": "intent",
+      "status": "failed",
       "target": "Issue34 final approval comment",
       "head": "9b5c910e1a664e59fa27d826acdb277bc4579246",
       "summary": "新head验收通过；一次列Ready合入main验收关34和分支核验；新实图artifact一次替代内嵌待批准",
-      "startedAt": "2026-10-14T07:00:00Z"
+      "startedAt": "2026-10-14T07:00:00Z",
+      "finishedAt": "2026-10-14T07:01:46Z",
+      "receipt": {
+        "readBack": "not present"
+      },
+      "reason": "tool returned user cancelled MCP tool call; during incoming conversation; causality unknown, not attributing human cancel"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
