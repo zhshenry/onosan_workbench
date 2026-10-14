@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 455,
+  "revision": 456,
   "currentRun": {
     "id": "ono-integrate37-20261014T153100Z",
     "startedAt": "2026-10-14T15:31:01.738Z",
@@ -1766,7 +1766,7 @@
       "primaryIssue": 37,
       "pr": 45,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/45",
-      "headSha": "6dd374c35a13ab6ebda5daa26fc4e18c48c5fde1",
+      "headSha": "0f313ee5fc1177ace4831a3c6524f06ac1497c28",
       "ciRun": 38402967190,
       "ciResult": "success",
       "tests": {
@@ -1788,10 +1788,12 @@
         "digest": "0c153beaf6e9e56f6137850a06b734ab7ed90f076b69fd8fc0093fba2a918556"
       },
       "imageDelivery": {
-        "channel": "one-time-private-chat",
-        "imageCount": 4,
-        "head": "42733f0bcfcb1155f0f03145b8ffd0ace2001882",
-        "acceptedAt": "2026-10-13T13:22:25Z"
+        "status": "uploaded-pending-link-visual-verification",
+        "imageCommit": "2c813cacf2853aa551cfb85eca97f8d929a7e14f",
+        "cleanupHead": "0f313ee5fc1177ace4831a3c6524f06ac1497c28",
+        "sourceHead": "6dd374c35a13ab6ebda5daa26fc4e18c48c5fde1",
+        "sourceRun": 38595349200,
+        "imageCount": 4
       },
       "finalApprovalRequest": {
         "commentId": 6146554493,
@@ -5128,7 +5130,7 @@
     },
     "issue37-images-6dd374c": {
       "operationId": "issue37-images-6dd374c",
-      "status": "intent",
+      "status": "succeeded",
       "target": "ono/issue-37-publish-association:.ono-evidence/issue-37/6dd374c/",
       "summary": "Upload four reviewed actual Windows screenshots; evidence commit then cleanup to identical product tree; immutable links in Issue",
       "startedAt": "2026-10-14T16:18:39.162Z",
@@ -5158,7 +5160,12 @@
       },
       "cleanupCommitReceipt": {
         "sha": "0f313ee5fc1177ace4831a3c6524f06ac1497c28"
-      }
+      },
+      "refReceipt": {
+        "head": "0f313ee5fc1177ace4831a3c6524f06ac1497c28",
+        "readBack": true
+      },
+      "finishedAt": "2026-10-14T16:23:34.390Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
