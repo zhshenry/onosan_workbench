@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 387,
+  "revision": 388,
   "currentRun": {
     "owner": "ono-root-closeout-20261014T0330Z",
     "startedAt": "2026-10-14T03:30:28Z",
@@ -401,7 +401,7 @@
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "stage": "accepted-version-awaiting-closeout-confirmation",
+      "stage": "approved-closeout-blocked-ready-permission",
       "type": [
         "ui",
         "interaction"
@@ -4584,10 +4584,19 @@
     },
     "issue26-ready-v3": {
       "operationId": "issue26-ready-v3",
-      "status": "intent",
+      "status": "failed",
       "target": "PR39",
       "head": "f27d982dd2abbdc9d2d730206e318a86ef0dbd26",
-      "startedAt": "2026-10-14T03:31:12Z"
+      "startedAt": "2026-10-14T03:31:12Z",
+      "reason": "permission reviewer denied ready-for-review; two calls denied including after direct raw approval verification; no workaround",
+      "finishedAt": "2026-10-14T03:32:10Z"
+    },
+    "issue35-design-status-20261014": {
+      "operationId": "issue35-design-status-20261014",
+      "status": "intent",
+      "target": 35,
+      "body": "【OnO 自动化】补充方案的布局分析此前已完成，但还没有可供你审阅的新高保真图。云电脑恢复后，之前的本地图文件已不在当前工作区，我正在重新准备可交付的设计图；完成后仍在本 Issue 对齐。原生附件故障尚未确认修复，不能承诺已附图，也不会沿用旧图冒充新方案。本条仅说明实际进度，不请求实施批准。",
+      "startedAt": "2026-10-14T03:32:10Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
