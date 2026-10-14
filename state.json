@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 463,
-  "currentRun": {
-    "id": "ono-check-20261014T180146Z",
-    "startedAt": "2026-10-14T18:30:13.555Z",
-    "currentTask": null,
-    "stage": "read-only-review"
-  },
+  "revision": 464,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -1622,7 +1617,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
-      "lastReadAt": "2026-10-14T04:34:54Z",
+      "lastReadAt": "2026-10-14T18:31:20.301Z",
       "nextAction": "调查已中断图片入Git调用；预期blob404且无成功回执，不盲重试。补齐三图固定链接后发布补充方案v2；未获追加实施批准。",
       "lastCommentId": 6144006182,
       "groupId": "media-keepalive-35",
@@ -1711,6 +1706,17 @@
           }
         ],
         "approvalStatus": "not-approved"
+      },
+      "uploadDiagnosis": {
+        "verifiedAt": "2026-10-14T18:31:20.301Z",
+        "fileBytes": 1480600,
+        "base64Characters": 1974136,
+        "pngStructuralVerification": "passed",
+        "expectedBlob": "65a5a2abb8f4c0e8e7226407ac6a4070fee9af28",
+        "localHashMatches": true,
+        "rootCause": "unknown",
+        "missing": "Per-step completion markers, create_blob invocation receipt/request ID/HTTP response/cancellation trace; size alone is not a cause",
+        "retry": "not attempted"
       }
     },
     "36": {
@@ -1722,7 +1728,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
-      "lastReadAt": "2026-10-14T04:34:54Z",
+      "lastReadAt": "2026-10-14T18:31:20.301Z",
       "nextAction": "35完成后基于最新main独立实施并回归保活",
       "lastCommentId": 6128520395,
       "planVersion": "v1",
@@ -1750,7 +1756,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
-      "lastReadAt": "2026-10-14T06:35:25Z",
+      "lastReadAt": "2026-10-14T18:31:20.301Z",
       "nextAction": "等待本次准确head0f313ee的最终合入收尾批准",
       "lastCommentId": 6144934226,
       "planVersion": "v1",
@@ -1851,7 +1857,7 @@
       ],
       "primaryIssue": 41,
       "targetVersion": "0.2.0",
-      "lastReadAt": "2026-10-14T04:34:54Z",
+      "lastReadAt": "2026-10-14T18:31:20.301Z",
       "nextAction": "先完成编号41前需求，随后汇总准确候选/变更集合/资产与验收并在41走独立发布批准；当前不打标签不发版",
       "dependencyIssueNumbers": [
         25,
@@ -5235,12 +5241,12 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "id": "ono-integrate37-20261014T153100Z",
-    "finishedAt": "2026-10-14T17:55:19.935Z",
-    "result": "Issue37 final head CI success and images delivered, awaiting approval6174761230; Issue35 design upload interrupted/404 reported6174797832; no in-flight writes",
-    "nextAction": "Read original Issue37 approval; do not reuse old head approval. Issue35 investigate delivery before plan review;36 waits35;41 waits prerequisites."
+    "id": "ono-check-20261014T180146Z",
+    "finishedAt": "2026-10-14T18:31:20.301Z",
+    "result": "All four open ono Issues and comments paginated; main and PR heads unchanged; no new approval. PR45 final CI success; PR43 conflict and design delivery blocker unchanged. Offline PNG/hash verified; interruption stage still unknown. No external product writes or duplicate notifications.",
+    "nextAction": "Await exact PR45 head0f313ee approval; Issue35 needs diagnosed delivery recovery before publishing v2; Issue36 waits35, Issue41 waits requirements."
   },
-  "updatedAt": "2026-10-14T14:16:05.080Z",
+  "updatedAt": "2026-10-14T18:31:20.301Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
