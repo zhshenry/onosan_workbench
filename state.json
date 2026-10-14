@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 434,
+  "revision": 435,
   "currentRun": {
     "id": "ono-close34-20261014T151700Z",
     "startedAt": "2026-10-14T15:17:00Z",
@@ -4956,12 +4956,28 @@
     },
     "issue34-ready-d959836": {
       "operationId": "issue34-ready-d959836",
-      "status": "intent",
+      "status": "succeeded",
       "target": "PR44 Draft -> Ready",
       "head": "d959836c26553efaef310ed2841585ffb7d82700",
       "approvalCommentId": 6171681690,
       "summary": "Execute explicitly approved current final closeout request6170763307",
-      "startedAt": "2026-10-14T15:17:41.779Z"
+      "startedAt": "2026-10-14T15:17:41.779Z",
+      "finishedAt": "2026-10-14T15:18:20.202Z",
+      "receipt": {
+        "draft": false,
+        "head": "d959836c26553efaef310ed2841585ffb7d82700",
+        "readBack": true
+      }
+    },
+    "issue34-merge-d959836": {
+      "operationId": "issue34-merge-d959836",
+      "status": "intent",
+      "target": "PR44 -> main",
+      "head": "d959836c26553efaef310ed2841585ffb7d82700",
+      "base": "661bee0ba7262098a31ef96efa1c3b4ba63d9f80",
+      "approvalCommentId": 6171681690,
+      "summary": "Merge exact approved head; verify actual main before close34",
+      "startedAt": "2026-10-14T15:18:20.202Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
