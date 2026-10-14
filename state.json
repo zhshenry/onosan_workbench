@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 457,
+  "revision": 458,
   "currentRun": {
     "id": "ono-integrate37-20261014T153100Z",
     "startedAt": "2026-10-14T15:31:01.738Z",
@@ -5168,6 +5168,15 @@
         "readBack": true
       },
       "finishedAt": "2026-10-14T16:23:34.390Z"
+    },
+    "issue35-design-v2-images": {
+      "operationId": "issue35-design-v2-images",
+      "status": "intent",
+      "target": "ono/issue-35-creator-keepalive:.ono-evidence/issue-35/design-v2/",
+      "summary": "Upload three reviewed independent layout designs only; immutable commit links; no product change or implementation approval",
+      "expectedHead": "4098f131a2ab17cb77c57df9f1119df0c15c898b",
+      "startedAt": "2026-10-14T16:29:19.257Z",
+      "receipts": []
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
