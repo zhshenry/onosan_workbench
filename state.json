@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 461,
-  "currentRun": {
-    "id": "ono-integrate37-20261014T153100Z",
-    "startedAt": "2026-10-14T15:31:01.738Z",
-    "currentTask": 37,
-    "stage": "integration-review"
-  },
+  "revision": 462,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -1614,7 +1609,7 @@
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
-      "stage": "blocked-visual-and-attachment",
+      "stage": "blocked-design-delivery",
       "type": [
         "ui",
         "bugfix",
@@ -1623,7 +1618,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-14T04:34:54Z",
-      "nextAction": "按原始请求6145544905准备首页窄屏附加方案；上传新一次仍失败，缺图不请求方案批准",
+      "nextAction": "调查已中断图片入Git调用；预期blob404且无成功回执，不盲重试。补齐三图固定链接后发布补充方案v2；未获追加实施批准。",
       "lastCommentId": 6144006182,
       "groupId": "media-keepalive-35",
       "groupIssueNumbers": [
@@ -1692,16 +1687,25 @@
         "authorId": 54107847,
         "summary": "询问窄窗截图问题，不是实施或合入批准"
       },
-      "latestStatusCommentId": 6160270446,
+      "latestStatusCommentId": 6174797832,
       "supplementalDesign": {
-        "version": "narrow-home-v1",
-        "status": "prepared-not-delivered",
-        "imageSha256": "80edf81d835d9f74147075b4449dda2a12094169eb4c0955ab0b611c8d82c705",
-        "width": 1069,
-        "height": 1472,
-        "bytes": 1483387,
-        "reviewedAt": "2026-10-14T03:41:08Z",
-        "description": "独立长页设计：窄窗待办/日程/概览/更多纵向；未上传、未交付、未获补充实施批准"
+        "version": "home-narrow-v2",
+        "status": "reviewed-not-delivered",
+        "files": [
+          {
+            "name": "home-narrow-first-v2-refined.png",
+            "sha256": "c8c3d06e0abe0d182d0db078fc86d0a74c22209404f15dd0adf1957841752a92"
+          },
+          {
+            "name": "home-narrow-scroll-v2-refined.png",
+            "sha256": "2b199c2492d5896818929d53cdea5b4c0a7ff53a3abe4862945225a87adf7735"
+          },
+          {
+            "name": "home-wide-v2-refined.png",
+            "sha256": "af5df9adcf3e4e57ecb8f341a813253d9d7a35d05a85a4a0effb411003b20de8"
+          }
+        ],
+        "approvalStatus": "not-approved"
       }
     },
     "36": {
@@ -1995,7 +1999,8 @@
     6171752092,
     6171949721,
     6171991282,
-    6174761230
+    6174761230,
+    6174797832
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -5206,9 +5211,14 @@
     },
     "issue35-upload-interruption-report": {
       "operationId": "issue35-upload-interruption-report",
-      "status": "intent",
+      "status": "succeeded",
       "target": "Issue35",
-      "summary": "Report design upload interrupted twice, exact blob404 and unchanged PR43; not user cancellation attribution; no plan approval requested"
+      "summary": "Report design upload interrupted twice, exact blob404 and unchanged PR43; not user cancellation attribution; no plan approval requested",
+      "receipt": {
+        "commentId": 6174797832,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6174797832",
+        "readBack": true
+      }
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -5220,9 +5230,10 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-close34-20261014T151700Z",
-    "finishedAt": "2026-10-14T15:29:35.255Z",
-    "summary": "PR44 merged; actual main539/111 passed; four image links reverified; Issue34 closed; branch retained no authenticated delete entry"
+    "id": "ono-integrate37-20261014T153100Z",
+    "finishedAt": "2026-10-14T17:55:19.935Z",
+    "result": "Issue37 final head CI success and images delivered, awaiting approval6174761230; Issue35 design upload interrupted/404 reported6174797832; no in-flight writes",
+    "nextAction": "Read original Issue37 approval; do not reuse old head approval. Issue35 investigate delivery before plan review;36 waits35;41 waits prerequisites."
   },
   "updatedAt": "2026-10-14T14:16:05.080Z",
   "lastNotification": {
