@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 435,
+  "revision": 436,
   "currentRun": {
     "id": "ono-close34-20261014T151700Z",
     "startedAt": "2026-10-14T15:17:00Z",
@@ -1467,7 +1467,7 @@
     },
     "34": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/34",
-      "stage": "final-approval-verified",
+      "stage": "post-merge-validation",
       "type": [
         "ui",
         "investigation"
@@ -1475,7 +1475,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-14T06:35:25Z",
-      "nextAction": "等待6170763307准确d959836最终请求的原始用户批准",
+      "nextAction": "跟踪实际main完整Windows验收，成功后关34并核验分支",
       "groupId": "settings-update-34",
       "groupIssueNumbers": [
         34
@@ -1588,7 +1588,9 @@
         "count": 4,
         "result": "同行状态、42%进度、短错误详情、最新/待重启，主题及1024/1280无覆盖；正常错误未重复",
         "delivery": "当前准确版本未原生内嵌；请求单次artifact例外与最终审批一并处理"
-      }
+      },
+      "mergeSha": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
+      "mainCiRunId": 38588207977
     },
     "35": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/35",
@@ -4971,13 +4973,28 @@
     },
     "issue34-merge-d959836": {
       "operationId": "issue34-merge-d959836",
-      "status": "intent",
+      "status": "succeeded",
       "target": "PR44 -> main",
       "head": "d959836c26553efaef310ed2841585ffb7d82700",
       "base": "661bee0ba7262098a31ef96efa1c3b4ba63d9f80",
       "approvalCommentId": 6171681690,
       "summary": "Merge exact approved head; verify actual main before close34",
-      "startedAt": "2026-10-14T15:18:20.202Z"
+      "startedAt": "2026-10-14T15:18:20.202Z",
+      "finishedAt": "2026-10-14T15:19:17.724Z",
+      "receipt": {
+        "merged": true,
+        "mergeSha": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
+        "mainSha": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
+        "tree": "e1a6f9893f782fcd7085aaf2e5c79292b248f4c3",
+        "readBack": true
+      }
+    },
+    "issue34-main-progress-45d8580": {
+      "operationId": "issue34-main-progress-45d8580",
+      "status": "intent",
+      "target": "Issue34 comment",
+      "summary": "准确批准head合入成功，实际main38588207977验收中，未提前关单",
+      "startedAt": "2026-10-14T15:19:17.727Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
