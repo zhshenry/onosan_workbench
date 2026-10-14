@@ -1,7 +1,12 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 440,
-  "currentRun": null,
+  "revision": 441,
+  "currentRun": {
+    "id": "ono-integrate37-20261014T153100Z",
+    "startedAt": "2026-10-14T15:31:01.738Z",
+    "currentTask": 37,
+    "stage": "approved-scope-integration"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -1729,7 +1734,7 @@
     },
     "37": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/37",
-      "stage": "tested-images-delivered-awaiting-final-approval",
+      "stage": "integration",
       "type": [
         "ui",
         "investigation"
@@ -1737,7 +1742,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-14T06:35:25Z",
-      "nextAction": "Ready成功；需验证新main集成，旧baseCI不沿用",
+      "nextAction": "将已批准v1最小集成至main45d8580，保留26/34验收，组合测试后新head请求最终批准",
       "lastCommentId": 6144934226,
       "planVersion": "v1",
       "planCommentId": 6140325358,
@@ -5048,6 +5053,13 @@
         "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6171949721",
         "readBack": true
       }
+    },
+    "issue37-integration-main45d8580-progress": {
+      "operationId": "issue37-integration-main45d8580-progress",
+      "status": "intent",
+      "target": "Issue37 comment",
+      "summary": "开始已批准v1与main45d8580最小集成，保留26/34测试并修正测试数据隔离，新head重批",
+      "startedAt": "2026-10-14T15:31:01.738Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
