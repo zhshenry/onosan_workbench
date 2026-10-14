@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 411,
+  "revision": 412,
   "currentRun": {
     "owner": "ono-root-check-20261014T0628Z",
     "startedAt": "2026-10-14T06:28:20Z",
@@ -401,7 +401,7 @@
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "stage": "main-validated-close-blocked",
+      "stage": "completed",
       "type": [
         "ui",
         "interaction"
@@ -409,7 +409,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-14T06:30:21Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "实际main验收成功；关闭26被执行审批拒绝，保留原始批准并停止该动作，不归因为GitHub权限",
+      "nextAction": "需求完成，用户自行关闭且读回已核；分支清理条件/受支持删除入口待核，不再重复关单",
       "groupId": "workbench-context-26",
       "groupIssueNumbers": [
         26
@@ -577,6 +577,14 @@
         "artifactId": 11875301093,
         "artifactExpiresAt": "2026-10-17T06:38:27Z",
         "imageReview": "本轮新截图未重新逐像素审阅；树与已查看及用户接受的准确版本一致，单次临时图例外有效"
+      },
+      "closeReceipt": {
+        "state": "closed",
+        "stateReason": "completed",
+        "closedAt": "2026-10-14T06:56:12Z",
+        "actor": "zhshenry",
+        "source": "https://github.com/zhshenry/onosan_workbench/issues/26",
+        "performedBy": "user; root readback verified"
       }
     },
     "28": {
