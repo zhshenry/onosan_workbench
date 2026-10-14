@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 443,
+  "revision": 444,
   "currentRun": {
     "id": "ono-integrate37-20261014T153100Z",
     "startedAt": "2026-10-14T15:31:01.738Z",
@@ -1812,14 +1812,14 @@
       },
       "localIntegrationTests": {
         "base": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
-        "unitPerTimezone": "570 total;568 pass;0 fail;2 platform skips",
+        "unitPerTimezone": "573 total;571 pass;0 fail;2 platform skips",
         "timezones": [
           "UTC",
           "Asia/Shanghai"
         ],
         "verify": "passed",
         "native": "not run locally; requires real Windows CI",
-        "status": "candidate awaiting final review"
+        "status": "final candidate tested"
       }
     },
     "41": {
@@ -5078,6 +5078,16 @@
         "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6171991282",
         "readBack": true
       }
+    },
+    "issue37-tree-main45d8580": {
+      "operationId": "issue37-tree-main45d8580",
+      "status": "intent",
+      "target": "PR45 integration tree",
+      "expectedTree": "eb935a7b3fb9736bd8fdd357c66a86051c589f7c",
+      "base": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
+      "head": "42733f0bcfcb1155f0f03145b8ffd0ace2001882",
+      "summary": "14 files approved v1 integration; preserve26/34; fix bounded async test readback without new product scope",
+      "startedAt": "2026-10-14T16:05:21.385Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
