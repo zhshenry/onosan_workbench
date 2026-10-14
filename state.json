@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 456,
+  "revision": 457,
   "currentRun": {
     "id": "ono-integrate37-20261014T153100Z",
     "startedAt": "2026-10-14T15:31:01.738Z",
@@ -1767,14 +1767,14 @@
       "pr": 45,
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/45",
       "headSha": "0f313ee5fc1177ace4831a3c6524f06ac1497c28",
-      "ciRun": 38402967190,
-      "ciResult": "success",
+      "ciRun": 38597616781,
+      "ciResult": "in_progress",
       "tests": {
         "windowsUnit": "512/512,0skip",
         "installed": "96/96",
         "visual": "关键pending确认按钮与unlinked输入未完整进入截图视口，需要仅修复证据取景"
       },
-      "nextStep": "等当前最终请求原始用户批准；批准后fresh核base并重验集成",
+      "nextStep": "等待清理后准确head的Windows CI结束，再发布最终验收请求",
       "latestRun": {
         "id": 38595349200,
         "head": "6dd374c35a13ab6ebda5daa26fc4e18c48c5fde1",
@@ -1788,12 +1788,14 @@
         "digest": "0c153beaf6e9e56f6137850a06b734ab7ed90f076b69fd8fc0093fba2a918556"
       },
       "imageDelivery": {
-        "status": "uploaded-pending-link-visual-verification",
+        "status": "verified",
         "imageCommit": "2c813cacf2853aa551cfb85eca97f8d929a7e14f",
         "cleanupHead": "0f313ee5fc1177ace4831a3c6524f06ac1497c28",
         "sourceHead": "6dd374c35a13ab6ebda5daa26fc4e18c48c5fde1",
         "sourceRun": 38595349200,
-        "imageCount": 4
+        "imageCount": 4,
+        "verifiedAt": "2026-10-14T16:26:47Z",
+        "verification": "API blob/URL readback and all four rendered in cloud browser"
       },
       "finalApprovalRequest": {
         "commentId": 6146554493,
