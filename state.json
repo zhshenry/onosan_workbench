@@ -1,13 +1,13 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 427,
+  "revision": 428,
   "currentRun": {
     "runId": "ono-resume-20261014T141049Z",
     "startedAt": "2026-10-14T14:10:49Z",
     "coordinator": "OnO",
     "issue": 34,
     "groupId": "settings-update-34",
-    "phase": "deliver-git-image-evidence"
+    "phase": "await-clean-head-ci"
   },
   "tasks": {
     "17": {
@@ -1514,10 +1514,22 @@
       "artifactId": 11808447592,
       "lastCommentId": 6144599897,
       "imageDelivery": {
-        "channel": "one-time-private-chat",
+        "channel": "issue-comment-with-git-image-links",
+        "status": "urls-and-images-verified-comment-pending",
         "imageCount": 4,
-        "head": "71416bb20380c013960d005f53b281340e97caa2",
-        "acceptedAt": "2026-10-13T13:13:59Z"
+        "sourceHead": "9b5c910e1a664e59fa27d826acdb277bc4579246",
+        "sourceRun": 38524589463,
+        "imageCommit": "f3a1d53613269af75c1492d37715f99f581821d0",
+        "cleanupHead": "d959836c26553efaef310ed2841585ffb7d82700",
+        "tree": "e1a6f9893f782fcd7085aaf2e5c79292b248f4c3",
+        "urls": [
+          "https://github.com/zhshenry/onosan_workbench/blob/f3a1d53613269af75c1492d37715f99f581821d0/.ono-evidence/issue-34/9b5c910/update-status-cool-downloading-1024x680.png",
+          "https://github.com/zhshenry/onosan_workbench/blob/f3a1d53613269af75c1492d37715f99f581821d0/.ono-evidence/issue-34/9b5c910/update-status-error-details-1024x680.png",
+          "https://github.com/zhshenry/onosan_workbench/blob/f3a1d53613269af75c1492d37715f99f581821d0/.ono-evidence/issue-34/9b5c910/update-status-mist-latest-1280x820.png",
+          "https://github.com/zhshenry/onosan_workbench/blob/f3a1d53613269af75c1492d37715f99f581821d0/.ono-evidence/issue-34/9b5c910/update-status-warm-ready-1024x680.png"
+        ],
+        "verifiedAt": "2026-10-14T14:23:36.148Z",
+        "verification": "All four public GitHub image pages actually viewed; final tree equals source implementation tree"
       },
       "finalApprovalRequest": {
         "commentId": 6146391991,
@@ -1567,8 +1579,8 @@
         "verify": "passed",
         "native": "not run locally"
       },
-      "ciRunId": 38524589463,
-      "ciConclusion": "success",
+      "ciRunId": 38579554510,
+      "ciConclusion": "in_progress",
       "actualImageReview": {
         "head": "9b5c910e1a664e59fa27d826acdb277bc4579246",
         "reviewedAt": "2026-10-14T06:59:48Z",
