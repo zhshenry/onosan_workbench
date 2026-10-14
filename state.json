@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 382,
-  "currentRun": {
-    "owner": "ono-root-check-20261014T0147Z",
-    "startedAt": "2026-10-14T01:47:44Z",
-    "mode": "read-only-discovery",
-    "currentDevelopmentGroup": null
-  },
+  "revision": 383,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -407,7 +402,7 @@
         "interaction"
       ],
       "sourceAuthorId": 54107847,
-      "lastReadAt": "2026-10-14T01:32:22Z",
+      "lastReadAt": "2026-10-14T01:48:55Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
       "nextAction": "用户已认可当前最终版本；等待本单临时内嵌例外及准确PR39 f27d982合入/main验收/仅关闭26收尾包确认",
       "groupId": "workbench-context-26",
@@ -1436,7 +1431,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
-      "lastReadAt": "2026-10-14T00:34:35Z",
+      "lastReadAt": "2026-10-14T01:48:55Z",
       "nextAction": "原生附图交付尚未完成；共享上传故障根因未知，勿合入或请求无图批准",
       "groupId": "settings-update-34",
       "groupIssueNumbers": [
@@ -1516,7 +1511,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
-      "lastReadAt": "2026-10-14T00:34:35Z",
+      "lastReadAt": "2026-10-14T01:48:55Z",
       "nextAction": "按原始请求6145544905准备首页窄屏附加方案；上传新一次仍失败，缺图不请求方案批准",
       "lastCommentId": 6144006182,
       "groupId": "media-keepalive-35",
@@ -1596,7 +1591,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "9bf6d06ae509dec4d8648b5cdc481813b20f0702",
-      "lastReadAt": "2026-10-14T00:34:35Z",
+      "lastReadAt": "2026-10-14T01:48:55Z",
       "nextAction": "35完成后基于最新main独立实施并回归保活",
       "lastCommentId": 6128520395,
       "planVersion": "v1",
@@ -1624,7 +1619,7 @@
       ],
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
-      "lastReadAt": "2026-10-14T00:34:35Z",
+      "lastReadAt": "2026-10-14T01:48:55Z",
       "nextAction": "仅修原生截图取景及toast消失等待，重新实际Windows；产品冻结",
       "lastCommentId": 6144934226,
       "planVersion": "v1",
@@ -1698,7 +1693,7 @@
       ],
       "primaryIssue": 41,
       "targetVersion": "0.2.0",
-      "lastReadAt": "2026-10-14T00:34:35Z",
+      "lastReadAt": "2026-10-14T01:48:55Z",
       "nextAction": "先完成编号41前需求，随后汇总准确候选/变更集合/资产与验收并在41走独立发布批准；当前不打标签不发版",
       "dependencyIssueNumbers": [
         25,
@@ -4562,8 +4557,9 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "finishedAt": "2026-10-14T01:32:22Z",
-    "summary": "核实26用户6158715372已看临时证据并认可当前最终版本；补充唯一准确合入/26关闭/本单内嵌例外收尾请求6158878464。未合入，其余队列无变化。"
+    "owner": "ono-root-check-20261014T0147Z",
+    "finishedAt": "2026-10-14T01:51:45Z",
+    "summary": "完整实时读取main规范与配套文件、6个ono开放Issue/67条原始评论、4个Draft PR准确head/base及讨论/review、Actions/check/job。26最终请求6158878464后无新回复，用户已认可版本但收尾包未获批；其余无变化，Windows均成功，230操作全终态。26/34/37待最终批准，35附图阻塞，36/41等依赖；无产品/通信/合入/收尾写入。"
   },
   "updatedAt": "2026-10-13T16:23:13.626Z",
   "lastNotification": {
