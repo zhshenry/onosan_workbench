@@ -1,11 +1,11 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 402,
+  "revision": 403,
   "currentRun": {
     "owner": "ono-root-check-20261014T0628Z",
     "startedAt": "2026-10-14T06:28:20Z",
-    "currentTask": 26,
-    "phase": "awaiting-actual-main-ci"
+    "currentTask": 34,
+    "phase": "local-integration-pr44"
   },
   "tasks": {
     "17": {
@@ -401,7 +401,7 @@
     },
     "26": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/26",
-      "stage": "merged-awaiting-main-validation",
+      "stage": "main-validated-close-blocked",
       "type": [
         "ui",
         "interaction"
@@ -409,7 +409,7 @@
       "sourceAuthorId": 54107847,
       "lastReadAt": "2026-10-14T06:30:21Z",
       "baseSha": "6850a4fb7acc10ac1d04468297b70ebd63cfa0a0",
-      "nextAction": "追踪实际main 661bee0 的完整Windows及#26专项验收，成功后按批准关闭26；不沿用PR结果",
+      "nextAction": "实际main验收成功；关闭26被执行审批拒绝，保留原始批准并停止该动作，不归因为GitHub权限",
       "groupId": "workbench-context-26",
       "groupIssueNumbers": [
         26
@@ -4717,11 +4717,16 @@
     },
     "issue26-close-after-main661bee0": {
       "operationId": "issue26-close-after-main661bee0",
-      "status": "intent",
+      "status": "failed",
       "target": "Issue26 closed/completed",
       "approvalCommentId": 6159873721,
       "summary": "准确批准PR39已合入，实际main511/511及99/99成功；本单准确图片例外已批准，仅关闭26",
-      "startedAt": "2026-10-14T06:40:40Z"
+      "startedAt": "2026-10-14T06:40:40Z",
+      "finishedAt": "2026-10-14T06:41:48Z",
+      "reason": "执行审批拒绝：未认可准确Issue/PR/head关单授权；GitHub原始批准6159873721存在且匹配，未绕过",
+      "receipt": {
+        "readBackState": "open"
+      }
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
