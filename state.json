@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 441,
+  "revision": 442,
   "currentRun": {
     "id": "ono-integrate37-20261014T153100Z",
     "startedAt": "2026-10-14T15:31:01.738Z",
@@ -1976,7 +1976,8 @@
     6162575588,
     6170763307,
     6171752092,
-    6171949721
+    6171949721,
+    6171991282
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -5056,10 +5057,16 @@
     },
     "issue37-integration-main45d8580-progress": {
       "operationId": "issue37-integration-main45d8580-progress",
-      "status": "intent",
+      "status": "succeeded",
       "target": "Issue37 comment",
       "summary": "开始已批准v1与main45d8580最小集成，保留26/34测试并修正测试数据隔离，新head重批",
-      "startedAt": "2026-10-14T15:31:01.738Z"
+      "startedAt": "2026-10-14T15:31:01.738Z",
+      "finishedAt": "2026-10-14T15:31:23Z",
+      "receipt": {
+        "commentId": 6171991282,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6171991282",
+        "readBack": true
+      }
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
