@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 459,
+  "revision": 460,
   "currentRun": {
     "id": "ono-integrate37-20261014T153100Z",
     "startedAt": "2026-10-14T15:31:01.738Z",
@@ -1734,15 +1734,15 @@
     },
     "37": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/37",
-      "stage": "ci-validation",
+      "stage": "awaiting-final-approval",
       "type": [
         "ui",
         "investigation"
       ],
       "sourceAuthorId": 54107847,
-      "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
+      "baseSha": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
       "lastReadAt": "2026-10-14T06:35:25Z",
-      "nextAction": "跟踪新集成head真实Windows验收及图；最终准确head重新请求批准",
+      "nextAction": "等待本次准确head0f313ee的最终合入收尾批准",
       "lastCommentId": 6144934226,
       "planVersion": "v1",
       "planCommentId": 6140325358,
@@ -1768,24 +1768,23 @@
       "prUrl": "https://github.com/zhshenry/onosan_workbench/pull/45",
       "headSha": "0f313ee5fc1177ace4831a3c6524f06ac1497c28",
       "ciRun": 38597616781,
-      "ciResult": "in_progress",
+      "ciResult": "success",
       "tests": {
-        "windowsUnit": "512/512,0skip",
-        "installed": "96/96",
-        "visual": "关键pending确认按钮与unlinked输入未完整进入截图视口，需要仅修复证据取景"
+        "windowsUnit": "573/573;0fail0skip",
+        "installed": "123/123",
+        "visual": "4 actual images reviewed; immutable URLs opened and rendered"
       },
-      "nextStep": "等待清理后准确head的Windows CI结束，再发布最终验收请求",
+      "nextStep": "等待本次准确head0f313ee的最终合入收尾批准",
       "latestRun": {
-        "id": 38595349200,
-        "head": "6dd374c35a13ab6ebda5daa26fc4e18c48c5fde1",
+        "id": 38597616781,
+        "head": "0f313ee5fc1177ace4831a3c6524f06ac1497c28",
         "base": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
-        "testedMerge": "433f5fdb83ecd0edf5ea0deb4ec05b6b7ffcdcd2",
-        "tree": "eb935a7b3fb9736bd8fdd357c66a86051c589f7c",
+        "testedMerge": "d2e8f8ee449b2d9ccd50e2a12c6d3e0de0b81212",
         "conclusion": "success",
         "unit": "573/573;0fail0skip",
         "native": "123/123",
-        "artifactId": 11908784463,
-        "digest": "0c153beaf6e9e56f6137850a06b734ab7ed90f076b69fd8fc0093fba2a918556"
+        "artifactId": 11912436534,
+        "digest": "6ed2601583912e0ad0b4da86989207e112e1031a44a9e5bf7d9dee5dd734784e"
       },
       "imageDelivery": {
         "status": "verified",
@@ -1798,9 +1797,9 @@
         "verification": "API blob/URL readback and all four rendered in cloud browser"
       },
       "finalApprovalRequest": {
-        "commentId": 6146554493,
-        "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6146554493",
-        "head": "42733f0bcfcb1155f0f03145b8ffd0ace2001882",
+        "commentId": 6174761230,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6174761230",
+        "head": "0f313ee5fc1177ace4831a3c6524f06ac1497c28",
         "closeIssues": [
           37
         ],
@@ -1995,7 +1994,8 @@
     6170763307,
     6171752092,
     6171949721,
-    6171991282
+    6171991282,
+    6174761230
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -5181,10 +5181,22 @@
     },
     "issue37-final-request-0f313ee": {
       "operationId": "issue37-final-request-0f313ee",
-      "status": "intent",
+      "status": "succeeded",
       "target": "Issue37",
       "summary": "Deliver final head0f313ee Windows573/123 and verified four immutable screenshot links; request merge/main acceptance/close37/conditional branch cleanup",
-      "startedAt": "2026-10-14T17:52:12.133Z"
+      "startedAt": "2026-10-14T17:52:12.133Z",
+      "receipt": {
+        "commentId": 6174761230,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6174761230",
+        "createdAt": "2026-10-14T17:53:00Z",
+        "readBack": true
+      }
+    },
+    "issue37-pr-body-0f313ee": {
+      "operationId": "issue37-pr-body-0f313ee",
+      "status": "intent",
+      "target": "PR45 body",
+      "summary": "Replace stale version and test text with current final head/evidence and Issue37 request link"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
