@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 414,
-  "currentRun": {
-    "owner": "ono-root-check-20261014T0628Z",
-    "startedAt": "2026-10-14T06:28:20Z",
-    "currentTask": 34,
-    "phase": "reconcile-cancelled-comment"
-  },
+  "revision": 415,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -4872,9 +4867,9 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-check-20261014T0433Z",
-    "finishedAt": "2026-10-14T04:35:03Z",
-    "summary": "实时完整读取规范及配套文件、6单72条原始评论、4个Draft PR准确head/main及CI，无变化或新用户回复；三条准确收尾批准保留，Ready执行审批阻碍未解除，不重试/换路。35设计已准备未交付，36/41等依赖。所有Windows检查成功，无未知写入。"
+    "owner": "ono-root-check-20261014T0628Z",
+    "finishedAt": "2026-10-14T07:03:20Z",
+    "summary": "完整6单72评论4PR核查；39合入main661bee0，实际main511/511及99/99成功，26工具关单拒绝后用户自行关闭已读回；45Ready成功，44Ready调用取消。44已集成main新head9b5c910，539/539及111/111真实Windows成功，4实图已看；最终请求评论取消且未发出，等待澄清调用取消与恢复。35设计交付阻碍、36/41依赖保留。全部写入已终态。"
   },
   "updatedAt": "2026-10-13T16:23:13.626Z",
   "lastNotification": {
