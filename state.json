@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 454,
+  "revision": 455,
   "currentRun": {
     "id": "ono-integrate37-20261014T153100Z",
     "startedAt": "2026-10-14T15:31:01.738Z",
@@ -5155,6 +5155,9 @@
       },
       "imageCommitReceipt": {
         "sha": "2c813cacf2853aa551cfb85eca97f8d929a7e14f"
+      },
+      "cleanupCommitReceipt": {
+        "sha": "0f313ee5fc1177ace4831a3c6524f06ac1497c28"
       }
     }
   },
