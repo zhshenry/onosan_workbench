@@ -1,7 +1,12 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 415,
-  "currentRun": null,
+  "revision": 416,
+  "currentRun": {
+    "owner": "ono-root-resume-20261014T0707Z",
+    "startedAt": "2026-10-14T07:07:20Z",
+    "currentTask": 34,
+    "phase": "resume-interrupted-final-comment"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -4856,6 +4861,14 @@
         "readBack": "not present"
       },
       "reason": "tool returned user cancelled MCP tool call; during incoming conversation; causality unknown, not attributing human cancel"
+    },
+    "issue34-final-request-9b5c910-resume1": {
+      "operationId": "issue34-final-request-9b5c910-resume1",
+      "status": "intent",
+      "target": "Issue34 final approval comment",
+      "head": "9b5c910e1a664e59fa27d826acdb277bc4579246",
+      "summary": "用户确认未执行取消；远端无旧请求，恢复一次发布同范围准确最终请求",
+      "startedAt": "2026-10-14T07:07:20Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
