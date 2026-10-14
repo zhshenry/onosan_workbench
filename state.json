@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 416,
-  "currentRun": {
-    "owner": "ono-root-resume-20261014T0707Z",
-    "startedAt": "2026-10-14T07:07:20Z",
-    "currentTask": 34,
-    "phase": "resume-interrupted-final-comment"
-  },
+  "revision": 417,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -1475,7 +1470,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-14T06:35:25Z",
-      "nextAction": "新head验收及4张图已查看；最终请求评论调用被取消且读回未发出，待明确恢复该写入",
+      "nextAction": "用户要求先排查再讨论自动化流程；新head验收完成，最终请求未发布，不消费旧批准",
       "groupId": "settings-update-34",
       "groupIssueNumbers": [
         34
@@ -4864,11 +4859,13 @@
     },
     "issue34-final-request-9b5c910-resume1": {
       "operationId": "issue34-final-request-9b5c910-resume1",
-      "status": "intent",
+      "status": "failed",
       "target": "Issue34 final approval comment",
       "head": "9b5c910e1a664e59fa27d826acdb277bc4579246",
       "summary": "用户确认未执行取消；远端无旧请求，恢复一次发布同范围准确最终请求",
-      "startedAt": "2026-10-14T07:07:20Z"
+      "startedAt": "2026-10-14T07:07:20Z",
+      "finishedAt": "2026-10-14T07:08:10Z",
+      "reason": "用户要求先排查问题再讨论后续流程；未调用发评论，停止需求推进"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -4880,9 +4877,9 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-check-20261014T0628Z",
-    "finishedAt": "2026-10-14T07:03:20Z",
-    "summary": "完整6单72评论4PR核查；39合入main661bee0，实际main511/511及99/99成功，26工具关单拒绝后用户自行关闭已读回；45Ready成功，44Ready调用取消。44已集成main新head9b5c910，539/539及111/111真实Windows成功，4实图已看；最终请求评论取消且未发出，等待澄清调用取消与恢复。35设计交付阻碍、36/41依赖保留。全部写入已终态。"
+    "owner": "ono-root-resume-20261014T0707Z",
+    "finishedAt": "2026-10-14T07:08:10Z",
+    "summary": "恢复评论前收到用户先诊断再讨论流程指令；未发出评论，所有操作终态，停止需求写入推进"
   },
   "updatedAt": "2026-10-13T16:23:13.626Z",
   "lastNotification": {
