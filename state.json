@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 422,
+  "revision": 423,
   "currentRun": {
     "runId": "ono-resume-20261014T141049Z",
     "startedAt": "2026-10-14T14:10:49Z",
@@ -4893,6 +4893,10 @@
         {
           "file": "update-status-mist-latest-1280x820.png",
           "blobSha": "0c2f72faa12a03fd1ab13fcf0a7d9d3c4fe818b0"
+        },
+        {
+          "file": "update-status-warm-ready-1024x680.png",
+          "blobSha": "255f85df5a88639ebcce2d6f665caf21a591d5f5"
         }
       ]
     }
