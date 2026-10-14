@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 429,
+  "revision": 430,
   "currentRun": {
     "runId": "ono-resume-20261014T141049Z",
     "startedAt": "2026-10-14T14:10:49Z",
@@ -1477,7 +1477,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "b276261a90cb60a53626dd2149b0f3cdc6aad0fd",
       "lastReadAt": "2026-10-14T06:35:25Z",
-      "nextAction": "最终树已清图且等同9b5c910产品树；核对不可变图片链接并等新head Actions，通过后Issue最终审批",
+      "nextAction": "等待6170763307准确d959836最终请求的原始用户批准",
       "groupId": "settings-update-34",
       "groupIssueNumbers": [
         34
@@ -1515,7 +1515,7 @@
       "lastCommentId": 6144599897,
       "imageDelivery": {
         "channel": "issue-comment-with-git-image-links",
-        "status": "urls-and-images-verified-comment-pending",
+        "status": "delivered",
         "imageCount": 4,
         "sourceHead": "9b5c910e1a664e59fa27d826acdb277bc4579246",
         "sourceRun": 38524589463,
@@ -1529,16 +1529,18 @@
           "https://github.com/zhshenry/onosan_workbench/blob/f3a1d53613269af75c1492d37715f99f581821d0/.ono-evidence/issue-34/9b5c910/update-status-warm-ready-1024x680.png"
         ],
         "verifiedAt": "2026-10-14T14:23:36.148Z",
-        "verification": "All four public GitHub image pages actually viewed; final tree equals source implementation tree"
+        "verification": "All four public GitHub image pages actually viewed; final tree equals source implementation tree",
+        "commentId": 6170763307
       },
       "finalApprovalRequest": {
-        "commentId": 6146391991,
-        "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6146391991",
-        "head": "71416bb20380c013960d005f53b281340e97caa2",
+        "commentId": 6170763307,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6170763307",
+        "head": "d959836c26553efaef310ed2841585ffb7d82700",
         "closeIssues": [
           34
         ],
-        "cleanupBranch": "ono/issue-34-update-status-inline"
+        "cleanupBranch": "ono/issue-34-update-status-inline",
+        "bodySha256": "fc60d0df738aa29933e834a584bbd7f9145ab4ecdaf2def998572fe3753d3d87"
       },
       "latestFeedback": {
         "commentId": 6145956873,
@@ -1546,7 +1548,7 @@
         "authorId": 54107847,
         "summary": "修复验收截图错误内容重复，不是合入批准"
       },
-      "nextStep": "等当前准确head最终请求6146391991原始用户批准",
+      "nextStep": "等待6170763307准确d959836最终请求的原始用户批准",
       "latestRun": {
         "id": 38579554510,
         "head": "d959836c26553efaef310ed2841585ffb7d82700",
@@ -1950,7 +1952,8 @@
     6160270446,
     6162410448,
     6162574658,
-    6162575588
+    6162575588,
+    6170763307
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -4927,12 +4930,16 @@
     },
     "issue34-final-request-d959836": {
       "operationId": "issue34-final-request-d959836",
-      "status": "pending",
+      "status": "succeeded",
       "target": "Issue34 final approval comment",
       "head": "d959836c26553efaef310ed2841585ffb7d82700",
       "bodySha256": "fc60d0df738aa29933e834a584bbd7f9145ab4ecdaf2def998572fe3753d3d87",
       "summary": "正式交付四图固定链接、准确清理后head通过539单测111原生检查，单次请求Ready合入/main验收/仅关34/合格分支清理",
-      "startedAt": "2026-10-14T14:30:10.018Z"
+      "startedAt": "2026-10-14T14:30:10.018Z",
+      "commentId": 6170763307,
+      "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6170763307",
+      "finishedAt": "2026-10-14T14:30:45Z",
+      "verifiedAt": "2026-10-14T14:31:06.912Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
