@@ -1,14 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 431,
-  "currentRun": {
-    "runId": "ono-resume-20261014T141049Z",
-    "startedAt": "2026-10-14T14:10:49Z",
-    "coordinator": "OnO",
-    "issue": 34,
-    "groupId": "settings-update-34",
-    "phase": "await-clean-head-ci"
-  },
+  "revision": 432,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -4943,11 +4936,17 @@
     },
     "issue34-pr44-metadata-d959836": {
       "operationId": "issue34-pr44-metadata-d959836",
-      "status": "pending",
+      "status": "succeeded",
       "target": "PR44 body",
       "head": "d959836c26553efaef310ed2841585ffb7d82700",
       "summary": "Update stale PR description to clean-head CI success and exact Issue final request; no Ready/merge/state change",
-      "startedAt": "2026-10-14T14:32:03.709Z"
+      "startedAt": "2026-10-14T14:32:03.709Z",
+      "finishedAt": "2026-10-14T14:32:57.415Z",
+      "receipt": {
+        "url": "https://github.com/zhshenry/onosan_workbench/pull/44",
+        "head": "d959836c26553efaef310ed2841585ffb7d82700",
+        "bodyReadBack": true
+      }
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -4959,9 +4958,9 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "owner": "ono-root-resume-20261014T0707Z",
-    "finishedAt": "2026-10-14T07:08:10Z",
-    "summary": "恢复评论前收到用户先诊断再讨论流程指令；未发出评论，所有操作终态，停止需求写入推进"
+    "owner": "ono-resume-20261014T141049Z",
+    "finishedAt": "2026-10-14T14:32:57.415Z",
+    "summary": "Issue34 clean head CI passed, four Git image links verified, final request6170763307 published; awaiting exact user approval"
   },
   "updatedAt": "2026-10-14T14:16:05.080Z",
   "lastNotification": {
