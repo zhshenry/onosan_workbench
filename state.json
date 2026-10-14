@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 452,
+  "revision": 453,
   "currentRun": {
     "id": "ono-integrate37-20261014T153100Z",
     "startedAt": "2026-10-14T15:31:01.738Z",
@@ -5149,7 +5149,10 @@
           "file": "publish-association-error.png",
           "blobSha": "60bae09603d228c37667ba6a47cc1c1b00f9bdc7"
         }
-      ]
+      ],
+      "treeReceipt": {
+        "sha": "620e1a8a8218f16a029be6e6a63a4a043090af2d"
+      }
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
