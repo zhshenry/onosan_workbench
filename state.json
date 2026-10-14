@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 430,
+  "revision": 431,
   "currentRun": {
     "runId": "ono-resume-20261014T141049Z",
     "startedAt": "2026-10-14T14:10:49Z",
@@ -4940,6 +4940,14 @@
       "url": "https://github.com/zhshenry/onosan_workbench/issues/34#issuecomment-6170763307",
       "finishedAt": "2026-10-14T14:30:45Z",
       "verifiedAt": "2026-10-14T14:31:06.912Z"
+    },
+    "issue34-pr44-metadata-d959836": {
+      "operationId": "issue34-pr44-metadata-d959836",
+      "status": "pending",
+      "target": "PR44 body",
+      "head": "d959836c26553efaef310ed2841585ffb7d82700",
+      "summary": "Update stale PR description to clean-head CI success and exact Issue final request; no Ready/merge/state change",
+      "startedAt": "2026-10-14T14:32:03.709Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
