@@ -142,7 +142,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
       return { bazi: null as BaziChart | null, ziwei: null as ZiweiChart | null, astro: null as AstroChart | null, error: errorText(e) };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.id, profile?.date, profile?.time, profile?.gender]);
+  }, [profile?.id, profile?.date, profile?.time, profile?.gender, profile?.lat, profile?.lon]);
 
   // 切换命例:重置流年展开,并载入该命例笔记
   useEffect(() => {
@@ -472,7 +472,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
                     <div className="phead"><span className="ptitle">行星落座</span><span className="pcount">回归制 · 东八区</span></div>
                     <table className="bazi-astab">
                       <thead>
-                        <tr><th aria-label="符号" /><th>行星</th><th>星座</th><th>度数</th></tr>
+                        <tr><th aria-label="符号" /><th>行星</th><th>星座</th><th>度数</th><th>宫位</th></tr>
                       </thead>
                       <tbody>
                         {astro.bodies.map((b) => {
@@ -486,12 +486,13 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
                               <td>{b.name}</td>
                               <td>{names[sign]}</td>
                               <td>{deg}°{String(min).padStart(2, '0')}′{b.retro && <span className="bazi-rx">℞</span>}</td>
+                              <td>{b.house !== undefined ? `${b.house}宫` : '—'}</td>
                             </tr>
                           );
                         })}
                       </tbody>
                     </table>
-                    <div className="bazi-notehint">宫位与上升点需要出生地经纬度,待后续版本加入。</div>
+                    {astro.asc === undefined && <div className="bazi-notehint">填写出生地经纬度后可显示宫位。</div>}
                   </div>
                   <NoteCard value={noteDraft} onChange={onNote} />
                 </div>

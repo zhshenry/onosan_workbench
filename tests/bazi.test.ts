@@ -205,16 +205,20 @@ test('占星:上海命例获得上升/天顶与整宫制宫位', () => {
   for (const body of chart.bodies) {
     assert.ok(body.house !== undefined && body.house >= 1 && body.house <= 12, `${body.name} 宫位缺失`);
   }
-  // 整宫制:上升点所在星座必为第 1 宫
+  // 整宫制:每颗行星的宫位 = 所在星座相对上升星座的序号(上升星座为第 1 宫)
   const ascSign = Math.floor(chart.asc! / 30);
-  const ascBody = chart.bodies.find((b) => Math.floor(b.lon / 30) === ascSign);
-  if (ascBody) assert.equal(ascBody.house, 1);
+  for (const body of chart.bodies) {
+    assert.equal(body.house, ((Math.floor(body.lon / 30) - ascSign + 12) % 12) + 1);
+  }
 });
 
 test('占星:无出生地则无宫位数据(向后兼容)', () => {
   const chart = buildAstro({ ...LIN_CHUAN });
   assert.equal(chart.asc, undefined);
-  assert.equal(chart.bodies[0].house, undefined);
+  assert.equal(chart.mc, undefined);
+  assert.equal(chart.place, undefined);
+  assert.ok(chart.bodies.length > 0);
+  for (const body of chart.bodies) assert.equal(body.house, undefined, `${body.name} 不应有宫位`);
 });
 
 test('命例契约:出生地经纬度成对校验', () => {
