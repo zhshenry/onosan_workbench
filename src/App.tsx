@@ -5,6 +5,7 @@ import type { AvatarColor, UiTheme, ViewId } from '../shared/contracts';
 import { localDay, openToday, taskTime, type ChatSession, type CopySource, type Task, type TaskInput } from '../shared/todo-contracts';
 import { isOverdue, meetingEndAt } from '../shared/todo-format';
 import { topbarScheduleDate, topbarTodoDate } from './topbar-dates';
+import { applyTopbarCapsulePlacement } from './topbar-layout';
 import { HomeView, useTodoData } from './views/HomeView';
 import { AiPanel, type AiPanelContext, type AiSeed } from './views/AiPanel';
 import { chatContextScope, TODO_AI_WORKBENCH_NAME, type AiScope } from '../shared/ai-scope';
@@ -407,6 +408,28 @@ export function App() {
   const overdueCount = todo.data
     ? openToday(todo.data.tasks, today).filter((t) => isOverdue(t, todo.clock.getTime())).length
     : 0;
+  const topbarCapsuleKey = [
+    todayMeetings.map((t) => `${t.id}:${t.title}:${t.dueAt ?? ''}:${t.endAt ?? ''}:${t.status}`).join(','),
+    `${doneCount}/${totalCount}`,
+    overdueCount,
+    `${todo.clock.getFullYear()}-${todo.clock.getMonth()}-${todo.clock.getDate()}`,
+    aiJob ? `${aiJob.chatId}:${aiJob.status}:${aiJob.title}` : '',
+    aiOpen ? 'ai' : '',
+    activeAiChatId ?? '',
+    browserTask ? `${browserTask.status}:${browserTask.workspace}` : '',
+    curView,
+  ].join('|');
+  useLayoutEffect(() => {
+    const bar = topbarRef.current;
+    if (!bar) return;
+    const place = (): void => { applyTopbarCapsulePlacement(bar); };
+    place();
+    const right = bar.querySelector('.tb-right');
+    const observer = new ResizeObserver(place);
+    observer.observe(bar);
+    if (right) observer.observe(right);
+    return () => observer.disconnect();
+  }, [topbarCapsuleKey]);
 
   return (
     <div className={'win' + (aiOpen ? ' ai-dock' : '')} style={{ '--ai-width': aiWidth + 'px' } as CSSProperties}>

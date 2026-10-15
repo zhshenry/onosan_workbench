@@ -378,10 +378,34 @@ input { font: inherit; color: inherit; }
 }
 .topbar button,
 .topbar .avatar { -webkit-app-region: no-drag; }
-.tb-middle { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; min-width: 0; width: max-content; max-width: calc(100% - 600px); }
+/* 日程 + 待办作为一组，相对顶栏（padding box）水平居中。
+   两侧按 .tb-right 的真实宽度对称留白，避免盖住窗控；单条日期放不下时由 topbar-layout 加宽并左移。 */
+.tb-middle {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  height: 100%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  min-width: 0;
+  max-width: calc(100% - 2 * (anchor-size(--tb-right width) + 12px));
+  z-index: 1;
+}
 .tb-left { position: relative; display: flex; align-items: center; flex: 0 1 auto; min-width: 0; }
 .tb-center { position: relative; display: flex; flex: none; }
-.tb-right { display: flex; align-items: center; gap: 8px; margin-left: auto; flex: none; }
+.tb-right {
+  anchor-name: --tb-right;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex: none;
+}
 .tb-right .vdiv { margin: 0 2px; }
 /* 灵动岛弹出面板:日程/待办胶囊的下拉 */
 .ipop {
@@ -450,7 +474,7 @@ input { font: inherit; color: inherit; }
 }
 .schip:hover { transform: translateY(-1px); }
 .schip .t { flex: none; white-space: pre-line; text-align: left; line-height: 1.2; font-weight: 700; font-size: var(--type-control); color: var(--ink-2); font-variant-numeric: tabular-nums; }
-.schip .n { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: var(--type-control); color: var(--ink-2); }
+.schip .n { min-width: 24px; overflow: hidden; text-overflow: ellipsis; font-size: var(--type-control); color: var(--ink-2); }
 .schip.done { opacity: 0.55; }
 .schip.done .n { text-decoration: line-through; }
 .schip.now { background: var(--acc-soft); }
@@ -1310,19 +1334,16 @@ kbd {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
-/* Allocate the actual right-control width instead of guessing a centered
-   reserve. Keep the compact track for the item date. */
+/* 中等宽度仍居中。事项日期优先于冗余的今日前缀，不再改回贴左排列。 */
 @media (max-width: 1440px) {
   .topbar { gap: 8px; }
-  .tb-middle { position: static; transform: none; flex: 0 1 auto; max-width: none; }
 }
 @media (min-width: 1181px) and (max-width: 1440px) {
   .sched-track > .date, .sched-track > .date + .sdiv { display: none; }
 }
 @media (max-width: 1180px) {
-  /* The collapsed pair must keep its intrinsic width. Absolute centering with
-     the wide-screen reserve can shrink the schedule under the todo trigger. */
-  .tb-middle { position: static; transform: none; flex: none; max-width: none; gap: 8px; }
+  /* 摘要收起后两个入口保持固有宽度，避免日程被挤到待办下面。组本身继续居中。 */
+  .tb-middle { gap: 8px; }
   .tb-left { flex: none; }
   .ipop-sched { left: 0; margin-left: 0; }
   .tb-right { gap: 5px; margin-left: auto; }
