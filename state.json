@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 479,
+  "revision": 480,
   "currentRun": {
     "id": "ono-close37-20261015T010700Z",
     "startedAt": "2026-10-15T01:08:05.862Z",
@@ -1848,7 +1848,17 @@
         "status": "final candidate tested"
       },
       "integrationBaseSha": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
-      "mainSha": "35f4e093e177030b3c31bbf360ae33e3bf5d9ea7"
+      "mainSha": "35f4e093e177030b3c31bbf360ae33e3bf5d9ea7",
+      "mainValidation": {
+        "sha": "35f4e093e177030b3c31bbf360ae33e3bf5d9ea7",
+        "run": 38664096642,
+        "attempt": 1,
+        "conclusion": "success",
+        "unit": "573/573,0fail0skip",
+        "native": "123/123",
+        "artifactId": 11940706717,
+        "digest": "161818f967c80022cb37e38b1767b1d11442e983516d809c7eafee77cf261bdc"
+      }
     },
     "41": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/41",
@@ -5252,6 +5262,14 @@
         "tree": "eb935a7b3fb9736bd8fdd357c66a86051c589f7c",
         "readBack": true
       }
+    },
+    "issue37-close-main35f4e09": {
+      "operationId": "issue37-close-main35f4e09",
+      "status": "intent",
+      "target": "Issue37 closed/completed",
+      "approvalCommentId": 6182012606,
+      "summary": "Approved exact PR45 merged; actual main573/123 passed and verified images; close only37",
+      "startedAt": "2026-10-15T01:20:08.919Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
