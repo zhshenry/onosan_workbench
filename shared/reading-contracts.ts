@@ -104,3 +104,32 @@ export function parseFrontmatter(text: string): { title?: string; status?: strin
 export function isShaped(status: string): boolean {
   return /成型|定稿|完稿/.test(status);
 }
+
+/**
+ * 库根下不作为书的目录。
+ * 点开头(`.obsidian`、`.workbuddy` 等)一律跳过;其余为约定非书目录。
+ */
+export const NON_BOOK_DIR_NAMES = ['模板'] as const;
+
+/** 确认面板脚注:与扫描规则一致的示意(点开头目录 + 约定非书目录) */
+export const SCAN_SKIP_HINT = '.obsidian / .workbuddy / 模板';
+
+export function isNonBookDir(name: string): boolean {
+  return name.startsWith('.') || (NON_BOOK_DIR_NAMES as readonly string[]).includes(name);
+}
+
+/**
+ * 从库导入的待写入项。
+ * `checkedFolders === null` 表示用户尚未确认,不产生任何写入;
+ * 已关联的文件夹即使被勾选也不重复导入。
+ */
+export function booksPendingImport<T extends { folder: string }>(
+  candidates: readonly T[],
+  linkedFolders: Iterable<string>,
+  checkedFolders: Iterable<string> | null,
+): T[] {
+  if (checkedFolders == null) return [];
+  const linked = new Set(linkedFolders);
+  const checked = new Set(checkedFolders);
+  return candidates.filter((candidate) => checked.has(candidate.folder) && !linked.has(candidate.folder));
+}

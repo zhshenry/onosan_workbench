@@ -49,14 +49,21 @@ export class ReadingStore {
   }
 
   save(input: unknown): ReadingStoreData {
-    const raw = (input ?? {}) as Record<string, unknown>;
+    const raw = { ...((input ?? {}) as Record<string, unknown>) };
     const id = typeof raw.id === 'string' && raw.id ? raw.id : null;
+    // createdAt/updatedAt 由存储层维护。调用方把整本回传时先剥离,避免 strict patch 报 unrecognized_keys。
+    delete raw.id;
+    delete raw.createdAt;
+    delete raw.updatedAt;
     const now = new Date().toISOString();
     if (id) {
       const existing = this.data.books.find((b) => b.id === id);
       if (!existing) throw new Error('书目不存在或已删除');
-      const { id: _ignored, ...patchRaw } = raw;
-      const patch = patchSchema.parse(patchRaw);
+      const parsed = patchSchema.parse(raw);
+      // partial 上的 tags 默认值会在缺省时变成 []。只合并调用方真正提交的字段,避免状态切换把标签等抹掉。
+      const patch = Object.fromEntries(
+        Object.entries(parsed).filter(([key]) => Object.prototype.hasOwnProperty.call(raw, key)),
+      ) as Partial<BookEntry>;
       if (patch.title !== undefined && !patch.title.trim()) throw new Error('请填写书名');
       const book: BookEntry = { ...existing, ...patch, id, createdAt: existing.createdAt, updatedAt: now };
       this.data = { ...this.data, books: this.data.books.map((b) => (b.id === id ? book : b)) };

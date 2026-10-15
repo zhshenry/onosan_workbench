@@ -5,7 +5,7 @@
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { isShaped, parseFrontmatter, parseTotalChapters, type NoteMeta } from '../../shared/reading-contracts';
+import { isNonBookDir, isShaped, parseFrontmatter, parseTotalChapters, type NoteMeta } from '../../shared/reading-contracts';
 
 const MD_SKIP = new Set(['欢迎.md']);
 
@@ -47,28 +47,31 @@ function noteMeta(rel: string, abs: string): NoteMeta {
   return { rel, title: fm.title || path.basename(rel, '.md'), status: fm.status || '', updated, draft: !isShaped(fm.status ?? '') };
 }
 
-/** 顶层书文件夹 = 一本书;返回候选(供导入) */
-export function scanBooks(vaultPath: string): { folder: string; name: string; noteCount: number; lastUpdated: string }[] {
+export interface BookCandidate {
+  folder: string;
+  /** 默认书名 = 文件夹名,不用深层笔记 frontmatter title */
+  name: string;
+  noteCount: number;
+  lastUpdated: string;
+}
+
+/** 顶层书文件夹 = 一本书。跳过点开头与约定非书目录;书名用文件夹名。 */
+export function scanBooks(vaultPath: string): BookCandidate[] {
   if (!isVaultDir(vaultPath)) throw new Error('所选文件夹不是 Obsidian 库(未找到 .obsidian)');
   return readdirSync(vaultPath, { withFileTypes: true })
-    .filter(d => d.isDirectory() && d.name !== '.obsidian')
-    .map(d => {
-      const abs = path.join(vaultPath, d.name);
+    .filter((entry) => entry.isDirectory() && !isNonBookDir(entry.name))
+    .map((entry) => {
+      const abs = path.join(vaultPath, entry.name);
       const files = mdFiles(abs);
       let last = '';
       for (const rel of files) {
-        const m = statSync(path.join(abs, rel)).mtime;
-        const day = `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, '0')}-${String(m.getDate()).padStart(2, '0')}`;
+        const mtime = statSync(path.join(abs, rel)).mtime;
+        const day = `${mtime.getFullYear()}-${String(mtime.getMonth() + 1).padStart(2, '0')}-${String(mtime.getDate()).padStart(2, '0')}`;
         if (day > last) last = day;
       }
-      let name = d.name;
-      for (const rel of files) {
-        const fm = parseFrontmatter(readFileSync(path.join(abs, rel), 'utf8'));
-        if (fm.title) { name = fm.title; break; }
-      }
-      return { folder: d.name, name, noteCount: files.length, lastUpdated: last };
+      return { folder: entry.name, name: entry.name, noteCount: files.length, lastUpdated: last };
     })
-    .sort((a, b) => b.noteCount - a.noteCount);
+    .sort((a, b) => b.noteCount - a.noteCount || a.folder.localeCompare(b.folder, 'zh-CN'));
 }
 
 export interface BookAggregate {
