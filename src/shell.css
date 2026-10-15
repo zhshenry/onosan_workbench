@@ -457,7 +457,8 @@ input { font: inherit; color: inherit; }
 .sched-label .lbl { font-weight: 700; }
 .sched-label .date { color: var(--ink-3); font-weight: 600; }
 .sdiv { width: 1px; height: 20px; background: var(--hairline); margin: 0 6px; flex: none; }
-.sched-track { display: flex; align-items: center; gap: 6px; overflow-x: auto; min-width: 0; scrollbar-width: none; }
+/* 0 宽的轨道在 display:flex 下仍会被判定为不可见。1px 是收缩下限，多条摘要仍在这条轨道里横向滚动。 */
+.sched-track { display: flex; align-items: center; gap: 6px; overflow-x: auto; min-width: 1px; scrollbar-width: none; }
 .sched-track::-webkit-scrollbar { display: none; }
 .sched-track > .date { flex: none; white-space: nowrap; }
 .schip {
@@ -1342,8 +1343,9 @@ kbd {
   .sched-track > .date, .sched-track > .date + .sdiv { display: none; }
 }
 @media (max-width: 1180px) {
-  /* 摘要收起后两个入口保持固有宽度，避免日程被挤到待办下面。组本身继续居中。 */
-  .tb-middle { gap: 8px; }
+  /* 摘要收起后两个入口保持固有宽度，避免日程被挤到待办下面。组本身继续居中。
+     收起宽度只写在变量上：内联 max-width 会留到重新展开的第一帧，把日程轨挤成 0 宽。 */
+  .tb-middle { gap: 8px; max-width: var(--tb-middle-cap, max-content); }
   .tb-left { flex: none; }
   .ipop-sched { left: 0; margin-left: 0; }
   .tb-right { gap: 5px; margin-left: auto; }

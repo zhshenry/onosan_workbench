@@ -56,6 +56,13 @@ test('placement refuses a zero-width collapse when the centered band is gone', (
   assert.ok(placed.width >= 200);
 });
 
+test('a hidden schedule track does not keep the inline cap that zeroes it when it returns', () => {
+  const source = readFileSync(new URL('../src/topbar-layout.ts', import.meta.url), 'utf8');
+  assert.match(source, /const trackShown = !track \|\| getComputedStyle\(track\)\.display !== 'none'/);
+  assert.match(source, /setProperty\('--tb-middle-cap', `\$\{placement\.width\}px`\)/);
+  assert.match(source, /maxWidth = trackShown \? `\$\{placement\.width\}px` : ''/);
+});
+
 test('app reapplies capsule placement when the right cluster changes', () => {
   const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
   assert.match(app, /ResizeObserver\(place\)/);

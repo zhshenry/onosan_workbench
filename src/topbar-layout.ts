@@ -80,6 +80,12 @@ export function applyTopbarCapsulePlacement(bar: HTMLElement): void {
     naturalWidth: natural,
     readableWidth: readable,
   });
-  middle.style.maxWidth = `${placement.width}px`;
+  const track = middle.querySelector<HTMLElement>('.sched-track');
+  // display:none while the window is ≤1180. An inline pixel cap from that
+  // measurement stays in force for the first frame after the track returns,
+  // and a flex item with a 0 floor collapses to an empty box.
+  const trackShown = !track || getComputedStyle(track).display !== 'none';
+  middle.style.setProperty('--tb-middle-cap', `${placement.width}px`);
+  middle.style.maxWidth = trackShown ? `${placement.width}px` : '';
   middle.style.transform = placement.nudge > 0.5 ? `translateX(calc(-50% - ${placement.nudge}px))` : '';
 }

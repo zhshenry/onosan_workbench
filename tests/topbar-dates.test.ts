@@ -65,7 +65,9 @@ test('compact topbar keeps the capsule pair intrinsic and the schedule popover a
   assert.match(compact, /\.tb-left \{ flex: none; \}/);
   assert.match(compact, /\.ipop-sched \{ left: 0; margin-left: 0; \}/);
   assert.match(compact, /\.sched-track, \.sdiv, \.tprog \{ display: none; \}/);
+  assert.match(compact, /\.tb-middle \{[^}]*max-width: var\(--tb-middle-cap, max-content\)/);
   assert.doesNotMatch(compact, /\.tb-middle \{[^}]*position:\s*static/);
+  assert.match(css, /\.sched-track \{[^}]*min-width: 1px;/);
 });
 
 test('topbar capsule group stays centered using the real right cluster, not a fixed reserve', () => {
