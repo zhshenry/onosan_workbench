@@ -80,9 +80,9 @@ test('creator host retains the actual DOM, frame subscriptions and lease only ac
   const { createRoot } = await import('react-dom/client');
   let root = createRoot(dom.window.document.getElementById('root')!);
   const focusTarget = { current: dom.window.document.getElementById('current')! };
-  const render = async (active: boolean, mode: 'creator' | 'browse' = 'creator') => {
+  const render = async (active: boolean) => {
     await act(async () => root.render(createElement(MediaBrowserHost, {
-      active, mode, focusTarget, onModeChange() {}, onPending() {}, onAskAI() {},
+      active, focusTarget, onPending() {},
     })));
   };
   const ready = async (guest: Guest) => { await act(async () => guest.dispatchEvent(new dom.window.Event('dom-ready'))); };
@@ -99,7 +99,15 @@ test('creator host retains the actual DOM, frame subscriptions and lease only ac
     const input = create('input'); input.value = '未提交文字'; first.append(input); input.focus();
     const host = dom.window.document.querySelector('.media-browser-host')!;
     const routes = [...first.routes]; const listenerCount = first.liveListeners.size;
-    assert.ok(listenerCount > 0); assert.equal(openListeners.size, 1); assert.equal(captureListeners, 2);
+    assert.ok(listenerCount > 0); assert.equal(openListeners.size, 1);
+    assert.equal(captureListeners, 0, 'Creator page must not subscribe to the materials collector');
+    assert.equal(dom.window.document.querySelector('.media-browser-header h1')?.textContent, '我的小红书');
+    assert.equal(dom.window.document.querySelector('.media-browser-header button'), null);
+    assert.equal([...dom.window.document.querySelectorAll('button')].some(button => button.textContent === '找素材' || button.textContent === '返回我的小红书'), false);
+    assert.equal(dom.window.document.querySelector('.mbp-capbtn'), null);
+    assert.equal(dom.window.document.querySelector('[title^="AI 看这页"]'), null);
+    assert.equal(dom.window.document.querySelector('.mbp-chip'), null);
+    assert.equal(dom.window.document.querySelector('webview')?.getAttribute('partition'), `persist:wb-browser-${XHS_CREATOR_WORKSPACE}`);
     for (let turn = 0; turn < 6; turn++) {
       await render(false);
       assert.equal(host.getAttribute('aria-hidden'), 'true'); assert.equal(host.hasAttribute('inert'), true);
@@ -126,37 +134,20 @@ test('creator host retains the actual DOM, frame subscriptions and lease only ac
     assert.deepEqual(released, ['lease-1']); assert.equal(first.liveListeners.size, 0);
     assert.equal(openListeners.size, 0); assert.equal(captureListeners, 0);
 
-    root = createRoot(dom.window.document.getElementById('root')!);
-    await render(true); await ready(guests[1]);
-    await render(true, 'browse');
-    assert.deepEqual(released, ['lease-1', 'lease-2'], 'Cross-mode switch must dispose creator');
-    assert.ok(dom.window.document.querySelector('.mbp-capbtn'));
-    assert.ok(dom.window.document.querySelector('[title^="AI 看这页"]'));
-    await act(async () => (dom.window.document.querySelector('.mbp-chip') as HTMLElement).click());
-    await ready(guests[2]); assert.equal(acquired[2].workspace, 'media');
-    await render(false, 'browse');
-    assert.equal(dom.window.document.querySelector('webview'), null);
-    assert.equal(released.at(-1), 'lease-3', 'Materials retain their previous workspace-unmount behavior');
-    await render(true, 'browse'); assert.equal(dom.window.document.querySelector('webview'), null);
-    await render(true); await ready(guests[3]);
-    assert.notEqual(guests[3], first); assert.deepEqual(guests[3].routes, [XHS_CREATOR_HOME]);
-    assert.equal(dom.window.document.querySelector('.mbp-capbtn'), null);
-    assert.equal(dom.window.document.querySelector('[title^="AI 看这页"]'), null);
-    await teardown();
-
     root = createRoot(dom.window.document.getElementById('root')!); hold = true;
     await render(true); const pendingLease = acquired.at(-1)!.lease;
-    await render(false); assert.equal(guests.length, 4, 'Hidden pending acquisition must not restart');
-    await act(async () => resolveAcquire!()); await ready(guests[4]);
-    await render(true); assert.equal(dom.window.document.querySelector('webview'), guests[4]);
-    assert.equal(acquired.at(-1)!.lease, pendingLease); assert.deepEqual(guests[4].routes, [XHS_CREATOR_HOME]);
+    await render(false); assert.equal(guests.length, 1, 'Hidden pending acquisition must not restart');
+    await act(async () => resolveAcquire!()); await ready(guests[1]);
+    await render(true); assert.equal(dom.window.document.querySelector('webview'), guests[1]);
+    assert.equal(acquired.at(-1)!.lease, pendingLease); assert.deepEqual(guests[1].routes, [XHS_CREATOR_HOME]);
     await teardown();
 
     root = createRoot(dom.window.document.getElementById('root')!);
     await render(true); const abandonedLease = acquired.at(-1)!.lease;
     await teardown(); await act(async () => resolveAcquire!());
-    assert.equal(guests.length, 5, 'Real teardown cancels pending guest attachment');
+    assert.equal(guests.length, 2, 'Real teardown cancels pending guest attachment');
     assert.equal(released.at(-1), abandonedLease);
+    assert.ok(acquired.every(value => value.workspace === XHS_CREATOR_WORKSPACE), 'Creator keepalive must not enter the materials workspace');
     assert.equal(new Set(released).size, released.length, 'Each acquired lease releases exactly once');
     assert.equal(released.length, acquired.length); assert.equal(openListeners.size, 0); assert.equal(captureListeners, 0);
   } finally {

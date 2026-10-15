@@ -639,22 +639,25 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       await until(page,()=>probe(application),value=>value.destroyed.includes(crashed),'Crashed guest lease/resource was not destroyed');
       (report.mediaKeepaliveRecovery??=[]).push({ crashedGuest:crashed,replacementGuest:id,statePreservation:false });
     });
-    await check('Creator/material mode boundaries remain destructive and keep their distinct real partitions', async () => {
-      const departing=id; await page.locator('.media-browser-header').getByRole('button',{name:'找素材',exact:true}).click();
-      await until(page,()=>probe(application),value=>value.destroyed.includes(departing),'Creator must release on mode switch');
-      await page.locator('.mbp-addr input').fill(`${MEDIA_FIXTURE_ORIGIN}/note/next`); await page.locator('.mbp-addr input').press('Enter');
-      const material=await guestId(page); await loaded(application,page,material,'/note/next');
-      assert.equal(await page.locator('webview').getAttribute('partition'),'persist:wb-browser-media');
-      assert.ok(await page.locator('.mbp-capbtn').isVisible()); assert.ok(await page.locator('[title^="AI 看这页"]').isVisible());
-      await page.locator('.rail [data-workbench="home"]').click();
-      await until(page,()=>probe(application),value=>value.destroyed.includes(material),'Materials must release on workspace exit');
-      assert.equal(await page.locator('.media-browser-host').count(),0);
-      await creator(page,true); assert.equal(await page.locator('webview').count(),0,'Returning to materials does not revive its old guest');
-      await page.locator('.media-browser-header').getByRole('button',{name:'返回我的小红书',exact:true}).click();
-      id=await guestId(page); assert.notEqual(id,departing); await loaded(application,page,id,'/');
-      assert.equal((await nativeState(application,id)).draft,'');
-      assert.equal(await page.locator('webview').getAttribute('partition'),'persist:wb-browser-xhs-creator');
-      assert.equal(await page.locator('.mbp-capbtn').count(),0); assert.equal(await page.locator('[title^="AI 看这页"]').count(),0);
+    await check('Removed find-materials entry leaves no orphan materials mode and retains the creator guest', async () => {
+      const retained = id;
+      assert.equal(await page.getByRole('button', { name: '找素材', exact: true }).count(), 0);
+      assert.equal(await page.getByRole('button', { name: '返回我的小红书', exact: true }).count(), 0);
+      assert.equal((await page.locator('.media-browser-header h1').innerText()).trim(), '我的小红书');
+      assert.match(await page.locator('.media-browser-header p').innerText(), /作品同步暂未接入/);
+      assert.equal(await page.locator('.media-browser-header button').count(), 0);
+      assert.equal(await page.locator('.mbp-capbtn').count(), 0);
+      assert.equal(await page.locator('.mbp-chip').count(), 0);
+      assert.equal(await page.locator('.mbp-tabs').count(), 0);
+      assert.equal(await page.locator('[title^="AI 看这页"]').count(), 0);
+      assert.equal(await page.locator('webview').count(), 1);
+      assert.equal(await page.locator('webview').getAttribute('partition'), 'persist:wb-browser-xhs-creator');
+      assert.equal(await guestId(page), retained);
+      for (const name of ['后退', '前进', '刷新']) {
+        assert.equal(await page.locator('.media-browser-host').getByRole('button', { name, exact: true }).count(), 1);
+      }
+      assert.equal(await page.locator('.media-browser-host .mbp-addr input').evaluate(node => node.readOnly), true);
+      assert.equal((await probe(application)).destroyed.includes(retained), false, 'Removing the entry must not release the retained creator guest');
     });
     await check('Actual renderer host teardown destroys the retained guest and reload is lazy again', async () => {
       const departing=id;const {point:oldPoint}=await focusMediaFixtureControl({application,page,native,id,selector:'#click-target',observation:{}});
@@ -667,7 +670,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
     });
     report.mediaKeepalive={ fixture:'local synthetic HTTPS responses in unchanged creator/material partitions', rows, security:report.mediaKeepalive.security,
       observations:await probe(application), exactBridgeLeaseAccounting:'tests/media-keepalive.test.ts',
-      limitations:['No live account/site automation','No restart/crash unsent-state guarantee','Materials cross-workspace and cross-mode keepalive excluded','No background freezing/muting/CPU or network guarantee'] };
+      limitations:['No live account/site automation','No restart/crash unsent-state guarantee','Find-materials entry removed; creator page has no materials mode','No background freezing/muting/CPU or network guarantee'] };
   } catch (error) {
     failure = error;
     report.mediaKeepalive.failure = String(error).slice(0,4000);

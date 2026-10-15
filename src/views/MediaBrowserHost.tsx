@@ -6,13 +6,13 @@ type MediaBrowserHostProps = ComponentProps<typeof MediaBrowserView> & {
   focusTarget: RefObject<HTMLElement | null>;
 };
 
-/** 工作台切换只隐藏创作者页的整个 DOM;素材模式与跨模式切换仍按原行为释放。 */
+/** 工作台切换只隐藏创作者页的整个 DOM。此页不再进入素材浏览器。 */
 export function MediaBrowserHost({ active, focusTarget, ...viewProps }: MediaBrowserHostProps) {
-  const [creatorEntered, setCreatorEntered] = useState(active && viewProps.mode === 'creator');
+  const [creatorEntered, setCreatorEntered] = useState(active);
   const hostRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (active) setCreatorEntered(viewProps.mode === 'creator');
-  }, [active, viewProps.mode]);
+    if (active) setCreatorEntered(true);
+  }, [active]);
 
   useLayoutEffect(() => {
     const host = hostRef.current;
@@ -25,7 +25,7 @@ export function MediaBrowserHost({ active, focusTarget, ...viewProps }: MediaBro
     }
   }, [active, focusTarget]);
 
-  if (!active && (!creatorEntered || viewProps.mode !== 'creator')) return null;
+  if (!active && !creatorEntered) return null;
   return (
     <div
       ref={hostRef}
