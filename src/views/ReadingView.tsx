@@ -1,10 +1,110 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  READING_STATUS_LABEL, READING_STATUSES,
+  READING_STATUS_LABEL, READING_STATUSES, SCAN_SKIP_HINT, booksPendingImport,
   type BookEntry, type ReadingStatus, type ReadingStoreData,
 } from '../../shared/reading-contracts';
 import { Modal, Segmented, Select, errorText } from '../../modules/todo/ui/ui';
-import { X } from '@phosphor-icons/react';
+import { Check, Info, X } from '@phosphor-icons/react';
+
+interface ImportCandidate {
+  folder: string;
+  name: string;
+  noteCount: number;
+}
+
+function ImportConfirmPanel({ candidates, checked, busy, onToggle, onCancel, onConfirm }: {
+  candidates: ImportCandidate[];
+  checked: Set<string>;
+  busy: boolean;
+  onToggle(folder: string): void;
+  onCancel(): void;
+  onConfirm(): void;
+}) {
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') onCancel();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onCancel]);
+  const selected = candidates.filter((candidate) => checked.has(candidate.folder)).length;
+  return (
+    <section className="rd-import" aria-label="确认导入">
+      <h2>确认导入</h2>
+      <p className="rd-import-sub">识别到 {candidates.length} 本书，勾选后导入工作台（不改 Obsidian 库）</p>
+      <ul className="rd-import-list">
+        {candidates.map((candidate) => {
+          const on = checked.has(candidate.folder);
+          return (
+            <li key={candidate.folder}>
+              <label className={on ? 'rd-import-row on' : 'rd-import-row'}>
+                <input
+                  type="checkbox"
+                  aria-label={candidate.name}
+                  checked={on}
+                  disabled={busy}
+                  onChange={() => onToggle(candidate.folder)}
+                />
+                <span className="rd-import-box" aria-hidden="true">{on ? <Check size={12} weight="bold" /> : null}</span>
+                <span className="rd-import-text">
+                  <b>{candidate.name}</b>
+                  <small>文件夹名</small>
+                </span>
+              </label>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="rd-import-skip"><Info size={14} aria-hidden="true" />已跳过 {SCAN_SKIP_HINT}</p>
+      <div className="rd-import-actions">
+        <button type="button" className="btn btn-sec" onClick={onCancel} disabled={busy}>取消</button>
+        <button type="button" className="btn btn-pri" onClick={onConfirm} disabled={busy || selected === 0}>确认导入</button>
+      </div>
+    </section>
+  );
+}
+
+function RemoveBookButton({ onRemove }: { onRemove(): void }) {
+  const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (event: MouseEvent): void => {
+      if (!wrap.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+  return (
+    <div className="rd-remove-wrap" ref={wrap}>
+      <button
+        type="button"
+        className="rd-remove"
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        onClick={() => setOpen((value) => !value)}
+      >
+        删除书目
+      </button>
+      {open && (
+        <div className="rd-remove-pop" role="dialog" aria-modal="false" aria-label="确认删除书目">
+          <p>仅移除工作台书目，不碰 Obsidian</p>
+          <div className="rd-remove-actions">
+            <button type="button" className="btn btn-sec btn-sm" onClick={() => setOpen(false)}>取消</button>
+            <button type="button" className="rd-remove-go" onClick={() => { setOpen(false); onRemove(); }}>删除</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const wb = window.workbench;
 const CUR_KEY = 'wb.reading.curBookId';
@@ -44,6 +144,11 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
   const [mFolder, setMFolder] = useState('');
   const [vaultInput, setVaultInput] = useState('');
   const [folders, setFolders] = useState<{ folder: string; name: string; noteCount: number }[]>([]);
+  const [importCandidates, setImportCandidates] = useState<ImportCandidate[] | null>(null);
+  const [importChecked, setImportChecked] = useState<Set<string>>(new Set());
+  const [importBusy, setImportBusy] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const importLock = useRef(false);
   const [commentDraft, setCommentDraft] = useState('');
   const commentTimer = useRef<number | undefined>(undefined);
   const loadedOnce = useRef(false);
@@ -85,7 +190,10 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
   const save = (patch: Partial<BookEntry>, id = book!.id, okMsg?: string): void => {
     const target = storeData!.books.find((b) => b.id === id);
     if (!target) return;
-    void wb.reading.save({ ...target, ...patch }).then(
+    const payload: Record<string, unknown> = { ...target, ...patch, id };
+    delete payload.createdAt;
+    delete payload.updatedAt;
+    void wb.reading.save(payload).then(
       (raw) => apply(raw, okMsg),
       (e) => onPending(errorText(e)),
     );
@@ -105,19 +213,80 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
     void wb.reading.openObsidian(vaultName, rel).catch((e) => onPending(errorText(e)));
   };
 
+  const linkedFolders = (): string[] => storeData?.books.flatMap((item) => item.link ? [item.link.folder] : []) ?? [];
+
   const scanAndImport = (): void => {
     if (!storeData?.vaultPath) { onPending('请先配置读书笔记库路径'); return; }
+    if (scanning) return;
+    setScanning(true);
     void wb.reading.scan(storeData.vaultPath).then((raw) => {
-      const candidates = raw as { folder: string; name: string; noteCount: number }[];
-      const known = new Set(storeData.books.filter((b) => b.link).map((b) => b.link!.folder));
-      const fresh = candidates.filter((c) => !known.has(c.folder));
-      if (!fresh.length) { onPending('库内没有新的书文件夹'); return; }
-      void Promise.all(fresh.map((c) => wb.reading.save({
-        title: c.name, status: c.noteCount > 1 ? 'reading' : 'wish',
-        link: { vault: vaultName, folder: c.folder },
-      }))).then(() => wb.reading.list().then((raw2) => {
-        apply(raw2, `已从库导入 ${fresh.length} 本:${fresh.map((c) => c.name).join('、')}`);
-      }));
+      const candidates = raw as ImportCandidate[];
+      const fresh = booksPendingImport(candidates, linkedFolders(), candidates.map((candidate) => candidate.folder));
+      if (!fresh.length) {
+        setImportCandidates(null);
+        onPending('库内没有新的书文件夹');
+        return;
+      }
+      setImportCandidates(fresh);
+      setImportChecked(new Set(fresh.map((candidate) => candidate.folder)));
+    }, (e) => onPending(errorText(e))).finally(() => setScanning(false));
+  };
+
+  const cancelImport = (): void => {
+    if (importBusy) return;
+    setImportCandidates(null);
+  };
+
+  const toggleImport = (folder: string): void => {
+    setImportChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(folder)) next.delete(folder);
+      else next.add(folder);
+      return next;
+    });
+  };
+
+  const confirmImport = (): void => {
+    if (!importCandidates || importLock.current) return;
+    const pending = booksPendingImport(importCandidates, linkedFolders(), importChecked);
+    if (!pending.length) { setImportCandidates(null); return; }
+    importLock.current = true;
+    setImportBusy(true);
+    void (async () => {
+      try {
+        let latest: unknown = null;
+        for (const candidate of pending) {
+          latest = await wb.reading.save({
+            title: candidate.name,
+            status: candidate.noteCount > 1 ? 'reading' : 'wish',
+            link: { vault: vaultName, folder: candidate.folder },
+          });
+        }
+        apply(latest, `已从库导入 ${pending.length} 本:${pending.map((candidate) => candidate.name).join('、')}`);
+        setImportCandidates(null);
+      } catch (e) {
+        onPending(errorText(e));
+      } finally {
+        importLock.current = false;
+        setImportBusy(false);
+      }
+    })();
+  };
+
+  const closeDetail = (): void => {
+    setCurId(null);
+    localStorage.removeItem(CUR_KEY);
+  };
+
+  const confirmRemove = (): void => {
+    if (!book) return;
+    const id = book.id;
+    void wb.reading.remove(id).then((raw) => {
+      apply(raw, '已删除书目');
+      if (curId === id) {
+        setCurId(null);
+        localStorage.removeItem(CUR_KEY);
+      }
     }, (e) => onPending(errorText(e)));
   };
 
@@ -190,13 +359,13 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
         </div>
         <div className="gbtns">
           {storeData.vaultPath && (
-            <button className="btn btn-sec" onClick={scanAndImport}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 3.8v3.4h-3.4"/></svg>
+            <button className="btn btn-sec" onClick={scanAndImport} disabled={scanning} aria-busy={scanning}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 3.8v3.4h-3.4"/></svg>
               从库导入
             </button>
           )}
           <button className="btn btn-pri" onClick={openNew}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
             添加书目
           </button>
         </div>
@@ -232,11 +401,24 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
         </div>
       )}
 
+      {importCandidates && (
+        <ImportConfirmPanel
+          candidates={importCandidates}
+          checked={importChecked}
+          busy={importBusy}
+          onToggle={toggleImport}
+          onCancel={cancelImport}
+          onConfirm={confirmImport}
+        />
+      )}
+
       {storeData.books.length === 0 ? (
-        <div className="bazi-empty glass rd-empty">
-          <b>书单还是空的</b>
-          <p>{storeData.vaultPath ? '点「从库导入」把读书笔记库里的书加进来,或「添加书目」手动录入。' : '先在上方关联读书笔记库,或「添加书目」手动录入一本。'}</p>
-        </div>
+        importCandidates ? null : (
+          <div className="bazi-empty glass rd-empty">
+            <b>书单还是空的</b>
+            <p>{storeData.vaultPath ? '点「从库导入」把读书笔记库里的书加进来,或「添加书目」手动录入。' : '先在上方关联读书笔记库,或「添加书目」手动录入一本。'}</p>
+          </div>
+        )
       ) : (
         <div className="rd-cols">
           <div>
@@ -292,14 +474,10 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
                 <div className="phead">
                   <span className="ptitle">书籍详情</span>
                   {book.link && <span className="pcount">关联文件夹:{book.link.folder}</span>}
-                  {storeData.books.length > 1 && (
-                    <button
-                      className="rd-del"
-                      aria-label={`删除 ${book.title}`}
-                      title="删除书目"
-                      onClick={() => { void wb.reading.remove(book.id).then((raw) => apply(raw, '已删除书目'), (e) => onPending(errorText(e))); }}
-                    ><X size={13} weight="bold" /></button>
-                  )}
+                  <button type="button" className="rd-close" aria-label="关闭面板（不删书）" onClick={closeDetail}>
+                    <span>关闭面板（不删书）</span>
+                    <span className="rd-close-x" aria-hidden="true"><X size={13} weight="bold" /></span>
+                  </button>
                 </div>
                 <div className="d-head">
                   <span className="d-cover" style={{ background: coverTone(book.title) }}>{[...book.title][0]}</span>
@@ -315,6 +493,7 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
                         ))}
                       </div>
                     </div>
+                    <RemoveBookButton key={book.id} onRemove={confirmRemove} />
                   </div>
                 </div>
 

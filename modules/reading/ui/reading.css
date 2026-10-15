@@ -71,13 +71,95 @@
 .stars { color: #c99a2e; font-size: var(--type-support); letter-spacing: 1px; }
 .stars .off, .rd-star .off { color: rgba(30, 34, 44, 0.18); }
 
+/* ---- 从库导入确认 ---- */
+.reading-view .gbtns .btn:disabled,
+.rd-import-actions .btn:disabled {
+  opacity: 0.45; cursor: default; transform: none; filter: none;
+}
+.rd-import {
+  width: min(640px, 100%); margin: 0 auto 16px; padding: 18px 18px 16px;
+  border-radius: var(--r-panel); background: rgba(255, 255, 255, 0.94);
+  border: 1px solid color-mix(in srgb, var(--acc-deep) 18%, white);
+  box-shadow: var(--shadow-sm);
+}
+.rd-import h2 { font-size: var(--type-section); font-weight: 800; letter-spacing: -0.01em; }
+.rd-import-sub { margin-top: 4px; font-size: var(--type-support); color: var(--ink-3); line-height: 1.5; }
+.rd-import-list {
+  list-style: none; display: flex; flex-direction: column; gap: 8px;
+  margin: 12px 0 0; max-height: 320px; overflow: auto;
+}
+.rd-import-row {
+  position: relative; display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 12px; cursor: pointer;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid color-mix(in srgb, var(--acc-deep) 16%, white);
+}
+.rd-import-row.on {
+  background: var(--currow);
+  border-color: color-mix(in srgb, var(--acc-deep) 42%, white);
+}
+.rd-import-row input {
+  position: absolute; inset: 0; width: 100%; height: 100%; margin: 0;
+  opacity: 0; cursor: pointer;
+}
+.rd-import-box {
+  width: 22px; height: 22px; border-radius: 6px; flex: none;
+  display: grid; place-items: center; color: #fff;
+  background: #fff; border: 1.5px solid color-mix(in srgb, var(--acc-deep) 45%, white);
+}
+.rd-import-row.on .rd-import-box { background: var(--acc-deep); border-color: var(--acc-deep); }
+.rd-import-text { min-width: 0; display: flex; flex-direction: column; }
+.rd-import-text b {
+  font-size: var(--type-control); font-weight: 800;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.rd-import-text small { font-size: var(--type-caption); color: var(--ink-3); font-weight: 600; }
+.rd-import-skip {
+  display: flex; align-items: center; gap: 6px; margin-top: 10px;
+  font-size: var(--type-caption); color: var(--ink-3);
+}
+.rd-import-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+
 /* ---- 详情卡 ---- */
 .detail { position: sticky; top: 0; }
-.rd-del {
-  margin-left: auto; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
-  color: var(--ink-3); transition: background 0.13s var(--ease), color 0.13s var(--ease);
+.rd-close {
+  margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: 8px;
+  color: var(--acc-deep); font-size: var(--type-support); font-weight: 700; white-space: nowrap;
 }
-.rd-del:hover { background: var(--danger-soft); color: var(--danger); }
+.rd-close-x {
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  color: var(--ink-2); background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.95); box-shadow: var(--shadow-sm);
+}
+.rd-close:hover .rd-close-x { background: #fff; color: var(--ink); }
+.rd-remove-wrap { position: relative; z-index: 4; display: inline-flex; margin-top: 10px; }
+.rd-remove {
+  height: 30px; padding: 0 12px; border-radius: 8px;
+  border: 1px solid var(--danger); color: var(--danger); background: #fff;
+  font-size: var(--type-support); font-weight: 700;
+}
+.rd-remove:hover { background: var(--danger-soft); }
+.rd-remove-pop {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 5; width: 248px;
+  padding: 12px; border-radius: 12px;
+  background: color-mix(in srgb, var(--avatar-amber) 8%, #fff);
+  border: 1px solid color-mix(in srgb, var(--avatar-amber) 32%, #fff);
+  box-shadow: var(--shadow-sm);
+}
+.rd-remove-pop::before {
+  content: ''; position: absolute; top: -6px; left: 18px; width: 10px; height: 10px;
+  background: color-mix(in srgb, var(--avatar-amber) 8%, #fff);
+  border-top: 1px solid color-mix(in srgb, var(--avatar-amber) 32%, #fff);
+  border-left: 1px solid color-mix(in srgb, var(--avatar-amber) 32%, #fff);
+  transform: rotate(45deg);
+}
+.rd-remove-pop p { margin: 0 0 10px; font-size: var(--type-support); line-height: 1.5; color: var(--ink-2); }
+.rd-remove-actions { display: flex; gap: 8px; }
+.rd-remove-go {
+  height: 32px; padding: 0 14px; border-radius: 10px;
+  background: var(--danger); color: #fff; font-size: var(--type-support); font-weight: 700;
+}
+.rd-remove-go:hover { filter: brightness(1.06); }
 .d-head { display: flex; align-items: flex-start; gap: 14px; padding-bottom: 12px; }
 .d-cover {
   width: 64px; height: 88px; border-radius: 10px; flex: none; display: grid; place-items: center; color: #fff;
