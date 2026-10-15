@@ -392,7 +392,7 @@ test('temporary protocol handler gates only local responses and cleanup preserve
 test('normal-quit fixture preserves unknown handlers, removes only its own synchronous handler and propagates cleanup errors', async () => {
   const source=await readFile(new URL('../tooling/media-keepalive-pilot.mjs',import.meta.url),'utf8');
   const start=source.indexOf('await application.evaluate(({app,session},{token,html,url})=>');
-  const finish=source.indexOf("},{token,html:mediaFixtureHtml('/'),url:",start);
+  const finish=source.indexOf('},{token,html:mediaFixtureHtml(restoredPath),url:',start);
   const installer=source.slice(start+'await application.evaluate('.length,finish+1);
   const cleanupStart=source.indexOf('await application.evaluate(({app,webContents},token)=>');
   const cleanupFinish=source.indexOf('},token).catch(',cleanupStart);

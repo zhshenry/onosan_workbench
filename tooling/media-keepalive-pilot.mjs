@@ -199,6 +199,10 @@ export async function closeUnchangedMediaTaskEditor(page) {
 /** Arm a fresh synthetic guest for the existing real UI quit, leaving teardown to the app. */
 export async function prepareMediaKeepaliveQuit({application,page,report}) {
   const token=`media35-quit-${Date.now()}`;
+  const saved=await page.evaluate(()=>window.workbench.browserAutomation.state('xhs-creator'));
+  const restoredUrl=(saved.tabs.find(tab=>tab.id===saved.activeId)??saved.tabs[0])?.url||MEDIA_FIXTURE_ORIGIN+'/';
+  assert.ok(isMediaFixtureUrl(restoredUrl),'Quit fixture may only restore a known synthetic creator address');
+  const restoredPath=new URL(restoredUrl).pathname;
   try {
     await application.evaluate(({app,session},{token,html,url})=>{
       if(globalThis.__onoMediaKeepaliveQuit) throw new Error('Duplicate media quit fixture');
@@ -223,9 +227,9 @@ export async function prepareMediaKeepaliveQuit({application,page,report}) {
       // On normal exit the real owner/BrowserGuests teardown destroys the guest.
       // The fixture only removes its own response handler; it does not destroy the guest early.
       app.once('will-quit',fixture.cleanup);
-    },{token,html:mediaFixtureHtml('/'),url:MEDIA_FIXTURE_ORIGIN+'/'});
+    },{token,html:mediaFixtureHtml(restoredPath),url:restoredUrl});
     await aiVisible(page,false);await creator(page,true);const id=await guestId(page);
-    await loaded(application,page,id,'/');const native=await application.browserWindow(page);
+    await loaded(application,page,id,restoredPath);const native=await application.browserWindow(page);
     const input=report.mediaKeepaliveQuitInput={};
     await focusMediaFixtureControl({application,page,native,id,selector:'#draft',observation:input});
     await page.keyboard.type('Quit-only unsent fixture');
@@ -234,7 +238,7 @@ export async function prepareMediaKeepaliveQuit({application,page,report}) {
     await page.locator('.rail [data-workbench="home"]').click();await assertHidden(application,page,id,report);
     await assertMediaHiddenInput({application,page,id,oldPoint,report,label:'normal quit'});
     assertMediaStatePreserved(retained,await nativeState(application,id));
-    report.mediaKeepaliveQuit={guestId:id,nonce:retained.nonce,draft:retained.draft,retainedBeforeQuit:true,statePreservationAcrossRestart:false};
+    report.mediaKeepaliveQuit={guestId:id,restoredUrl,nonce:retained.nonce,draft:retained.draft,retainedBeforeQuit:true,statePreservationAcrossRestart:false};
   } catch(error) {
     await application.evaluate(({app,webContents},token)=>{
       const fixture=globalThis.__onoMediaKeepaliveQuit;if(!fixture||fixture.token!==token)return;
