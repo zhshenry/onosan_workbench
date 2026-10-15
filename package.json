@@ -69,7 +69,7 @@
     "directories": { "output": "release" },
     "publish": { "provider": "github", "owner": "zhshenry", "repo": "onosan_workbench" },
     "files": [
-      "dist/**", "dist-electron/**", "assets/tray.png", "package.json",
+      "dist/**", "dist-electron/**", "assets/tray.png", "assets/icon.ico", "package.json",
       "!node_modules/astronomy-engine/**", "!node_modules/dompurify/**",
       "!node_modules/iztro/**", "!node_modules/marked/**", "!node_modules/pdfjs-dist/**",
       "!node_modules/@napi-rs/canvas*/**"
@@ -80,13 +80,15 @@
       { "from": "node_modules/pdfjs-dist/standard_fonts", "to": "pdfjs/standard_fonts" },
       { "from": "node_modules/pdfjs-dist/wasm", "to": "pdfjs/wasm" }
     ],
-    "win": { "target": "nsis", "signExecutable": false },
+    "win": { "target": "nsis", "signExecutable": false, "icon": "assets/icon.ico" },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "deleteAppDataOnUninstall": false
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico"
     },
     "artifactName": "Ono-Workbench-Setup-${version}-${arch}.${ext}"
   }
