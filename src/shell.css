@@ -548,11 +548,12 @@ input { font: inherit; color: inherit; }
    包裹后该检测失效 —— 以下规则把检测与 flex 传递补到嵌套层,与直接子形态等价 */
 .content:has(> .view-fade > .pending-workbench),
 .content:has(> .view-fade > .copy-wrap),
-.content:has(> .view-fade > .media-browser-view) { display: flex; flex-direction: column; min-height: 0; }
-.content:has(> .view-fade > .media-browser-view) { padding: 12px; }
+.content:has(> .view-fade:not([hidden]) > .media-browser-view) { display: flex; flex-direction: column; min-height: 0; }
+.content:has(> .view-fade:not([hidden]) > .media-browser-view) { padding: 12px; }
 .view-fade:has(> .pending-workbench),
 .view-fade:has(> .copy-wrap),
 .view-fade:has(> .media-browser-view) { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.media-browser-host[hidden] { display: none !important; }
 @keyframes fadein {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
@@ -1327,6 +1328,7 @@ kbd {
   .sched-track, .sdiv, .tprog { display: none; }
   .todopill { gap: 6px; padding: 0 10px; }
   .cols { grid-template-columns: 1fr; }
+  .cols > div:last-child, .todo-panel { grid-column: auto; grid-row: auto; }
   .mgrid { grid-template-columns: 1fr; }
   .mitem:nth-child(2n) { border-left: none; }
   .mitem:nth-child(n + 2) { border-top: 1px solid var(--hairline); }

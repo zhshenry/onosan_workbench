@@ -1,0 +1,429 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { readFile, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { EventEmitter } from 'node:events';
+import { runInNewContext } from 'node:vm';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { JSDOM } from 'jsdom';
+import { TaskEditor } from '../modules/todo/ui/TaskEditor';
+import { newTask, type Task } from '../shared/todo-contracts';
+import { MEDIA_FIXTURE_ORIGIN, MEDIA_FIXTURE_PATHS, MEDIA_KEEPALIVE_SCREENSHOTS, isMediaFixtureUrl, mediaFixtureHtml,
+  assertMediaStatePreserved, assertMediaGeometry, assertMediaGuestSecurity, assertMediaHiddenFocus, mediaNativeFocus, closeUnchangedMediaTaskEditor, assertMediaHomeLayoutUnchanged } from '../tooling/media-keepalive-pilot.mjs';
+import { inspectPilotArtifacts, MAX_ARTIFACT_BYTES } from '../tooling/pilot-artifacts.mjs';
+
+test('synthetic creator HTTPS fixture is exact-origin, exact-route and never forwards to the live site', () => {
+  for (const route of MEDIA_FIXTURE_PATHS) assert.equal(isMediaFixtureUrl(MEDIA_FIXTURE_ORIGIN + route), true);
+  for (const value of ['http://creator.xiaohongshu.com/', 'https://creator.xiaohongshu.com:8443/', 'https://user:pass@creator.xiaohongshu.com/',
+    'https://creator.xiaohongshu.com.evil.test/', 'https://other.xiaohongshu.com/', `${MEDIA_FIXTURE_ORIGIN}/unknown`, `${MEDIA_FIXTURE_ORIGIN}/?live=1`, `${MEDIA_FIXTURE_ORIGIN}/#live`, 'invalid']) assert.equal(isMediaFixtureUrl(value), false);
+  for (const route of MEDIA_FIXTURE_PATHS) {
+    const html = mediaFixtureHtml(route);
+    assert.match(html, /本地合成网页/); assert.match(html, /无账号、无发布、无外部网络/);
+    assert.match(html, /crypto\.randomUUID/); assert.match(html, /tryFixtureFocus/);
+    assert.match(html, /document\.addEventListener\('wheel'/);assert.match(html,/passive:true/);
+    assert.doesNotMatch(html, /fetch\(|https?:\/\/|document\.cookie|localStorage|sessionStorage|src=/);
+    const dom=new JSDOM(html,{url:MEDIA_FIXTURE_ORIGIN+route,runScripts:'dangerously'});
+    const wheel=new dom.window.WheelEvent('wheel',{deltaY:-5000,clientX:100,clientY:564,bubbles:true,cancelable:true});
+    dom.window.document.dispatchEvent(wheel);
+    const events=Reflect.get(dom.window,'__mediaFixture').wheelEvents;
+    assert.equal(events.length,1);assert.equal(events[0].deltaY,-5000);assert.equal(events[0].clientX,100);assert.equal(events[0].clientY,564);
+    assert.equal(wheel.defaultPrevented,false,'Read-only routing observation must not consume native wheel input');dom.window.close();
+  }
+  assert.throws(() => mediaFixtureHtml('/unknown'));
+});
+
+const state = () => ({ id:4, url:`${MEDIA_FIXTURE_ORIGIN}/note/keepalive`, nonce:'document', draft:'unsent', scrollY:900,
+  history:{ index:1, entries:[{ url:MEDIA_FIXTURE_ORIGIN+'/',title:'fixture' },{ url:MEDIA_FIXTURE_ORIGIN+'/note/keepalive',title:'fixture' }] } });
+test('preservation assertion requires real identity, document/input state, scroll and native history', () => {
+  const before=state(); assert.doesNotThrow(()=>assertMediaStatePreserved(before,state()));
+  for(const key of ['id','url','nonce','draft']) assert.throws(()=>assertMediaStatePreserved(before,{...state(),[key]:'changed'}),new RegExp(key));
+  assert.throws(()=>assertMediaStatePreserved(before,{...state(),scrollY:903}),/scroll/);
+  assert.throws(()=>assertMediaStatePreserved(before,{...state(),scrollY:NaN}),/scroll/);
+  assert.throws(()=>assertMediaStatePreserved(before,{...state(),history:{...before.history,index:0}}),/history/);
+});
+
+test('same-size home comparison distinguishes hidden-host layout regression from visual acceptance', async () => {
+  const before={nativeSize:[1024,680],zoom:1,viewport:{width:1024,height:680},homeMode:'today-board',fontStatus:'loaded',fadeTransform:'none',
+    navigation:{homeActive:true,aiOpen:false,snavCount:0},
+    bounds:{content:{x:66,y:64,width:958,height:616},overview:{x:90,y:156,width:540,height:480},todo:{x:646,y:156,width:340,height:480}},
+    styles:{contentDisplay:'block',contentPadding:'22px 24px 26px',columns:'540px 340px'},overflow:{contentX:0,overviewX:0,todoX:0},
+    layoutFlags:{overviewCollapsed:false,overviewContentOverflows:false,panelsOverlap:false},hosts:[] as unknown[]};
+  const hidden={hidden:true,inert:true,display:'none',width:0,height:0};
+  const after=()=>({...structuredClone(before),hosts:[hidden]});
+  assert.deepEqual(assertMediaHomeLayoutUnchanged(before,after()),{unchanged:true,visualAcceptance:true});
+  for(const key of Object.keys(before.bounds)) {
+    const changed=after();Reflect.set(Reflect.get(changed.bounds,key),'width',Reflect.get(before.bounds,key).width+3);
+    assert.throws(()=>assertMediaHomeLayoutUnchanged(before,changed),new RegExp(`home ${key}.width`));
+  }
+  assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),nativeSize:[1024,728]}),/same native content size/);
+  assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),zoom:1.25}),/normal native zoom/);
+  assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),viewport:{width:819,height:544}}),/actual CSS viewport/);
+  assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),homeMode:'library'}),/ordinary task board/);
+  for(const changed of [{homeActive:false},{aiOpen:true},{snavCount:1}]) {
+    assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),navigation:{...before.navigation,...changed}}),/secondary sidebar/);
+  }
+  assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),styles:{...before.styles,contentDisplay:'flex'}}),/home CSS layout/);
+  assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),hosts:[{...hidden,display:'flex'}]}));
+  assert.throws(()=>assertMediaHomeLayoutUnchanged({...before,hosts:[hidden]},after()),/precede any retained creator DOM/);
+  assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),overflow:{...before.overflow,overviewX:10}}),/home overflow/);
+  assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),layoutFlags:{...before.layoutFlags,overviewCollapsed:true}}),/collapse\/overlap/);
+  const badBefore={...structuredClone(before),layoutFlags:{...before.layoutFlags,overviewCollapsed:true,overviewContentOverflows:true}};
+  const badAfter={...structuredClone(badBefore),hosts:[hidden]};
+  assert.deepEqual(assertMediaHomeLayoutUnchanged(badBefore,badAfter),{unchanged:true,visualAcceptance:false},'Equal existing collapse must never be called visually acceptable');
+  const source=await readFile(new URL('../tooling/media-keepalive-pilot.mjs',import.meta.url),'utf8');
+  assert.match(source,/if\(await page\.locator\('#view-home \.task-library'\)\.count\(\)\).*name:'事项库'/);
+  assert.match(source,/win\.webContents\.setZoomFactor\(1\);win\.setContentSize\(1024,680\)/);
+  assert.match(source,/await document\.fonts\.ready/);assert.match(source,/same task data/);
+  assert.match(source,/page\.locator\('\.snav'\)\.waitFor\(\{state:'detached'\}\)/);
+  assert.match(source,/longTitlePresent,true/);assert.match(source,/taskDataUnchanged=true/);
+  assert.equal(source.indexOf("screenshot('media-keepalive-before.png')")<source.indexOf("await creator(page, true); id = await guestId(page)"),true,'Before PNG must show actual home before creating any guest');
+  assert.match(source,/assertMediaHomeLayoutUnchanged\(homeBefore,homeHidden\)/);
+  assert.equal(source.indexOf("screenshot('media-keepalive-hidden.png')")<source.indexOf('Object.assign(report.mediaKeepaliveHomeLayout,assertMediaHomeLayoutUnchanged'),true,'A failing comparison must still deliver the hidden native screenshot');
+});
+
+const security = () => ({ contextIsolation:true, sandbox:true, webSecurity:true,
+  nodeIntegration:false, nodeIntegrationInWorker:false, nodeIntegrationInSubFrames:false,
+  webviewTag:false, plugins:false, allowRunningInsecureContent:false });
+const securityAttachment = () => ({ id:4, partition:'persist:wb-browser-xhs-creator', matchingRequests:1,
+  requestedSrc:'about:blank#fixture-reservation', initialUrl:'about:blank#fixture-reservation', preferences:security() });
+test('security requires strict native values and actual post-guard attachment proof when plugins is not exposed', () => {
+  const reported:Record<string,unknown> = security();delete reported.plugins;
+  assert.doesNotThrow(() => assertMediaGuestSecurity(4,reported,securityAttachment()));
+  assert.doesNotThrow(() => assertMediaGuestSecurity(4,security(),securityAttachment()));
+  for (const key of Object.keys(security())) {
+    const attachment=securityAttachment(); Reflect.deleteProperty(attachment.preferences,key);
+    assert.throws(() => assertMediaGuestSecurity(4,reported,attachment),new RegExp(`will-attach preference ${key}`));
+    const changed={...security(),[key]:!Reflect.get(security(),key)};
+    assert.throws(() => assertMediaGuestSecurity(4,reported,{...securityAttachment(),preferences:changed}),new RegExp(key));
+    assert.throws(() => assertMediaGuestSecurity(4,changed,securityAttachment()),new RegExp(key));
+    if (key !== 'plugins') {
+      const missing:Record<string,unknown> = {...reported};delete missing[key];
+      assert.throws(() => assertMediaGuestSecurity(4,missing,securityAttachment()),new RegExp(`Native reported preference ${key}`));
+    }
+  }
+  for (const value of [true,undefined,null,0,'false']) assert.throws(() => assertMediaGuestSecurity(4,{...reported,plugins:value},securityAttachment()),/Native reported preference plugins/);
+  for (const changed of [{id:5},{partition:'persist:wb-browser-media'},{matchingRequests:0},{matchingRequests:2},
+    {requestedSrc:'https://creator.xiaohongshu.com/'},{initialUrl:'about:blank#other-reservation'}]) {
+    assert.throws(() => assertMediaGuestSecurity(4,reported,{...securityAttachment(),...changed}));
+  }
+});
+
+test('hidden native focus checks actual frame ownership while retaining root-view focus telemetry', async () => {
+  const ownerFrame={frameTreeNodeId:1,frameToken:'owner-frame',processId:2,url:'file:///app/index.html'};
+  const guestFrame={frameTreeNodeId:3,frameToken:'guest-frame',processId:4,url:MEDIA_FIXTURE_ORIGIN+'/'};
+  const owner:any={id:2,focusedFrame:ownerFrame,isFocused:()=>true};
+  const guest:any={id:4,hostWebContents:owner,focusedFrame:null,isDestroyed:()=>false,isFocused:()=>true};
+  let requestedId=0;
+  const application={evaluate:async(callback:any,id:number)=>{requestedId=id;return callback({webContents:{
+    fromId:(id:number)=>id===4?guest:null,getFocusedWebContents:()=>guest,fromFrame:(frame:any)=>frame===ownerFrame?owner:frame===guestFrame?guest:null,
+  }},id);}};
+  const hidden=await mediaNativeFocus(application,4);assert.equal(requestedId,4);
+  assert.equal(hidden.focused,true);assert.equal(hidden.focusedId,4,'Legacy getFocusedWebContents may prefer a webview when only the root native window is focused');
+  assert.equal(hidden.guestFocusedFrame,null);assert.equal(hidden.ownerFocusedContentsId,2);assert.equal(hidden.ownerFocusedFrame.frameToken,'owner-frame');
+  assert.doesNotThrow(()=>assertMediaHiddenFocus(hidden,2),'A focused outer window must not be confused with hidden guest keyboard ownership');
+  assert.doesNotThrow(()=>assertMediaHiddenFocus({...hidden,focused:false,focusedId:null,ownerViewFocused:false},2));
+  guest.focusedFrame=guestFrame;const active=await mediaNativeFocus(application,4);
+  assert.equal(active.guestFocusedContentsId,4);assert.throws(()=>assertMediaHiddenFocus(active,2),/must not own keyboard focus/);
+  guest.focusedFrame=null;owner.focusedFrame=guestFrame;
+  const wrongOwnerFrame=await mediaNativeFocus(application,4);assert.throws(()=>assertMediaHiddenFocus(wrongOwnerFrame,2),/actual focused frame/);
+  owner.focusedFrame=null;const none=await mediaNativeFocus(application,4);assert.throws(()=>assertMediaHiddenFocus(none,2),/actual focused frame/);
+  owner.focusedFrame=ownerFrame;assert.throws(()=>assertMediaHiddenFocus(hidden,9),/actual application owner/);
+  for(const missing of [undefined,false,0,'frame',{}]) {guest.focusedFrame=missing;await assert.rejects(mediaNativeFocus(application,4),/actual frame or explicit null/);}
+  guest.focusedFrame=null;
+  assert.equal(await mediaNativeFocus(application,99),null);assert.throws(()=>assertMediaHiddenFocus(null,2),/must remain alive/);
+  guest.isDestroyed=()=>true;assert.equal(await mediaNativeFocus(application,4),null);
+});
+
+test('hidden-input fixture closes actual new and existing TaskEditor controls without submitting or guessing return labels', async () => {
+  const existing:Task={...newTask('Synthetic existing task'),id:'fixture-task',createdAt:'2026-10-13T00:00:00Z',updatedAt:'2026-10-13T00:00:00Z',completedAt:null,notifiedFor:null,deletedAt:null};
+  const write=async()=>assert.fail('The dismissal fixture must never create, save or delete a task');
+  for(const task of [undefined,existing]) {
+    const markup=renderToStaticMarkup(createElement(TaskEditor,{task,categories:[],api:{create:write,update:write,remove:write,createCategory:write},close(){},saved(){},changed(){}}));
+    const dom=new JSDOM(markup);const dialog=dom.window.document.querySelector<HTMLDialogElement>('.task-modal')!;dialog.setAttribute('open','');
+    let clicks=0;let waited=false;
+    const locator={
+      getAttribute:async(name:string)=>dialog.getAttribute(name),
+      getByRole:(role:string,options:{name:string;exact:boolean})=>{
+        assert.equal(role,'button');assert.equal(options.exact,true);
+        const matches=[...dialog.querySelectorAll<HTMLButtonElement>('button')].filter(button=>(button.getAttribute('aria-label')??button.textContent?.trim())===options.name);
+        assert.equal(matches.length,1,`Actual ${dialog.getAttribute('aria-label')} DOM must expose ${options.name}`);
+        assert.equal(matches[0].type,'button','Dismissal must never select a form submit control');
+        assert.equal(options.name,task?'关闭':'返回');
+        return {click:async()=>{clicks++;dialog.removeAttribute('open');}};
+      },
+      waitFor:async(options:{state:string})=>{assert.equal(options.state,'hidden');assert.equal(dialog.open,false);waited=true;},
+    };
+    await closeUnchangedMediaTaskEditor({locator:(selector:string)=>{assert.equal(selector,'.task-modal[open]');return locator;}});
+    assert.equal(clicks,1);assert.equal(waited,true);dom.window.close();
+  }
+  await assert.rejects(closeUnchangedMediaTaskEditor({locator:()=>({getAttribute:async()=> 'Unexpected dialog'})}),/Unexpected current-page task editor/);
+});
+
+const metrics = () => ({ content:{x:70,y:80,width:1100,height:700},stage:{x:82,y:180,width:1076,height:580},
+  webview:{x:82,y:180,width:1076,height:580},guestViewport:{width:1076,height:580},viewport:{width:1280,height:820},contentOverflow:0 });
+test('native geometry assertions reject missing, offscreen, stale, collapsed and overflowing guest surfaces', () => {
+  const before=metrics(); assert.doesNotThrow(()=>assertMediaGeometry(before));
+  for(const mutate of [
+    (value:ReturnType<typeof metrics>)=>{value.webview.x+=3;},
+    (value:ReturnType<typeof metrics>)=>{value.guestViewport.width-=4;},
+    (value:ReturnType<typeof metrics>)=>{value.stage.height=0;},
+    (value:ReturnType<typeof metrics>)=>{value.webview.y=NaN;},
+    (value:ReturnType<typeof metrics>)=>{value.content.width=900;},
+    (value:ReturnType<typeof metrics>)=>{value.viewport.width=1024;},
+    (value:ReturnType<typeof metrics>)=>{value.contentOverflow=3;},
+  ]) {const value=metrics();mutate(value);assert.throws(()=>assertMediaGeometry(value));}
+});
+
+test('navigation wheel waits for requested native geometry and physical focus, observes routed input and bounds its retries', async () => {
+  const source=await readFile(new URL('../tooling/media-keepalive-pilot.mjs',import.meta.url),'utf8');
+  const helperStart=source.indexOf('export async function restoreMediaFixtureNavigation(');
+  const helperEnd=source.indexOf('\nasync function assertHidden(',helperStart);
+  const controlStart=source.indexOf('export async function focusMediaFixtureControl(');
+  const controlEnd=source.indexOf('\nexport async function restoreMediaFixtureNavigation(',controlStart);
+  const untilStart=source.indexOf('async function until(');const untilEnd=source.indexOf('\nasync function aiVisible(',untilStart);
+  const old=()=>({ content:{x:50,y:40,width:960,height:640},stage:{x:50,y:56,width:948,height:614},
+    webview:{x:50,y:56,width:948,height:614},guestViewport:{width:948,height:614},viewport:{width:1024,height:680},contentOverflow:0 });
+  assert.doesNotThrow(()=>assertMediaGeometry(old()),'Coherent old bounds alone must not imply the requested resized viewport');
+  const make=(behavior='normal')=>{
+    let clock=0;let geometryReads=0;let clicks=0;let wheels=0;let foreground=false;let pendingWheel=false;
+    let contentSize=[1024,680];const order:string[]=[];
+    const current:any={...state(),clicks:26,targetClicks:25,activeElement:'',focused:false,focusedId:null,documentFocused:true,guestFocusedFrame:null,guestFocusedContentsId:null,
+      guestViewport:{width:948,height:614},wheelEvents:[{deltaY:900,isTrusted:true}]};
+    const copy=(value:any)=>JSON.parse(JSON.stringify(value));
+    const win={setContentSize(width:number,height:number){order.push('resize');contentSize=[width,height];},
+      getContentSize:()=>[...contentSize],isFocused:()=>foreground,focus(){order.push('window-focus');if(behavior!=='window-unfocused')foreground=true;}};
+    const page={emulateMedia:async()=>{order.push('motion');},waitForTimeout:async(ms:number)=>{
+      clock+=ms;if(pendingWheel){pendingWheel=false;current.scrollY=0;current.wheelEvents.push({deltaY:-5000,isTrusted:true});if(behavior==='changed-document')current.nonce='changed';}
+    },mouse:{move:async(x:number,y:number)=>{assert.equal(x,metrics().webview.x+100);assert.equal(y,metrics().webview.y+metrics().webview.height-50);order.push('move');},
+      wheel:async(x:number,y:number)=>{
+        assert.equal(x,0);assert.equal(y,-5000);assert.equal(foreground,true);assert.equal(current.focusedId,current.id);wheels++;order.push('wheel');
+        if(behavior==='no-wheel')return;if(behavior==='scroll-without-event'){current.scrollY=0;return;}if(wheels>1)pendingWheel=true;
+      }} };
+    const native={evaluate:async(callback:any,argument:any)=>callback(win,argument)};
+    const context:any={assert,Date:{now:()=>clock},assertMediaGeometry,assertMediaStatePreserved,
+      aiVisible:async()=>{order.push('ai-close');},
+      geometry:async()=>{
+        geometryReads++;clock+=350;order.push('geometry');
+        if(behavior==='old-host'||geometryReads===1)return old();
+        const next=metrics();if(behavior==='old-guest'||geometryReads===2)next.guestViewport=old().guestViewport;
+        else current.guestViewport=next.guestViewport;
+        return next;
+      },nativeState:async()=>copy(current),clickGuest:async(_application:any,_page:any,id:number,selector:string)=>{
+        assert.equal(id,current.id);assert.ok(selector==='#click-target'||selector==='#draft');assert.ok(geometryReads>=4);assert.equal(foreground,true);clicks++;order.push('physical-click');
+        if(behavior!=='missed-click'){current.clicks++;if(selector==='#click-target')current.targetClicks++;}current.focused=behavior!=='guest-unfocused';
+        current.focusedId=behavior==='wrong-guest'?id+1:behavior==='guest-unfocused'?null:id;
+        current.guestFocusedFrame=behavior==='guest-unfocused'?null:{frameTreeNodeId:3,frameToken:'guest-frame',processId:4,url:current.url};current.guestFocusedContentsId=current.focusedId;
+        current.activeElement=behavior==='wrong-control'?'other':selector.slice(1);return {x:324,y:176};
+      }};
+    const wait=runInNewContext(`(${source.slice(untilStart,untilEnd)})`,context);context.until=wait;
+    const control=runInNewContext(`(${source.slice(controlStart+'export '.length,controlEnd)})`,context);context.focusMediaFixtureControl=control;
+    const helper=runInNewContext(`(${source.slice(helperStart+'export '.length,helperEnd)})`,context);
+    const report:any={};const run=()=>helper({application:{},page,native,id:current.id,report});
+    const input:any={};const draft=()=>{win.setContentSize(1280,820);return control({application:{},page,native,id:current.id,selector:'#draft',observation:input});};
+    return {run,draft,input,report,order,current,clicks:()=>clicks,wheels:()=>wheels};
+  };
+  const normal=make();await normal.run();assert.equal(normal.clicks(),1);assert.equal(normal.wheels(),2,'A dropped first wheel must receive only bounded further physical input');
+  assert.equal(normal.current.scrollY,0);assert.equal(normal.report.mediaKeepaliveNavigationInput.attempts.length,2);
+  assert.equal(normal.report.mediaKeepaliveNavigationInput.readiness.metrics.viewport.width,1280);
+  assert.equal(normal.report.mediaKeepaliveNavigationInput.after.wheelEvents.at(-1).deltaY,-5000);
+  assert.ok(normal.order.indexOf('window-focus')>normal.order.indexOf('geometry'));
+  assert.ok(normal.order.indexOf('wheel')>normal.order.indexOf('physical-click'));
+  for(const behavior of ['old-host','old-guest']) {
+    const failed=make(behavior);await assert.rejects(failed.run(),/Native resize and creator input surface did not settle/);
+    assert.equal(failed.clicks(),0);assert.equal(failed.wheels(),0);
+  }
+  const unfocused=make('window-unfocused');await assert.rejects(unfocused.run(),/did not regain foreground focus/);assert.equal(unfocused.clicks(),0);assert.equal(unfocused.wheels(),0);
+  for(const behavior of ['guest-unfocused','wrong-guest','missed-click']) {
+    const failed=make(behavior);await assert.rejects(failed.run(),/physical click did not restore native guest focus/);assert.equal(failed.clicks(),1);assert.equal(failed.wheels(),0);
+  }
+  const dropped=make('no-wheel');await assert.rejects(dropped.run(),/Guest did not return to fixture navigation/);assert.equal(dropped.wheels(),3);
+  const unrouted=make('scroll-without-event');await assert.rejects(unrouted.run(),/Guest did not return to fixture navigation/);assert.equal(unrouted.wheels(),1,'Unobserved scrolling cannot count as actual guest wheel routing');
+  const changed=make('changed-document');await assert.rejects(changed.run(),/Physical wheel must preserve nonce/);
+  const draft=make();await draft.draft();assert.equal(draft.clicks(),1);assert.equal(draft.wheels(),0);
+  assert.equal(draft.current.activeElement,'draft');assert.equal(draft.input.after.clicks,draft.input.before.clicks+1);
+  assert.equal(draft.input.after.guestFocusedContentsId,4);assert.deepEqual([...draft.input.expectedContentSize],[1280,820]);
+  for(const behavior of ['missed-click','wrong-control','guest-unfocused','wrong-guest']) {
+    const failed=make(behavior);await assert.rejects(failed.draft(),/physical click did not restore native guest focus to the requested control/);assert.equal(failed.wheels(),0);
+  }
+});
+
+test('keepalive screenshots share existing raw/ZIP ceilings and three-day single-upload policy', async t => {
+  assert.equal(MEDIA_KEEPALIVE_SCREENSHOTS.length,8);assert.ok(Object.isFrozen(MEDIA_KEEPALIVE_SCREENSHOTS));
+  assert.equal(new Set(MEDIA_KEEPALIVE_SCREENSHOTS).size,8);
+  const directory=await mkdtemp(path.join(tmpdir(),'ono-media-pilot-'));t.after(()=>rm(directory,{recursive:true,force:true}));
+  for(const name of MEDIA_KEEPALIVE_SCREENSHOTS) await writeFile(path.join(directory,name),Buffer.from('89504e470d0a1a0a','hex'));
+  const result=await inspectPilotArtifacts(directory);assert.equal(result.bytes,64);assert.equal(result.retentionDays,3);
+  assert.equal(result.uploadCeilingBytes,20_000_000);assert.equal(MAX_ARTIFACT_BYTES,19_000_000);
+  await assert.rejects(inspectPilotArtifacts(directory,63),/exceed/);
+  await writeFile(path.join(directory,'media-keepalive-unapproved.png'),Buffer.from('89504e470d0a1a0a','hex'));
+  await assert.rejects(inspectPilotArtifacts(directory),/unapproved/);
+});
+
+test('installed keepalive acceptance keeps prior suites and exercises physical input and native lifetime APIs', async () => {
+  const source=await readFile(new URL('../tooling/media-keepalive-pilot.mjs',import.meta.url),'utf8');
+  const entry=await readFile(new URL('../tooling/windows-pilot.mjs',import.meta.url),'utf8');
+  assert.ok(entry.indexOf('await runMediaKeepalivePilot(')>entry.indexOf('floatGroupFixture = await runFloatGroupPilot('));
+  assert.ok(entry.indexOf('await runMediaKeepalivePilot(')<entry.indexOf("await check('Choose exit-on-close"));
+  for(const fragment of ['getWebContentsId()', 'getFocusedWebContents()', 'guest.isFocused()', 'navigationHistory.getAllEntries()', 'forcefullyCrashRenderer()',
+    "page.keyboard.type('Synthetic unsent draft for Issue 35')", 'page.mouse.wheel(0, 900)', 'page.mouse.click(', 'Accessibility.getPartialAXTree', 'await page.reload()',
+    "['no-preference','reduce']", 'creatorSession.protocol.handle', "protocol.unhandle('https')"]) assert.ok(source.includes(fragment),fragment);
+  assert.match(entry,/name\.startsWith\('media-keepalive-'\)/);
+  assert.match(entry,/await prepareMediaKeepaliveQuit\(\{ application, page, report \}\)/);
+  assert.ok(entry.indexOf('await verifyMediaKeepaliveRelaunch(')>entry.indexOf("await check('Relaunch same installed executable"));
+  assert.match(source,/app\.once\('will-quit',fixture\.cleanup\)/);
+  assert.match(source,/report\.mediaKeepaliveQuit\.exitCode,0/);
+  assert.doesNotMatch(source,/\.webRequest\.|ipcMain\.|setContent\(|addInitScript\(|force:\s*true|dispatchEvent\(|--no-sandbox|ignoreCertificateErrors|setCertificateVerifyProc|fetch\(/);
+  assert.match(source,/if\(!failure\) throw cleanupError/);
+  const hidden=source.slice(source.indexOf('async function assertHidden('),source.indexOf('export async function assertMediaHiddenInput('));
+  assert.doesNotMatch(hidden,/executeJavaScript|await nativeState\(/);
+  assert.match(hidden,/await mediaNativeFocus/);assert.match(hidden,/assertMediaHiddenFocus\(native,ownerId\)/);
+  assert.match(source,/guest\.focusedFrame/);assert.match(source,/webContents\.fromFrame\(ownerFocusedFrame\)/);
+  assert.match(source,/getFocusedWebContents\(\)\?\.id/);assert.match(source,/report\.mediaKeepaliveHiddenFocus/);
+  assert.match(source,/label:'renderer host teardown'/);assert.match(source,/label:'normal quit'/);
+  assert.match(source,/Hidden lifecycle input probe must not create or modify tasks/);
+  assert.match(source,/guest\.isDestroyed\(\) \|\| guest\.isLoading\(\)/);
+  assert.match(source,/5000, 'Synthetic native guest document read'/);
+  assert.match(source,/owner\.on\('will-attach-webview', willAttach\)/);
+  assert.match(source,/fixture\.ownerListeners\.push\(\{ name:'will-attach-webview', listener:willAttach \}\)/);
+  assert.match(source,/report\.mediaKeepalive\.security = \{ id, reported:prefs, reportedKeys:Object\.keys\(prefs\), attachment/);
+  assert.match(source,/assertMediaGuestSecurity\(id, prefs, attachment\)/);
+  assert.match(source,/application\.evaluate\(async \(_electron,token\)=>/);
+  assert.match(source,/cleaned\?\.token,token/);
+  assert.match(source,/report\.mediaKeepalive\.cleanup=cleaned/);
+  assert.match(source,/partition\.protocol\.isProtocolHandled\('https'\)/);
+  assert.match(source,/await restoreMediaFixtureNavigation\(\{ application,page,native,id,report \}\)/);
+  assert.equal(source.match(/await focusMediaFixtureControl\(\{application,page,native,id,selector:'#draft'/g)?.length,2,'Both actual guest keyboard input sites must use the verified physical-control barrier');
+  assert.doesNotMatch(source,/await clickGuest\([^;]*'#draft'\)/,'No new guest may receive blind keyboard input after a raw click');
+  assert.doesNotMatch(source,/\bscrollTo\(|\bscrollBy\(|\bscrollTop\s*=/,'Native scrolling must never be replaced with injected document scrolling');
+  assert.match(source,/const currentTasks = await page\.evaluate\(\(\) => window\.workbench\.todo\.state\(\)\)/);
+  assert.match(source,/Hidden-input acceptance must not create or modify a task/);
+  assert.equal(source.match(/await closeUnchangedMediaTaskEditor\(page\)/g)?.length,5);
+  assert.doesNotMatch(source,/\.task-modal'\)\.getByRole\('button', \{ name:'返回'/);
+});
+
+test('temporary protocol handler gates only local responses and cleanup preserves security listeners and foreign fixtures', async () => {
+  const source=await readFile(new URL('../tooling/media-keepalive-pilot.mjs',import.meta.url),'utf8');
+  const start=source.indexOf('await application.evaluate(({ session, BrowserWindow },');
+  const finish=source.indexOf('}, { html, origin:MEDIA_FIXTURE_ORIGIN',start);
+  const installer=source.slice(start+'await application.evaluate('.length,finish+1);
+  const cleanupStart=source.indexOf('const cleaned = await application.evaluate(async (_electron,token)=>');
+  const cleanupEnd=source.indexOf('},token);',cleanupStart);
+  const cleanup=source.slice(cleanupStart+'const cleaned = await application.evaluate('.length,cleanupEnd+1);
+  const context:any={URL,Response};context.globalThis=context;
+  const owner=new EventEmitter();let preservedCalls=0;const preserved=()=>{preservedCalls++;};owner.on('did-attach-webview',preserved);
+  let guardPlugins:'safe'|'missing'|'unsafe'='safe';
+  const productionGuard=(_event:any,preferences:any)=>{
+    Object.assign(preferences,security());
+    if(guardPlugins==='missing') Reflect.deleteProperty(preferences,'plugins');
+    if(guardPlugins==='unsafe') preferences.plugins=true;
+    Object.freeze(preferences);
+  };owner.on('will-attach-webview',productionGuard);
+  const sessions=new Map<string,any>();
+  const session={fromPartition:(name:string)=>{
+    if(!sessions.has(name)) sessions.set(name,{webRequest:{onBeforeRequest:()=>assert.fail('Never replace production security guard')},protocol:{
+      handler:null as any,handle(_scheme:string,handler:any){assert.equal(this.handler,null);this.handler=handler;},unhandle(){this.handler=null;},isProtocolHandled(){return this.handler!==null;},
+    }});
+    return sessions.get(name);
+  }};
+  const install=runInNewContext(`(${installer})`,context);
+  const restore=runInNewContext(`(${cleanup})`,context);
+  const installerElectron={session,BrowserWindow:{getAllWindows:()=>[{webContents:{...owner,getURL:()=> 'file:///app/index.html',on:owner.on.bind(owner),removeListener:owner.removeListener.bind(owner),listenerCount:owner.listenerCount.bind(owner),listeners:owner.listeners.bind(owner)}}]}};
+  const installerArgs={html:Object.fromEntries(MEDIA_FIXTURE_PATHS.map(route=>[route,mediaFixtureHtml(route)])),origin:MEDIA_FIXTURE_ORIGIN,paths:MEDIA_FIXTURE_PATHS,token:'owned'};
+  install(installerElectron,installerArgs);
+  const fixture=context.__onoMediaKeepaliveFixture;
+  const creator=sessions.get('persist:wb-browser-xhs-creator');const material=sessions.get('persist:wb-browser-media');
+  assert.equal(owner.listenerCount('did-attach-webview'),2);assert.equal(owner.listenerCount('will-attach-webview'),2);
+  const home=creator.protocol.handler({url:MEDIA_FIXTURE_ORIGIN+'/',method:'GET'});
+  assert.equal(typeof fixture.releaseHome,'function');fixture.releaseHome();assert.equal((await home).status,200);
+  assert.equal((await creator.protocol.handler({url:MEDIA_FIXTURE_ORIGIN+'/offline',method:'GET'})).type,'error');
+  fixture.failOffline=false;assert.equal((await creator.protocol.handler({url:MEDIA_FIXTURE_ORIGIN+'/offline',method:'GET'})).status,200);
+  const count=fixture.requests.length;
+  for(const url of ['https://outside.test/',MEDIA_FIXTURE_ORIGIN+'/?live=1',MEDIA_FIXTURE_ORIGIN+'/unmatched']) assert.equal((await creator.protocol.handler({url,method:'GET'})).type,'error');
+  assert.equal(fixture.requests.length,count,'Unmatched requests must not reach local content or network');
+  const guest:any=new EventEmitter();guest.id=9;guest.session=creator;guest.isDestroyed=()=>false;guest.getURL=()=> 'about:blank#fixture-reservation';let closes=0;guest.close=()=>{closes++;};
+  const preferences={plugins:true};owner.emit('will-attach-webview',{defaultPrevented:false},preferences,{partition:'persist:wb-browser-xhs-creator',src:guest.getURL()});
+  assert.equal(preferences.plugins,false,'Fixture observer must run after, and never replace, the production guard');
+  owner.emit('did-attach-webview',{},guest);guest.emit('dom-ready');assert.equal(preservedCalls,1);assert.equal(fixture.attachments[0].creator,true);
+  assertMediaGuestSecurity(9,security(),fixture.attachments[0]);
+  const second:any=new EventEmitter();second.id=10;second.session=creator;second.isDestroyed=()=>false;second.getURL=()=> 'about:blank#second-reservation';second.close=()=>{closes++;};
+  owner.emit('will-attach-webview',{defaultPrevented:false},{plugins:true},{partition:'persist:wb-browser-xhs-creator',src:second.getURL()});
+  owner.emit('did-attach-webview',{},second);second.emit('dom-ready');
+  assertMediaGuestSecurity(10,security(),fixture.attachments[1]);
+  assert.equal(fixture.attachments[0].id,9);assert.equal(fixture.attachments[0].initialUrl,guest.getURL(),'Later attachments must not overwrite earlier route identity');
+  const materialGuest:any=new EventEmitter();materialGuest.id=11;materialGuest.session=material;materialGuest.isDestroyed=()=>false;materialGuest.getURL=()=> 'about:blank#material-reservation';materialGuest.close=()=>{closes++;};
+  owner.emit('will-attach-webview',{defaultPrevented:false},{plugins:true},{partition:'persist:wb-browser-media',src:materialGuest.getURL()});
+  owner.emit('did-attach-webview',{},materialGuest);materialGuest.emit('dom-ready');
+  assert.equal(fixture.attachments[2].id,11);assert.equal(fixture.attachments[2].material,true);assert.equal(fixture.attachments[2].partition,'persist:wb-browser-media');
+  assert.equal(fixture.attachments[2].requestedSrc,materialGuest.getURL());assert.equal(fixture.attachments[2].initialUrl,materialGuest.getURL());assert.equal(fixture.attachments[2].matchingRequests,1);
+  const pending:any=new EventEmitter();pending.id=12;pending.session=creator;pending.isDestroyed=()=>false;pending.getURL=()=> 'about:blank#pending-reservation';pending.close=()=>{closes++;};
+  owner.emit('will-attach-webview',{defaultPrevented:false},{plugins:true},{partition:'persist:wb-browser-xhs-creator',src:pending.getURL()});
+  owner.emit('did-attach-webview',{},pending);assert.equal(pending.listenerCount('dom-ready'),1,'Observe the pending native bootstrap route');
+  for(const [index,behavior] of ['missing','unsafe'].entries()) {
+    guardPlugins=behavior as 'missing'|'unsafe';
+    const bad:any=new EventEmitter();bad.id=13+index;bad.session=creator;bad.isDestroyed=()=>false;bad.getURL=()=> `about:blank#bad-${behavior}-reservation`;bad.close=()=>{closes++;};
+    owner.emit('will-attach-webview',{defaultPrevented:false},{plugins:true},{partition:'persist:wb-browser-xhs-creator',src:bad.getURL()});
+    owner.emit('did-attach-webview',{},bad);bad.emit('dom-ready');
+    assert.throws(()=>assertMediaGuestSecurity(bad.id,security(),fixture.attachments.at(-1)),/Actual post-guard will-attach preference plugins/,'The actual observer must preserve missing/unsafe guard output as failure');
+  }
+  guardPlugins='safe';
+  const electronModule={session,BrowserWindow:{}};
+  await restore(electronModule,'foreign');assert.equal(closes,0);assert.equal(owner.listenerCount('did-attach-webview'),2);assert.equal(typeof creator.protocol.handler,'function');
+  const cleaned=await restore(electronModule,'owned');assert.equal(cleaned.token,'owned');assert.equal(cleaned.creatorHandled,false);assert.equal(cleaned.materialHandled,false);assert.equal(cleaned.ownerObserversPresent,false);
+  assert.equal(closes,6);assert.equal(owner.listenerCount('did-attach-webview'),1);assert.equal(guest.listenerCount('did-start-navigation'),0);
+  assert.equal(owner.listenerCount('will-attach-webview'),1);assert.equal(owner.listeners('will-attach-webview')[0],productionGuard);
+  assert.equal(guest.listenerCount('dom-ready'),0);assert.equal(pending.listenerCount('dom-ready'),0,'Cleanup must remove a bootstrap listener before dom-ready ever fires');
+  assert.equal(creator.protocol.handler,null);assert.equal(material.protocol.handler,null);assert.equal(context.__onoMediaKeepaliveFixture,undefined);
+  creator.protocol.handle('https',()=>new Response('next fixture'));assert.equal(creator.protocol.isProtocolHandled(),true,'Actual cleanup must release the scheme for the next fixture');
+  creator.protocol.unhandle('https');
+  install(installerElectron,installerArgs);const notRemoved=context.__onoMediaKeepaliveFixture;const actualUnhandle=creator.protocol.unhandle;
+  creator.protocol.unhandle=()=>{};
+  await assert.rejects(restore(electronModule,'owned'),/Owned creator fixture handler was not removed/);
+  assert.equal(context.__onoMediaKeepaliveFixture,notRemoved);assert.equal(notRemoved.creatorHandled,true,'A failed removal must retain truthful owned-handler state');
+  creator.protocol.unhandle=actualUnhandle;await restore(electronModule,'owned');
+  install(installerElectron,installerArgs);const listenersLeft=context.__onoMediaKeepaliveFixture;const actualRemove=listenersLeft.owner.removeListener;
+  listenersLeft.owner.removeListener=()=>{};
+  await assert.rejects(restore(electronModule,'owned'),/Owned media fixture cleanup incomplete/);
+  assert.equal(context.__onoMediaKeepaliveFixture,listenersLeft);assert.equal(owner.listenerCount('will-attach-webview'),2);
+  listenersLeft.owner.removeListener=actualRemove;await restore(electronModule,'owned');assert.equal(owner.listenerCount('will-attach-webview'),1);
+});
+
+test('normal-quit fixture preserves unknown handlers, removes only its own synchronous handler and propagates cleanup errors', async () => {
+  const source=await readFile(new URL('../tooling/media-keepalive-pilot.mjs',import.meta.url),'utf8');
+  const start=source.indexOf('await application.evaluate(({app,session},{token,html,url})=>');
+  const finish=source.indexOf("},{token,html:mediaFixtureHtml('/'),url:",start);
+  const installer=source.slice(start+'await application.evaluate('.length,finish+1);
+  const cleanupStart=source.indexOf('await application.evaluate(({app,webContents},token)=>');
+  const cleanupFinish=source.indexOf('},token).catch(',cleanupStart);
+  const cleanup=source.slice(cleanupStart+'await application.evaluate('.length,cleanupFinish+1);
+  const make=()=>{
+    const context:any={Response};context.globalThis=context;const app=new EventEmitter();let guestCloses=0;
+    const protocol={handler:null as any,fail:false,handle(_scheme:string,handler:any){assert.equal(this.handler,null);this.handler=handler;},
+      unhandle(){if(this.fail)throw new Error('unhandle failed');this.handler=null;},isProtocolHandled(){return this.handler!==null;}};
+    const partition={protocol};const guest={getType:()=> 'webview',session:partition,isDestroyed:()=>false,close:()=>{guestCloses++;}};
+    const electron={app,session:{fromPartition:()=>partition},webContents:{getAllWebContents:()=>[guest]}};
+    const install=runInNewContext(`(${installer})`,context);const args={token:'owned-quit',html:'local fixture',url:MEDIA_FIXTURE_ORIGIN+'/'};
+    return {context,app,protocol,electron,install,args,guestCloses:()=>guestCloses};
+  };
+  const normal=make();normal.install(normal.electron,normal.args);assert.equal(normal.protocol.isProtocolHandled(),true);
+  assert.equal((await normal.protocol.handler({url:normal.args.url})).status,200);
+  assert.equal((await normal.protocol.handler({url:MEDIA_FIXTURE_ORIGIN+'/unmatched'})).type,'error');
+  normal.app.emit('will-quit');assert.equal(normal.protocol.isProtocolHandled(),false);assert.equal(normal.context.__onoMediaKeepaliveQuit,undefined);
+  assert.equal(normal.guestCloses(),0,'Normal quit fixture must leave actual guest destruction to the app');
+  const foreign=make();const handler=()=>new Response('unknown owner');foreign.protocol.handler=handler;
+  assert.throws(()=>foreign.install(foreign.electron,foreign.args),/must not replace an existing HTTPS handler/);
+  assert.equal(foreign.protocol.handler,handler);assert.equal(foreign.context.__onoMediaKeepaliveQuit,undefined);assert.equal(foreign.app.listenerCount('will-quit'),0);
+  const stale=make();stale.context.__onoMediaKeepaliveFixture={token:'foreign-main'};
+  assert.throws(()=>stale.install(stale.electron,stale.args),/Previous media fixture cleanup has not completed/);assert.equal(stale.protocol.handler,null);
+  const replaced=make();replaced.install(replaced.electron,replaced.args);const replacement={token:'foreign-quit'};replaced.context.__onoMediaKeepaliveQuit=replacement;
+  const registered=replaced.protocol.handler;replaced.app.emit('will-quit');assert.equal(replaced.context.__onoMediaKeepaliveQuit,replacement);assert.equal(replaced.protocol.handler,registered);
+  const failure=make();failure.install(failure.electron,failure.args);failure.protocol.fail=true;
+  assert.throws(()=>failure.app.emit('will-quit'),/unhandle failed/);assert.match(failure.context.__onoMediaKeepaliveQuit.cleanupError,/unhandle failed/);
+  assert.equal(failure.context.__onoMediaKeepaliveQuit.handled,true);assert.equal(failure.guestCloses(),0);
+  const interrupted=make();interrupted.install(interrupted.electron,interrupted.args);const restore=runInNewContext(`(${cleanup})`,interrupted.context);
+  const owned=interrupted.context.__onoMediaKeepaliveQuit;await restore(interrupted.electron,'foreign');assert.equal(interrupted.context.__onoMediaKeepaliveQuit,owned);
+  assert.equal(interrupted.guestCloses(),0);assert.equal(interrupted.app.listenerCount('will-quit'),1);assert.equal(interrupted.protocol.isProtocolHandled(),true);
+  await restore(interrupted.electron,interrupted.args.token);assert.equal(interrupted.guestCloses(),1);assert.equal(interrupted.app.listenerCount('will-quit'),0);
+  assert.equal(interrupted.protocol.isProtocolHandled(),false);assert.equal(interrupted.context.__onoMediaKeepaliveQuit,undefined);
+});

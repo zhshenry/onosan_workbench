@@ -8,6 +8,7 @@ import { _electron as electron } from 'playwright';
 import { runAiCardsPilot, verifyAiCardsRelaunch } from './ai-cards-pilot.mjs';
 import { runFloatEmptyPilot, runFloatGroupPilot, verifyFloatGroupRelaunch } from './float-group-pilot.mjs';
 import { runContextPickerPilot, verifyContextPickerRelaunch } from './context-picker-pilot.mjs';
+import { runMediaKeepalivePilot, prepareMediaKeepaliveQuit, verifyMediaKeepaliveRelaunch } from './media-keepalive-pilot.mjs';
 import { inspectPilotArtifacts } from './pilot-artifacts.mjs';
 import { bounded, exitPilot, failurePage, finalizePilot } from './pilot-cleanup.mjs';
 import { runTopbarDatesPilot, verifyTopbarDatesRelaunch } from './topbar-dates-pilot.mjs';
@@ -56,7 +57,7 @@ async function check(name, action) {
   }
 }
 async function screenshot(name, capturePage = page) {
-  if (name.startsWith('topbar-dates-') && name.endsWith('-zoom125.png')) {
+  if ((name.startsWith('topbar-dates-') && name.endsWith('-zoom125.png')) || name.startsWith('media-keepalive-')) {
     // Playwright's Electron viewport screenshot can crop a zoomed window to its
     // CSS viewport size. Capture the complete native surface without resampling.
     const window = await application.browserWindow(page);
@@ -220,17 +221,20 @@ try {
   contextPickerFixture = await runContextPickerPilot({ application, page, check, screenshot, runId, report, birthdayFixture });
   publishAssociationFixture = await runPublishAssociationPilot({ application, page, check, screenshot, runId, report, dataRoot });
   await runUpdateStatusPilot({ application, page, check, screenshot, report });
+  await runMediaKeepalivePilot({ application, page, check, screenshot, report });
   await check('Choose exit-on-close in settings and quit through the window close button', async () => {
     await page.locator('.rail [data-workbench="settings"]').click();
     await page.locator('.tree').getByRole('button', { name: '通用', exact: true }).click();
     await page.getByRole('button', { name: '退出应用', exact: true }).click();
     await page.waitForFunction(() => window.workbench.settings.get().then(value => value.closeAction === 'exit'));
+    await prepareMediaKeepaliveQuit({ application, page, report });
     const exited = new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('Installed process did not exit after UI close')), 20000);
       application.process().once('exit', code => { clearTimeout(timer); code === 0 ? resolve() : reject(new Error(`Exit code ${code}`)); });
     });
     // Attach both rejection handlers immediately, including if clicking closes the target.
     await Promise.all([exited, page.locator('.wbtn.close').click()]);
+    report.mediaKeepaliveQuit.exitCode = 0;
     application = undefined; page = undefined;
   });
   await check('Relaunch same installed executable and verify persisted task and setting', async () => {
@@ -243,6 +247,7 @@ try {
     assert.ok((await stat(path.join(dataRoot, 'To-Do-List', 'tasks.db'))).size > 0);
   });
   await screenshot('relaunched.png');
+  await verifyMediaKeepaliveRelaunch({ application, page, check, report });
   await verifyYearDropdownRelaunch({ page, check, screenshot, fixture: birthdayFixture });
   await verifyAiCardsRelaunch({ page, check, screenshot, fixture: aiCardsFixture });
   await verifyContextPickerRelaunch({ application, page, check, screenshot, fixture: contextPickerFixture });

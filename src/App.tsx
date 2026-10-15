@@ -11,7 +11,8 @@ import { chatContextScope, TODO_AI_WORKBENCH_NAME, type AiScope } from '../share
 import { SettingsView } from './views/SettingsView';
 import { BaziView } from '../modules/bazi/ui/BaziView';
 import { TaskEditor, type TaskEditorApi, type TodoState } from '../modules/todo/ui/TaskEditor';
-import { MediaBrowserView, type MediaBrowserMode } from './views/MediaBrowserView';
+import type { MediaBrowserMode } from './views/MediaBrowserView';
+import { MediaBrowserHost } from './views/MediaBrowserHost';
 import { CopyView } from '../modules/copywriting/ui/CopyView';
 import { PublishView } from '../modules/copywriting/ui/PublishView';
 import { ReadingView } from './views/ReadingView';
@@ -45,6 +46,7 @@ export function App() {
   const [selectionTop, setSelectionTop] = useState(0);
   const [selectionReady, setSelectionReady] = useState(false);
   const railRef = useRef<HTMLElement>(null);
+  const contentRef = useRef<HTMLElement>(null);
   const [curView, setCurView] = useState<ViewId>('home');
   const [mediaBrowserMode, setMediaBrowserMode] = useState<MediaBrowserMode>('creator');
   const [maximized, setMaximized] = useState(false);
@@ -594,10 +596,10 @@ export function App() {
       )}
 
       {/* 主区 */}
-      <main className="content">
+      <main className="content" ref={contentRef} tabIndex={-1}>
           {todo.error && <div className="todo-load-error" role="alert">{todo.error}</div>}
           {/* 视图切换动效:按 curView 换 key 重挂载,统一淡入上移(见 shell.css .view-fade) */}
-          <div className="view-fade" key={curView}>
+          {(isPlanningWorkbench || curView !== 'media-browser') && <div className="view-fade" key={curView}>
           {isPlanningWorkbench ? (
             <section className="pending-workbench" role="status">
               <span className="pending-workbench-icon" aria-hidden="true"><ActiveWorkbenchIcon /></span>
@@ -610,8 +612,6 @@ export function App() {
             <CopyView onPending={showToast} onCurrentDraft={setCopyCtx} onSaveState={setCopySaveState} requestedDraftId={requestedCopyId} requestedSource={requestedCopySource} onSourceLocated={() => setRequestedCopySource(null)} onGoPublish={() => switchView('copy-publish')} />
           ) : curView === 'copy-publish' ? (
             <PublishView onPending={showToast} onGoEdit={() => switchView('copy')} onOpenCreator={() => { setMediaBrowserMode('creator'); switchView('media-browser'); }} />
-          ) : curView === 'media-browser' ? (
-            <MediaBrowserView mode={mediaBrowserMode} onModeChange={setMediaBrowserMode} onPending={showToast} onAskAI={askAI} />
           ) : curView === 'reading' ? (
             <ReadingView onPending={showToast} onAskAI={(prompt, bookId) => askAI(prompt, { module: 'reading', profileId: bookId })} onCurrentBook={setReadingCtx} />
           ) : curView.startsWith('settings') ? (
@@ -621,7 +621,9 @@ export function App() {
           ) : (
             <div className="todo-loading" role="status">正在读取本地待办…</div>
           )}
-          </div>
+          </div>}
+          <MediaBrowserHost active={!isPlanningWorkbench && curView === 'media-browser'} focusTarget={contentRef}
+            mode={mediaBrowserMode} onModeChange={setMediaBrowserMode} onPending={showToast} onAskAI={askAI} />
         </main>
 
       </div>
