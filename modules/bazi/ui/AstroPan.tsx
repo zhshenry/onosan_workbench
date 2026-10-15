@@ -4,6 +4,14 @@ import type { BaziProfile } from '../../../shared/bazi-contracts';
 
 const CX = 260;
 const SIGN_GLYPHS = ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓'];
+const SIGN_NAMES = ['白羊', '金牛', '双子', '巨蟹', '狮子', '处女', '天秤', '天蝎', '射手', '摩羯', '水瓶', '双鱼'];
+
+function formatAscendant(lon: number): string {
+  const norm = ((lon % 360) + 360) % 360;
+  const deg = Math.floor(norm % 30);
+  const min = Math.round((norm % 1) * 60);
+  return `${SIGN_NAMES[Math.floor(norm / 30)]} ${deg}°${String(min).padStart(2, '0')}′`;
+}
 
 /** 黄道经度 → 盘面坐标(0° 白羊在 9 点方向,逆时针) */
 function polar(r: number, lon: number): [number, number] {
@@ -92,6 +100,7 @@ export function AstroPan({ profile, chart }: { profile: BaziProfile; chart: Astr
             公历 {profile.date} {profile.time} · {profile.gender === 1 ? '男' : '女'} · 回归制
           </div>
           <div className="bazi-pan-meta">所填出生时间按东八区（UTC+8）换算</div>
+          {chart.asc !== undefined && <div className="bazi-pan-meta">上升点 {formatAscendant(chart.asc)}</div>}
         </div>
       </div>
       <Wheel chart={chart} />
