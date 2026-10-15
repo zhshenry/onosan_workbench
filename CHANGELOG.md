@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- #48 Windows 安装向导、桌面快捷方式和 exe 使用应用圆环标记，不再显示默认 Electron 图标
+
 ## [0.2.0] - 2026-10-15
 
 ### Added
