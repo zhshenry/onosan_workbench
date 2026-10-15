@@ -9,7 +9,7 @@ import type { ChatSession, ChatSummary, RlcdProviderKind } from '../shared/todo-
 import { sameAiWorkbench, chatScope, type AiScope } from '../shared/ai-scope';
 
 export type StoredProvider = { id: string; kind: 'openai' | 'anthropic' | 'deepseek' | 'custom'; name: string; endpoint: string; protocol: 'openai-chat' | 'openai-responses' | 'anthropic'; apiKey: string };
-export type StoredModel = { id: string; providerId: string; name: string };
+export type StoredModel = { id: string; providerId: string; name: string; supportsImages?: boolean };
 export type StoredRlcdProvider = Omit<StoredProvider, 'kind'> & { kind: RlcdProviderKind };
 export interface AiConfigFile {
   providers: StoredProvider[];

@@ -3,7 +3,7 @@
  * 页头不再提供素材浏览器入口；采集模块、共享浏览器与登录分区仍保留在各自文件中。
  */
 import { XHS_CREATOR_HOME, XHS_CREATOR_WORKSPACE } from '../../shared/browser-contracts';
-import { BrowserPane } from '../../modules/browser/ui/pane';
+import { BrowserWorkspacePane as BrowserPane } from '../../modules/browser/ui/automation';
 
 export function MediaBrowserView({ onPending }: {
   onPending(message: string): void;

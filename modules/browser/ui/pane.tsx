@@ -3,10 +3,14 @@
  * 整页「素材浏览器」与编辑器侧栏(v1b)共用本组件;采集与「AI 看这页」为可选能力。
  * 多标签:每个标签一个独立 GuestFrame;隐藏标签的 guest 保持存活(页面状态不丢)。
  */
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { ArrowClockwise, ArrowLeft, ArrowRight, LockSimple, Plus, Sparkle, X } from '@phosphor-icons/react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { ArrowClockwise, ArrowLeft, ArrowRight, Plus, Sparkle, X } from '@phosphor-icons/react';
+import { BrowserAddress } from './address';
+import { browserAddressTarget } from '../../../shared/browser-history';
 import { GuestFrame } from './guest-frame';
 import { WebviewPresentation } from './webview-presentation';
+import { BrowserAutomationBar, restorableBrowserTabs } from './automation';
+import type { BrowserSavedTab, BrowserTask } from '../../../shared/browser-automation-contracts';
 import './pane.css';
 
 export interface PaneChip { name: string; url: string; dot: string; }
@@ -21,6 +25,9 @@ export interface PanePage { url: string; title: string; text: string; }
 export interface BrowserPaneApi { loadUrl(url: string): void; }
 
 export interface BrowserPaneProps {
+  savedTabs?: BrowserSavedTab[];
+  savedActiveId?: string;
+  automation?: boolean;
   /** 存储身份:同 workspace 共享分区与登录态(持久化) */
   workspace: string;
   initialUrl?: string;
@@ -58,18 +65,22 @@ const PAGE_TEXT_CODE = `(() => {
 export function BrowserPane({
   workspace, initialUrl, slogan, chips = [], startSlot, capture, onAskPage, apiRef, onPending,
   compact = false, tabs: tabsEnabled = false, readOnlyAddress = false,
+  savedTabs = [], savedActiveId, automation = false,
 }: BrowserPaneProps) {
+  const openPopup = useRef<(url: string, tabId?: string) => void>(() => {});
+  const createTab = (id: string, url?: string): PaneTab => {
+    let frame: GuestFrame;
+    const presentation = new WebviewPresentation({ mounted: () => frame.attach(), unmounted: () => frame.detach() });
+    frame = new GuestFrame({ workspace, tabId: id, openRequested: (value, tabId) => tabsEnabled ? openPopup.current(value, tabId) : frame.loadUrl(value) }, window.workbench.browser, presentation);
+    if (url) frame.loadUrl(url);
+    return { id, frame, presentation };
+  };
   const [tabs, setTabs] = useState<PaneTab[]>(() => {
-    let f: GuestFrame;
-    const pres = new WebviewPresentation({
-      mounted: () => f.attach(),
-      unmounted: () => f.detach(),
-    });
-    f = new GuestFrame({ workspace }, window.workbench.browser, pres);
-    if (initialUrl) f.loadUrl(initialUrl);
-    return [{ id: 't1', frame: f, presentation: pres }];
+    return restorableBrowserTabs(savedTabs, initialUrl, !tabsEnabled).map(tab => createTab(tab.id, tab.url));
   });
-  const [activeId, setActiveId] = useState('t1');
+  const [activeId, setActiveId] = useState(savedActiveId && tabs.some(tab => tab.id === savedActiveId) ? savedActiveId : tabs[0].id);
+  const [task, setTask] = useState<BrowserTask | null>(null);
+  const [titlesRevision, setTitlesRevision] = useState(0);
   const tabsRef = useRef(tabs);
   tabsRef.current = tabs;
   const active = tabs.find((t) => t.id === activeId) ?? tabs[0];
@@ -78,6 +89,27 @@ export function BrowserPane({
   const [capBusy, setCapBusy] = useState(false);
   const [capDone, setCapDone] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const pendingRef = useRef(onPending);
+  pendingRef.current = onPending;
+  const persistenceEnabled = automation;
+  const onTaskState = useCallback((value: BrowserTask | null) => setTask(value), []);
+
+  useEffect(() => {
+    if (!window.workbench.browserAutomation || !persistenceEnabled) return;
+    let timer: number | undefined;
+    const persist = () => {
+      const values = tabsRef.current.map(tab => ({ id: tab.id, url: tab.frame.getSnapshot().target?.url ?? '' }));
+      void window.workbench.browserAutomation.saveTabs(workspace, values, activeId).catch(error => pendingRef.current(`标签保存失败：${String(error)}`));
+    };
+    const save = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(persist, 400);
+    };
+    const unsubscribe = tabs.map(tab => tab.frame.subscribe(() => { setTitlesRevision(value => value + 1); save(); }));
+    persist();
+    return () => { unsubscribe.forEach(off => off()); window.clearTimeout(timer); };
+  }, [tabs, activeId, workspace, persistenceEnabled]);
+  useEffect(() => { if (automation) void window.workbench.browserAutomation.activate(workspace, active.id).catch(() => {}); }, [workspace, active.id, titlesRevision, automation]);
 
   // 卸载:释放全部标签的 guest 与租约
   useEffect(() => () => {
@@ -96,10 +128,14 @@ export function BrowserPane({
   }, [apiRef, active?.frame]);
 
   const go = (raw: string): void => {
-    const value = raw.trim();
-    if (value === '') return;
+    const value = browserAddressTarget(raw);
+    if (!value) { if (raw.trim()) onPending('请输入 HTTP/HTTPS 网址或搜索词。'); return; }
     setInput(value.replace(/^https?:\/\//, ''));
-    active.frame.loadUrl(value);
+    manual(() => active.frame.loadUrl(value));
+  };
+  const manual = (action: () => void): void => {
+    if (task?.status === 'running') void window.workbench.browserAutomation.control(task.id, 'pause').then(() => action(), error => onPending(String(error)));
+    else action();
   };
 
   const onCaptureClick = async (): Promise<void> => {
@@ -124,20 +160,17 @@ export function BrowserPane({
     await onAskPage({ url: state.target.url, title: state.target.title, text });
   };
 
-  const newTab = (): void => {
-    let f: GuestFrame;
-    const pres = new WebviewPresentation({
-      mounted: () => f.attach(),
-      unmounted: () => f.detach(),
-    });
-    f = new GuestFrame({ workspace }, window.workbench.browser, pres);
-    const tab: PaneTab = { id: `t${Date.now()}`, frame: f, presentation: pres };
+  const newTab = (url?: string, id: string = crypto.randomUUID()): void => {
+    if (tabsRef.current.length >= 20) { onPending('最多打开 20 个标签页。'); return; }
+    const tab = createTab(id, url);
     setTabs((list) => [...list, tab]);
     setActiveId(tab.id);
     setInput('');
   };
+  openPopup.current = (url, id) => newTab(url, id);
 
   const closeTab = (id: string): void => {
+    if (tabs.length < 2) return;
     const idx = tabs.findIndex((t) => t.id === id);
     if (idx < 0) return;
     const tab = tabs[idx];
@@ -153,6 +186,16 @@ export function BrowserPane({
     }
   };
 
+  useEffect(() => {
+    if (!automation) return;
+    return window.workbench.browserAutomation.onTabCommand(command => {
+      if (command.workspace !== workspace) return;
+      if (command.type === 'open') newTab(command.url, command.tabId);
+      else if (command.type === 'select') setActiveId(command.tabId);
+      else closeTab(command.tabId);
+    });
+  }, [workspace, tabs, activeId, automation]);
+
   const startVisible = state.target === undefined;
 
   return (
@@ -163,42 +206,31 @@ export function BrowserPane({
             const title = t.frame.getSnapshot().target?.title || '新标签页';
             return (
               <div key={t.id} className={t.id === active.id ? 'mbp-tab on' : 'mbp-tab'} role="tab" aria-selected={t.id === active.id}>
-                <button className="mbp-tab-btn" title={title} onClick={() => { setActiveId(t.id); setInput(t.frame.getSnapshot().target?.url.replace(/^https?:\/\//, '') ?? ''); }}>
+                <button className="mbp-tab-btn" title={title} onClick={() => manual(() => { setActiveId(t.id); setInput(t.frame.getSnapshot().target?.url.replace(/^https?:\/\//, '') ?? ''); })}>
                   <span className="mbp-tab-title">{title}</span>
                 </button>
                 {tabs.length > 1 && (
-                  <button className="mbp-tab-x" title="关闭标签页" aria-label={`关闭 ${title}`} onClick={() => closeTab(t.id)}>
+                  <button className="mbp-tab-x" title="关闭标签页" aria-label={`关闭 ${title}`} onClick={() => manual(() => closeTab(t.id))}>
                     <X size={9} weight="bold" />
                   </button>
                 )}
               </div>
             );
           })}
-          <button className="mbp-tabnew" title="新标签页" onClick={newTab}><Plus size={12} weight="bold" /></button>
+          <button className="mbp-tabnew" title="新标签页" disabled={tabs.length >= 20} onClick={() => manual(() => newTab())}><Plus size={12} weight="bold" /></button>
         </div>
       )}
       <div className="mbp-chrome">
-        <button className="mbp-navbtn" title="后退" disabled={!state.canGoBack} onClick={() => active.frame.goBack()}>
+        <button className="mbp-navbtn" title="后退" disabled={!state.canGoBack} onClick={() => manual(() => active.frame.goBack())}>
           <ArrowLeft size={15} />
         </button>
-        <button className="mbp-navbtn" title="前进" disabled={!state.canGoForward} onClick={() => active.frame.goForward()}>
+        <button className="mbp-navbtn" title="前进" disabled={!state.canGoForward} onClick={() => manual(() => active.frame.goForward())}>
           <ArrowRight size={15} />
         </button>
-        <button className="mbp-navbtn" title="刷新" onClick={() => active.frame.reload()}>
+        <button className="mbp-navbtn" title="刷新" onClick={() => manual(() => active.frame.reload())}>
           <ArrowClockwise size={14} />
         </button>
-        <div className="mbp-addr">
-          <LockSimple size={13} weight="bold" />
-          <input
-            ref={inputRef}
-            aria-label="地址"
-            placeholder="搜索或输入网址,回车打开(仅 http/https)"
-            value={input}
-            readOnly={readOnlyAddress}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (!readOnlyAddress && e.key === 'Enter') go(input); }}
-          />
-        </div>
+        <BrowserAddress workspace={workspace} value={input} onChange={setInput} onGo={go} readOnly={readOnlyAddress} inputRef={inputRef} />
         {onAskPage && (
           <button
             className="mbp-navbtn"
@@ -219,7 +251,9 @@ export function BrowserPane({
           </button>
         )}
       </div>
+      {automation && <BrowserAutomationBar workspace={workspace} url={state.target?.url} ready={state.target !== undefined && !state.loading && !state.error} onNavigate={go} onState={onTaskState} />}
       <div className="mbp-stage">
+        {task?.status === 'running' && <button className="browser-takeover" aria-label="接管浏览器并暂停 AI" onClick={() => void window.workbench.browserAutomation.control(task.id, 'pause').catch(error => onPending(String(error)))}><span>AI 正在操作此浏览器 · 点击页面接管</span></button>}
         {state.loading && <div className="mbp-progress" aria-hidden="true" />}
         {state.error && (
           <div className="mbp-error" role="alert">

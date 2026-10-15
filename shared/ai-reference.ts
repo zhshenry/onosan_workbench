@@ -79,6 +79,7 @@ export type AiReferenceSnapshot = z.infer<typeof aiReferenceSnapshotSchema>;
 export interface AiTurnContext {
   scope?: AiScope;
   pageScope?: AiScope;
+  browserTabId?: string;
   references?: AiReference[];
   baziSystem?: 'bazi' | 'ziwei' | 'astro';
   copySource?: CopySource;

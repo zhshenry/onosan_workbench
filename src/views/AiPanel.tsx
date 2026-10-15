@@ -218,6 +218,8 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
   const currentRef = useRef(current);
   const pageContextRef = useRef(context);
   const pageWorkbench = workbenchForScope(context.scope);
+  const browserWorkspace = context.scope.module === 'workbench' && pageWorkbench === workbenchForScope(activeContext.scope)
+    ? context.scope.viewId === 'browser' ? 'default' : context.scope.viewId === 'media-browser' ? 'xhs-creator' : null : null;
   const previousPageWorkbench = useRef(pageWorkbench);
   const pageScopeKey = aiScopeKey(context.scope);
   const activeScopeKey = aiScopeKey(activeContext.scope);
@@ -434,9 +436,13 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
         const request = wb.ai.ask(chat.id, seed.text, { scope: seed.scope, pageScope: seedPageScope, references: seedReferences, baziSystem: seed.baziSystem, copySource: seed.copySource });
         if (unsentDraft) void wb.ai.chatDraft(chat.id, unsentDraft).catch(() => undefined);
         await request;
-      } catch (e) { if (sequence === loadSequence.current) setError(errorText(e)); }
+      } catch (e) {
+        if (sequence === loadSequence.current) setError(errorText(e));
+      }
       finally { setSending(false); }
-    })().catch(e => { if (sequence === loadSequence.current) setError(errorText(e)); });
+    })().catch(e => {
+      if (sequence === loadSequence.current) setError(errorText(e));
+    });
   }, [open, seed?.nonce]);
   useEffect(() => wb.ai.onChat(raw => {
     const chat = raw as ChatSession;
@@ -586,7 +592,8 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
       const sentReferenceKey = visibleCurrent ? referenceContextKey : referenceKeyForChat(chat.id);
       try {
         const sendReferences = await checkedReferences(references, linkedPageScope, activeContext.scope, sentReferenceKey);
-        await wb.ai.ask(chat.id, text, { scope: activeContext.scope, pageScope: linkedPageScope, references: sendReferences, baziSystem: activeContext.scope.module === 'bazi' ? activeContext.baziSystem : undefined });
+        const browserTabId = browserWorkspace ? (await wb.browserAutomation.tabs(browserWorkspace)).find(tab => tab.active && tab.ready)?.id : undefined;
+        await wb.ai.ask(chat.id, text, { scope: activeContext.scope, pageScope: linkedPageScope, ...(browserTabId ? { browserTabId } : {}), references: sendReferences, baziSystem: activeContext.scope.module === 'bazi' ? activeContext.baziSystem : undefined });
       }
       catch (e) {
         if (sequence === loadSequence.current && referenceContextKeyRef.current === sentReferenceKey && activeScopeKeyRef.current === targetKey) { setError(errorText(e)); setInput(previous => previous || text); }
@@ -648,7 +655,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
           )}
           <span className="ai-scope-tip">
             <button type="button" className="ai-ctx-info" aria-label="查看协助范围" aria-describedby="ai-scope-detail"><Info size={14} /></button>
-            <span id="ai-scope-detail" className="ai-scope-tooltip" role="tooltip">{SCOPE_TIPS[activeContext.scope.module] ?? SCOPE_TIP_DEFAULT}</span>
+            <span id="ai-scope-detail" className="ai-scope-tooltip" role="tooltip">{browserWorkspace ? '本对话保留当前协助对象，同时可操作当前浏览器标签。新站点需要授权，可随时接管或停止；切换工作台或收起助手后，进行中的任务继续操作原标签。' : SCOPE_TIPS[activeContext.scope.module] ?? SCOPE_TIP_DEFAULT}</span>
           </span>
         </div>
         <div className="ai-ctx-sub">

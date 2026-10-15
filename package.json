@@ -1,7 +1,7 @@
 {
   "name": "onosan-workbench",
   "productName": "Ono Workbench",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "个人工作台 — 待办/日程、文档中心、内置浏览器与可生长的工作台模块",
   "type": "module",
   "main": "dist-electron/main.cjs",
@@ -16,6 +16,7 @@
     "start": "electron .",
     "test": "tsx --test tests/*.test.ts",
     "test:windows-pilot": "node tooling/windows-pilot.mjs",
+    "test:browser": "npm run build && node tooling/browser-automation-pilot.mjs",
     "postinstall": "node tooling/patch-excel.mjs",
     "dist:win": "npm run dist:portable",
     "dist:installer": "npm run verify && electron-builder --win nsis --x64 --publish never --config.electronDist=node_modules/electron/dist && powershell -NoProfile -ExecutionPolicy Bypass -File tooling/package-release.ps1 -Mode All",

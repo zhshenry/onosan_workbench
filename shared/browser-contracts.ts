@@ -14,13 +14,14 @@ export interface BrowserReservation {
 export interface BrowserOpenRequest {
   lease: BrowserLeaseId;
   url: string;
+  tabId?: string;
 }
 
 /** 渲染层可用的租约操作(不暴露 IPC 与 Electron 对象) */
 export interface BrowserBridge {
-  acquire(workspace: string): Promise<BrowserReservation>;
+  acquire(workspace: string, tabId?: string): Promise<BrowserReservation>;
   release(lease: BrowserLeaseId): Promise<void>;
-  onOpenRequested(lease: BrowserLeaseId, listener: (url: string) => void): () => void;
+  onOpenRequested(lease: BrowserLeaseId, listener: (url: string, tabId?: string) => void): () => void;
 }
 
 /** 观察到的页面状态(载体中立,UI 直接消费) */
@@ -42,7 +43,7 @@ export const emptyBrowserFrame = (): BrowserFrameState => ({
   error: undefined,
 });
 
-/** 缺省存储身份:同一身份的分区进程内复用,cookie/登录态跨标签共享,进程退出即消失 */
+/** 缺省存储身份:同一身份复用 persist 分区，Cookie/登录态跨标签与正常重启保留。 */
 export const DEFAULT_BROWSER_WORKSPACE = 'default';
 
 /** 创作者后台单独保留登录态,不与素材浏览器的采集会话混用。 */

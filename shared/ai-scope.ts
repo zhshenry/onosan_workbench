@@ -33,6 +33,7 @@ export function sameAiScope(chat: Pick<ChatSession, 'module' | 'draftId' | 'prof
 }
 
 const viewWorkbenches: Record<ViewId, WorkbenchId> = {
+  browser: 'web',
   home: 'home', bazi: 'life', reading: 'life', copy: 'media', 'copy-publish': 'media', 'media-browser': 'media',
   'settings-profile': 'settings', 'settings-general': 'settings', 'settings-appearance': 'settings',
   'settings-ai': 'settings', 'settings-data': 'settings', 'settings-notifications': 'settings', 'settings-about': 'settings',
@@ -40,6 +41,7 @@ const viewWorkbenches: Record<ViewId, WorkbenchId> = {
 
 export function defaultAiScopeForWorkbench(workbench: WorkbenchId): AiScope | null {
   if (workbench === 'home') return { module: 'todo' };
+  if (workbench === 'web') return { module: 'workbench', viewId: 'browser' };
   if (workbench === 'media' || workbench === 'life' || workbench === 'settings') return { module: 'workbench', viewId: `workspace:${workbench}` };
   return null;
 }

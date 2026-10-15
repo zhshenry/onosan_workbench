@@ -10,6 +10,9 @@ import { ReadingStore } from '../modules/reading/store';
 import { aggregateBook, scanBooks } from '../modules/reading/obsidian';
 import { CopyStore } from '../modules/copywriting/store';
 import { BrowserGuests } from './browser-guests';
+import { BrowserAutomation } from './browser/tasks';
+import { BrowserStore } from './browser/store';
+import { registerBrowserAutomationIpc } from './browser/ipc';
 import { registerAiIpc } from './ai-ipc';
 import { FloatTodoWindow, registerFloatIpc } from './float-window';
 
@@ -48,6 +51,7 @@ let floatTodoFactory: FloatFactory | null = null;
 let aiStore: AiStore | null = null;
 let settingsStore: AppSettingsStore | null = null;
 let browserGuests: BrowserGuests | null = null;
+let browserAutomation: BrowserAutomation | null = null;
 let baziStore: BaziStore | null = null;
 let mediaCaptureStore: MediaCaptureStore | null = null;
 let readingStore: ReadingStore | null = null;
@@ -199,13 +203,13 @@ if (!app.requestSingleInstanceLock()) {
 
     // 内置浏览器(租约模式;仅主窗口文档可申请)
     const assertMainWindow = (event: Electron.IpcMainInvokeEvent): void => {
-      if (!browserGuests || event.sender !== mainWindow?.webContents) {
+      if (!browserGuests || event.sender !== mainWindow?.webContents || event.senderFrame !== event.sender.mainFrame) {
         throw new Error('内置浏览器:仅主窗口可使用租约');
       }
     };
-    ipcMain.handle('browser:acquire', (event, workspace: unknown) => {
+    ipcMain.handle('browser:acquire', (event, workspace: unknown, tabId: unknown) => {
       assertMainWindow(event);
-      return browserGuests!.acquire(event.sender, workspace);
+      return browserGuests!.acquire(event.sender, workspace, tabId);
     });
     ipcMain.handle('browser:release', (event, lease: unknown) => {
       assertMainWindow(event);
@@ -352,6 +356,8 @@ if (!app.requestSingleInstanceLock()) {
     settingsStore = new AppSettingsStore(app.getPath('userData'));
     applyLoginItem(settingsStore.read().launchAtLogin);
     browserGuests = new BrowserGuests(() => (DEV_URL || undefined));
+    browserAutomation = new BrowserAutomation(browserGuests, new BrowserStore(join(app.getPath('userData'), 'browser-state.json')));
+    registerBrowserAutomationIpc(browserAutomation, browserGuests, () => mainWindow?.webContents);
     officeConverter = new OfficeConverter(OFFICE_CONVERT_OPTIONS);
     registerPdfAssetHandler(app.isPackaged ? join(process.resourcesPath, 'pdfjs') : join(__dirname, '../node_modules/pdfjs-dist'));
     const updateEnabled = app.isPackaged && !SMOKE && !process.env.WORKBENCH_TEST_DATA_DIR && existsSync(join(process.resourcesPath, 'app-update.yml'));
@@ -396,7 +402,7 @@ if (!app.requestSingleInstanceLock()) {
     floatTodoFactory = () => floatTodo;
     registerFloatIpc(floatTodoFactory);
     aiStore = new AiStore(app.getPath('userData'));
-    registerAiIpc(store, aiStore, copyStore, baziStore, readingStore);
+    registerAiIpc(store, aiStore, copyStore, baziStore, readingStore, browserAutomation);
     registerCopyIpc(copyStore);
     createWindow();
     void createTray();

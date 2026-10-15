@@ -1457,6 +1457,8 @@ kbd {
 .ai-config-link:hover:not(:disabled) { background: var(--acc-soft); }
 .settings-ai .icon-button { width: 30px; height: 30px; display: grid; place-items: center; flex: none; border-radius: 7px; color: var(--ink-3); }
 .settings-ai .icon-button:hover:not(:disabled) { background: var(--acc-soft); color: var(--acc-deep); }
+.settings-ai .icon-button.ai-config-multimodal { width: 32px; height: 32px; border: 1px solid var(--acc-ring); border-radius: var(--r-ctl); background: var(--acc-soft); }
+.settings-ai .icon-button.ai-config-multimodal[aria-pressed="true"] { color: var(--avatar-teal); border-color: color-mix(in srgb, var(--avatar-teal) 32%, transparent); background: color-mix(in srgb, var(--avatar-teal) 8%, var(--todo-white)); }
 .settings-ai .ai-config-danger { color: var(--danger); }
 .settings-ai .ai-config-danger:hover:not(:disabled) { color: var(--danger); background: var(--danger-soft); }
 .ai-config-test-result { padding: 0 14px 10px; font-size: var(--type-support); color: var(--ink-3); overflow-wrap: anywhere; user-select: text; }

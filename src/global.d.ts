@@ -6,6 +6,7 @@ declare global {
       close(): void;
       onMaximized(callback: (maximized: boolean) => void): () => void;
       browser: import('../shared/browser-contracts').BrowserBridge;
+      browserAutomation: import('../shared/browser-automation-contracts').BrowserAutomationBridge;
       office: {
         convert(
           filename: string,
@@ -79,7 +80,7 @@ declare global {
         chatRemove(id: string): Promise<unknown>;
         chatDraft(id: string, text: string): Promise<void>;
         chatContext(id: string, scope: import('../shared/ai-scope').AiScope): Promise<unknown>;
-        ask(sessionId: string, text: string, context?: { scope?: import('../shared/ai-scope').AiScope; pageScope?: import('../shared/ai-scope').AiScope; references?: import('../shared/ai-scope').AiScope[]; baziSystem?: 'bazi' | 'ziwei' | 'astro'; copySource?: import('../shared/todo-contracts').CopySource }): Promise<void>;
+        ask(sessionId: string, text: string, context?: import('../shared/ai-reference').AiTurnContext): Promise<void>;
         cancel(): void;
         apply(token: string, indices: number[]): Promise<unknown>;
         undo(token: string): Promise<unknown>;

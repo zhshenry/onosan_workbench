@@ -21,6 +21,9 @@ import { buildBaziContribution } from '../modules/bazi/ai';
 import { buildReadingContribution } from '../modules/reading/ai';
 import type { ReadingStore } from '../modules/reading/store';
 import { buildWorkbenchContribution, describeAiScope, withWorkbenchContext } from '../modules/workbench-ai';
+import { buildBrowserContribution } from '../modules/browser/ai';
+import type { BrowserAutomation } from './browser/tasks';
+import type { WebContents } from 'electron';
 import { aiScopeKey, chatContextScope, chatScope, sameAiWorkbench, type AiScope } from '../shared/ai-scope';
 
 import { aiReferencesSchema, describeAiReference } from '../shared/ai-reference';
@@ -67,7 +70,7 @@ function todoChanged(): void {
   for (const win of BrowserWindow.getAllWindows()) win.webContents.send('todo:changed');
 }
 
-export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: BaziStore, reading: ReadingStore): void {
+export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: BaziStore, reading: ReadingStore, browserAutomation?: BrowserAutomation): void {
   const configSummary = () => {
     const config = ai.readConfig();
     const providers: AIProvider[] = config.providers.map(({ id, kind, name, endpoint, protocol, apiKey }) => ({ id, kind, name, endpoint, protocol, hasKey: Boolean(apiKey) }));
@@ -147,6 +150,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
       id: z.union([z.string().uuid(), z.literal('')]).optional(),
       providerId: z.string().uuid(),
       name: z.string().trim().min(1, '请填写模型名称或 ID').max(200, '模型名称最多200字'),
+      supportsImages: z.boolean().optional(),
     }).strict().parse(input);
     const config = ai.readConfig();
     if (!config.providers.some(provider => provider.id === data.providerId)) throw new Error('请先保存供应商');
@@ -157,12 +161,12 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
       const current = models.find(model => model.id === data.id);
       if (!current || current.providerId !== data.providerId) throw new Error('模型不存在');
       assertUniqueName(siblings, data.name, current.id, '该供应商已有同名模型');
-      next = { ...current, name: data.name };
+      next = { ...current, name: data.name, ...(data.supportsImages === undefined ? {} : { supportsImages: data.supportsImages }) };
       models.splice(models.findIndex(model => model.id === current.id), 1, next);
     } else {
       if (siblings.length >= MAX_MODELS) throw new Error('每个供应商最多保存8个模型');
       assertUniqueName(siblings, data.name, undefined, '该供应商已有同名模型');
-      next = { id: randomUUID(), providerId: data.providerId, name: data.name };
+      next = { id: randomUUID(), providerId: data.providerId, name: data.name, ...(data.supportsImages === undefined ? {} : { supportsImages: data.supportsImages }) };
       models.push(next);
     }
     mutateConfig(current => ({ ...current, models: [...models], activeModelId: current.activeModelId || next.id }));
@@ -334,13 +338,14 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     return updated;
   });
 
-  const ask = async (sessionId: string, text: string, turnContext: unknown): Promise<void> => {
+  const ask = async (sessionId: string, text: string, turnContext: unknown, owner: WebContents, isMainFrame: boolean): Promise<void> => {
     const request = z.object({ sessionId: z.string().uuid(), text: z.string().trim().min(1).max(10000, '输入最多10000字') }).strict().parse({ sessionId, text });
     const context = z.object({
       baziSystem: z.enum(['bazi', 'ziwei', 'astro']).optional(),
       copySource: z.object({ draftId: z.string().min(1), start: z.number().int().nonnegative(), end: z.number().int().positive(), text: z.string().min(1).max(1000) }).strict().optional(),
       scope: scopeSchema.optional(),
       pageScope: scopeSchema.optional(),
+      browserTabId: z.string().min(1).max(100).optional(),
       references: aiReferencesSchema.optional(),
     }).strict().parse(turnContext ?? {});
     const selectedSystem = context.baziSystem ?? 'bazi';
@@ -354,6 +359,9 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     if (context.pageScope && !sameAiWorkbench(chat, context.pageScope)) throw new Error('当前页面不属于这条对话的工作台');
     const scope = requestedScope;
     const pageScope = context.pageScope ?? (aiScopeKey(requestedScope) === aiScopeKey(priorScope) ? chat.pageScope ?? scope : requestedScope);
+    const isBrowserPage = pageScope.module === 'workbench' && ['browser', 'media-browser'].includes(pageScope.viewId);
+    if (isBrowserPage && !isMainFrame) throw new Error('浏览器任务仅允许主窗口文档。');
+    if (context.browserTabId && !isBrowserPage) throw new Error('请在关联的浏览器页面发送网页操作要求。');
     const referenceSnapshots = resolveAiReferences(context.references, pageScope, scope, { todo: store, copy, bazi, reading }, { now: new Date(), baziSystem: selectedSystem });
     const references = referenceSnapshots.map(snapshot => snapshot.reference);
     const selectedTaskIds = references.flatMap(reference => reference.module === 'todo' ? [reference.taskId] : []);
@@ -384,8 +392,19 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
       })()
       : scope.module === 'workbench' ? buildWorkbenchContribution(scope.viewId)
       : copyContribution ?? todoContribution!;
-    contribution = withAiReferenceSnapshots(contribution, referenceSnapshots);
     const key = decryptKey(connection.provider.apiKey);
+    const browserTask = isBrowserPage ? browserAutomation?.forChat(owner, pageScope.viewId === 'media-browser' ? 'xhs-creator' : 'default', request.text, chat.id, chat.browserTaskId, context.browserTabId) : undefined;
+    if (browserTask) {
+      const browser = buildBrowserContribution(browserAutomation!, owner, browserTask, connection.model.supportsImages === true);
+      const business = scope.module === 'workbench' ? undefined : contribution;
+      contribution = {
+        directBrowserOperations: true,
+        toolNames: [...(business?.toolNames ?? []), ...browser.toolNames], labels: { ...business?.labels, ...browser.labels },
+        buildTools: () => [...(business?.buildTools() ?? []), ...browser.buildTools()],
+        systemPrompt: now => `${business?.systemPrompt(now) ?? ''}\n\n${browser.systemPrompt(now)}\n业务协助对象保持不变，网页是本轮独立操作目标。本地博客修改仍只生成待确认建议；把已有内容填写到网页不需要修改本地博客。`,
+      };
+    }
+    contribution = withAiReferenceSnapshots(contribution, referenceSnapshots);
     const assistantId = randomUUID();
     const history = chat.entries.filter(entry => !entry.streaming && !entry.error && entry.content.trim()).slice(-12).map(entry => {
       const earlierScope = entry.contextScope ?? chatScope(chat);
@@ -396,12 +415,19 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
       return { role: entry.role, content: earlierContext + earlierPage + earlierSystem + earlierReferences + entry.content };
     });
     const systemTag = scope.module === 'bazi' ? { baziSystem: selectedSystem } : {};
+    const controller = new AbortController();
+    if (browserTask) browserAutomation!.bind(owner, browserTask.id, chat.id, controller.signal);
     chat.contextScope = scope;
     chat.pageScope = pageScope;
+    if (browserTask) chat.browserTaskId = browserTask.id;
     chat.entries.push({ id: randomUUID(), role: 'user', content: request.text, contextScope: scope, pageScope, references, referenceSnapshots, copySource: context.copySource, ...systemTag }, { id: assistantId, role: 'assistant', content: '', contextScope: scope, pageScope, references, referenceSnapshots, streaming: true, tools: [], ...systemTag });
     if (chat.title === '新对话' && !chat.titleEdited) chat.title = request.text.slice(0, 32);
     chat.draft = '';
-    emitChat(ai.saveChat(chat));
+    try { emitChat(ai.saveChat(chat)); }
+    catch (error) {
+      if (browserTask) browserAutomation!.finish(owner, browserTask.id, '对话保存失败，浏览器任务未执行。');
+      throw error;
+    }
     const updateEntry = (change: (entry: ChatSession['entries'][number]) => void): void => {
       const latest = ai.chat(chat.id);
       const entry = latest.entries.find(item => item.id === assistantId)!;
@@ -417,10 +443,9 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
         pending.delete(token);
       }
     };
-    const controller = new AbortController();
     activeRequest = controller;
     // 写作助手可能整段成稿,超时放宽到 90s(待办保持 45s)
-    const timeout = setTimeout(() => controller.abort(), scope.module === 'copy' ? 90000 : 45000);
+    const timeout = setTimeout(() => controller.abort(), browserTask ? 600000 : scope.module === 'copy' ? 90000 : 45000);
     let deltaTimer: ReturnType<typeof setTimeout> | null = null;
     let latestDelta = '', latestThinking = '', latestThinkingActive = false;
     const applyStream = (entry: ChatSession['entries'][number]): void => {
@@ -437,9 +462,9 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
       scheduleDelta();
     };
     try {
-      const { reply } = await runAgentLoop({ endpoint: connection.provider.endpoint, model: connection.model.name, protocol: connection.provider.protocol, key }, request.text,
+      const { reply } = await runAgentLoop({ endpoint: connection.provider.endpoint, model: connection.model.name, protocol: connection.provider.protocol, key, supportsImages: browserTask && connection.model.supportsImages === true }, request.text,
         history,
-        controller.signal, withWorkbenchContext(contribution, scope, draft?.title || profile?.name, pageScope), onDelta,
+        browserTask ? browserAutomation!.signal(owner, browserTask.id) : controller.signal, withWorkbenchContext(contribution, scope, draft?.title || profile?.name, pageScope), onDelta,
         tool => updateEntry(entry => {
           const tools = entry.tools ?? [];
           const index = tools.findIndex(item => item.id === tool.id);
@@ -483,7 +508,9 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
         if (!reply.trim()) throw new Error('模型未返回可用内容,请检查服务协议和模型输出');
         updateEntry(entry => { applyStream(entry); entry.content = reply; entry.streaming = false; });
       }
+      if (browserTask) browserAutomation!.finish(owner, browserTask.id);
     } catch (cause) {
+      if (browserTask) browserAutomation!.finish(owner, browserTask.id, cause instanceof Error ? cause.message : '请求失败');
       if (deltaTimer) { clearTimeout(deltaTimer); deltaTimer = null; }
       latestThinkingActive = false;
       updateEntry(entry => {
@@ -502,8 +529,8 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
       activeRequest = null;
     }
   };
-  ipcMain.handle('ai:ask', async (_event, sessionId: unknown, text: unknown, context: unknown) => {
-    await ask(z.string().uuid().parse(sessionId), z.string().parse(text), context);
+  ipcMain.handle('ai:ask', async (event, sessionId: unknown, text: unknown, context: unknown) => {
+    await ask(z.string().uuid().parse(sessionId), z.string().parse(text), context, event.sender, event.senderFrame === event.sender.mainFrame);
   });
   // 用户回答 AI 的澄清提问(上游 ask:answer 同义;跳过=空答案)
   ipcMain.on('ai:answer', (_event, input: unknown) => {

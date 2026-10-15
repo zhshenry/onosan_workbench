@@ -87,19 +87,38 @@ const ai = {
 
 // 内置浏览器:仅暴露三个租约操作,不暴露 IPC 与 Electron 对象
 const browser = {
-  acquire: (workspace: string): Promise<unknown> => ipcRenderer.invoke('browser:acquire', workspace),
+  acquire: (workspace: string, tabId?: string): Promise<unknown> => ipcRenderer.invoke('browser:acquire', workspace, tabId),
   release: (lease: string): Promise<void> => ipcRenderer.invoke('browser:release', lease),
-  onOpenRequested: (lease: string, listener: (url: string) => void): (() => void) => {
+  onOpenRequested: (lease: string, listener: (url: string, tabId?: string) => void): (() => void) => {
     const l = (_event: unknown, request: unknown): void => {
       if (typeof request !== 'object' || request === null) return;
       const r = request as Record<string, unknown>;
       if (r.lease !== lease || typeof r.url !== 'string') return;
-      listener(r.url);
+      listener(r.url, typeof r.tabId === 'string' ? r.tabId : undefined);
     };
     ipcRenderer.on('browser:open-requested', l);
     return () => {
       ipcRenderer.off('browser:open-requested', l);
     };
+  },
+};
+
+const browserAutomation = {
+  tabs: (workspace: string) => ipcRenderer.invoke('browser:tabs', workspace),
+  deleteHistory: (workspace: string, ids: string[]) => ipcRenderer.invoke('browser:delete-history', workspace, ids),
+  clearData: (input: unknown) => ipcRenderer.invoke('browser:clear-data', input),
+  state: (workspace: string) => ipcRenderer.invoke('browser:state', workspace),
+  saveTabs: (workspace: string, tabs: unknown, activeId: string) => ipcRenderer.invoke('browser:save-tabs', workspace, tabs, activeId),
+  activate: (workspace: string, tabId: string) => ipcRenderer.invoke('browser:activate', workspace, tabId),
+  control: (id: string, action: string) => ipcRenderer.invoke('browser:task-control', id, action),
+  clear: (workspace: string, kind: string, origin?: string) => ipcRenderer.invoke('browser:clear', workspace, kind, origin),
+  onTask: (listener: (task: unknown) => void) => {
+    const callback = (_event: unknown, task: unknown) => listener(task);
+    ipcRenderer.on('browser:task', callback); return () => ipcRenderer.off('browser:task', callback);
+  },
+  onTabCommand: (listener: (command: unknown) => void) => {
+    const callback = (_event: unknown, command: unknown) => listener(command);
+    ipcRenderer.on('browser:tab-command', callback); return () => ipcRenderer.off('browser:tab-command', callback);
   },
 };
 
@@ -233,6 +252,7 @@ const api = {
   copy,
   ai,
   browser,
+  browserAutomation,
   mediaCapture,
   office,
   settings,

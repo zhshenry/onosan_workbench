@@ -12,6 +12,8 @@ import { SettingsView } from './views/SettingsView';
 import { BaziView } from '../modules/bazi/ui/BaziView';
 import { TaskEditor, type TaskEditorApi, type TodoState } from '../modules/todo/ui/TaskEditor';
 import { MediaBrowserHost } from './views/MediaBrowserHost';
+import { BrowserHost } from './views/BrowserView';
+import type { BrowserTask } from '../shared/browser-automation-contracts';
 import { CopyView } from '../modules/copywriting/ui/CopyView';
 import { PublishView } from '../modules/copywriting/ui/PublishView';
 import { ReadingView } from './views/ReadingView';
@@ -108,6 +110,7 @@ export function App() {
   const [railMenu, setRailMenu] = useState<WorkbenchId | null>(null);
   const dismissedRailMenu = useRef<WorkbenchId | null>(null);
   const [aiJob, setAiJob] = useState<{ chatId: string; scope: AiScope; title: string; status: 'running' | 'done' | 'error' } | null>(null);
+  const [browserTask, setBrowserTask] = useState<BrowserTask | null>(null);
   const [activeAiChatId, setActiveAiChatId] = useState<string | null>(null);
   const [requestedAiChatId, setRequestedAiChatId] = useState<string | null>(null);
   const [requestedCopyId, setRequestedCopyId] = useState<string | null>(null);
@@ -132,10 +135,11 @@ export function App() {
         ? { scope: { module: 'bazi', profileId: baziCtx.id }, label: '命理解读', object: baziCtx.name, baziSystem: baziCtx.system }
         : curView === 'reading' && readingCtx
           ? { scope: { module: 'reading', profileId: readingCtx.id }, label: '阅读助手', object: readingCtx.title }
-          : { scope: { module: 'workbench', viewId: curView }, label: '工作台助手', object: curView === 'copy' ? '尚未选择博客' : curView === 'bazi' ? '尚未选择命例' : curView === 'copy-publish' ? '图文发布' : curView === 'media-browser' ? '素材浏览器' : curView === 'reading' ? '阅读清单' : curView.startsWith('settings') ? '设置' : '当前页面' };
+          : { scope: { module: 'workbench', viewId: curView }, label: curView === 'browser' || curView === 'media-browser' ? '浏览器助手' : '工作台助手', object: curView === 'copy' ? '尚未选择博客' : curView === 'bazi' ? '尚未选择命例' : curView === 'copy-publish' ? '图文发布' : curView === 'media-browser' ? '我的小红书' : curView === 'browser' ? '浏览器任务' : curView === 'reading' ? '阅读清单' : curView.startsWith('settings') ? '设置' : '当前页面' };
 
   useEffect(() => { localStorage.setItem('wb.ai.open', aiOpen ? '1' : '0'); }, [aiOpen]);
   useEffect(() => { localStorage.setItem('wb.ai.width', String(aiWidth)); }, [aiWidth]);
+  useEffect(() => window.workbench.browserAutomation?.onTask(setBrowserTask), []);
   useEffect(() => { if (copyCtx?.id === requestedCopyId) setRequestedCopyId(null); }, [copyCtx?.id, requestedCopyId]);
   useEffect(() => { if (baziCtx?.id === requestedProfileId) setRequestedProfileId(null); }, [baziCtx?.id, requestedProfileId]);
   useEffect(() => window.workbench.ai.onChat(raw => {
@@ -526,6 +530,7 @@ export function App() {
 
       <div className="tb-right">
         {aiJob && (!aiOpen || aiJob.chatId !== activeAiChatId) && <button className="ai-job-btn" title="返回生成的对话" onClick={returnToAiJob}>{aiJob.scope.module === 'copy' ? '博客' : aiJob.scope.module === 'bazi' ? '命理' : '助手'}{aiJob.status === 'running' ? '生成中' : aiJob.status === 'error' ? '请求失败' : '已完成'}</button>}
+        {browserTask && ['running', 'paused', 'site-approval'].includes(browserTask.status) && curView !== (browserTask.workspace === 'xhs-creator' ? 'media-browser' : 'browser') && <button className="ai-job-btn" title="返回浏览器任务" onClick={() => switchView(browserTask.workspace === 'xhs-creator' ? 'media-browser' : 'browser')}>{browserTask.status === 'site-approval' ? '浏览器等待站点授权' : browserTask.status === 'paused' ? '浏览器已暂停' : '浏览器后台操作中'}</button>}
         <button className="ibtn float-topbar-btn" title={floatVisible ? '隐藏悬浮待办窗' : '打开悬浮待办窗'} aria-label={floatVisible ? '隐藏悬浮待办窗' : '打开悬浮待办窗'} aria-pressed={floatVisible} onClick={() => { setIslandPop(null); void window.workbench.float.toggle(); }}><CheckSquareOffset size={18} weight={floatVisible ? 'fill' : 'regular'} /></button>
         <button className="ibtn ai-topbar-btn" title={aiToggleLabel} aria-label={aiToggleLabel} aria-expanded={aiOpen} aria-controls="workbench-ai-panel" data-background-running={backgroundAiRunning || undefined} onClick={() => setAiOpen(v => !v)}><Sparkle size={18} weight={aiOpen || backgroundAiRunning ? 'fill' : 'regular'} /></button>
         <span className="vdiv" />
@@ -597,7 +602,7 @@ export function App() {
       <main className="content" ref={contentRef} tabIndex={-1}>
           {todo.error && <div className="todo-load-error" role="alert">{todo.error}</div>}
           {/* 视图切换动效:按 curView 换 key 重挂载,统一淡入上移(见 shell.css .view-fade) */}
-          {(isPlanningWorkbench || curView !== 'media-browser') && <div className="view-fade" key={curView}>
+          {(isPlanningWorkbench || curView !== 'media-browser' && curView !== 'browser') && <div className="view-fade" key={curView}>
           {isPlanningWorkbench ? (
             <section className="pending-workbench" role="status">
               <span className="pending-workbench-icon" aria-hidden="true"><ActiveWorkbenchIcon /></span>
@@ -622,6 +627,7 @@ export function App() {
           </div>}
           <MediaBrowserHost active={!isPlanningWorkbench && curView === 'media-browser'} focusTarget={contentRef}
             onPending={showToast} />
+          <BrowserHost active={!isPlanningWorkbench && curView === 'browser'} focusTarget={contentRef} onPending={showToast} />
         </main>
 
       </div>

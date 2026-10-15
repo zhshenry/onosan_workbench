@@ -13,6 +13,8 @@ interface GuestLease {
   readonly owner: WebContents;
   readonly partition: string;
   readonly workspace: string;
+  readonly tabId: string;
+  active: boolean;
   attached: boolean;
   guest?: WebContents;
 }
@@ -30,6 +32,10 @@ export class BrowserGuests {
   private readonly partitions = new Map<string, string>();
   private readonly leases = new Map<BrowserLeaseId, GuestLease>();
   private imageSaver: ((ctx: ImageSaveContext) => void | Promise<void>) | undefined;
+  private navigationObserver?: (workspace: string, url: string, title: string, tabId: string) => void;
+  private popupObserver?: (owner: WebContents, parentTabId: string) => string | undefined;
+  observeNavigation(listener: (workspace: string, url: string, title: string, tabId: string) => void): void { this.navigationObserver = listener; }
+  observePopup(listener: (owner: WebContents, parentTabId: string) => string | undefined): void { this.popupObserver = listener; }
 
   /** 注入原图采集实现(主进程受控抓取,不放宽下载禁令);不注入则右键菜单不出现。 */
   setImageSaver(fn: (ctx: ImageSaveContext) => void | Promise<void>): void {
@@ -45,10 +51,12 @@ export class BrowserGuests {
    * @param workspace - 经 IPC 到达的存储身份。
    * @returns 不透明租约与批准给它的分区。
    */
-  acquire(owner: WebContents, workspace: unknown): BrowserReservation {
+  acquire(owner: WebContents, workspace: unknown, tabId?: unknown): BrowserReservation {
     if (typeof workspace !== 'string' || workspace.length === 0 || workspace.length > 4096) {
       throw new Error('内置浏览器:缺少 workspace 存储标识');
     }
+    if (tabId !== undefined && (typeof tabId !== 'string' || !/^[a-zA-Z0-9_-]{1,100}$/.test(tabId))) throw new Error('内置浏览器:无效标签标识');
+    if (tabId && [...this.leases.values()].some(item => item.owner === owner && item.tabId === tabId)) throw new Error('内置浏览器:标签已经存在');
     let partition = this.partitions.get(workspace);
     if (partition === undefined) {
       // 确定性持久分区:同 workspace 重启后仍拿回同一存储(cookie/登录态保留)。
@@ -59,9 +67,36 @@ export class BrowserGuests {
       this.partitions.set(workspace, partition);
     }
     const lease = randomUUID();
-    this.leases.set(lease, { owner, partition, workspace, attached: false });
+    this.leases.set(lease, { owner, partition, workspace, tabId: typeof tabId === 'string' ? tabId : lease, active: false, attached: false });
     return { lease, partition };
   }
+
+  /** Only the issuing host can resolve a tab to its live guest. Never exposed over IPC. */
+  resolve(owner: WebContents, tabId: string): GuestLease & { guest: WebContents } {
+    const lease = [...this.leases.values()].find(item => item.owner === owner && item.tabId === tabId);
+    if (!lease?.guest || lease.guest.isDestroyed()) throw new Error('浏览器标签尚未就绪或已关闭，请重新打开页面。');
+    return lease as GuestLease & { guest: WebContents };
+  }
+
+  tabs(owner: WebContents, workspace: string) {
+    return [...this.leases.values()].filter(item => item.owner === owner && item.workspace === workspace).map(item => ({
+      id: item.tabId, workspace: item.workspace, url: item.guest?.isDestroyed() === false ? item.guest.getURL() : '',
+      title: item.guest?.isDestroyed() === false ? item.guest.getTitle() : '', ready: !!item.guest && !item.guest.isDestroyed(), active: item.active,
+    }));
+  }
+
+  activate(owner: WebContents, tabId: string, workspace?: string): void {
+    const current = [...this.leases.values()].find(lease => lease.owner === owner && lease.tabId === tabId);
+    if (current && workspace && current.workspace !== workspace) throw new Error('内置浏览器:标签不属于此分区');
+    for (const lease of this.leases.values()) if (lease.owner === owner && lease.workspace === (current?.workspace ?? workspace)) lease.active = lease.tabId === tabId;
+  }
+
+  async closeTab(owner: WebContents, tabId: string): Promise<void> {
+    const entry = [...this.leases].find(([, lease]) => lease.owner === owner && lease.tabId === tabId);
+    if (entry) await this.release(owner, entry[0]);
+  }
+
+  canNavigate(url: string, workspace: string): boolean { return this.allowedNavigation(url, workspace); }
 
   /**
    * 仅释放签发给该窗口的租约;workspace 存储(cookie/存储)保留。
@@ -118,6 +153,7 @@ export class BrowserGuests {
         plugins: false,
         navigateOnDragDrop: false,
         disableDialogs: true,
+        backgroundThrottling: false,
         devTools: !app.isPackaged,
       });
       params.httpreferrer = '';
@@ -139,6 +175,8 @@ export class BrowserGuests {
         guest.once('destroyed', () => {
           this.leases.delete(id);
         });
+        guest.on('did-navigate', (_event, target) => this.navigationObserver?.(lease.workspace, target, guest.getTitle(), lease.tabId));
+        guest.on('page-title-updated', (_event, title) => this.navigationObserver?.(lease.workspace, guest.getURL(), title, lease.tabId));
       });
       guest.setWindowOpenHandler(({ url, postBody }) => {
         const lease = attachedLease === undefined ? undefined : this.leases.get(attachedLease);
@@ -150,7 +188,7 @@ export class BrowserGuests {
           postBody === undefined &&
           this.allowedNavigation(url, lease.workspace)
         ) {
-          const request: BrowserOpenRequest = { lease: attachedLease, url: new URL(url).href };
+          const request: BrowserOpenRequest = { lease: attachedLease, url: new URL(url).href, tabId: this.popupObserver?.(owner, lease.tabId) };
           owner.send('browser:open-requested', request);
         }
         return { action: 'deny' };

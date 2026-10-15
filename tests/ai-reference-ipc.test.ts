@@ -13,6 +13,7 @@ import { BaziStore } from '../modules/bazi/store';
 import { ReadingStore } from '../modules/reading/store';
 import { newTask } from '../shared/todo-contracts';
 import type { AiTurnContext } from '../shared/ai-reference';
+import type { BrowserAutomation } from '../electron/browser/tasks';
 
 // Only Electron's process transport is replaced. Handlers, stores, model loop,
 // reference resolution, proposal collection and explicit apply all run for real.
@@ -62,10 +63,27 @@ test('真实 ai:ask 拒绝越界输入后不解密、不存消息；发送冻结
     const modelId = randomUUID();
     const address = server.address() as { port: number };
     ai.writeConfig({ providers: [{ id: providerId, kind: 'custom', name: 'Local fixture', endpoint: `http://127.0.0.1:${address.port}/v1`, protocol: 'openai-chat', apiKey: Buffer.from('fixture-key').toString('base64') }], models: [{ id: modelId, providerId, name: 'fixture' }], activeModelId: modelId, rlcdProviders: [], rlcdModels: [], activeRlcdModelId: '', aiEnabled: true });
-    registerAiIpc(todo, ai, copy, bazi, reading);
+    let browserEnabled = false;
+    const browserCalls: { workspace: string; chatId: string; tabId?: string }[] = [];
+    const browserTask = { id: randomUUID(), workspace: 'xhs-creator', tabIds: ['creator-tab'], origins: ['https://creator.xiaohongshu.com'], goal: '填写当前博客', status: 'ready', steps: [], updatedAt: new Date().toISOString() };
+    registerAiIpc(todo, ai, copy, bazi, reading, {
+      forChat: (_owner: unknown, workspace: string, _goal: string, chatId: string, _previous?: string, tabId?: string) => {
+        if (!browserEnabled) return undefined;
+        browserCalls.push({ workspace, chatId, tabId }); return browserTask;
+      },
+      bind: () => {}, finish: () => {}, signal: () => new AbortController().signal,
+      observe: () => ({ id: 'observation', tab: { id: 'creator-tab' }, text: '合成发布表单', elements: [], frames: [], truncated: false }),
+    } as unknown as BrowserAutomation);
+    const browser = ai.newChat({ module: 'workbench', viewId: 'browser' });
+    browser.browserTaskId = randomUUID(); ai.saveChat(browser);
+    const mainFrame = {};
+    await assert.rejects(() => handlers.get('ai:ask')!({ sender: { mainFrame }, senderFrame: {} }, browser.id, '继续浏览器任务', { scope: { module: 'workbench', viewId: 'browser' }, pageScope: { module: 'workbench', viewId: 'browser' } }), /主窗口文档/);
+    assert.equal(ai.chat(browser.id).entries.length, 0);
+    assert.equal(state.decryptions, 0);
     const ask = async (id: string, context: AiTurnContext | Record<string, unknown>) => {
       firstRequest = true;
-      await handlers.get('ai:ask')!(undefined, id, '请按明确选中的资料回答', context);
+      const mainFrame = {};
+      await handlers.get('ai:ask')!({ sender: { mainFrame }, senderFrame: mainFrame }, id, '请按明确选中的资料回答', context);
     };
     const life = ai.newChat({ module: 'workbench', viewId: 'workspace:life' });
     const invalid = [
@@ -116,7 +134,25 @@ test('真实 ai:ask 拒绝越界输入后不解密、不存消息；发送冻结
     assert.ok(copyProposal);
     assert.equal(copy.get(primaryCopy.id)!.body, '主博客原文');
     assert.equal(copy.get(selectedCopy.id)!.body, '发送后变更资料');
-    await handlers.get('ai:apply')!(undefined, copyProposal.token, [0]);
+
+    browserEnabled = true;
+    requests.length = 0;
+    action = { name: 'browser_observe', arguments: { tabId: 'creator-tab' } };
+    await ask(copyChat.id, { scope: { module: 'copy', draftId: primaryCopy.id }, pageScope: { module: 'workbench', viewId: 'media-browser' }, browserTabId: 'creator-tab' });
+    assert.deepEqual(browserCalls.at(-1), { workspace: 'xhs-creator', chatId: copyChat.id, tabId: 'creator-tab' });
+    const tools = requests[0].tools!.map(tool => tool.function.name);
+    assert.ok(tools.includes('propose_edit') && tools.includes('browser_act') && tools.includes('browser_check'));
+    assert.match(JSON.stringify(requests[0].messages), /主博客原文/);
+    assert.match(JSON.stringify(requests[1].messages), /合成发布表单/);
+    assert.equal(copy.get(primaryCopy.id)!.body, '主博客原文');
+    assert.deepEqual(ai.chat(copyChat.id).contextScope, { module: 'copy', draftId: primaryCopy.id });
+    assert.deepEqual(ai.chat(copyChat.id).pageScope, { module: 'workbench', viewId: 'media-browser' });
+    browserEnabled = false;
+
+    action = { name: 'propose_edit', arguments: { text: '等待用户确认的新主正文' } };
+    await ask(copyChat.id, { scope: { module: 'copy', draftId: primaryCopy.id }, pageScope: { module: 'workbench', viewId: 'copy-publish' } });
+    const latestProposal = ai.chat(copyChat.id).entries.at(-1)!.copyProposal!;
+    await handlers.get('ai:apply')!(undefined, latestProposal.token, [0]);
     assert.equal(copy.get(primaryCopy.id)!.body, '等待用户确认的新主正文');
     assert.equal(copy.get(selectedCopy.id)!.body, '发送后变更资料');
 

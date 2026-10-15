@@ -50,8 +50,8 @@ export const NAV: WorkbenchDef[] = [
   {
     id: 'web',
     title: '网页工作台',
-    pending: true,
     subs: [
+      { label: '浏览器', view: 'browser' },
       { label: '站点搭建', pending: true },
       { label: '页面设计', pending: true },
       { label: '发布管理', pending: true },

@@ -21,10 +21,11 @@ interface LoadFailureEvent extends NavigationEvent {
 }
 
 export interface GuestFrameOptions {
+  tabId?: string;
   /** 初始地址;不传则等 loadUrl。 */
   initialUrl?: string;
   /** guest 内弹窗转交(主进程已校验为目标地址)。 */
-  openRequested?: (url: string) => void;
+  openRequested?: (url: string, tabId?: string) => void;
   /** 存储身份;同一身份共享分区与登录态。 */
   workspace?: string;
 }
@@ -142,7 +143,7 @@ export class GuestFrame {
     } else this.navigate('reload');
   }
 
-  /** 整页截图(采集用);guest 未就绪或无已加载页面时返回 null。 */
+  /** 当前视口截图(采集用);guest 未就绪或无已加载页面时返回 null。 */
   async capturePage(): Promise<{ url: string; title: string; png: string; thumb: string } | null> {
     const current = this.state;
     if (!this.ready || this.element === undefined || current.target === undefined || current.error !== undefined) {
@@ -219,7 +220,7 @@ export class GuestFrame {
   }
 
   private async createGuest(attachmentSignal: AbortSignal): Promise<void> {
-    const reservation = await this.bridge.acquire(this.workspaceKey);
+    const reservation = await this.bridge.acquire(this.workspaceKey, this.options.tabId);
     // 信号可能在 acquire 挂起期间中止
     if (attachmentSignal.aborted) {
       await this.release(reservation.lease);
@@ -230,8 +231,8 @@ export class GuestFrame {
     const signal = AbortSignal.any([attachmentSignal, this.guestLifetime.signal]);
     const element = this.presentation.createElement(reservation);
     this.element = element;
-    const unsubscribeOpen = this.bridge.onOpenRequested(reservation.lease, (url) => {
-      if (this.element === element && !signal.aborted) this.options.openRequested?.(url);
+    const unsubscribeOpen = this.bridge.onOpenRequested(reservation.lease, (url, tabId) => {
+      if (this.element === element && !signal.aborted) this.options.openRequested?.(url, tabId);
     });
     signal.addEventListener('abort', unsubscribeOpen, { once: true });
     element.addEventListener(
@@ -309,6 +310,12 @@ export class GuestFrame {
     try {
       this.observeReady(this.element, committed);
     } catch (error) {
+      // 主进程关闭标签后，最后一条页面事件可能先于 destroyed 到达。
+      if (error instanceof Error && error.message.startsWith('Invalid guestInstanceId:')) {
+        void this.dropGuest();
+        this.failed({ description: '页面已关闭，请重新打开。' });
+        return;
+      }
       this.commandFailed(error);
     }
   }

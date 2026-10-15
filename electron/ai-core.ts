@@ -19,6 +19,7 @@ const emptyUsage = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalToke
 
 /** 模块贡献契约:每个工作台向 AI 内核注册自己的工具与上下文 */
 export interface AiModuleContribution {
+  directBrowserOperations?: boolean;
   /** 工具定义(闭包内持有模块上下文与建议收集器) */
   buildTools(): ReturnType<typeof defineTool>[];
   /** 允许模型使用的工具名(顺序即暴露顺序) */
@@ -123,12 +124,12 @@ export function mapAiError(error: unknown, signal: AbortSignal): Error {
 
 /**
  * 运行一次会话:历史 + 当前输入 → 流式回复 + 工具事件 → 由 module 侧收集的 actions 组装计划。
- * actions 的收集与校验在模块工具内完成(上游同款纪律:工具只记建议,不写库)。
+ * 业务模块的建议收集与校验在模块工具内完成；浏览器模块在已授权的任务范围内操作网页。
  */
-export async function runAgentLoop(config: { endpoint: string; model: string; protocol: AIProtocol; key: string }, text: string, history: AIConversationTurn[], signal: AbortSignal, module: AiModuleContribution, onDelta?: (text: string) => void, onTool?: (event: AIToolEvent) => void, onThinking?: (text: string, active: boolean) => void): Promise<{ reply: string }> {
+export async function runAgentLoop(config: { endpoint: string; model: string; protocol: AIProtocol; key: string; supportsImages?: boolean }, text: string, history: AIConversationTurn[], signal: AbortSignal, module: AiModuleContribution, onDelta?: (text: string) => void, onTool?: (event: AIToolEvent) => void, onThinking?: (text: string, active: boolean) => void): Promise<{ reply: string }> {
   const endpoint = validateEndpoint(config.endpoint);
   const workspace = mkdtempSync(path.join(tmpdir(), 'workbench-pi-'));
-  const settingsManager = SettingsManager.inMemory({ compaction: { enabled: false }, retry: { enabled: false } });
+  const settingsManager = SettingsManager.inMemory({ compaction: { enabled: module.directBrowserOperations === true }, retry: { enabled: false } });
   const loader = new DefaultResourceLoader({
     cwd: workspace, agentDir: workspace, settingsManager,
     noExtensions: true, noSkills: true, noPromptTemplates: true, noThemes: true, noContextFiles: true,
@@ -143,7 +144,7 @@ export async function runAgentLoop(config: { endpoint: string; model: string; pr
     name: 'Ono Workbench', baseUrl: endpoint, api: piApi(config.protocol), apiKey: config.key || 'local',
     authHeader: config.protocol !== 'anthropic',
     models: [{
-      id: config.model, name: config.model, reasoning: false, input: ['text'],
+      id: config.model, name: config.model, reasoning: false, input: config.supportsImages ? ['text', 'image'] : ['text'],
       cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 128000, maxTokens: 3500,
       compat: { supportsDeveloperRole: false, supportsReasoningEffort: false },
     }],

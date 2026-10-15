@@ -251,16 +251,20 @@ export function AiSettings({ query }: { query: string }) {
               <div className="ai-config-meta"><span>{protocolLabel(provider.protocol)}</span><span><Key size={13} />{provider.hasKey ? '密钥已保存' : '未设置密钥'}</span><span>{models.length} 个模型</span></div>
               <div className="ai-config-models" id={`ai-models-${provider.id}`} hidden={!open}>
                 <div className="ai-config-model-head"><h3>模型列表</h3><button type="button" className="ai-config-link" disabled={busy || models.length >= 8} title={models.length >= 8 ? '每个供应商最多保存 8 个模型' : undefined} onClick={() => setEditor({ type: 'model', surface, provider })}><Plus size={14} />添加模型</button></div>
-                {models.length ? <ul>{models.map(model => <li key={model.id}>
+                {models.length ? <ul>{models.map(model => {
+                  const supportsImages = 'supportsImages' in model && model.supportsImages === true;
+                  return <li key={model.id}>
                   <div className="ai-config-model-row"><span className="ai-config-model-name">{model.name}</span>
                     <div className="ai-config-model-actions">
                       <button type="button" className="ai-config-button compact test" aria-label={`测试连接 ${model.name}`} disabled={busy} onClick={() => void test(surface, model)}><Lightning size={14} />{probe?.surface === surface && probe.id === model.id && probe.state === 'pending' ? '测试中…' : '测试连接'}</button>
                       <IconButton label={`编辑模型 ${model.name}`} disabled={busy} onClick={() => setEditor({ type: 'model', surface, provider, model })}><PencilSimple size={16} /></IconButton>
+                      {surface === 'llm' && <IconButton label={`多模态 ${model.name}`} className="ai-config-multimodal" aria-pressed={supportsImages} title={supportsImages ? '多模态已开启（图片输入），点击关闭' : '多模态已关闭，点击开启图片输入'} disabled={busy} onClick={() => void mutate(() => api.saveModel({ id: model.id, providerId: model.providerId, name: model.name, supportsImages: !supportsImages }), '多模态设置已保存')}>{supportsImages ? <Eye size={18} /> : <EyeSlash size={18} />}</IconButton>}
                       <IconButton label={`删除模型 ${model.name}`} className="ai-config-danger" disabled={busy} onClick={() => { setRemoveError(''); setRemoving({ title: `删除${surface === 'rlcd' ? ' RLCD ' : ''}模型「${model.name}」？`, detail: '将移除该模型配置，供应商和其他模型会保留。', action: () => (surface === 'rlcd' ? api.removeRlcdModel : api.removeModel)(model.id) }); }}><Trash size={16} /></IconButton>
                     </div>
                   </div>
                   {probe?.surface === surface && probe.id === model.id && <p className={`ai-config-test-result ${probe.state}`} role={probe.state === 'error' ? 'alert' : 'status'}>{probe.state === 'ok' ? '连接成功 · ' : probe.state === 'error' ? '连接失败 · ' : ''}{probe.message}</p>}
-                </li>)}</ul> : <p className="ai-config-empty-models">还没有模型，点击“添加模型”填写服务提供的模型 ID。</p>}
+                </li>;
+                })}</ul> : <p className="ai-config-empty-models">还没有模型，点击“添加模型”填写服务提供的模型 ID。</p>}
               </div>
             </article>;
           })}
