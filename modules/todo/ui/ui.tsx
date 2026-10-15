@@ -212,7 +212,11 @@ export function DatePicker({ id, value, onChange, yearRange, 'aria-invalid': inv
     const year = `${yearRange.min + index}年`;
     return { value: year, label: year };
   }) : [];
-  function yearMenuIsOpen() { return Boolean(yearRange && menu.current?.querySelector('.date-year-select [aria-expanded="true"]')); }
+  const monthOptions = yearRange ? Array.from({ length: 12 }, (_, index) => {
+    const month = `${index + 1}月`;
+    return { value: month, label: month };
+  }) : [];
+  function browseMenuIsOpen() { return Boolean(yearRange && menu.current?.querySelector('.date-year-select [aria-expanded="true"], .date-month-select [aria-expanded="true"]')); }
   function selectYear(value: string) {
     const year = Number(value.slice(0, -1));
     if (!yearRange || !Number.isInteger(year) || year < yearRange.min || year > yearRange.max) return;
@@ -220,6 +224,15 @@ export function DatePicker({ id, value, onChange, yearRange, 'aria-invalid': inv
     setCursor(current => {
       const day = (parseIso(current) ?? parseIso(today)!).d;
       return toIso(year, view.m, Math.min(day, new Date(year, view.m, 0).getDate()));
+    });
+  }
+  function selectMonth(value: string) {
+    const month = Number(value.slice(0, -1));
+    if (!yearRange || !Number.isInteger(month) || month < 1 || month > 12) return;
+    setView(current => ({ y: current.y, m: month }));
+    setCursor(current => {
+      const day = (parseIso(current) ?? parseIso(today)!).d;
+      return toIso(view.y, month, Math.min(day, new Date(view.y, month, 0).getDate()));
     });
   }
   function close() { setOpen(false); trigger.current?.focus(); }
@@ -267,8 +280,8 @@ export function DatePicker({ id, value, onChange, yearRange, 'aria-invalid': inv
       setOpen(false);
     }
     function onKeyDown(event: globalThis.KeyboardEvent) {
-      // The shared nested Select handles its own keys and first Escape.
-      if (yearMenuIsOpen()) return;
+      // Nested year/month Selects handle their own keys and the first Escape.
+      if (browseMenuIsOpen()) return;
       if (yearRange && (event.isComposing || event.keyCode === 229)) return;
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); return; }
       const target = event.target;
@@ -316,13 +329,13 @@ export function DatePicker({ id, value, onChange, yearRange, 'aria-invalid': inv
         <button type="button" aria-label="上个月" onClick={() => setView(current => { const next = shiftMonth(current.y, current.m, -1); setCursor(iso => { const parsed = parseIso(iso) ?? parseIso(today)!; return toIso(next.y, next.m, Math.min(parsed.d, new Date(next.y, next.m, 0).getDate())); }); return next; })}><CaretLeft size={14} weight="bold" /></button>
         {yearRange ? <div className="date-month-label">
           <Select value={`${view.y}年`} onChange={selectYear} options={yearOptions} className="date-year-select" menuClassName="date-year-menu" aria-label="选择年份" portalContainer={() => menu.current} />
-          <span>{view.m}月</span>
+          <Select value={`${view.m}月`} onChange={selectMonth} options={monthOptions} className="date-month-select" menuClassName="date-month-menu" aria-label="选择月份" portalContainer={() => menu.current} />
         </div> : <span>{view.y}年{view.m}月</span>}
         <button type="button" aria-label="下个月" onClick={() => setView(current => { const next = shiftMonth(current.y, current.m, 1); setCursor(iso => { const parsed = parseIso(iso) ?? parseIso(today)!; return toIso(next.y, next.m, Math.min(parsed.d, new Date(next.y, next.m, 0).getDate())); }); return next; })}><CaretRight size={14} weight="bold" /></button>
       </div>
       <div className="date-weekdays">{WEEKDAYS.map(day => <span key={day}>{day}</span>)}</div>
       <div id={gridId} className="date-grid" role="grid">
-        {monthCells(view.y, view.m).map(cell => <button key={cell.iso} type="button" id={`${gridId}-${cell.iso}`} role="gridcell" aria-label={cell.iso} aria-selected={cell.iso === value} className={[cell.outside && 'is-outside', cell.iso === today && 'is-today', cell.iso === value && 'is-selected', cell.iso === cursor && 'is-active'].filter(Boolean).join(' ')} onMouseEnter={() => { if (!yearRange) setCursor(cell.iso); }} onMouseMove={() => { if (yearRange && !yearMenuIsOpen()) setCursor(cell.iso); }} onClick={() => pick(cell.iso)}>{cell.day}</button>)}
+        {monthCells(view.y, view.m).map(cell => <button key={cell.iso} type="button" id={`${gridId}-${cell.iso}`} role="gridcell" aria-label={cell.iso} aria-selected={cell.iso === value} className={[cell.outside && 'is-outside', cell.iso === today && 'is-today', cell.iso === value && 'is-selected', cell.iso === cursor && 'is-active'].filter(Boolean).join(' ')} onMouseEnter={() => { if (!yearRange) setCursor(cell.iso); }} onMouseMove={() => { if (yearRange && !browseMenuIsOpen()) setCursor(cell.iso); }} onClick={() => pick(cell.iso)}>{cell.day}</button>)}
       </div>
       <div className="date-menu-actions">
         <button type="button" onClick={() => pick('')}>清除</button>
