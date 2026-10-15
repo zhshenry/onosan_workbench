@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 481,
-  "currentRun": {
-    "id": "ono-close37-20261015T010700Z",
-    "startedAt": "2026-10-15T01:08:05.862Z",
-    "currentTask": 37,
-    "stage": "premerge-verification"
-  },
+  "revision": 482,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -1762,7 +1757,7 @@
       "sourceAuthorId": 54107847,
       "baseSha": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
       "lastReadAt": "2026-10-14T23:39:49.285Z",
-      "nextAction": "等待本次准确head0f313ee的最终合入收尾批准",
+      "nextAction": "已完成；分支待有受支持删除入口时复核清理，不重复合入关单",
       "lastCommentId": 6144934226,
       "planVersion": "v1",
       "planCommentId": 6140325358,
@@ -1794,7 +1789,7 @@
         "installed": "123/123",
         "visual": "4 actual images reviewed; immutable URLs opened and rendered"
       },
-      "nextStep": "验证实际main push CI后按批准关闭37",
+      "nextStep": "已完成；分支待有受支持删除入口时复核清理，不重复合入关单",
       "latestRun": {
         "id": 38597616781,
         "head": "0f313ee5fc1177ace4831a3c6524f06ac1497c28",
@@ -1865,7 +1860,8 @@
         "head": "0f313ee5fc1177ace4831a3c6524f06ac1497c28",
         "reason": "No authenticated supported branch-delete tool available; no deletion attempted",
         "eligibility": "unprotected; fully in main; no openPR use; recoverable via merged main"
-      }
+      },
+      "completionCommentId": 6182187234
     },
     "41": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/41",
@@ -2035,7 +2031,8 @@
     6171949721,
     6171991282,
     6174761230,
-    6174797832
+    6174797832,
+    6182187234
   ],
   "operations": {
     "retire-pr20-comment": {
@@ -5286,9 +5283,14 @@
     },
     "issue37-completion-main35f4e09": {
       "operationId": "issue37-completion-main35f4e09",
-      "status": "intent",
+      "status": "succeeded",
       "target": "Issue37 completion comment",
-      "summary": "Record actual main573/123, closed37, fixed images and retained branch deletion capability limitation"
+      "summary": "Record actual main573/123, closed37, fixed images and retained branch deletion capability limitation",
+      "receipt": {
+        "commentId": 6182187234,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6182187234",
+        "readBack": true
+      }
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -5300,12 +5302,12 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "id": "ono-check-20261015T000146Z",
-    "finishedAt": "2026-10-14T23:39:49.285Z",
-    "result": "Current main workflow/checklists/state and all open ono Issue raw comment pages reviewed. No new authenticated user approval or target change. PR45 current CI and main CI success unchanged; PR43 unchanged. Existing Issue35 delivery interruption remains blocked; no blind retry or duplicate notification.",
-    "nextAction": "Await exact PR45 head approval; diagnose Issue35 upload interruption before retry;36 waits35;41 waits prerequisites."
+    "id": "ono-close37-20261015T010700Z",
+    "finishedAt": "2026-10-15T01:21:41.901Z",
+    "result": "Approved exact PR45 merged; actual main35f4e093 CI38664096642 passed573/123; images and identical tree verified; Issue37 closed/completed; branch retained because supported deletion entry unavailable. No in-flight writes.",
+    "nextAction": "Issue35 design delivery still blocked;36 waits35;41 waits remaining requirements."
   },
-  "updatedAt": "2026-10-14T23:39:49.285Z",
+  "updatedAt": "2026-10-15T01:21:41.901Z",
   "lastNotification": {
     "at": "2026-10-13T03:18:53Z",
     "messageId": "Sentinel_7bf07bca0bcc8191bd07786fa666b1c6",
