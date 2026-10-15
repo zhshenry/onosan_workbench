@@ -1,7 +1,12 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 482,
-  "currentRun": null,
+  "revision": 483,
+  "currentRun": {
+    "id": "ono-design35-20261015T014800Z",
+    "startedAt": "2026-10-15T01:49:04.905Z",
+    "currentTask": 35,
+    "stage": "design-delivery"
+  },
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -5291,6 +5296,14 @@
         "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6182187234",
         "readBack": true
       }
+    },
+    "issue35-design-v2-resume": {
+      "operationId": "issue35-design-v2-resume",
+      "status": "intent",
+      "target": "ono/issue-35-creator-keepalive:.ono-evidence/issue-35/design-v2/",
+      "summary": "User explicitly requested resume; exact prior blob404 and branch unchanged. Upload three reviewed design PNGs, fixed links then supplemental plan; no product implementation",
+      "expectedHead": "4098f131a2ab17cb77c57df9f1119df0c15c898b",
+      "receipts": []
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
