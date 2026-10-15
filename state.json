@@ -1,12 +1,7 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 483,
-  "currentRun": {
-    "id": "ono-design35-20261015T014800Z",
-    "startedAt": "2026-10-15T01:49:04.905Z",
-    "currentTask": 35,
-    "stage": "design-delivery"
-  },
+  "revision": 484,
+  "currentRun": null,
   "tasks": {
     "17": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/17",
@@ -1713,15 +1708,14 @@
         "approvalStatus": "not-approved"
       },
       "uploadDiagnosis": {
-        "verifiedAt": "2026-10-14T18:31:20.301Z",
+        "verifiedAt": "2026-10-15T01:52:59.112Z",
         "fileBytes": 1480600,
-        "base64Characters": 1974136,
-        "pngStructuralVerification": "passed",
-        "expectedBlob": "65a5a2abb8f4c0e8e7226407ac6a4070fee9af28",
-        "localHashMatches": true,
-        "rootCause": "unknown",
-        "missing": "Per-step completion markers, create_blob invocation receipt/request ID/HTTP response/cancellation trace; size alone is not a cause",
-        "retry": "not attempted"
+        "expectedBase64Characters": 1974136,
+        "singleReadCharacters": 1048606,
+        "finding": "Single exec output truncated; chunked reads reconstructed complete validated base64 before this attempt",
+        "correctedPayloadLength": 1974136,
+        "currentResult": "Tool cancellation string; no success receipt; not attributed to user",
+        "rootCause": "Cancellation cause unknown; complete payload alone did not resolve delivery"
       }
     },
     "36": {
@@ -5299,11 +5293,17 @@
     },
     "issue35-design-v2-resume": {
       "operationId": "issue35-design-v2-resume",
-      "status": "intent",
+      "status": "blocked",
       "target": "ono/issue-35-creator-keepalive:.ono-evidence/issue-35/design-v2/",
       "summary": "User explicitly requested resume; exact prior blob404 and branch unchanged. Upload three reviewed design PNGs, fixed links then supplemental plan; no product implementation",
       "expectedHead": "4098f131a2ab17cb77c57df9f1119df0c15c898b",
-      "receipts": []
+      "receipts": [],
+      "receipt": {
+        "toolResult": "user cancelled MCP tool call",
+        "attributedToUser": false,
+        "expectedBlobReadback": "404",
+        "branchHead": "4098f131a2ab17cb77c57df9f1119df0c15c898b"
+      }
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
@@ -5315,10 +5315,10 @@
     "所有 OnO 对外评论（含浏览器图片评论）先记录写入意图，成功后记录 comment ID；日志缺失或结果不明时暂停相关动作。"
   ],
   "lastRun": {
-    "id": "ono-close37-20261015T010700Z",
-    "finishedAt": "2026-10-15T01:21:41.901Z",
-    "result": "Approved exact PR45 merged; actual main35f4e093 CI38664096642 passed573/123; images and identical tree verified; Issue37 closed/completed; branch retained because supported deletion entry unavailable. No in-flight writes.",
-    "nextAction": "Issue35 design delivery still blocked;36 waits35;41 waits remaining requirements."
+    "id": "ono-design35-20261015T014800Z",
+    "finishedAt": "2026-10-15T01:52:59.112Z",
+    "result": "Found and corrected local base64 read truncation; explicit user-requested resumed blob call returned cancellation string, remote expectedblob404 and unchangedPR43. No in-flight write.",
+    "nextAction": "Await clarification/screenshot of unclickable confirmation; no blind retry or alternative authorization bypass."
   },
   "updatedAt": "2026-10-15T01:21:41.901Z",
   "lastNotification": {
