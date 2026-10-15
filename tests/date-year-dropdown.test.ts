@@ -47,7 +47,13 @@ async function fixture(t: test.TestContext, initial = '', withYears = true) {
     assert.ok(option);
     await click(`[id="${option.id}"]`);
   };
-  return { dom, doc, get, click, key, pickYear, changes, submits: () => submits };
+  const pickMonth = async (month: number) => {
+    await click('.date-month-select button');
+    const option = [...doc.querySelectorAll<HTMLElement>('.date-month-menu [role="option"]')].find(item => item.textContent === `${month}月`);
+    assert.ok(option);
+    await click(`[id="${option.id}"]`);
+  };
+  return { dom, doc, get, click, key, pickYear, pickMonth, changes, submits: () => submits };
 }
 
 test('生日下拉具有含端点的201个年份，选年保月且选日才提交', async t => {
@@ -161,6 +167,7 @@ test('其他日期调用默认不显示年份下拉并保留原有日期行为',
   const f = await fixture(t, '2026-10-12', false);
   await f.click('.date-picker > button');
   assert.equal(f.doc.querySelector('[role="combobox"]'), null);
+  assert.equal(f.doc.querySelector('.date-month-select'), null);
   assert.equal(f.get('.date-head > span').textContent, '2026年10月');
   await f.click('[aria-label="上个月"]');
   assert.equal(f.get('.date-head > span').textContent, '2026年9月');
@@ -195,4 +202,110 @@ test('收起年份列表时底层日期被动mouseenter不改变闰日校正后�
   await act(async () => { f.get('[aria-label="2001-02-21"]').dispatchEvent(new f.dom.window.MouseEvent('mousemove', { bubbles: true })); });
   assert.equal(f.doc.activeElement?.getAttribute('aria-label'), '2001-02-21');
   assert.deepEqual(f.changes, []);
+});
+
+test('生日月份下拉列出1到12月，选月只改格子，选日才提交并保留年月', async t => {
+  const f = await fixture(t, '2026-10-12');
+  await f.click('.date-picker > button');
+  assert.equal(f.get('.date-month-select button').textContent, '10月');
+  assert.equal(f.get('.date-month-label').textContent, '2026年10月');
+  await f.click('.date-month-select button');
+  const options = f.doc.querySelectorAll('.date-month-menu [role="option"]');
+  assert.equal(options.length, 12);
+  assert.equal(options[0].textContent, '1月');
+  assert.equal(options[11].textContent, '12月');
+  assert.equal(f.doc.querySelector('.date-month-menu [aria-selected="true"]')?.textContent, '10月');
+  assert.equal(f.get('.date-menu').contains(f.get('.date-month-menu')), true, 'Nested month popup belongs to the calendar outside-click boundary');
+  await f.key('.date-month-select button', 'Escape');
+  assert.equal(f.doc.querySelector('.date-month-menu'), null);
+  assert.ok(f.doc.querySelector('.date-menu'));
+  await f.pickMonth(3);
+  assert.equal(f.doc.querySelector('.date-month-menu'), null);
+  assert.equal(f.get('.date-month-label').textContent, '2026年3月');
+  assert.equal(f.get('.date-year-select button').textContent, '2026年');
+  const inMonth = [...f.doc.querySelectorAll('.date-grid button:not(.is-outside)')].map(cell => cell.getAttribute('aria-label'));
+  assert.equal(inMonth.length, 31);
+  assert.ok(inMonth.every(label => label?.startsWith('2026-03-')));
+  assert.equal(f.doc.activeElement?.getAttribute('aria-label'), '2026-03-12');
+  assert.equal(f.get('.date-picker > button').textContent, '2026年10月12日');
+  assert.deepEqual(f.changes, []);
+  await f.click('[aria-label="2026-03-16"]');
+  assert.deepEqual(f.changes, ['2026-03-16']);
+  assert.equal(f.doc.querySelector('.date-menu'), null);
+  assert.equal(f.get('.date-picker > button').textContent, '2026年3月16日');
+  assert.equal(f.submits(), 0);
+});
+
+test('选月校正短月与闰日，Escape分层，且年份键盘和月份箭头仍可用', async t => {
+  const f = await fixture(t, '2000-03-31');
+  await f.click('.date-picker > button');
+  await f.key('.date-month-select button', 'Enter');
+  await act(async () => { f.get('[aria-label="2000-03-01"]').dispatchEvent(new f.dom.window.MouseEvent('mouseover', { bubbles: true })); });
+  assert.equal(f.doc.activeElement, f.get('.date-month-select button'));
+  await act(async () => { f.doc.activeElement!.dispatchEvent(new f.dom.window.KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true })); });
+  const activeId = f.get('.date-month-select button').getAttribute('aria-activedescendant')!;
+  assert.equal(f.doc.getElementById(activeId)?.textContent, '4月');
+  await f.key('.date-month-select button', 'Enter', true);
+  assert.ok(f.doc.querySelector('.date-month-menu'));
+  assert.equal(f.get('.date-month-label').textContent, '2000年3月');
+  assert.deepEqual(f.changes, []);
+  await f.key('.date-month-select button', 'Escape');
+  assert.equal(f.doc.querySelector('.date-month-menu'), null);
+  assert.ok(f.doc.querySelector('.date-menu'));
+  assert.equal(f.doc.activeElement, f.get('.date-month-select button'));
+
+  await f.pickMonth(2);
+  assert.equal(f.get('.date-month-label').textContent, '2000年2月');
+  assert.equal(f.doc.activeElement?.getAttribute('aria-label'), '2000-02-29');
+  assert.equal(f.get('.date-picker > button').textContent, '2000年3月31日');
+  assert.deepEqual(f.changes, []);
+  await f.click('[aria-label="下个月"]');
+  assert.equal(f.get('.date-month-label').textContent, '2000年3月');
+  assert.equal(f.doc.activeElement?.getAttribute('aria-label'), '2000-03-29');
+  await f.click('[aria-label="上个月"]');
+  assert.equal(f.doc.activeElement?.getAttribute('aria-label'), '2000-02-29');
+  await f.key('.date-grid .is-active', 'PageDown');
+  assert.equal(f.doc.activeElement?.getAttribute('aria-label'), '2000-03-29');
+  await f.key('.date-grid .is-active', 'PageUp');
+  assert.equal(f.doc.activeElement?.getAttribute('aria-label'), '2000-02-29');
+  await f.key('.date-grid .is-active', 'ArrowRight');
+  assert.equal(f.doc.activeElement?.getAttribute('aria-label'), '2000-03-01');
+  await f.key('.date-grid .is-active', 'ArrowLeft');
+  assert.equal(f.doc.activeElement?.getAttribute('aria-label'), '2000-02-29');
+
+  await f.key('.date-month-select button', 'Enter');
+  await f.key('.date-month-select button', 'End');
+  await f.key('.date-month-select button', 'Enter');
+  assert.equal(f.get('.date-month-label').textContent, '2000年12月');
+  assert.equal(f.doc.activeElement?.getAttribute('aria-label'), '2000-12-29');
+  assert.equal(f.doc.querySelector('.date-month-menu'), null);
+  await f.key('.date-month-select button', 'Enter');
+  await f.key('.date-month-select button', 'Home');
+  await f.key('.date-month-select button', 'Enter');
+  assert.equal(f.get('.date-month-label').textContent, '2000年1月');
+  assert.equal(f.doc.activeElement?.getAttribute('aria-label'), '2000-01-29');
+  await f.click('.date-month-select button');
+  await f.key('.date-month-select button', 'ArrowDown');
+  await f.key('.date-month-select button', 'Escape');
+  assert.equal(f.doc.querySelector('.date-month-menu'), null);
+  assert.ok(f.doc.querySelector('.date-menu'));
+  assert.equal(f.get('.date-month-label').textContent, '2000年1月');
+  assert.equal(f.doc.activeElement, f.get('.date-month-select button'));
+  await f.key('.date-month-select button', 'Escape');
+  assert.equal(f.doc.querySelector('.date-menu'), null);
+
+  await f.click('.date-picker > button');
+  assert.equal(f.get('.date-month-label').textContent, '2000年3月');
+  assert.equal(f.doc.activeElement?.getAttribute('aria-label'), '2000-03-31');
+  await f.pickMonth(2);
+  await f.key('.date-year-select button', 'Enter');
+  await f.key('.date-year-select button', 'ArrowDown');
+  await f.key('.date-year-select button', 'Enter');
+  assert.equal(f.get('.date-month-label').textContent, '2001年2月');
+  assert.equal(f.doc.activeElement?.getAttribute('aria-label'), '2001-02-28');
+  assert.equal(f.get('.date-picker > button').textContent, '2000年3月31日');
+  assert.deepEqual(f.changes, []);
+  await f.click('[aria-label="2001-02-28"]');
+  assert.deepEqual(f.changes, ['2001-02-28']);
+  assert.equal(f.submits(), 0);
 });

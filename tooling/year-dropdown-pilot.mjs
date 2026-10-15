@@ -44,6 +44,7 @@ export function assertYearDropdownGeometry({ viewport, dialog, calendar, trigger
 
 const dateMenu = page => page.getByRole('dialog', { name: '选择日期', exact: true });
 const yearTrigger = page => page.getByRole('combobox', { name: '选择年份', exact: true });
+const monthTrigger = page => page.getByRole('combobox', { name: '选择月份', exact: true });
 const yearMenu = page => page.getByRole('listbox', { name: '选择年份', exact: true });
 const birthday = dialog => dialog.locator('.date-picker > button');
 const labelForDate = iso => iso ? iso.split('-').map(Number).map((value, index) => `${value}${['年', '月', '日'][index]}`).join('') : '选择日期';
@@ -54,7 +55,7 @@ async function assertBirthday(dialog, iso) {
 }
 async function assertView(page, year, month) {
   assert.equal((await yearTrigger(page).textContent()).trim(), `${year}年`);
-  assert.equal((await dateMenu(page).locator('.date-month-label > span').textContent()).trim(), `${month}月`);
+  assert.equal((await monthTrigger(page).textContent()).trim(), `${month}月`);
 }
 async function assertCursor(page, iso) {
   assert.equal(await dateMenu(page).locator('.date-grid .is-active').getAttribute('aria-label'), iso);
@@ -75,7 +76,7 @@ async function chooseYear(page, year) {
 async function viewMonth(page, month) {
   // Keep the requested year. Never shortcut the UI with DOM or bridge writes.
   for (let steps = 0; steps < 12; steps++) {
-    const current = Number((await dateMenu(page).locator('.date-month-label > span').textContent()).replace('月', ''));
+    const current = Number((await monthTrigger(page).textContent()).trim().replace('月', ''));
     if (current === month) return;
     await dateMenu(page).getByRole('button', { name: current < month ? '下个月' : '上个月', exact: true }).click();
   }
@@ -191,7 +192,7 @@ export async function runYearDropdownPilot({ application, page, check, screensho
     const dialog = await createEditor(page);
     await birthday(dialog).click();
     const initialYear = Number((await yearTrigger(page).textContent()).replace('年', ''));
-    const initialMonth = Number((await dateMenu(page).locator('.date-month-label > span').textContent()).replace('月', ''));
+    const initialMonth = Number((await monthTrigger(page).textContent()).trim().replace('月', ''));
     await yearTrigger(page).focus();
     await page.keyboard.press('ArrowDown');
     assert.equal(await yearMenu(page).getByRole('option').count(), 201);
