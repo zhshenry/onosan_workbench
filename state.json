@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 480,
+  "revision": 481,
   "currentRun": {
     "id": "ono-close37-20261015T010700Z",
     "startedAt": "2026-10-15T01:08:05.862Z",
@@ -1754,7 +1754,7 @@
     },
     "37": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/37",
-      "stage": "main-validation",
+      "stage": "completed",
       "type": [
         "ui",
         "investigation"
@@ -1858,6 +1858,13 @@
         "native": "123/123",
         "artifactId": 11940706717,
         "digest": "161818f967c80022cb37e38b1767b1d11442e983516d809c7eafee77cf261bdc"
+      },
+      "closedAt": "2026-10-15T01:20:42Z",
+      "branchCleanup": {
+        "status": "retained",
+        "head": "0f313ee5fc1177ace4831a3c6524f06ac1497c28",
+        "reason": "No authenticated supported branch-delete tool available; no deletion attempted",
+        "eligibility": "unprotected; fully in main; no openPR use; recoverable via merged main"
       }
     },
     "41": {
@@ -5265,11 +5272,23 @@
     },
     "issue37-close-main35f4e09": {
       "operationId": "issue37-close-main35f4e09",
-      "status": "intent",
+      "status": "succeeded",
       "target": "Issue37 closed/completed",
       "approvalCommentId": 6182012606,
       "summary": "Approved exact PR45 merged; actual main573/123 passed and verified images; close only37",
-      "startedAt": "2026-10-15T01:20:08.919Z"
+      "startedAt": "2026-10-15T01:20:08.919Z",
+      "receipt": {
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-15T01:20:42Z",
+        "readBack": true
+      }
+    },
+    "issue37-completion-main35f4e09": {
+      "operationId": "issue37-completion-main35f4e09",
+      "status": "intent",
+      "target": "Issue37 completion comment",
+      "summary": "Record actual main573/123, closed37, fixed images and retained branch deletion capability limitation"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
