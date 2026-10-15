@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 478,
+  "revision": 479,
   "currentRun": {
     "id": "ono-close37-20261015T010700Z",
     "startedAt": "2026-10-15T01:08:05.862Z",
@@ -1754,7 +1754,7 @@
     },
     "37": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/37",
-      "stage": "awaiting-final-approval",
+      "stage": "main-validation",
       "type": [
         "ui",
         "investigation"
@@ -1794,7 +1794,7 @@
         "installed": "123/123",
         "visual": "4 actual images reviewed; immutable URLs opened and rendered"
       },
-      "nextStep": "等待本次准确head0f313ee的最终合入收尾批准",
+      "nextStep": "验证实际main push CI后按批准关闭37",
       "latestRun": {
         "id": 38597616781,
         "head": "0f313ee5fc1177ace4831a3c6524f06ac1497c28",
@@ -1847,7 +1847,8 @@
         "native": "not run locally; requires real Windows CI",
         "status": "final candidate tested"
       },
-      "integrationBaseSha": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e"
+      "integrationBaseSha": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
+      "mainSha": "35f4e093e177030b3c31bbf360ae33e3bf5d9ea7"
     },
     "41": {
       "issueUrl": "https://github.com/zhshenry/onosan_workbench/issues/41",
@@ -5239,13 +5240,18 @@
     },
     "issue37-merge-0f313ee": {
       "operationId": "issue37-merge-0f313ee",
-      "status": "intent",
+      "status": "succeeded",
       "target": "PR45 -> main",
       "head": "0f313ee5fc1177ace4831a3c6524f06ac1497c28",
       "base": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
       "approvalCommentId": 6182012606,
       "summary": "Execute exact approved merge, then actual main validation before closing37",
-      "startedAt": "2026-10-15T01:08:43.291Z"
+      "startedAt": "2026-10-15T01:08:43.291Z",
+      "receipt": {
+        "mergeSha": "35f4e093e177030b3c31bbf360ae33e3bf5d9ea7",
+        "tree": "eb935a7b3fb9736bd8fdd357c66a86051c589f7c",
+        "readBack": true
+      }
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
