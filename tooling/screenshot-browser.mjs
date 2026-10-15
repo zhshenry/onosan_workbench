@@ -76,20 +76,26 @@ try {
   console.log(JSON.stringify({ rows, rendererErrors:errors.length }));
   if (phase === 'after' && rows.some(r => !r.guest || !r.guestViewport || r.overflow > 1 || r.stage.bottom > r.content.bottom || r.stage.height < r.content.height * 0.7 || Math.abs(r.guestViewport.height-r.guest.height) > 2)) throw new Error('Browser does not fill available space');
   if (phase === 'after') {
-    await evaluate(`document.querySelector('.media-browser-header button').click()`);
-    await wait(600);
-    const browse = await evaluate(`({ heading:document.querySelector('.media-browser-header h1').textContent, capture:!!document.querySelector('.mbp-capbtn'), ai:!!document.querySelector('[title^="AI 看这页"]') })`);
-    if (browse.heading !== '找素材' || !browse.capture || !browse.ai) throw new Error('Secondary material browser unavailable');
-    await evaluate(`document.querySelector('.media-browser-header button').click()`);
-    await wait(1000);
-    const creator = await evaluate(`({ heading:document.querySelector('.media-browser-header h1').textContent, capture:!!document.querySelector('.mbp-capbtn'), ai:!!document.querySelector('[title^="AI 看这页"]'), partition:document.querySelector('webview')?.getAttribute('partition') })`);
-    if (creator.heading !== '我的小红书' || creator.capture || creator.ai || !creator.partition?.includes('xhs-creator')) throw new Error('Creator mode isolation changed');
+    const creator = await evaluate(`({
+      heading: document.querySelector('.media-browser-header h1')?.textContent,
+      headerButtons: document.querySelectorAll('.media-browser-header button').length,
+      findMaterials: [...document.querySelectorAll('button')].some(el => el.textContent.trim() === '找素材' || el.textContent.trim() === '返回我的小红书'),
+      capture: !!document.querySelector('.mbp-capbtn'),
+      ai: !!document.querySelector('[title^="AI 看这页"]'),
+      chips: document.querySelectorAll('.mbp-chip').length,
+      partition: document.querySelector('webview')?.getAttribute('partition'),
+      back: !!document.querySelector('.mbp-navbtn[title="后退"]'),
+      forward: !!document.querySelector('.mbp-navbtn[title="前进"]'),
+      reload: !!document.querySelector('.mbp-navbtn[title="刷新"]'),
+      address: !!document.querySelector('.mbp-addr input[readonly]'),
+    })`);
+    if (creator.heading !== '我的小红书' || creator.headerButtons || creator.findMaterials || creator.capture || creator.ai || creator.chips || !creator.partition?.includes('xhs-creator') || !creator.back || !creator.forward || !creator.reload || !creator.address) throw new Error('Creator page entry or chrome changed');
     await evaluate(`document.querySelector('.ai-topbar-btn[aria-expanded="true"]')?.click()`);
     await resize(1280, 820);
     await wait(700);
     const shot = await send('Page.captureScreenshot', { format: 'png' });
     writeFileSync('design/mockups/_shots/browser-after-focused.png', Buffer.from(shot.result.data, 'base64'));
-    console.log(JSON.stringify({ browse, creator }));
+    console.log(JSON.stringify({ creator }));
   }
   if (errors.length) throw new Error('Renderer exceptions');
 } finally {

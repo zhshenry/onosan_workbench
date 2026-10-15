@@ -11,7 +11,6 @@ import { chatContextScope, TODO_AI_WORKBENCH_NAME, type AiScope } from '../share
 import { SettingsView } from './views/SettingsView';
 import { BaziView } from '../modules/bazi/ui/BaziView';
 import { TaskEditor, type TaskEditorApi, type TodoState } from '../modules/todo/ui/TaskEditor';
-import type { MediaBrowserMode } from './views/MediaBrowserView';
 import { MediaBrowserHost } from './views/MediaBrowserHost';
 import { CopyView } from '../modules/copywriting/ui/CopyView';
 import { PublishView } from '../modules/copywriting/ui/PublishView';
@@ -48,7 +47,6 @@ export function App() {
   const railRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLElement>(null);
   const [curView, setCurView] = useState<ViewId>('home');
-  const [mediaBrowserMode, setMediaBrowserMode] = useState<MediaBrowserMode>('creator');
   const [maximized, setMaximized] = useState(false);
   const [toast, setToast] = useState('');
   const toastTimer = useRef<number | undefined>(undefined);
@@ -611,7 +609,7 @@ export function App() {
           ) : curView === 'copy' ? (
             <CopyView onPending={showToast} onCurrentDraft={setCopyCtx} onSaveState={setCopySaveState} requestedDraftId={requestedCopyId} requestedSource={requestedCopySource} onSourceLocated={() => setRequestedCopySource(null)} onGoPublish={() => switchView('copy-publish')} />
           ) : curView === 'copy-publish' ? (
-            <PublishView onPending={showToast} onGoEdit={() => switchView('copy')} onOpenCreator={() => { setMediaBrowserMode('creator'); switchView('media-browser'); }} />
+            <PublishView onPending={showToast} onGoEdit={() => switchView('copy')} onOpenCreator={() => switchView('media-browser')} />
           ) : curView === 'reading' ? (
             <ReadingView onPending={showToast} onAskAI={(prompt, bookId) => askAI(prompt, { module: 'reading', profileId: bookId })} onCurrentBook={setReadingCtx} />
           ) : curView.startsWith('settings') ? (
@@ -623,7 +621,7 @@ export function App() {
           )}
           </div>}
           <MediaBrowserHost active={!isPlanningWorkbench && curView === 'media-browser'} focusTarget={contentRef}
-            mode={mediaBrowserMode} onModeChange={setMediaBrowserMode} onPending={showToast} onAskAI={askAI} />
+            onPending={showToast} />
         </main>
 
       </div>
