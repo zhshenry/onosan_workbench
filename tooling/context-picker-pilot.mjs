@@ -414,13 +414,17 @@ export async function runContextPickerPilot({ application, page, check, screensh
       await add(page).click(); await picker(page).locator('.ai-reference-search input').fill(birthdayFixture.name);
       assert.equal(await picker(page).locator('.ai-reference-option').count(), 0); await dismiss(page);
     });
-    await check('Context picker: settings and planned workbenches show explanations without stale chips', async () => {
+    await check('Context picker: settings, planned game and enabled browser show explanations without stale chips', async () => {
       for (const workspace of ['settings', 'game', 'web']) {
         await navigate(page, workspace, workspace === 'settings' ? '通用' : null);
         await openPanel(page); assert.equal(await chips(page).count(), 0);
         await add(page).click(); await picker(page).waitFor({ state: 'visible' });
         assert.equal(await picker(page).locator('.ai-reference-option').count(), 0);
-        assert.match(await picker(page).innerText(), workspace === 'settings' ? /设置|无需|不支持|当前没有可关联内容/ : /规划中|尚未开放/);
+        if (workspace === 'web') {
+          assert.equal(await page.locator('#view-browser').getByRole('combobox', { name: '地址', exact: true }).count(), 1);
+          assert.match(await picker(page).innerText(), /当前没有可关联内容/);
+          assert.doesNotMatch(await picker(page).innerText(), /规划中|尚未开放/);
+        } else assert.match(await picker(page).innerText(), workspace === 'settings' ? /设置|无需|不支持|当前没有可关联内容/ : /规划中|尚未开放/);
         await dismiss(page);
       }
     });
