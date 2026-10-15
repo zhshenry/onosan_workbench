@@ -150,6 +150,23 @@ test('creator host retains the actual DOM, frame subscriptions and lease only ac
     assert.ok(acquired.every(value => value.workspace === XHS_CREATOR_WORKSPACE), 'Creator keepalive must not enter the materials workspace');
     assert.equal(new Set(released).size, released.length, 'Each acquired lease releases exactly once');
     assert.equal(released.length, acquired.length); assert.equal(openListeners.size, 0); assert.equal(captureListeners, 0);
+
+    root = createRoot(dom.window.document.getElementById('root')!); hold = false;
+    const { BrowserHost } = await import('../src/views/BrowserView');
+    const pair = async (browserActive: boolean) => act(async () => root.render(createElement(React.Fragment, null,
+      createElement(BrowserHost, { active: browserActive, focusTarget, onPending() {} }),
+      createElement(MediaBrowserHost, { active: !browserActive, focusTarget, onPending() {} }),
+    )));
+    await pair(true); await pair(false);
+    const creatorHost = dom.window.document.querySelector('.media-browser-host')!;
+    const browserHost = dom.window.document.querySelector('#view-browser')!.parentElement!;
+    assert.equal(dom.window.document.querySelectorAll('.media-browser-host').length, 1, 'Creator selectors must not include the generic browser');
+    assert.equal(creatorHost.querySelector('#view-media-browser')?.id, 'view-media-browser');
+    assert.equal(browserHost.hasAttribute('hidden'), true);
+    await pair(true);
+    assert.equal(dom.window.document.querySelector('.media-browser-host'), creatorHost);
+    assert.equal(creatorHost.hasAttribute('hidden'), true);
+    assert.equal(browserHost.hasAttribute('hidden'), false);
   } finally {
     if (resolveAcquire) resolveAcquire();
     try { await act(async () => root.unmount()); } catch { /* Already unmounted after successful cleanup. */ }

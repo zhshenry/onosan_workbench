@@ -434,6 +434,7 @@ export async function assertMediaHiddenInput({application,page,id,oldPoint,repor
 }
 
 export async function runMediaKeepalivePilot({ application, page, check, screenshot, report }) {
+  const view = page.locator('#view-media-browser');
   const initial = { theme: await page.evaluate(() => document.documentElement.dataset.theme), aiOpen: await page.locator('.ai-topbar-btn').getAttribute('aria-expanded') === 'true' };
   const native = await application.browserWindow(page);
   const originalSize = await native.evaluate(win => win.getContentSize());
@@ -526,25 +527,25 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       report.mediaKeepalive.security = { id, reported:prefs, reportedKeys:Object.keys(prefs), attachment,
         pluginsReported:Object.hasOwn(prefs,'plugins') ? prefs.plugins : 'not exposed by getLastWebPreferences' };
       assertMediaGuestSecurity(id, prefs, attachment);
-      assert.equal(await page.locator('webview').getAttribute('partition'), 'persist:wb-browser-xhs-creator');
+      assert.equal(await view.locator('webview').getAttribute('partition'), 'persist:wb-browser-xhs-creator');
     });
     await check('Real nested navigation, unsent keyboard input and wheel scroll form the preservation baseline', async () => {
       await clickGuest(application, page, id, '#nested'); await loaded(application, page, id, '/note/keepalive');
       await focusMediaFixtureControl({application,page,native,id,selector:'#draft',observation:{}});
       await page.keyboard.type('Synthetic unsent draft for Issue 35');
       await until(page, () => nativeState(application, id), value => value?.draft === 'Synthetic unsent draft for Issue 35', 'Real guest keyboard input was not delivered');
-      const surface = await page.locator('webview').boundingBox(); await page.mouse.move(surface.x + 100, surface.y + surface.height - 50); await page.mouse.wheel(0, 900);
+      const surface = await view.locator('webview').boundingBox(); await page.mouse.move(surface.x + 100, surface.y + surface.height - 50); await page.mouse.wheel(0, 900);
       await until(page, () => nativeState(application, id), value => value?.scrollY > 500, 'Real guest wheel input was not delivered');
       retainedPoint = await clickGuest(application, page, id, '#click-target');
       preserved = await nativeState(application, id); assert.ok(preserved.keys > 0 && preserved.targetClicks > 0);
-      await page.evaluate(() => { window.__onoRetainedWebview = document.querySelector('webview'); window.__onoRetainedMediaHost = document.querySelector('.media-browser-host'); });
+      await page.evaluate(() => { window.__onoRetainedWebview = document.querySelector('#view-media-browser webview'); window.__onoRetainedMediaHost = document.querySelector('.media-browser-host'); });
       preservedProbe = await probe(application);
     });
     await check('Repeated real workbench navigation keeps DOM/native identity, state, history and listener counts', async () => {
       for (let turn = 0; turn < 2; turn++) for (const workbench of ['home', 'settings', 'life', 'game', 'web']) {
         await page.locator(`.rail [data-workbench="${workbench}"]`).click(); await assertHidden(application, page, id, report);
         await creator(page, true); assert.equal(await guestId(page), id);
-        assert.equal(await page.evaluate(() => window.__onoRetainedWebview === document.querySelector('webview') && window.__onoRetainedMediaHost === document.querySelector('.media-browser-host')), true);
+        assert.equal(await page.evaluate(() => window.__onoRetainedWebview === document.querySelector('#view-media-browser webview') && window.__onoRetainedMediaHost === document.querySelector('.media-browser-host')), true);
         const next = await nativeState(application, id); assertMediaStatePreserved(preserved, next); assert.deepEqual(next.listeners, preserved.listeners);
         const observations = await probe(application); assert.equal(observations.attachments.length, 1); assert.deepEqual(observations.navigations, preservedProbe.navigations);
       }
@@ -626,7 +627,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       await application.evaluate(()=>{globalThis.__onoMediaKeepaliveFixture.failOffline=false;});
       // A failed in-page link need not commit: retry the current observed address,
       // exactly as the existing GuestFrame reload contract does.
-      const address=await page.locator('.mbp-addr input').inputValue();
+      const address=await view.locator('.mbp-addr input').inputValue();
       const retry=new URL(/^https?:\/\//.test(address)?address:`https://${address}`);
       await page.locator('.media-browser-host').getByRole('button',{name:'刷新',exact:true}).click(); await loaded(application,page,id,retry.pathname);
       await page.locator('.media-browser-host .mbp-error').waitFor({state:'hidden'});
@@ -643,15 +644,15 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       const retained = id;
       assert.equal(await page.getByRole('button', { name: '找素材', exact: true }).count(), 0);
       assert.equal(await page.getByRole('button', { name: '返回我的小红书', exact: true }).count(), 0);
-      assert.equal((await page.locator('.media-browser-header h1').innerText()).trim(), '我的小红书');
-      assert.match(await page.locator('.media-browser-header p').innerText(), /作品同步暂未接入/);
-      assert.equal(await page.locator('.media-browser-header button').count(), 0);
-      assert.equal(await page.locator('.mbp-capbtn').count(), 0);
-      assert.equal(await page.locator('.mbp-chip').count(), 0);
-      assert.equal(await page.locator('.mbp-tabs').count(), 0);
-      assert.equal(await page.locator('[title^="AI 看这页"]').count(), 0);
-      assert.equal(await page.locator('webview').count(), 1);
-      assert.equal(await page.locator('webview').getAttribute('partition'), 'persist:wb-browser-xhs-creator');
+      assert.equal((await view.locator('.media-browser-header h1').innerText()).trim(), '我的小红书');
+      assert.match(await view.locator('.media-browser-header p').innerText(), /作品同步暂未接入/);
+      assert.equal(await view.locator('.media-browser-header button').count(), 0);
+      assert.equal(await view.locator('.mbp-capbtn').count(), 0);
+      assert.equal(await view.locator('.mbp-chip').count(), 0);
+      assert.equal(await view.locator('.mbp-tabs').count(), 0);
+      assert.equal(await view.locator('[title^="AI 看这页"]').count(), 0);
+      assert.equal(await view.locator('webview').count(), 1);
+      assert.equal(await view.locator('webview').getAttribute('partition'), 'persist:wb-browser-xhs-creator');
       assert.equal(await guestId(page), retained);
       for (const name of ['后退', '前进', '刷新']) {
         assert.equal(await page.locator('.media-browser-host').getByRole('button', { name, exact: true }).count(), 1);

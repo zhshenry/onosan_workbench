@@ -552,6 +552,8 @@ try {
     await page.getByRole('button', { name:'自媒体工作台', exact:true }).hover();
     await page.getByRole('button', { name:'我的小红书', exact:true }).filter({ visible:true }).click();
     await page.waitForFunction(()=>{try { const view=document.querySelector('#view-media-browser webview');return view?.getTitle?.()==='创作者中心 · 本地合成验收'&&!view.isLoading(); } catch { return false; }});
+    assert.equal(await page.locator('.media-browser-host').count(), 1, 'Creator host remains unique beside the retained generic browser');
+    assert.equal(await page.locator('.browser-host').count(), 1);
     assert.equal(await page.getByText(/^操作网页：/).count(),0);
     assert.equal(await page.locator('.ai-ctx-name').textContent(), creatorTitle);
     await sendChat('博客网页协作测试：把当前协助文章的标题和正文填入网页，先不要发布。');

@@ -10,10 +10,12 @@
 | 浏览器任务与 AI IPC 定向回归 | 15 项通过；历史、图片协议等同时由全仓回归覆盖 |
 | 全仓 `npm test` | 626 项，624 通过，2 项因 Windows 文件 symlink 权限报 `EPERM`，未跳过 |
 | 最终真实 Electron 浏览器 pilot | 22 组全部通过，使用实际 guest 与合成模型工具链 |
-| 严格前端静态审计（合入前记录） | 浏览器变更与其基线均 9 项，规则/文件清单无新增；本轮未对 origin 新增的阅读清单改动重跑此审计 |
+| 严格前端静态审计 | 当前 9 项，与浏览器变更前已记录的 9 项规则/文件/消息完全一致，无新增；既有检查项保留 |
 | `git diff --check` | 通过 |
 
 Windows CI 首轮（`38753854465`）626 项测试、生产构建及静默安装通过；安装版 UI 第 81 项仍把已启用浏览器的网页工作台视为“规划中”，因此失败。已更新该用例，要求实际浏览器地址栏存在、没有跨工作台参考条目且不显示旧占位提示；设置和游戏工作台保留原检查。后续完整 CI 与发布状态以对应提交的 Actions/Release 为准。
+
+第二轮（`38755731299`）通过前 115 项 UI 检查，发现通用浏览器复用小红书宿主标识导致两个保留页面被一起选中。新增 React 并存回归复现 `2 !== 1` 后，为通用浏览器分配独立的 `browser-host` 及同等隐藏规则；小红书 pilot 的控件和网页定位限定在自身页面，浏览器 pilot 同时断言两个宿主各自存在且唯一。
 
 ## 真实页面覆盖
 
@@ -45,9 +47,9 @@ Windows CI 首轮（`38753854465`）626 项测试、生产构建及静默安装�
 
 ## 本机证据
 
-- 最终浏览器报告：`C:\Users\henry\AppData\Local\Temp\ono-browser-pilot-wRfF5Q\report.json`；同目录六张 `mist/cool/warm-1280/1024.png`、协作截图 `creator-linked-chat.png`、控制台记录 `console.json`，另有模型设置 `model-multimodal-setting.png`、关闭态 `model-multimodal-off.png` 及两态模型行截图 `model-multimodal-on-row.png` / `model-multimodal-off-row.png`、地址建议 `address-history.png` 与历史管理 `history-panel.png`。
+- 最终浏览器报告：`C:\Users\henry\AppData\Local\Temp\ono-browser-pilot-KWRIdA\report.json`；同目录六张 `mist/cool/warm-1280/1024.png`、协作截图 `creator-linked-chat.png`、控制台记录 `console.json`，另有模型设置 `model-multimodal-setting.png`、关闭态 `model-multimodal-off.png` 及两态模型行截图 `model-multimodal-on-row.png` / `model-multimodal-off-row.png`、地址建议 `address-history.png` 与历史管理 `history-panel.png`。
 - 全仓日志：`C:\Users\henry\AppData\Local\Temp\onosan-v0.3.0-tests.log`；类型与构建：`C:\Users\henry\AppData\Local\Temp\onosan-v0.3.0-verify.log`。
-- 审计基线：`C:\Users\henry\AppData\Local\Temp\ono-browser-audit-3e77dfe68f02487fb5fcd8a9b1b985fb\baseline.json`；当前：`C:\Users\henry\AppData\Local\Temp\ono-browser-collaboration-audit.json`。错误仍为 9 项，与上一轮 `ono-browser-operation-audit.json` 的规则/文件/消息清单一致。
+- 审计基线：`C:\Users\henry\AppData\Local\Temp\ono-browser-audit-3e77dfe68f02487fb5fcd8a9b1b985fb\baseline.json`；当前：`C:\Users\henry\AppData\Local\Temp\onosan-v0.3.0-ui-audit.json`。错误仍为 9 项，与 `ono-browser-collaboration-audit.json` 的规则/文件/消息清单一致。
 
 以上目录由本次验收创建，仅包含合成数据和测试产物；没有使用真实账号登录态、真实业务数据或真实供应商密钥。临时目录可能被系统清理，可通过 `npm run test:browser` 重建。
 
