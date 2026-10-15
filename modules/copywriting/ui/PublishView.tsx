@@ -1,15 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { PaperPlaneTilt } from '@phosphor-icons/react';
 import {
   copyStoreDataSchema, extractXhsTags, XHS_BODY_LIMIT, XHS_PUBLISH_URL, XHS_TITLE_LIMIT,
   type CopyStoreData,
 } from '../../../shared/copy-contracts';
-import { parseXhsNoteUrl } from '../xhs-publish';
+import { PublishAssociation } from './PublishAssociation';
 import { errorText } from '../../todo/ui/ui';
 
 const wb = window.workbench;
 const PUB_KEY = 'wb.copy.pubDraftId';
 const EDIT_KEY = 'wb.copy.curDraftId';
+
+// IPC may finish after navigating away. Keep the one in-flight write locked
+// across page instances, without persisting an unchecked target or input.
+let associationWritePending = false;
+const associationListeners = new Set<() => void>();
+const subscribeAssociation = (listener: () => void): (() => void) => {
+  associationListeners.add(listener);
+  return () => { associationListeners.delete(listener); };
+};
+const associationSnapshot = (): boolean => associationWritePending;
+const notifyAssociation = (): void => { for (const listener of associationListeners) listener(); };
 
 const charCount = (text: string): number => [...text.trim()].length;
 const snippetOf = (body: string): string => [...body.replace(/#[^\s#]+/g, '').trim()].slice(0, 32).join('');
@@ -40,9 +51,38 @@ export function PublishView({ onPending, onGoEdit, onOpenCreator }: {
   const [loadError, setLoadError] = useState('');
   const [curId, setCurId] = useState<string | null>(null);
   const [tagInput, setTagInput] = useState('');
-  const [publishUrl, setPublishUrl] = useState('');
-  const [checkedUrl, setCheckedUrl] = useState<{ url: string; remoteId: string } | null>(null);
-  const [publishBusy, setPublishBusy] = useState(false);
+  const associationBusy = useSyncExternalStore(subscribeAssociation, associationSnapshot);
+  const refreshSequence = useRef(0);
+
+  const refreshStore = async (): Promise<void> => {
+    const sequence = ++refreshSequence.current;
+    const data = copyStoreDataSchema.parse(await wb.copy.list());
+    if (sequence === refreshSequence.current) { setStoreData(data); setLoadError(''); }
+  };
+
+  const writeAssociation = async (id: string, url: string | null): Promise<boolean> => {
+    if (associationWritePending) return false;
+    associationWritePending = true; notifyAssociation();
+    try {
+      const written = copyStoreDataSchema.parse(url === null
+        ? await wb.copy.clearXhsPublished(id)
+        : await wb.copy.markXhsPublished(id, url));
+      const recorded = written.drafts.find(draft => draft.id === id);
+      if (!recorded) throw new Error('关联写入结果缺少当前博客,请重新打开核对');
+      // The command already confirmed persistence. Merge only its association
+      // field, so a later failed list read cannot invite a duplicate write or
+      // overwrite a newer title/body response with this complete snapshot.
+      setStoreData(previous => previous ? { drafts: previous.drafts.map(draft => {
+        if (draft.id !== id) return draft;
+        const { xhsPublished: _old, ...fields } = draft;
+        return recorded.xhsPublished ? { ...fields, xhsPublished: recorded.xhsPublished } : fields;
+      }) } : written);
+      await refreshStore().catch((error: unknown) => setLoadError(`关联已保存,但博客列表重新读取失败:${errorText(error) || '请重新打开核对'}`));
+      return true;
+    } finally {
+      associationWritePending = false; notifyAssociation();
+    }
+  };
 
   useEffect(() => {
     const wanted = localStorage.getItem(PUB_KEY);
@@ -55,6 +95,11 @@ export function PublishView({ onPending, onGoEdit, onOpenCreator }: {
     }).catch((error: unknown) => setLoadError(errorText(error) || '草稿库读取失败,请重启应用'));
   }, []);
 
+  useEffect(() => {
+    // Re-read after a write from a previous page instance; preserve selection and input.
+    if (!associationBusy) void refreshStore().catch((error: unknown) => setLoadError(errorText(error) || '草稿库读取失败,请重启应用'));
+  }, [associationBusy]);
+
   const drafts = storeData?.drafts ?? [];
   const cur = drafts.find((d) => d.id === curId);
   const state = cur ? readiness(cur) : null;
@@ -62,49 +107,12 @@ export function PublishView({ onPending, onGoEdit, onOpenCreator }: {
 
   const select = (id: string): void => {
     setCurId(id);
-    setPublishUrl('');
-    setCheckedUrl(null);
     localStorage.setItem(PUB_KEY, id);
-  };
-
-  const checkPublishedUrl = (): void => {
-    try { setCheckedUrl(parseXhsNoteUrl(publishUrl)); }
-    catch (error) { setCheckedUrl(null); onPending(errorText(error)); }
-  };
-
-  const markPublished = async (): Promise<void> => {
-    if (!cur || !checkedUrl || publishBusy) return;
-    setPublishBusy(true);
-    try {
-      setStoreData(copyStoreDataSchema.parse(await wb.copy.markXhsPublished(cur.id, checkedUrl.url)));
-      setPublishUrl('');
-      setCheckedUrl(null);
-      onPending('作品链接已关联,状态来源为手动确认');
-    } catch (error) { onPending(errorText(error) || '关联失败,请重试'); }
-    finally { setPublishBusy(false); }
-  };
-
-  const clearPublished = async (): Promise<void> => {
-    if (!cur || publishBusy) return;
-    setPublishBusy(true);
-    try {
-      setStoreData(copyStoreDataSchema.parse(await wb.copy.clearXhsPublished(cur.id)));
-      onPending('已移除手动发布标记');
-    } catch (error) { onPending(errorText(error) || '移除失败,请重试'); }
-    finally { setPublishBusy(false); }
-  };
-
-  const copyPublishedUrl = async (): Promise<void> => {
-    if (!cur?.xhsPublished) return;
-    try { await wb.clipboard.write(cur.xhsPublished.url); onPending('作品链接已复制'); }
-    catch (error) { onPending(errorText(error) || '复制失败'); }
   };
 
   const saveBody = (nextBody: string): void => {
     if (!curId) return;
-    void wb.copy.save({ id: curId, body: nextBody }).then((raw) => {
-      setStoreData(copyStoreDataSchema.parse(raw));
-    }).catch((error: unknown) => onPending(errorText(error) || '保存失败,请重试'));
+    void wb.copy.save({ id: curId, body: nextBody }).then(refreshStore).catch((error: unknown) => onPending(errorText(error) || '保存失败,请重试'));
   };
 
   const addTag = (): void => {
@@ -161,19 +169,19 @@ export function PublishView({ onPending, onGoEdit, onOpenCreator }: {
           {drafts.map((d) => {
             const r = readiness(d);
             return (
-              <div key={d.id} className={d.id === curId ? 'copy-item on' : 'copy-item'} onClick={() => select(d.id)}>
-                <div className="copy-item-main">
+              <button type="button" key={d.id} className={d.id === curId ? 'copy-item pub-blog-option on' : 'copy-item pub-blog-option'} aria-label={`选择博客《${d.title || '未命名博客'}》`} aria-pressed={d.id === curId} onClick={() => select(d.id)}>
+                <span className="copy-item-main">
                   <span className="copy-item-title">{d.title || '(未命名)'}</span>
                   <span className="copy-item-snip">{snippetOf(d.body) || '空笔记'}</span>
                   <span className="pub-ready-row">
-                    {d.xhsPublished && <span className="pub-ready ok">已发布 · 手动确认</span>}
+                    {d.xhsPublished && <span className="pub-ready ok">已关联 · 手动确认</span>}
                     {!d.xhsPublished && !r.blocked && <span className="pub-ready ok">本地文字检查通过</span>}
                     <span className={r.titleOk ? 'pub-ready ok' : 'pub-ready bad'}>标题</span>
                     <span className={r.bodyOk ? 'pub-ready ok' : 'pub-ready bad'}>正文</span>
                     <span className={r.tagCount > 0 ? 'pub-ready ok' : 'pub-ready'}>标签 {r.tagCount}</span>
                   </span>
-                </div>
-              </div>
+                </span>
+              </button>
             );
           })}
         </div>
@@ -186,7 +194,8 @@ export function PublishView({ onPending, onGoEdit, onOpenCreator }: {
             <div className="copy-editor-head">
               <div>
                 <span className="copy-eyebrow">小红书 · 图文发布</span>
-                <h1>发布准备</h1>
+                <h1>发布前准备</h1>
+                <p className="pub-preparation-tip">准备新笔记内容,复制后前往小红书手动发布。</p>
               </div>
               <button className="btn btn-sec btn-sm" onClick={goEdit} title="回「博客编辑」修改这篇">去编辑修改</button>
             </div>
@@ -242,34 +251,9 @@ export function PublishView({ onPending, onGoEdit, onOpenCreator }: {
                 <PaperPlaneTilt weight="bold" /> 去发布
               </button>
             </div>
-            <p className="pub-tip">发布页操作(选话题/传图/点发布)由你本人完成,工作台只准备内容,账号零风险。</p>
+            <p className="pub-tip">发布页操作(选话题/传图/点发布)由你本人完成,工作台只准备内容。</p>
 
-            <section className="pub-linked" aria-label="已发布作品关联">
-              <div className="copy-pub-head">
-                <span className="copy-pub-title">已发布作品</span>
-                <span className="copy-pub-tip">{cur.xhsPublished ? '用户手动确认' : '尚未关联'}</span>
-              </div>
-              <button type="button" className="btn btn-sec btn-sm" onClick={onOpenCreator}>在工作台打开小红书创作者中心</button>
-              {cur.xhsPublished && (
-                <div className="pub-linked-record">
-                  <span>作品 ID · {cur.xhsPublished.remoteId}</span>
-                  <span>确认于 {new Date(cur.xhsPublished.confirmedAt).toLocaleString('zh-CN')}</span>
-                  <button type="button" className="btn btn-sec btn-sm" onClick={() => void copyPublishedUrl()}>复制作品链接</button>
-                  <button type="button" className="btn btn-sec btn-sm" disabled={publishBusy} onClick={() => void clearPublished()}>移除标记</button>
-                </div>
-              )}
-              <p className="pub-tip">已发布后可粘贴作品直链并手动关联。此标记不表示工作台已从小红书后台核验。</p>
-              <div className="pub-linked-input">
-                <input type="url" aria-label="小红书已发布作品直链" placeholder="https://www.xiaohongshu.com/explore/..." value={publishUrl} onChange={(event) => { setPublishUrl(event.target.value); setCheckedUrl(null); }} />
-                <button type="button" className="btn btn-sec btn-sm" disabled={!publishUrl.trim() || publishBusy} onClick={checkPublishedUrl}>核对链接</button>
-              </div>
-              {checkedUrl && (
-                <div className="pub-linked-preview">
-                  <span>将《{cur.title || '未命名博客'}》关联到作品 ID {checkedUrl.remoteId}。请确认链接对应这篇笔记。</span>
-                  <button type="button" className="btn btn-pri btn-sm" disabled={publishBusy} onClick={() => void markPublished()}>确认关联</button>
-                </div>
-              )}
-            </section>
+            <PublishAssociation key={cur.id} draft={cur} writePending={associationBusy} onCommit={writeAssociation} onPending={onPending} onOpenCreator={onOpenCreator} />
           </>
         ) : (
           <div className="copy-empty">
