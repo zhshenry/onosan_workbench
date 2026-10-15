@@ -1,6 +1,6 @@
 {
   "schema": "ono-progress-v1",
-  "revision": 477,
+  "revision": 478,
   "currentRun": {
     "id": "ono-close37-20261015T010700Z",
     "startedAt": "2026-10-15T01:08:05.862Z",
@@ -1826,14 +1826,15 @@
         "cleanupBranch": "ono/issue-37-publish-association"
       },
       "closeoutApproval": {
-        "commentId": 6159876764,
-        "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6159876764",
+        "commentId": 6182012606,
+        "url": "https://github.com/zhshenry/onosan_workbench/issues/37#issuecomment-6182012606",
         "authorId": 54107847,
-        "createdAt": "2026-10-14T02:58:23Z",
-        "updatedAt": "2026-10-14T02:58:23Z",
+        "createdAt": "2026-10-15T01:07:04Z",
+        "updatedAt": "2026-10-15T01:07:04Z",
         "performedViaGithubApp": null,
-        "head": "42733f0bcfcb1155f0f03145b8ffd0ace2001882",
-        "bodySha256": "67e12c1c1b0448cd9eea01060c4d6bc0985e5d6662e2643b17354c19c6378cbd"
+        "head": "0f313ee5fc1177ace4831a3c6524f06ac1497c28",
+        "requestCommentId": 6174761230,
+        "scope": "Ready if needed; merge exact head; actual main acceptance; close only37; conditional branch cleanup"
       },
       "localIntegrationTests": {
         "base": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
@@ -5235,6 +5236,16 @@
         "url": "https://github.com/zhshenry/onosan_workbench/issues/35#issuecomment-6174797832",
         "readBack": true
       }
+    },
+    "issue37-merge-0f313ee": {
+      "operationId": "issue37-merge-0f313ee",
+      "status": "intent",
+      "target": "PR45 -> main",
+      "head": "0f313ee5fc1177ace4831a3c6524f06ac1497c28",
+      "base": "45d8580119bb9c22dcbf117e2bbf96df16e2d26e",
+      "approvalCommentId": 6182012606,
+      "summary": "Execute exact approved merge, then actual main validation before closing37",
+      "startedAt": "2026-10-15T01:08:43.291Z"
     }
   },
   "createdAt": "2026-10-12T09:18:04.927Z",
