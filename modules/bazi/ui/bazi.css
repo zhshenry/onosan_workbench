@@ -84,6 +84,45 @@
 .bazi-cols { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; align-items: start; }
 .bazi-cols > .panel + .panel { margin-top: 16px; }
 
+/* ---- 顶栏:左为标题+页签,右为按钮列及其下的命例选择。窄到放不下时右列整组换行,不压住页签。 ---- */
+.bazi-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  column-gap: 20px;
+  row-gap: 14px;
+  margin-bottom: 14px;
+}
+.bazi-top-lead {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  flex: 1 1 0;
+  min-width: min(100%, 240px);
+}
+.bazi-top-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+  flex: 0 1 auto;
+  margin-left: auto;
+  max-width: 100%;
+  min-width: 0;
+}
+.bazi-top .greet { margin-bottom: 0; min-width: 0; max-width: 100%; }
+.bazi-top .greet > div { min-width: 0; }
+.bazi-top .gbtns { flex-wrap: wrap; justify-content: flex-end; max-width: 100%; }
+.bazi-top .bazi-pbar,
+.bazi-top .bazi-syseg { margin-bottom: 0; max-width: 100%; }
+.bazi-top-side .bazi-psel { max-width: 100%; }
+.bazi-top-side .bazi-psel-btn { max-width: 100%; min-width: 0; }
+.bazi-top-side .bazi-psel-btn .bazi-pname,
+.bazi-top-side .bazi-psel-btn .bazi-pbirth { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.bazi-top-side .bazi-psel-menu { left: auto; right: 0; }
+
 /* ---- 命例下拉选择器 ---- */
 .bazi-pbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
 .bazi-psel { position: relative; }

@@ -285,18 +285,105 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
       .filter((s) => s.mutagen).map((s) => ({ star: s, palace: p.name })))
     : [];
 
+  const hasProfiles = profiles.length > 0;
+
   return (
     <section className="view on panel glass bazi-workspace" id="view-bazi">
-      <div className="greet">
-        <div>
-          <h1>命理</h1>
-          <div className="gsub">从出生那一刻聊起：填好出生信息，八字、紫微斗数和占星三种命盘就到齐了。边看边记，还能请 AI 一起琢磨。</div>
+      <div className="bazi-top">
+        <div className="bazi-top-lead">
+          <div className="greet">
+            <div>
+              <h1>命理</h1>
+              <div className="gsub">从出生那一刻聊起：填好出生信息，八字、紫微斗数和占星三种命盘就到齐了。边看边记，还能请 AI 一起琢磨。</div>
+            </div>
+          </div>
+          {hasProfiles && (
+            <div className="bazi-syseg" role="tablist" aria-label="命理系统">
+              {TABS.map((t) => (
+                <button
+                  key={t.key}
+                  role="tab"
+                  aria-selected={tab === t.key}
+                  className={tab === t.key ? 'on' : ''}
+                  onClick={() => setTab(t.key)}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        <div className="gbtns">
-          <button className="btn btn-sec" onClick={() => startEdit(null)}><Plus size={15} weight="bold" />新建命例</button>
-          <button className="btn btn-pri" disabled={!profile || !chart || savingForAI} onClick={askAI}>
-            <Sparkle size={15} weight="fill" />{savingForAI ? '保存笔记…' : 'AI 解读'}
-          </button>
+        <div className="bazi-top-side">
+          <div className="gbtns">
+            <button className="btn btn-sec" onClick={() => startEdit(null)}><Plus size={15} weight="bold" />新建命例</button>
+            <button className="btn btn-pri" disabled={!profile || !chart || savingForAI} onClick={askAI}>
+              <Sparkle size={15} weight="fill" />{savingForAI ? '保存笔记…' : 'AI 解读'}
+            </button>
+          </div>
+          {hasProfiles && (
+            <div className="bazi-pbar">
+              <div className={`bazi-psel${pselOpen ? ' open' : ''}`} ref={pselRef}>
+                <button
+                  className="bazi-psel-btn"
+                  aria-haspopup="listbox"
+                  aria-expanded={pselOpen}
+                  title="切换命例"
+                  onClick={() => setPselOpen((v) => !v)}
+                >
+                  {profile && (
+                    <>
+                      <span className="bazi-pav" aria-hidden="true">{profile.name.slice(0, 1)}</span>
+                      <span className="bazi-pname">{profile.name}</span>
+                      {profile.tag && <span className="bazi-ptag">{profile.tag}</span>}
+                      <span className="bazi-pbirth">{profile.date} · {profile.gender === 1 ? '男' : '女'}</span>
+                      <CaretDown size={12} weight="bold" className="bazi-psel-caret" />
+                    </>
+                  )}
+                </button>
+                {pselOpen && (
+                  <div className="bazi-psel-menu" role="listbox" aria-label="命例列表">
+                    {profiles.map((p) => (
+                      <button
+                        key={p.id}
+                        role="option"
+                        aria-selected={p.id === profile?.id}
+                        className={p.id === profile?.id ? 'bazi-psel-item on' : 'bazi-psel-item'}
+                        onClick={() => { switchProfile(p.id); setPselOpen(false); }}
+                      >
+                        <span className="bazi-pav" aria-hidden="true">{p.name.slice(0, 1)}</span>
+                        <span className="bazi-pname">{p.name}</span>
+                        {p.tag && <span className="bazi-ptag">{p.tag}</span>}
+                        <span className="bazi-pbirth">{p.date} · {p.gender === 1 ? '男' : '女'}</span>
+                        <span
+                          className="bazi-psel-act edit"
+                          role="button"
+                          aria-label={`编辑 ${p.name}`}
+                          title="编辑命例"
+                          onClick={(e) => { e.stopPropagation(); setPselOpen(false); startEdit(p); }}
+                        >
+                          <Pencil size={11} />
+                        </span>
+                        <span
+                          className="bazi-psel-act del"
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`删除 ${p.name}`}
+                          title="删除命例"
+                          onClick={(e) => { e.stopPropagation(); setPselOpen(false); setDeleteTarget(p); }}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setPselOpen(false); setDeleteTarget(p); } }}
+                        >
+                          <TrashSimple size={14} />
+                        </span>
+                      </button>
+                    ))}
+                    <button className="bazi-psel-new" onClick={() => { setPselOpen(false); startEdit(null); }}>
+                      <Plus size={14} />新建命例
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -308,84 +395,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
         </div>
       ) : (
         <>
-          <div className="bazi-pbar">
-            <div className={`bazi-psel${pselOpen ? ' open' : ''}`} ref={pselRef}>
-              <button
-                className="bazi-psel-btn"
-                aria-haspopup="listbox"
-                aria-expanded={pselOpen}
-                title="切换命例"
-                onClick={() => setPselOpen((v) => !v)}
-              >
-                {profile && (
-                  <>
-                    <span className="bazi-pav" aria-hidden="true">{profile.name.slice(0, 1)}</span>
-                    <span className="bazi-pname">{profile.name}</span>
-                    {profile.tag && <span className="bazi-ptag">{profile.tag}</span>}
-                    <span className="bazi-pbirth">{profile.date} · {profile.gender === 1 ? '男' : '女'}</span>
-                    <CaretDown size={12} weight="bold" className="bazi-psel-caret" />
-                  </>
-                )}
-              </button>
-              {pselOpen && (
-                <div className="bazi-psel-menu" role="listbox" aria-label="命例列表">
-                  {profiles.map((p) => (
-                    <button
-                      key={p.id}
-                      role="option"
-                      aria-selected={p.id === profile?.id}
-                      className={p.id === profile?.id ? 'bazi-psel-item on' : 'bazi-psel-item'}
-                      onClick={() => { switchProfile(p.id); setPselOpen(false); }}
-                    >
-                      <span className="bazi-pav" aria-hidden="true">{p.name.slice(0, 1)}</span>
-                      <span className="bazi-pname">{p.name}</span>
-                      {p.tag && <span className="bazi-ptag">{p.tag}</span>}
-                      <span className="bazi-pbirth">{p.date} · {p.gender === 1 ? '男' : '女'}</span>
-                      <span
-                        className="bazi-psel-act edit"
-                        role="button"
-                        aria-label={`编辑 ${p.name}`}
-                        title="编辑命例"
-                        onClick={(e) => { e.stopPropagation(); setPselOpen(false); startEdit(p); }}
-                      >
-                        <Pencil size={11} />
-                      </span>
-                      <span
-                        className="bazi-psel-act del"
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`删除 ${p.name}`}
-                        title="删除命例"
-                        onClick={(e) => { e.stopPropagation(); setPselOpen(false); setDeleteTarget(p); }}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setPselOpen(false); setDeleteTarget(p); } }}
-                      >
-                        <TrashSimple size={14} />
-                      </span>
-                    </button>
-                  ))}
-                  <button className="bazi-psel-new" onClick={() => { setPselOpen(false); startEdit(null); }}>
-                    <Plus size={14} />新建命例
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
           {charts?.error && <div className="bazi-chart-error" role="alert">{charts.error}</div>}
-
-          <div className="bazi-syseg" role="tablist" aria-label="命理系统">
-            {TABS.map((t) => (
-              <button
-                key={t.key}
-                role="tab"
-                aria-selected={tab === t.key}
-                className={tab === t.key ? 'on' : ''}
-                onClick={() => setTab(t.key)}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
 
           {profile && chart && (
             <div className="bazi-tabview" role="tabpanel" hidden={tab !== 'bazi'}>
