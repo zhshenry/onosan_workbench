@@ -96,7 +96,7 @@ declare global {
         collapse(collapsed: boolean, animate: boolean): Promise<void>;
         tempHeight(height: number | null): void;
         resize(height: number): void;
-        width(narrow?: boolean): Promise<number>;
+        width(narrow?: boolean, animate?: boolean): Promise<number>;
         pin(): Promise<boolean>;
       };
       settings: {

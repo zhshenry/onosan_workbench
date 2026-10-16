@@ -56,7 +56,10 @@ export function FloatTodoApp() {
     if (widthChanging.current || movingRef.current) return;
     widthChanging.current = true;
     setWidthBusy(true);
-    try { setNarrow((await wb.float.width(!narrow)) === 330); }
+    const next = !narrow;
+    // The main process eases the native width. Reduced motion settles in one step.
+    const animate = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    try { setNarrow((await wb.float.width(next, animate)) === 330); }
     catch (error) { setError(errorText(error)); }
     finally { widthChanging.current = false; setWidthBusy(false); }
   };
@@ -232,8 +235,10 @@ export function FloatTodoApp() {
   return (
     <div className={`float-app${narrow ? ' narrow' : ''}${collapsed ? ' mini' : ''} is-${motion}${floatMode === 'ai' ? ' ai-active' : ''}`}>
       <header className={collapsed ? 'float-bar float-mini-bar' : 'float-bar'}>
-        <span className="float-brand" aria-hidden="true"><LogoMark size={40} /></span>
-        <span className="float-bar-title">待办</span>
+        <div className="float-bar-leading">
+          <span className="float-brand" aria-hidden="true"><LogoMark size={40} /></span>
+          <span className="float-bar-title">待办</span>
+        </div>
         <div className="float-window-actions">
           <button className={floatMode === 'ai' ? 'float-bar-btn ai on' : 'float-bar-btn ai'} title="AI 助手" aria-label="AI 助手" aria-pressed={floatMode === 'ai'} onClick={() => { if (collapsed) { if (floatMode === 'ai') { setFloatMode('home'); wb.float.collapse(true, true); } else { setFloatMode('ai'); wb.float.tempHeight(null); } } else { setFloatMode(m => m === 'ai' ? 'home' : 'ai'); } }}><span className={floatMode === 'ai' ? 'float-ai-glyph on' : 'float-ai-glyph'} aria-hidden='true' /></button>
           <button className={pinned ? 'float-bar-btn on' : 'float-bar-btn'} title={pinned ? '取消置顶' : '置顶'} aria-label={pinned ? '取消置顶' : '置顶'} aria-pressed={pinned} onClick={() => { void wb.float.pin().then(setPinned); }}><PushPin size={19} weight={pinned ? 'fill' : 'regular'} /></button>
