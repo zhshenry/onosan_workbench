@@ -236,6 +236,34 @@ test('narrow float bar keeps the wide left anchor and width requests honor reduc
   assert.match(preload, /width: \(narrow\?: boolean, animate\?: boolean\)/);
 });
 
+test('collapsed float chrome keeps the expanded top bar metrics', () => {
+  const view = readFileSync('src/views/FloatTodo.tsx', 'utf8');
+  const css = readFileSync('src/shell.css', 'utf8');
+  const contract = readFileSync('UX-CONTRACT.md', 'utf8');
+  assert.match(view, /<header className=\{collapsed \? 'float-bar float-mini-bar' : 'float-bar'\}>/);
+  assert.match(view, /<LogoMark size=\{40\} \/>/);
+  assert.match(view, /<PushPin size=\{19\}/);
+  assert.match(view, /<ArrowsHorizontal size=\{19\}/);
+  assert.match(view, /size=\{19\} \/> : <ArrowsInLineVertical size=\{19\}/);
+  assert.match(view, /<Minus size=\{20\}/);
+  assert.match(css, /\.float-bar \{[^}]*height:\s*52px;[^}]*gap:\s*10px;[^}]*padding:\s*0 12px 0 16px;/);
+  assert.match(css, /\.float-brand \{[^}]*width:\s*40px;\s*height:\s*40px;/);
+  assert.match(css, /\.float-bar-title \{[^}]*font-size:\s*var\(--type-section\);[^}]*font-weight:\s*600;/);
+  assert.match(css, /\.float-bar-btn \{[^}]*width:\s*30px;\s*height:\s*30px;/);
+  assert.match(css, /\.float-window-actions \{[^}]*gap:\s*1px;/);
+  assert.match(css, /\.float-ai-glyph \{[^}]*width:\s*20px;\s*height:\s*20px;/);
+  const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)];
+  for (const [, selector, body] of rules) {
+    const collapsedChrome = /\.float-mini-bar/.test(selector)
+      || /\.float-app\.mini(?![\w-])\s+button\b/.test(selector)
+      || (/\.float-app\.mini(?![\w-])/.test(selector) && /\.float-(?:bar|brand|window-actions|ai-glyph)\b/.test(selector));
+    if (!collapsedChrome) continue;
+    assert.doesNotMatch(body, /(?:^|[^-\w])(?:height|width|font-size|gap|padding)\s*:/, `collapsed chrome must not restyle ${selector.trim()}`);
+  }
+  assert.match(contract, /展开与收起共用 52px 标题栏、40px Logo、16px\/600「待办」和 30px 按钮/);
+  assert.doesNotMatch(contract, /收起标题栏40px/);
+});
+
 test('animated expansion ignores compact height deliveries during and after motion', async () => {
   const { owner, win } = fixture();
   owner.setExpandedHeight(704);

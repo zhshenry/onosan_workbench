@@ -1705,7 +1705,7 @@ html:has(.float-app) {
 .float-add { border: none; background: none; color: var(--acc-deep); font-size: var(--type-support); font-weight: 700; cursor: pointer; padding: 4px 6px; font-family: var(--font); }
 .float-add:hover { background: var(--acc-soft); border-radius: 8px; }
 .float-app.mini button { -webkit-app-region: no-drag; }
-/* 折叠态顶栏与展开态一致:玻璃底 + 发丝分隔线 */
+/* 折叠态顶栏与展开态同一套尺寸:高度、Logo、标题、按钮都留在 .float-bar,这里只对齐底色。 */
 .float-mini-bar { background: var(--glass-surface); border-bottom-color: var(--hairline); }
 .float-mini-content { flex: none; height: 124px; padding: 9px 12px 11px; overflow: hidden; }
 .float-mini-summary { height: 22px; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; padding: 0 7px; border-radius: 8px; background: rgba(255, 255, 255, 0.42); color: var(--ink-2); font-size: var(--type-caption); }
@@ -1990,9 +1990,8 @@ html:has(.float-app) {
   .todo-proposal-arrow { justify-self: center; transform: rotate(90deg); }
 }
 
-/* Floating group v2: context, a two-row dialog (former chip gap + input), and the quick row. */
-.float-mini-bar { height: 40px; }
-.float-mini-bar .float-brand svg { width: 30px; height: 30px; }
+/* Floating group v2: context, a two-row dialog (former chip gap + input), and the quick row.
+   收起不改顶栏:高度仍是 .float-bar 的 52px,Logo 仍是 40px,标题与按钮尺寸也不在这里缩小。 */
 .float-mini-content { height: 136px; }
 .float-mini-ai { padding: 5px 10px 7px; }
 .fa-mini-surface { height: 124px; grid-template-rows: 22px 55px 22px; gap: 3px; padding: 5px 8px; }
