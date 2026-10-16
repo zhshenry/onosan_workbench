@@ -368,6 +368,10 @@ test('Wire acceptance checks latest normalized user message exactly and keeps sy
   assert.match(wireCheck, /assert\.equal\(requests\.length, 1\)/);
   assert.match(wireCheck, /requests\[0\]\.model, 'float-synthetic-long-model-name-0'/);
   assert.doesNotMatch(wireCheck.replace(/^\s*\/\/.*$/gm, ''), /headers|authorization|apiKey|systemPrompt/);
+  const replyHold = wireCheck.indexOf("locator('.fa-mini-reply')");
+  const continueChat = wireCheck.indexOf("name: '继续对话'");
+  const referenceWait = wireCheck.lastIndexOf(".ai-add-reference').waitFor");
+  assert.ok(replyHold > 0 && continueChat > replyHold && referenceWait > continueChat, 'Explicit send must keep the collapsed text reply, then return to the composer before requiring the reference control');
 });
 
 const expandedToolbar = () => ({
