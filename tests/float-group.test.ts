@@ -166,3 +166,149 @@ test('expanded and collapsed modify cards share the built-in suggestion hierarch
     assert.ok(dom.window.document.querySelector('textarea[aria-label="AI 对话输入"]'));
   } finally { await act(async () => root.unmount()); dom.window.close(); names.forEach((name, index) => descriptors[index] ? Object.defineProperty(globalThis, name, descriptors[index]!) : Reflect.deleteProperty(globalThis, name)); }
 });
+
+test('collapsed float AI keeps a pure conversational reply visible after the run', async () => {
+  const dom = new JSDOM('<div id="root"></div>', { pretendToBeVisual: true });
+  const names = ['window', 'document', 'HTMLElement', 'Node', 'navigator', 'IS_REACT_ACT_ENVIRONMENT'] as const;
+  const descriptors = names.map(name => Object.getOwnPropertyDescriptor(globalThis, name));
+  names.forEach(name => Object.defineProperty(globalThis, name, { configurable: true, value: name === 'IS_REACT_ACT_ENVIRONMENT' ? true : name === 'window' ? dom.window : dom.window[name] }));
+  type Entry = { id: string; role: 'user' | 'assistant'; content: string; streaming?: boolean; error?: string; actionState?: 'pending'; proposal?: { token: string; message: string; actions: { type: 'update'; id: string; patch: { status: string } }[]; preview: { title: string; verb: string; fields: { label: string; before: string; after: string }[] }[] } };
+  let session: { id: string; entries: Entry[] } = { id: 'chat', entries: [
+    { id: 'old-user', role: 'user', content: '以前的问题' },
+    { id: 'old-assistant', role: 'assistant', content: '以前的回复不该占住输入框', streaming: false },
+  ] };
+  let emit: (next: typeof session) => void = () => {};
+  let outcome: 'defer' | 'sync' | 'error' | 'throw' | 'proposal' = 'defer';
+  let release: (() => void) | null = null;
+  let turn = 0;
+  const replyText = '你目前有 3 项未完成事项。';
+  const heights: Array<number | null> = [];
+  Object.assign(dom.window, { workbench: { ai: {
+    chatList: async () => [{ id: 'chat', module: 'todo' }], chatOpen: async () => session, chatNew: async () => session,
+    onChat: (cb: (next: typeof session) => void) => { emit = next => cb(next); return () => {}; }, onAsk: () => () => {},
+    config: async () => ({ providers: [], models: [], activeModelId: '' }),
+    ask: async (_id: string, text: string) => {
+      if (outcome === 'throw') throw new Error('请先在 AI 设置中配置并启用');
+      turn += 1;
+      const id = `turn-${turn}`;
+      const base = session.entries.map(entry => ({ ...entry }));
+      const user: Entry = { id: `u-${id}`, role: 'user', content: text };
+      const publish = (assistant: Entry) => { session = { id: 'chat', entries: [...base, user, assistant] }; emit(session); };
+      if (outcome === 'sync') { publish({ id: `a-${id}`, role: 'assistant', content: '同步回复也能留下。', streaming: false }); return; }
+      publish({ id: `a-${id}`, role: 'assistant', content: '', streaming: true });
+      await new Promise<void>(resolve => { release = resolve; });
+      if (outcome === 'proposal') {
+        publish({ id: `a-${id}`, role: 'assistant', content: '建议把买菜标成完成', streaming: false, actionState: 'pending', proposal: { token: '22222222-2222-4222-8222-222222222222', message: '建议', actions: [{ type: 'update', id: 'task-1', patch: { status: 'done' } }], preview: [{ title: '买菜', verb: '修改事项', fields: [{ label: '状态', before: '未完成', after: '已完成' }] }] } });
+        return;
+      }
+      if (outcome === 'error') {
+        publish({ id: `a-${id}`, role: 'assistant', content: '已统计到一半', streaming: false, error: '请求超时，请重试' });
+        throw new Error('请求超时，请重试');
+      }
+      publish({ id: `a-${id}`, role: 'assistant', content: replyText, streaming: false });
+    },
+    apply: async () => {}, discard: async () => {},
+  } } });
+  const { FloatAiChat } = await import('../src/views/FloatTodo');
+  const { createRoot } = await import('react-dom/client');
+  const root = createRoot(dom.window.document.getElementById('root')!);
+  const body = () => dom.window.document.body.textContent ?? '';
+  const button = (label: string) => [...dom.window.document.querySelectorAll('button')].find(item => item.textContent === label);
+  const props = { seed: null, onSeedConsumed() {}, tasks: [] as never[], onCompactHeight(height: number | null) { heights.push(height); } };
+  const send = async (value: string) => {
+    const textarea = dom.window.document.querySelector('textarea[aria-label="AI 对话输入"]') as HTMLTextAreaElement | null;
+    assert.ok(textarea, `composer missing before send: ${body()}`);
+    Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype, 'value')!.set!.call(textarea, value);
+    await act(async () => { textarea.dispatchEvent(new dom.window.Event('input', { bubbles: true })); });
+    const submit = dom.window.document.querySelector('button[aria-label="发送"]') as HTMLButtonElement;
+    assert.equal(submit.disabled, false);
+    release = null;
+    await act(async () => { submit.click(); });
+  };
+  const finish = async () => {
+    assert.ok(release, 'run is waiting to finish');
+    const done = release;
+    release = null;
+    await act(async () => { done(); await Promise.resolve(); });
+  };
+  try {
+    await act(async () => root.render(createElement(FloatAiChat, { ...props, mini: true })));
+    for (let i = 0; i < 8 && !dom.window.document.querySelector('textarea'); i++) await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    assert.equal(dom.window.document.querySelector('.fa-mini-reply'), null, 'an older text reply must not replace the composer on open');
+    assert.doesNotMatch(body(), /以前的回复不该占住输入框/);
+    assert.ok(dom.window.document.querySelector('textarea[aria-label="AI 对话输入"]'));
+
+    await send('我现在有多少未完成的事项？');
+    assert.match(body(), /正在准备模型上下文/, body());
+    assert.match(body(), /执行中/);
+    assert.equal(dom.window.document.querySelector('.fa-mini-reply'), null);
+    await finish();
+    assert.match(body(), new RegExp(replyText), body());
+    assert.match(body(), /已回复/);
+    assert.doesNotMatch(body(), /正在准备模型上下文/);
+    assert.doesNotMatch(body(), /执行中/);
+    assert.ok(dom.window.document.querySelector('.fa-mini-reply'), 'finished text stays in the result area');
+    assert.ok(dom.window.document.querySelector('textarea[aria-label="AI 对话输入"]'), 'composer stays usable under the reply');
+    assert.ok(dom.window.document.querySelector('.ai-add-reference'), 'reference control stays available under the reply');
+    assert.equal(dom.window.document.querySelector('.todo-proposal-card'), null);
+    assert.ok(dom.window.document.querySelector('.fa-mini-surface.is-result.is-reply'));
+    assert.equal(heights.at(-1), 232, 'collapsed text reply grows enough to stay readable');
+    assert.ok(!heights.includes(300));
+    await act(async () => dom.window.document.querySelector('.ai-add-reference')!.dispatchEvent(new dom.window.Event('pointerdown', { bubbles: true })));
+    await act(async () => (dom.window.document.querySelector('.ai-add-reference') as HTMLButtonElement).click());
+    assert.ok(dom.window.document.querySelector('[role="listbox"]'), 'reference picker opens while the reply is visible');
+    await act(async () => button('继续对话')!.click());
+    assert.equal(dom.window.document.querySelector('.fa-mini-reply'), null);
+    assert.ok(dom.window.document.querySelector('textarea[aria-label="AI 对话输入"]'));
+    assert.ok(dom.window.document.querySelector('.ai-add-reference'));
+    assert.equal(heights.at(-1), null);
+
+    await act(async () => root.render(createElement(FloatAiChat, { ...props, mini: false, key: 'expanded' })));
+    for (let i = 0; i < 8 && !(dom.window.document.querySelector('.ai-messages')?.textContent ?? '').includes(replyText); i++) await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    assert.match(dom.window.document.querySelector('.ai-messages')?.textContent ?? '', new RegExp(replyText), 'expanded transcript keeps the same assistant text');
+    assert.match(body(), /我现在有多少未完成的事项？/);
+    assert.match(body(), /以前的回复不该占住输入框/);
+    assert.ok(dom.window.document.querySelector('textarea[aria-label="AI 对话输入"]'), 'expanded composer stays available under the transcript');
+
+    await act(async () => root.render(createElement(FloatAiChat, { ...props, mini: true, key: 'mini-again' })));
+    for (let i = 0; i < 8 && !dom.window.document.querySelector('textarea'); i++) await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    assert.equal(dom.window.document.querySelector('.fa-mini-reply'), null, 'reopening the collapsed card does not pin an older reply over the composer');
+    assert.doesNotMatch(body(), new RegExp(replyText));
+
+    outcome = 'sync';
+    await send('再问一次');
+    assert.match(body(), /同步回复也能留下。/, body());
+    assert.ok(dom.window.document.querySelector('.fa-mini-reply'));
+    assert.ok(dom.window.document.querySelector('textarea[aria-label="AI 对话输入"]'));
+    assert.ok(dom.window.document.querySelector('.ai-add-reference'));
+    await act(async () => button('继续对话')!.click());
+
+    outcome = 'throw';
+    await send('设置没开');
+    assert.match(body(), /请先在 AI 设置中配置并启用/, body());
+    assert.ok(dom.window.document.querySelector('textarea[aria-label="AI 对话输入"]'), 'a failure before any assistant entry stays on the composer');
+    assert.equal(dom.window.document.querySelector('.fa-mini-reply'), null);
+
+    outcome = 'error';
+    await send('统计超时');
+    assert.match(body(), /执行中/);
+    await finish();
+    assert.match(dom.window.document.querySelector('.fa-mini-reply')?.textContent ?? '', /已统计到一半/);
+    assert.match(body(), /请求超时，请重试/);
+    assert.ok(dom.window.document.querySelector('textarea[aria-label="AI 对话输入"]'), 'an error reply keeps the composer');
+    assert.ok(dom.window.document.querySelector('.ai-add-reference'));
+    assert.ok(dom.window.document.querySelector('.fa-error[role="alert"]'));
+    await act(async () => button('继续对话')!.click());
+    assert.match(body(), /请求超时，请重试/, 'leaving the result must not drop the error');
+    assert.ok(dom.window.document.querySelector('textarea[aria-label="AI 对话输入"]'));
+
+    outcome = 'proposal';
+    await send('把买菜标完成');
+    await finish();
+    assert.ok(dom.window.document.querySelector('.todo-proposal-card'), body());
+    assert.match(body(), /买菜/);
+    assert.match(body(), /AI 修改建议/);
+    assert.equal(dom.window.document.querySelector('.fa-mini-reply'), null, 'edit suggestions still use the proposal card');
+    assert.equal(dom.window.document.querySelector('textarea[aria-label="AI 对话输入"]'), null);
+  } finally { await act(async () => root.unmount()); dom.window.close(); names.forEach((name, index) => descriptors[index] ? Object.defineProperty(globalThis, name, descriptors[index]!) : Reflect.deleteProperty(globalThis, name)); }
+});

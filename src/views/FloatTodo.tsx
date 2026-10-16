@@ -410,7 +410,7 @@ function Modal({ title, children, close }: { title: string; children: React.Reac
 // ---- AI 模式:上游两套布局同源状态机 ----
 // mini = 上游 mini-ai-surface(104px 三行网格:上下文/输入/快捷;执行态中间行 1fr;conic 流光边框)
 // panel = 展开态全内容区四态执行面(composer / asking / working / result)
-// 不是聊天记录界面:输入一句话 → (AI 反问则答题) → 看执行进度 → 确认建议 → 回到输入。
+// 不是聊天记录界面:输入一句话 → (AI 反问则答题) → 看执行进度 → 确认建议或阅读纯文本回复 → 再回到输入。
 
 // 模型切换只用到 ai:config 返回的字段子集
 type AiConfigBrief = {
@@ -442,6 +442,8 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
   const [kindFilter, setKindFilter] = useState<TodoKindFilter>('all');
   const [keptProposalToken, setKeptProposalToken] = useState<string | null>(null);
   const [dismissedProposalToken, setDismissedProposalToken] = useState<string | null>(null);
+  // 本轮从哪条助手消息之后开始。收起态只靠它把纯文本/失败留在结果区,打开历史对话时不占住输入框。
+  const [replyWatch, setReplyWatch] = useState<{ baselineId: string | null } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const followReply = useRef(true);
   const consumed = useRef<number | null>(null);
@@ -480,17 +482,26 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
   const keptEntry = activeProposalToken ? conversation.find((entry) => entry.proposal?.token === activeProposalToken) ?? null : null;
   const showMiniProposal = Boolean(keptEntry?.proposal && dismissedProposalToken !== activeProposalToken);
   const miniProposalVisible = mini && showMiniProposal && !ask && !busy;
+  const latestAssistant = [...conversation].reverse().find((entry) => entry.role === 'assistant');
+  // 有修改建议时走建议卡。没有建议的正文或错误要单独留在结果区,否则执行一结束就回到空输入。
+  const textReply = latestAssistant && !latestAssistant.streaming && !latestAssistant.proposal?.actions.length && (latestAssistant.content.trim() || latestAssistant.error)
+    ? latestAssistant : null;
+  const watchedReplyId = replyWatch && !busy && !ask && textReply && textReply.id !== replyWatch.baselineId ? textReply.id : null;
+  const showMiniReply = Boolean(mini && !showMiniProposal && watchedReplyId && textReply);
 
-  // 反问仍是 300。收起态单行建议卡是 232：贴住卡片，应用后仍容得下继续对话。其余回 176。只在迷你态生效。
+  // 反问仍是 300。收起态建议卡是 232。纯文本回复也是 232，但回复叠在输入上方，关联事项和发送仍可用。其余回 176。只在迷你态生效。
   useEffect(() => {
-    if (mini) onCompactHeight?.(ask ? 300 : miniProposalVisible ? 232 : null);
-  }, [ask, miniProposalVisible, mini, onCompactHeight]);
+    if (mini) onCompactHeight?.(ask ? 300 : miniProposalVisible ? 232 : showMiniReply ? 232 : null);
+  }, [ask, miniProposalVisible, showMiniReply, mini, onCompactHeight]);
 
   async function send(text: string): Promise<void> {
     if (!chat || !text.trim() || busy || ask) return;
+    const baselineId = [...chat.entries].reverse().find((entry) => entry.role === 'assistant')?.id ?? null;
     setError('');
     setBusy(true);
     setPickerOpen(false);
+    setLogOpen(false);
+    setReplyWatch({ baselineId });
     const prompt = linked ? `关于事项「${linked.title}」:${text.trim()}` : text.trim();
     setInput('');
     await wb.ai.ask(chat.id, prompt).catch((e) => { setError(errorText(e)); setBusy(false); });
@@ -503,7 +514,6 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
     setInput('');
   }
 
-  const latestAssistant = [...conversation].reverse().find((entry) => entry.role === 'assistant');
   const tools = latestAssistant?.tools ?? [];
   const currentTool = tools.find((tool) => tool.status === 'running') ?? [...tools].reverse().find((tool) => tool.status !== 'complete');
   const completedTools = tools.filter((tool) => tool.status === 'complete').length;
@@ -637,9 +647,9 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
 
   // ================= 迷你布局(标题 / 两行对话框 / 底栏;建议卡与运行态占满中间) =================
   if (mini) {
-    const surfaceClass = ask ? 'fa-mini-surface is-asking' : busy ? 'fa-mini-surface is-working' : miniProposalVisible ? 'fa-mini-surface is-result is-proposal' : 'fa-mini-surface';
+    const surfaceClass = ask ? 'fa-mini-surface is-asking' : busy ? 'fa-mini-surface is-working' : miniProposalVisible ? 'fa-mini-surface is-result is-proposal' : showMiniReply ? 'fa-mini-surface is-result is-reply' : 'fa-mini-surface';
     return (
-      <section className={surfaceClass} aria-live={busy || ask ? 'polite' : undefined}>
+      <section className={surfaceClass} aria-live={busy || ask || showMiniReply ? 'polite' : undefined}>
         <div className="fa-mini-context">
           <span className="fa-mini-mark"><Sparkle size={10} weight="fill" /></span>
           <span className="fa-mini-title"><b>AI 助手</b></span>
@@ -710,6 +720,16 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
           </div>
         ) : (
           <>
+            {showMiniReply && textReply ? (
+              <div className="fa-mini-reply">
+                <div className="fa-mini-reply-body">
+                  <span>{textReply.error ? '未能完成' : '已回复'}</span>
+                  {textReply.content.trim() ? <p>{textReply.content}</p> : null}
+                  {textReply.error ? <p className="fa-error" role="alert">{textReply.error}</p> : null}
+                </div>
+                <button type="button" className="fa-mini-continue" onClick={() => { setReplyWatch(null); setLogOpen(false); }}>继续对话</button>
+              </div>
+            ) : null}
             <form className="fa-mini-compose" onSubmit={(e) => { e.preventDefault(); void send(input); }}>
               {linkedChip}
               <div className="fa-mini-compose-main">
@@ -731,7 +751,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
                 <button onClick={() => setLogOpen(false)}>返回</button>
               </div>
             )}
-            {error && <p className="fa-error">{error}</p>}
+            {!showMiniReply && error && <p className="fa-error">{error}</p>}
           </>
         )}
         {modelMenu}

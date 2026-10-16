@@ -28,6 +28,16 @@ export function floatWidthTarget(bounds: FloatRect, width: number, area: FloatRe
     height: bounds.height,
   };
 }
+// Grow upward from the current bottom, then slide only as far as the work area allows.
+export function floatTempHeightTarget(bounds: FloatRect, height: number, area: FloatRect): FloatRect {
+  const nextHeight = Math.min(Math.max(1, Math.round(height)), area.height);
+  return {
+    x: Math.max(area.x, Math.min(bounds.x, area.x + area.width - bounds.width)),
+    y: Math.max(area.y, Math.min(bounds.y + bounds.height - nextHeight, area.y + area.height - nextHeight)),
+    width: bounds.width,
+    height: nextHeight,
+  };
+}
 
 export function floatWidthEase(progress: number): number {
   const t = Math.min(1, Math.max(0, progress));
@@ -244,11 +254,11 @@ export class FloatTodoWindow {
     // A compact renderer effect can arrive after an instant expansion completes.
     // Temporary question/reset heights belong only to the native collapsed state.
     if (!this.win || this.motion || !this.collapsed) return;
-    const target = height ?? MINI.height;
     const bounds = this.win.getBounds();
-    if (bounds.height === target) return;
-    const y = bounds.y + bounds.height - target;
-    this.win.setBounds({ x: bounds.x, y, width: bounds.width, height: target });
+    const area = screen.getDisplayMatching(bounds).workArea;
+    const target = floatTempHeightTarget(bounds, height ?? MINI.height, area);
+    if (bounds.x === target.x && bounds.y === target.y && bounds.width === target.width && bounds.height === target.height) return;
+    this.win.setBounds(target);
   }
 
   togglePin(): boolean {

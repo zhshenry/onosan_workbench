@@ -625,7 +625,10 @@ export async function runFloatGroupPilot({ application, page, check, screenshot,
       assert.equal(requests[0].model, 'float-synthetic-long-model-name-0', 'Explicit send must use the settled selected model');
       assert.ok(userMessages.length > 0, 'Wire request must contain a user turn');
       assert.equal(floatWireText(userMessages.at(-1).content), expectedText, 'Latest wire user prompt must exactly equal linked title and explicit user text');
+      // The pure-text reply stays visible, and the reference control stays on the composer underneath it.
+      await floatPage.locator('.fa-mini-reply').getByText('合成关联验收完成。', { exact: true }).waitFor();
       await floatPage.locator('.ai-add-reference').waitFor({ state: 'visible' });
+      assert.equal((await settled(application, floatPage)).height, 232, 'Collapsed text reply grows without covering the reference control');
       assert.deepEqual(await page.evaluate(() => window.workbench.todo.state()), before);
     });
     await check('Floating group: hide/show retains narrow width on the same native window', async () => {
