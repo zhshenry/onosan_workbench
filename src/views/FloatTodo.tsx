@@ -489,7 +489,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
   const watchedReplyId = replyWatch && !busy && !ask && textReply && textReply.id !== replyWatch.baselineId ? textReply.id : null;
   const showMiniReply = Boolean(mini && !showMiniProposal && watchedReplyId && textReply);
 
-  // 反问仍是 300。收起态单行建议卡和纯文本回复都是 232,让结果留在中间区。其余回 176。只在迷你态生效。
+  // 反问仍是 300。收起态建议卡是 232。纯文本回复也是 232，但回复叠在输入上方，关联事项和发送仍可用。其余回 176。只在迷你态生效。
   useEffect(() => {
     if (mini) onCompactHeight?.(ask ? 300 : miniProposalVisible ? 232 : showMiniReply ? 232 : null);
   }, [ask, miniProposalVisible, showMiniReply, mini, onCompactHeight]);
@@ -647,7 +647,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
 
   // ================= 迷你布局(标题 / 两行对话框 / 底栏;建议卡与运行态占满中间) =================
   if (mini) {
-    const surfaceClass = ask ? 'fa-mini-surface is-asking' : busy ? 'fa-mini-surface is-working' : miniProposalVisible ? 'fa-mini-surface is-result is-proposal' : showMiniReply ? 'fa-mini-surface is-result' : 'fa-mini-surface';
+    const surfaceClass = ask ? 'fa-mini-surface is-asking' : busy ? 'fa-mini-surface is-working' : miniProposalVisible ? 'fa-mini-surface is-result is-proposal' : showMiniReply ? 'fa-mini-surface is-result is-reply' : 'fa-mini-surface';
     return (
       <section className={surfaceClass} aria-live={busy || ask || showMiniReply ? 'polite' : undefined}>
         <div className="fa-mini-context">
@@ -718,21 +718,18 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
             )}
             {error && <p className="fa-error">{error}</p>}
           </div>
-        ) : showMiniReply && textReply ? (
-          <>
-            <div className="fa-mini-middle">
-              <div className="fa-mini-reply">
-                {textReply.content.trim() ? <p>{textReply.content}</p> : null}
-                {textReply.error ? <p className="fa-error" role="alert">{textReply.error}</p> : null}
-              </div>
-            </div>
-            <footer className="fa-mini-foot">
-              <span>{textReply.error ? '未能完成' : '已回复'}</span>
-              <button type="button" className="fa-mini-continue" onClick={() => { setReplyWatch(null); setLogOpen(false); }}>继续对话</button>
-            </footer>
-          </>
         ) : (
           <>
+            {showMiniReply && textReply ? (
+              <div className="fa-mini-reply">
+                <div className="fa-mini-reply-body">
+                  <span>{textReply.error ? '未能完成' : '已回复'}</span>
+                  {textReply.content.trim() ? <p>{textReply.content}</p> : null}
+                  {textReply.error ? <p className="fa-error" role="alert">{textReply.error}</p> : null}
+                </div>
+                <button type="button" className="fa-mini-continue" onClick={() => { setReplyWatch(null); setLogOpen(false); }}>继续对话</button>
+              </div>
+            ) : null}
             <form className="fa-mini-compose" onSubmit={(e) => { e.preventDefault(); void send(input); }}>
               {linkedChip}
               <div className="fa-mini-compose-main">
@@ -754,7 +751,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
                 <button onClick={() => setLogOpen(false)}>返回</button>
               </div>
             )}
-            {error && <p className="fa-error">{error}</p>}
+            {!showMiniReply && error && <p className="fa-error">{error}</p>}
           </>
         )}
         {modelMenu}

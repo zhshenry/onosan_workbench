@@ -1944,9 +1944,12 @@ html:has(.float-app) {
 .fa-mini-stream > span { display: flex; align-items: center; gap: 4px; color: var(--acc-deep); font-size: var(--type-micro); font-weight: 600; }
 .fa-mini-stream > span > i { width: 6px; height: 6px; border-radius: 50%; background: var(--acc-deep); animation: fa-blink 1s ease-in-out infinite alternate; }
 .fa-mini-stream p { margin: 3px 0 0; font-size: var(--type-caption); line-height: 1.5; }
-.fa-mini-reply { min-width: 0; flex: 1; min-height: 0; overflow: auto; padding: 3px 5px; border-radius: 8px; background: var(--currow-tile); }
+.fa-mini-reply { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 2px; overflow: hidden; padding: 3px 5px; border-radius: 8px; background: var(--currow-tile); }
+.fa-mini-reply-body { min-height: 0; flex: 1; overflow: auto; }
+.fa-mini-reply-body > span { color: var(--acc-deep); font-size: var(--type-micro); font-weight: 700; }
 .fa-mini-reply p { margin: 0; font-size: var(--type-caption); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 .fa-mini-reply p + p { margin-top: 4px; }
+.fa-mini-reply > .fa-mini-continue { align-self: flex-end; }
 .fa-mini-log { flex: 1; min-height: 0; overflow-y: auto; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
 .fa-mini-log li { display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-radius: 6px; background: var(--currow-tile); font-size: var(--type-micro); }
 .fa-mini-log span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2003,6 +2006,7 @@ html:has(.float-app) {
 .float-mini-ai { padding: 5px 10px 0; }
 .fa-mini-surface { height: 124px; grid-template-rows: 22px 55px 22px; gap: 3px; padding: 5px 8px; }
 .fa-mini-surface.is-asking, .fa-mini-surface.is-working, .fa-mini-surface.is-result { grid-template-rows: 22px minmax(0, 1fr) 22px; }
+.fa-mini-surface.is-result.is-reply { grid-template-rows: 22px minmax(0, 1fr) 55px 22px; }
 .fa-mini-surface.is-proposal { grid-template-rows: 22px minmax(0, 1fr); min-height: 0; max-height: 100%; overflow: hidden; }
 .fa-mini-compose { height: 55px; max-height: 55px; display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 2px; padding: 4px 4px 4px 8px; overflow: hidden; }
 .fa-mini-compose-main { min-width: 0; min-height: 0; flex: 1; display: flex; align-items: stretch; gap: 5px; }

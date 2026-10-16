@@ -247,14 +247,20 @@ test('collapsed float AI keeps a pure conversational reply visible after the run
     assert.match(body(), /已回复/);
     assert.doesNotMatch(body(), /正在准备模型上下文/);
     assert.doesNotMatch(body(), /执行中/);
-    assert.equal(dom.window.document.querySelector('textarea[aria-label="AI 对话输入"]'), null, 'finished text stays in the result area');
+    assert.ok(dom.window.document.querySelector('.fa-mini-reply'), 'finished text stays in the result area');
+    assert.ok(dom.window.document.querySelector('textarea[aria-label="AI 对话输入"]'), 'composer stays usable under the reply');
+    assert.ok(dom.window.document.querySelector('.ai-add-reference'), 'reference control stays available under the reply');
     assert.equal(dom.window.document.querySelector('.todo-proposal-card'), null);
-    assert.ok(dom.window.document.querySelector('.fa-mini-surface.is-result:not(.is-proposal)'));
+    assert.ok(dom.window.document.querySelector('.fa-mini-surface.is-result.is-reply'));
     assert.equal(heights.at(-1), 232, 'collapsed text reply grows enough to stay readable');
     assert.ok(!heights.includes(300));
+    await act(async () => dom.window.document.querySelector('.ai-add-reference')!.dispatchEvent(new dom.window.Event('pointerdown', { bubbles: true })));
+    await act(async () => (dom.window.document.querySelector('.ai-add-reference') as HTMLButtonElement).click());
+    assert.ok(dom.window.document.querySelector('[role="listbox"]'), 'reference picker opens while the reply is visible');
     await act(async () => button('继续对话')!.click());
     assert.equal(dom.window.document.querySelector('.fa-mini-reply'), null);
     assert.ok(dom.window.document.querySelector('textarea[aria-label="AI 对话输入"]'));
+    assert.ok(dom.window.document.querySelector('.ai-add-reference'));
     assert.equal(heights.at(-1), null);
 
     await act(async () => root.render(createElement(FloatAiChat, { ...props, mini: false, key: 'expanded' })));
@@ -272,7 +278,9 @@ test('collapsed float AI keeps a pure conversational reply visible after the run
     outcome = 'sync';
     await send('再问一次');
     assert.match(body(), /同步回复也能留下。/, body());
-    assert.equal(dom.window.document.querySelector('textarea[aria-label="AI 对话输入"]'), null);
+    assert.ok(dom.window.document.querySelector('.fa-mini-reply'));
+    assert.ok(dom.window.document.querySelector('textarea[aria-label="AI 对话输入"]'));
+    assert.ok(dom.window.document.querySelector('.ai-add-reference'));
     await act(async () => button('继续对话')!.click());
 
     outcome = 'throw';
@@ -287,7 +295,8 @@ test('collapsed float AI keeps a pure conversational reply visible after the run
     await finish();
     assert.match(dom.window.document.querySelector('.fa-mini-reply')?.textContent ?? '', /已统计到一半/);
     assert.match(body(), /请求超时，请重试/);
-    assert.equal(dom.window.document.querySelector('textarea[aria-label="AI 对话输入"]'), null);
+    assert.ok(dom.window.document.querySelector('textarea[aria-label="AI 对话输入"]'), 'an error reply keeps the composer');
+    assert.ok(dom.window.document.querySelector('.ai-add-reference'));
     assert.ok(dom.window.document.querySelector('.fa-error[role="alert"]'));
     await act(async () => button('继续对话')!.click());
     assert.match(body(), /请求超时，请重试/, 'leaving the result must not drop the error');
