@@ -233,7 +233,9 @@ export function AiSettings({ query }: { query: string }) {
           <h2><button type="button" className="ai-config-surface-toggle" aria-expanded={sectionOpen[surface]} aria-controls={`ai-surface-${surface}`} onClick={() => setSectionOpen(previous => ({ ...previous, [surface]: !previous[surface] }))}><CaretDown size={16} /><span>{section.title}</span><span className={`ai-config-surface-badge ${surface}`}>{section.badge}</span></button></h2>
           <p>{section.help}</p>
         </div><button type="button" className="ai-config-button primary" disabled={busy || section.providers.length >= 8} title={section.providers.length >= 8 ? '最多保存 8 个供应商' : undefined} onClick={() => setEditor({ type: 'provider', surface, provider: null })}><Plus size={16} />添加供应商</button></div>
-        <div className="ai-config-list" id={`ai-surface-${surface}`} hidden={!sectionOpen[surface]}>
+        <div className="ai-config-surface-panel" id={`ai-surface-${surface}`} data-open={sectionOpen[surface] ? 'true' : 'false'} inert={!sectionOpen[surface]} aria-hidden={!sectionOpen[surface]}>
+        <div className="ai-config-surface-clip">
+        <div className="ai-config-list">
           {providers.map(provider => {
             const models = section.models.filter(model => model.providerId === provider.id);
             const open = !collapsed.includes(provider.id);
@@ -269,6 +271,8 @@ export function AiSettings({ query }: { query: string }) {
             </article>;
           })}
           {!providers.length && <div className="ai-config-empty" role="status"><strong>{needle ? '没有匹配的供应商或模型' : '还没有供应商'}</strong><p>{needle ? '试试供应商名称、服务地址或模型 ID。' : surface === 'rlcd' ? '可添加 TypeSafe、OpenRouter 或自定义服务；当前仅保存配置。' : '从“添加供应商”开始，再为它添加模型。支持 DeepSeek、OpenAI、Anthropic 和自定义服务。'}</p></div>}
+        </div>
+        </div>
         </div>
       </section>;
     })}
