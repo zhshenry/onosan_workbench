@@ -499,7 +499,7 @@ export async function runFloatGroupPilot({ application, page, check, screenshot,
         const row = options.filter({ hasText: task.title });
         const deadline = task.kind === 'meeting' ? task.endAt || (task.dueAt ? new Date(Date.parse(task.dueAt) + 3600000).toISOString() : null) : task.dueAt;
         const overdue = (deadline ? Date.parse(deadline) : new Date(`${task.plannedDate}T23:59:59`).getTime()) < now;
-        const status = task.status === 'done' ? '已完成' : overdue ? '已超期' : task.status === 'doing' ? '进行中' : '待办';
+        const status = task.status === 'done' ? '已完成' : overdue ? '已逾期' : task.status === 'doing' ? '进行中' : '待办';
         assert.ok((await row.locator('.fa-task-status').innerText()).includes(status), `Business status must be independent of selection: ${task.title}`);
         assert.equal(await row.getAttribute('title'), task.title, 'Picker must expose full title tooltip');
       }
@@ -507,7 +507,7 @@ export async function runFloatGroupPilot({ application, page, check, screenshot,
       const first = await options.nth(0).getAttribute('title'); assert.ok(first);
       await options.nth(0).click(); // Playwright dispatches physical pointerdown/up/click, never HTMLElement.click().
       await picker.waitFor({ state: 'hidden' });
-      const chip = floatPage.locator(mini ? '.fa-mini-compose .ai-reference-chip' : '.fa-linked-row .ai-reference-chip'); await chip.waitFor();
+      const chip = floatPage.locator(mini ? '.fa-mini-compose .ai-reference-chip' : '.fa-surface .ai-compose-input .ai-reference-chip'); await chip.waitFor();
       assert.ok((await chip.innerText()).includes(first));
       assert.equal(await chip.locator('span[title]').getAttribute('title'), first);
       assertFloatModelGeometry(before, await model.boundingBox());

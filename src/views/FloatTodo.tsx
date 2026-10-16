@@ -4,12 +4,13 @@
 // 不移植:AI 启动按钮、To-Do-List 品牌图标(用户明确排除)。
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowsInLineVertical, ArrowsOutLineVertical, ArrowsOutSimple, ArrowsHorizontal, ArrowLeft, CaretDown, Check, Minus, PaperPlaneRight, Plus, PushPin, Sparkle, Stop, X } from '@phosphor-icons/react';
-import { localDay, openToday, type AIAction, type ChatSession, type ChatSummary, type Task } from '../../shared/todo-contracts';
-import { isOverdue, scheduleStamp } from '../../shared/todo-format';
+import { ArrowsInLineVertical, ArrowsOutLineVertical, ArrowsOutSimple, ArrowsHorizontal, ArrowLeft, CalendarBlank, CaretDown, Check, Circle, Minus, PaperPlaneRight, Plus, PushPin, Sparkle, Stop, X } from '@phosphor-icons/react';
+import { localDay, openToday, type ChatSession, type ChatSummary, type Task } from '../../shared/todo-contracts';
+import { scheduleStamp } from '../../shared/todo-format';
 import { errorText, Select as TodoSelect } from '../../modules/todo/ui/ui';
 import { AiResponse } from './AiResponse';
 import { TodoProposalCard } from './TodoProposalCard';
+import { matchesTodoPickerFilter, TODO_STATUS_LABEL, TodoPickerFilters, todoPickerStatusKey, type TodoKindFilter, type TodoStatusFilter } from './todo-picker-filters';
 import { TaskEditor, type TaskEditorApi, type TodoState } from '../../modules/todo/ui/TaskEditor';
 import { TaskLibrary } from '../../modules/todo/ui/TaskLibrary';
 import { TodayBoard, type Mutate } from '../../modules/todo/ui/TodayBoard';
@@ -40,18 +41,6 @@ const libraryApi = {
   update: (id: string, patch: unknown, revision: string) => wb.todo.update(id, patch, revision) as Promise<TodoState>,
   restore: (id: string) => wb.todo.restore(id) as Promise<TodoState>,
 };
-
-// 建议卡行摘要(与主窗 AiPanel.actionSummary 同文,悬浮窗待办域只需这一份)
-function actionSummary(action: AIAction): { verb: string; detail: string; danger?: boolean } {
-  switch (action.type) {
-    case 'create': return { verb: action.task.kind === 'meeting' ? '新增日程' : '新增待办', detail: action.task.title + (action.task.dueAt ? ' · ' + (action.task.kind === 'meeting' ? scheduleStamp(action.task) : new Date(action.task.dueAt).toLocaleString('zh-CN')) : '') };
-    case 'update': return { verb: '修改事项', detail: Object.entries(action.patch).map(([key, value]) => key + ': ' + (value === null ? '清空' : String(value).slice(0, 40))).join(' · ') || '无字段' };
-    case 'remove': return { verb: '删除事项', detail: action.id.slice(0, 8), danger: true };
-    case 'create_category': return { verb: '新增标签', detail: action.category.name };
-    case 'update_category': return { verb: '修改标签', detail: action.id.slice(0, 8) };
-    case 'remove_category': return { verb: '删除标签', detail: action.id.slice(0, 8), danger: true };
-  }
-}
 
 export function FloatTodoApp() {
   const [data, setData] = useState<TodoState | null>(null);
@@ -258,7 +247,7 @@ export function FloatTodoApp() {
 
       {collapsed && floatMode === 'ai' ? (
         <div className="float-mini-ai" inert={motion !== 'idle'}>
-          <FloatAiChat mini seed={aiSeed} onSeedConsumed={() => setAiSeed(null)} tasks={data?.tasks ?? []} onCompactHeight={(h) => wb.float.tempHeight(h)} onExpand={() => { void setCollapsedAndSync(false); }} onBack={() => { setFloatMode('home'); wb.float.collapse(true, true); }} />
+          <FloatAiChat mini seed={aiSeed} onSeedConsumed={() => setAiSeed(null)} tasks={data?.tasks ?? []} categories={data?.categories ?? []} onCompactHeight={(h) => wb.float.tempHeight(h)} onExpand={() => { void setCollapsedAndSync(false); }} onBack={() => { setFloatMode('home'); wb.float.collapse(true, true); }} />
         </div>
       ) : collapsed ? (
         <div className="float-mini-content" inert={motion !== 'idle'}>
@@ -321,7 +310,7 @@ export function FloatTodoApp() {
             <button className="float-ai-back" onClick={() => setFloatMode('home')}><ArrowLeft size={15} />返回首页</button>
           </header>
           <div className="float-ai-body">
-            <FloatAiChat seed={aiSeed} onSeedConsumed={() => setAiSeed(null)} tasks={data?.tasks ?? []} />
+            <FloatAiChat seed={aiSeed} onSeedConsumed={() => setAiSeed(null)} tasks={data?.tasks ?? []} categories={data?.categories ?? []} />
           </div>
         </div>
       ) : (
@@ -431,10 +420,11 @@ type AiConfigBrief = {
 };
 
 
-export function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini = false, onExpand, onBack }: {
+export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCompactHeight, mini = false, onExpand, onBack }: {
   seed: { text: string; nonce: number } | null;
   onSeedConsumed(): void;
   tasks: Task[];
+  categories?: { id: string; name: string }[];
   onCompactHeight?: (height: number | null) => void;
   mini?: boolean;
   onExpand?(): void;
@@ -448,10 +438,10 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini
   const [logOpen, setLogOpen] = useState(false);
   const [linked, setLinked] = useState<Task | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<TodoStatusFilter>('all');
+  const [kindFilter, setKindFilter] = useState<TodoKindFilter>('all');
   const [keptProposalToken, setKeptProposalToken] = useState<string | null>(null);
   const [dismissedProposalToken, setDismissedProposalToken] = useState<string | null>(null);
-  // 展开态对话流(与主窗 AiPanel 同构):建议逐项勾选 + 消息区滚动跟随
-  const [selected, setSelected] = useState<Record<string, number[]>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
   const followReply = useRef(true);
   const consumed = useRef<number | null>(null);
@@ -544,7 +534,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini
     if (!pickerOpen) return;
     const onDown = (e: PointerEvent): void => {
       const target = e.target as HTMLElement | null;
-      if (target?.closest('.fa-picker-list, .fa-mini-picker, .ai-add-reference')) return;
+      if (target?.closest('.fa-picker, .fa-picker-list, .fa-mini-picker, .ai-add-reference, .todo-picker-filters')) return;
       setPickerOpen(false);
     };
     document.addEventListener('pointerdown', onDown);
@@ -621,19 +611,28 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini
   ) : null;
 
   const linkedChip = linked ? <span className="ai-reference-chip"><span title={linked.title}>关联 · {linked.title}</span><button type="button" aria-label={`取消关联 ${linked.title}`} onClick={() => setLinked(null)}><X size={12} /></button></span> : null;
-  const linkedRow = <div className="fa-linked-row" aria-live="polite">{linkedChip}</div>;
   const referenceControl = <button type="button" className="ai-add-reference" aria-expanded={pickerOpen} aria-label="关联已有事项" onClick={() => { setModelOpen(false); setPickerOpen(value => !value); }}><Plus size={13} />关联事项</button>;
-  const picker = pickerOpen ? <div className={`fa-picker-list${mini ? ' fa-mini-picker' : ''}`} role="listbox" aria-label="选择事项">
-    {tasks.filter(task => !task.deletedAt).map(task => {
-      const status = task.status === 'done' ? '已完成' : isOverdue(task) ? '已超期' : task.status === 'doing' ? '进行中' : '待办';
-      return <button type="button" key={task.id} role="option" aria-selected={linked?.id === task.id} className={linked?.id === task.id ? 'is-linked' : ''} title={task.title} onClick={() => { setLinked(task); setPickerOpen(false); document.querySelector<HTMLButtonElement>('.ai-add-reference')?.focus(); }}>
-        <i className={task.kind === 'meeting' ? 'pill meet' : 'pill task'} aria-hidden="true" />
-        <span>{task.kind === 'meeting' ? '日程' : '待办'} · {task.title}</span>
-        <small className="fa-task-status"><span aria-hidden="true">{task.status === 'done' ? '✓' : isOverdue(task) ? '!' : task.status === 'doing' ? '◐' : '○'}</span> {status}</small>
-        {linked?.id === task.id ? <Check size={12} aria-label="当前选择" /> : null}
-      </button>;
-    })}
-    {!tasks.some(task => !task.deletedAt) && <p>暂无可关联事项</p>}
+  const activeTasks = tasks.filter(task => !task.deletedAt);
+  const visibleTasks = activeTasks.filter(task => matchesTodoPickerFilter({ statusKey: todoPickerStatusKey(task), kind: task.kind }, statusFilter, kindFilter));
+  const categoryName = (task: Task) => categories.find(category => category.id === task.categoryId)?.name ?? '';
+  const picker = pickerOpen ? <div className={`fa-picker${mini ? ' fa-mini-picker' : ''}`}>
+    <TodoPickerFilters status={statusFilter} kind={kindFilter} onStatus={setStatusFilter} onKind={setKindFilter} />
+    <div className="fa-picker-list" role="listbox" aria-label="选择事项">
+      {visibleTasks.map(task => {
+        const statusKey = todoPickerStatusKey(task);
+        const status = TODO_STATUS_LABEL[statusKey];
+        const detail = [task.kind === 'meeting' ? '日程' : '待办', scheduleStamp(task), categoryName(task)].filter(Boolean).join(' · ');
+        const chosen = linked?.id === task.id;
+        return <button type="button" key={task.id} role="option" aria-selected={chosen} className={chosen ? 'is-linked' : ''} title={task.title} onClick={() => { setLinked(task); setPickerOpen(false); document.querySelector<HTMLButtonElement>('.ai-add-reference')?.focus(); }}>
+          <span className={`ai-reference-kind ${task.kind === 'meeting' ? 'meeting' : 'task'}`} aria-hidden="true">{task.kind === 'meeting' ? <CalendarBlank size={16} weight="bold" /> : <Circle size={10} weight="fill" />}</span>
+          <span className="ai-reference-option-text"><strong>{task.title}</strong><small>{detail}</small></span>
+          <small className={`fa-task-status ${statusKey}`}>{status}</small>
+          <span className="ai-reference-selected-mark">{chosen ? <Check size={12} weight="bold" aria-label="当前选择" /> : null}</span>
+        </button>;
+      })}
+      {!activeTasks.length && <p>暂无可关联事项</p>}
+      {activeTasks.length > 0 && !visibleTasks.length && <p>没有符合筛选的事项</p>}
+    </div>
   </div> : null;
 
   // ================= 迷你布局(标题 / 两行对话框 / 底栏;建议卡与运行态占满中间) =================
@@ -759,29 +758,9 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini
           <div key={entry.id} className={entry.role === 'user' ? 'ai-msg user' : 'ai-msg'}>
             {entry.role === 'assistant' ? <AiResponse entry={entry} /> : <div className="ai-bubble">{entry.content}</div>}
             {entry.error && <div className="ai-error" role="alert">{entry.error}</div>}
-            {entry.proposal && entry.actionState === 'pending' && (
-              <div className="ai-proposal">
-                <div className="ai-proposal-head">请确认以下 {entry.proposal.actions.length} 项操作</div>
-                {entry.proposal.actions.map((action, index) => {
-                  const summary = actionSummary(action);
-                  const indices = selected[entry.proposal!.token] ?? [];
-                  return (
-                    <label key={index} className={summary.danger ? 'ai-proposal-item danger' : 'ai-proposal-item'}>
-                      <input type="checkbox" checked={indices.includes(index)} onChange={(e) => setSelected((previous) => {
-                        const before = previous[entry.proposal!.token] ?? [];
-                        return { ...previous, [entry.proposal!.token]: e.target.checked ? [...before, index] : before.filter((item) => item !== index) };
-                      })} />
-                      <span className="ai-proposal-verb">{summary.verb}</span><span className="ai-proposal-detail">{summary.detail}</span>
-                    </label>
-                  );
-                })}
-                <div className="ai-proposal-actions">
-                  <button className="ai-apply" disabled={!(selected[entry.proposal.token] ?? []).length} onClick={() => { void wb.ai.apply(entry.proposal!.token, selected[entry.proposal!.token] ?? []).then(() => setSelected((previous) => ({ ...previous, [entry.proposal!.token]: [] })), (e) => setError(errorText(e))); }}>应用所选</button>
-                  <button className="ai-discard" onClick={() => { void wb.ai.discard(entry.proposal!.token).catch((e) => setError(errorText(e))); }}>保留原内容</button>
-                </div>
-              </div>
-            )}
-            {entry.actionState && entry.actionState !== 'pending' && (
+            {entry.proposal && <TodoProposalCard key={entry.proposal.token} entry={entry} busy={busy}
+              apply={(token, indices) => wb.ai.apply(token, indices)} discard={(token) => wb.ai.discard(token)} />}
+            {!entry.proposal && entry.actionState && entry.actionState !== 'pending' && (
               <div className={'ai-action-state ' + entry.actionState}>
                 {({ applied: '已应用', discarded: '已保留原内容', expired: '已过期，未应用', revised: '已被后续建议替代', undone: '已撤销' } as const)[entry.actionState]}
               </div>
@@ -817,9 +796,9 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini
       </div>
       <div className="ai-compose-wrap">
         {picker}
-        {linkedRow}
         <div className="ai-compose">
           <div className="ai-compose-input">
+            {linkedChip ? <div className="ai-reference-row" aria-label="已关联事项" aria-live="polite">{linkedChip}</div> : null}
             <textarea rows={1} value={input} maxLength={10000} aria-label="AI 对话输入"
               placeholder={linked ? `针对「${linked.title}」提问…` : '一句话告诉 AI 你想怎么处理'}
               onChange={(e) => setInput(e.target.value)}

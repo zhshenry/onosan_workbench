@@ -11,9 +11,10 @@ test('main AI panel model trigger is capped and its menu can grow past the trigg
   assert.match(css, /\.ai-panel \.ai-model-select \.select-trigger > svg \{ flex: none; \}/);
   assert.match(css, /\.select-menu\.ai-model-menu\.ai-panel-model-menu \{[^}]*width: max-content;[^}]*max-width: min\(208px, calc\(100vw - 16px\)\);/);
   assert.match(css, /\.select-menu\.ai-panel-model-menu \.select-option \{[^}]*overflow-wrap: anywhere;/);
-  // Floating expanded chat keeps the shared 320px menu and the narrow-window shrink rule.
+  // Expanded float trigger uses the same 148px cap. Its menu stays the shared 320px list; collapsed mode is a separate 120px toggle.
   assert.match(css, /\.select-menu\.ai-model-menu \{ width: 320px;/);
-  assert.match(css, /\.float-app\.narrow \.fa-surface \.ai-compose-toolbar > \.ai-model-select \{ flex: 1 1 0; min-width: 0; max-width: none;/);
+  assert.match(css, /\.fa-surface \.ai-compose-toolbar > \.ai-model-select \{ flex: 0 0 auto; width: max-content; min-width: 88px; max-width: min\(148px, calc\(100% - 88px\)\); \}/);
+  assert.match(css, /\.fa-mini-quick \.fa-model-toggle \{ flex: 0 0 120px; width: 120px; max-width: 120px;/);
 });
 
 test('AI panel model trigger exposes the full name and switching still activates the chosen model', async () => {

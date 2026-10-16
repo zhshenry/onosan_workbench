@@ -87,6 +87,20 @@ test('上下文选择器使用真实控件发送所选 ID，并隔离页面、�
     assert.ok(dom.window.document.querySelector('.ai-compose-toolbar .ai-add-reference'), '+ stays at composer bottom');
     await click('.ai-add-reference');
     assert.equal(all('.ai-reference-option').length, 3);
+    assert.ok(dom.window.document.querySelector('.todo-picker-filters'), 'todo picker has filter chips');
+    const filterButton = (group: string, label: string) => all(`[aria-label="${group}"] button`).find(button => button.textContent === label)!;
+    assert.deepEqual(all('[aria-label="按状态筛选"] button').map(button => button.textContent), ['全部', '待办', '进行中', '已完成', '已逾期']);
+    assert.deepEqual(all('[aria-label="按类型筛选"] button').map(button => button.textContent), ['全部', '事项', '日程']);
+    await act(async () => { filterButton('按状态筛选', '已完成').click(); });
+    assert.equal(all('.ai-reference-option').length, 1);
+    assert.match(all('.ai-reference-option')[0].textContent!, /已完成事项/);
+    await act(async () => { filterButton('按状态筛选', '全部').click(); });
+    await act(async () => { filterButton('按类型筛选', '日程').click(); });
+    assert.equal(all('.ai-reference-option').length, 1);
+    assert.match(all('.ai-reference-option')[0].textContent!, /项目会议/);
+    await act(async () => { filterButton('按类型筛选', '全部').click(); });
+    await act(async () => { all('.ai-reference-option input')[0].focus(); });
+    assert.equal(all('.ai-reference-option').length, 3);
     assert.match(dom.window.document.querySelector('.ai-reference-dialog')!.textContent!, /日程/);
     assert.match(dom.window.document.querySelector('.ai-reference-dialog')!.textContent!, /已完成/);
     assert.match(dom.window.document.querySelector('.ai-reference-dialog')!.textContent!, /逾期/);
@@ -170,6 +184,7 @@ test('上下文选择器使用真实控件发送所选 ID，并隔离页面、�
     await render({ scope: { module: 'workbench', viewId: 'copy-publish' }, label: '工作台助手', object: '图文发布' });
     assert.equal(all('.ai-reference-chip').length, 0);
     await click('.ai-add-reference');
+    assert.equal(all('.todo-picker-filters').length, 0, 'non-todo pickers keep search instead of todo filter chips');
     await type('.ai-reference-search input', '无匹配');
     assert.equal(all('.ai-reference-option').length, 0);
     assert.match(dom.window.document.querySelector('.ai-reference-dialog')!.textContent!, /没有找到/);

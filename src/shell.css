@@ -1786,17 +1786,27 @@ html:has(.float-app) {
 .fa-surface .ai-compose textarea { min-height: 64px; }
 .fa-surface .ai-compose-toolbar > .ai-add-reference { margin-right: auto; }
 .float-app.narrow .fa-surface .ai-compose-toolbar > .ai-add-reference { flex: none; white-space: nowrap; }
-.float-app.narrow .fa-surface .ai-compose-toolbar > .ai-model-select { flex: 1 1 0; min-width: 0; max-width: none; }
-.float-app.narrow .fa-surface .ai-model-select .select-trigger > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.float-app.narrow .fa-surface .ai-model-select .select-trigger > svg { flex: none; }
-/* 事项选择列表 = 浮层:锚在对话框上方,遮挡(不挤压)消息卡 */
-.fa-picker-list { position: absolute; left: 0; right: 0; bottom: calc(100% + 8px); z-index: 20; max-height: 240px; overflow-y: auto; border: 1px solid var(--todo-line); border-radius: 10px; background: #fff; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 1px; padding: 4px; }
-.fa-picker-list button { display: flex; align-items: center; gap: 7px; padding: 6px 8px; border: none; border-radius: 7px; background: none; font: inherit; font-size: var(--type-support); text-align: left; cursor: pointer; }
-.fa-picker-list button:hover { background: var(--currow); }
-.fa-picker-list .pill { width: 7px; height: 7px; border-radius: 50%; flex: none; }
-.fa-picker-list .pill.task { background: var(--acc-deep); }
-.fa-picker-list .pill.meet { background: var(--avatar-teal, #2c7a7a); }
-.fa-picker-list span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Expanded float model trigger matches the main-panel cap (#68). Collapsed .fa-model-toggle stays 120px. Menu stays the shared 320px list. */
+.fa-surface .ai-compose-toolbar > .ai-model-select { flex: 0 0 auto; width: max-content; min-width: 88px; max-width: min(148px, calc(100% - 88px)); }
+.fa-surface .ai-model-select .select-trigger { width: auto; max-width: 100%; }
+.fa-surface .ai-model-select .select-trigger > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fa-surface .ai-model-select .select-trigger > svg { flex: none; }
+.fa-surface .ai-compose-input .ai-reference-row { padding: 8px 10px 0; }
+.fa-surface .ai-compose-input .ai-reference-chip { max-width: 100%; border-radius: 999px; padding: 2px 4px 2px 9px; }
+.fa-surface .ai-compose-input .ai-reference-chip > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fa-surface .ai-compose-input .ai-reference-chip button { border-radius: 50%; }
+/* 事项选择列表 = 浮层:锚在对话框上方,遮挡(不挤压)消息卡。行结构对齐主窗 light list。 */
+.fa-picker { position: absolute; left: 0; right: 0; bottom: calc(100% + 8px); z-index: 20; display: flex; flex-direction: column; max-height: min(320px, 70vh); overflow: hidden; border: 1px solid var(--todo-line); border-radius: 14px; background: var(--todo-white); box-shadow: var(--shadow); }
+.fa-picker-list { position: static; flex: 1 1 auto; min-height: 0; max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding: 4px; }
+.fa-picker-list button { display: flex; align-items: center; gap: 7px; min-height: 44px; padding: 7px 8px; border: 1px solid transparent; border-radius: 9px; background: none; font: inherit; font-size: var(--type-support); text-align: left; cursor: pointer; }
+.fa-picker-list button:hover { background: var(--todo-subtle); }
+.fa-picker-list button.is-linked { background: var(--acc-soft); }
+.fa-picker-list .ai-reference-option-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; overflow: hidden; white-space: normal; }
+.fa-picker-list .ai-reference-option-text strong { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fa-picker-list .ai-reference-option-text small { color: var(--ink-3); font-size: var(--type-caption); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fa-picker-list .ai-reference-kind,
+.fa-picker-list .ai-reference-selected-mark { flex: none; }
+.fa-picker-list button.is-linked .ai-reference-selected-mark { background: var(--acc-deep); color: white; }
 /* AI 反问内联卡(ask_user):嵌入消息流末尾,浅蓝强调 */
 .fa-askcard { flex: none; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 1px solid var(--acc-ring); border-radius: 13px; background: var(--acc-soft); }
 .fa-askcard .fa-question { margin: 0; }
@@ -1989,10 +1999,27 @@ html:has(.float-app) {
 .fa-model-menu section > button span { white-space: normal; overflow-wrap: anywhere; }
 .fa-mini-model-menu section > button { min-width: 0; font-size: var(--type-micro); }
 .fa-mini-model-menu section > button span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }
-.fa-mini-surface .fa-mini-picker { bottom: 30px; left: 8px; right: 8px; max-height: 82px; }
+.fa-mini-surface .fa-mini-picker { bottom: 30px; left: 8px; right: 8px; max-height: 92px; }
+.fa-mini-surface .fa-picker.fa-mini-picker { overflow: hidden; padding: 0; gap: 0; }
+.fa-mini-surface .fa-picker .fa-picker-list { max-height: 60px; }
 .fa-picker-list { background: var(--todo-white); }
-.fa-task-status { flex: none; white-space: nowrap; color: var(--ink-3); font-size: var(--type-detail); }
-.fa-picker-list .fa-task-status span { display: inline; }
+.fa-picker-list .fa-task-status { flex: none; max-width: 72px; border-radius: 999px; padding: 3px 7px; background: var(--todo-subtle); color: var(--ink-2); font-size: var(--type-caption); white-space: nowrap; }
+.fa-picker-list .fa-task-status.overdue { color: var(--danger); background: var(--danger-soft); }
+.fa-picker-list .fa-task-status.todo,
+.fa-picker-list .fa-task-status.doing { color: var(--acc-deep); background: var(--acc-soft); }
+.fa-picker-list .fa-task-status.done { color: var(--ink-3); }
+.todo-picker-filters { display: flex; flex-direction: column; gap: 4px; flex: none; padding: 8px 8px 6px; border-bottom: 1px solid var(--hairline); }
+.todo-picker-filters [role="group"] { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.todo-picker-filters [role="group"] > span { flex: none; color: var(--ink-3); font-size: var(--type-micro); font-weight: 600; }
+.fa-picker .todo-picker-filters button,
+.fa-mini-picker .todo-picker-filters button,
+.ai-reference-dialog .todo-picker-filters button { flex: none; display: inline-flex; align-items: center; width: auto; min-height: 0; height: auto; margin: 0; border: 1px solid var(--hairline); border-radius: 999px; background: transparent; color: var(--ink-2); font-family: var(--font); font-size: var(--type-micro); font-weight: 600; line-height: 16px; padding: 1px 7px; cursor: pointer; text-align: center; }
+.fa-picker .todo-picker-filters button[aria-pressed="true"],
+.fa-mini-picker .todo-picker-filters button[aria-pressed="true"],
+.ai-reference-dialog .todo-picker-filters button[aria-pressed="true"] { border-color: var(--acc-ring); background: var(--acc-soft); color: var(--acc-deep); }
+.fa-mini-picker .todo-picker-filters { flex-direction: row; flex-wrap: nowrap; gap: 8px; overflow-x: auto; padding: 4px 6px; }
+.fa-mini-picker .todo-picker-filters [role="group"] { flex: none; flex-wrap: nowrap; }
+.ai-reference-light-list .todo-picker-filters { padding: 6px 6px 4px; }
 .float-mini-quick .ai-entry { border-color: var(--ai-accent); color: var(--ai-accent-deep); }
 .float-mini-quick .ai-entry svg { color: var(--ai-accent); }
 .float-mini-quick .ai-entry:hover { border-color: var(--ai-accent-deep); color: var(--ai-accent-deep); background: color-mix(in srgb, var(--ai-accent) 10%, var(--todo-white)); }

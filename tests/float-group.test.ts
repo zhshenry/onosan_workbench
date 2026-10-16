@@ -28,26 +28,35 @@ test('floating picker survives pointerdown, displays real status and cancels wit
     for (const mini of [true, false]) {
       await act(async () => root.render(createElement(FloatAiChat, { mini, seed: null, onSeedConsumed() {}, tasks: tasks as never })));
       await click(find('.ai-add-reference'));
+      const filters = dom.window.document.querySelector('.todo-picker-filters');
+      assert.ok(filters, 'picker exposes status and kind filters');
+      const filterButton = (group: string, label: string) => [...dom.window.document.querySelectorAll<HTMLButtonElement>(`[aria-label="${group}"] button`)].find(button => button.textContent === label)!;
+      await click(filterButton('按状态筛选', '已完成'));
+      assert.equal(dom.window.document.querySelectorAll('[role="option"]').length, 1);
+      assert.match(dom.window.document.querySelector('[role="option"]')!.textContent!, /已完成/);
+      await click(filterButton('按状态筛选', '全部'));
+      await click(filterButton('按类型筛选', '日程'));
+      assert.equal(dom.window.document.querySelectorAll('[role="option"]').length, 1);
+      assert.match(dom.window.document.querySelector('[role="option"]')!.textContent!, /日程/);
+      await click(filterButton('按类型筛选', '全部'));
       const options = [...dom.window.document.querySelectorAll('[role="option"]')];
-      assert.match(options[0].textContent!, /已完成/); assert.doesNotMatch(options[0].textContent!, /已超期/);
-      assert.match(options[1].textContent!, /已超期/);
+      assert.equal(options.length, 4);
+      assert.match(options[0].textContent!, /已完成/); assert.doesNotMatch(options[0].textContent!, /已逾期/);
+      assert.match(options[1].textContent!, /已逾期/);
       assert.match(options[2].textContent!, /进行中/);
-      assert.match(options[3].textContent!, /日程/); assert.doesNotMatch(options[3].textContent!, /已超期/);
+      assert.match(options[3].textContent!, /日程/); assert.doesNotMatch(options[3].textContent!, /已逾期/);
+      assert.ok(options[0].querySelector('.ai-reference-option-text strong'), 'float rows use the built-in title/detail structure');
       await click(options[0]);
-      const chip = () => find(mini ? '.fa-mini-compose .ai-reference-chip' : '.fa-linked-row .ai-reference-chip');
+      const chip = () => find(mini ? '.fa-mini-compose .ai-reference-chip' : '.fa-surface .ai-compose-input .ai-reference-chip');
       assert.match(chip().textContent!, /已完成但旧截止/);
-      if (mini) {
-        assert.equal(dom.window.document.querySelector('.fa-linked-row'), null, 'collapsed mode keeps the chip inside the dialog');
-        assert.ok(find('.fa-mini-compose').contains(chip()));
-      } else {
-        assert.equal(dom.window.document.querySelector('.ai-compose .ai-reference-chip'), null, 'expanded chip stays above the dialog');
-      }
+      assert.equal(dom.window.document.querySelector('.fa-linked-row'), null, 'chip stays inside the dialog');
+      if (mini) assert.ok(find('.fa-mini-compose').contains(chip()));
+      else assert.ok(find('.ai-compose-input').contains(chip()));
       assert.equal(find('.ai-add-reference').textContent, '关联事项');
       await click(find('.ai-add-reference')); await click(dom.window.document.querySelectorAll('[role="option"]')[1]);
       assert.match(chip().textContent!, /很长的未完成/);
       await click(chip().querySelector('button')!);
-      assert.equal(dom.window.document.querySelector(mini ? '.fa-mini-compose .ai-reference-chip' : '.fa-linked-row .ai-reference-chip'), null);
-      if (!mini) assert.equal(find('.fa-linked-row').textContent, '');
+      assert.equal(dom.window.document.querySelector(mini ? '.fa-mini-compose .ai-reference-chip' : '.fa-surface .ai-compose-input .ai-reference-chip'), null);
       assert.equal(asks, 0);
       await click(find('.ai-add-reference'));
       await act(async () => dom.window.document.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
@@ -82,8 +91,9 @@ test('width-only measurement is isolated from polling and home AI stripe is remo
 test('floating expanded toolbar reserves reference text while model takes shrinkable remaining width', () => {
   const css = readFileSync('src/shell.css', 'utf8');
   assert.match(css, /\.float-app\.narrow \.fa-surface \.ai-compose-toolbar > \.ai-add-reference \{[^}]*flex: none;[^}]*white-space: nowrap;/);
-  assert.match(css, /\.float-app\.narrow \.fa-surface \.ai-compose-toolbar > \.ai-model-select \{ flex: 1 1 0; min-width: 0; max-width: none;/);
-  assert.match(css, /\.float-app\.narrow \.fa-surface \.ai-model-select \.select-trigger > span \{[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/);
+  assert.match(css, /\.fa-surface \.ai-compose-toolbar > \.ai-model-select \{ flex: 0 0 auto; width: max-content; min-width: 88px; max-width: min\(148px, calc\(100% - 88px\)\); \}/);
+  assert.doesNotMatch(css, /\.float-app\.narrow \.fa-surface \.ai-compose-toolbar > \.ai-model-select \{ flex: 1 1 0;/);
+  assert.match(css, /\.fa-surface \.ai-model-select \.select-trigger > span \{[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/);
   assert.match(css, /\.fa-mini-surface \{ height: 124px; grid-template-rows: 22px 55px 22px;/);
   assert.match(css, /\.fa-mini-quick \.fa-model-toggle \{ flex: 0 0 120px; width: 120px; max-width: 120px;/);
   assert.match(css, /\.fa-mini-compose-main > button\[type='submit'\] \{ align-self: flex-end;/);
@@ -94,7 +104,7 @@ test('floating expanded toolbar reserves reference text while model takes shrink
   assert.match(css, /\.ai-panel \.ai-compose-toolbar > \.ai-model-select \{[^}]*max-width: min\(148px/);
 });
 
-test('collapsed modify card stays readable after apply while expanded summary is unchanged', async () => {
+test('expanded and collapsed modify cards share the built-in suggestion hierarchy', async () => {
   const dom = new JSDOM('<div id="root"></div>', { pretendToBeVisual: true });
   const names = ['window', 'document', 'HTMLElement', 'Node', 'navigator', 'IS_REACT_ACT_ENVIRONMENT'] as const;
   const descriptors = names.map(name => Object.getOwnPropertyDescriptor(globalThis, name));
@@ -119,9 +129,18 @@ test('collapsed modify card stays readable after apply while expanded summary is
   const button = (label: string) => [...dom.window.document.querySelectorAll('button')].find(item => item.textContent === label);
   try {
     await act(async () => root.render(createElement(FloatAiChat, { mini: false, seed: null, onSeedConsumed() {}, tasks: [] })));
-    for (let i = 0; i < 8 && !dom.window.document.querySelector('.ai-proposal'); i++) await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
-    assert.equal(dom.window.document.querySelector('.todo-proposal-card'), null);
-    assert.match(dom.window.document.querySelector('.ai-proposal-detail')!.textContent!, /dueAt:/);
+    for (let i = 0; i < 8 && !dom.window.document.querySelector('.todo-proposal-card'); i++) await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    assert.equal(dom.window.document.querySelector('.ai-proposal'), null);
+    assert.match(text(), /AI 修改建议/);
+    assert.match(text(), /完成第一篇博客/);
+    assert.match(text(), /修改事项/);
+    assert.match(text(), /截止时间/);
+    assert.match(text(), /修改前/);
+    assert.match(text(), /修改后/);
+    assert.doesNotMatch(text(), /dueAt/);
+    assert.ok(dom.window.document.querySelector('textarea[aria-label="AI 对话输入"]'), 'expanded card stays in the thread and keeps the composer');
+    await act(async () => button('应用所选')!.click());
+    assert.deepEqual(applied, [0]);
     await act(async () => root.render(createElement(FloatAiChat, { mini: true, seed: null, onSeedConsumed() {}, tasks: [], onCompactHeight(height) { heights.push(height); } })));
     for (let i = 0; i < 8 && !dom.window.document.querySelector('.todo-proposal-card'); i++) await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
     assert.match(text(), /完成第一篇博客/);
