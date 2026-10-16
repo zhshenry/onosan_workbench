@@ -1870,8 +1870,8 @@ html:has(.float-app) {
 .fa-mini-compose { height: 34px; display: flex; align-items: center; gap: 5px; padding: 3px 4px 3px 6px; border: 1px solid var(--todo-line); border-radius: 9px; background: var(--currow-tile); }
 .fa-mini-compose:focus-within { border-color: var(--acc-deep); background: #fff; }
 .fa-mini-compose textarea { min-width: 0; height: 24px; min-height: 24px; max-height: 24px; flex: 1; resize: none; padding: 3px 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: var(--type-caption); line-height: 18px; }
-.fa-mini-compose > button[type='submit'] { width: 24px; height: 24px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 7px; background: var(--acc-deep); color: #fff; cursor: pointer; }
-.fa-mini-compose > button[type='submit']:disabled { background: var(--acc-soft); color: var(--acc-deep); cursor: default; }
+.fa-mini-compose button[type='submit'] { width: 24px; height: 24px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 7px; background: var(--acc-deep); color: #fff; cursor: pointer; }
+.fa-mini-compose button[type='submit']:disabled { background: var(--acc-soft); color: var(--acc-deep); cursor: default; }
 .fa-mini-plus { width: 24px; height: 24px; flex: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: 7px; background: transparent; color: var(--ink-3); cursor: pointer; }
 .fa-mini-plus:hover { background: var(--currow); color: var(--acc-deep); }
 .fa-mini-quick { min-width: 0; height: 22px; display: flex; align-items: center; gap: 4px; }
@@ -1963,24 +1963,32 @@ html:has(.float-app) {
   .todo-proposal-arrow { justify-self: center; transform: rotate(90deg); }
 }
 
-/* Floating group v2: independent widths and a four-row compact composer. */
+/* Floating group v2: context, a two-row dialog (former chip gap + input), and the quick row. */
 .float-mini-bar { height: 40px; }
 .float-mini-bar .float-brand svg { width: 30px; height: 30px; }
 .float-mini-content { height: 136px; }
 .float-mini-ai { padding: 5px 10px 7px; }
-.fa-mini-surface { height: 124px; grid-template-rows: 22px 20px 32px 22px; gap: 3px; padding: 5px 8px; }
+.fa-mini-surface { height: 124px; grid-template-rows: 22px 55px 22px; gap: 3px; padding: 5px 8px; }
 .fa-mini-surface.is-asking, .fa-mini-surface.is-working, .fa-mini-surface.is-result { grid-template-rows: 22px minmax(0, 1fr) 22px; }
-.fa-mini-compose { height: 32px; }
+.fa-mini-surface.is-proposal { grid-template-rows: 22px minmax(0, 1fr); min-height: 0; max-height: 100%; overflow: hidden; }
+.fa-mini-compose { height: 55px; max-height: 55px; display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 2px; padding: 4px 4px 4px 8px; overflow: hidden; }
+.fa-mini-compose-main { min-width: 0; min-height: 0; flex: 1; display: flex; align-items: stretch; gap: 5px; }
+.fa-mini-compose .ai-reference-chip { align-self: flex-start; max-width: 100%; }
+.fa-mini-compose textarea { height: 100%; min-height: 0; max-height: none; align-self: stretch; padding: 2px 0; }
+.fa-mini-compose-main > button[type='submit'] { align-self: flex-end; flex: none; }
 .fa-linked-row { flex: none; height: 32px; min-width: 0; display: flex; align-items: center; }
 .fa-mini-surface .fa-linked-row { height: 20px; }
 .fa-linked-row .ai-reference-chip { max-width: 100%; min-width: 0; display: inline-flex; align-items: center; }
 .fa-linked-row .ai-reference-chip > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fa-linked-row .ai-reference-chip > button { flex: none; }
 .fa-mini-quick > .ai-add-reference { flex: none; margin: 0; font-size: var(--type-micro); white-space: nowrap; }
-.fa-mini-quick .fa-model-toggle { flex: 0 0 168px; width: 168px; max-width: 168px; height: 22px; padding: 2px 8px; }
+.fa-mini-quick .fa-model-toggle { flex: 0 0 120px; width: 120px; max-width: 120px; height: 22px; padding: 2px 8px; }
 .fa-mini-quick .fa-model-toggle > span { flex: 1; text-align: left; }
 .fa-model-menu { left: auto; box-sizing: border-box; }
+.fa-mini-model-menu { max-width: min(152px, calc(100vw - 24px)); font-size: var(--type-micro); }
 .fa-model-menu section > button span { white-space: normal; overflow-wrap: anywhere; }
+.fa-mini-model-menu section > button { min-width: 0; font-size: var(--type-micro); }
+.fa-mini-model-menu section > button span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }
 .fa-mini-surface .fa-mini-picker { bottom: 30px; left: 8px; right: 8px; max-height: 82px; }
 .fa-picker-list { background: var(--todo-white); }
 .fa-task-status { flex: none; white-space: nowrap; color: var(--ink-3); font-size: var(--type-detail); }
@@ -2006,5 +2014,39 @@ html:has(.float-app) {
 .float-app.narrow .float-mini-category { flex: 1; }
 .fa-mini-surface .ai-reference-chip { height: 20px; padding: 0 4px 0 6px; }
 .fa-mini-surface .ai-reference-chip button { width: 18px; height: 18px; }
+.fa-mini-middle.fa-mini-proposal { overflow-x: hidden; overflow-y: auto; gap: 2px; }
+.fa-mini-surface .todo-proposal-card { gap: 4px; padding: 6px 8px; border-radius: 10px; line-height: 1.3; }
+.fa-mini-surface .todo-proposal-header { gap: 4px; }
+.fa-mini-surface .todo-proposal-header h3 { font-size: var(--type-micro); gap: 4px; }
+.fa-mini-surface .todo-proposal-header h3 svg { width: 12px; height: 12px; }
+.fa-mini-surface .todo-proposal-badge { padding: 0 5px; font-size: var(--type-micro); line-height: 16px; }
+.fa-mini-surface .todo-proposal-intro { display: none; }
+.fa-mini-surface .todo-proposal-note,
+.fa-mini-surface .todo-proposal-warning,
+.fa-mini-surface .todo-proposal-error,
+.fa-mini-surface .todo-proposal-item-result { font-size: var(--type-micro); line-height: 1.3; }
+.fa-mini-surface .todo-proposal-item-result { display: none; }
+.fa-mini-surface .todo-proposal-operation { gap: 3px; }
+.fa-mini-surface .todo-proposal-operation + .todo-proposal-operation { padding-top: 4px; }
+.fa-mini-surface .todo-proposal-target { gap: 5px; align-items: center; }
+.fa-mini-surface .todo-proposal-target > div { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.fa-mini-surface .todo-proposal-target strong { display: inline; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--type-caption); line-height: 1.3; }
+.fa-mini-surface .todo-proposal-target small { display: inline; flex: none; margin-top: 0; white-space: nowrap; font-size: var(--type-micro); line-height: 1.2; }
+.fa-mini-surface .todo-proposal-target input { width: 13px; height: 13px; margin-top: 0; }
+.fa-mini-surface .todo-proposal-result-icon { width: 14px; height: 14px; }
+.fa-mini-surface .todo-proposal-result-icon svg { width: 10px; height: 10px; }
+.fa-mini-surface .todo-proposal-field { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.fa-mini-surface .todo-proposal-field > b { flex: none; margin: 0; white-space: nowrap; font-size: var(--type-micro); }
+.fa-mini-surface .todo-proposal-diff { display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px; }
+.fa-mini-surface .todo-proposal-before,
+.fa-mini-surface .todo-proposal-after { display: inline-flex; flex-direction: row; align-items: baseline; gap: 4px; flex: 0 1 auto; min-width: 0; padding: 1px 6px; }
+.fa-mini-surface .todo-proposal-arrow { flex: none; transform: none; }
+.fa-mini-surface .todo-proposal-diff small { flex: none; white-space: nowrap; font-size: var(--type-micro); margin-bottom: 0; line-height: 1.2; }
+.fa-mini-surface .todo-proposal-diff span:not(.todo-proposal-arrow) { display: inline; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--type-micro); line-height: 1.3; }
+.fa-mini-surface .todo-proposal-footer { gap: 4px; padding-top: 4px; font-size: var(--type-micro); }
+.fa-mini-surface .todo-proposal-buttons { gap: 4px; }
+.fa-mini-surface .todo-proposal-buttons button { min-height: 0; padding: 2px 8px; border-radius: 7px; font-size: var(--type-micro); line-height: 1.3; }
+.fa-mini-continue { align-self: flex-end; flex: none; border: 0; background: transparent; color: var(--acc-deep); font: inherit; font-size: var(--type-micro); font-weight: 700; cursor: pointer; padding: 2px 4px; }
+.fa-mini-continue:hover { background: var(--acc-soft); border-radius: 6px; }
 .fa-mini-quick > .ai-add-reference { height: 22px; }
 .float-mini-content { flex: 1; height: auto; padding-top: 8px; padding-bottom: 9px; }

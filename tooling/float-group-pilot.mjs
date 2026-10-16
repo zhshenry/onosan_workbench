@@ -32,6 +32,8 @@ export function assertFloatMenuGeometry(menu, anchor, viewport) {
   for (const value of [menu.x, menu.y, menu.width, menu.height, anchor.x, anchor.width, viewport.width, viewport.height]) assert.ok(Number.isFinite(value), 'Menu geometry must be finite');
   assert.ok(menu.x >= 0 && menu.y >= 0 && menu.x + menu.width <= viewport.width + 1 && menu.y + menu.height <= viewport.height + 1, 'Model menu must fit the actual float viewport');
   assert.ok(Math.abs(menu.x + menu.width - anchor.x - anchor.width) <= 1, 'Compact model menu must align to its anchor right edge');
+  assert.ok(menu.width <= 160, 'Collapsed model menu must stay narrow enough not to cover the dialog');
+  assert.ok(menu.width <= anchor.width + 40, 'Collapsed model menu must stay with its trigger');
 }
 export function assertFloatRectInside(rect, container, label) {
   for (const value of [rect?.x, rect?.y, rect?.width, rect?.height, container?.x, container?.y, container?.width, container?.height]) assert.ok(Number.isFinite(value), `${label}: finite real bounds required`);
@@ -41,20 +43,26 @@ export function assertFloatRectInside(rect, container, label) {
 export function assertFloatCompactGeometry(value, before) {
   assert.equal(value.native.height, 176, 'Compact composition must fit native 176px');
   assert.equal(value.viewport.height, 176, 'Compact viewport must match native 176px');
-  const rows = ['context', 'linkedRow', 'compose', 'bottom'];
+  assert.equal(value.linkedRow ?? null, null, 'Collapsed dialog must not reserve an empty chip row');
+  const rows = ['context', 'compose', 'bottom'];
   for (const key of rows) assertFloatRectInside(value[key], value.viewport, key);
   for (let index = 1; index < rows.length; index++) {
     const previous = value[rows[index - 1]]; const current = value[rows[index]];
     assert.ok(previous.y + previous.height <= current.y + 1, `${rows[index - 1]} overlaps ${rows[index]}`);
   }
+  const gap = value.compose.y - (value.context.y + value.context.height);
+  assert.ok(gap >= -1 && gap <= 6, 'No reserved chip gap above the collapsed dialog');
+  assert.ok(value.compose.height >= 52, 'Collapsed dialog fills the former chip row and input row');
   for (const key of ['textarea', 'send']) assertFloatRectInside(value[key], value.compose, key);
   for (const key of ['reference', 'model']) assertFloatRectInside(value[key], value.bottom, key);
   assert.ok(value.textarea.x + value.textarea.width <= value.send.x + 1, 'Input and send button overlap');
+  const sendInset = (value.compose.y + value.compose.height) - (value.send.y + value.send.height);
+  assert.ok(sendInset >= 0 && sendInset <= 8, 'Send button stays anchored to the dialog bottom-right');
   assert.ok(value.reference.x + value.reference.width <= value.model.x + 1, 'Reference and model buttons overlap');
-  if (value.chip) assertFloatRectInside(value.chip, value.linkedRow, 'Linked chip');
-  if (value.remove) assertFloatRectInside(value.remove, value.linkedRow, 'Remove button');
+  assert.ok(value.model.width <= 136, 'Collapsed model button must stay narrow');
+  if (value.chip) assertFloatRectInside(value.chip, value.compose, 'Linked chip inside dialog');
+  if (value.remove) assertFloatRectInside(value.remove, value.chip, 'Remove button');
   if (before) {
-    assert.equal(value.linkedRow.height, before.linkedRow.height, 'Empty/linked chip row must retain the same measured height');
     for (const key of rows) assertFloatModelGeometry(before[key], value[key]);
   }
 }
@@ -104,7 +112,7 @@ async function expandedToolbarGeometry(application, page, report) {
   return value;
 }
 async function compactGeometry(application, page, report, before) {
-  const selectors = { context: '.fa-mini-context', linkedRow: '.fa-linked-row', compose: '.fa-mini-compose', bottom: '.fa-mini-quick', textarea: '.fa-mini-compose textarea', send: '.fa-mini-compose button', reference: '.ai-add-reference', model: '.fa-model-toggle', chip: '.fa-linked-row .ai-reference-chip', remove: '.fa-linked-row .ai-reference-chip button' };
+  const selectors = { context: '.fa-mini-context', linkedRow: '.fa-mini-surface .fa-linked-row', compose: '.fa-mini-compose', bottom: '.fa-mini-quick', textarea: '.fa-mini-compose textarea', send: '.fa-mini-compose button[type="submit"]', reference: '.fa-mini-quick .ai-add-reference', model: '.fa-mini-quick .fa-model-toggle', chip: '.fa-mini-compose .ai-reference-chip', remove: '.fa-mini-compose .ai-reference-chip button' };
   const value = { native: await bounds(application, page), viewport: await page.evaluate(() => ({ x: 0, y: 0, width: innerWidth, height: innerHeight })) };
   for (const [key, selector] of Object.entries(selectors)) value[key] = await page.locator(selector).count() ? await page.locator(selector).boundingBox() : null;
   assertFloatCompactGeometry(value, before);
@@ -499,7 +507,7 @@ export async function runFloatGroupPilot({ application, page, check, screenshot,
       const first = await options.nth(0).getAttribute('title'); assert.ok(first);
       await options.nth(0).click(); // Playwright dispatches physical pointerdown/up/click, never HTMLElement.click().
       await picker.waitFor({ state: 'hidden' });
-      const chip = floatPage.locator('.fa-linked-row .ai-reference-chip'); await chip.waitFor();
+      const chip = floatPage.locator(mini ? '.fa-mini-compose .ai-reference-chip' : '.fa-linked-row .ai-reference-chip'); await chip.waitFor();
       assert.ok((await chip.innerText()).includes(first));
       assert.equal(await chip.locator('span[title]').getAttribute('title'), first);
       assertFloatModelGeometry(before, await model.boundingBox());
