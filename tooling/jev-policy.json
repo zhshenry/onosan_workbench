@@ -1,0 +1,94 @@
+{
+  "policy_version": "jev-accept-1",
+  "model": "typesafe/jev-1.14",
+  "endpoint_path": "/api/alpha/decisions",
+  "default_base_url": "https://openrouter.ai",
+  "thresholds": {
+    "approve_min": 0.9,
+    "reject_max": 0.1
+  },
+  "fixed_propositions": [
+    {
+      "id": "A2_matches_spec",
+      "type": "noul",
+      "modes": ["functional", "optimize"],
+      "instructions": "Does this head implement the approved spec and acceptance criteria, with no required behavior missing or contradicted?",
+      "criteria": {
+        "true": "The diff, tests, and other recorded evidence show that the approved spec and acceptance criteria are met.",
+        "false": "A required behavior from the approved spec is missing, contradicted, or replaced by a different behavior."
+      }
+    },
+    {
+      "id": "A5_regression_covered",
+      "type": "noul",
+      "modes": ["functional", "optimize"],
+      "instructions": "Are regressions in the touched behavior covered, and does the recorded test result show no new in-scope failure?",
+      "criteria": {
+        "true": "Relevant regression coverage is present, and the recorded test result shows no new in-scope failure.",
+        "false": "Regression coverage is missing for touched behavior, or the recorded result shows a new in-scope failure."
+      }
+    },
+    {
+      "id": "A6_scope_contained",
+      "type": "noul",
+      "modes": ["functional", "optimize"],
+      "instructions": "Is the change contained in the approved issue scope, without unrelated product UI or drive-by edits?",
+      "criteria": {
+        "true": "The changed files and the diff stay inside the approved scope.",
+        "false": "The diff includes unrelated product UI, extra features, or other out-of-scope edits."
+      }
+    },
+    {
+      "id": "A8_evidence_sufficient",
+      "type": "noul",
+      "optional": true,
+      "gated_by_mode": "optimize",
+      "instructions": "For this optimize-only change, is the evidence sufficient to show preserved behavior or the claimed improvement, without a scope expansion?",
+      "criteria": {
+        "true": "Evidence shows that behavior is preserved or the claimed improvement is measured, and the scope did not expand.",
+        "false": "Evidence is missing, the improvement is unmeasured, behavior changed without proof, or the scope expanded."
+      }
+    }
+  ],
+  "dynamic_propositions": {
+    "cli": "--dynamic path/to/dynamic-questions.json",
+    "count": { "min": 1, "max": 3 },
+    "when": "Optional on each run. Omit the flag to ask only the fixed propositions for the mode. When the flag is present, the file must contain 1 to 3 issue-specific noul questions.",
+    "merge": "The HTTP questions object is the fixed propositions for the mode, in policy order, then the dynamic questions, in file order. Ids must not collide. Dynamic questions are not asked when mode is important_ui.",
+    "id_pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+    "shape": {
+      "questions": [
+        {
+          "id": "issue86_chat_reply_visible",
+          "type": "noul",
+          "instructions": "English or issue-specific noul question. Extra keys are ignored and are not sent.",
+          "criteria": {
+            "true": "Evidence shows the point holds.",
+            "false": "Evidence shows the point fails or is absent."
+          }
+        }
+      ]
+    },
+    "note": "A map of id to question is also accepted. tooling/jev-dynamic-from-issue.mjs only writes a starter template. The gate sends type, instructions, and criteria. It does not turn raw probabilities into an accept decision except through the threshold route below."
+  },
+  "important_ui": {
+    "skip_jev_final": true,
+    "enum": "PENDING_HUMAN",
+    "reason": "skip_jev_final",
+    "exit_code_when_prechecks_pass": 0,
+    "behavior": "Important UI issues do not use JEV as the final judge. Deterministic prechecks run first. When they pass, the script emits PENDING_HUMAN with reason skip_jev_final, writes a ledger line, and does not POST /api/alpha/decisions. Screenshots and the final judgment stay on human gate 2. A failed precheck does not call JEV either: missing head or bad args exit 1, and a failed npm test exits 2 RETRY. PENDING_HUMAN is not AUTO_ACCEPT and does not approve a merge."
+  },
+  "routing": {
+    "all_noul_gte_approve_min": "AUTO_ACCEPT",
+    "any_noul_lte_reject_max": "RETRY",
+    "otherwise": "HUMAN_REVIEW",
+    "priority": "A score at or below reject_max is RETRY even when other scores clear approve_min. Scores strictly between the thresholds are HUMAN_REVIEW. Missing, non-numeric, or out-of-range noul values are HUMAN_REVIEW and are not coerced.",
+    "faults": "Missing API key, network failure, non-2xx, invalid JSON, model mismatch, and missing answers are HUMAN_REVIEW. They are never AUTO_ACCEPT.",
+    "caller_rule": "Callers consume the enum and the exit code only. They must not re-threshold scores outside this gate."
+  },
+  "documentation": {
+    "api": "POST {SYSTEM1_API_BASE_URL|OPENROUTER_API_BASE_URL|default_base_url}{endpoint_path}. This is the OpenRouter Decisions API for System1 / typesafe/jev, not a Cursor CloudAgent model and not a chat completion.",
+    "auth": "Authorization: Bearer OPENROUTER_API_KEY, falling back to SYSTEM1_API_KEY.",
+    "hash": "policy_hash is the SHA-256 of the exact policy file bytes. Any edit changes the hash. Bump policy_version when the meaning changes. A new head, a moved base, or a changed policy requires a fresh accept run; --verify will not reuse an older ledger line."
+  }
+}

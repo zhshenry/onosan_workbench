@@ -1,0 +1,51 @@
+# Accept scenario for issue 86. This is not an approval and not visual evidence.
+issue: 86
+title: 悬浮框纯对话类提问无结果展示
+mode: functional
+gate: accept
+spec_version: v1
+base: main
+
+steps:
+  - id: open_float
+    do: 打开 TODOLIST 悬浮框里的 AI 输入
+  - id: ask_chat
+    do: 发送纯对话问句「我现在有多少未完成的事项？」
+    during: 出现正在准备模型上下文或执行中
+  - id: read_result
+    do: 等待这一轮结束
+    during: 对话区留下助手文字回复，而不是回到空输入且没有回复
+
+expect:
+  - 纯对话问句发送完成后，对话区出现助手文字回复，不是空白，也不是进度结束后消失
+  - 修改类建议路径不回归，有修改建议时仍然出现修改卡片
+  - 如果实现碰到错误或超时，界面有可见反馈，而不是静默清空
+
+judge:
+  fixed:
+    - A2_matches_spec
+    - A5_regression_covered
+    - A6_scope_contained
+  dynamic:
+    - id: issue86_chat_reply_visible
+      type: noul
+      instructions: "After a pure chat question in the floating todolist, does the evidence show a visible assistant text reply rather than a blank input?"
+      criteria:
+        true: "Evidence shows an assistant text reply after the pure chat question."
+        false: "Evidence shows a blank result, a progress indicator that disappears, or a silent clear."
+    - id: issue86_edit_cards_intact
+      type: noul
+      instructions: "Does the evidence show that todo-edit suggestion cards still appear when the model proposes a change?"
+      criteria:
+        true: "Edit-suggestion cards still appear for a change proposal."
+        false: "The change-proposal path is missing, blank, or broken."
+    - id: issue86_errors_visible
+      type: noul
+      instructions: "If the run hits an error or timeout, does the evidence show visible feedback instead of a silent clear?"
+      criteria:
+        true: "Error or timeout feedback is visible."
+        false: "An error or timeout clears the UI with no visible feedback."
+  important_ui: false
+  skip_jev_final: false
+
+notes: Functional defect. Run JEV only after CI is green for this head. A new head needs a fresh accept run. Placeholder float artifacts are not screenshots.
