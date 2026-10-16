@@ -30,7 +30,7 @@ function fixture(show = true) {
   const owner = new module.exports.FloatTodoWindow('http://localhost', '/unused');
   module.exports.registerFloatIpc(() => owner);
   if (show) owner.show();
-  return { owner, win: windows[0], windows, handlers, area };
+  return { owner, win: windows[0], windows, handlers, area, exports: module.exports };
 }
 test('native width preserves exact height and clamps edges in expanded, mini and temporary states', async () => {
   const { owner, win, area } = fixture();
@@ -131,6 +131,109 @@ test('late compact IPC after instant expansion cannot overwrite expanded height 
     await owner.setCollapsed(false, false);
     assert.equal(win.bounds.height, 704, 'A late mini reset must never poison remembered expanded height');
   }
+});
+
+test('width frames keep a free left edge and a clamped right edge', () => {
+  const { exports } = fixture(false);
+  const { floatWidthTarget, floatWidthFrame, floatWidthEase } = exports;
+  const area = { x: -100, y: 20, width: 1000, height: 1000 };
+  const free = { x: 120, y: 80, width: 440, height: 500 };
+  const narrowed = floatWidthTarget(free, 330, area);
+  assert.deepEqual(narrowed, { x: 120, y: 80, width: 330, height: 500 });
+  let previous = free.width;
+  for (let step = 0; step <= 20; step++) {
+    const frame = floatWidthFrame(free, narrowed, step / 20);
+    assert.equal(frame.x, 120, 'logo anchor stays on the free left edge');
+    assert.equal(frame.y, 80);
+    assert.equal(frame.height, 500, 'width animation must not change height');
+    assert.ok(frame.width <= previous && frame.width >= 330);
+    previous = frame.width;
+  }
+  assert.equal(previous, 330);
+  assert.ok(floatWidthEase(0.25) > 0.5, 'width easing matches the collapse ease-out');
+  const quarter = floatWidthFrame(free, narrowed, 0.25);
+  assert.ok(quarter.width < 440 - 110 * 0.25, 'early frames travel farther than a linear slide');
+
+  const flush = { x: 570, y: 100, width: 330, height: 400 };
+  const widened = floatWidthTarget(flush, 440, area);
+  assert.equal(widened.x, 460);
+  assert.equal(widened.x + widened.width, area.x + area.width);
+  for (let step = 0; step <= 20; step++) {
+    const frame = floatWidthFrame(flush, widened, step / 20);
+    assert.ok(Math.abs(frame.x + frame.width - (area.x + area.width)) <= 1, 'clamped widen keeps the right edge on the work area');
+    assert.equal(frame.height, 400);
+  }
+});
+
+test('animated narrowing keeps a free left edge while the right edge eases in', async () => {
+  const { owner, win } = fixture();
+  win.setBounds({ x: 120, y: 80, width: 440, height: 500 });
+  const frames: Array<{ x: number; y: number; width: number; height: number }> = [];
+  const original = win.setBounds.bind(win);
+  win.setBounds = (next: { x: number; y: number; width: number; height: number }) => {
+    original(next);
+    frames.push(win.getBounds());
+  };
+  const started = Date.now();
+  const pending = owner.setWidth(true, true);
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  assert.ok(frames.some((frame) => frame.width < 440 && frame.width > 330), 'width must be between the two stops while sliding');
+  assert.ok(frames.every((frame) => frame.x === 120 && frame.y === 80 && frame.height === 500));
+  await pending;
+  assert.ok(Date.now() - started >= 140, 'narrowing uses the collapse-length slide');
+  assert.deepEqual(win.getBounds(), { x: 120, y: 80, width: 330, height: 500 });
+  frames.length = 0;
+  const widenStarted = Date.now();
+  const widen = owner.setWidth(false, true);
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  assert.ok(frames.some((frame) => frame.width > 330 && frame.width < 440));
+  assert.ok(frames.every((frame) => frame.x === 120 && frame.height === 500));
+  await widen;
+  assert.ok(Date.now() - widenStarted >= 180, 'widening uses the longer expand slide');
+  assert.deepEqual(win.getBounds(), { x: 120, y: 80, width: 440, height: 500 });
+});
+
+test('reduced-motion width settles in one step and a later request is not dropped', async () => {
+  const { owner, win, handlers } = fixture();
+  win.setBounds({ x: 120, y: 80, width: 440, height: 500 });
+  let calls = 0;
+  const original = win.setBounds.bind(win);
+  win.setBounds = (next: { x: number; y: number; width: number; height: number }) => { calls += 1; original(next); };
+  const started = Date.now();
+  assert.equal(await handlers.get('float:width')({}, true, false), 330);
+  assert.ok(Date.now() - started < 80);
+  assert.equal(calls, 1);
+  assert.deepEqual(win.getBounds(), { x: 120, y: 80, width: 330, height: 500 });
+  const first = owner.setWidth(true, true);
+  const second = owner.setWidth(false, true);
+  await Promise.all([first, second]);
+  assert.equal(win.getBounds().width, 440);
+  assert.equal(win.getBounds().x, 120);
+  assert.equal(win.getBounds().height, 500);
+});
+
+test('destroy cancels an in-flight width animation', async () => {
+  const { owner, win } = fixture();
+  const pending = owner.setWidth(true, true);
+  await Promise.resolve();
+  const started = Date.now();
+  owner.destroy();
+  await pending;
+  assert.ok(Date.now() - started < 80);
+  assert.equal(win.isDestroyed(), true);
+});
+
+test('narrow float bar keeps the wide left anchor and width requests honor reduced motion', () => {
+  const view = readFileSync('src/views/FloatTodo.tsx', 'utf8');
+  const css = readFileSync('src/shell.css', 'utf8');
+  const preload = readFileSync('electron/preload.ts', 'utf8');
+  assert.match(view, /const animate = !window\.matchMedia\('\(prefers-reduced-motion: reduce\)'\)\.matches;\s*try \{ setNarrow\(\(await wb\.float\.width\(next, animate\)\) === 330\);/);
+  assert.match(view, /className="float-bar-leading"/);
+  assert.match(css, /\.float-bar-leading \{[^}]*flex:\s*none;[^}]*gap:\s*10px;/);
+  assert.match(css, /\.float-bar \{[^}]*padding:\s*0 12px 0 16px;/);
+  assert.match(css, /\.float-window-actions \{[^}]*margin-left:\s*auto;/);
+  assert.doesNotMatch(css, /\.float-app\.narrow \.float-bar \{/);
+  assert.match(preload, /width: \(narrow\?: boolean, animate\?: boolean\)/);
 });
 
 test('animated expansion ignores compact height deliveries during and after motion', async () => {

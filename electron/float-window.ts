@@ -7,6 +7,43 @@ import { join } from 'node:path';
 const EXPANDED = { width: 440, height: 1200 };
 const MINI = { width: 440, height: 176 };
 const INITIAL_HEIGHT = 860;
+const NARROW_WIDTH = 330;
+const WIDE_WIDTH = 440;
+const NARROW_MS = 180;
+const WIDE_MS = 240;
+
+export interface FloatRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+// 横向宽度的落点:左缘保持不动,只有结果会超出工作区时才把窗口往屏幕内收。
+export function floatWidthTarget(bounds: FloatRect, width: number, area: FloatRect): FloatRect {
+  return {
+    x: Math.max(area.x, Math.min(bounds.x, area.x + area.width - width)),
+    y: Math.max(area.y, Math.min(bounds.y, area.y + area.height - bounds.height)),
+    width,
+    height: bounds.height,
+  };
+}
+
+export function floatWidthEase(progress: number): number {
+  const t = Math.min(1, Math.max(0, progress));
+  return 1 - Math.pow(1 - t, 3);
+}
+
+// 与纵向收起同一条 ease-out。高度不参与插值,避免宽度动画改掉迷你/展开高度。
+export function floatWidthFrame(from: FloatRect, to: FloatRect, progress: number): FloatRect {
+  const eased = floatWidthEase(progress);
+  return {
+    x: Math.round(from.x + (to.x - from.x) * eased),
+    y: Math.round(from.y + (to.y - from.y) * eased),
+    width: Math.round(from.width + (to.width - from.width) * eased),
+    height: from.height,
+  };
+}
 
 export class FloatTodoWindow {
   private win: BrowserWindow | null = null;
@@ -16,6 +53,7 @@ export class FloatTodoWindow {
   private collapsed = false;
   private motion: Promise<void> | null = null;
   private cancelMotion: (() => void) | null = null;
+  private widthChain: Promise<unknown> = Promise.resolve();
 
   constructor(private readonly devUrl: string | undefined, private readonly preloadPath: string) {}
 
@@ -146,19 +184,51 @@ export class FloatTodoWindow {
 
   getWidth(): number { return this.width; }
 
-  async setWidth(narrow: boolean): Promise<number> {
-    if (this.motion) await this.motion;
-    const width = narrow ? 330 : 440;
+  setWidth(narrow: boolean, animate = true): Promise<number> {
+    const width = narrow ? NARROW_WIDTH : WIDE_WIDTH;
+    const run = this.widthChain.then(() => this.commitWidth(width, animate));
+    this.widthChain = run.then(() => undefined, () => undefined);
+    return run;
+  }
+
+  // Width is independent of height, including temporary question heights.
+  // Narrowing pulls the right edge in; widening pushes it out. The left edge
+  // stays put unless the work area would clip the window.
+  private commitWidth(width: number, animate: boolean): Promise<number> {
+    if (this.motion) return this.motion.then(() => this.commitWidth(width, animate));
     this.width = width;
-    if (!this.win || this.win.isDestroyed()) return width;
-    const bounds = this.win.getBounds();
+    if (!this.win || this.win.isDestroyed()) return Promise.resolve(width);
+    const win = this.win;
+    const bounds = win.getBounds();
     const area = screen.getDisplayMatching(bounds).workArea;
-    // Width is independent of height, including temporary question heights.
-    this.win.setBounds({ ...bounds, width,
-      x: Math.max(area.x, Math.min(bounds.x, area.x + area.width - width)),
-      y: Math.max(area.y, Math.min(bounds.y, area.y + area.height - bounds.height)),
+    const target = floatWidthTarget(bounds, width, area);
+    const settle = (): void => {
+      if (!win.isDestroyed()) win.setBounds(target);
+    };
+    const same = bounds.x === target.x && bounds.y === target.y && bounds.width === target.width && bounds.height === target.height;
+    if (!animate || same) {
+      settle();
+      return Promise.resolve(width);
+    }
+    const duration = width < bounds.width ? NARROW_MS : WIDE_MS;
+    const motion = new Promise<void>((resolve) => {
+      const started = Date.now();
+      const finish = (): void => {
+        clearInterval(timer);
+        if (this.cancelMotion === finish) this.cancelMotion = null;
+        if (this.motion === motion) this.motion = null;
+        resolve();
+      };
+      const timer = setInterval(() => {
+        if (win.isDestroyed()) { finish(); return; }
+        const progress = Math.min(1, (Date.now() - started) / duration);
+        win.setBounds(floatWidthFrame(bounds, target, progress));
+        if (progress === 1) { settle(); finish(); }
+      }, 16);
+      this.cancelMotion = finish;
     });
-    return width;
+    this.motion = motion;
+    return motion.then(() => width);
   }
 
   setExpandedHeight(height: number): void {
@@ -217,6 +287,6 @@ export function registerFloatIpc(factory: () => FloatTodoWindow): void {
   ipcMain.on('float:resize', (_event, height: unknown) => {
     if (typeof height === 'number') factory().setExpandedHeight(height);
   });
-  ipcMain.handle('float:width', (_event, narrow: unknown) => typeof narrow === 'boolean' ? factory().setWidth(narrow) : factory().getWidth());
+  ipcMain.handle('float:width', (_event, narrow: unknown, animate: unknown) => typeof narrow === 'boolean' ? factory().setWidth(narrow, animate !== false) : factory().getWidth());
   ipcMain.handle('float:pin', () => factory().togglePin());
 }

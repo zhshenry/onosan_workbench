@@ -1617,6 +1617,8 @@ html:has(.float-app) {
 }
 @keyframes ai-flow-spin { to { --ai-flow-angle: 360deg; } }
 .float-bar { flex: none; height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 12px 0 16px; -webkit-app-region: drag; background: var(--glass-surface); border-bottom: 1px solid var(--hairline); }
+/* 横向收窄不改这条左内边距:窗口左缘固定时,LOGO 与「待办」的屏幕位置保持不动。 */
+.float-bar-leading { flex: none; display: flex; align-items: center; gap: 10px; min-width: 0; }
 .float-brand { flex: none; width: 40px; height: 40px; display: grid; place-items: center; }
 .float-dash { flex: none; align-items: flex-start; padding: 0 24px; }
 .float-dash .dash-heading { gap: 4px; padding: 8px 0 18px; }
@@ -1626,9 +1628,9 @@ html:has(.float-app) {
 .float-dash .btn-sec { background: var(--todo-white); border-color: var(--todo-line); box-shadow: none; }
 .float-foot { flex: none; padding: 0 24px 12px; }
 .float-foot .reminder-strip { margin: 0; padding: 8px 10px; border: 1px solid var(--todo-line); border-radius: var(--r-ctl); background: var(--todo-white); }
-.float-bar-title { flex: 1; min-width: 0; font-size: var(--type-section); font-weight: 600; }
+.float-bar-title { flex: none; min-width: 0; white-space: nowrap; font-size: var(--type-section); font-weight: 600; }
 .float-bar-date { font-size: var(--type-caption); color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.float-window-actions { flex: none; display: flex; gap: 1px; }
+.float-window-actions { flex: none; display: flex; gap: 1px; margin-left: auto; }
 .float-bar-btn { width: 30px; height: 30px; padding: 6px; border: none; border-radius: 8px; background: none; color: var(--ink-2); display: grid; place-items: center; cursor: pointer; -webkit-app-region: no-drag; }
 .float-bar-btn:hover { background: rgba(28, 30, 36, 0.07); color: var(--ink); }
 .float-bar-btn.on { color: var(--acc-deep); }
@@ -1977,7 +1979,6 @@ html:has(.float-app) {
 .float-mini-quick .ai-entry svg { color: var(--ai-accent); }
 .float-mini-quick .ai-entry:hover { border-color: var(--ai-accent-deep); color: var(--ai-accent-deep); background: color-mix(in srgb, var(--ai-accent) 10%, var(--todo-white)); }
 .float-app button:focus-visible, .fa-model-menu button:focus-visible { outline: 2px solid var(--acc-deep); outline-offset: -2px; }
-.float-app.narrow .float-bar { gap: 6px; padding-left: 10px; padding-right: 8px; }
 .float-app.narrow .float-window-actions { gap: 0; }
 .float-app.narrow .float-bar-btn { width: 29px; }
 .float-app.narrow .float-dash { padding-left: 12px; padding-right: 12px; gap: 6px; }
