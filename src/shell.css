@@ -1135,7 +1135,11 @@ kbd {
 .ai-panel .ai-compose-toolbar > .ai-add-reference { flex: none; display: grid; place-items: center; width: 34px; height: 34px; margin-right: auto; padding: 0; border-radius: 50%; background: var(--acc-deep); color: white; }
 .ai-panel .ai-compose-toolbar > .ai-add-reference:hover, .ai-panel .ai-compose-toolbar > .ai-add-reference[aria-expanded="true"] { background: var(--acc-hover); }
 .ai-panel .ai-compose-toolbar > .ai-add-reference:active { transform: scale(.96); }
-.ai-panel .ai-model-select { max-width: calc(100% - 88px); }
+/* 右下角模型触发器收到原先撑满底栏时的约 60%（默认 380px 面板约 246px → 148px）。
+   deepseek-chat / deepseek-v4-flash 仍完整；更长的名字省略，title 显示全名。窄面板继续让出发送钮。 */
+.ai-panel .ai-compose-toolbar > .ai-model-select { flex: 0 1 auto; width: auto; min-width: 0; max-width: min(148px, calc(100% - 88px)); }
+.ai-panel .ai-model-select .select-trigger > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-panel .ai-model-select .select-trigger > svg { flex: none; }
 .ai-reference-dialog { position: fixed; z-index: 260; display: flex; flex-direction: column; min-width: 0; padding: 10px; border: 1px solid var(--hairline); border-radius: 14px; background: var(--todo-white); box-shadow: var(--shadow); color: var(--ink); font-family: var(--font); }
 .ai-reference-head { display: flex; align-items: center; justify-content: space-between; flex: none; gap: 8px; margin-bottom: 7px; }
 .ai-reference-head strong { font-size: var(--type-control); font-weight: 600; }
@@ -1318,6 +1322,10 @@ kbd {
 .ai-model-select .select-trigger { min-height: 32px; padding: 5px 8px; border: 0; background: transparent; font-size: var(--type-support); }
 .ai-model-select .select-trigger:hover { background: var(--acc-soft); }
 .select-menu.ai-model-menu { width: 320px; max-width: calc(100vw - 16px); max-height: min(320px, 50vh); padding: 7px; border-radius: 15px; }
+/* 主面板下拉不再固定 320px：按内容变宽，上限约为原来的 65%，仍可比触发器宽。超长名字换行，全名仍可读。悬浮窗继续用上面的 320px。 */
+.select-menu.ai-model-menu.ai-panel-model-menu { width: max-content; max-width: min(208px, calc(100vw - 16px)); }
+.select-menu.ai-panel-model-menu .select-option { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+.select-menu.ai-panel-model-menu .select-option::after { flex: none; }
 .ai-model-menu .select-group + .select-group { margin-top: 7px; }
 .ai-model-menu .select-group-label { padding: 4px 10px; color: var(--ink-3); font-size: var(--type-support); font-weight: 600; }
 .ai-model-menu .select-option { display: flex; align-items: center; justify-content: space-between; min-height: 36px; padding: 7px 10px; border-radius: 10px; font-size: var(--type-control); }

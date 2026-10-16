@@ -4,7 +4,7 @@ import { CalendarBlank, CaretDown, CaretLeft, CaretRight, Clock, Question, X } f
 import { localDay } from '../../../shared/todo-contracts';
 export type SelectOption = { value: string; label: string; group?: string };
 export const HALF_HOUR_TIMES = Array.from({ length: 48 }, (_, index) => `${String(Math.floor(index / 2)).padStart(2, '0')}:${index % 2 ? '30' : '00'}`);
-export function Select({ id, value, onChange, options, className, menuClassName, disabled = false, renderOption, portalContainer, 'aria-label': ariaLabel, 'aria-invalid': invalid, 'aria-describedby': describedBy }: { id?: string; value: string; onChange(value: string): void; options: SelectOption[]; className?: string; menuClassName?: string; disabled?: boolean; renderOption?: (option: SelectOption) => ReactNode; portalContainer?: () => HTMLElement | null; 'aria-label'?: string; 'aria-invalid'?: boolean | 'true' | 'false'; 'aria-describedby'?: string }) {
+export function Select({ id, value, onChange, options, className, menuClassName, disabled = false, renderOption, portalContainer, title, 'aria-label': ariaLabel, 'aria-invalid': invalid, 'aria-describedby': describedBy }: { id?: string; value: string; onChange(value: string): void; options: SelectOption[]; className?: string; menuClassName?: string; disabled?: boolean; renderOption?: (option: SelectOption) => ReactNode; portalContainer?: () => HTMLElement | null; title?: string; 'aria-label'?: string; 'aria-invalid'?: boolean | 'true' | 'false'; 'aria-describedby'?: string }) {
   const listId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
@@ -94,7 +94,7 @@ export function Select({ id, value, onChange, options, className, menuClassName,
   }
   const optionElement = (option: SelectOption, index: number) => <div key={option.value} id={`${listId}-${index}`} role="option" className={`select-option${index === active ? ' is-active' : ''}`} aria-label={renderOption ? option.label : undefined} aria-selected={option.value === value} onMouseEnter={() => setActive(index)} onMouseDown={event => event.preventDefault()} onClick={() => pick(option.value)}>{renderOption ? renderOption(option) : option.label}</div>;
   return <div ref={root} className={`select${className ? ` ${className}` : ''}`}>
-    <button type="button" ref={trigger} id={id} className="select-trigger" role="combobox" aria-label={ariaLabel} aria-valuetext={renderOption ? label : undefined} aria-haspopup="listbox" aria-expanded={open} aria-controls={listId} aria-activedescendant={open ? `${listId}-${active}` : undefined} aria-invalid={invalid} aria-describedby={describedBy} disabled={disabled} onClick={() => setOpen(current => !current)} onKeyDown={onTriggerKeyDown}>
+    <button type="button" ref={trigger} id={id} className="select-trigger" role="combobox" aria-label={ariaLabel} aria-valuetext={renderOption ? label : undefined} title={title} aria-haspopup="listbox" aria-expanded={open} aria-controls={listId} aria-activedescendant={open ? `${listId}-${active}` : undefined} aria-invalid={invalid} aria-describedby={describedBy} disabled={disabled} onClick={() => setOpen(current => !current)} onKeyDown={onTriggerKeyDown}>
       <span>{renderOption && selectedOption ? renderOption(selectedOption) : label}</span><CaretDown size={12} weight="bold" />
     </button>
     {open ? createPortal(<div ref={menu} id={listId} className={`select-menu${menuClassName ? ` ${menuClassName}` : ''}`} role="listbox" aria-label={ariaLabel}>

@@ -724,7 +724,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
                   onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); send(); } }} />
                 <div className="ai-compose-toolbar">
                   <button ref={referenceTrigger} type="button" className="ai-add-reference" aria-label="添加上下文" title="添加上下文" aria-haspopup="dialog" aria-controls={referencePickerId} aria-expanded={referenceDialogOpen} onClick={editReferences}><Plus size={19} /></button>
-                  {config?.models.length ? <TodoSelect aria-label="选择大模型" className="ai-model-select" menuClassName="ai-model-menu" value={model?.id ?? ''} onChange={selectModel}
+                  {config?.models.length ? <TodoSelect aria-label="选择大模型" className="ai-model-select" menuClassName="ai-model-menu ai-panel-model-menu" title={model?.name} value={model?.id ?? ''} onChange={selectModel}
                     options={modelOptions}
                     disabled={!open || busy || switchingModel} />
                     : <button className="ai-text-btn" onClick={onOpenSettings}>配置模型</button>}
