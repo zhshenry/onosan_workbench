@@ -1454,8 +1454,25 @@ kbd {
 .ai-config-surface-toggle[aria-expanded='false'] > svg { transform: rotate(-90deg); }
 .ai-config-surface-badge { padding: 3px 8px; border-radius: 999px; background: var(--acc-soft); color: var(--acc-deep); font-size: var(--type-caption); font-weight: 600; white-space: nowrap; }
 .ai-config-surface-badge.rlcd { background: var(--todo-paper); color: var(--ink-2); }
-.ai-config-section > .ai-config-list { margin-top: 12px; }
-.ai-config-section > .ai-config-list[hidden] { display: none; }
+/* 对话模型 / 决策模型：高度与透明度一起过渡 250ms。
+   不用 --ease，那条曲线在前 100ms 就基本走完，观感会短于 200ms。
+   减少动效时不声明 transition，data-open 仍即时切换。 */
+.ai-config-surface-panel {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  overflow-anchor: none;
+}
+.ai-config-surface-panel[data-open='false'] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+.ai-config-surface-clip { min-height: 0; overflow: hidden; }
+.ai-config-surface-clip > .ai-config-list { margin-top: 12px; }
+@media (prefers-reduced-motion: no-preference) {
+  .ai-config-surface-panel { transition: grid-template-rows 250ms ease, opacity 250ms ease; }
+}
 .ai-config-status { min-height: 24px; padding: 3px 0; color: var(--ink-2); font-size: var(--type-support); overflow-wrap: anywhere; }
 .ai-config-list { display: flex; flex-direction: column; gap: 14px; }
 .ai-config-card { padding: 18px 20px; border: 1px solid var(--glass-line); border-radius: var(--r-card); background: var(--glass-surface); box-shadow: var(--shadow-sm); }
