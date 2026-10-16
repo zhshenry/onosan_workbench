@@ -1991,9 +1991,13 @@ html:has(.float-app) {
 }
 
 /* Floating group v2: context, a two-row dialog (former chip gap + input), and the quick row.
-   收起不改顶栏:高度仍是 .float-bar 的 52px,Logo 仍是 40px,标题与按钮尺寸也不在这里缩小。 */
-.float-mini-content { height: 136px; }
-.float-mini-ai { padding: 5px 10px 7px; }
+   收起不改顶栏:高度仍是 .float-bar 的 52px,Logo 仍是 40px,标题与按钮尺寸也不在这里缩小。
+   176 窗口扣 1px 窗缘后,52px 顶栏只剩 122px。内容设计高度是 124px(52+124=176);
+   136px 是旧的 40px 顶栏预算,再叠上去会超出窗口。文末 flex:1 / height:auto 才是实际高度。
+   AI 区下内距必须为 0,表面才有 117px:上下边框 2px + 上下内距 10px + 22/3/55/3/22 网格正好装满。
+   少这 7px 时,关联后聚焦底栏会把溢出的表面滚上去,模型按钮跟着移位。 */
+.float-mini-content { height: 124px; }
+.float-mini-ai { padding: 5px 10px 0; }
 .fa-mini-surface { height: 124px; grid-template-rows: 22px 55px 22px; gap: 3px; padding: 5px 8px; }
 .fa-mini-surface.is-asking, .fa-mini-surface.is-working, .fa-mini-surface.is-result { grid-template-rows: 22px minmax(0, 1fr) 22px; }
 .fa-mini-surface.is-proposal { grid-template-rows: 22px minmax(0, 1fr); min-height: 0; max-height: 100%; overflow: hidden; }

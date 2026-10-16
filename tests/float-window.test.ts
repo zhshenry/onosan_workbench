@@ -264,6 +264,16 @@ test('collapsed float chrome keeps the expanded top bar metrics', () => {
   assert.doesNotMatch(contract, /收起标题栏40px/);
 });
 
+test('collapsed mini body fits the 176px window under the shared 52px bar', () => {
+  const css = readFileSync('src/shell.css', 'utf8');
+  assert.match(css, /\.float-mini-content \{ height: 124px; \}/);
+  assert.doesNotMatch(css, /\.float-mini-content \{[^}]*height:\s*136px/);
+  assert.match(css, /\.float-mini-content \{ flex: 1; height: auto; padding-top: 8px; padding-bottom: 9px; \}/);
+  assert.match(css, /\.float-mini-ai \{ padding: 5px 10px 0; \}/);
+  assert.doesNotMatch(css, /\.float-mini-ai \{[^}]*padding:\s*5px 10px 7px/);
+  assert.match(css, /\.fa-mini-surface \{ height: 124px; grid-template-rows: 22px 55px 22px; gap: 3px; padding: 5px 8px; \}/);
+});
+
 test('animated expansion ignores compact height deliveries during and after motion', async () => {
   const { owner, win } = fixture();
   owner.setExpandedHeight(704);
