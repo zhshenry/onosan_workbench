@@ -56,6 +56,8 @@ export function assertFloatCompactGeometry(value, before) {
   for (const key of ['textarea', 'send']) assertFloatRectInside(value[key], value.compose, key);
   for (const key of ['reference', 'model']) assertFloatRectInside(value[key], value.bottom, key);
   assert.ok(value.textarea.x + value.textarea.width <= value.send.x + 1, 'Input and send button overlap');
+  const sendInset = (value.compose.y + value.compose.height) - (value.send.y + value.send.height);
+  assert.ok(sendInset >= 0 && sendInset <= 8, 'Send button stays anchored to the dialog bottom-right');
   assert.ok(value.reference.x + value.reference.width <= value.model.x + 1, 'Reference and model buttons overlap');
   assert.ok(value.model.width <= 136, 'Collapsed model button must stay narrow');
   if (value.chip) assertFloatRectInside(value.chip, value.compose, 'Linked chip inside dialog');

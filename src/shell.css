@@ -1972,10 +1972,10 @@ html:has(.float-app) {
 .fa-mini-surface.is-asking, .fa-mini-surface.is-working, .fa-mini-surface.is-result { grid-template-rows: 22px minmax(0, 1fr) 22px; }
 .fa-mini-surface.is-proposal { grid-template-rows: 22px minmax(0, 1fr); min-height: 0; max-height: 100%; overflow: hidden; }
 .fa-mini-compose { height: 55px; max-height: 55px; display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 2px; padding: 4px 4px 4px 8px; overflow: hidden; }
-.fa-mini-compose-main { min-width: 0; min-height: 0; flex: 1; display: flex; align-items: center; gap: 5px; }
+.fa-mini-compose-main { min-width: 0; min-height: 0; flex: 1; display: flex; align-items: stretch; gap: 5px; }
 .fa-mini-compose .ai-reference-chip { align-self: flex-start; max-width: 100%; }
 .fa-mini-compose textarea { height: 100%; min-height: 0; max-height: none; align-self: stretch; padding: 2px 0; }
-.fa-mini-compose-main > button[type='submit'] { align-self: center; flex: none; }
+.fa-mini-compose-main > button[type='submit'] { align-self: flex-end; flex: none; }
 .fa-linked-row { flex: none; height: 32px; min-width: 0; display: flex; align-items: center; }
 .fa-mini-surface .fa-linked-row { height: 20px; }
 .fa-linked-row .ai-reference-chip { max-width: 100%; min-width: 0; display: inline-flex; align-items: center; }
@@ -2014,32 +2014,35 @@ html:has(.float-app) {
 .float-app.narrow .float-mini-category { flex: 1; }
 .fa-mini-surface .ai-reference-chip { height: 20px; padding: 0 4px 0 6px; }
 .fa-mini-surface .ai-reference-chip button { width: 18px; height: 18px; }
-.fa-mini-middle.fa-mini-proposal { overflow-x: hidden; overflow-y: auto; gap: 6px; }
-.fa-mini-surface .todo-proposal-card { gap: 6px; padding: 8px; border-radius: 10px; }
-.fa-mini-surface .todo-proposal-header h3 { font-size: var(--type-caption); gap: 5px; }
-.fa-mini-surface .todo-proposal-header h3 svg { width: 14px; height: 14px; }
-.fa-mini-surface .todo-proposal-badge { padding: 2px 6px; font-size: var(--type-micro); }
+.fa-mini-middle.fa-mini-proposal { overflow-x: hidden; overflow-y: auto; gap: 2px; }
+.fa-mini-surface .todo-proposal-card { gap: 4px; padding: 6px 8px; border-radius: 10px; line-height: 1.3; }
+.fa-mini-surface .todo-proposal-header { gap: 4px; }
+.fa-mini-surface .todo-proposal-header h3 { font-size: var(--type-micro); gap: 4px; }
+.fa-mini-surface .todo-proposal-header h3 svg { width: 12px; height: 12px; }
+.fa-mini-surface .todo-proposal-badge { padding: 0 5px; font-size: var(--type-micro); line-height: 16px; }
 .fa-mini-surface .todo-proposal-intro,
 .fa-mini-surface .todo-proposal-note,
 .fa-mini-surface .todo-proposal-warning,
 .fa-mini-surface .todo-proposal-error,
-.fa-mini-surface .todo-proposal-item-result { font-size: var(--type-micro); }
-.fa-mini-surface .todo-proposal-operation { gap: 6px; }
-.fa-mini-surface .todo-proposal-operation + .todo-proposal-operation { padding-top: 6px; }
-.fa-mini-surface .todo-proposal-target { gap: 6px; }
-.fa-mini-surface .todo-proposal-target strong { font-size: var(--type-caption); }
-.fa-mini-surface .todo-proposal-target small { font-size: var(--type-micro); margin-top: 1px; }
-.fa-mini-surface .todo-proposal-target input { width: 14px; height: 14px; }
-.fa-mini-surface .todo-proposal-result-icon { width: 16px; height: 16px; }
-.fa-mini-surface .todo-proposal-result-icon svg { width: 12px; height: 12px; }
-.fa-mini-surface .todo-proposal-field > b { font-size: var(--type-micro); margin-bottom: 3px; }
+.fa-mini-surface .todo-proposal-item-result { font-size: var(--type-micro); line-height: 1.3; }
+.fa-mini-surface .todo-proposal-operation { gap: 3px; }
+.fa-mini-surface .todo-proposal-operation + .todo-proposal-operation { padding-top: 4px; }
+.fa-mini-surface .todo-proposal-target { gap: 5px; align-items: center; }
+.fa-mini-surface .todo-proposal-target strong { font-size: var(--type-caption); line-height: 1.3; }
+.fa-mini-surface .todo-proposal-target small { font-size: var(--type-micro); margin-top: 0; line-height: 1.2; }
+.fa-mini-surface .todo-proposal-target input { width: 13px; height: 13px; margin-top: 0; }
+.fa-mini-surface .todo-proposal-result-icon { width: 14px; height: 14px; }
+.fa-mini-surface .todo-proposal-result-icon svg { width: 10px; height: 10px; }
+.fa-mini-surface .todo-proposal-field > b { font-size: var(--type-micro); margin-bottom: 2px; }
 .fa-mini-surface .todo-proposal-before,
-.fa-mini-surface .todo-proposal-after { padding: 5px 6px; }
-.fa-mini-surface .todo-proposal-diff { gap: 4px; }
-.fa-mini-surface .todo-proposal-diff small { font-size: var(--type-micro); margin-bottom: 2px; }
-.fa-mini-surface .todo-proposal-diff span:not(.todo-proposal-arrow) { font-size: var(--type-micro); }
-.fa-mini-surface .todo-proposal-footer { gap: 6px; padding-top: 6px; font-size: var(--type-micro); }
-.fa-mini-surface .todo-proposal-buttons button { padding: 4px 8px; border-radius: 8px; font-size: var(--type-micro); }
+.fa-mini-surface .todo-proposal-after { padding: 3px 6px; }
+.fa-mini-surface .todo-proposal-diff { grid-template-columns: minmax(0, 1fr) 12px minmax(0, 1fr); gap: 4px; }
+.fa-mini-surface .todo-proposal-arrow { transform: none; }
+.fa-mini-surface .todo-proposal-diff small { font-size: var(--type-micro); margin-bottom: 0; line-height: 1.2; }
+.fa-mini-surface .todo-proposal-diff span:not(.todo-proposal-arrow) { font-size: var(--type-micro); line-height: 1.3; }
+.fa-mini-surface .todo-proposal-footer { gap: 4px; padding-top: 4px; font-size: var(--type-micro); }
+.fa-mini-surface .todo-proposal-buttons { gap: 4px; }
+.fa-mini-surface .todo-proposal-buttons button { min-height: 0; padding: 2px 8px; border-radius: 7px; font-size: var(--type-micro); line-height: 1.3; }
 .fa-mini-continue { align-self: flex-end; flex: none; border: 0; background: transparent; color: var(--acc-deep); font: inherit; font-size: var(--type-micro); font-weight: 700; cursor: pointer; padding: 2px 4px; }
 .fa-mini-continue:hover { background: var(--acc-soft); border-radius: 6px; }
 .fa-mini-quick > .ai-add-reference { height: 22px; }

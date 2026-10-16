@@ -86,6 +86,7 @@ test('floating expanded toolbar reserves reference text while model takes shrink
   assert.match(css, /\.float-app\.narrow \.fa-surface \.ai-model-select \.select-trigger > span \{[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/);
   assert.match(css, /\.fa-mini-surface \{ height: 124px; grid-template-rows: 22px 55px 22px;/);
   assert.match(css, /\.fa-mini-quick \.fa-model-toggle \{ flex: 0 0 120px; width: 120px; max-width: 120px;/);
+  assert.match(css, /\.fa-mini-compose-main > button\[type='submit'\] \{ align-self: flex-end;/);
   assert.doesNotMatch(css, /grid-template-rows: 22px 20px 32px 22px/);
   assert.match(css, /\.ai-panel \.ai-compose-toolbar > \.ai-model-select \{[^}]*max-width: min\(148px/);
 });
@@ -127,7 +128,7 @@ test('collapsed modify card stays readable after apply while expanded summary is
     assert.match(text(), /修改后/);
     assert.match(text(), /2026-10-31 23:59/);
     assert.doesNotMatch(text(), /dueAt/);
-    assert.ok(heights.includes(360), 'collapsed suggestion card grows just enough to stay readable');
+    assert.ok(heights.includes(300), 'collapsed suggestion card grows just enough to stay readable');
     await act(async () => button('应用所选')!.click());
     assert.deepEqual(applied, [0]);
     session = { id: 'chat', entries: [{ ...entry, actionState: 'applied', todoReceipt: { appliedIndices: [0], appliedCount: 1 } }] };

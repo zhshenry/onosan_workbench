@@ -491,9 +491,9 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini
   const showMiniProposal = Boolean(keptEntry?.proposal && dismissedProposalToken !== activeProposalToken);
   const miniProposalVisible = mini && showMiniProposal && !ask && !busy;
 
-  // 反问 300 / 收起态可读建议卡 360（应用后仍容得下继续对话）/ 其余回 176。只在迷你态生效。
+  // 反问与收起态紧凑建议卡都是 300（贴住卡片，应用后仍容得下继续对话）/ 其余回 176。只在迷你态生效。
   useEffect(() => {
-    if (mini) onCompactHeight?.(ask ? 300 : miniProposalVisible ? 360 : null);
+    if (mini) onCompactHeight?.(ask || miniProposalVisible ? 300 : null);
   }, [ask, miniProposalVisible, mini, onCompactHeight]);
 
   async function send(text: string): Promise<void> {

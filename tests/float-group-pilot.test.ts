@@ -85,7 +85,7 @@ const compact = () => ({
   native: { x: 100, y: 200, width: 330, height: 176 }, viewport: { x: 0, y: 0, width: 330, height: 176 },
   context: { x: 18, y: 45, width: 294, height: 22 },
   compose: { x: 18, y: 70, width: 294, height: 55 }, bottom: { x: 18, y: 128, width: 294, height: 22 },
-  textarea: { x: 26, y: 74, width: 248, height: 46 }, send: { x: 278, y: 85, width: 24, height: 24 },
+  textarea: { x: 26, y: 74, width: 248, height: 46 }, send: { x: 278, y: 96, width: 24, height: 24 },
   reference: { x: 18, y: 128, width: 84, height: 22 }, model: { x: 192, y: 128, width: 120, height: 22 },
   chip: null as { x: number; y: number; width: number; height: number } | null,
   remove: null as { x: number; y: number; width: number; height: number } | null,
