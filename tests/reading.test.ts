@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync, statSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync, statSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { JSDOM } from 'jsdom';
@@ -264,10 +264,12 @@ test('阅读清单:确认前不落盘,仅勾选入库;关闭不删;气泡删除;
   (dom.window as unknown as { workbench: typeof api }).workbench = api;
   const { createRoot } = await import('react-dom/client');
   const { ReadingView } = await import('../src/views/ReadingView');
-  const root = createRoot(dom.window.document.getElementById('root')!);
+  let root = createRoot(dom.window.document.getElementById('root')!);
+  let mounted = true;
   const doc = dom.window.document;
   t.after(async () => {
-    await act(async () => { root.unmount(); });
+    if (mounted) await act(async () => { root.unmount(); });
+    mounted = false;
     dom.window.close();
     names.forEach((name, index) => {
       if (previous[index]) Object.defineProperty(globalThis, name, previous[index]);
@@ -392,6 +394,20 @@ test('阅读清单:确认前不落盘,仅勾选入库;关闭不删;气泡删除;
   };
   await openBook();
   assert.equal(doc.querySelector('dialog'), null);
+  const detailText = (): string => doc.body.textContent ?? '';
+  assert.equal(detailText().includes('关闭面板（不删书）'), false);
+  assert.equal(doc.querySelector('.rd-close')?.getAttribute('aria-label'), '关闭面板');
+  assert.equal(detailText().includes('评分与短评'), false);
+  assert.equal(detailText().includes('写一句话短评'), false);
+  assert.equal(detailText().includes('只读 · 不改动你的库'), false);
+  assert.equal(detailText().includes('只读笔记,不改库'), false);
+  assert.equal(detailText().includes('搁置'), false);
+  assert.match(detailText(), /Obsidian库/);
+  assert.match(detailText(), /AI读书/);
+  assert.ok(doc.querySelectorAll('.rd-divide').length >= 2);
+  assert.deepEqual([...doc.querySelectorAll('[aria-label="阅读状态"] button')].map((button) => button.textContent), ['想读', '在读', '已读']);
+  const dmbokCard = [...doc.querySelectorAll('.bookcard')].find((node) => node.textContent?.includes('DMBOK'));
+  assert.match(dmbokCard?.querySelector('.b-progress')?.textContent ?? '', /^0%$/);
   await click(buttonByText('已读'));
   await waitFor(() => store.all().books[0]?.status === 'done', '状态未切换');
   const statusSave = saves.at(-1)!;
@@ -403,7 +419,7 @@ test('阅读清单:确认前不落盘,仅勾选入库;关闭不删;气泡删除;
   assert.equal(new ReadingStore(dir).all().books[0].status, 'done');
   assert.equal(new ReadingStore(dir).all().books[0].createdAt, createdAt);
 
-  await click(buttonByText('关闭面板（不删书）'));
+  await click(doc.querySelector('.rd-close')!);
   await waitFor(() => doc.querySelector('.detail') == null, '关闭后面板仍在');
   assert.equal(removed.length, 0);
   assert.equal(store.all().books.length, 1);
@@ -438,4 +454,48 @@ test('阅读清单:确认前不落盘,仅勾选入库;关闭不删;气泡删除;
   const persisted = new ReadingStore(dir).all() satisfies ReadingStoreData;
   assert.equal(persisted.books.length, 0);
   assert.equal(persisted.vaultPath, vault);
+
+  store.save({ title: '无进度', status: 'reading', tags: [] });
+  store.save({ title: '零进度', status: 'reading', progressPct: 0, tags: [] });
+  store.save({ title: '旧搁置', status: 'paused', rating: 4, comment: '保留的短评', tags: [] });
+  await act(async () => { root.unmount(); });
+  mounted = false;
+  root = createRoot(doc.getElementById('root')!);
+  mounted = true;
+  await act(async () => {
+    root.render(createElement(ReadingView, {
+      onPending: (message: string) => { notices.push(message); },
+      onAskAI: () => undefined,
+      onCurrentBook: () => undefined,
+    }));
+  });
+  await waitFor(() => (doc.body.textContent ?? '').includes('旧搁置'), '搁置书目未显示');
+  const progressOf = (title: string): string => {
+    const card = [...doc.querySelectorAll('.bookcard')].find((node) => node.textContent?.includes(title));
+    assert.ok(card, title);
+    return card.querySelector('.b-progress')?.textContent ?? '';
+  };
+  assert.equal(progressOf('无进度'), '0%');
+  assert.equal(progressOf('零进度'), '0%');
+  assert.match(doc.body.textContent ?? '', /当前为搁置|搁置/);
+  const pausedCard = [...doc.querySelectorAll('.bookcard')].find((node) => node.textContent?.includes('旧搁置'));
+  assert.ok(pausedCard);
+  await click(pausedCard);
+  await waitFor(() => (doc.body.textContent ?? '').includes('当前为搁置'), '打开搁置书后应仍能读到旧状态');
+  assert.equal([...doc.querySelectorAll('.pseg button')].some((button) => button.textContent === '搁置'), false);
+  assert.equal(doc.querySelector('textarea.shortcut'), null);
+  assert.equal((doc.body.textContent ?? '').includes('评分与短评'), false);
+  assert.equal((doc.body.textContent ?? '').includes('保留的短评'), false);
+  await click(buttonByText('想读'));
+  await waitFor(() => store.all().books.find((book) => book.title === '旧搁置')?.status === 'wish', '搁置应能改选为三态之一');
+  assert.equal(store.all().books.find((book) => book.title === '旧搁置')?.rating, 4);
+  assert.equal(store.all().books.find((book) => book.title === '旧搁置')?.comment, '保留的短评');
+  assert.equal((doc.body.textContent ?? '').includes('当前为搁置'), false);
+});
+
+test('阅读清单样式:状态选择单行高度,内容区预留滚动槽', () => {
+  const css = readFileSync(new URL('../modules/reading/ui/reading.css', import.meta.url), 'utf8');
+  assert.match(css, /\.reading-view \.d-state \.pseg button[\s\S]*white-space:\s*nowrap/);
+  assert.match(css, /\.reading-view \.d-state \.pseg button[\s\S]*height:\s*28px/);
+  assert.match(css, /\.content:has\(\.reading-view\)\s*\{[^}]*scrollbar-gutter:\s*stable/);
 });

@@ -63,7 +63,7 @@
 .b-progbar i { display: block; height: 100%; border-radius: 999px; background: var(--rd-reading, #4a67a3); }
 .b-recent { font-size: var(--type-caption); color: var(--ink-3); }
 .stars { color: #c99a2e; font-size: var(--type-support); letter-spacing: 1px; }
-.stars .off, .rd-star .off { color: rgba(30, 34, 44, 0.18); }
+.stars .off { color: rgba(30, 34, 44, 0.18); }
 
 /* ---- 从库导入确认 ---- */
 .reading-view .gbtns .btn:disabled,
@@ -163,6 +163,15 @@
 .d-title { font-size: var(--type-lead); font-weight: 800; letter-spacing: -0.01em; }
 .d-author { font-size: var(--type-support); color: var(--ink-3); margin-top: 2px; }
 .d-state { margin-top: 8px; }
+.rd-paused-now { margin: 0 0 6px; font-size: var(--type-caption); font-weight: 700; color: var(--rd-paused, #8a8f96); }
+/* 状态胶囊保持单行高度：窄栏（AI 打开）时中文不再被压成两行撑高 */
+.reading-view .d-state .pseg { display: flex; width: 100%; margin-left: 0; align-items: center; flex-wrap: nowrap; }
+.reading-view .d-state .pseg button {
+  flex: 1 1 auto; min-width: max-content; white-space: nowrap; height: 28px; padding: 0 12px;
+  display: inline-flex; align-items: center; justify-content: center; line-height: 1;
+}
+.d-label { font-size: var(--type-caption); font-weight: 700; color: var(--ink-3); margin-bottom: 6px; }
+.rd-divide { border-top: 1px solid color-mix(in srgb, var(--ink) 18%, transparent); margin-top: 14px; padding-top: 12px; }
 .rd-chaprow { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: var(--type-support); color: var(--ink-3); }
 .rd-num {
   width: 72px; height: 30px; padding: 0 10px; border-radius: var(--r-ctl); text-align: center;
@@ -173,16 +182,6 @@
 .progress-row { display: flex; align-items: center; gap: 10px; }
 .progress-row input[type='range'] { flex: 1; accent-color: var(--rd-reading, #4a67a3); }
 .progress-row .pct { width: 64px; text-align: right; font-weight: 700; font-size: var(--type-control); font-variant-numeric: tabular-nums; color: var(--ink-2); }
-.rate-row { display: flex; align-items: center; gap: 6px; }
-.rd-star { font-size: var(--type-lead); line-height: 1; color: rgba(30, 34, 44, 0.18); transition: color 0.12s var(--ease); padding: 0 2px; }
-.rd-star.on { color: #c99a2e; }
-.shortcut {
-  width: 100%; min-height: 56px; resize: none; border-radius: 10px; padding: 8px 11px;
-  font-size: var(--type-control); line-height: 1.6; color: var(--ink);
-  background: rgba(255, 255, 255, 0.65); border: 1px solid rgba(255, 255, 255, 0.85); outline: none;
-  transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
-}
-.shortcut:focus { border-color: var(--acc-ring); background: #fff; }
 .tagrow { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .tagrow .b-tag.on { background: var(--acc-soft); color: var(--acc-deep); cursor: pointer; }
 .rd-tagadd {
@@ -233,6 +232,8 @@
 .ai-hint b { color: var(--ink-2); }
 
 .rd-empty { margin-top: 4px; }
+/* 详情开合带来的滚动条不再改变内容区宽度，列表和顶栏相对位置保持不动 */
+.content:has(.reading-view) { scrollbar-gutter: stable; }
 
 @media (max-width: 1180px) {
   .rd-cols { grid-template-columns: 1fr; }
