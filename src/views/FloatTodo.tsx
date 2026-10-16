@@ -9,13 +9,21 @@ import { localDay, openToday, type AIAction, type ChatSession, type ChatSummary,
 import { isOverdue, scheduleStamp } from '../../shared/todo-format';
 import { errorText, Select as TodoSelect } from '../../modules/todo/ui/ui';
 import { AiResponse } from './AiResponse';
+import { TodoProposalCard } from './TodoProposalCard';
 import { TaskEditor, type TaskEditorApi, type TodoState } from '../../modules/todo/ui/TaskEditor';
 import { TaskLibrary } from '../../modules/todo/ui/TaskLibrary';
 import { TodayBoard, type Mutate } from '../../modules/todo/ui/TodayBoard';
 import { LogoMark, IconDocs } from '../icons';
 
 
-const wb = window.workbench;
+// Resolve on each access so a replaced test window still reaches its own bridge.
+const wb = new Proxy({} as typeof window.workbench, {
+  get(_target, key) {
+    const current = window.workbench as typeof window.workbench & Record<PropertyKey, unknown>;
+    const value = current[key];
+    return typeof value === 'function' ? (value as (...args: unknown[]) => unknown).bind(current) : value;
+  },
+});
 
 // 展开态最小高度:与首页待办卡片同高 = 屏幕工作区 - 主窗 chrome(灵动岛 64 + 内容上下边距 48)
 // (用户 2026-09-27:全屏下悬浮窗与首页卡整体高度一致)
@@ -440,6 +448,8 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini
   const [logOpen, setLogOpen] = useState(false);
   const [linked, setLinked] = useState<Task | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [keptProposalToken, setKeptProposalToken] = useState<string | null>(null);
+  const [dismissedProposalToken, setDismissedProposalToken] = useState<string | null>(null);
   // 展开态对话流(与主窗 AiPanel 同构):建议逐项勾选 + 消息区滚动跟随
   const [selected, setSelected] = useState<Record<string, number[]>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -468,10 +478,23 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini
     onSeedConsumed();
   }, [seed]);
 
-  // 上游 compactHeight 同义:反问 300 / 事项选择器 320 / 其余回 176(仅迷你态生效)
+  const conversation = chat?.entries ?? [];
+  const pendingProposal = conversation.find((entry) => entry.actionState === 'pending' && entry.proposal?.actions.length);
+  const pendingToken = pendingProposal?.proposal?.token ?? null;
+  // Remember the suggestion that was just pending so Apply does not unmount the card.
+  let activeProposalToken = keptProposalToken;
+  if (pendingToken && pendingToken !== activeProposalToken) {
+    activeProposalToken = pendingToken;
+    setKeptProposalToken(pendingToken);
+  }
+  const keptEntry = activeProposalToken ? conversation.find((entry) => entry.proposal?.token === activeProposalToken) ?? null : null;
+  const showMiniProposal = Boolean(keptEntry?.proposal && dismissedProposalToken !== activeProposalToken);
+  const miniProposalVisible = mini && showMiniProposal && !ask && !busy;
+
+  // 反问 300 / 收起态可读建议卡 360（应用后仍容得下继续对话）/ 其余回 176。只在迷你态生效。
   useEffect(() => {
-    if (mini) onCompactHeight?.(ask ? 300 : null);
-  }, [ask, pickerOpen, mini, onCompactHeight]);
+    if (mini) onCompactHeight?.(ask ? 300 : miniProposalVisible ? 360 : null);
+  }, [ask, miniProposalVisible, mini, onCompactHeight]);
 
   async function send(text: string): Promise<void> {
     if (!chat || !text.trim() || busy || ask) return;
@@ -490,25 +513,10 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini
     setInput('');
   }
 
-  const conversation = chat?.entries ?? [];
-  const pendingEntry = conversation.find((entry) => entry.actionState === 'pending' && entry.proposal?.actions.length);
   const latestAssistant = [...conversation].reverse().find((entry) => entry.role === 'assistant');
   const tools = latestAssistant?.tools ?? [];
   const currentTool = tools.find((tool) => tool.status === 'running') ?? [...tools].reverse().find((tool) => tool.status !== 'complete');
   const completedTools = tools.filter((tool) => tool.status === 'complete').length;
-
-  const applyAll = (): void => {
-    if (!pendingEntry?.proposal) return;
-    void wb.ai.apply(pendingEntry.proposal.token, pendingEntry.proposal.actions.map((_a, idx) => idx)).catch((e) => setError(errorText(e)));
-  };
-  const discardAll = (): void => {
-    if (!pendingEntry?.proposal) return;
-    void wb.ai.discard(pendingEntry.proposal.token);
-  };
-  const actionLabel = (action: Extract<NonNullable<typeof pendingEntry>['proposal'], { actions: unknown[] }>['actions'][number]): string =>
-    action.type === 'create' ? (action.task.kind === 'meeting' ? '新增日程' : '新增待办')
-      : action.type === 'update' ? '修改事项' : action.type === 'remove' ? '删除事项'
-        : action.type === 'create_category' ? '新增标签' : action.type === 'update_category' ? '修改标签' : '删除标签';
 
   // 模型切换(上游 compact 同款:底部 toggle + 按供应商分组菜单;菜单用 portal 固定定位,不被 surface overflow 裁剪)
   const [config, setConfig] = useState<AiConfigBrief | null>(null);
@@ -573,7 +581,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini
       const bottom = Math.round(window.innerHeight - rect.top + 6);
       const cap = Math.round(window.innerHeight - bottom - 8);
       setModelMenuPos({ bottom, right: Math.max(8, window.innerWidth - rect.right),
-        width: Math.min(196, window.innerWidth - 16), maxHeight: Math.max(24, Math.min(240, cap)) });
+        width: Math.min(152, window.innerWidth - 24), maxHeight: Math.max(24, Math.min(240, cap)) });
     }
     setModelOpen(true);
   };
@@ -585,7 +593,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini
   };
 
   const modelMenu = modelOpen && config && config.models.length ? createPortal(
-    <div className="fa-model-menu" role="menu" aria-label="按供应商选择模型" style={{ bottom: modelMenuPos?.bottom, right: modelMenuPos?.right, width: modelMenuPos?.width, maxHeight: modelMenuPos?.maxHeight }}>
+    <div className="fa-model-menu fa-mini-model-menu" role="menu" aria-label="按供应商选择模型" style={{ bottom: modelMenuPos?.bottom, right: modelMenuPos?.right, width: modelMenuPos?.width, maxHeight: modelMenuPos?.maxHeight }}>
       {config.providers.map((provider) => {
         const models = config.models.filter((m) => m.providerId === provider.id);
         if (!models.length) return null;
@@ -593,7 +601,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini
           <section key={provider.id} role="group" aria-label={provider.name}>
             <b>{provider.name}</b>
             {models.map((model) => (
-              <button key={model.id} type="button" role="menuitemradio" aria-checked={model.id === config.activeModelId} className={model.id === config.activeModelId ? 'is-active' : ''} onClick={() => selectModel(model.id)}>
+              <button key={model.id} type="button" role="menuitemradio" title={model.name} aria-checked={model.id === config.activeModelId} className={model.id === config.activeModelId ? 'is-active' : ''} onClick={() => selectModel(model.id)}>
                 <span>{model.name}</span>
                 {model.id === config.activeModelId ? <small>当前</small> : null}
               </button>
@@ -612,9 +620,8 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini
     </button>
   ) : null;
 
-  const linkedRow = <div className="fa-linked-row" aria-live="polite">
-    {linked && <span className="ai-reference-chip"><span title={linked.title}>关联 · {linked.title}</span><button type="button" aria-label={`取消关联 ${linked.title}`} onClick={() => setLinked(null)}><X size={12} /></button></span>}
-  </div>;
+  const linkedChip = linked ? <span className="ai-reference-chip"><span title={linked.title}>关联 · {linked.title}</span><button type="button" aria-label={`取消关联 ${linked.title}`} onClick={() => setLinked(null)}><X size={12} /></button></span> : null;
+  const linkedRow = <div className="fa-linked-row" aria-live="polite">{linkedChip}</div>;
   const referenceControl = <button type="button" className="ai-add-reference" aria-expanded={pickerOpen} aria-label="关联已有事项" onClick={() => { setModelOpen(false); setPickerOpen(value => !value); }}><Plus size={13} />关联事项</button>;
   const picker = pickerOpen ? <div className={`fa-picker-list${mini ? ' fa-mini-picker' : ''}`} role="listbox" aria-label="选择事项">
     {tasks.filter(task => !task.deletedAt).map(task => {
@@ -629,9 +636,9 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini
     {!tasks.some(task => !task.deletedAt) && <p>暂无可关联事项</p>}
   </div> : null;
 
-  // ================= 迷你布局(v2:标题 / 关联 / 输入 / 底栏;运行态保留三行) =================
+  // ================= 迷你布局(标题 / 两行对话框 / 底栏;建议卡与运行态占满中间) =================
   if (mini) {
-    const surfaceClass = ask ? 'fa-mini-surface is-asking' : busy ? 'fa-mini-surface is-working' : pendingEntry ? 'fa-mini-surface is-result' : 'fa-mini-surface';
+    const surfaceClass = ask ? 'fa-mini-surface is-asking' : busy ? 'fa-mini-surface is-working' : miniProposalVisible ? 'fa-mini-surface is-result is-proposal' : 'fa-mini-surface';
     return (
       <section className={surfaceClass} aria-live={busy || ask ? 'polite' : undefined}>
         <div className="fa-mini-context">
@@ -694,31 +701,25 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, onCompactHeight, mini
               <button className="fa-x" title="取消 AI 请求" onClick={() => wb.ai.cancel()}><X size={11} /></button>
             </footer>
           </>
-        ) : pendingEntry && pendingEntry.proposal ? (
-          <>
-            <div className="fa-mini-middle">
-              {pendingEntry.proposal.actions.map((action, i) => (
-                <div key={i} className="fa-proposal-item">
-                  <span className="fa-verb">{actionLabel(action)}</span>
-                  <span className="fa-detail">{action.type === 'create' ? action.task.title : action.type === 'update' ? Object.entries(action.patch).map(([k, v]) => k + ':' + (v === null ? '清空' : String(v).slice(0, 24))).join(' · ') : 'id' in action ? action.id.slice(0, 8) : ''}</span>
-                </div>
-              ))}
-              {error && <p className="fa-error">{error}</p>}
-            </div>
-            <footer className="fa-mini-foot">
-              <button onClick={discardAll}>放弃建议</button>
-              <button className="primary" onClick={applyAll}>应用 {pendingEntry.proposal.actions.length} 项</button>
-            </footer>
-          </>
+        ) : miniProposalVisible && keptEntry?.proposal ? (
+          <div className="fa-mini-middle fa-mini-proposal">
+            <TodoProposalCard entry={keptEntry} busy={busy} apply={(token, indices) => wb.ai.apply(token, indices)} discard={(token) => wb.ai.discard(token)} />
+            {keptEntry.actionState !== 'pending' && (
+              <button type="button" className="fa-mini-continue" onClick={() => setDismissedProposalToken(keptEntry.proposal!.token)}>继续对话</button>
+            )}
+            {error && <p className="fa-error">{error}</p>}
+          </div>
         ) : (
           <>
-            {linkedRow}
             <form className="fa-mini-compose" onSubmit={(e) => { e.preventDefault(); void send(input); }}>
-              <textarea rows={1} value={input} maxLength={10000} aria-label="AI 对话输入"
-                placeholder={linked ? `针对「${linked.title}」…` : '一句话告诉 AI 你想怎么处理'}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(input); } }} />
-              <button type="submit" aria-label="发送" disabled={!input.trim()}><PaperPlaneRight size={11} weight="fill" /></button>
+              {linkedChip}
+              <div className="fa-mini-compose-main">
+                <textarea rows={2} value={input} maxLength={10000} aria-label="AI 对话输入"
+                  placeholder={linked ? `针对「${linked.title}」…` : '一句话告诉 AI 你想怎么处理'}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(input); } }} />
+                <button type="submit" aria-label="发送" disabled={!input.trim()}><PaperPlaneRight size={11} weight="fill" /></button>
+              </div>
             </form>
             <div className="fa-mini-quick">
               {referenceControl}

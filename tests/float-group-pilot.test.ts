@@ -40,14 +40,15 @@ test('Model geometry assertion checks every coordinate and does not allow missin
 });
 
 test('Compact model menu must be bounded and right-aligned to actual trigger', () => {
-  const anchor = { x: 140, y: 140, width: 168, height: 22 };
-  const menu = { x: 112, y: 8, width: 196, height: 126 };
+  const anchor = { x: 186, y: 140, width: 120, height: 22 };
+  const menu = { x: 154, y: 8, width: 152, height: 126 };
   const viewport = { width: 330, height: 176 };
   assert.doesNotThrow(() => assertFloatMenuGeometry(menu, anchor, viewport));
   assert.throws(() => assertFloatMenuGeometry({ ...menu, y: -1 }, anchor, viewport), /fit/);
   assert.throws(() => assertFloatMenuGeometry({ ...menu, height: 180 }, anchor, viewport), /fit/);
   assert.throws(() => assertFloatMenuGeometry({ ...menu, x: 100 }, anchor, viewport), /right edge/);
   assert.throws(() => assertFloatMenuGeometry({ ...menu, width: 0 }, anchor, viewport), /usable/);
+  assert.throws(() => assertFloatMenuGeometry({ ...menu, x: 110, width: 196 }, anchor, viewport), /narrow/);
 });
 
 test('Floating evidence shares the unchanged global 19 MB allowlist and 3-day retention', async t => {
@@ -82,28 +83,29 @@ test('Installed pilot uses actual float surfaces, physical UI, native bounds and
 
 const compact = () => ({
   native: { x: 100, y: 200, width: 330, height: 176 }, viewport: { x: 0, y: 0, width: 330, height: 176 },
-  context: { x: 20, y: 50, width: 290, height: 22 }, linkedRow: { x: 20, y: 75, width: 290, height: 20 },
-  compose: { x: 20, y: 98, width: 290, height: 32 }, bottom: { x: 20, y: 133, width: 290, height: 22 },
-  textarea: { x: 25, y: 100, width: 240, height: 26 }, send: { x: 278, y: 103, width: 22, height: 22 },
-  reference: { x: 20, y: 133, width: 70, height: 22 }, model: { x: 142, y: 133, width: 168, height: 22 },
+  context: { x: 18, y: 45, width: 294, height: 22 },
+  compose: { x: 18, y: 70, width: 294, height: 55 }, bottom: { x: 18, y: 128, width: 294, height: 22 },
+  textarea: { x: 26, y: 74, width: 248, height: 46 }, send: { x: 278, y: 85, width: 24, height: 24 },
+  reference: { x: 18, y: 128, width: 84, height: 22 }, model: { x: 192, y: 128, width: 120, height: 22 },
   chip: null as { x: number; y: number; width: number; height: number } | null,
   remove: null as { x: number; y: number; width: number; height: number } | null,
+  linkedRow: null as { x: number; y: number; width: number; height: number } | null,
 });
-test('Real compact row assertions preserve empty chip space and reject overlap/clipping at 176px', () => {
+test('Real compact row assertions keep the chip inside the two-row dialog and reject overlap/clipping at 176px', () => {
   const empty = compact(); assert.doesNotThrow(() => assertFloatCompactGeometry(empty));
-  const linked = compact(); linked.chip = { x: 20, y: 75, width: 270, height: 20 }; linked.remove = { x: 268, y: 75, width: 20, height: 20 };
+  const linked = compact(); linked.chip = { x: 26, y: 74, width: 200, height: 20 }; linked.remove = { x: 200, y: 76, width: 18, height: 16 };
   assert.doesNotThrow(() => assertFloatCompactGeometry(linked, empty));
   const mutations = [
     (value: ReturnType<typeof compact>) => { value.context.height = 28; },
-    (value: ReturnType<typeof compact>) => { value.linkedRow.height = 21; },
+    (value: ReturnType<typeof compact>) => { value.linkedRow = { x: 18, y: 71, width: 294, height: 20 }; },
     (value: ReturnType<typeof compact>) => { value.bottom.y = 160; },
-    (value: ReturnType<typeof compact>) => { value.reference.width = 130; },
+    (value: ReturnType<typeof compact>) => { value.reference.width = 200; },
     (value: ReturnType<typeof compact>) => { value.textarea.width = 270; },
     (value: ReturnType<typeof compact>) => { value.model.width = 190; },
     (value: ReturnType<typeof compact>) => { value.native.height = 175; },
   ];
   for (const mutate of mutations) { const value = compact(); mutate(value); assert.throws(() => assertFloatCompactGeometry(value, empty)); }
-  const clipped = compact(); clipped.chip = { x: 20, y: 74, width: 270, height: 23 };
+  const clipped = compact(); clipped.chip = { x: 18, y: 40, width: 180, height: 20 };
   assert.throws(() => assertFloatCompactGeometry(clipped), /outside/);
 });
 test('Real picker containment rejects escaped, missing and nonfinite menu rectangles', () => {
