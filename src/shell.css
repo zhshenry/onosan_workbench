@@ -1944,6 +1944,9 @@ html:has(.float-app) {
 .fa-mini-stream > span { display: flex; align-items: center; gap: 4px; color: var(--acc-deep); font-size: var(--type-micro); font-weight: 600; }
 .fa-mini-stream > span > i { width: 6px; height: 6px; border-radius: 50%; background: var(--acc-deep); animation: fa-blink 1s ease-in-out infinite alternate; }
 .fa-mini-stream p { margin: 3px 0 0; font-size: var(--type-caption); line-height: 1.5; }
+.fa-mini-reply { min-width: 0; flex: 1; min-height: 0; overflow: auto; padding: 3px 5px; border-radius: 8px; background: var(--currow-tile); }
+.fa-mini-reply p { margin: 0; font-size: var(--type-caption); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.fa-mini-reply p + p { margin-top: 4px; }
 .fa-mini-log { flex: 1; min-height: 0; overflow-y: auto; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
 .fa-mini-log li { display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-radius: 6px; background: var(--currow-tile); font-size: var(--type-micro); }
 .fa-mini-log span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2095,5 +2098,6 @@ html:has(.float-app) {
 .fa-mini-surface .todo-proposal-buttons button { min-height: 0; padding: 2px 8px; border-radius: 7px; font-size: var(--type-micro); line-height: 1.3; }
 .fa-mini-continue { align-self: flex-end; flex: none; border: 0; background: transparent; color: var(--acc-deep); font: inherit; font-size: var(--type-micro); font-weight: 700; cursor: pointer; padding: 2px 4px; }
 .fa-mini-continue:hover { background: var(--acc-soft); border-radius: 6px; }
+.fa-mini-foot > .fa-mini-continue { margin-left: auto; color: var(--acc-deep); font-weight: 700; }
 .fa-mini-quick > .ai-add-reference { height: 22px; }
 .float-mini-content { flex: 1; height: auto; padding-top: 8px; padding-bottom: 9px; }
