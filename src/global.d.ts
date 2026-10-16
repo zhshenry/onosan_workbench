@@ -6,6 +6,7 @@ declare global {
       close(): void;
       onMaximized(callback: (maximized: boolean) => void): () => void;
       browser: import('../shared/browser-contracts').BrowserBridge;
+      game: import('../shared/game-contracts').GameBridge;
       browserAutomation: import('../shared/browser-automation-contracts').BrowserAutomationBridge;
       office: {
         convert(
@@ -81,13 +82,13 @@ declare global {
         chatDraft(id: string, text: string): Promise<void>;
         chatContext(id: string, scope: import('../shared/ai-scope').AiScope): Promise<unknown>;
         ask(sessionId: string, text: string, context?: import('../shared/ai-reference').AiTurnContext): Promise<void>;
-        cancel(): void;
+        cancel(sessionId: string): void;
         apply(token: string, indices: number[]): Promise<unknown>;
         undo(token: string): Promise<unknown>;
         discard(token: string): Promise<unknown>;
         onChat(callback: (chat: unknown) => void): () => void;
-        onAsk(callback: (ask: { id: string; question: string; options: { label: string; description?: string }[] }) => void): () => void;
-        answerAsk(input: { id: string; kind: 'option' | 'text' | 'skip'; value?: string }): void;
+        onAsk(callback: (ask: { id: string; sessionId: string; question: string; options: { label: string; description?: string }[] }) => void): () => void;
+        answerAsk(input: { id: string; sessionId: string; kind: 'option' | 'text' | 'skip'; value?: string }): void;
       };
       float: {
         toggle(): Promise<boolean>;

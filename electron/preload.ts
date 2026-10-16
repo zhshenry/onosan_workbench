@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-const onAsk = (callback: (ask: { id: string; question: string; options: { label: string; description?: string }[] }) => void): (() => void) => {
-  const listener = (_event: unknown, ask: { id: string; question: string; options: { label: string; description?: string }[] }): void => callback(ask);
+const onAsk = (callback: (ask: { id: string; sessionId: string; question: string; options: { label: string; description?: string }[] }) => void): (() => void) => {
+  const listener = (_event: unknown, ask: { id: string; sessionId: string; question: string; options: { label: string; description?: string }[] }): void => callback(ask);
   ipcRenderer.on('ai:ask', listener);
   return () => {
     ipcRenderer.off('ai:ask', listener);
@@ -66,14 +66,14 @@ const ai = {
     chatDraft: (id: string, text: string): Promise<void> => ipcRenderer.invoke('ai:chat:draft', id, text),
     chatContext: (id: string, scope: import('../shared/ai-scope').AiScope): Promise<unknown> => ipcRenderer.invoke('ai:chat:context', id, scope),
     ask: (sessionId: string, text: string, context?: import('../shared/ai-reference').AiTurnContext): Promise<void> => ipcRenderer.invoke('ai:ask', sessionId, text, context),
-  cancel: (): void => {
-    ipcRenderer.send('ai:cancel');
+  cancel: (sessionId: string): void => {
+    ipcRenderer.send('ai:cancel', sessionId);
   },
   apply: (token: string, indices: number[]): Promise<unknown> => ipcRenderer.invoke('ai:apply', token, indices),
   undo: (token: string): Promise<unknown> => ipcRenderer.invoke('ai:undo', token),
   discard: (token: string): Promise<unknown> => ipcRenderer.invoke('ai:discard', token),
   onAsk: onAsk,
-  answerAsk: (input: { id: string; kind: 'option' | 'text' | 'skip'; value?: string }): void => {
+  answerAsk: (input: { id: string; sessionId: string; kind: 'option' | 'text' | 'skip'; value?: string }): void => {
     ipcRenderer.send('ai:answer', input);
   },
   onChat: (callback: (chat: unknown) => void): (() => void) => {
@@ -110,7 +110,7 @@ const browserAutomation = {
   state: (workspace: string) => ipcRenderer.invoke('browser:state', workspace),
   saveTabs: (workspace: string, tabs: unknown, activeId: string) => ipcRenderer.invoke('browser:save-tabs', workspace, tabs, activeId),
   activate: (workspace: string, tabId: string) => ipcRenderer.invoke('browser:activate', workspace, tabId),
-  control: (id: string, action: string) => ipcRenderer.invoke('browser:task-control', id, action),
+  control: (id: string, action: string, expectedOrigin?: string) => ipcRenderer.invoke('browser:task-control', id, action, expectedOrigin),
   clear: (workspace: string, kind: string, origin?: string) => ipcRenderer.invoke('browser:clear', workspace, kind, origin),
   onTask: (listener: (task: unknown) => void) => {
     const callback = (_event: unknown, task: unknown) => listener(task);
@@ -228,6 +228,36 @@ const clipboard = {
   pin: (): Promise<boolean> => ipcRenderer.invoke('float:pin'),
 };
 
+const game: import('../shared/game-contracts').GameBridge = {
+  terminal: {
+    state: () => ipcRenderer.invoke('game:terminal:state'),
+    open: size => ipcRenderer.invoke('game:terminal:open', size),
+    write: (id, data) => ipcRenderer.invoke('game:terminal:write', { id, data }),
+    resize: (id, cols, rows) => ipcRenderer.invoke('game:terminal:resize', { id, cols, rows }),
+    clear: id => ipcRenderer.invoke('game:terminal:clear', { id }),
+    close: id => ipcRenderer.invoke('game:terminal:close', { id }),
+    onEvent: callback => {
+      const listener = (_event: unknown, event: import('../shared/game-contracts').GameTerminalEvent) => callback(event);
+      ipcRenderer.on('game:terminal:event', listener); return () => ipcRenderer.off('game:terminal:event', listener);
+    },
+  },
+  state: () => ipcRenderer.invoke('game:state'),
+  configure: config => ipcRenderer.invoke('game:configure', config),
+  chooseRoot: () => ipcRenderer.invoke('game:chooseRoot'),
+  start: () => ipcRenderer.invoke('game:start'),
+  stop: () => ipcRenderer.invoke('game:stop'),
+  connect: () => ipcRenderer.invoke('game:connect'),
+  run: scope => ipcRenderer.invoke('game:run', scope),
+  cancel: () => ipcRenderer.invoke('game:cancel'),
+  open: target => ipcRenderer.invoke('game:open', target),
+  capture: tabId => ipcRenderer.invoke('game:capture', tabId),
+  openArtifact: id => ipcRenderer.invoke('game:openArtifact', id),
+  onChanged: callback => {
+    const listener = (_event: unknown, state: import('../shared/game-contracts').GameState) => callback(state);
+    ipcRenderer.on('game:changed', listener); return () => ipcRenderer.off('game:changed', listener);
+  },
+};
+
 const api = {
   minimize: (): void => {
     ipcRenderer.send('win:minimize');
@@ -258,6 +288,7 @@ const api = {
   settings,
   appInfo,
   updater,
+  game,
   clipboard,
 };
 

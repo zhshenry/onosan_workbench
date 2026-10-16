@@ -431,10 +431,11 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
   onBack?(): void;
 }) {
   const [chat, setChat] = useState<ChatSession | null>(null);
+  const chatRef = useRef(chat); chatRef.current = chat;
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [ask, setAsk] = useState<{ id: string; question: string; options: { label: string; description?: string }[] } | null>(null);
+  const [ask, setAsk] = useState<{ id: string; sessionId: string; question: string; options: { label: string; description?: string }[] } | null>(null);
   const [logOpen, setLogOpen] = useState(false);
   const [linked, setLinked] = useState<Task | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -452,14 +453,18 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
     void (async () => {
       const list = (await wb.ai.chatList()) as (ChatSummary & { module?: string })[];
       const target = list.find((c) => c.module === 'todo') ?? list[0];
-      setChat(target ? (await wb.ai.chatOpen(target.id)) as ChatSession : (await wb.ai.chatNew({ module: 'todo' } as never)) as ChatSession);
+      const selected = target ? (await wb.ai.chatOpen(target.id)) as ChatSession : (await wb.ai.chatNew({ module: 'todo' } as never)) as ChatSession;
+      setChat(selected); setBusy(selected.entries.some(entry => entry.streaming));
     })().catch((e) => setError(errorText(e)));
     const offChat = wb.ai.onChat((raw) => {
       const next = raw as ChatSession;
       setChat((prev) => (prev && prev.id === next.id ? next : prev));
-      setBusy(next.entries.some((entry) => entry.streaming));
+      if (chatRef.current?.id === next.id) {
+        const running = next.entries.some((entry) => entry.streaming);
+        setBusy(running); if (!running) setAsk(null);
+      }
     });
-    const offAsk = wb.ai.onAsk((a) => setAsk(a));
+    const offAsk = wb.ai.onAsk((a) => { if (a.sessionId === chatRef.current?.id) setAsk(a); });
     return () => { offChat(); offAsk(); };
   }, []);
 
@@ -509,7 +514,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
 
   function answer(kind: 'option' | 'text' | 'skip', value?: string): void {
     if (!ask) return;
-    wb.ai.answerAsk({ id: ask.id, kind, value });
+    wb.ai.answerAsk({ id: ask.id, sessionId: ask.sessionId, kind, value });
     setAsk(null);
     setInput('');
   }
@@ -680,7 +685,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
             <footer className="fa-mini-foot">
               <span>已暂停 · 等待回答</span>
               <button onClick={() => answer('skip')}>跳过</button>
-              <button className="fa-x" title="取消 AI 请求" onClick={() => { answer('skip'); wb.ai.cancel(); }}><X size={11} /></button>
+              <button className="fa-x" title="取消 AI 请求" onClick={() => { if (chat) wb.ai.cancel(chat.id); setAsk(null); }}><X size={11} /></button>
             </footer>
           </>
         ) : busy ? (
@@ -707,7 +712,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
               <span className="fa-mini-loop"><i /></span>
               <small>已完成 {completedTools} 项</small>
               <button onClick={() => setLogOpen(v => !v)}>{logOpen ? '返回进度' : '处理记录'}</button>
-              <button className="fa-x" title="取消 AI 请求" onClick={() => wb.ai.cancel()}><X size={11} /></button>
+              <button className="fa-x" title="取消 AI 请求" onClick={() => chat && wb.ai.cancel(chat.id)}><X size={11} /></button>
             </footer>
           </>
         ) : miniProposalVisible && keptEntry?.proposal ? (
@@ -809,7 +814,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
             <footer className="fa-foot">
               <span>已暂停 · 等待回答</span>
               <button onClick={() => answer('skip')}>跳过</button>
-              <button className="fa-x" title="取消 AI 请求" onClick={() => { answer('skip'); wb.ai.cancel(); }}><X size={12} /></button>
+              <button className="fa-x" title="取消 AI 请求" onClick={() => { if (chat) wb.ai.cancel(chat.id); setAsk(null); }}><X size={12} /></button>
             </footer>
           </div>
         )}
@@ -832,7 +837,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
                   options={config.providers.flatMap((provider) => config.models.filter((item) => item.providerId === provider.id).map((item) => ({ value: item.id, label: item.name, group: provider.name })))} />
               ) : null}
               {busy ? (
-                <button type="button" className="ai-send cancel" aria-label="停止生成" title="停止生成" onClick={() => wb.ai.cancel()}><Stop size={16} weight="fill" /></button>
+                <button type="button" className="ai-send cancel" aria-label="停止生成" title="停止生成" onClick={() => chat && wb.ai.cancel(chat.id)}><Stop size={16} weight="fill" /></button>
               ) : (
                 <button type="button" className="ai-send" aria-label="发送" title="发送" disabled={!input.trim()} onClick={() => void send(input)}><PaperPlaneRight size={16} weight="fill" /></button>
               )}

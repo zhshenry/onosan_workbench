@@ -18,6 +18,7 @@ export const ViewIdSchema = z.enum([
   'reading',
   'media-browser',
   'browser',
+  'game',
   'settings-profile',
   'settings-general',
   'settings-appearance',

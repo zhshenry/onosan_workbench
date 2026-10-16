@@ -35,7 +35,8 @@ web(Electron 桌面壳,Windows 为主;渲染层为 Web 技术)
 已确认:
 - 内嵌 To-Do-List 全部功能且保持一致、同步更新(待办/日程双类型、优先级、标签、提醒、事项库、软删除、AI 建议等)。
 - 内置 Office 预览/编辑;内置浏览器;为未来 CLI 工具挂载预留。
-- 导航分两层;规划中模块:自媒体制作、个人网页设计、个人游戏设计、八字等(本期仅占位入口)。
+- 导航分两层;早期规划包含自媒体制作、个人网页设计、个人游戏设计、八字等占位入口，后续状态以各模块实施记录为准。
+- **游戏工作台（2026-10-16）**:以轨迹侦探为当前项目，采用已选定的双区联调布局与全宽底部项目终端（终端方案 2）。代码继续在现有开发工具中修改，Ono 负责本地服务、真实网页试玩、五项快速检查、独立 Edge 完整通关、截图与问题报告；项目终端支持手工 PowerShell 命令并跨切页保留会话。实现边界及验收见 `docs/GAME-WORKBENCH.md`。
 - 视觉候选方向两套(磨砂玻璃质感 / 沿用 To-Do-List 纸感风格),由用户评审设计稿后选定。
 - **AI 能力(2026-09-23 已定,当日修订)**:与 To-Do-List 同源的 Pi Agent Loop(`@earendil-works/pi-coding-agent`),主进程「AI 内核 + 模块工具注册」:各模块按 `AiModuleContribution` 注册工具与上下文;写入一律走「建议-确认卡」事务应用。**AI 与 To-Do-List 完全独立(用户明确要求)**:供应商/模型/Key/启用开关/对话会话均为工作台自有存储(userData 的 ai-config.json 与 chats.db),不读写共享库的 settings/chats 表;仅待办数据(tasks/categories)同库共享。
 - **待办同步策略(2026-09-23 已定,当日修订)**:以 To-Do-List 为上游,清单化移植(固定文件清单:contracts/store/任务 UI/编辑器/事项库/提醒/AI 任务工具)+ 移植其测试作为一致性安全网 + 上游 drift 检查脚本 + 「To-Do-List 每次发版触发一次同步」流程;工作台侧不为待办做上游没有的功能,有新功能想法先进上游再同步回来,防分叉。**修订:待办数据与 To-Do-List 跨应用共享同一个库文件**(`%APPDATA%/To-Do-List/tasks.db`,WAL 多进程并发),两边增删改互通;工作台不写该库的 settings/chats 表;上游 schema(user_version)变更的同步因此成为硬性要求(详见 modules/todo/SYNC.md)。长期方案见 docs/TODOLIST-SHARED-KIT-PLAN.md(共享包 ono-todo-kit)。

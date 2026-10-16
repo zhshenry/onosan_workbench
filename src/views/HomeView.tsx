@@ -26,11 +26,12 @@ const editorApi: TaskEditorApi = {
 
 const WEEKDAY_NAMES = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
-export function HomeView({ data, clock, mutate, userName, onPending, onOpenMedia, onOpenBazi, editor, setEditor, onAskAi }: {
+export function HomeView({ data, clock, mutate, userName, onPending, onOpenMedia, onOpenBazi, onOpenGame, editor, setEditor, onAskAi }: {
   data: TodoState; clock: Date; mutate: Mutate; userName: string;
   onPending: (name: string) => void;
   onOpenMedia: () => void;
   onOpenBazi: () => void;
+  onOpenGame: () => void;
   editor: Task | 'new' | null;
   setEditor: (t: Task | 'new' | null) => void;
   onAskAi: (prompt: string) => void;
@@ -191,13 +192,12 @@ export function HomeView({ data, clock, mutate, userName, onPending, onOpenMedia
                 </span>
                 <span className="ntag">规划中</span>
               </button>
-              <button type="button" className="mitem" onClick={() => onPending('游戏工作台')}>
+              <button type="button" className="mitem" onClick={onOpenGame}>
                 <span className="mtile"><IconGamepad /></span>
                 <span className="mtext">
                   <span className="mname">游戏工作台</span>
-                  <span className="mdesc">玩法原型、素材与版本管理</span>
+                  <span className="mdesc">轨迹侦探 · 本地试玩与自动测试</span>
                 </span>
-                <span className="ntag">规划中</span>
               </button>
               <button type="button" className="mitem" onClick={onOpenBazi}>
                 <span className="mtile"><IconBagua /></span>

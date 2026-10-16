@@ -16,7 +16,7 @@ export class BrowserStore {
             if (!Array.isArray(value.tasks) || !Array.isArray(value.history)) continue;
             const tabs = tabsSchema.safeParse(value.tabs);
             if (!tabs.success) continue;
-            this.data[workspace] = { tabs: tabs.data, activeId: value.activeId, history: value.history.slice(-5000).map(item => ({ ...item, id: item.id || randomUUID(), url: browserRecordUrl(item.url) })).filter(item => item.url), tasks: value.tasks.slice(-40).map(task => ({ ...task, status: ['ready', 'running', 'paused', 'site-approval'].includes(task.status) ? 'interrupted' : task.status, pendingOrigin: undefined })) };
+            this.data[workspace] = { tabs: tabs.data, activeId: value.activeId, history: value.history.slice(-5000).map(item => ({ ...item, id: item.id || randomUUID(), url: browserRecordUrl(item.url) })).filter(item => item.url), tasks: value.tasks.slice(-40).map(task => ({ ...task, status: ['ready', 'running', 'paused', 'site-approval'].includes(task.status) ? 'interrupted' : task.status, pendingOrigin: undefined, siteApprovals: task.siteApprovals?.map(approval => approval.status === 'pending' ? { ...approval, status: 'expired' as const } : approval) })) };
           }
         }
       } catch { /* A damaged browser journal must not prevent opening the workbench. */ }

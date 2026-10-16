@@ -13,6 +13,9 @@ import { BrowserGuests } from './browser-guests';
 import { BrowserAutomation } from './browser/tasks';
 import { BrowserStore } from './browser/store';
 import { registerBrowserAutomationIpc } from './browser/ipc';
+import { GameWorkbench } from './game-workbench';
+import { GameTerminal } from './game-terminal';
+import { registerGameIpc } from './game-ipc';
 import { registerAiIpc } from './ai-ipc';
 import { FloatTodoWindow, registerFloatIpc } from './float-window';
 
@@ -59,6 +62,7 @@ let copyStore: CopyStore | null = null;
 let officeConverter: OfficeConverter | null = null;
 let tray: Tray | null = null;
 let updates: AppUpdates | null = null;
+let gameWorkbench: GameWorkbench | null = null;
 const updateTimers: NodeJS.Timeout[] = [];
 
 let notificationBusy = false;
@@ -91,6 +95,7 @@ if (!app.requestSingleInstanceLock()) {
       frame: false,
       backgroundColor: '#e9eaee', // 与 shell.css 默认主题 mist 的 --field-base 一致,避免启动闪色
       title: '个人工作台',
+      icon: join(__dirname, '../assets/icon.ico'),
       webPreferences: {
         preload: join(__dirname, 'preload.cjs'),
         contextIsolation: true,
@@ -339,7 +344,7 @@ if (!app.requestSingleInstanceLock()) {
     });
   };
 
-  void app.whenReady().then(() => {
+  void app.whenReady().then(async () => {
     // 目录兜底:未装 To-Do-List 或首次运行时初始化空库(建表由 Store 构造完成)
     mkdirSync(dirname(TODO_DB), { recursive: true });
     try {
@@ -358,6 +363,17 @@ if (!app.requestSingleInstanceLock()) {
     browserGuests = new BrowserGuests(() => (DEV_URL || undefined));
     browserAutomation = new BrowserAutomation(browserGuests, new BrowserStore(join(app.getPath('userData'), 'browser-state.json')));
     registerBrowserAutomationIpc(browserAutomation, browserGuests, () => mainWindow?.webContents);
+    gameWorkbench = new GameWorkbench({ dataDir: join(app.getPath('userData'), 'games', 'trail-detective'), appRoot: app.getAppPath() });
+    await gameWorkbench.initialize();
+    const gameTerminal = new GameTerminal();
+    registerGameIpc(gameWorkbench, gameTerminal, browserGuests, () => mainWindow?.webContents);
+    let gameQuitting = false;
+    app.on('before-quit', event => {
+      if (!gameQuitting && gameWorkbench) {
+        event.preventDefault(); gameQuitting = true;
+        void Promise.allSettled([gameWorkbench.dispose(), gameTerminal.dispose()]).finally(() => app.quit());
+      }
+    });
     officeConverter = new OfficeConverter(OFFICE_CONVERT_OPTIONS);
     registerPdfAssetHandler(app.isPackaged ? join(process.resourcesPath, 'pdfjs') : join(__dirname, '../node_modules/pdfjs-dist'));
     const updateEnabled = app.isPackaged && !SMOKE && !process.env.WORKBENCH_TEST_DATA_DIR && existsSync(join(process.resourcesPath, 'app-update.yml'));
@@ -367,7 +383,7 @@ if (!app.requestSingleInstanceLock()) {
     updates = new AppUpdates(updateEnabled ? autoUpdater : null, unavailableMessage, status => {
       mainWindow?.webContents.send('updater:status', status);
       if (status.phase === 'ready' && Notification.isSupported()) {
-        const notification = new Notification({ title: `新版本 v${status.version} 已下载`, body: '点击重启并安装，退出应用时也会安装。' });
+        const notification = new Notification({ title: `新版本 v${status.version} 已下载`, body: '点击重启并安装，退出应用时也会安装。', icon: nativeImage.createFromPath(join(__dirname, '../assets/tray.png')) });
         notification.on('click', () => updates?.install());
         notification.show();
       }
@@ -476,8 +492,7 @@ if (!app.requestSingleInstanceLock()) {
   // ---------- 托盘 ----------
   const createTray = async (): Promise<void> => {
     const iconPath = join(__dirname, '../assets/tray.png');
-    const icon = await app.getFileIcon(process.execPath, { size: 'large' })
-      .catch(() => nativeImage.createFromPath(iconPath));
+    const icon = nativeImage.createFromPath(iconPath);
     if (icon.isEmpty()) return;
     tray = new Tray(icon);
     tray.setToolTip('个人工作台 · 待办提醒运行中');

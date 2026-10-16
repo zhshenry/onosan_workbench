@@ -113,6 +113,7 @@ export class FloatTodoWindow {
       skipTaskbar: true,
       show: false,
       title: '待办',
+      icon: join(this.preloadPath, '../../assets/icon.ico'),
       webPreferences: {
         preload: this.preloadPath,
         contextIsolation: true,

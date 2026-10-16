@@ -11,7 +11,7 @@ const shared = {
   format: 'cjs',
   target: 'node22',
   // LibreOffice kit uses sibling worker files and a native runtime resolved from its own package path.
-  external: ['electron', 'electron-updater', '@deepseek-ai/libreoffice-kit'],
+  external: ['electron', 'electron-updater', '@deepseek-ai/libreoffice-kit', 'node-pty'],
   minify: true,
   sourcemap: false,
   logLevel: 'info',

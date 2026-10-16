@@ -62,7 +62,8 @@ export class BrowserGuests {
       // 确定性持久分区:同 workspace 重启后仍拿回同一存储(cookie/登录态保留)。
       // 仅保留安全字符,避免 workspace 拼接出路径歧义。
       const safe = workspace.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64) || 'default';
-      partition = `persist:wb-browser-${safe}`;
+      // Fresh game trials use an in-memory partition; the retained trial keeps its own persistent identity.
+      partition = `${workspace.startsWith('game-trail-fresh-') ? '' : 'persist:'}wb-browser-${safe}`;
       this.configureSession(session.fromPartition(partition), workspace);
       this.partitions.set(workspace, partition);
     }

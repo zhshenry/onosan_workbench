@@ -35,6 +35,7 @@ test('切换一级工作台恢复各自会话，同工作台切页保留当前�
   let newChatCount = 0;
   (dom.window as unknown as { workbench: unknown }).workbench = {
     ai: {
+      onAsk: () => () => undefined,
       config: async () => ({ aiEnabled: true, providers: [], models: [], activeModelId: '', hasConnection: true, rlcdProviders: [], rlcdModels: [], activeRlcdModelId: '' }),
       chatList: async () => chats.map(({ id, title, updatedAt, module, draftId, profileId, viewId }) => ({ id, title, updatedAt, module, draftId, profileId, viewId })),
       chatOpen: async (id: string) => ({ ...chats.find(item => item.id === id) }),

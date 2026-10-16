@@ -1,7 +1,7 @@
 {
   "name": "onosan-workbench",
   "productName": "Ono Workbench",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "个人工作台 — 待办/日程、文档中心、内置浏览器与可生长的工作台模块",
   "type": "module",
   "main": "dist-electron/main.cjs",
@@ -28,12 +28,16 @@
   },
   "dependencies": {
     "@deepseek-ai/libreoffice-kit": "^0.1.0",
+    "@xterm/addon-fit": "0.11.0",
+    "@xterm/xterm": "6.0.0",
     "astronomy-engine": "^2.1.19",
     "dompurify": "^3.4.16",
     "electron-updater": "6.8.9",
     "iztro": "^2.6.1",
     "marked": "^18.0.14",
-    "pdfjs-dist": "^6.3.289"
+    "node-pty": "1.1.0",
+    "pdfjs-dist": "^6.3.289",
+    "playwright": "1.63.0"
   },
   "devDependencies": {
     "@earendil-works/pi-coding-agent": "^0.85.1",
@@ -54,7 +58,6 @@
     "jsdom": "^30.1.1",
     "lunar-javascript": "^1.7.7",
     "papaparse": "^5.5.3",
-    "playwright": "1.63.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "tsx": "4.23.13",
@@ -68,6 +71,7 @@
     "appId": "com.zhshenry.onoworkbench.app",
     "productName": "Ono Workbench",
     "directories": { "output": "release" },
+    "npmRebuild": false,
     "publish": { "provider": "github", "owner": "zhshenry", "repo": "onosan_workbench" },
     "files": [
       "dist/**", "dist-electron/**", "assets/tray.png", "assets/icon.ico", "package.json",

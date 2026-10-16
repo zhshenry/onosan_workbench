@@ -39,7 +39,7 @@ const stampCode = `(() => {
 })()`;
 
 export class BrowserControlError extends Error {
-  constructor(readonly code: string, message: string) { super(message); }
+  constructor(readonly code: string, message: string, readonly details?: unknown) { super(message); }
 }
 export class BrowserDriver {
   private refs = new Map<string, Target>();
@@ -62,7 +62,7 @@ export class BrowserDriver {
       for (const [frame, session] of this.sessions) if (session === params.sessionId) this.sessions.delete(frame);
       this.sessionParents.delete(params.sessionId);
     }
-    if (method === 'Runtime.executionContextsCleared' || method === 'Page.frameNavigated' || method === 'DOM.documentUpdated') {
+    if (method === 'Runtime.executionContextsCleared' || method === 'Page.frameNavigated' || method === 'Page.navigatedWithinDocument' || method === 'DOM.documentUpdated') {
       this.invalidate(); this.contexts.clear();
     }
   }
@@ -125,8 +125,8 @@ export class BrowserDriver {
     const { frameTree } = await this.send('Page.getFrameTree', {}, undefined, signal);
     const frames: { id: string; url: string; available: boolean }[] = [];
     const elements: BrowserElement[] = [], text: string[] = [];
-    let truncated = false, protectedFocus = false;
-    const candidates: { node: AXNode; target: Target; metadata: Pick<QueryNode, 'tag' | 'attributes' | 'cells' | 'cellsTruncated'> }[] = [];
+    let truncated = false, protectedFocus = false, queryIncomplete = false;
+    const candidates: { node: AXNode; target: Target; metadata: Pick<QueryNode, 'tag' | 'context' | 'attributes' | 'cells' | 'cellsTruncated'> }[] = [];
     const refs = new Map<string, Target>();
     const observationId = randomUUID();
     const visit = async (tree: any, parentSession?: string): Promise<void> => {
@@ -138,16 +138,17 @@ export class BrowserDriver {
       let available = true;
       try {
         await this.world(frame.id, sessionId);
-        const { nodes } = await this.send('Accessibility.getFullAXTree', { frameId: frame.id }, sessionId, signal) as { nodes: AXNode[] };
+        const nodes: AXNode[] = query?.within?.[0]?.by === 'css' ? [] : (await this.send('Accessibility.getFullAXTree', { frameId: frame.id }, sessionId, signal)).nodes;
         for (const node of nodes) if (node.properties?.some(property => property.name === 'focused' && property.value.value === true) && node.backendDOMNodeId) protectedFocus ||= await this.protectedNode(node, sessionId, signal);
         if (!query?.frameId || query.frameId === frame.id) {
           const domQuery = query && (query.selector || query.within?.length || query.and?.length || query.or?.length || query.has || query.hasNot || query.hasText !== undefined || query.hasNotText !== undefined || query.visible !== undefined || query.nth !== undefined);
-          const result: { nodes: QueryNode[]; text: string } = domQuery ? await queryDocument((method, params) => this.send(method, params, sessionId, signal), await this.world(frame.id, sessionId), nodes, { ...query!, nth: query?.nth === undefined ? undefined : query.nth - candidates.length }) : {
+          const result: { nodes: QueryNode[]; text: string; incomplete?: boolean } = domQuery ? await queryDocument((method, params) => this.send(method, method === 'Accessibility.getFullAXTree' ? { ...params, frameId: frame.id } : params, sessionId, signal), await this.world(frame.id, sessionId), nodes, { ...query!, nth: query?.nth === undefined ? undefined : query.nth - candidates.length }, signal) : {
             nodes: nodes.filter(node => !node.ignored && interactive.has(node.role?.value ?? '') && node.backendDOMNodeId).map(node => ({ node, signature: undefined })),
             text: nodes.filter(node => !node.ignored && node.role?.value === 'StaticText').map(node => node.name?.value ?? '').join('\n'),
           };
+          queryIncomplete ||= result.incomplete === true;
           if (result.text) text.push(result.text);
-          for (const item of result.nodes) candidates.push({ node: item.node, target: { backendNodeId: item.node.backendDOMNodeId!, frameId: frame.id, sessionId, url: frame.url, signature: item.signature }, metadata: { tag: item.tag, attributes: item.attributes, cells: item.cells, cellsTruncated: item.cellsTruncated } });
+          for (const item of result.nodes) candidates.push({ node: item.node, target: { backendNodeId: item.node.backendDOMNodeId!, frameId: frame.id, sessionId, url: frame.url, signature: item.signature }, metadata: { tag: item.tag, context: item.context, attributes: item.attributes, cells: item.cells, cellsTruncated: item.cellsTruncated } });
         }
       } catch (error) { if (signal?.aborted || query && (!query.frameId || query.frameId === frame.id)) throw error; available = false; }
       frames.push({ id: frame.id, url: frame.url, available });
@@ -164,11 +165,12 @@ export class BrowserDriver {
     const offset = query?.offset ?? 0, limit = query?.limit ?? 250, textOffset = query?.textOffset ?? 0, textLimit = query?.textLimit ?? 14000;
     for (const { node, target, metadata } of candidates.slice(offset, offset + limit)) {
       const ref = `${observationId.slice(0, 8)}:e${elements.length + 1}`; refs.set(ref, target);
-      elements.push({ ref, role: node.role?.value ?? '', name: String(node.name?.value ?? '').slice(0, 300), value: await this.protectedNode(node, target.sessionId, signal) ? undefined : String(node.value?.value ?? '').slice(0, 1000), frameId: target.frameId, ...axState(node), ...metadata });
+      const value = await this.protectedNode(node, target.sessionId, signal) ? undefined : String(node.value?.value ?? '');
+      elements.push({ ref, role: node.role?.value ?? '', name: String(node.name?.value ?? '').slice(0, 300), value: value?.slice(0, 1000), ...(value && value.length > 1000 ? { valueTruncated: true } : {}), frameId: target.frameId, ...axState(node), ...metadata });
     }
     const fullText = text.join('\n'), nextOffset = offset + limit < candidates.length ? offset + limit : undefined, nextTextOffset = textOffset + textLimit < fullText.length ? textOffset + textLimit : undefined;
-    truncated = offset > 0 || textOffset > 0 || nextOffset !== undefined || nextTextOffset !== undefined;
-    const result: BrowserObservation = { id: observationId, tab: this.port.info(), text: fullText.slice(textOffset, textOffset + textLimit), elements, frames, truncated, page: { totalElements: candidates.length, offset, nextOffset, totalTextLength: fullText.length, textOffset, nextTextOffset } };
+    truncated = queryIncomplete || offset > 0 || textOffset > 0 || nextOffset !== undefined || nextTextOffset !== undefined;
+    const result: BrowserObservation = { id: observationId, tab: this.port.info(), text: fullText.slice(textOffset, textOffset + textLimit), elements, frames, truncated, ...(queryIncomplete ? { queryIncomplete: true } : {}), page: { totalElements: candidates.length, offset, nextOffset, totalTextLength: fullText.length, textOffset, nextTextOffset } };
     let shotStamp = '';
     if (screenshot) {
       const before = await this.stamp(frameTree.frame.id);
@@ -236,7 +238,7 @@ export class BrowserDriver {
     do {
       signal?.throwIfAborted(); await guard();
       const observation = await this.observe(false, false, signal, { ...action.query, visible: true, offset: 0, limit: 2 });
-      if (observation.elements.length > 1) throw new BrowserControlError('ambiguous-locator', '定位条件匹配多个元素，请增加容器、文字或 nth 条件后重试。');
+      if (observation.elements.length > 1) throw new BrowserControlError('ambiguous-locator', '定位条件匹配多个元素，请增加容器、文字或 nth 条件后重试。', { count: observation.page?.totalElements, candidates: observation.elements.map(({ role, name, frameId, context }) => ({ role, name, frameId, context })) });
       let dispatched = false;
       if (observation.elements.length === 1) {
         try { return await this.act({ ...action.action, ref: observation.elements[0].ref }, guard, signal, () => { dispatched = true; }); }
@@ -265,8 +267,10 @@ export class BrowserDriver {
           this.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
           const rect = this.getBoundingClientRect(), style = getComputedStyle(this);
           const hit = this.getRootNode().elementFromPoint?.(rect.x + rect.width/2, rect.y + rect.height/2) ?? this.ownerDocument.elementFromPoint(rect.x + rect.width/2, rect.y + rect.height/2);
-          return { ok: rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none' && !!hit && (hit === this || this.contains(hit)), disabled: !!this.disabled, readOnly: !!this.readOnly, tag: this.tagName, type: this.type, secret: /(?:current|new)-password/.test(this.autocomplete ?? ''), editable: this.isContentEditable, signature: JSON.stringify([this.nodeName, [...this.attributes].flatMap(attribute => [attribute.name,attribute.value]), (this.textContent ?? '').replace(/\s+/g,' ').trim().slice(0,300)]) };
+          const moving = this.getAnimations().some(animation => animation.playState === 'running' && animation.effect?.getKeyframes().some(frame => Object.keys(frame).some(key => /^(transform|translate|rotate|scale|top|left|right|bottom|width|height|margin|padding)/.test(key))));
+          return { moving, ok: rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none' && !!hit && (hit === this || this.contains(hit)), disabled: !!this.disabled, readOnly: !!this.readOnly, tag: this.tagName, type: this.type, secret: /(?:current|new)-password/.test(this.autocomplete ?? ''), editable: this.isContentEditable, signature: JSON.stringify([this.nodeName, [...this.attributes].flatMap(attribute => [attribute.name,attribute.value]), (this.textContent ?? '').replace(/\s+/g,' ').trim().slice(0,300)]) };
         }`, [], signal);
+        if (state?.moving) throw new BrowserControlError('element-blocked', '元素的位置动画尚未结束，请等待稳定后操作。');
         if (!state?.ok || state.disabled) throw new BrowserControlError('element-blocked', '元素隐藏、禁用或被其他内容遮挡，请重新观察。');
         if (state.type === 'file' || state.type === 'password' || state.secret) throw new BrowserControlError('manual-required', '密码与文件选择请手动完成，完成后点击继续。');
         const expected = this.observation?.elements.find(element => element.ref === action.ref);
@@ -307,6 +311,9 @@ export class BrowserDriver {
           const { quads } = await this.send('DOM.getContentQuads', { backendNodeId: target.backendNodeId }, target.sessionId, signal);
           const quad = quads?.[0];
           if (!quad) throw new BrowserControlError('element-blocked', '无法定位元素，请重新观察。');
+          await new Promise(resolve => setTimeout(resolve, 100));
+          const next = (await this.send('DOM.getContentQuads', { backendNodeId: target.backendNodeId }, target.sessionId, signal)).quads?.[0];
+          if (!next || quad.some((value: number, index: number) => Math.abs(value - next[index]) > 0.5)) throw new BrowserControlError('element-blocked', '元素仍在移动，请等待位置稳定后操作。');
           const x = (quad[0] + quad[2] + quad[4] + quad[6]) / 4, y = (quad[1] + quad[3] + quad[5] + quad[7]) / 4;
           if (action.type === 'setChecked') {
             if (!['checkbox', 'radio', 'switch'].includes(current?.role?.value ?? '') || state.type === 'radio' && !action.checked) throw new BrowserControlError('not-checkable', '请选择复选框、开关或要选中的单选项。');
@@ -391,7 +398,27 @@ export class BrowserDriver {
     await this.bounded(this.port.navigate(url), signal);
     return this.observe(false, false, signal);
   }
-  async check(condition: BrowserCondition, signal?: AbortSignal): Promise<{ passed: boolean; evidence: string; observation: BrowserObservation }> {
+  async check(condition: BrowserCondition, signal?: AbortSignal): Promise<{ passed: boolean; evidence: string; actual: string; complete: boolean; observation: BrowserObservation }> {
+    if (condition.type === 'state') {
+      const { state } = condition;
+      const observation = await this.observe(false, false, signal, { ...condition.query, visible: ['visible', 'hidden', 'stable'].includes(state) ? true : condition.query.visible, offset: 0, limit: 250 });
+      const count = observation.page?.totalElements ?? observation.elements.length;
+      const complete = !observation.queryIncomplete && !observation.frames.some(frame => !frame.available && (!condition.query.frameId || frame.id === condition.query.frameId));
+      let passed = ['detached', 'hidden'].includes(state) ? count === 0 && complete : ['enabled', 'disabled'].includes(state) ? count === 1 && observation.elements[0]?.disabled === (state === 'disabled') : count > 0;
+      if (state === 'stable' && passed) {
+        if (count !== 1) passed = false;
+        else {
+          const target = this.target(observation.elements[0].ref);
+          const moving = await this.withNode(target, objectId => this.nodeCall(target, objectId, `function() { return this.getAnimations().some(animation => animation.playState === 'running' && animation.effect?.getKeyframes().some(frame => Object.keys(frame).some(key => /^(transform|translate|rotate|scale|top|left|right|bottom|width|height|margin|padding)/.test(key)))); }`, [], signal), signal);
+          const before = (await this.send('DOM.getContentQuads', { backendNodeId: target.backendNodeId }, target.sessionId, signal)).quads?.[0];
+          await new Promise(resolve => setTimeout(resolve, 100));
+          const after = (await this.send('DOM.getContentQuads', { backendNodeId: target.backendNodeId }, target.sessionId, signal)).quads?.[0];
+          passed = !moving && !!before && !!after && before.every((value: number, index: number) => Math.abs(value - after[index]) <= 0.5);
+        }
+      }
+      const actual = `匹配 ${count} 项：${observation.elements.slice(0, 5).map(element => `${element.name || '未命名元素'}（${element.disabled ? '已禁用' : '可用'}）`).join('；')}`;
+      return { passed, complete, actual, evidence: `${state}，匹配 ${count} 个元素 → ${passed ? '条件符合' : complete ? '条件不符合' : '观察不完整'}`, observation };
+    }
     const query = condition.type === 'locator' ? condition.query : condition.type === 'element' || condition.type === 'field'
       ? browserQuerySchema.parse({ frameId: condition.frameId, selector: { by: 'role', value: condition.role, name: condition.name } })
       : condition.type === 'text' ? browserQuerySchema.parse({ selector: { by: 'text', value: condition.text, exact: false }, visible: true }) : undefined;
@@ -400,12 +427,14 @@ export class BrowserDriver {
     const states = ['value', 'checked', 'selected', 'expanded'] as const;
     const hasState = condition.type === 'field' || condition.type === 'locator' && states.some(key => condition[key] !== undefined);
     const exists = condition.type === 'url' ? observation.tab.url.includes(condition.text) : hasState
-      ? observation.elements.some(element => states.every(key => !(key in condition) || condition[key as keyof typeof condition] === undefined || element[key] === condition[key as keyof typeof condition])) : count > 0;
-    const incomplete = observation.frames.some(frame => !frame.available && (!query?.frameId || query.frameId === frame.id)) || hasState && observation.page?.nextOffset !== undefined;
+      ? observation.elements.some(element => !('value' in condition && element.valueTruncated) && states.every(key => !(key in condition) || condition[key as keyof typeof condition] === undefined || element[key] === condition[key as keyof typeof condition])) : count > 0;
+    const incomplete = observation.queryIncomplete === true || observation.elements.some(element => hasState && 'value' in condition && element.valueTruncated) || observation.frames.some(frame => !frame.available && (!query?.frameId || query.frameId === frame.id)) || hasState && observation.page?.nextOffset !== undefined;
     const expected = condition.type === 'locator' && condition.count !== undefined ? condition.count > 0 : 'present' in condition ? condition.present : true;
     const passed = exists === expected && !(condition.type !== 'url' && !exists && incomplete)
       && !(condition.type === 'locator' && condition.count !== undefined && (count !== condition.count || incomplete));
     const target = condition.type === 'locator' ? `局部定位，匹配 ${count} 个元素` : condition.type === 'field' || condition.type === 'element' ? `${condition.role} / ${condition.name}` : condition.text;
-    return { passed, evidence: condition.type === 'url' ? browserRecordUrl(observation.tab.url) : `${target} → ${passed ? '条件符合' : incomplete ? '观察不完整，无法确认条件' : '条件不符合'}`, observation };
+    const actual = condition.type === 'url' ? browserRecordUrl(observation.tab.url) : `匹配 ${count} 项：${observation.elements.slice(0, 5).map(element => [element.name || '未命名元素', element.value === undefined ? '' : `实际值：${element.value}${element.valueTruncated ? '（已截断）' : ''}`, element.checked === undefined ? '' : `勾选：${element.checked === 'mixed' ? '部分选中' : element.checked ? '是' : '否'}`, element.selected === undefined ? '' : `选中：${element.selected ? '是' : '否'}`, element.expanded === undefined ? '' : `展开：${element.expanded ? '是' : '否'}`].filter(Boolean).join(' / ')).join('；')}`.slice(0, 2000);
+    const observedActual = condition.type !== 'url' && observation.text ? `${actual}\n读取文字：${observation.text.slice(0, 1000)}${observation.page?.nextTextOffset !== undefined || observation.text.length > 1000 ? '（已截断）' : ''}` : actual;
+    return { passed, actual: observedActual, complete: !incomplete, evidence: condition.type === 'url' ? browserRecordUrl(observation.tab.url) : `${target} → ${passed ? '条件符合' : incomplete ? '观察不完整，无法确认条件' : '条件不符合'}`, observation };
   }
 }

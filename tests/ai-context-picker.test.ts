@@ -32,7 +32,9 @@ test('上下文选择器使用真实控件发送所选 ID，并隔离页面、�
   };
   const originalHome = newChat({ module: 'todo' });
   (dom.window as unknown as { workbench: unknown }).workbench = {
+    browserAutomation: { tabs: async () => [] },
     ai: {
+      onAsk: () => () => undefined,
       config: async () => ({ aiEnabled: true, providers: [], models: [], activeModelId: '', hasConnection: true, rlcdProviders: [], rlcdModels: [], activeRlcdModelId: '' }),
       chatList: async () => chats.map(item => ({ ...item })),
       chatOpen: async (id: string) => ({ ...chats.find(item => item.id === id)! }),
@@ -203,6 +205,8 @@ test('上下文选择器使用真实控件发送所选 ID，并隔离页面、�
     await click('.ai-add-reference'); await select('参考博文0'); await apply();
     const seed: AiSeed = { text: '快捷发送', nonce: 1, scope: context.scope };
     await render(context, { seed });
+    assert.equal(requests.at(-1)!.text, seed.text);
+    assert.equal(requests.at(-1)!.turn.browserTabId, null, 'blank page is captured explicitly for the browser request');
     assert.deepEqual(requests.at(-1)!.turn.references, [{ module: 'copy', draftId: 'blog-0' }]);
 
     await render({ scope: { module: 'workbench', viewId: 'reading' }, label: '阅读清单', object: '未选书目' });

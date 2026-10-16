@@ -32,8 +32,13 @@ import { resolveAiReferences, withAiReferenceSnapshots } from './ai-reference';
 const MAX_PROVIDERS = 8;
 const MAX_MODELS = 8;
 
-let activeRequest: AbortController | null = null;
-let pendingAsk: { ask: { id: string; question: string; options: { label: string; description?: string }[] }; resolve: (answer: string) => void; reject: () => void } | null = null;
+const activeRequests = new Map<string, AbortController>();
+const pendingAsks = new Map<string, { ask: { id: string; question: string; options: { label: string; description?: string }[] }; resolve: (answer: string) => void; reject: () => void }>();
+function cancelRequests(): void {
+  for (const controller of activeRequests.values()) controller.abort();
+  for (const question of pendingAsks.values()) question.reject();
+  pendingAsks.clear();
+}
 type Pending = { sessionId: string; plan: Proposal; revisions: Map<string, string>; copy?: { draftId: string; updatedAt: string; title: string; body: string; actions: CopyAiAction[] } };
 const pending = new Map<string, Pending>();
 
@@ -101,7 +106,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     const data = z.object({ aiEnabled: z.boolean() }).strict().parse(input);
     if (data.aiEnabled && !activeConnection(ai)) throw new Error('开启 AI 前,请先添加供应商和模型');
     mutateConfig(config => ({ ...config, aiEnabled: data.aiEnabled }));
-    activeRequest?.abort();
+    cancelRequests();
     pending.clear();
     return configSummary();
   });
@@ -131,7 +136,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
       providers.push(next);
     }
     mutateConfig(current => ({ ...current, providers: [...providers] }));
-    activeRequest?.abort();
+    cancelRequests();
     pending.clear();
     return configSummary();
   });
@@ -141,7 +146,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     if (!config.providers.some(provider => provider.id === providerId)) throw new Error('供应商不存在');
     const models = config.models.filter(model => model.providerId !== providerId);
     mutateConfig(current => ({ ...current, providers: current.providers.filter(p => p.id !== providerId), models, aiEnabled: models.length ? current.aiEnabled : false }));
-    activeRequest?.abort();
+    cancelRequests();
     pending.clear();
     return configSummary();
   });
@@ -182,7 +187,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
       aiEnabled: current.models.filter(m => m.id !== modelId).length ? current.aiEnabled : false,
       activeModelId: current.activeModelId === modelId ? '' : current.activeModelId,
     }));
-    activeRequest?.abort();
+    cancelRequests();
     pending.clear();
     return configSummary();
   });
@@ -292,7 +297,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     const activeId = ai.setting('activeChatId', '');
     const selected = id ? z.string().uuid().parse(id) : activeId;
     const chat = selected ? ai.chat(selected) : ai.newChat();
-    if (!activeRequest) {
+    if (!activeRequests.has(chat.id)) {
       for (const entry of chat.entries) if (entry.actionState === 'pending' && !pending.has(entry.proposal?.token ?? entry.copyProposal?.token ?? '')) entry.actionState = 'expired';
     }
     ai.setSetting('activeChatId', chat.id);
@@ -316,7 +321,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
   });
   ipcMain.handle('ai:chat:remove', (_event, id: unknown) => {
     const chatId = z.string().uuid().parse(id);
-    if (activeRequest && ai.chat(chatId).entries.some(entry => entry.streaming)) throw new Error('这条对话正在生成，请先停止生成');
+    if (activeRequests.has(chatId)) throw new Error('这条对话正在生成，请先停止生成');
     for (const [token, item] of pending) if (item.sessionId === chatId) pending.delete(token);
     return ai.deleteChat(chatId);
   });
@@ -345,13 +350,13 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
       copySource: z.object({ draftId: z.string().min(1), start: z.number().int().nonnegative(), end: z.number().int().positive(), text: z.string().min(1).max(1000) }).strict().optional(),
       scope: scopeSchema.optional(),
       pageScope: scopeSchema.optional(),
-      browserTabId: z.string().min(1).max(100).optional(),
+      browserTabId: z.string().min(1).max(100).nullable().optional(),
       references: aiReferencesSchema.optional(),
     }).strict().parse(turnContext ?? {});
     const selectedSystem = context.baziSystem ?? 'bazi';
     const connection = activeConnection(ai);
     if (!ai.readConfig().aiEnabled || !connection) throw new Error('请先在 AI 设置中配置并启用');
-    if (activeRequest) throw new Error('已有 AI 请求正在处理');
+    if (activeRequests.has(request.sessionId)) throw new Error('这条对话正在生成，请先停止生成');
     const chat = ai.chat(request.sessionId);
     const priorScope = chatContextScope(chat);
     const requestedScope = context.scope ?? priorScope;
@@ -361,7 +366,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     const pageScope = context.pageScope ?? (aiScopeKey(requestedScope) === aiScopeKey(priorScope) ? chat.pageScope ?? scope : requestedScope);
     const isBrowserPage = pageScope.module === 'workbench' && ['browser', 'media-browser'].includes(pageScope.viewId);
     if (isBrowserPage && !isMainFrame) throw new Error('浏览器任务仅允许主窗口文档。');
-    if (context.browserTabId && !isBrowserPage) throw new Error('请在关联的浏览器页面发送网页操作要求。');
+    if (context.browserTabId !== undefined && !isBrowserPage) throw new Error('请在关联的浏览器页面发送网页操作要求。');
     const referenceSnapshots = resolveAiReferences(context.references, pageScope, scope, { todo: store, copy, bazi, reading }, { now: new Date(), baziSystem: selectedSystem });
     const references = referenceSnapshots.map(snapshot => snapshot.reference);
     const selectedTaskIds = references.flatMap(reference => reference.module === 'todo' ? [reference.taskId] : []);
@@ -376,9 +381,11 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     const tasks = scope.module === 'todo' ? store.all() : [];
     const categories = scope.module === 'todo' ? store.categories() : [];
     const todoContribution = scope.module === 'todo' ? buildTodoContribution(tasks, categories, (ask) => new Promise<string>((resolve, reject) => {
-      pendingAsk = { ask, resolve, reject };
+      const abort = () => { pendingAsks.delete(chat.id); reject(new Error('已停止此对话的澄清请求。')); };
+      controller.signal.addEventListener('abort', abort, { once: true });
+      pendingAsks.set(chat.id, { ask, resolve: answer => { controller.signal.removeEventListener('abort', abort); resolve(answer); }, reject: abort });
       for (const win of BrowserWindow.getAllWindows()) {
-        if (!win.isDestroyed() && !win.webContents.isDestroyed() && win.isVisible()) win.webContents.send('ai:ask', ask);
+        if (!win.isDestroyed() && !win.webContents.isDestroyed() && win.isVisible()) win.webContents.send('ai:ask', { ...ask, sessionId: chat.id });
       }
     }), selectedTaskIds) : null;
     const copyContribution = draft ? buildCopyContribution(draft) : null;
@@ -443,7 +450,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
         pending.delete(token);
       }
     };
-    activeRequest = controller;
+    activeRequests.set(chat.id, controller);
     // 写作助手可能整段成稿,超时放宽到 90s(待办保持 45s)
     const timeout = setTimeout(() => controller.abort(), browserTask ? 600000 : scope.module === 'copy' ? 90000 : 45000);
     let deltaTimer: ReturnType<typeof setTimeout> | null = null;
@@ -526,7 +533,8 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     } finally {
       if (deltaTimer) clearTimeout(deltaTimer);
       clearTimeout(timeout);
-      activeRequest = null;
+      if (activeRequests.get(chat.id) === controller) activeRequests.delete(chat.id);
+      pendingAsks.get(chat.id)?.reject(); pendingAsks.delete(chat.id);
     }
   };
   ipcMain.handle('ai:ask', async (event, sessionId: unknown, text: unknown, context: unknown) => {
@@ -534,17 +542,19 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
   });
   // 用户回答 AI 的澄清提问(上游 ask:answer 同义;跳过=空答案)
   ipcMain.on('ai:answer', (_event, input: unknown) => {
-    const data = input as { id?: string; kind?: 'option' | 'text' | 'skip'; value?: string };
-    if (!pendingAsk || data.id !== pendingAsk.ask.id) return;
+    const parsed = z.object({ id: z.string(), sessionId: z.string().uuid(), kind: z.enum(['option', 'text', 'skip']), value: z.string().max(10000).optional() }).strict().safeParse(input);
+    if (!parsed.success) return;
+    const data = parsed.data, question = pendingAsks.get(data.sessionId);
+    if (!question || data.id !== question.ask.id) return;
     const answer = data.kind === 'skip' ? '(用户选择跳过,请按你的判断继续并说明假设)' : data.kind === 'option' ? data.value ?? '' : data.value ?? '';
-    pendingAsk.resolve(answer);
-    pendingAsk = null;
+    pendingAsks.delete(data.sessionId); question.resolve(answer);
   });
 
-  ipcMain.on('ai:cancel', () => {
-    pendingAsk?.reject();
-    pendingAsk = null;
-    activeRequest?.abort();
+  ipcMain.on('ai:cancel', (_event, input: unknown) => {
+    const id = z.string().uuid().safeParse(input);
+    if (!id.success) return;
+    activeRequests.get(id.data)?.abort();
+    pendingAsks.get(id.data)?.reject(); pendingAsks.delete(id.data);
   });
   ipcMain.handle('ai:apply', (_event, token: unknown, indices: number[]) => {
     const tokenText = z.string().uuid().parse(token);

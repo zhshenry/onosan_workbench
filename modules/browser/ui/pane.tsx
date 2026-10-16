@@ -136,7 +136,7 @@ export function BrowserPane({
     manual(() => active.frame.loadUrl(value));
   };
   const manual = (action: () => void): void => {
-    if (task?.status === 'running') void window.workbench.browserAutomation.control(task.id, 'pause').then(() => action(), error => onPending(String(error)));
+    if (task?.status === 'running' && task.tabIds.includes(active.id)) void window.workbench.browserAutomation.control(task.id, 'pause').then(() => action(), error => onPending(String(error)));
     else action();
   };
 
@@ -209,25 +209,25 @@ export function BrowserPane({
           const index = tabs.findIndex(tab => tab.id === active.id);
           const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
           const tab = tabs[next];
-          manual(() => { setActiveId(tab.id); setInput(tab.frame.getSnapshot().target?.url.replace(/^https?:\/\//, '') ?? ''); document.getElementById(`browser-tab-${workspace}-${tab.id}`)?.focus(); });
+          setActiveId(tab.id); setInput(tab.frame.getSnapshot().target?.url.replace(/^https?:\/\//, '') ?? ''); document.getElementById(`browser-tab-${workspace}-${tab.id}`)?.focus();
         }}>
           {tabs.map((t) => {
             const title = t.frame.getSnapshot().target?.title || '新标签页';
             return (
               <div key={t.id} className={t.id === active.id ? 'mbp-tab on' : 'mbp-tab'}>
-                <button className="mbp-tab-btn" id={`browser-tab-${workspace}-${t.id}`} role="tab" aria-selected={t.id === active.id} tabIndex={t.id === active.id ? 0 : -1} title={title} onClick={() => manual(() => { setActiveId(t.id); setInput(t.frame.getSnapshot().target?.url.replace(/^https?:\/\//, '') ?? ''); })}>
+                <button className="mbp-tab-btn" id={`browser-tab-${workspace}-${t.id}`} role="tab" aria-selected={t.id === active.id} tabIndex={t.id === active.id ? 0 : -1} title={title} onClick={() => { setActiveId(t.id); setInput(t.frame.getSnapshot().target?.url.replace(/^https?:\/\//, '') ?? ''); }}>
                   <Globe size={15} />
                   <span className="mbp-tab-title">{title}</span>
                 </button>
                 {tabs.length > 1 && (
-                  <button className="mbp-tab-x" title="关闭标签页" aria-label={`关闭 ${title}`} onClick={() => manual(() => closeTab(t.id))}>
+                  <button className="mbp-tab-x" title="关闭标签页" aria-label={`关闭 ${title}`} onClick={() => closeTab(t.id)}>
                     <X size={9} weight="bold" />
                   </button>
                 )}
               </div>
             );
           })}
-        </div><button className="mbp-tabnew" title="新标签页" aria-label="新标签页" disabled={tabs.length >= 20} onClick={() => manual(() => newTab())}><Plus size={17} /></button></div>
+        </div><button className="mbp-tabnew" title="新标签页" aria-label="新标签页" disabled={tabs.length >= 20} onClick={() => newTab()}><Plus size={17} /></button></div>
       )}
       <div className="mbp-chrome">
         <div className="mbp-navigation">
@@ -261,7 +261,7 @@ export function BrowserPane({
             {capDone ? <>已采集 ✓</> : <><Plus size={13} weight="bold" />{capture.label}</>}
           </button>
         )}
-        {automation && <BrowserAutomationBar workspace={workspace} url={state.target?.url} ready={state.target !== undefined && !state.loading && !state.error} zoomFactor={state.zoomFactor} onZoomChange={factor => active.frame.setZoomFactor(factor)} onRefreshZoom={() => active.frame.refreshZoom()} onNavigate={go} onState={onTaskState} />}
+        {automation && <BrowserAutomationBar workspace={workspace} tabId={active.id} url={state.target?.url} ready={state.target !== undefined && !state.loading && !state.error} zoomFactor={state.zoomFactor} onZoomChange={factor => active.frame.setZoomFactor(factor)} onRefreshZoom={() => active.frame.refreshZoom()} onNavigate={go} onState={onTaskState} />}
       </div>
       <div className="mbp-stage">
         {task?.status === 'running' && <button className="browser-takeover" title="点击页面可暂停并接管" aria-label="接管浏览器并暂停 AI" onClick={() => void window.workbench.browserAutomation.control(task.id, 'pause').catch(error => onPending(String(error)))} />}

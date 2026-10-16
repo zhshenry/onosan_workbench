@@ -4,10 +4,11 @@ import type { BrowserGuests } from '../browser-guests';
 import { BrowserControlError, BrowserDriver } from './driver';
 import { createGuestDriver } from './guest-driver';
 import { BrowserStore } from './store';
-import type { BrowserAction, BrowserClearData, BrowserCondition, BrowserQuery, BrowserTask, BrowserTabCommand } from '../../shared/browser-automation-contracts';
-import { browserRecordUrl } from '../../shared/browser-automation-contracts';
+import { BrowserCollections } from './extract';
+import type { BrowserAction, BrowserChecks, BrowserClearData, BrowserCondition, BrowserExtract, BrowserQuery, BrowserTask, BrowserTabCommand, BrowserVerificationItem } from '../../shared/browser-automation-contracts';
+import { browserChecksSchema, browserConditionSchema, browserRecordUrl } from '../../shared/browser-automation-contracts';
 
-interface ActiveTask { task: BrowserTask; owner: WebContents; controller: AbortController; signal?: AbortSignal; wake: Set<() => void>; verified: boolean; busy: boolean; }
+interface ActiveTask { task: BrowserTask; owner: WebContents; controller: AbortController; signal?: AbortSignal; wake: Set<() => void>; collections: BrowserCollections; busy: boolean; }
 export class BrowserAutomation {
   private tasks = new Map<string, ActiveTask>();
   private drivers = new Map<number, Promise<BrowserDriver>>();
@@ -19,8 +20,14 @@ export class BrowserAutomation {
       if (guests.resolve(owner, parent).workspace === 'xhs-creator') return undefined;
       const active = [...this.tasks.values()].find(item => item.owner === owner && item.busy && item.task.tabIds.includes(parent));
       if (!active || active.task.tabIds.length >= 20) return undefined;
-      const id = randomUUID(); active.task.tabIds.push(id); active.verified = false; this.publish(active); return id;
+      const id = randomUUID(); active.task.tabIds.push(id); this.invalidateVerification(active); this.publish(active); return id;
     });
+  }
+  private invalidateVerification(active: ActiveTask): void {
+    for (const item of active.task.verification?.items ?? []) item.status = 'stale';
+  }
+  private assertTabAvailable(owner: WebContents, tabId: string, exceptId?: string): void {
+    if ([...this.tasks.values()].some(item => item.owner === owner && item.task.id !== exceptId && item.task.tabIds.includes(tabId) && (item.busy || ['ready', 'paused', 'site-approval'].includes(item.task.status)))) throw new BrowserControlError('tab-busy', '此标签正在由另一对话操作，请停止该任务或使用另一个标签。');
   }
   private publish(active: ActiveTask): BrowserTask {
     active.task.updatedAt = new Date().toISOString();
@@ -38,10 +45,15 @@ export class BrowserAutomation {
     const lease = tabId ? this.guests.resolve(owner, tabId) : undefined;
     const url = lease?.guest.getURL();
     if (url && !this.guests.canNavigate(url, lease!.workspace)) throw new Error('请先打开一个允许的网页。');
-    if ([...this.tasks.values()].some(item => item.owner === owner && ['ready', 'running', 'paused', 'site-approval'].includes(item.task.status))) throw new Error('请先结束当前浏览器任务。');
+    if (tabId) this.assertTabAvailable(owner, tabId);
     const task: BrowserTask = { id: randomUUID(), workspace: lease?.workspace ?? workspace, tabIds: tabId ? [tabId] : [], origins: url ? [new URL(url).origin] : [], goal, status: 'ready', steps: [], updatedAt: new Date().toISOString() };
-    const active: ActiveTask = { task, owner, controller: new AbortController(), wake: new Set(), verified: false, busy: false };
-    for (const [id, old] of this.tasks) if (!old.busy && !['ready', 'paused', 'site-approval'].includes(old.task.status)) this.tasks.delete(id);
+    const active: ActiveTask = { task, owner, controller: new AbortController(), wake: new Set(), collections: new BrowserCollections(), busy: false };
+    for (const [id, old] of this.tasks) if (!old.busy && !['ready', 'paused', 'site-approval', 'unverified'].includes(old.task.status)) this.tasks.delete(id);
+    while (this.tasks.size >= 40) {
+      const oldest = [...this.tasks.values()].filter(item => !item.busy && item.task.status === 'unverified').sort((a, b) => a.task.updatedAt.localeCompare(b.task.updatedAt))[0];
+      if (!oldest) break;
+      this.tasks.delete(oldest.task.id);
+    }
     this.tasks.set(task.id, active);
     return this.publish(active);
   }
@@ -51,8 +63,8 @@ export class BrowserAutomation {
     return active;
   }
   taskFor(owner: WebContents, id: string): BrowserTask { return structuredClone(this.get(owner, id).task); }
-  forChat(owner: WebContents, workspace: string, goal: string, chatId: string, previousId?: string, tabId?: string): BrowserTask {
-    const tab = this.guests.tabs(owner, workspace).find(tab => (tabId ? tab.id === tabId : tab.active) && tab.ready && this.guests.canNavigate(tab.url, workspace));
+  forChat(owner: WebContents, workspace: string, goal: string, chatId: string, previousId?: string, tabId?: string | null): BrowserTask {
+    const tab = tabId === null ? undefined : this.guests.tabs(owner, workspace).find(tab => (tabId ? tab.id === tabId : tab.active) && tab.ready && this.guests.canNavigate(tab.url, workspace));
     if (tabId && !tab) throw new BrowserControlError('tab-unavailable', '关联的网页已经关闭或不可操作，请重新选择页面后发送。');
     const previous = previousId ? this.continuation(owner, previousId, chatId) : undefined;
     return previous?.workspace === workspace && (tab ? previous.tabIds.includes(tab.id) : !previous.tabIds.length) ? previous : this.start(owner, tab?.id, goal, workspace);
@@ -65,21 +77,28 @@ export class BrowserAutomation {
   bind(owner: WebContents, id: string, chatId: string, signal: AbortSignal): BrowserTask {
     const active = this.get(owner, id);
     if (!['ready', 'paused', 'unverified'].includes(active.task.status) || active.busy || active.task.chatId && active.task.chatId !== chatId) throw new Error('浏览器任务不可在此对话启动，请重新开始任务。');
+    for (const tabId of active.task.tabIds) this.assertTabAvailable(owner, tabId, id);
+    this.invalidateVerification(active);
     active.busy = true; active.signal = AbortSignal.any([signal, active.controller.signal]);
     active.task.chatId = chatId; active.task.status = 'running'; active.task.error = undefined;
     return this.publish(active);
   }
-  control(owner: WebContents, id: string, action: 'pause' | 'resume' | 'cancel' | 'approve-site'): BrowserTask {
+  private settleSiteApproval(active: ActiveTask, status: 'allowed' | 'denied' | 'expired'): void {
+    for (const approval of active.task.siteApprovals ?? []) if (approval.status === 'pending') approval.status = status;
+  }
+  control(owner: WebContents, id: string, action: 'pause' | 'resume' | 'cancel' | 'approve-site', expectedOrigin?: string): BrowserTask {
     const active = this.get(owner, id);
     if (!['ready', 'running', 'paused', 'site-approval', 'unverified'].includes(active.task.status)) throw new Error('该任务已结束。');
-    if (action === 'cancel') { active.controller.abort(); active.task.status = 'cancelled'; }
+    if (expectedOrigin !== undefined && (active.task.status !== 'site-approval' || active.task.pendingOrigin !== expectedOrigin)) throw new Error('站点授权请求已变化，请确认当前站点后重试。');
+    if (action === 'cancel') { this.settleSiteApproval(active, 'denied'); active.controller.abort(); active.task.status = 'cancelled'; active.task.pendingOrigin = undefined; }
     else if (action === 'pause' && active.task.status === 'running') {
-      active.task.status = 'paused'; active.verified = false;
+      active.task.status = 'paused'; this.invalidateVerification(active); active.collections.clear();
       for (const tabId of active.task.tabIds) {
         try { void this.drivers.get(this.guests.resolve(owner, tabId).guest.id)?.then(driver => driver.invalidate()); } catch { /* The next operation reports a closed tab. */ }
       }
     }
     else if (action === 'approve-site' && active.task.pendingOrigin && active.task.status === 'site-approval') {
+      this.settleSiteApproval(active, 'allowed');
       active.task.origins.push(active.task.pendingOrigin); active.task.pendingOrigin = undefined; active.task.status = active.busy ? 'running' : 'ready';
     } else if (action === 'resume' && active.task.status === 'paused' && !active.task.pendingOrigin) active.task.status = active.busy ? 'running' : 'ready';
     else throw new Error('当前状态不能执行此操作。');
@@ -88,8 +107,11 @@ export class BrowserAutomation {
   }
   finish(owner: WebContents, id: string, error?: string): void {
     const active = this.get(owner, id);
+    this.settleSiteApproval(active, 'expired');
     active.busy = false;
-    if (active.task.status !== 'cancelled') active.task.status = error ? active.signal?.aborted ? 'interrupted' : 'failed' : active.verified ? 'completed' : 'unverified';
+    active.collections.clear();
+    const items = active.task.verification?.items ?? [];
+    if (active.task.status !== 'cancelled') active.task.status = error ? active.signal?.aborted ? 'interrupted' : 'failed' : items.length && items.every(item => item.status === 'passed') ? 'completed' : 'unverified';
     active.task.error ||= error; active.task.pendingOrigin = undefined;
     this.publish(active);
   }
@@ -98,7 +120,13 @@ export class BrowserAutomation {
     signal.throwIfAborted();
     if (!active.busy || !['running', 'paused', 'site-approval'].includes(active.task.status)) throw new BrowserControlError('task-ended', '浏览器任务已经结束。');
     const origin = url && /^https?:/.test(url) ? new URL(url).origin : undefined;
-    if (origin && !active.task.origins.includes(origin)) { active.task.pendingOrigin = origin; active.task.status = 'site-approval'; this.publish(active); }
+    if (origin && !active.task.origins.includes(origin)) {
+      if (active.task.pendingOrigin !== origin) {
+        this.settleSiteApproval(active, 'expired');
+        (active.task.siteApprovals ??= []).push({ origin, status: 'pending' });
+      }
+      active.task.pendingOrigin = origin; active.task.status = 'site-approval'; this.publish(active);
+    }
     while (active.task.status !== 'running') {
       await new Promise<void>((resolve, reject) => {
         const cleanup = () => { active.wake.delete(wake); signal.removeEventListener('abort', abort); clearTimeout(timer); };
@@ -119,7 +147,12 @@ export class BrowserAutomation {
         if (guest.isDevToolsOpened()) throw new Error('请先关闭该网页的开发者工具，再由 AI 操作。');
         guest.debugger.attach('1.3');
         const driver = createGuestDriver(guest, () => this.guests.tabs(owner, lease.workspace).find(tab => tab.id === tabId)!);
-        guest.debugger.on('message', (_event, method, params, sessionId) => driver.event(method, params, sessionId));
+        guest.debugger.on('message', (_event, method, params, sessionId) => {
+          driver.event(method, params, sessionId);
+          if (['Page.frameNavigated', 'Page.navigatedWithinDocument', 'DOM.documentUpdated'].includes(method)) for (const active of this.tasks.values()) {
+            if (active.owner === owner && active.busy && active.task.tabIds.includes(tabId) && active.task.verification?.items.some(item => item.status === 'passed')) { this.invalidateVerification(active); this.publish(active); }
+          }
+        });
         const lost = (reason: string) => {
           driver.invalidate(); this.drivers.delete(guest.id);
           for (const active of this.tasks.values()) if (active.owner === owner && active.task.tabIds.includes(tabId) && active.busy) { active.controller.abort(); active.task.error = reason; active.task.status = 'interrupted'; this.publish(active); }
@@ -150,7 +183,7 @@ export class BrowserAutomation {
       try {
         if (active.task.steps.length >= 75) throw new BrowserControlError('step-limit', '本次任务达到操作上限，请检查已完成结果后重新开始。');
         await this.permit(active, this.guests.resolve(owner, tabId).guest.getURL());
-        if (mutate) active.verified = false;
+        if (mutate) this.invalidateVerification(active);
         driver = await this.driver(owner, tabId);
         driver.setReadPermission(url => { try { return active.task.origins.includes(new URL(url).origin); } catch { return false; } });
         const result = await run(driver, active);
@@ -183,10 +216,62 @@ export class BrowserAutomation {
       await this.permit(active, url); return driver.navigate(url, active.signal);
     });
   }
+  plan(owner: WebContents, taskId: string, tabId: string, checks: BrowserChecks) {
+    const active = this.get(owner, taskId), parsed = browserChecksSchema.parse(checks);
+    active.signal?.throwIfAborted();
+    if (!active.busy) throw new Error('浏览器任务已经结束，请重新开始。');
+    if (!active.task.tabIds.includes(tabId)) throw new BrowserControlError('tab-denied', '该标签不属于当前任务。');
+    if (new Set(parsed.map(item => item.id)).size !== parsed.length) throw new Error('核验项标识不能重复。');
+    const existing = active.task.verification;
+    if (existing) {
+      for (const check of parsed) {
+        const prior = existing.items.find(item => item.id === check.id);
+        if (prior && (prior.tabId !== tabId || JSON.stringify(prior.condition) !== JSON.stringify(check.condition))) throw new Error('既有核验项不可更换条件，请新建任务。');
+      }
+    }
+    const items = [...(existing?.items ?? [])];
+    for (const check of parsed) if (!items.some(item => item.id === check.id)) {
+      if (items.some(item => item.tabId === tabId && JSON.stringify(item.condition) === JSON.stringify(check.condition))) throw new Error('相同核验条件请复用既有标识。');
+      items.push({ ...check, tabId, status: 'pending' });
+    }
+    if (items.length > 20) throw new Error('本任务最多 20 个核验项。');
+    active.task.verification = { planned: true, items };
+    return this.publish(active).verification!;
+  }
+  async verify(owner: WebContents, taskId: string, tabId: string, checks?: BrowserChecks) {
+    if (checks) this.plan(owner, taskId, tabId, checks);
+    const active = this.get(owner, taskId), items = active.task.verification?.items.filter(item => item.tabId === tabId) ?? [];
+    if (!items.length) throw new Error('请先根据用户目标声明核验项。');
+    for (const item of items) await this.check(owner, taskId, tabId, item.condition);
+    const all = active.task.verification!.items;
+    return { passed: all.every(item => item.status === 'passed'), evidence: `必需条件 ${all.filter(item => item.status === 'passed').length}/${all.length} 通过`, results: structuredClone(all) };
+  }
+  extract(owner: WebContents, taskId: string, tabId: string, input: BrowserExtract) {
+    return this.operation(owner, taskId, tabId, 'extract', false, (driver, active) => {
+      driver.setReadPermission(async (url, frameId) => { if (input.operation === 'collect' && [input.query.frameId, input.totalQuery?.frameId, input.endCondition?.type === 'state' || input.endCondition?.type === 'locator' ? input.endCondition.query.frameId : input.endCondition && 'frameId' in input.endCondition ? input.endCondition.frameId : undefined].includes(frameId)) await this.permit(active, url); try { return active.task.origins.includes(new URL(url).origin); } catch { return false; } });
+      return active.collections.extract(tabId, input, driver, active.signal);
+    });
+  }
   check(owner: WebContents, taskId: string, tabId: string, condition: BrowserCondition, timeoutMs = 0, verify = true) {
+    condition = browserConditionSchema.parse(condition);
+    const activeTask = this.get(owner, taskId);
+    if (!activeTask.task.tabIds.includes(tabId)) throw new BrowserControlError('tab-denied', '该标签不属于当前任务。');
+    let item: BrowserVerificationItem | undefined;
+    if (verify) {
+      activeTask.task.verification ??= { planned: false, items: [] };
+      const items = activeTask.task.verification.items;
+      item = items.find(item => item.tabId === tabId && JSON.stringify(item.condition) === JSON.stringify(condition));
+      if (!item) {
+        if (activeTask.task.verification.planned) throw new Error('此条件不在必需核验项中，请通过 plan 增加核验项，不能跳过既有条件。');
+        if (items.length >= 20) throw new Error('本任务最多 20 个核验项。');
+        item = { id: randomUUID(), label: `结果条件 ${items.length + 1}`, condition, tabId, status: 'pending' }; items.push(item);
+      }
+      item.status = 'unknown';
+      item.evidence = undefined;
+    }
     return this.operation(owner, taskId, tabId, verify ? 'check' : 'wait', false, async (driver, active) => {
       const deadline = Date.now() + timeoutMs;
-      const frameId = condition.type === 'locator' ? condition.query.frameId : 'frameId' in condition ? condition.frameId : undefined;
+      const frameId = condition.type === 'locator' || condition.type === 'state' ? condition.query.frameId : 'frameId' in condition ? condition.frameId : undefined;
       driver.setReadPermission(async (url, id) => { if (frameId === id) await this.permit(active, url); try { return active.task.origins.includes(new URL(url).origin); } catch { return false; } });
       let result;
       do {
@@ -196,7 +281,10 @@ export class BrowserAutomation {
         if (Date.now() >= deadline) break;
         await new Promise(resolve => setTimeout(resolve, 250));
       } while (Date.now() < deadline);
-      if (verify) active.verified = result.passed;
+      if (item) {
+        item.status = result.passed ? 'passed' : result.complete ? 'failed' : 'unknown';
+        item.evidence = { at: new Date().toISOString(), url: browserRecordUrl(result.observation.tab.url), actual: result.actual, detail: result.evidence };
+      }
       return result;
     });
   }
@@ -209,7 +297,7 @@ export class BrowserAutomation {
     } else if (!active.task.tabIds.includes(tabId)) throw new Error('该标签未授权。');
     if (type === 'close' && active.task.tabIds.length === 1) throw new Error('请保留至少一个任务标签。');
     const command: BrowserTabCommand = { workspace: active.task.workspace, type, tabId, url };
-    if (type !== 'select') active.verified = false;
+    if (type !== 'select') this.invalidateVerification(active);
     if (type === 'close') active.task.tabIds = active.task.tabIds.filter(id => id !== tabId);
     owner.send('browser:tab-command', command);
     if (type === 'close') {

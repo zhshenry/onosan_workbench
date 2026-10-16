@@ -14,6 +14,7 @@ import { BaziView } from '../modules/bazi/ui/BaziView';
 import { TaskEditor, type TaskEditorApi, type TodoState } from '../modules/todo/ui/TaskEditor';
 import { MediaBrowserHost } from './views/MediaBrowserHost';
 import { BrowserHost } from './views/BrowserView';
+import { GameHost } from './views/GameView';
 import type { BrowserTask } from '../shared/browser-automation-contracts';
 import { CopyView } from '../modules/copywriting/ui/CopyView';
 import { PublishView } from '../modules/copywriting/ui/PublishView';
@@ -110,9 +111,11 @@ export function App() {
   const [aiWidth, setAiWidth] = useState(() => Math.max(340, Math.min(480, Number(localStorage.getItem('wb.ai.width')) || 380)));
   const [railMenu, setRailMenu] = useState<WorkbenchId | null>(null);
   const dismissedRailMenu = useRef<WorkbenchId | null>(null);
-  const [aiJob, setAiJob] = useState<{ chatId: string; scope: AiScope; title: string; status: 'running' | 'done' | 'error' } | null>(null);
-  const [browserTask, setBrowserTask] = useState<BrowserTask | null>(null);
+  const [aiJobs, setAiJobs] = useState<{ chatId: string; scope: AiScope; title: string; status: 'running' | 'done' | 'error' }[]>([]);
+  const [browserTasks, setBrowserTasks] = useState<BrowserTask[]>([]);
   const [activeAiChatId, setActiveAiChatId] = useState<string | null>(null);
+  const aiJob = aiJobs.find(job => job.status === 'running' && job.chatId !== activeAiChatId) ?? aiJobs.find(job => job.status === 'running') ?? aiJobs[0] ?? null;
+  const browserTask = browserTasks.find(task => ['running', 'paused', 'site-approval'].includes(task.status)) ?? browserTasks[0] ?? null;
   const [requestedAiChatId, setRequestedAiChatId] = useState<string | null>(null);
   const [requestedCopyId, setRequestedCopyId] = useState<string | null>(null);
   const [requestedCopySource, setRequestedCopySource] = useState<(CopySource & { nonce: number }) | null>(null);
@@ -140,7 +143,7 @@ export function App() {
 
   useEffect(() => { localStorage.setItem('wb.ai.open', aiOpen ? '1' : '0'); }, [aiOpen]);
   useEffect(() => { localStorage.setItem('wb.ai.width', String(aiWidth)); }, [aiWidth]);
-  useEffect(() => window.workbench.browserAutomation?.onTask(setBrowserTask), []);
+  useEffect(() => window.workbench.browserAutomation?.onTask(task => setBrowserTasks(previous => [task, ...previous.filter(item => item.id !== task.id)].slice(0, 40))), []);
   useEffect(() => { if (copyCtx?.id === requestedCopyId) setRequestedCopyId(null); }, [copyCtx?.id, requestedCopyId]);
   useEffect(() => { if (baziCtx?.id === requestedProfileId) setRequestedProfileId(null); }, [baziCtx?.id, requestedProfileId]);
   useEffect(() => window.workbench.ai.onChat(raw => {
@@ -148,14 +151,12 @@ export function App() {
     const scope = chatContextScope(chat);
     const running = chat.entries.some(entry => entry.streaming);
     const failed = chat.entries.at(-1)?.error;
-    setAiJob(previous => running
-      ? { chatId: chat.id, scope, title: chat.title, status: 'running' }
-      : previous && previous.chatId === chat.id && previous.status === 'running'
-        ? { chatId: chat.id, scope, title: chat.title, status: failed ? 'error' : 'done' }
-        : previous);
+    setAiJobs(previous => running
+      ? [{ chatId: chat.id, scope, title: chat.title, status: 'running' as const }, ...previous.filter(item => item.chatId !== chat.id)].slice(0, 40)
+      : previous.map(item => item.chatId === chat.id && item.status === 'running' ? { ...item, title: chat.title, status: failed ? 'error' as const : 'done' as const } : item));
   }), []);
   useEffect(() => {
-    if (aiOpen && aiJob?.status !== 'running' && aiJob?.chatId === activeAiChatId) setAiJob(null);
+    if (aiOpen && aiJob?.status !== 'running' && aiJob?.chatId === activeAiChatId) setAiJobs(previous => previous.filter(item => item.chatId !== activeAiChatId));
   }, [aiJob, activeAiChatId, aiOpen]);
 
   const askAI = (prompt: string, scope: AiScope = aiContext.scope, baziSystem = aiContext.baziSystem, copySource?: CopySource): void => {
@@ -267,7 +268,7 @@ export function App() {
     if (!aiJob) return;
     setRequestedAiChatId(aiJob.chatId);
     setAiOpen(true);
-    if (aiJob.status !== 'running') setAiJob(null);
+    if (aiJob.status !== 'running') setAiJobs(previous => previous.filter(item => item.chatId !== aiJob.chatId));
   };
 
   const activeWorkbench = workbenchById(curWb);
@@ -432,7 +433,7 @@ export function App() {
   }, [topbarCapsuleKey]);
 
   return (
-    <div className={'win' + (aiOpen ? ' ai-dock' : '')} style={{ '--ai-width': aiWidth + 'px' } as CSSProperties}>
+    <div className={'win' + (aiOpen ? ' ai-dock' : '')} data-game={curView === 'game'} style={{ '--ai-width': aiWidth + 'px' } as CSSProperties}>
       {/* 图标栏 = 一级:大工作台切换 */}
       <aside className="rail" ref={railRef} data-selection-ready={selectionReady}>
         <div className="logo" title="个人工作台">
@@ -625,7 +626,7 @@ export function App() {
       <main className="content" ref={contentRef} tabIndex={-1}>
           {todo.error && <div className="todo-load-error" role="alert">{todo.error}</div>}
           {/* 视图切换动效:按 curView 换 key 重挂载,统一淡入上移(见 shell.css .view-fade) */}
-          {(isPlanningWorkbench || curView !== 'media-browser' && curView !== 'browser') && <div className="view-fade" key={curView}>
+          {(isPlanningWorkbench || curView !== 'media-browser' && curView !== 'browser' && curView !== 'game') && <div className="view-fade" key={curView}>
           {isPlanningWorkbench ? (
             <section className="pending-workbench" role="status">
               <span className="pending-workbench-icon" aria-hidden="true"><ActiveWorkbenchIcon /></span>
@@ -643,7 +644,7 @@ export function App() {
           ) : curView.startsWith('settings') ? (
             <SettingsView view={curView} uiTheme={uiTheme} onUiThemeChange={applyUiTheme} onAvatarColorChange={setProfileAvatarColor} />
           ) : todo.data ? (
-            <HomeView data={todo.data} clock={todo.clock} mutate={todo.mutate} userName={profileName} onPending={showToast} onOpenMedia={() => switchView('copy')} onOpenBazi={() => switchView('bazi')} editor={homeEditor} setEditor={setHomeEditor} onAskAi={askAI} />
+            <HomeView data={todo.data} clock={todo.clock} mutate={todo.mutate} userName={profileName} onPending={showToast} onOpenMedia={() => switchView('copy')} onOpenBazi={() => switchView('bazi')} onOpenGame={() => switchView('game')} editor={homeEditor} setEditor={setHomeEditor} onAskAi={askAI} />
           ) : (
             <div className="todo-loading" role="status">正在读取本地待办…</div>
           )}
@@ -651,6 +652,7 @@ export function App() {
           <MediaBrowserHost active={!isPlanningWorkbench && curView === 'media-browser'} focusTarget={contentRef}
             onPending={showToast} />
           <BrowserHost active={!isPlanningWorkbench && curView === 'browser'} focusTarget={contentRef} onPending={showToast} />
+          <GameHost active={!isPlanningWorkbench && curView === 'game'} focusTarget={contentRef} onPending={showToast} />
         </main>
 
       </div>

@@ -40,11 +40,8 @@ export const NAV: WorkbenchDef[] = [
   {
     id: 'game',
     title: '游戏工作台',
-    pending: true,
     subs: [
-      { label: '玩法原型', pending: true },
-      { label: '素材库', pending: true },
-      { label: '版本管理', pending: true },
+      { label: '轨迹侦探', view: 'game' },
     ],
   },
   {

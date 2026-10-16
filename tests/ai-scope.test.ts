@@ -70,7 +70,7 @@ test('空的自媒体工作区可直接开启通用对话，但不获得博客�
     assert.ok(initialScope);
     assert.equal(workbenchForScope(initialScope), workbench.id);
   }
-  assert.equal(defaultAiScopeForWorkbench('game'), null);
+  assert.deepEqual(defaultAiScopeForWorkbench('game'), { module: 'workbench', viewId: 'game' });
   const scope = defaultAiScopeForWorkbench('media')!;
   if (scope.module !== 'workbench') throw new Error('自媒体工作区需要通用对话范围');
   assert.deepEqual(scope, { module: 'workbench', viewId: 'workspace:media' });

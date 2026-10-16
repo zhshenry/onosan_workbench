@@ -28,11 +28,14 @@ export function BrowserWorkspacePane(props: BrowserPaneProps) {
   return <BrowserPane {...props} savedTabs={saved.tabs} savedActiveId={saved.activeId} automation={!!api()} />;
 }
 
-export function BrowserAutomationBar({ workspace, url, ready, zoomFactor, onZoomChange, onRefreshZoom, onNavigate, onState }: {
+export function BrowserAutomationBar({ workspace, tabId, url, ready, zoomFactor, onZoomChange, onRefreshZoom, onNavigate, onState }: {
   workspace: string; url?: string; ready: boolean; onNavigate(url: string): void; onState(task: BrowserTask | null): void;
+  tabId?: string;
   zoomFactor: number; onZoomChange(factor: number): void; onRefreshZoom(): void;
 }) {
-  const [task, setTask] = useState<BrowserTask | null>(null);
+  const [tasks, setTasks] = useState<BrowserTask[]>([]);
+  const task = [...tasks].reverse().find(task => !tabId || task.tabIds.includes(tabId) || !ready && !task.tabIds.length && ['ready', 'running', 'paused', 'site-approval'].includes(task.status)) ?? null;
+  const setTask = (task: BrowserTask) => setTasks(previous => [...previous.filter(item => item.id !== task.id), task].slice(-40));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [panel, setPanel] = useState<'history' | 'tasks' | 'clear-site' | 'clear-history' | null>(null);
@@ -44,14 +47,16 @@ export function BrowserAutomationBar({ workspace, url, ready, zoomFactor, onZoom
   const menuId = useId(), menu = useRef<HTMLDivElement>(null), trigger = useRef<HTMLButtonElement>(null);
   const history = useMemo(() => filterBrowserHistory(state?.history ?? [], historyQuery, browserHistorySince(historyRange)), [state?.history, historyQuery, historyRange]);
   const running = task && ['ready', 'running', 'paused', 'site-approval'].includes(task.status);
+  const anyRunning = tasks.some(task => ['ready', 'running', 'paused', 'site-approval'].includes(task.status));
   const zoomPercent = Math.round(zoomFactor * 100);
   const smallerZoom = [...ZOOM_STEPS].reverse().find(value => value < zoomPercent), largerZoom = ZOOM_STEPS.find(value => value > zoomPercent);
   useEffect(() => {
-    let mounted = true, updated = false;
-    void api().state(workspace).then(value => { if (mounted) { setState(value); if (!updated) { const latest = value.tasks.at(-1) ?? null; setTask(latest); onState(latest); } } }, cause => { if (mounted) setError(errorText(cause)); });
-    const unsubscribe = api().onTask(value => { if (value.workspace === workspace) { updated = true; setTask(value); onState(value); } });
+    let mounted = true;
+    void api().state(workspace).then(value => { if (mounted) { setState(value); setTasks(previous => [...value.tasks.filter(item => !previous.some(current => current.id === item.id)), ...previous].slice(-40)); } }, cause => { if (mounted) setError(errorText(cause)); });
+    const unsubscribe = api().onTask(value => { if (value.workspace === workspace) { setTask(value); setState(previous => previous ? { ...previous, tasks: [...previous.tasks.filter(item => item.id !== value.id), value].slice(-40) } : previous); } });
     return () => { mounted = false; unsubscribe(); };
-  }, [workspace, onState]);
+  }, [workspace]);
+  useEffect(() => onState(task), [task, onState]);
   useLayoutEffect(() => {
     if (!menuOpen || !menu.current || !trigger.current) return;
     const element = menu.current, anchor = trigger.current.getBoundingClientRect();
@@ -69,7 +74,7 @@ export function BrowserAutomationBar({ workspace, url, ready, zoomFactor, onZoom
     try { await action(); } catch (cause) { setError(errorText(cause)); } finally { setBusy(false); }
   };
   const control = (action: 'pause' | 'resume' | 'cancel' | 'approve-site') => perform(async () => {
-    if (task) { const next = await api().control(task.id, action); setTask(next); onState(next); if (action === 'approve-site') menu.current?.hidePopover(); }
+    if (task) { const next = await api().control(task.id, action, action === 'approve-site' ? task.pendingOrigin : undefined); setTask(next); onState(next); if (action === 'approve-site') menu.current?.hidePopover(); }
   });
   const zoom = (percent: number) => perform(async () => {
     if (task?.status === 'running') { const paused = await api().control(task.id, 'pause'); setTask(paused); onState(paused); }
@@ -94,7 +99,7 @@ export function BrowserAutomationBar({ workspace, url, ready, zoomFactor, onZoom
       </button>
       {task.status === 'running' && <button type="button" className="mbp-navbtn" title="接管 / 暂停" aria-label="接管 / 暂停" disabled={busy} onClick={() => void control('pause')}><Pause size={16} /></button>}
       {task.status === 'paused' && <button type="button" className="mbp-navbtn" title="继续操作" aria-label="继续操作" disabled={busy} onClick={() => void control('resume')}><Play size={16} /></button>}
-      {running && <button type="button" className="mbp-navbtn" title="停止任务" aria-label="停止任务" disabled={busy} onClick={() => void control('cancel')}><Stop size={16} weight="fill" /></button>}
+      {(running || task.status === 'unverified') && <button type="button" className="mbp-navbtn" title="停止任务" aria-label="停止任务" disabled={busy} onClick={() => void control('cancel')}><Stop size={16} weight="fill" /></button>}
     </div>}
     <button type="button" ref={trigger} className="mbp-navbtn browser-menu-trigger" title="浏览器选项" aria-label="浏览器选项" aria-haspopup="menu" aria-expanded={menuOpen} popoverTarget={menuId}><DotsThree size={22} weight="bold" /></button>
     <div ref={menu} id={menuId} className="browser-menu" popover="auto" role="menu" aria-label="浏览器选项" onToggle={event => { setMenuOpen(event.newState === 'open'); if (event.newState === 'open') onRefreshZoom(); }} onKeyDown={event => {
@@ -118,11 +123,11 @@ export function BrowserAutomationBar({ workspace, url, ready, zoomFactor, onZoom
         <button type="button" aria-label="重置网页缩放" title="恢复 100%" disabled={busy || !ready || zoomPercent === 100} onClick={() => void zoom(100)}><ArrowCounterClockwise size={18} /></button>
       </div>
       <hr />
-      <button type="button" role="menuitem" disabled={busy || !ready || Boolean(running)} onClick={() => void open('clear-site')}><Trash size={18} />清理当前站点数据…</button>
-      <button type="button" role="menuitem" disabled={busy || Boolean(running)} onClick={() => { setClearKinds(['history']); setClearRange('all'); setClearScope('all'); void open('clear-history'); }}><Trash size={18} />清除浏览数据…</button>
+      <button type="button" role="menuitem" disabled={busy || !ready || anyRunning} onClick={() => void open('clear-site')}><Trash size={18} />清理当前站点数据…</button>
+      <button type="button" role="menuitem" disabled={busy || anyRunning} onClick={() => { setClearKinds(['history']); setClearRange('all'); setClearScope('all'); void open('clear-history'); }}><Trash size={18} />清除浏览数据…</button>
     </div>
     {(error || task?.error || task?.persistenceError) && <div className="browser-toolbar-error" role="alert">{error || task?.error || task?.persistenceError}</div>}
-    {panel && <Modal title={{ history: '浏览历史', tasks: '浏览器任务记录', 'clear-site': '清理站点数据', 'clear-history': '清空浏览历史' }[panel]} close={() => { if (!busy) { setPanel(null); setError(''); } }} className="browser-dialog">
+    {panel && <Modal title={{ history: '浏览历史', tasks: '浏览器任务记录', 'clear-site': '清理站点数据', 'clear-history': '清空浏览历史' }[panel]} close={() => { if (!busy) { setPanel(null); setError(''); } }} className={`browser-dialog${panel === 'tasks' ? ' browser-task-dialog' : ''}`}>
       {panel === 'history' && <>
         <p>最近 5000 条访问记录；保留普通参数和锚点，含登录凭据的地址会脱敏。</p>
         <div className="browser-history-filters"><label htmlFor="browser-history-search">搜索历史</label><div className="browser-history-search"><input id="browser-history-search" type="search" placeholder="网页标题或网址" value={historyQuery} maxLength={300} onChange={event => { setHistoryQuery(event.target.value); setHistoryPage(0); }} />{historyQuery && <button aria-label="清空历史搜索" onClick={() => { setHistoryQuery(''); setHistoryPage(0); document.getElementById('browser-history-search')?.focus(); }}>清空</button>}</div>

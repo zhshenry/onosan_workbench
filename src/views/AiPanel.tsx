@@ -9,6 +9,7 @@ import { AiReferencePicker, loadReferenceOptions, REFERENCE_LABELS, type Referen
 import { errorText, Modal, Select as TodoSelect } from '../../modules/todo/ui/ui';
 import { TodoProposalCard } from './TodoProposalCard';
 import { AiResponse } from './AiResponse';
+import { BrowserSiteApprovalCard, useBrowserApprovalTasks } from '../../modules/browser/ui/site-approval';
 import { NAV } from '../nav';
 
 const wb = window.workbench;
@@ -196,9 +197,17 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
   const [referenceReload, setReferenceReload] = useState(0);
   const referenceTrigger = useRef<HTMLButtonElement>(null);
   const composeAnchor = useRef<HTMLDivElement>(null);
+  const approvalCard = useRef<HTMLElement>(null);
+  const approvalCardId = useId();
   const referencePickerId = useId();
   const [input, setInput] = useState('');
-  const [sending, setSending] = useState(false);
+  const [sending, setSending] = useState<string[]>([]);
+  const sendingRef = useRef(new Set<string>());
+  const markSending = (id: string, value: boolean): void => {
+    if (value) sendingRef.current.add(id); else sendingRef.current.delete(id);
+    setSending([...sendingRef.current]);
+  };
+  const [questions, setQuestions] = useState<Record<string, { id: string; sessionId: string; question: string; options: { label: string; description?: string }[] }>>({});
   const [error, setError] = useState('');
   const [switchingModel, setSwitchingModel] = useState(false);
   const [modelError, setModelError] = useState('');
@@ -407,6 +416,8 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
     const sequence = ++loadSequence.current;
     const targetKey = workspaceKey(seed.scope);
     void (async () => {
+      const seedBrowserWorkspace = context.scope.module === 'workbench' && workbenchForScope(seed.scope) === pageWorkbench ? context.scope.viewId === 'browser' ? 'default' : context.scope.viewId === 'media-browser' ? 'xhs-creator' : null : null;
+      const seedBrowserTabId = seedBrowserWorkspace ? (await wb.browserAutomation.tabs(seedBrowserWorkspace)).find(tab => tab.active && tab.ready)?.id ?? null : undefined;
       const existing = currentRef.current;
       let chat: ChatSession;
       if (existing && sameAiWorkbench(existing, seed.scope)) chat = existing;
@@ -426,20 +437,20 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
         setCurrent(chat);
         if (existing?.id !== chat.id) setInput(chat.draft);
       }
-      setSending(true);
+      markSending(chat.id, true);
       try {
         const unsentDraft = existing?.id === chat.id ? input : chat.draft;
         const chosen = existing?.id === chat.id || !existing ? references : [];
         const seedPageScope = workbenchForScope(seed.scope) === pageWorkbench ? context.scope : seed.scope;
         const seedReferences = await checkedReferences(chosen, seedPageScope, seed.scope, referenceContextKey);
         if (!existing && sequence === loadSequence.current && seedReferences.length) setReferenceSelection({ key: referenceKeyForChat(chat.id), values: seedReferences });
-        const request = wb.ai.ask(chat.id, seed.text, { scope: seed.scope, pageScope: seedPageScope, references: seedReferences, baziSystem: seed.baziSystem, copySource: seed.copySource });
+        const request = wb.ai.ask(chat.id, seed.text, { scope: seed.scope, pageScope: seedPageScope, ...(seedBrowserWorkspace ? { browserTabId: seedBrowserTabId } : {}), references: seedReferences, baziSystem: seed.baziSystem, copySource: seed.copySource });
         if (unsentDraft) void wb.ai.chatDraft(chat.id, unsentDraft).catch(() => undefined);
         await request;
       } catch (e) {
         if (sequence === loadSequence.current) setError(errorText(e));
       }
-      finally { setSending(false); }
+      finally { markSending(chat.id, false); }
     })().catch(e => {
       if (sequence === loadSequence.current) setError(errorText(e));
     });
@@ -450,7 +461,9 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
     setChats(previous => [summary, ...previous.filter(item => item.id !== chat.id)]
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
     setCurrent(previous => previous?.id === chat.id ? chat : previous);
+    if (!summary.streaming) setQuestions(previous => { const next = { ...previous }; delete next[chat.id]; return next; });
   }), []);
+  useEffect(() => wb.ai.onAsk(ask => setQuestions(previous => ({ ...previous, [ask.sessionId]: ask }))), []);
   useEffect(() => {
     if (!current) return;
     draftSnapshot.current = { id: current.id, text: input };
@@ -488,9 +501,20 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
   }, [open, referenceDialogOpen, managing, onClose]);
 
   const visibleCurrent = current;
+  const browserApprovals = useBrowserApprovalTasks(visibleCurrent);
+  const pendingSiteTask = Object.values(browserApprovals.tasks).find(task => task.status === 'site-approval' && task.pendingOrigin);
+  const lastBrowserEntries = new Map(visibleCurrent?.entries.flatMap(entry => entry.browserTask ? [[entry.browserTask.id, entry.id] as const] : []));
+  const locateSiteApproval = (): void => { approvalCard.current?.focus({ preventScroll: true }); };
   const activeChat = chats.find(chat => chat.streaming);
-  const busy = Boolean(activeChat) || sending;
   const currentBusy = visibleCurrent?.entries.some(entry => entry.streaming) ?? false;
+  const busy = currentBusy || sending.includes(contextKey);
+  const question = visibleCurrent ? questions[visibleCurrent.id] : undefined;
+  const answerQuestion = (kind: 'option' | 'text' | 'skip', value?: string): void => {
+    if (!question) return;
+    wb.ai.answerAsk({ id: question.id, sessionId: question.sessionId, kind, value });
+    setQuestions(previous => { const next = { ...previous }; delete next[question.sessionId]; return next; });
+    setInput('');
+  };
   const copyWriteBlocked = (scope: AiScope | undefined): boolean => scope?.module === 'copy' && copySaveState?.id === scope.draftId && copySaveState.status !== 'saved';
   const activeCopyWriteBlocked = copyWriteBlocked(activeContext.scope);
   const copySaveHint = copySaveState?.status === 'error' ? '请回到博客编辑重试保存' : '请先等待当前博客保存完成';
@@ -577,13 +601,17 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
   };
   const send = (): void => {
     const text = input.trim();
-    if (!text || busy || switchingModel || !config?.aiEnabled || activeCopyWriteBlocked) return;
+    if (question && text) { answerQuestion('text', text); return; }
+    if (!text || busy || sendingRef.current.has(contextKey) || switchingModel || !config?.aiEnabled || activeCopyWriteBlocked) return;
     const targetKey = activeScopeKey;
     const sequence = loadSequence.current;
     window.clearTimeout(draftTimer.current); draftSnapshot.current = null;
-    setInput(''); setSending(true); setError('');
+    let sendingKey = contextKey;
+    setInput(''); markSending(sendingKey, true); setError('');
     void (async () => {
+      const browserTabId = browserWorkspace ? (await wb.browserAutomation.tabs(browserWorkspace)).find(tab => tab.active && tab.ready)?.id ?? null : undefined;
       const chat = visibleCurrent ?? await wb.ai.chatNew(activeContext.scope) as ChatSession;
+      if (sendingKey !== chat.id) { markSending(sendingKey, false); sendingKey = chat.id; markSending(sendingKey, true); }
       if (!visibleCurrent && sequence === loadSequence.current && activeScopeKeyRef.current === targetKey) {
         if (fixedContext) setFixedContexts(previous => ({ ...previous, [chat.id]: fixedContext }));
         if (references.length) setReferenceSelection({ key: referenceKeyForChat(chat.id), values: references });
@@ -593,13 +621,12 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
       const sentReferenceKey = visibleCurrent ? referenceContextKey : referenceKeyForChat(chat.id);
       try {
         const sendReferences = await checkedReferences(references, linkedPageScope, activeContext.scope, sentReferenceKey);
-        const browserTabId = browserWorkspace ? (await wb.browserAutomation.tabs(browserWorkspace)).find(tab => tab.active && tab.ready)?.id : undefined;
-        await wb.ai.ask(chat.id, text, { scope: activeContext.scope, pageScope: linkedPageScope, ...(browserTabId ? { browserTabId } : {}), references: sendReferences, baziSystem: activeContext.scope.module === 'bazi' ? activeContext.baziSystem : undefined });
+        await wb.ai.ask(chat.id, text, { scope: activeContext.scope, pageScope: linkedPageScope, ...(browserWorkspace ? { browserTabId } : {}), references: sendReferences, baziSystem: activeContext.scope.module === 'bazi' ? activeContext.baziSystem : undefined });
       }
       catch (e) {
         if (sequence === loadSequence.current && referenceContextKeyRef.current === sentReferenceKey && activeScopeKeyRef.current === targetKey) { setError(errorText(e)); setInput(previous => previous || text); }
-      } finally { setSending(false); }
-    })().catch(e => { if (sequence === loadSequence.current && referenceContextKeyRef.current === referenceContextKey && activeScopeKeyRef.current === targetKey) { setError(errorText(e)); setInput(previous => previous || text); } setSending(false); });
+      } finally { markSending(sendingKey, false); }
+    })().catch(e => { if (sequence === loadSequence.current && referenceContextKeyRef.current === referenceContextKey && activeScopeKeyRef.current === targetKey) { setError(errorText(e)); setInput(previous => previous || text); } markSending(sendingKey, false); });
   };
   const closePanel = (): void => {
     flushDraft(); onClose();
@@ -684,7 +711,8 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
                 {entry.role === 'user' && entry.referenceSnapshots?.length ? <span className="ai-message-tag">当时参考：{entry.referenceSnapshots.map(snapshot => snapshot.name).join('、')}</span> : null}
                 {entry.copySource && <button className="ai-source-chip" title={entry.copySource.text} onClick={() => onLocateCopySource(entry.copySource!)}>引用原文 · 定位</button>}
                 {entry.role === 'assistant' && entry.baziSystem === 'bazi' && entry.content.includes('日主') && (entry.contextScope ?? chatScope(visibleCurrent)).module === 'bazi' && <button className="ai-source-chip" onClick={() => { const scope = entry.contextScope ?? chatScope(visibleCurrent); if (scope.module === 'bazi') onLocateBaziDay(scope.profileId); }}>在盘面中定位日主</button>}
-                {entry.role === 'assistant' ? <AiResponse entry={entry} /> : <div className="ai-bubble">{entry.content}</div>}
+                {entry.role === 'assistant' ? <AiResponse entry={entry} browserTask={entry.browserTask && lastBrowserEntries.get(entry.browserTask.id) === entry.id ? browserApprovals.tasks[entry.browserTask.id] : undefined}
+                  approvalCardId={approvalCardId} onLocateApproval={locateSiteApproval} /> : <div className="ai-bubble">{entry.content}</div>}
                 {entry.error && <div className="ai-error" role="alert">{entry.error}</div>}
                 {entry.proposal && <TodoProposalCard key={entry.proposal.token} entry={entry} busy={busy}
                   apply={(token, indices) => wb.ai.apply(token, indices)} discard={token => wb.ai.discard(token)} />}
@@ -708,7 +736,17 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
             {error && <div className="ai-error" role="alert">{error}</div>}
           </div>
           <div className="ai-compose-wrap">
-            {activeChat && activeChat.id !== visibleCurrent?.id && <div className="ai-busy-hint">“{activeChat.title}”正在生成，可继续输入，完成后再发送。</div>}
+            {pendingSiteTask && <BrowserSiteApprovalCard key={`${pendingSiteTask.id}:${pendingSiteTask.pendingOrigin}`} task={pendingSiteTask} id={approvalCardId} elementRef={approvalCard} onTask={task => {
+              browserApprovals.update(task, pendingSiteTask.pendingOrigin!);
+              if (currentRef.current?.id === task.chatId && document.activeElement === document.body) composeAnchor.current?.querySelector('textarea')?.focus();
+            }} />}
+            {browserApprovals.error && <div className="ai-site-approval-error" role="alert">{browserApprovals.error}<button type="button" onClick={browserApprovals.retry}>重新读取</button></div>}
+            {activeChat && activeChat.id !== visibleCurrent?.id && <div className="ai-busy-hint">其他对话正在执行，你可以在当前对话继续提问。</div>}
+            {question && <div className="ai-proposal" role="group" aria-label="AI 澄清问题"><p>{question.question}</p><div className="ai-proposal-actions">
+              {question.options.map(option => <button key={option.label} type="button" title={option.description} onClick={() => answerQuestion('option', option.label)}>{option.label}</button>)}
+              <button type="button" onClick={() => answerQuestion('skip')}>跳过问题</button>
+              <button type="button" onClick={() => visibleCurrent && wb.ai.cancel(visibleCurrent.id)}>停止此对话</button>
+            </div></div>}
             {activeCopyWriteBlocked && <div className="ai-busy-hint">{copySaveHint}</div>}
             {activeContext.scope.module === 'copy' && <div className="ai-copy-actions" aria-label="博客写作快捷指令">
               {COPY_QUICK_ACTIONS.map(action => <button key={action.label} type="button" className="ai-copy-action" title={activeCopyWriteBlocked ? copySaveHint : action.prompt}
@@ -729,8 +767,8 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
                     options={modelOptions}
                     disabled={!open || busy || switchingModel} />
                     : <button className="ai-text-btn" onClick={onOpenSettings}>配置模型</button>}
-                  {currentBusy ? <button className="ai-send cancel" aria-label="停止生成" title="停止生成" onClick={() => wb.ai.cancel()}><Stop size={16} weight="fill" /></button>
-                    : <button className="ai-send" aria-label="发送" title="发送" disabled={!input.trim() || !config?.aiEnabled || busy || switchingModel || activeCopyWriteBlocked} onClick={send}><PaperPlaneRight size={16} weight="fill" /></button>}
+                  {currentBusy && !question ? <button className="ai-send cancel" aria-label="停止生成" title="停止生成" onClick={() => visibleCurrent && wb.ai.cancel(visibleCurrent.id)}><Stop size={16} weight="fill" /></button>
+                    : <button className="ai-send" aria-label={question ? '提交回答' : '发送'} title={question ? '提交回答' : '发送'} disabled={!input.trim() || !config?.aiEnabled || !question && (busy || switchingModel || activeCopyWriteBlocked)} onClick={send}><PaperPlaneRight size={16} weight="fill" /></button>}
                 </div>
               </div>
             </div>

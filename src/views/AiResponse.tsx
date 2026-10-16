@@ -4,6 +4,8 @@ import type { ChatEntry } from '../../shared/todo-contracts';
 import { renderAiMarkdown } from '../ai-markdown';
 import { errorText } from '../../modules/todo/ui/ui';
 import { BrowserTaskRecord } from '../../modules/browser/ui/task-record';
+import type { BrowserTask } from '../../shared/browser-automation-contracts';
+import { BrowserSiteApprovalReceipts } from '../../modules/browser/ui/site-approval';
 
 const toolStatus = { running: '进行中', complete: '已完成', error: '失败', interrupted: '已中断' } as const;
 
@@ -24,7 +26,7 @@ const AiMarkdown = memo(function AiMarkdown({ text }: { text: string }) {
   </>;
 });
 
-export function AiResponse({ entry }: { entry: ChatEntry }) {
+export function AiResponse({ entry, browserTask, approvalCardId = '', onLocateApproval = () => {} }: { entry: ChatEntry; browserTask?: BrowserTask; approvalCardId?: string; onLocateApproval?(): void }) {
   const [thinkingExpanded, setThinkingExpanded] = useState<boolean | null>(null);
   const [toolsExpanded, setToolsExpanded] = useState<boolean | null>(null);
   const [recordOpen, setRecordOpen] = useState(false);
@@ -34,6 +36,7 @@ export function AiResponse({ entry }: { entry: ChatEntry }) {
   const failed = tools.filter(tool => tool.status === 'error' || tool.status === 'interrupted').length;
   const thinkingOpen = thinkingExpanded ?? thinkingActive;
   const toolsOpen = toolsExpanded ?? running;
+  const waitingForSite = browserTask?.status === 'site-approval';
   return <div className="ai-response">
     {entry.thinking?.trim() && <details className="ai-activity ai-thinking" open={thinkingOpen}>
       <summary onClick={event => { event.preventDefault(); setThinkingExpanded(!thinkingOpen); }}>
@@ -45,10 +48,10 @@ export function AiResponse({ entry }: { entry: ChatEntry }) {
     {tools.length > 0 && <details className="ai-activity" open={toolsOpen}>
       <summary onClick={event => { event.preventDefault(); setToolsExpanded(!toolsOpen); }}>
         <Wrench size={15} /><span>工具执行 <small>· {tools.length} 项</small></span>
-        <small className={failed ? 'ai-tool-failed' : undefined}>{running ? '进行中' : failed ? `${failed} 项未完成` : '已完成'}</small><CaretDown size={13} className="ai-activity-caret" />
+        <small className={failed ? 'ai-tool-failed' : undefined}>{waitingForSite ? '等待授权' : running ? '进行中' : failed ? `${failed} 项未完成` : '已完成'}</small><CaretDown size={13} className="ai-activity-caret" />
       </summary>
       <div className="ai-tool-list">{tools.map(tool => <details key={tool.id} className={'ai-tool-detail ' + tool.status}>
-        <summary><span>{tool.label}</span><small>{toolStatus[tool.status]}</small><CaretDown size={12} className="ai-activity-caret" /></summary>
+        <summary><span>{tool.label}</span><small>{waitingForSite && tool.status === 'running' ? '等待授权' : toolStatus[tool.status]}</small><CaretDown size={12} className="ai-activity-caret" /></summary>
         <pre>{tool.output || (tool.status === 'running' ? '等待工具返回…' : '未返回可见结果')}</pre>
       </details>)}</div>
     </details>}
@@ -57,6 +60,7 @@ export function AiResponse({ entry }: { entry: ChatEntry }) {
     </div>
       : entry.streaming && !(thinkingActive && entry.thinking?.trim()) && !running ? <div className="ai-typing" role="status"><i /><i /><i /><span>正在生成回复…</span></div> : null}
     {!entry.content && entry.browserTask && !entry.streaming && <button type="button" className="ai-browser-record" onClick={() => setRecordOpen(true)}>查看操作记录<CaretRight size={13} /></button>}
+    {browserTask && <BrowserSiteApprovalReceipts task={browserTask} onLocate={onLocateApproval} cardId={approvalCardId} />}
     {recordOpen && entry.browserTask && <BrowserTaskRecord reference={entry.browserTask} close={() => setRecordOpen(false)} />}
   </div>;
 }

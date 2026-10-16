@@ -55,7 +55,8 @@ const server = createServer(async (request, response) => {
       const userContent = [...body.messages].reverse().find(message => message.role === 'user')?.content;
       const userText = typeof userContent === 'string' ? userContent : (userContent ?? []).filter(part => part.type === 'text').map(part => part.text).join('\n');
       const navigation = userText.includes('跨站弹窗测试');
-      if (parsed?.ok === false) {
+      if (userText.includes('并发普通对话测试')) result = answer('第二个对话独立完成。');
+      else if (parsed?.ok === false) {
         const lastArgs = JSON.parse([...body.messages].reverse().find(message => message.tool_calls).tool_calls.at(-1).function.arguments);
         result = toolResponse('browser_observe', { tabId: lastArgs.tabId, screenshot: false });
       } else if (userText.includes('先澄清测试')) result = answer('请确认测试名称是否为 AI 中文验证。');
@@ -86,23 +87,30 @@ const server = createServer(async (request, response) => {
         else if (tools.length === 3) result = toolResponse('browser_tabs', { operation: 'close', tabId: parsed.find(tab => tab.url.includes('/opened')).id });
         else if (tools.length === 4) result = toolResponse('browser_check', { tabId: parsed[0].id, condition: { type: 'url', text: `${base}/form` } });
         else result = answer('标签开关测试完成。');
-      } else if (userText.includes('空白页打开测试')) {
+      } else if (userText.includes('空白页打开测试') || userText === '帮我打开百度') {
+        const target = userText === '帮我打开百度' ? 'https://www.baidu.com' : `${base}/chat-start`;
         if (!last) result = toolResponse('browser_tabs', { operation: 'list' });
-        else if (!parsed.length && lastCall === 'browser_tabs') result = toolResponse('browser_tabs', { operation: 'open', url: `${base}/chat-start` });
-        else if (lastCall === 'browser_tabs') result = toolResponse('browser_check', { tabId: parsed[0].id, condition: { type: 'url', text: `${base}/chat-start` } });
+        else if (!parsed.length && lastCall === 'browser_tabs') result = toolResponse('browser_tabs', { operation: 'open', url: target });
+        else if (lastCall === 'browser_tabs') result = toolResponse('browser_check', { tabId: parsed[0].id, condition: { type: 'url', text: target } });
         else result = answer('已从右侧对话打开并核验指定网页。');
       } else if (!last) result = toolResponse('browser_tabs', { operation: 'list' });
       else if (lastCall === 'browser_tabs') result = toolResponse('browser_observe', { tabId: parsed[0].id, screenshot: body.model.includes('vision'), query: { selector: { by: 'role', value: 'textbox', name: '测试名称' } } });
       else if (lastCall === 'browser_observe') {
         const input = parsed.elements.find(element => element.role === 'textbox' && element.name === '测试名称');
         assert.ok(input, 'Model fixture must receive the actual observed input');
-        result = toolResponse('browser_act', { tabId: parsed.tab.id, action: { type: 'fill', ref: input.ref, text: 'AI 中文验证' } });
+        result = toolResponse('browser_check', { tabId: parsed.tab.id, operation: 'plan', checks: [
+          { id: 'field', label: '测试名称已填写', condition: { type: 'field', role: 'textbox', name: '测试名称', value: 'AI 中文验证' } },
+          { id: 'saved', label: '页面保存结果', condition: { type: 'text', text: '保存成功：AI 中文验证' } },
+          { id: 'page', label: '正确的测试页面', condition: { type: 'url', text: '/form' } },
+        ] });
+      } else if (lastCall === 'browser_check' && parsed.planned) {
+        result = toolResponse('browser_act', { tabId: parsed.items[0].tabId, action: { type: 'locator', query: { selector: { by: 'role', value: 'textbox', name: '测试名称' } }, action: { type: 'fill', text: 'AI 中文验证' } } });
       } else if (lastCall === 'browser_act' && parsed.elements) {
         if (!parsed.text.includes('保存成功：AI 中文验证')) {
           const button = parsed.elements.find(element => element.role === 'button' && element.name === '保存测试');
           result = toolResponse('browser_act', { tabId: parsed.tab.id, action: { type: 'click', ref: button.ref } });
         } else result = toolResponse('browser_wait', { tabId: parsed.tab.id, condition: { type: 'text', text: '保存成功：AI 中文验证' }, timeoutMs: 1000 });
-      } else if (lastCall === 'browser_wait') { assert.equal(parsed.passed, true); result = toolResponse('browser_check', { tabId: parsed.observation.tab.id, condition: { type: 'text', text: '保存成功：AI 中文验证' } }); }
+      } else if (lastCall === 'browser_wait') { assert.equal(parsed.passed, true); result = toolResponse('browser_check', { tabId: parsed.observation.tab.id, operation: 'verify' }); }
       else if (lastCall === 'browser_check') { assert.equal(parsed.passed, true); result = answer('已核实页面显示保存成功。'); }
       else result = answer(`合成测试遇到浏览器错误：${JSON.stringify(parsed)}`);
       if (body.stream) {
@@ -124,6 +132,8 @@ base = `http://127.0.0.1:${server.address().port}`;
 other = `http://localhost:${server.address().port}`;
 const driverFile = path.join(output, 'driver.cjs');
 await build({ entryPoints: ['electron/browser/guest-driver.ts'], outfile: driverFile, bundle: true, platform: 'node', format: 'cjs' });
+const extractFile = path.join(output, 'extract.cjs');
+await build({ entryPoints: ['electron/browser/extract.ts'], outfile: extractFile, bundle: true, platform: 'node', format: 'cjs' });
 async function check(name, action) { await action(); checks.push(name); console.log(`BROWSER_PASS ${name}`); }
 async function launch() {
   const env = { ...process.env, WORKBENCH_TEST_DATA_DIR: path.join(output, 'data'), WORKBENCH_ISOLATED: '1' };
@@ -336,6 +346,59 @@ try {
       const events = await readFixture('inputLog.filter(event=>event.target==="multiline")');
       assert.equal(events.filter(event=>event.type==='input').length, 4); assert.equal(events.filter(event=>event.type==='keydown').length, 3);
     });
+    await check('Regex locators, scoped AX reads, state waits and animation stability operate the real guest', async () => {
+      await readFixture(`window.advancedClicks=0;{const box=document.createElement('section');box.id='advanced';box.innerHTML='<div id="first-zone"><button class="save">SAVE</button></div><div id="second-zone"><button class="save">save</button></div><button id="disabled-advanced" disabled>等待启用</button><style>@keyframes advancedMove{from{transform:translateX(0)}to{transform:translateX(100px)}}#moving-advanced{animation:advancedMove .7s linear forwards}</style><button id="moving-advanced" onclick="advancedClicks++">移动按钮</button>';document.body.append(box);}`);
+      const observed = await driver('observe', false, false, undefined, { within: [{ by: 'css', value: '#advanced' }], selector: { by: 'role', value: 'button', name: { pattern: '^save$', flags: 'i' } } });
+      assert.equal(observed.elements.length, 2); assert.match(observed.elements[0].context, /first-zone/);
+      const ambiguity = await application.evaluate(async () => { try { await globalThis.__browserPilot.driver.act({ type: 'locator', query: { within: [{ by: 'css', value: '#advanced' }], selector: { by: 'role', value: 'button', name: { pattern: '^save$', flags: 'i' } } }, timeoutMs: 1000, action: { type: 'click', button: 'left', count: 1 } }, async () => {}); } catch (error) { return { code: error.code, details: error.details }; } });
+      assert.equal(ambiguity.code, 'ambiguous-locator'); assert.equal(ambiguity.details.candidates.length, 2);
+      for (const [state, passed] of [['disabled', true], ['enabled', false], ['visible', true], ['hidden', false]]) assert.equal((await driver('check', { type: 'state', query: { selector: { by: 'css', value: '#disabled-advanced' } }, state })).passed, passed);
+      await readFixture(`window.advancedEvents=[];for(const type of ['mousedown','mouseup','click'])document.addEventListener(type,event=>advancedEvents.push({type,target:event.target.id,x:event.clientX,y:event.clientY,trusted:event.isTrusted}));document.querySelector('#moving-advanced').style.animation='none';void document.querySelector('#moving-advanced').offsetWidth;document.querySelector('#moving-advanced').style.animation='advancedMove .7s linear forwards'`);
+      await application.evaluate(() => { const port=globalThis.__browserPilot.driver.port, original=port.input;globalThis.__browserPilot.advancedInputs=[];globalThis.__browserPilot.restoreAdvancedInput=()=>{port.input=original;};port.input=async(...args)=>{globalThis.__browserPilot.advancedInputs.push(args);return original(...args);}; });
+      await act({ type: 'locator', query: { selector: { by: 'css', value: '#moving-advanced' } }, timeoutMs: 3000, action: { type: 'click', button: 'left', count: 1 } });
+      await application.evaluate(() => globalThis.__browserPilot.restoreAdvancedInput());
+      await writeFile(path.join(output, 'advanced-input-debug.json'), JSON.stringify(await readFixture(`({events:advancedEvents,clicks:advancedClicks,rect:document.querySelector('#moving-advanced').getBoundingClientRect().toJSON(),hit:document.elementFromPoint(document.querySelector('#moving-advanced').getBoundingClientRect().x+30,document.querySelector('#moving-advanced').getBoundingClientRect().y+10)?.outerHTML,viewport:{width:innerWidth,height:innerHeight,scrollX,scrollY},animations:document.querySelector('#moving-advanced').getAnimations().map(a=>({state:a.playState,time:a.currentTime}))})`), null, 2));
+      await writeFile(path.join(output, 'advanced-native-inputs.json'), JSON.stringify(await application.evaluate(() => ({ inputs:globalThis.__browserPilot.advancedInputs, zoom:globalThis.__browserPilot.guest.getZoomFactor() })), null, 2));
+      assert.equal(await readFixture('advancedClicks'), 1);
+      assert.equal((await driver('check', { type: 'state', query: { selector: { by: 'css', value: '#moving-advanced' } }, state: 'stable' })).passed, true);
+      await readFixture(`document.querySelector('#advanced').remove();window.scrollTo(0,0)`);
+    });
+    await check('Real table extraction reads typed columns, deduplicates pages and proves coverage from page facts', async () => {
+      await readFixture(`{const box=document.createElement('section');box.id='extract-test';box.innerHTML='<p id="extract-total">共 3 条</p><table><tbody id="extract-rows"></tbody></table><button id="extract-next">下一页</button>';document.body.append(box);window.renderExtract=page=>{document.querySelector('#extract-rows').innerHTML=(page===1?[['A1','￥1,234.50'],['A2','25']]:[['A2','25'],['A3','30']]).map(row=>'<tr>'+row.map(cell=>'<td>'+cell+'</td>').join('')+'</tr>').join('');document.querySelector('#extract-next').disabled=page===2;};renderExtract(1);}`);
+      await application.evaluate((_electron, file) => { const { BrowserCollections } = process.getBuiltinModule('module').createRequire(process.cwd()+'/package.json')(file); globalThis.__browserPilot.collections = new BrowserCollections(); }, extractFile);
+      const input = { operation: 'collect', query: { selector: { by: 'css', value: '#extract-rows tr' } }, fields: [{ name: 'order', column: 0, type: 'text', required: true }, { name: 'amount', column: 1, type: 'number', required: true }], keyFields: ['order'], totalQuery: { selector: { by: 'css', value: '#extract-total' } }, endCondition: { type: 'state', query: { selector: { by: 'css', value: '#extract-next' } }, state: 'disabled' }, resultOffset: 0, resultLimit: 100 };
+      const collect = input => application.evaluate(async (_electron, input) => globalThis.__browserPilot.collections.extract('pilot', input, globalThis.__browserPilot.driver), input);
+      const first = await collect(input); assert.equal(first.coverage.status, 'partial');
+      await readFixture('renderExtract(2)');
+      const second = await collect({ ...input, collectionId: first.collectionId });
+      assert.equal(second.coverage.status, 'complete'); assert.equal(second.coverage.collected, 3); assert.equal(second.coverage.pagesRead, 2);
+      assert.equal(second.rows[0].values.amount, 1234.5); assert.equal(second.rows[0].raw.amount, '￥1,234.50');
+      assert.ok(second.rows.every(row => row.source.frameId && row.source.at && row.source.url));
+      await readFixture(`document.querySelector('#extract-test').remove();window.scrollTo(0,0)`);
+    });
+    await check('Independent guest inputs fill and submit two tabs concurrently without crossing their values', async () => {
+      await page.locator('#view-browser').getByRole('button', { name: '新标签页', exact: true }).click();
+      await navigate(`${base}/parallel-form`);
+      const values = await application.evaluate(async ({ webContents }, file) => {
+        const guest = webContents.getAllWebContents().find(contents => contents.getType() === 'webview' && contents.getURL().includes('/parallel-form'));
+        guest.debugger.attach('1.3');
+        const { createGuestDriver } = process.getBuiltinModule('module').createRequire(process.cwd()+'/package.json')(file);
+        const second = createGuestDriver(guest, () => ({ id: 'second', workspace: 'default', url: guest.getURL(), title: guest.getTitle(), ready: true, active: true }));
+        guest.debugger.on('message', (_event, method, params, sessionId) => second.event(method, params, sessionId));
+        for (const method of ['Page.enable', 'DOM.enable', 'Runtime.enable']) await guest.debugger.sendCommand(method);
+        const first = globalThis.__browserPilot.driver;
+        try {
+          await Promise.all([first.act({ type: 'locator', query: { selector: { by: 'role', value: 'textbox', name: '测试名称' } }, timeoutMs: 3000, action: { type: 'fill', text: '并发标签 A' } }, async () => {}), second.act({ type: 'locator', query: { selector: { by: 'role', value: 'textbox', name: '测试名称' } }, timeoutMs: 3000, action: { type: 'fill', text: '并发标签 B' } }, async () => {})]);
+          const click = driver => driver.act({ type: 'locator', query: { selector: { by: 'role', value: 'button', name: '保存测试' } }, timeoutMs: 3000, action: { type: 'click', button: 'left', count: 1 } }, async () => {});
+          await Promise.all([click(first), click(second)]);
+          return Promise.all([globalThis.__browserPilot.guest, guest].map(contents => contents.executeJavaScript('({value:document.querySelector("#name").value,result:document.querySelector("#result").textContent,trusted:fixture.trusted})')));
+        } finally { guest.debugger.detach(); }
+      }, driverFile);
+      assert.deepEqual(values.map(item => item.value), ['并发标签 A', '并发标签 B']);
+      assert.deepEqual(values.map(item => item.result), ['保存成功：并发标签 A', '保存成功：并发标签 B']);
+      assert.ok(values.every(item => item.trusted));
+      await page.locator('#view-browser .mbp-tab.on .mbp-tab-x').click();
+    });
     await application.evaluate(() => { globalThis.__browserPilot.guest.debugger.detach(); delete globalThis.__browserPilot; });
   });
   await check('Workspace switches preserve live guest, form, navigation and login partition', async () => {
@@ -369,12 +432,65 @@ try {
       return { task, chatId: chat.id, entryId: entry.id, reference: entry.browserTask };
     });
     assert.deepEqual(firstBrowserReply.reference, { id: firstBrowserReply.task.id, workspace: 'default' });
+    assert.match(firstBrowserReply.task.verification.items.find(item => item.id === 'saved').evidence.actual, /保存成功：AI 中文验证/);
     await page.getByRole('button', { name: '查看操作记录', exact: true }).last().click();
     const record = page.getByRole('dialog', { name: '浏览器操作记录', exact: true });
     await record.getByRole('heading', { name: firstBrowserReply.task.goal, exact: true }).waitFor();
-    assert.equal(await record.locator('.browser-task-steps > li').count(), firstBrowserReply.task.steps.length);
+    assert.equal(await record.locator('.browser-task-detail > .browser-task-steps > li').count(), firstBrowserReply.task.steps.length);
+    await record.getByRole('status').filter({ hasText: '3/3 项通过' }).waitFor();
+    const checks = record.locator('section[aria-label="任务核验清单"] details');
+    assert.equal(await checks.count(), 3);
+    assert.equal(await record.locator('.browser-task-steps details[open]').count(), 0, 'All record rows start collapsed');
+    await record.screenshot({ path: path.join(output, 'browser-verification-checklist.png') });
+    const check = checks.first(), summary = check.locator('summary');
+    await summary.focus(); await page.keyboard.press('Enter');
+    assert.equal(await check.evaluate(element => element.open), true);
+    await check.locator('p').filter({ hasText: '读取文字：' }).waitFor();
+    assert.equal(await checks.nth(1).evaluate(element => element.open), false, 'Expanding one check does not open other checks');
+    await record.screenshot({ path: path.join(output, 'browser-verification-expanded.png') });
+    await page.keyboard.press('Space');
+    assert.equal(await check.evaluate(element => element.open), false);
+    const operation = record.locator('.browser-task-detail > .browser-task-steps details').first();
+    await operation.locator('summary').click();
+    assert.equal(await operation.evaluate(element => element.open), true);
+    await operation.locator('p').waitFor();
+    await operation.locator('summary').click();
+    assert.equal(await operation.evaluate(element => element.open), false);
     await page.keyboard.press('Escape');
     assert.equal(await page.locator('.ai-topbar-btn').getAttribute('aria-expanded'), 'true', 'Closing a task record must keep the assistant open');
+  });
+  await check('A second sidebar conversation runs while the browser request waits and stopping one keeps the other result', async () => {
+    holdModel = true; releaseModel = undefined;
+    const count = requests.length;
+    await sendChat('并发浏览器等待测试');
+    while (requests.length === count) await new Promise(resolve => setTimeout(resolve, 20));
+    const a = (await page.evaluate(() => window.workbench.ai.chatList())).find(chat => chat.streaming);
+    assert.ok(a);
+    const releaseA = releaseModel;
+    await page.getByRole('button', { name: '首页', exact: true }).click();
+    await page.locator('#view-home').waitFor();
+    await sendChat('并发普通对话测试');
+    while (requests.length < count + 2 || releaseModel === releaseA) await new Promise(resolve => setTimeout(resolve, 20));
+    holdModel = false;
+    const releaseB = releaseModel;
+    await page.getByRole('button', { name: /^选择历史对话，当前：/ }).click();
+    const picker = page.getByRole('dialog', { name: '切换对话', exact: true });
+    await picker.waitFor();
+    assert.equal(await picker.locator('.ai-chat-status.running').count(), 2, 'The chat list shows both concurrent requests as running');
+    const window = await application.browserWindow(page);
+    await picker.screenshot({ path: path.join(output, 'ai-concurrent-chat-list-detail.png') });
+    await page.screenshot({ path: path.join(output, 'ai-concurrent-chat-list.png'), fullPage: false });
+    await page.keyboard.press('Escape');
+    releaseB?.();
+    await page.getByRole('complementary', { name: 'AI 助手', exact: true }).getByText('第二个对话独立完成。', { exact: true }).waitFor();
+    releaseModel = releaseA;
+    const aWhileBFinished = await page.evaluate(id => window.workbench.ai.chatOpen(id), a.id);
+    assert.ok(aWhileBFinished.entries.some(entry => entry.streaming));
+    await writeFile(path.join(output, 'ai-concurrent-conversations.png'), Buffer.from(await window.evaluate(async window => (await window.webContents.capturePage()).toPNG().toString('base64')), 'base64'));
+    await page.getByRole('button', { name: '网页工作台', exact: true }).click();
+    await page.getByRole('button', { name: '停止生成', exact: true }).click();
+    releaseModel?.();
+    await page.waitForFunction(async id => !(await window.workbench.ai.chatOpen(id)).entries.some(entry => entry.streaming), a.id);
   });
   await check('Browser overflow menu is keyboard accessible and appears above the live guest', async () => {
     const trigger = page.locator('#view-browser .browser-menu-trigger');
@@ -492,8 +608,53 @@ try {
     assert.equal(await view.locator('.browser-task-controls').evaluate(element => getComputedStyle(element, '::before').animationName), 'browser-task-flow');
     const state = await page.evaluate(() => window.workbench.browserAutomation.state('default'));
     assert.deepEqual(state.tasks.at(-1).tabIds, []);
-    await openBrowserOption('允许此站点');
+    const card = page.locator('.ai-compose-wrap > .ai-site-approval');
+    await card.waitFor();
+    assert.equal(await card.getByRole('button', { name: '允许并继续', exact: true }).isEnabled(), true);
+    assert.ok((await card.textContent()).includes(state.tasks.at(-1).pendingOrigin));
+    const window = await application.browserWindow(page);
+    for (const [theme, width, height] of [['mist', 1440, 852], ...['mist', 'cool', 'warm'].flatMap(theme => [[theme, 1280, 820], [theme, 1024, 680]])]) {
+      await window.evaluate((window, size) => window.setContentSize(...size), [width, height]);
+      await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme);
+      await page.waitForFunction(width => Math.abs(innerWidth - width) < 2, width);
+      const before = await card.boundingBox();
+      await page.locator('.ai-messages').evaluate(element => { element.scrollTop = 0; element.dispatchEvent(new Event('scroll')); });
+      assert.deepEqual(await card.boundingBox(), before, 'Reading chat history must not move the fixed authorization card');
+      assert.equal(await card.evaluate(element => {
+        const rect = element.getBoundingClientRect(), composer = document.querySelector('.ai-compose').getBoundingClientRect();
+        return rect.top >= 0 && rect.bottom <= composer.top && composer.bottom <= innerHeight && element.scrollWidth <= element.clientWidth;
+      }), true, `${theme}/${width}: card and input must stay inside the panel without overlap`);
+      for (const name of ['不允许', '允许并继续']) assert.equal(await card.getByRole('button', { name, exact: true }).evaluate(button => { const rect = button.getBoundingClientRect(), hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2); return hit === button || button.contains(hit); }), true);
+      await page.locator('.ai-site-approval-receipt button').last().click();
+      assert.equal(await card.evaluate(element => element === document.activeElement), true);
+      await page.locator('.ai-messages').evaluate(element => { element.scrollTop = element.scrollHeight; element.dispatchEvent(new Event('scroll')); });
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      await writeFile(path.join(output, `site-approval-${theme}-${width}.png`), Buffer.from(await window.evaluate(async window => (await window.webContents.capturePage()).toPNG().toString('base64')), 'base64'));
+    }
+    await window.evaluate(window => window.setContentSize(1280, 820));
+    await page.evaluate(() => { document.documentElement.dataset.theme = 'mist'; });
+    await card.getByRole('button', { name: '允许并继续', exact: true }).click();
     await view.getByRole('button', { name: '页面条件验证通过', exact: true }).waitFor({ timeout: 30000 });
+    assert.equal(await card.count(), 0);
+    assert.equal((await page.evaluate(() => window.workbench.browserAutomation.state('default'))).tasks.at(-1).siteApprovals[0].status, 'allowed');
+    await view.getByRole('tab', { name: '浏览器合成测试 /form', exact: true }).click();
+  });
+  await check('Denying the docked site card stops the pending request without opening a tab', async () => {
+    const view = page.locator('#view-browser');
+    await view.getByRole('button', { name: '新标签页', exact: true }).click();
+    await sendChat('空白页打开测试：等待授权后再打开合成指定地址。');
+    const card = page.locator('.ai-compose-wrap > .ai-site-approval');
+    await card.waitFor();
+    const tabsBefore = await view.getByRole('tab').count();
+    await card.getByRole('button', { name: '不允许', exact: true }).click();
+    await card.waitFor({ state: 'detached' });
+    await page.locator('.ai-site-approval-receipt').filter({ hasText: '未授权，已停止本次任务' }).waitFor();
+    const task = (await page.evaluate(() => window.workbench.browserAutomation.state('default'))).tasks.at(-1);
+    assert.equal(task.status, 'cancelled'); assert.equal(task.siteApprovals[0].status, 'denied'); assert.deepEqual(task.tabIds, []);
+    assert.equal(await view.getByRole('tab').count(), tabsBefore);
+    const window = await application.browserWindow(page);
+    await writeFile(path.join(output, 'site-approval-denied.png'), Buffer.from(await window.evaluate(async window => (await window.webContents.capturePage()).toPNG().toString('base64')), 'base64'));
+    await view.locator('.mbp-tab:has([role="tab"][aria-selected="true"]) .mbp-tab-x').click();
     await view.getByRole('tab', { name: '浏览器合成测试 /form', exact: true }).click();
   });
   await check('Popup adoption and cross-site navigation wait for the visible site grant', async () => {
@@ -690,7 +851,7 @@ try {
     await page.getByRole('button', { name: '查看操作记录', exact: true }).first().click();
     const record = page.getByRole('dialog', { name: '浏览器操作记录', exact: true });
     await record.getByRole('heading', { name: firstBrowserReply.task.goal, exact: true }).waitFor();
-    assert.equal(await record.locator('.browser-task-steps > li').count(), firstBrowserReply.task.steps.length);
+    assert.equal(await record.locator('.browser-task-detail > .browser-task-steps > li').count(), firstBrowserReply.task.steps.length);
     await record.evaluate(async element => { await Promise.all(element.getAnimations({ subtree:true }).filter(animation => Number.isFinite(animation.effect?.getComputedTiming().endTime)).map(animation => animation.finished)); });
     const window = await application.browserWindow(page);
     await writeFile(path.join(output, 'browser-reply-record.png'), Buffer.from(await window.evaluate(async window => (await window.webContents.capturePage()).toPNG().toString('base64')), 'base64'));
@@ -828,10 +989,32 @@ try {
     assert.equal(cookies.current.length, 0); assert.equal(cookies.otherSite.length, 1); assert.equal(cookies.separate.length, 1);
     assert.equal(await readFixture('localStorage.getItem("fixture")'), null);
   });
+  await check('Selected permission design is visible in a fresh chat and remains pending until a real click', async () => {
+    const view = page.locator('#view-browser');
+    await view.getByRole('button', { name: '新标签页', exact: true }).click();
+    if (await page.locator('.ai-topbar-btn').getAttribute('aria-expanded') !== 'true') await page.locator('.ai-topbar-btn').click();
+    await page.locator('.ai-ctx-new').click();
+    await sendChat('帮我打开百度');
+    const card = page.locator('.ai-compose-wrap > .ai-site-approval');
+    await card.waitFor();
+    const window = await application.browserWindow(page);
+    await window.evaluate(window => window.setContentSize(1440, 852));
+    await page.evaluate(() => { document.documentElement.dataset.theme = 'mist'; });
+    await page.waitForFunction(() => Math.abs(innerWidth - 1440) < 2);
+    await page.locator('.ai-messages').evaluate(element => { element.scrollTop = element.scrollHeight; });
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await writeFile(path.join(output, 'site-approval-selected.png'), Buffer.from(await window.evaluate(async window => (await window.webContents.capturePage()).toPNG().toString('base64')), 'base64'));
+    assert.ok((await card.textContent()).includes('https://www.baidu.com'));
+    const task = (await page.evaluate(() => window.workbench.browserAutomation.state('default'))).tasks.at(-1);
+    assert.equal(task.status, 'site-approval'); assert.deepEqual(task.tabIds, []);
+    await card.getByRole('button', { name: '不允许', exact: true }).click();
+    await card.waitFor({ state: 'detached' });
+    assert.equal((await page.evaluate(() => window.workbench.browserAutomation.state('default'))).tasks.at(-1).status, 'cancelled');
+  });
   assert.deepEqual(errors, []);
   assert.deepEqual(consoleMessages.filter(message => message.level === 'error'), []);
   await writeFile(path.join(output, 'console.json'), JSON.stringify(consoleMessages, null, 2));
-  await writeFile(path.join(output, 'report.json'), JSON.stringify({ status: 'passed', checks, layouts, screenshots: ['browser-zoom-125.png', 'browser-zoom-menu.png', 'browser-combined-menu.png', 'browser-reply-record.png', 'browser-running-controls.png', 'browser-running-1024.png', 'creator-linked-chat.png', 'model-multimodal-setting.png', 'model-multimodal-off.png', 'model-multimodal-on-row.png', 'model-multimodal-off-row.png', 'address-history.png', 'history-panel.png', ...['mist', 'cool', 'warm'].flatMap(theme => [1280, 1024].flatMap(width => [`${theme}-${width}.png`, `${theme}-${width}-menu.png`]))], limitations: ['Synthetic model and creator-site content served locally, not real external model or website compatibility tests', 'Development Electron binary; not an installer or cross-version update check'], requests: requests.length }, null, 2));
+  await writeFile(path.join(output, 'report.json'), JSON.stringify({ status: 'passed', checks, layouts, screenshots: ['browser-verification-checklist.png', 'browser-verification-expanded.png', 'ai-concurrent-chat-list.png', 'ai-concurrent-conversations.png', 'browser-zoom-125.png', 'browser-zoom-menu.png', 'browser-combined-menu.png', 'browser-reply-record.png', 'browser-running-controls.png', 'browser-running-1024.png', 'creator-linked-chat.png', 'model-multimodal-setting.png', 'model-multimodal-off.png', 'model-multimodal-on-row.png', 'model-multimodal-off-row.png', 'address-history.png', 'history-panel.png', ...['mist', 'cool', 'warm'].flatMap(theme => [1280, 1024].flatMap(width => [`${theme}-${width}.png`, `${theme}-${width}-menu.png`]))], limitations: ['Synthetic model and creator-site content served locally, not real external model or website compatibility tests', 'Development Electron binary; not an installer or cross-version update check'], requests: requests.length }, null, 2));
   console.log(`BROWSER_PILOT_OK ${output}`);
 } catch (error) {
   console.error(error);

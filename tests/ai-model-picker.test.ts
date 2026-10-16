@@ -44,6 +44,7 @@ test('AI panel model trigger exposes the full name and switching still activates
   });
   (dom.window as unknown as { workbench: unknown }).workbench = {
     ai: {
+      onAsk: () => () => undefined,
       config: async () => config(),
       chatList: async () => [],
       chatDraft: async () => undefined,
