@@ -110,6 +110,21 @@ test('application before-quit owns float destruction without changing ordinary c
   assert.ok(source.indexOf("app.once('before-quit'") > source.indexOf('const floatTodo = new FloatTodoWindow'));
 });
 
+test('temporary compact height grows upward and stays inside the work area', async () => {
+  const { owner, win, area } = fixture();
+  await owner.setCollapsed(true, false);
+  win.setBounds({ x: area.x, y: area.y, width: 330, height: 176 });
+  owner.setTempHeight(232);
+  assert.deepEqual(win.getBounds(), { x: area.x, y: area.y, width: 330, height: 232 });
+  owner.setTempHeight(null);
+  assert.deepEqual(win.getBounds(), { x: area.x, y: area.y + 56, width: 330, height: 176 });
+  assert.ok(win.bounds.y + win.bounds.height <= area.y + area.height);
+  win.setBounds({ x: area.x + area.width - 330, y: area.y + area.height - 176, width: 330, height: 176 });
+  owner.setTempHeight(232);
+  assert.deepEqual(win.getBounds(), { x: area.x + area.width - 330, y: area.y + area.height - 232, width: 330, height: 232 });
+  assert.ok(win.bounds.y >= area.y && win.bounds.y + win.bounds.height <= area.y + area.height);
+});
+
 test('late compact IPC after instant expansion cannot overwrite expanded height or memory', async () => {
   const { owner, win } = fixture();
   owner.setExpandedHeight(704);
