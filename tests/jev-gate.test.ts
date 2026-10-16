@@ -7,7 +7,7 @@ import path from 'node:path';
 import test, { after } from 'node:test';
 import { run as floatRun, parseSimpleYaml } from '../tooling/accept-float.mjs';
 import { questionsFromIssueText, run as dynamicRun } from '../tooling/jev-dynamic-from-issue.mjs';
-import { assessLedger, decideFromHttp, exitCodeFor, loadPolicy, routeNoulScores, run as gateRun, selectFixed } from '../tooling/jev-gate.mjs';
+import { assessLedger, decideFromHttp, endpointFromEnv, exitCodeFor, loadPolicy, routeNoulScores, run as gateRun, selectFixed } from '../tooling/jev-gate.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const head = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).stdout.trim();
@@ -57,6 +57,11 @@ test('policy keeps the fixed propositions, thresholds, and important-ui skip', (
   assert.deepEqual(selectFixed(policy, 'optimize').map(item => item.id), [...fixedIds, 'A8_evidence_sufficient']);
   assert.deepEqual(selectFixed(policy, 'important_ui').map(item => item.id), []);
   assert.equal(createHash('sha256').update(bytes).digest('hex').length, 64);
+  const rootUrl = endpointFromEnv(policy, { SYSTEM1_API_BASE_URL: 'https://openrouter.ai' });
+  assert.equal(rootUrl.href, 'https://openrouter.ai/api/alpha/decisions');
+  const pasted = endpointFromEnv(policy, { OPENROUTER_API_BASE_URL: 'https://openrouter.ai/api/alpha/decisions/' });
+  assert.equal(pasted.href, 'https://openrouter.ai/api/alpha/decisions');
+  assert.throws(() => endpointFromEnv(policy, { SYSTEM1_API_BASE_URL: 'https://openrouter.ai/api/alpha/decisions/extra' }), /origin root/);
 });
 
 test('noul routing is fail-closed around the thresholds', () => {
@@ -135,8 +140,8 @@ test('important UI prechecks pass without calling JEV and verify is hash-bound',
     assert.equal(verified.exitCode, 0);
     assert.equal(verified.summary.enum, 'PENDING_HUMAN');
     assert.equal(verified.summary.hash_ok, true);
-    const parent = spawnSync('git', ['rev-parse', 'HEAD^'], { cwd: root, encoding: 'utf8' }).stdout.trim();
-    const moved = await gateRun(['--verify', '--issue', '86', '--head', parent, '--base', head], { env });
+    const flippedHead = `${head.slice(0, -1)}${head.endsWith('a') ? 'b' : 'a'}`;
+    const moved = await gateRun(['--verify', '--issue', '86', '--head', flippedHead, '--base', head], { env });
     assert.equal(moved.exitCode, 1);
     assert.equal(moved.summary.enum, null);
     assert.equal(moved.summary.reason, 'head_mismatch');

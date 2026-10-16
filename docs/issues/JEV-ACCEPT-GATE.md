@@ -20,11 +20,11 @@ BOT 和人只消费枚举和退出码。不要在门脚本外面看着原始概�
 |---|---|
 | `OPENROUTER_API_KEY` | `Authorization: Bearer`。优先使用 |
 | `SYSTEM1_API_KEY` | 上面没有时的备用密钥 |
-| `SYSTEM1_API_BASE_URL` | 可选源站，再拼 `/api/alpha/decisions` |
-| `OPENROUTER_API_BASE_URL` | 上一项没有时的备用源站 |
+| `SYSTEM1_API_BASE_URL` | 可选源站根，例如 `https://openrouter.ai`。不要自带 `/api/alpha/decisions`；脚本会再拼这段路径。若末尾已经带了这段后缀，会先去掉再拼，避免打出两次路径的 404 |
+| `OPENROUTER_API_BASE_URL` | 上一项没有时的备用源站根，规则相同 |
 | `JEV_LEDGER_PATH` | 可选账本路径。默认 `docs/issues/jev-ledger.jsonl`。相对路径相对当前工作目录 |
 
-都没设源站时用策略里的 `default_base_url`（`https://openrouter.ai`）。源站必须是 `https`，只有 `127.0.0.1` / `localhost` 允许 `http`。密钥不会写入账本或摘要。
+都没设源站时用策略里的 `default_base_url`（`https://openrouter.ai`）。这两个变量都要写成源站根，不要写成完整的 Decisions 地址。源站必须是 `https`，只有 `127.0.0.1` / `localhost` 允许 `http`。密钥不会写入账本或摘要。完整 40 位 SHA 直接作为 head/base 使用，不再向 git 解析祖先，因此浅克隆也能校验一个不在本地的 head。
 
 状态文本会离开本机。不要把密钥、令牌或私人数据放进 `--spec`、Issue 正文或 diff。
 

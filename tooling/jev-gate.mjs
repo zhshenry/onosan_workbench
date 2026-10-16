@@ -319,10 +319,10 @@ export function resolveLedgerPath(env = process.env, cwd = process.cwd()) {
 export function endpointFromEnv(policy, env = process.env) {
   const base = env.SYSTEM1_API_BASE_URL || env.OPENROUTER_API_BASE_URL || policy.default_base_url;
   if (typeof base !== 'string' || !base.trim()) throw fail('ARGS', 'missing decisions base URL');
+  const suffix = policy.endpoint_path.startsWith('/') ? policy.endpoint_path : `/${policy.endpoint_path}`;
   let url;
   try {
-    const suffix = policy.endpoint_path.startsWith('/') ? policy.endpoint_path : `/${policy.endpoint_path}`;
-    url = new URL(`${base.trim().replace(/\/+$/, '')}${suffix}`);
+    url = new URL(base.trim());
   } catch {
     throw fail('ARGS', 'invalid decisions base URL');
   }
@@ -331,6 +331,14 @@ export function endpointFromEnv(policy, env = process.env) {
   if (url.protocol !== 'https:' && !(url.protocol === 'http:' && local)) {
     throw fail('ARGS', 'decisions URL must be https, or http on localhost');
   }
+  // Base URL is the origin root. A pasted /api/alpha/decisions suffix is removed so it is not joined twice.
+  let pathname = url.pathname.replace(/\/+$/, '');
+  if (pathname === '/') pathname = '';
+  while (pathname.endsWith(suffix)) pathname = pathname.slice(0, -suffix.length).replace(/\/+$/, '');
+  if (pathname.includes(suffix)) throw fail('ARGS', `decisions base URL must be an origin root, not a path containing ${suffix}`);
+  url.pathname = `${pathname}${suffix}`;
+  url.search = '';
+  url.hash = '';
   return url;
 }
 
@@ -342,7 +350,11 @@ function git(args) {
 }
 
 function resolveCommit(ref) {
-  return git(['rev-parse', '--verify', `${ref}^{commit}`]).trim();
+  const trimmed = String(ref).trim();
+  // A full SHA is already resolved. Shallow CI checkouts have no parents, and a
+  // hash-bound mismatch check may use a SHA that is not in this clone.
+  if (/^[0-9a-f]{40}$/i.test(trimmed)) return trimmed.toLowerCase();
+  return git(['rev-parse', '--verify', `${trimmed}^{commit}`]).trim();
 }
 
 function collectDiff(base, head) {
