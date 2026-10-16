@@ -1,8 +1,9 @@
 import { memo, useMemo, useState, type MouseEvent } from 'react';
-import { CaretDown, Brain, Wrench } from '@phosphor-icons/react';
+import { CaretDown, CaretRight, Brain, Wrench } from '@phosphor-icons/react';
 import type { ChatEntry } from '../../shared/todo-contracts';
 import { renderAiMarkdown } from '../ai-markdown';
 import { errorText } from '../../modules/todo/ui/ui';
+import { BrowserTaskRecord } from '../../modules/browser/ui/task-record';
 
 const toolStatus = { running: '进行中', complete: '已完成', error: '失败', interrupted: '已中断' } as const;
 
@@ -26,6 +27,7 @@ const AiMarkdown = memo(function AiMarkdown({ text }: { text: string }) {
 export function AiResponse({ entry }: { entry: ChatEntry }) {
   const [thinkingExpanded, setThinkingExpanded] = useState<boolean | null>(null);
   const [toolsExpanded, setToolsExpanded] = useState<boolean | null>(null);
+  const [recordOpen, setRecordOpen] = useState(false);
   const thinkingActive = Boolean(entry.streaming && entry.thinkingActive);
   const tools = entry.tools ?? [];
   const running = tools.some(tool => tool.status === 'running');
@@ -50,7 +52,11 @@ export function AiResponse({ entry }: { entry: ChatEntry }) {
         <pre>{tool.output || (tool.status === 'running' ? '等待工具返回…' : '未返回可见结果')}</pre>
       </details>)}</div>
     </details>}
-    {entry.content ? <div className="ai-bubble"><AiMarkdown text={entry.content} />{entry.streaming && <span className="ai-caret" aria-hidden="true" />}</div>
+    {entry.content ? <div className="ai-bubble"><AiMarkdown text={entry.content} />{entry.streaming && <span className="ai-caret" aria-hidden="true" />}
+      {entry.browserTask && !entry.streaming && <button type="button" className="ai-browser-record" onClick={() => setRecordOpen(true)}>查看操作记录<CaretRight size={13} /></button>}
+    </div>
       : entry.streaming && !(thinkingActive && entry.thinking?.trim()) && !running ? <div className="ai-typing" role="status"><i /><i /><i /><span>正在生成回复…</span></div> : null}
+    {!entry.content && entry.browserTask && !entry.streaming && <button type="button" className="ai-browser-record" onClick={() => setRecordOpen(true)}>查看操作记录<CaretRight size={13} /></button>}
+    {recordOpen && entry.browserTask && <BrowserTaskRecord reference={entry.browserTask} close={() => setRecordOpen(false)} />}
   </div>;
 }

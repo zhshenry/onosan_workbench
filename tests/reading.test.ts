@@ -228,9 +228,14 @@ test('阅读清单:确认前不落盘,仅勾选入库;关闭不删;气泡删除;
   store.setVaultPath(vault);
   const vaultBefore = vaultSnapshot(vault);
   const saves: Record<string, unknown>[] = [];
+  const scans: string[] = [];
+  let vaultWriteFailure = false;
   const removed: string[] = [];
   const notices: string[] = [];
   const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', { url: 'http://localhost', pretendToBeVisual: true });
+  Object.assign(dom.window.HTMLDialogElement.prototype, {
+    showModal() { this.setAttribute('open', ''); }, close() { this.removeAttribute('open'); },
+  });
   const names = ['window', 'document', 'HTMLElement', 'Node', 'navigator', 'localStorage', 'getComputedStyle', 'requestAnimationFrame', 'cancelAnimationFrame'] as const;
   const previous = names.map((name) => Object.getOwnPropertyDescriptor(globalThis, name));
   for (const name of names) {
@@ -250,8 +255,8 @@ test('阅读清单:确认前不落盘,仅勾选入库;关闭不删;气泡删除;
         removed.push(id);
         return store.remove(id);
       },
-      setVault: async (vaultPath: string) => store.setVaultPath(vaultPath),
-      scan: async () => scanBooks(vault),
+      setVault: async (vaultPath: string) => { if (vaultWriteFailure) throw new Error('路径保存失败'); return store.setVaultPath(vaultPath); },
+      scan: async (vaultPath: string) => { scans.push(vaultPath); return scanBooks(vaultPath); },
       aggregate: async (folder: string) => aggregateBook(vault, folder),
       openObsidian: async () => undefined,
     },
@@ -289,6 +294,13 @@ test('阅读清单:确认前不落盘,仅勾选入库;关闭不删;气泡删除;
   const click = async (el: Element): Promise<void> => {
     await act(async () => { (el as HTMLElement).click(); });
   };
+  const fillVault = async (value: string): Promise<void> => {
+    await act(async () => {
+      const input = doc.querySelector<HTMLInputElement>('[aria-label="读书笔记库路径"]')!;
+      Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value')!.set!.call(input, value);
+      input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    });
+  };
 
   await act(async () => {
     root.render(createElement(ReadingView, {
@@ -301,6 +313,34 @@ test('阅读清单:确认前不落盘,仅勾选入库;关闭不删;气泡删除;
   assert.equal(store.all().books.length, 0);
 
   await click(buttonByText('从库导入'));
+  const pathDialog = doc.querySelector('dialog[aria-label="从库导入"]');
+  assert.ok(pathDialog, '已保存路径时，仍须先显示库路径确认框');
+  assert.equal(doc.querySelector<HTMLInputElement>('[aria-label="读书笔记库路径"]')?.value, vault);
+  assert.equal(scans.length, 0, '点击导入不能直接扫描旧路径');
+  await click(buttonByText('取消'));
+  assert.equal(doc.querySelector('dialog[aria-label="从库导入"]'), null);
+  assert.equal(store.all().vaultPath, vault);
+  assert.equal(store.all().books.length, 0);
+  await click(buttonByText('从库导入'));
+  await fillVault(' ');
+  await click(buttonByText('关联并扫描'));
+  assert.match(doc.querySelector('[role="alert"]')?.textContent ?? '', /请填写/);
+  assert.equal(scans.length, 0);
+  assert.equal(doc.activeElement, doc.querySelector('[aria-label="读书笔记库路径"]'));
+  await fillVault(dir);
+  await click(buttonByText('关联并扫描'));
+  await waitFor(() => (doc.querySelector('[role="alert"]')?.textContent ?? '').includes('.obsidian'), '无效路径应就地提示');
+  assert.equal(store.all().vaultPath, vault, '校验失败不能覆盖旧库路径');
+  assert.equal(doc.querySelector<HTMLInputElement>('[aria-label="读书笔记库路径"]')?.value, dir);
+  vaultWriteFailure = true;
+  await fillVault(vault + path.sep);
+  await click(buttonByText('关联并扫描'));
+  await waitFor(() => (doc.querySelector('[role="alert"]')?.textContent ?? '').includes('路径保存失败'), '配置保存失败应保留表单');
+  assert.equal(store.all().vaultPath, vault);
+  assert.equal(doc.querySelector('.rd-import'), null);
+  vaultWriteFailure = false;
+  await fillVault(vault);
+  await click(buttonByText('关联并扫描'));
   await waitFor(() => doc.querySelector('.rd-import') != null, '确认面板未出现');
   assert.equal(store.all().books.length, 0);
   assert.equal(saves.length, 0);
@@ -313,6 +353,7 @@ test('阅读清单:确认前不落盘,仅勾选入库;关闭不删;气泡删除;
   assert.equal(store.all().books.length, 0);
 
   await click(buttonByText('从库导入'));
+  await click(buttonByText('关联并扫描'));
   await waitFor(() => doc.querySelector('.rd-import') != null, '再次打开确认面板');
   const wish = doc.querySelector<HTMLInputElement>('input[aria-label="置身事内"]');
   const dmbok = doc.querySelector<HTMLInputElement>('input[aria-label="DMBOK"]');
@@ -335,6 +376,7 @@ test('阅读清单:确认前不落盘,仅勾选入库;关闭不删;气泡删除;
   assert.deepEqual(vaultSnapshot(vault), vaultBefore);
 
   await click(buttonByText('从库导入'));
+  await click(buttonByText('关联并扫描'));
   await waitFor(() => doc.querySelector('.rd-import') != null, '未导入的书应仍可确认');
   assert.deepEqual([...doc.querySelectorAll('.rd-import-text b')].map((node) => node.textContent), ['置身事内']);
   await click(buttonByText('取消'));

@@ -9,13 +9,7 @@
 .rd-vault-text { flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 3px; }
 .rd-vault-text b { font-size: var(--type-control); }
 .rd-vault-text span { font-size: var(--type-support); color: var(--ink-3); line-height: 1.6; }
-.rd-vault-form { flex: none; display: flex; gap: 8px; align-items: center; }
-.rd-vault-form input {
-  width: 300px; height: 34px; padding: 0 12px; border-radius: var(--r-ctl);
-  background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.85);
-  font-size: var(--type-support); color: var(--ink-2); outline: none;
-}
-.rd-vault-form input:focus { border-color: var(--acc-ring); background: #fff; }
+.modal.rd-vault-dialog { width: min(540px, calc(100vw - 48px)); max-width: min(540px, calc(100vw - 48px)); background: var(--ai-panel-bg); }
 
 /* ---- 标签筛选 ---- */
 .rd-tagfilter { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }

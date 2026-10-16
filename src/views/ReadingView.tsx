@@ -143,6 +143,9 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
   const [mTags, setMTags] = useState('');
   const [mFolder, setMFolder] = useState('');
   const [vaultInput, setVaultInput] = useState('');
+  const [vaultDialogOpen, setVaultDialogOpen] = useState(false);
+  const [vaultError, setVaultError] = useState('');
+  const vaultInputRef = useRef<HTMLInputElement>(null);
   const [folders, setFolders] = useState<{ folder: string; name: string; noteCount: number }[]>([]);
   const [importCandidates, setImportCandidates] = useState<ImportCandidate[] | null>(null);
   const [importChecked, setImportChecked] = useState<Set<string>>(new Set());
@@ -152,6 +155,8 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
   const [commentDraft, setCommentDraft] = useState('');
   const commentTimer = useRef<number | undefined>(undefined);
   const loadedOnce = useRef(false);
+
+  useEffect(() => { if (vaultDialogOpen) vaultInputRef.current?.focus(); }, [vaultDialogOpen]);
 
   useEffect(() => {
     if (loadedOnce.current) return;
@@ -215,21 +220,35 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
 
   const linkedFolders = (): string[] => storeData?.books.flatMap((item) => item.link ? [item.link.folder] : []) ?? [];
 
+  const openImport = (): void => {
+    setVaultInput(storeData?.vaultPath ?? '');
+    setVaultError('');
+    setImportCandidates(null);
+    setVaultDialogOpen(true);
+  };
+
   const scanAndImport = (): void => {
-    if (!storeData?.vaultPath) { onPending('请先配置读书笔记库路径'); return; }
     if (scanning) return;
+    const value = vaultInput.trim();
+    if (!value) { setVaultError('请填写读书笔记库的本地文件夹路径'); vaultInputRef.current?.focus(); return; }
     setScanning(true);
-    void wb.reading.scan(storeData.vaultPath).then((raw) => {
-      const candidates = raw as ImportCandidate[];
-      const fresh = booksPendingImport(candidates, linkedFolders(), candidates.map((candidate) => candidate.folder));
-      if (!fresh.length) {
-        setImportCandidates(null);
-        onPending('库内没有新的书文件夹');
-        return;
+    setVaultError('');
+    void (async () => {
+      try {
+        const candidates = await wb.reading.scan(value) as ImportCandidate[];
+        if (value !== storeData?.vaultPath) apply(await wb.reading.setVault(value));
+        setVaultDialogOpen(false);
+        const fresh = booksPendingImport(candidates, linkedFolders(), candidates.map((candidate) => candidate.folder));
+        if (!fresh.length) { setImportCandidates(null); onPending('库内没有新的书文件夹'); return; }
+        setImportCandidates(fresh);
+        setImportChecked(new Set(fresh.map((candidate) => candidate.folder)));
+      } catch (e) {
+        setVaultError(errorText(e));
+        vaultInputRef.current?.focus();
+      } finally {
+        setScanning(false);
       }
-      setImportCandidates(fresh);
-      setImportChecked(new Set(fresh.map((candidate) => candidate.folder)));
-    }, (e) => onPending(errorText(e))).finally(() => setScanning(false));
+    })();
   };
 
   const cancelImport = (): void => {
@@ -287,14 +306,6 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
         setCurId(null);
         localStorage.removeItem(CUR_KEY);
       }
-    }, (e) => onPending(errorText(e)));
-  };
-
-  const saveVault = (): void => {
-    const value = vaultInput.trim();
-    if (!value) { onPending('请填写读书笔记库路径'); return; }
-    void wb.reading.scan(value).then(() => {
-      void wb.reading.setVault(value).then((raw) => apply(raw, '读书笔记库已配置'), (e) => onPending(errorText(e)));
     }, (e) => onPending(errorText(e)));
   };
 
@@ -358,12 +369,10 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
           </div>
         </div>
         <div className="gbtns">
-          {storeData.vaultPath && (
-            <button className="btn btn-sec" onClick={scanAndImport} disabled={scanning} aria-busy={scanning}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 3.8v3.4h-3.4"/></svg>
-              从库导入
-            </button>
-          )}
+          <button className="btn btn-sec" onClick={openImport} disabled={scanning || importBusy} aria-haspopup="dialog">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 3.8v3.4h-3.4"/></svg>
+            从库导入
+          </button>
           <button className="btn btn-pri" onClick={openNew}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
             添加书目
@@ -377,16 +386,7 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
             <b>关联你的读书笔记库</b>
             <span>填写 Obsidian 读书库的本地路径(需含 .obsidian 文件夹),例如 C:/Myself/Obsidian/读书笔记。工作台只读取其中的书目活动,不改动任何笔记。</span>
           </div>
-          <div className="rd-vault-form">
-            <input
-              aria-label="读书笔记库路径"
-              placeholder="如:C:/Myself/Obsidian/读书笔记"
-              value={vaultInput}
-              onChange={(e) => setVaultInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') saveVault(); }}
-            />
-            <button className="btn btn-pri btn-sm" onClick={saveVault}>校验并关联</button>
-          </div>
+          <button className="btn btn-pri btn-sm" onClick={openImport} aria-haspopup="dialog">选择读书笔记库</button>
         </div>
       )}
 
@@ -416,7 +416,7 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
         importCandidates ? null : (
           <div className="bazi-empty glass rd-empty">
             <b>书单还是空的</b>
-            <p>{storeData.vaultPath ? '点「从库导入」把读书笔记库里的书加进来,或「添加书目」手动录入。' : '先在上方关联读书笔记库,或「添加书目」手动录入一本。'}</p>
+            <p>点「从库导入」填写读书笔记库路径并选择书目,或「添加书目」手动录入。</p>
           </div>
         )
       ) : (
@@ -620,6 +620,19 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
           )}
         </div>
       )}
+
+      {vaultDialogOpen && <Modal title="从库导入" className="rd-vault-dialog" close={() => { if (!scanning) setVaultDialogOpen(false); }}>
+        <form className="form-body" noValidate aria-busy={scanning} onSubmit={event => { event.preventDefault(); scanAndImport(); }}>
+          <p className="field-help" id="reading-vault-help">填写 Obsidian 库的本地文件夹路径，需包含 .obsidian 文件夹。确认后记住此路径并扫描书目，笔记库保持只读。</p>
+          <label htmlFor="reading-vault-path">读书笔记库路径</label>
+          <input id="reading-vault-path" ref={vaultInputRef} aria-label="读书笔记库路径" placeholder="如：C:/Myself/Obsidian/读书笔记" readOnly={scanning} value={vaultInput}
+            aria-invalid={Boolean(vaultError)} aria-describedby={vaultError ? 'reading-vault-help reading-vault-error' : 'reading-vault-help'}
+            onChange={event => { setVaultInput(event.target.value); setVaultError(''); }} onKeyDown={event => { if (event.key === 'Enter' && event.nativeEvent.isComposing) event.preventDefault(); }} />
+          {storeData.books.some(item => item.link) && <p className="field-help">当前为单库关联，更改路径会更新已有书目的笔记来源；书目和阅读进度保留。</p>}
+          {vaultError && <p className="error" id="reading-vault-error" role="alert">{vaultError}</p>}
+          <div className="bazi-form-actions"><button type="button" className="btn btn-sec" disabled={scanning} onClick={() => setVaultDialogOpen(false)}>取消</button><button type="submit" className="btn btn-pri" disabled={scanning}>{scanning ? '正在扫描…' : '关联并扫描'}</button></div>
+        </form>
+      </Modal>}
 
       {modalOpen && (
         <Modal title="添加书目" close={() => setModalOpen(false)}>

@@ -23,6 +23,8 @@ export interface WebviewElement extends HTMLElement {
   goForward(): void;
   reload(): void;
   isLoading(): boolean;
+  getZoomFactor(): number;
+  setZoomFactor(factor: number): void;
   /** 整页截图(采集用)。 */
   capturePage(): Promise<WebviewNativeImage>;
   /** 在 guest 主文档执行脚本(AI 读取正文用);结果 JSON 可序列化。 */

@@ -479,6 +479,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
     if (!open) return;
     const onKey = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape') return;
+      if (event.defaultPrevented || document.querySelector('dialog[open]') || Array.from(document.querySelectorAll<HTMLElement>('[popover]')).some(element => element.matches(':popover-open'))) return;
       if (referenceDialogOpen || managing) return;
       { onClose(); requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('.ai-topbar-btn')?.focus()); }
     };

@@ -120,6 +120,8 @@ export interface ChatEntry {
   baziSystem?: 'bazi' | 'ziwei' | 'astro';
   actionState?: 'pending' | 'applied' | 'discarded' | 'expired' | 'revised' | 'undone'; streaming?: boolean;
   tools?: AIToolEvent[]; thinking?: string; thinkingActive?: boolean; error?: string;
+  /** 本轮实际执行的浏览器任务，不能用会话的最新任务替代历史回复。 */
+  browserTask?: Pick<import('./browser-automation-contracts').BrowserTask, 'id' | 'workspace'>;
 }
 /** 缺省 module 为旧版待办会话；原始对象用于工作台归类，contextScope 是当前业务对象，pageScope 是明确关联的页面。 */
 export interface ChatSession { id: string; title: string; titleEdited?: boolean; updatedAt: string; entries: ChatEntry[]; draft: string; module?: 'todo' | 'copy' | 'bazi' | 'workbench' | 'reading'; draftId?: string; profileId?: string; viewId?: string; contextScope?: import('./ai-scope').AiScope; pageScope?: import('./ai-scope').AiScope; browserTaskId?: string; }

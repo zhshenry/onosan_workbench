@@ -4,7 +4,7 @@
  * 多标签:每个标签一个独立 GuestFrame;隐藏标签的 guest 保持存活(页面状态不丢)。
  */
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { ArrowClockwise, ArrowLeft, ArrowRight, Plus, Sparkle, X } from '@phosphor-icons/react';
+import { ArrowClockwise, ArrowLeft, ArrowRight, Globe, Plus, Sparkle, X } from '@phosphor-icons/react';
 import { BrowserAddress } from './address';
 import { browserAddressTarget } from '../../../shared/browser-history';
 import { GuestFrame } from './guest-frame';
@@ -93,6 +93,8 @@ export function BrowserPane({
   pendingRef.current = onPending;
   const persistenceEnabled = automation;
   const onTaskState = useCallback((value: BrowserTask | null) => setTask(value), []);
+
+  useEffect(() => active.frame.refreshZoom(), [active.frame]);
 
   useEffect(() => {
     if (!window.workbench.browserAutomation || !persistenceEnabled) return;
@@ -201,12 +203,20 @@ export function BrowserPane({
   return (
     <div className={compact ? 'mbp compact' : 'mbp'}>
       {tabsEnabled && (
-        <div className="mbp-tabs" role="tablist" aria-label="浏览器标签页">
+        <div className="mbp-tabstrip"><div className="mbp-tabs" role="tablist" aria-label="浏览器标签页" onKeyDown={event => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+          event.preventDefault();
+          const index = tabs.findIndex(tab => tab.id === active.id);
+          const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+          const tab = tabs[next];
+          manual(() => { setActiveId(tab.id); setInput(tab.frame.getSnapshot().target?.url.replace(/^https?:\/\//, '') ?? ''); document.getElementById(`browser-tab-${workspace}-${tab.id}`)?.focus(); });
+        }}>
           {tabs.map((t) => {
             const title = t.frame.getSnapshot().target?.title || '新标签页';
             return (
-              <div key={t.id} className={t.id === active.id ? 'mbp-tab on' : 'mbp-tab'} role="tab" aria-selected={t.id === active.id}>
-                <button className="mbp-tab-btn" title={title} onClick={() => manual(() => { setActiveId(t.id); setInput(t.frame.getSnapshot().target?.url.replace(/^https?:\/\//, '') ?? ''); })}>
+              <div key={t.id} className={t.id === active.id ? 'mbp-tab on' : 'mbp-tab'}>
+                <button className="mbp-tab-btn" id={`browser-tab-${workspace}-${t.id}`} role="tab" aria-selected={t.id === active.id} tabIndex={t.id === active.id ? 0 : -1} title={title} onClick={() => manual(() => { setActiveId(t.id); setInput(t.frame.getSnapshot().target?.url.replace(/^https?:\/\//, '') ?? ''); })}>
+                  <Globe size={15} />
                   <span className="mbp-tab-title">{title}</span>
                 </button>
                 {tabs.length > 1 && (
@@ -217,10 +227,10 @@ export function BrowserPane({
               </div>
             );
           })}
-          <button className="mbp-tabnew" title="新标签页" disabled={tabs.length >= 20} onClick={() => manual(() => newTab())}><Plus size={12} weight="bold" /></button>
-        </div>
+        </div><button className="mbp-tabnew" title="新标签页" aria-label="新标签页" disabled={tabs.length >= 20} onClick={() => manual(() => newTab())}><Plus size={17} /></button></div>
       )}
       <div className="mbp-chrome">
+        <div className="mbp-navigation">
         <button className="mbp-navbtn" title="后退" disabled={!state.canGoBack} onClick={() => manual(() => active.frame.goBack())}>
           <ArrowLeft size={15} />
         </button>
@@ -230,6 +240,7 @@ export function BrowserPane({
         <button className="mbp-navbtn" title="刷新" onClick={() => manual(() => active.frame.reload())}>
           <ArrowClockwise size={14} />
         </button>
+        </div>
         <BrowserAddress workspace={workspace} value={input} onChange={setInput} onGo={go} readOnly={readOnlyAddress} inputRef={inputRef} />
         {onAskPage && (
           <button
@@ -250,10 +261,10 @@ export function BrowserPane({
             {capDone ? <>已采集 ✓</> : <><Plus size={13} weight="bold" />{capture.label}</>}
           </button>
         )}
+        {automation && <BrowserAutomationBar workspace={workspace} url={state.target?.url} ready={state.target !== undefined && !state.loading && !state.error} zoomFactor={state.zoomFactor} onZoomChange={factor => active.frame.setZoomFactor(factor)} onRefreshZoom={() => active.frame.refreshZoom()} onNavigate={go} onState={onTaskState} />}
       </div>
-      {automation && <BrowserAutomationBar workspace={workspace} url={state.target?.url} ready={state.target !== undefined && !state.loading && !state.error} onNavigate={go} onState={onTaskState} />}
       <div className="mbp-stage">
-        {task?.status === 'running' && <button className="browser-takeover" aria-label="接管浏览器并暂停 AI" onClick={() => void window.workbench.browserAutomation.control(task.id, 'pause').catch(error => onPending(String(error)))}><span>AI 正在操作此浏览器 · 点击页面接管</span></button>}
+        {task?.status === 'running' && <button className="browser-takeover" title="点击页面可暂停并接管" aria-label="接管浏览器并暂停 AI" onClick={() => void window.workbench.browserAutomation.control(task.id, 'pause').catch(error => onPending(String(error)))} />}
         {state.loading && <div className="mbp-progress" aria-hidden="true" />}
         {state.error && (
           <div className="mbp-error" role="alert">

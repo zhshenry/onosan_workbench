@@ -16,6 +16,7 @@ const checks = [], errors = [], requests = [];
 const consoleMessages = [];
 const layouts = [];
 let application, page, base, other;
+let firstBrowserReply;
 let holdModel, releaseModel;
 const creatorTitle = '浏览器协作验收文章 A', creatorBody = '这段合成正文只属于文章 A，用于验证同一对话填写网页。';
 const html = route => `<!doctype html><meta charset="utf-8"><title>浏览器合成测试 ${route}</title>
@@ -141,7 +142,12 @@ async function launch() {
   await page.getByRole('button', { name: '网页工作台', exact: true }).click();
   await page.locator('#view-browser').waitFor();
 }
-async function navigate(url) { const address = page.locator('#view-browser').getByRole('combobox', { name: '地址', exact: true }); await address.fill(url); await address.press('Enter'); await page.waitForFunction(expected => { const view = document.querySelector('#view-browser webview'); return view?.getURL?.() === expected && !view.isLoading(); }, url); }
+async function navigate(url) { const address = page.locator('#view-browser').getByRole('combobox', { name: '地址', exact: true }); await address.fill(url); await address.press('Enter'); await page.waitForFunction(expected => { const view = Array.from(document.querySelectorAll('#view-browser webview')).find(element => element.checkVisibility()); return view?.getURL?.() === expected && !view.isLoading(); }, url); }
+async function openBrowserOption(name) {
+  const trigger = page.locator('#view-browser .browser-menu-trigger');
+  if (await trigger.getAttribute('aria-expanded') !== 'true') await trigger.click();
+  await page.getByRole('menu', { name: '浏览器选项', exact: true }).getByRole('menuitem', { name, exact: true }).click();
+}
 async function sendChat(text) {
   const panel = page.getByRole('complementary', { name: 'AI 助手', exact: true });
   if (!await panel.isVisible() || await panel.getAttribute('aria-hidden') === 'true') await page.locator('.ai-topbar-btn').click();
@@ -230,13 +236,24 @@ try {
     assert.ok(canvas.y < observed.screenshot.cssHeight, 'Fixture canvas should be visible');
     observed = await act({ type: 'coordinate', screenshotId: observed.screenshot.id, point: canvas, button: 'left', count: 1 });
     assert.equal((await readFixture('fixture')).canvas, 1);
-    await application.evaluate(() => globalThis.__browserPilot.guest.setZoomFactor(1.25));
+    const beforeZoom = (await driver('observe', true)).screenshot.id;
+    await page.locator('#view-browser .browser-menu-trigger').click();
+    const zoomMenu = page.getByRole('menu', { name: '浏览器选项', exact: true });
+    await zoomMenu.getByRole('button', { name: '放大网页', exact: true }).click();
+    await zoomMenu.getByRole('button', { name: '放大网页', exact: true }).click();
+    assert.equal(await zoomMenu.getByLabel('当前网页缩放', { exact: true }).textContent(), '125%');
+    assert.ok(Math.abs(await application.evaluate(() => globalThis.__browserPilot.guest.getZoomFactor()) - 1.25) < 0.001);
+    await page.keyboard.press('Escape');
+    await assert.rejects(act({ type: 'coordinate', screenshotId: beforeZoom, point: canvas, button: 'left', count: 1 }), /变化/);
     await readFixture('document.querySelector("#canvas").scrollIntoView({block:"center"})');
     observed = await driver('observe', true);
     const zoomedCanvas = await readFixture('(()=>{const r=document.querySelector("#canvas").getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2}})()');
     await act({ type: 'coordinate', screenshotId: observed.screenshot.id, point: zoomedCanvas, button: 'left', count: 1 });
     assert.equal((await readFixture('fixture')).canvas, 2, '125% page zoom must map CSS coordinates to native guest input');
-    await application.evaluate(() => globalThis.__browserPilot.guest.setZoomFactor(1));
+    await page.locator('#view-browser .browser-menu-trigger').click();
+    await zoomMenu.getByRole('button', { name: '重置网页缩放', exact: true }).click();
+    assert.equal(await zoomMenu.getByLabel('当前网页缩放', { exact: true }).textContent(), '100%');
+    await page.keyboard.press('Escape');
     await readFixture('window.scrollTo(0,0)');
     await readFixture('document.querySelector("#drag").scrollIntoView({block:"center"})');
     observed = await driver('observe', true);
@@ -340,11 +357,97 @@ try {
     await page.waitForFunction(() => { try { const view = document.querySelector('#view-browser webview'); return view?.getURL?.().includes('/form') && !view.isLoading(); } catch { return false; } });
     const view = page.locator('#view-browser');
     await sendChat('将测试名称填为 AI 中文验证，点击保存测试，并检查保存成功提示。');
-    await view.getByText('页面条件验证通过', { exact: true }).waitFor({ timeout: 60000 });
+    await view.getByRole('button', { name: '页面条件验证通过', exact: true }).waitFor({ timeout: 60000 });
     assert.ok(requests.length >= 6);
     assert.ok(requests.some(request => JSON.stringify(request.messages).includes('data:image/jpeg;base64,')), 'Actual OpenAI-compatible transport must carry screenshot image content');
     assert.equal(await readFixture('document.querySelector("#name").value'), 'AI 中文验证');
     assert.equal((await readFixture('fixture')).trusted, true);
+    firstBrowserReply = await page.evaluate(async () => {
+      const task = (await window.workbench.browserAutomation.state('default')).tasks.at(-1);
+      const chat = await window.workbench.ai.chatOpen(task.chatId);
+      const entry = chat.entries.filter(entry => entry.role === 'assistant').at(-1);
+      return { task, chatId: chat.id, entryId: entry.id, reference: entry.browserTask };
+    });
+    assert.deepEqual(firstBrowserReply.reference, { id: firstBrowserReply.task.id, workspace: 'default' });
+    await page.getByRole('button', { name: '查看操作记录', exact: true }).last().click();
+    const record = page.getByRole('dialog', { name: '浏览器操作记录', exact: true });
+    await record.getByRole('heading', { name: firstBrowserReply.task.goal, exact: true }).waitFor();
+    assert.equal(await record.locator('.browser-task-steps > li').count(), firstBrowserReply.task.steps.length);
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('.ai-topbar-btn').getAttribute('aria-expanded'), 'true', 'Closing a task record must keep the assistant open');
+  });
+  await check('Browser overflow menu is keyboard accessible and appears above the live guest', async () => {
+    const trigger = page.locator('#view-browser .browser-menu-trigger');
+    await trigger.focus(); await page.keyboard.press('Enter');
+    const menu = page.getByRole('menu', { name: '浏览器选项', exact: true });
+    await menu.waitFor();
+    await page.waitForFunction(() => document.activeElement?.textContent === '历史记录');
+    await page.keyboard.press('ArrowDown');
+    assert.equal(await page.evaluate(() => document.activeElement.textContent), '任务记录');
+    assert.ok(await menu.evaluate(element => { const r=element.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return element.contains(hit); }));
+    const window = await application.browserWindow(page);
+    await writeFile(path.join(output, 'browser-combined-menu.png'), Buffer.from(await window.evaluate(async window => (await window.webContents.capturePage()).toPNG().toString('base64')), 'base64'));
+    await page.keyboard.press('Escape'); await menu.waitFor({ state:'hidden' });
+    assert.equal(await page.locator('.ai-topbar-btn').getAttribute('aria-expanded'), 'true', 'Closing the browser menu must not close the assistant');
+    assert.equal(await trigger.evaluate(element => element === document.activeElement), true);
+    await trigger.click(); await menu.waitFor();
+    await page.getByRole('textbox', { name: '发送给当前对话的 AI 助手', exact: true }).focus();
+    await page.keyboard.press('Escape'); await menu.waitFor({ state: 'hidden' });
+    assert.equal(await page.locator('.ai-topbar-btn').getAttribute('aria-expanded'), 'true', 'Escape must dismiss the open menu before the assistant even after focus leaves the menu');
+    assert.equal(await page.locator('#view-browser .browser-utilities').count(), 0);
+    assert.equal(await page.locator('#view-browser .media-browser-header').count(), 0);
+  });
+  await check('Browser menu zoom changes the real page, enforces limits and follows native site zoom across tabs and reload', async () => {
+    const window = await application.browserWindow(page);
+    const view = page.locator('#view-browser'), trigger = view.locator('.browser-menu-trigger');
+    const menu = page.getByRole('menu', { name: '浏览器选项', exact: true });
+    const percentage = menu.getByLabel('当前网页缩放', { exact: true });
+    const smaller = menu.getByRole('button', { name: '缩小网页', exact: true }), larger = menu.getByRole('button', { name: '放大网页', exact: true });
+    const reset = menu.getByRole('button', { name: '重置网页缩放', exact: true });
+    const nativeZoom = () => view.locator('webview').filter({ visible: true }).evaluate(element => element.getZoomFactor());
+    const nonce = await readFixture('fixture.nonce'), width = await readFixture('innerWidth');
+    const shellZoom = await window.evaluate(window => window.webContents.getZoomFactor());
+    await trigger.click(); await percentage.filter({ hasText: '100%' }).waitFor();
+    assert.equal(await reset.isDisabled(), true);
+    await smaller.focus(); await page.keyboard.press('Enter');
+    await percentage.filter({ hasText: '90%' }).waitFor();
+    assert.ok(Math.abs(await nativeZoom() - 0.9) < 0.001);
+    await reset.click();
+    await larger.click(); await larger.click();
+    await percentage.filter({ hasText: '125%' }).waitFor();
+    assert.ok(await readFixture('innerWidth') < width, 'Page zoom must change the actual CSS viewport');
+    assert.equal(await window.evaluate(window => window.webContents.getZoomFactor()), shellZoom, 'App chrome must retain its own scale');
+    await writeFile(path.join(output, 'browser-zoom-125.png'), Buffer.from(await window.evaluate(async window => (await window.webContents.capturePage()).toPNG().toString('base64')), 'base64'));
+    await menu.screenshot({ path: path.join(output, 'browser-zoom-menu.png'), animations: 'disabled' });
+    for (let count = 0; count < 30 && await smaller.isEnabled(); count++) await smaller.click();
+    assert.equal(await percentage.textContent(), '25%'); assert.equal(await smaller.isDisabled(), true);
+    assert.ok(Math.abs(await nativeZoom() - 0.25) < 0.001);
+    for (let count = 0; count < 30 && await larger.isEnabled(); count++) await larger.click();
+    assert.equal(await percentage.textContent(), '500%'); assert.equal(await larger.isDisabled(), true);
+    assert.ok(Math.abs(await nativeZoom() - 5) < 0.001);
+    await reset.click(); await larger.click(); await larger.click();
+    await page.keyboard.press('Escape');
+    await view.getByRole('button', { name: '新标签页', exact: true }).click();
+    await trigger.click();
+    assert.equal(await smaller.isDisabled(), true); assert.equal(await larger.isDisabled(), true);
+    await page.keyboard.press('Escape');
+    await navigate(`${other}/zoom`);
+    await trigger.click(); await percentage.filter({ hasText: '100%' }).waitFor();
+    assert.ok(Math.abs(await nativeZoom() - 1) < 0.001, 'A different site must not inherit the original site zoom');
+    await page.keyboard.press('Escape');
+    await navigate(`${base}/zoom`);
+    await trigger.click(); await percentage.filter({ hasText: '125%' }).waitFor();
+    assert.ok(Math.abs(await nativeZoom() - 1.25) < 0.001, 'Same-origin tabs must reflect the native shared zoom');
+    await larger.click(); await page.keyboard.press('Escape');
+    await view.locator('.mbp-tab.on .mbp-tab-x').click();
+    await trigger.click(); await percentage.filter({ hasText: '150%' }).waitFor();
+    assert.ok(Math.abs(await nativeZoom() - 1.5) < 0.001);
+    assert.equal(await readFixture('fixture.nonce'), nonce, 'Zoom and tab switching must preserve the live page');
+    await reset.click(); await larger.click(); await page.keyboard.press('Escape');
+    await view.getByRole('button', { name: '刷新', exact: true }).click();
+    await page.waitForFunction(() => { const view = document.querySelector('#view-browser webview'); return view && !view.isLoading(); });
+    await trigger.click(); await percentage.filter({ hasText: '110%' }).waitFor();
+    await reset.click(); await page.keyboard.press('Escape');
   });
   await check('Model list multimodal eye toggle saves both states beside edit and survives ordinary model edits', async () => {
     await page.getByRole('button', { name: '设置', exact: true }).click();
@@ -384,25 +487,27 @@ try {
     const view = page.locator('#view-browser');
     await view.getByRole('button', { name: '新标签页', exact: true }).click();
     await sendChat('空白页打开测试：打开合成指定地址并检查页面地址。');
-    await view.getByText('等待站点授权', { exact: true }).waitFor({ timeout: 30000 });
+    await view.getByRole('button', { name: '等待站点授权', exact: true }).waitFor({ timeout: 30000 });
+    assert.equal(await view.locator('.browser-task-controls').evaluate(element => getComputedStyle(element).animationName), 'browser-task-breathe');
+    assert.equal(await view.locator('.browser-task-controls').evaluate(element => getComputedStyle(element, '::before').animationName), 'browser-task-flow');
     const state = await page.evaluate(() => window.workbench.browserAutomation.state('default'));
     assert.deepEqual(state.tasks.at(-1).tabIds, []);
-    await view.getByRole('button', { name: '允许此站点', exact: true }).click();
-    await view.getByText('页面条件验证通过', { exact: true }).waitFor({ timeout: 30000 });
-    await view.getByRole('button', { name: '浏览器合成测试 /form', exact: true }).click();
+    await openBrowserOption('允许此站点');
+    await view.getByRole('button', { name: '页面条件验证通过', exact: true }).waitFor({ timeout: 30000 });
+    await view.getByRole('tab', { name: '浏览器合成测试 /form', exact: true }).click();
   });
   await check('Popup adoption and cross-site navigation wait for the visible site grant', async () => {
     const view = page.locator('#view-browser');
     await sendChat('跨站弹窗测试：打开弹窗标签，访问合成跨站地址并核验。');
-    await view.getByText('等待站点授权', { exact: true }).waitFor({ timeout: 30000 });
+    await view.getByRole('button', { name: '等待站点授权', exact: true }).waitFor({ timeout: 30000 });
     const waiting = await page.evaluate(() => window.workbench.browserAutomation.state('default'));
     assert.equal(waiting.tasks.at(-1).tabIds.length, 2);
     assert.equal(waiting.tasks.at(-1).pendingOrigin, other);
     await page.getByRole('button', { name: '首页', exact: true }).click();
     await page.getByRole('button', { name: '浏览器等待站点授权', exact: true }).click();
-    await view.getByRole('button', { name: '允许此站点', exact: true }).click();
-    await view.getByText('页面条件验证通过', { exact: true }).waitFor({ timeout: 30000 });
-    await view.getByRole('button', { name: '浏览器合成测试 /form', exact: true }).click();
+    await openBrowserOption('允许此站点');
+    await view.getByRole('button', { name: '页面条件验证通过', exact: true }).waitFor({ timeout: 30000 });
+    await view.getByRole('tab', { name: '浏览器合成测试 /form', exact: true }).click();
   });
   await check('Background browser task writes while its workspace and AI panel are hidden, without taking focus', async () => {
     await readFixture('document.querySelector("#name").value="后台前"; document.querySelector("#result").textContent="尚未保存"');
@@ -412,6 +517,9 @@ try {
     await view.getByRole('button', { name: '接管 / 暂停', exact: true }).waitFor();
     const before = await readFixture('({nonce:fixture.nonce,clicks:fixture.clicks})');
     await page.getByRole('complementary', { name: 'AI 助手', exact: true }).getByRole('button', { name: '收起 AI 助手', exact: true }).click();
+    await view.getByRole('button', { name: '接管 / 暂停', exact: true }).waitFor();
+    const window = await application.browserWindow(page);
+    await writeFile(path.join(output, 'browser-running-controls.png'), Buffer.from(await window.evaluate(async window => (await window.webContents.capturePage()).toPNG().toString('base64')), 'base64'));
     await page.getByRole('button', { name: '首页', exact: true }).click();
     await page.getByRole('button', { name: '浏览器后台操作中', exact: true }).waitFor();
     await page.getByRole('button', { name: '首页', exact: true }).focus();
@@ -462,30 +570,104 @@ try {
     const view = page.locator('#view-browser'), before = (await readFixture('fixture')).clicks;
     await sendChat('暂停取消合成任务');
     await view.getByRole('button', { name: '接管 / 暂停', exact: true }).waitFor();
+    const window = await application.browserWindow(page);
+    const controls = view.locator('.browser-task-controls');
+    const effect = () => controls.evaluate(element => {
+      const style = getComputedStyle(element), edge = getComputedStyle(element, '::before'), rect = element.getBoundingClientRect();
+      const label = getComputedStyle(element.querySelector('.browser-task-label'));
+      return { animation: style.animationName, background: style.backgroundColor, labelColor: label.color, labelOpacity: label.opacity, edgeAnimation: edge.animationName, angle: edge.getPropertyValue('--browser-task-flow-angle'), edgeDisplay: edge.display, pointerEvents: edge.pointerEvents, bounds: { x: rect.x, y: rect.y, width: rect.width, height: rect.height } };
+    });
+    const movingEffect = async status => {
+      const start = await effect();
+      await new Promise(resolve => setTimeout(resolve, 400));
+      const end = await effect();
+      assert.equal(end.animation, 'browser-task-breathe', status);
+      assert.equal(end.edgeAnimation, 'browser-task-flow', status);
+      assert.notEqual(start.background, end.background, `${status}: background must actually breathe`);
+      assert.notEqual(start.angle, end.angle, `${status}: edge highlight must actually move`);
+      assert.equal(start.labelColor, end.labelColor); assert.equal(start.labelOpacity, end.labelOpacity);
+      assert.deepEqual(start.bounds, end.bounds, 'Animation must not shift the clickable controls');
+      assert.equal(end.pointerEvents, 'none');
+      return { status, start, end };
+    };
+    const captureEffect = async (name, details) => {
+      await window.evaluate(window => window.setContentSize(1280, 820));
+      await page.waitForFunction(() => Math.abs(innerWidth - 1280) < 2);
+      await page.evaluate(async () => { await Promise.all(document.getAnimations().filter(animation => Number.isFinite(animation.effect?.getComputedTiming().endTime)).map(animation => animation.finished.catch(() => {}))); });
+      const bounds = await controls.boundingBox();
+      const region = { x: Math.floor(bounds.x) - 8, y: Math.floor(bounds.y) - 8, width: Math.ceil(bounds.width) + 16, height: Math.ceil(bounds.height) + 16 };
+      const frames = [], started = Date.now();
+      for (let index = 0; index < 16; index++) {
+        await new Promise(resolve => setTimeout(resolve, Math.max(0, started + index * 200 - Date.now())));
+        const frame = `${name}-frame-${String(index).padStart(2, '0')}.png`;
+        await writeFile(path.join(output, frame), Buffer.from(await window.evaluate(async (window, region) => (await window.webContents.capturePage(region)).toPNG().toString('base64'), region), 'base64'));
+        frames.push(frame);
+      }
+      await writeFile(path.join(output, `${name}.json`), JSON.stringify({ ...details, region, frames, delayMs: 200 }, null, 2));
+      await writeFile(path.join(output, `${name}.png`), Buffer.from(await window.evaluate(async window => (await window.webContents.capturePage()).toPNG().toString('base64')), 'base64'));
+    };
+    await check('Visible task effects move without shifting controls and respect reduced motion and forced colors', async () => {
+      const states = [];
+      for (const theme of ['mist', 'cool', 'warm']) {
+        await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme);
+        states.push({ theme, ...await movingEffect(`running-${theme}`) });
+      }
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      const reduced = await effect();
+      assert.equal(reduced.animation, 'none'); assert.equal(reduced.edgeAnimation, 'none');
+      assert.equal(await controls.locator('.browser-task-spinner').evaluate(element => getComputedStyle(element).animationName), 'none');
+      await page.emulateMedia({ reducedMotion: 'no-preference', forcedColors: 'active' });
+      const contrast = await effect(); assert.equal(contrast.animation, 'none'); assert.equal(contrast.edgeDisplay, 'none');
+      await page.emulateMedia({ reducedMotion: 'no-preference', forcedColors: 'none' });
+      await page.evaluate(() => { document.documentElement.dataset.theme = 'mist'; });
+      await captureEffect('browser-task-effects', { states, reduced, contrast });
+    });
+    for (const [width, height] of [[1280, 820], [1024, 680]]) {
+      await window.evaluate((window, size) => window.setContentSize(...size), [width, height]);
+      await page.waitForFunction(({ width, height }) => {
+        const button=document.querySelector('#view-browser [aria-label="接管 / 暂停"]'); if (!button || Math.abs(innerWidth-width)>2 || Math.abs(innerHeight-height)>2) return false;
+        const r=button.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return hit===button||button.contains(hit);
+      }, { width, height });
+    }
+    await writeFile(path.join(output, 'browser-running-1024.png'), Buffer.from(await window.evaluate(async window => (await window.webContents.capturePage()).toPNG().toString('base64')), 'base64'));
+    await view.locator('.browser-menu-trigger').click();
+    const zoomMenu = page.getByRole('menu', { name: '浏览器选项', exact: true });
+    await zoomMenu.getByRole('button', { name: '放大网页', exact: true }).click();
+    await view.getByRole('button', { name: '已暂停 · 可手动操作', exact: true }).waitFor();
+    const paused = await movingEffect('paused');
+    await zoomMenu.getByLabel('当前网页缩放', { exact: true }).filter({ hasText: '110%' }).waitFor();
+    await zoomMenu.getByRole('button', { name: '重置网页缩放', exact: true }).click();
+    await page.keyboard.press('Escape');
+    await captureEffect('browser-task-paused', { states: [paused] });
+    await view.getByRole('button', { name: '继续操作', exact: true }).click();
     await view.getByRole('button', { name: '接管 / 暂停', exact: true }).click();
-    await view.getByText('已暂停 · 可手动操作', { exact: true }).waitFor();
     await view.getByRole('button', { name: '停止任务', exact: true }).click();
     holdModel = false; releaseModel?.();
-    await view.getByText('已停止', { exact: true }).waitFor();
+    await view.getByRole('button', { name: '已停止', exact: true }).waitFor();
+    const cancelled = await movingEffect('cancelled');
+    await writeFile(path.join(output, 'browser-task-persistent-effects.json'), JSON.stringify({ paused, cancelled }, null, 2));
     assert.equal((await readFixture('fixture')).clicks, before);
+    await window.evaluate(window => window.setContentSize(1280, 820));
   });
   await check('Website operation UI has no goal form, annotations or developer diagnostics', async () => {
     const view = page.locator('#view-browser');
     assert.equal(await view.getByRole('textbox', { name: '浏览器任务目标' }).count(), 0);
     assert.equal(await view.getByRole('button', { name: '标注给 AI', exact: true }).count(), 0);
     assert.equal(await view.getByRole('button', { name: '页面诊断', exact: true }).count(), 0);
-    await view.getByRole('button', { name: '历史', exact: true }).click();
+    await openBrowserOption('历史记录');
     await page.getByRole('dialog').getByText(`${base}/form`, { exact: true }).first().waitFor();
     await page.keyboard.press('Escape');
   });
   await check('Clarification continues in the same sidebar conversation without a separate task form', async () => {
     const view = page.locator('#view-browser');
     await sendChat('先澄清测试：确认后填写测试名称并保存核验。');
-    await view.getByText('执行结束 · 结果尚未验证', { exact: true }).waitFor();
+    await view.getByRole('button', { name: '执行结束 · 结果尚未验证', exact: true }).waitFor();
     const before = await page.evaluate(() => window.workbench.browserAutomation.state('default'));
     const task = before.tasks.at(-1);
     await sendChat('已确认，填写 AI 中文验证，点击保存并检查保存成功。');
-    await view.getByText('页面条件验证通过', { exact: true }).waitFor();
+    await view.getByRole('button', { name: '页面条件验证通过', exact: true }).waitFor();
+    assert.equal(await view.locator('.browser-task-controls').evaluate(element => getComputedStyle(element).animationName), 'browser-task-breathe');
+    assert.equal(await view.locator('.browser-task-controls').evaluate(element => getComputedStyle(element, '::before').animationName), 'browser-task-flow');
     const after = await page.evaluate(() => window.workbench.browserAutomation.state('default'));
     assert.equal(after.tasks.at(-1).id, task.id);
     assert.equal(after.tasks.at(-1).status, 'completed');
@@ -494,11 +676,25 @@ try {
   await check('Model can open/select/close its own tab without interrupting the remaining task', async () => {
     const view = page.locator('#view-browser');
     await sendChat('标签开关测试：打开新标签、切换后关闭它，核验原页面地址。');
-    await view.getByText('页面条件验证通过', { exact: true }).waitFor({ timeout: 30000 });
+    await view.getByRole('button', { name: '页面条件验证通过', exact: true }).waitFor({ timeout: 30000 });
     const state = await page.evaluate(() => window.workbench.browserAutomation.state('default'));
     assert.equal(state.tasks.at(-1).status, 'completed'); assert.equal(state.tasks.at(-1).tabIds.length, 1);
     assert.equal(await page.locator('#view-browser .mbp-tab-title').filter({ hasText: '/opened' }).count(), 0);
     await page.locator('#view-browser .mbp-tab.on .mbp-tab-title').filter({ hasText: '/form' }).waitFor();
+  });
+  await check('Historical reply opens its own task after later tasks update the same conversation', async () => {
+    const state = await page.evaluate(() => window.workbench.browserAutomation.state('default'));
+    assert.notEqual(state.tasks.at(-1).id, firstBrowserReply.task.id);
+    const chat = await page.evaluate(id => window.workbench.ai.chatOpen(id), firstBrowserReply.chatId);
+    assert.deepEqual(chat.entries.find(entry => entry.id === firstBrowserReply.entryId).browserTask, firstBrowserReply.reference);
+    await page.getByRole('button', { name: '查看操作记录', exact: true }).first().click();
+    const record = page.getByRole('dialog', { name: '浏览器操作记录', exact: true });
+    await record.getByRole('heading', { name: firstBrowserReply.task.goal, exact: true }).waitFor();
+    assert.equal(await record.locator('.browser-task-steps > li').count(), firstBrowserReply.task.steps.length);
+    await record.evaluate(async element => { await Promise.all(element.getAnimations({ subtree:true }).filter(animation => Number.isFinite(animation.effect?.getComputedTiming().endTime)).map(animation => animation.finished)); });
+    const window = await application.browserWindow(page);
+    await writeFile(path.join(output, 'browser-reply-record.png'), Buffer.from(await window.evaluate(async window => (await window.webContents.capturePage()).toPNG().toString('base64')), 'base64'));
+    await page.keyboard.press('Escape');
   });
   await check('Address suggestions support keyboard navigation and history search/deletion preserves route parameters', async () => {
     await navigate(`${base}/history-choice?report=42#summary`); await navigate(`${base}/form?report=42#details`);
@@ -511,7 +707,7 @@ try {
     await address.press('ArrowDown'); await address.press('Enter');
     await page.waitForFunction(expected => document.querySelector('#view-browser webview').getURL()===expected, `${base}/history-choice?report=42#summary`);
     await navigate(`${base}/form?report=42#details`);
-    await page.locator('#view-browser').getByRole('button', { name: '历史', exact: true }).click();
+    await openBrowserOption('历史记录');
     const dialog = page.getByRole('dialog'); await dialog.getByRole('searchbox', { name: '搜索历史', exact: true }).fill('history-choice');
     await page.waitForFunction(() => { const dialog=document.querySelector('.browser-dialog'); return dialog && !dialog.getAnimations({subtree:true}).some(animation=>animation.playState==='running'&&Number.isFinite(animation.effect?.getComputedTiming().endTime)); });
     await writeFile(path.join(output, 'history-panel.png'), Buffer.from(await window.evaluate(async window => (await window.webContents.capturePage()).toPNG().toString('base64')), 'base64'));
@@ -525,7 +721,7 @@ try {
     assert.ok(saved.tabs.some(tab => tab.url===`${base}/form?report=42#details`));
   });
   await check('Clearing only site cache preserves cookies and local storage', async () => {
-    await page.locator('#view-browser').getByRole('button', { name: '清理当前站点数据', exact: true }).click();
+    await openBrowserOption('清理当前站点数据…');
     const dialog = page.getByRole('dialog'); await dialog.getByLabel('Cookie 和登录状态', { exact: true }).uncheck(); await dialog.getByLabel('站点存储', { exact: true }).uncheck(); await dialog.getByLabel('缓存', { exact: true }).check();
     await dialog.getByRole('button', { name: '确认清理', exact: true }).click(); await dialog.waitFor({ state: 'hidden' });
     assert.equal(await readFixture('localStorage.getItem("fixture")'), 'persistent');
@@ -557,9 +753,17 @@ try {
     assert.equal(await page.getByText(/^操作网页：/).count(),0);
     assert.equal(await page.locator('.ai-ctx-name').textContent(), creatorTitle);
     await sendChat('博客网页协作测试：把当前协助文章的标题和正文填入网页，先不要发布。');
-    await page.locator('#view-media-browser').getByText('页面条件验证通过', { exact:true }).waitFor({ timeout:60000 });
+    await page.locator('#view-media-browser').getByRole('button', { name: '页面条件验证通过', exact:true }).waitFor({ timeout:60000 });
     const filled=await application.evaluate(({ webContents })=>webContents.getAllWebContents().find(contents=>contents.getType()==='webview'&&contents.getURL().startsWith('https://creator.xiaohongshu.com/')).executeJavaScript('({title:document.querySelector("#article-title").value,body:document.querySelector("#article-body").value})'));
     assert.deepEqual(filled,{title:creatorTitle,body:creatorBody});
+    const creatorView = page.locator('#view-media-browser');
+    await creatorView.locator('.browser-menu-trigger').click();
+    const creatorZoom = page.getByRole('menu', { name: '浏览器选项', exact: true });
+    await creatorZoom.getByRole('button', { name: '放大网页', exact: true }).click();
+    await creatorZoom.getByLabel('当前网页缩放', { exact: true }).filter({ hasText: '110%' }).waitFor();
+    assert.ok(Math.abs(await creatorView.locator('webview').evaluate(element => element.getZoomFactor()) - 1.1) < 0.001);
+    await creatorZoom.getByRole('button', { name: '重置网页缩放', exact: true }).click();
+    await page.keyboard.press('Escape');
     const stored=await page.evaluate(async article=>({chat:await window.workbench.ai.chatOpen(article.chatId),copy:await window.workbench.copy.list()}),article);
     assert.equal(stored.chat.contextScope.draftId,article.id);
     assert.equal(stored.chat.pageScope.viewId,'media-browser');
@@ -580,17 +784,23 @@ try {
       if (await page.locator('.ai-topbar-btn').getAttribute('aria-expanded') !== 'true') await page.locator('.ai-topbar-btn').click();
       await page.waitForFunction(({ width, height }) => {
         if (Math.abs(innerWidth-width)>2 || Math.abs(innerHeight-height)>2) return false;
-        const button=document.querySelector('#view-browser .browser-utilities button:first-child'); if(!button) return false;
+        const button=document.querySelector('#view-browser .browser-menu-trigger'); if(!button) return false;
         const r=button.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
         const moving=document.getAnimations().some(animation=>animation.playState==='running'&&animation.effect?.target instanceof Element&&animation.effect.target.contains(button));
         return !moving && (hit===button || button.contains(hit));
       }, { width, height }, { timeout: 5000 });
       const layout = await page.locator('#view-browser .mbp-stage').boundingBox();
       assert.ok(layout.width > 300 && layout.height > 150, `Browser remains usable: ${theme}/${width}`);
-      assert.ok(await page.locator('#view-browser .browser-utilities button:first-child').evaluate(button => { const r=button.getBoundingClientRect();const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return hit===button||button.contains(hit); }), `Browser controls must remain reachable with the AI panel open: ${theme}/${width}`);
+      assert.ok(await page.locator('#view-browser .mbp-tabs').evaluate(element => element.scrollWidth <= element.clientWidth + 1), `Four tabs should shrink before adding a scrollbar: ${theme}/${width}`);
+      assert.ok(await page.locator('#view-browser .browser-menu-trigger').evaluate(button => { const r=button.getBoundingClientRect();const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return hit===button||button.contains(hit); }), `Browser controls must remain reachable with the AI panel open: ${theme}/${width}`);
       const image = await window.evaluate(async window => (await window.webContents.capturePage()).toPNG().toString('base64'));
       layouts.push({theme, requested:[width,height], nativeContent:await window.evaluate(window=>window.getContentSize()), viewport:await page.evaluate(()=>({width:innerWidth,height:innerHeight,dpr:devicePixelRatio})), browser:layout});
       await writeFile(path.join(output, `${theme}-${width}.png`), Buffer.from(image, 'base64'));
+      await page.locator('#view-browser .browser-menu-trigger').click();
+      const menu = page.getByRole('menu', { name:'浏览器选项', exact:true }); await menu.waitFor();
+      assert.ok(await menu.evaluate(element => { const r=element.getBoundingClientRect(); return r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight; }), `Menu stays inside viewport: ${theme}/${width}`);
+      await writeFile(path.join(output, `${theme}-${width}-menu.png`), Buffer.from(await window.evaluate(async window => (await window.webContents.capturePage()).toPNG().toString('base64')), 'base64'));
+      await page.keyboard.press('Escape');
     }
   });
   await check('Normal restart restores tabs and persistent login without replaying cancelled actions', async () => {
@@ -605,11 +815,13 @@ try {
     assert.equal(saved.tasks.at(-1).status, 'completed');
     assert.equal((await page.evaluate(() => window.workbench.ai.config())).models[0].supportsImages, true);
     assert.ok(saved.tabs.some(tab => tab.url === `${base}/form?report=42#details`));
+    const chat = await page.evaluate(id => window.workbench.ai.chatOpen(id), firstBrowserReply.chatId);
+    assert.deepEqual(chat.entries.find(entry => entry.id === firstBrowserReply.entryId).browserTask, firstBrowserReply.reference);
   });
   await check('Confirmed site-data clearing only affects the selected persistent profile/site', async () => {
     await application.evaluate(async ({ session }) => session.fromPartition('persist:wb-browser-xhs-creator').cookies.set({ url: 'https://creator.xiaohongshu.com', name: 'synthetic_profile', value: 'keep', expirationDate: Math.floor(Date.now()/1000)+3600 }));
     const view = page.locator('#view-browser');
-    await view.getByRole('button', { name: '清理当前站点数据', exact: true }).click();
+    await openBrowserOption('清理当前站点数据…');
     await page.getByRole('dialog').getByRole('button', { name: '确认清理', exact: true }).click();
     await page.getByRole('dialog').waitFor({ state: 'hidden' });
     const cookies = await application.evaluate(async ({ session }) => ({ current: await session.fromPartition('persist:wb-browser-default').cookies.get({ name: 'synthetic_session', domain: '127.0.0.1' }), otherSite: await session.fromPartition('persist:wb-browser-default').cookies.get({ name: 'synthetic_session', domain: 'localhost' }), separate: await session.fromPartition('persist:wb-browser-xhs-creator').cookies.get({ name: 'synthetic_profile' }) }));
@@ -619,7 +831,7 @@ try {
   assert.deepEqual(errors, []);
   assert.deepEqual(consoleMessages.filter(message => message.level === 'error'), []);
   await writeFile(path.join(output, 'console.json'), JSON.stringify(consoleMessages, null, 2));
-  await writeFile(path.join(output, 'report.json'), JSON.stringify({ status: 'passed', checks, layouts, screenshots: ['creator-linked-chat.png', 'model-multimodal-setting.png', 'model-multimodal-off.png', 'model-multimodal-on-row.png', 'model-multimodal-off-row.png', 'address-history.png', 'history-panel.png', ...['mist', 'cool', 'warm'].flatMap(theme => [1280, 1024].map(width => `${theme}-${width}.png`))], limitations: ['Synthetic model and creator-site content served locally, not real external model or website compatibility tests', 'Development Electron binary; not an installer or cross-version update check'], requests: requests.length }, null, 2));
+  await writeFile(path.join(output, 'report.json'), JSON.stringify({ status: 'passed', checks, layouts, screenshots: ['browser-zoom-125.png', 'browser-zoom-menu.png', 'browser-combined-menu.png', 'browser-reply-record.png', 'browser-running-controls.png', 'browser-running-1024.png', 'creator-linked-chat.png', 'model-multimodal-setting.png', 'model-multimodal-off.png', 'model-multimodal-on-row.png', 'model-multimodal-off-row.png', 'address-history.png', 'history-panel.png', ...['mist', 'cool', 'warm'].flatMap(theme => [1280, 1024].flatMap(width => [`${theme}-${width}.png`, `${theme}-${width}-menu.png`]))], limitations: ['Synthetic model and creator-site content served locally, not real external model or website compatibility tests', 'Development Electron binary; not an installer or cross-version update check'], requests: requests.length }, null, 2));
   console.log(`BROWSER_PILOT_OK ${output}`);
 } catch (error) {
   console.error(error);

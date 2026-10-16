@@ -420,7 +420,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     chat.contextScope = scope;
     chat.pageScope = pageScope;
     if (browserTask) chat.browserTaskId = browserTask.id;
-    chat.entries.push({ id: randomUUID(), role: 'user', content: request.text, contextScope: scope, pageScope, references, referenceSnapshots, copySource: context.copySource, ...systemTag }, { id: assistantId, role: 'assistant', content: '', contextScope: scope, pageScope, references, referenceSnapshots, streaming: true, tools: [], ...systemTag });
+    chat.entries.push({ id: randomUUID(), role: 'user', content: request.text, contextScope: scope, pageScope, references, referenceSnapshots, copySource: context.copySource, ...systemTag }, { id: assistantId, role: 'assistant', content: '', contextScope: scope, pageScope, references, referenceSnapshots, streaming: true, tools: [], ...(browserTask ? { browserTask: { id: browserTask.id, workspace: browserTask.workspace } } : {}), ...systemTag });
     if (chat.title === '新对话' && !chat.titleEdited) chat.title = request.text.slice(0, 32);
     chat.draft = '';
     try { emitChat(ai.saveChat(chat)); }

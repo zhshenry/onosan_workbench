@@ -31,6 +31,7 @@ export interface BrowserFrameState {
   loading: boolean;
   canGoBack: boolean;
   canGoForward: boolean;
+  zoomFactor: number;
   error: { code?: number; description?: string } | undefined;
 }
 
@@ -40,6 +41,7 @@ export const emptyBrowserFrame = (): BrowserFrameState => ({
   loading: false,
   canGoBack: false,
   canGoForward: false,
+  zoomFactor: 1,
   error: undefined,
 });
 

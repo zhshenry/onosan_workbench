@@ -1,13 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { ArrowCounterClockwise, CheckCircle, ClockCounterClockwise, DotsThree, ListChecks, Minus, Pause, Play, Plus, ShieldCheck, SpinnerGap, Stop, Trash, WarningCircle } from '@phosphor-icons/react';
 import { Modal, Select, errorText } from '../../todo/ui/ui';
 import type { BrowserClearData, BrowserSavedTab, BrowserTask, BrowserWorkspaceState } from '../../../shared/browser-automation-contracts';
 import { browserClearDataSchema } from '../../../shared/browser-automation-contracts';
 import { browserHistorySince, browserTimeOptions, filterBrowserHistory } from '../../../shared/browser-history';
 import type { BrowserPaneProps } from './pane';
 import { BrowserPane } from './pane';
+import { BrowserTaskDetails, browserTaskLabels } from './task-record';
+
+export { browserTaskLabels } from './task-record';
 
 const api = () => window.workbench.browserAutomation;
-export const browserTaskLabels: Record<BrowserTask['status'], string> = { ready: '准备开始', running: 'AI 正在操作', paused: '已暂停 · 可手动操作', 'site-approval': '等待站点授权', completed: '页面条件验证通过', unverified: '执行结束 · 结果尚未验证', cancelled: '已停止', failed: '执行失败', interrupted: '任务已中断 · 请检查页面' };
+const ZOOM_STEPS = [25, 33, 50, 67, 75, 80, 90, 100, 110, 125, 150, 175, 200, 250, 300, 400, 500];
 
 /** The entire host stays mounted across workbench switches. Only URLs and IDs restore after restart. */
 export function BrowserWorkspacePane(props: BrowserPaneProps) {
@@ -24,8 +28,9 @@ export function BrowserWorkspacePane(props: BrowserPaneProps) {
   return <BrowserPane {...props} savedTabs={saved.tabs} savedActiveId={saved.activeId} automation={!!api()} />;
 }
 
-export function BrowserAutomationBar({ workspace, url, ready, onNavigate, onState }: {
+export function BrowserAutomationBar({ workspace, url, ready, zoomFactor, onZoomChange, onRefreshZoom, onNavigate, onState }: {
   workspace: string; url?: string; ready: boolean; onNavigate(url: string): void; onState(task: BrowserTask | null): void;
+  zoomFactor: number; onZoomChange(factor: number): void; onRefreshZoom(): void;
 }) {
   const [task, setTask] = useState<BrowserTask | null>(null);
   const [busy, setBusy] = useState(false);
@@ -35,23 +40,43 @@ export function BrowserAutomationBar({ workspace, url, ready, onNavigate, onStat
   const [origin, setOrigin] = useState('');
   const [historyQuery, setHistoryQuery] = useState(''), [historyRange, setHistoryRange] = useState('all'), [historyPage, setHistoryPage] = useState(0);
   const [clearKinds, setClearKinds] = useState<BrowserClearData['kinds']>(['history']), [clearRange, setClearRange] = useState('all'), [clearScope, setClearScope] = useState('current');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuId = useId(), menu = useRef<HTMLDivElement>(null), trigger = useRef<HTMLButtonElement>(null);
   const history = useMemo(() => filterBrowserHistory(state?.history ?? [], historyQuery, browserHistorySince(historyRange)), [state?.history, historyQuery, historyRange]);
   const running = task && ['ready', 'running', 'paused', 'site-approval'].includes(task.status);
+  const zoomPercent = Math.round(zoomFactor * 100);
+  const smallerZoom = [...ZOOM_STEPS].reverse().find(value => value < zoomPercent), largerZoom = ZOOM_STEPS.find(value => value > zoomPercent);
   useEffect(() => {
-    let mounted = true;
-    void api().state(workspace).then(value => { if (mounted) { setState(value); const latest = value.tasks.at(-1) ?? null; setTask(latest); onState(latest); } }, cause => { if (mounted) setError(errorText(cause)); });
-    const unsubscribe = api().onTask(value => { if (value.workspace === workspace) { setTask(value); onState(value); } });
+    let mounted = true, updated = false;
+    void api().state(workspace).then(value => { if (mounted) { setState(value); if (!updated) { const latest = value.tasks.at(-1) ?? null; setTask(latest); onState(latest); } } }, cause => { if (mounted) setError(errorText(cause)); });
+    const unsubscribe = api().onTask(value => { if (value.workspace === workspace) { updated = true; setTask(value); onState(value); } });
     return () => { mounted = false; unsubscribe(); };
   }, [workspace, onState]);
+  useLayoutEffect(() => {
+    if (!menuOpen || !menu.current || !trigger.current) return;
+    const element = menu.current, anchor = trigger.current.getBoundingClientRect();
+    element.style.left = `${Math.max(8, Math.min(anchor.right - element.offsetWidth, window.innerWidth - element.offsetWidth - 8))}px`;
+    element.style.top = `${Math.max(8, Math.min(anchor.bottom + 6, window.innerHeight - element.offsetHeight - 8))}px`;
+    element.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
+    const close = () => element.hidePopover();
+    window.addEventListener('resize', close);
+    return () => window.removeEventListener('resize', close);
+  }, [menuOpen, task?.status]);
+  useEffect(() => { if (menu.current?.matches(':popover-open')) menu.current.hidePopover(); }, [url]);
   const perform = async (action: () => Promise<void>) => {
     if (busy) return;
     setBusy(true); setError('');
     try { await action(); } catch (cause) { setError(errorText(cause)); } finally { setBusy(false); }
   };
   const control = (action: 'pause' | 'resume' | 'cancel' | 'approve-site') => perform(async () => {
-    if (task) { const next = await api().control(task.id, action); setTask(next); onState(next); }
+    if (task) { const next = await api().control(task.id, action); setTask(next); onState(next); if (action === 'approve-site') menu.current?.hidePopover(); }
+  });
+  const zoom = (percent: number) => perform(async () => {
+    if (task?.status === 'running') { const paused = await api().control(task.id, 'pause'); setTask(paused); onState(paused); }
+    onZoomChange(percent / 100);
   });
   const open = (target: NonNullable<typeof panel>) => perform(async () => {
+    menu.current?.hidePopover();
     const value = await api().state(workspace);
     setState(value);
     if (target === 'clear-site') {
@@ -61,21 +86,42 @@ export function BrowserAutomationBar({ workspace, url, ready, onNavigate, onStat
     setPanel(target);
   });
   return <div className="browser-automation">
-    <div className="browser-task-status" role="status" aria-live="polite">
-      <span>{task ? browserTaskLabels[task.status] : '直接在右侧 AI 助手说明要操作的内容。'}</span>
-      {task?.status === 'running' && <button className="btn btn-sec" disabled={busy} onClick={() => void control('pause')}>接管 / 暂停</button>}
-      {task?.status === 'paused' && <button className="btn btn-sec" disabled={busy} onClick={() => void control('resume')}>继续操作</button>}
-      {task?.status === 'site-approval' && <><span className="browser-origin">{task.pendingOrigin}</span><button className="btn btn-sec" disabled={busy} onClick={() => void control('approve-site')}>允许此站点</button></>}
-      {running && <button className="btn btn-sec" disabled={busy} onClick={() => void control('cancel')}>停止任务</button>}
-      {task?.chatId && <span title={task.goal}>{task.steps.length} 条操作记录</span>}
+    {task && <div className={`browser-task-controls${running ? ' is-active' : ''}`}>
+      <button type="button" className={`browser-task-label ${task.status}`} title={browserTaskLabels[task.status]} aria-label={browserTaskLabels[task.status]} disabled={busy}
+        onClick={() => task.status === 'site-approval' ? menu.current?.showPopover() : void open('tasks')}>
+        {task.status === 'running' || task.status === 'ready' ? <SpinnerGap size={17} className="browser-task-spinner" /> : task.status === 'completed' ? <CheckCircle size={18} /> : task.status === 'paused' ? <Pause size={17} /> : task.status === 'cancelled' ? <Stop size={17} /> : task.status === 'site-approval' ? <ShieldCheck size={18} /> : <WarningCircle size={18} />}
+        {running && <span role="status">{browserTaskLabels[task.status]}</span>}
+      </button>
+      {task.status === 'running' && <button type="button" className="mbp-navbtn" title="接管 / 暂停" aria-label="接管 / 暂停" disabled={busy} onClick={() => void control('pause')}><Pause size={16} /></button>}
+      {task.status === 'paused' && <button type="button" className="mbp-navbtn" title="继续操作" aria-label="继续操作" disabled={busy} onClick={() => void control('resume')}><Play size={16} /></button>}
+      {running && <button type="button" className="mbp-navbtn" title="停止任务" aria-label="停止任务" disabled={busy} onClick={() => void control('cancel')}><Stop size={16} weight="fill" /></button>}
+    </div>}
+    <button type="button" ref={trigger} className="mbp-navbtn browser-menu-trigger" title="浏览器选项" aria-label="浏览器选项" aria-haspopup="menu" aria-expanded={menuOpen} popoverTarget={menuId}><DotsThree size={22} weight="bold" /></button>
+    <div ref={menu} id={menuId} className="browser-menu" popover="auto" role="menu" aria-label="浏览器选项" onToggle={event => { setMenuOpen(event.newState === 'open'); if (event.newState === 'open') onRefreshZoom(); }} onKeyDown={event => {
+      if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const items = Array.from(menu.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? []);
+      const index = items.findIndex(item => item === document.activeElement);
+      items[event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
+    }}>
+      {task?.status === 'site-approval' && <div className="browser-site-approval" role="group" aria-label="站点授权"><strong>等待站点授权</strong><p>{task.pendingOrigin}</p><button type="button" role="menuitem" disabled={busy} onClick={() => void control('approve-site')}>允许此站点</button></div>}
+      <button type="button" role="menuitem" disabled={busy} onClick={() => void open('history')}><ClockCounterClockwise size={18} />历史记录</button>
+      <button type="button" role="menuitem" disabled={busy} onClick={() => void open('tasks')}><ListChecks size={18} />任务记录</button>
+      <hr />
+      <div className="browser-zoom" role="group" aria-label="网页缩放">
+        <span>缩放</span>
+        <div className="browser-zoom-steps">
+          <button type="button" aria-label="缩小网页" title="缩小网页" disabled={busy || !ready || smallerZoom === undefined} onClick={() => smallerZoom !== undefined && void zoom(smallerZoom)}><Minus size={16} /></button>
+          <output aria-label="当前网页缩放" aria-live="polite">{zoomPercent}%</output>
+          <button type="button" aria-label="放大网页" title="放大网页" disabled={busy || !ready || largerZoom === undefined} onClick={() => largerZoom !== undefined && void zoom(largerZoom)}><Plus size={16} /></button>
+        </div>
+        <button type="button" aria-label="重置网页缩放" title="恢复 100%" disabled={busy || !ready || zoomPercent === 100} onClick={() => void zoom(100)}><ArrowCounterClockwise size={18} /></button>
+      </div>
+      <hr />
+      <button type="button" role="menuitem" disabled={busy || !ready || Boolean(running)} onClick={() => void open('clear-site')}><Trash size={18} />清理当前站点数据…</button>
+      <button type="button" role="menuitem" disabled={busy || Boolean(running)} onClick={() => { setClearKinds(['history']); setClearRange('all'); setClearScope('all'); void open('clear-history'); }}><Trash size={18} />清除浏览数据…</button>
     </div>
-    <div className="browser-utilities">
-      <button disabled={busy} onClick={() => void open('history')}>历史</button>
-      <button disabled={busy} onClick={() => void open('tasks')}>任务记录</button>
-      <button disabled={busy || !ready || Boolean(running)} onClick={() => void open('clear-site')}>清理当前站点数据</button>
-      <span>密码、验证码和文件选择可暂停后手动完成</span>
-    </div>
-    {(error || task?.error || task?.persistenceError) && <div className="mbp-error" role="alert">{error || task?.error || task?.persistenceError}</div>}
+    {(error || task?.error || task?.persistenceError) && <div className="browser-toolbar-error" role="alert">{error || task?.error || task?.persistenceError}</div>}
     {panel && <Modal title={{ history: '浏览历史', tasks: '浏览器任务记录', 'clear-site': '清理站点数据', 'clear-history': '清空浏览历史' }[panel]} close={() => { if (!busy) { setPanel(null); setError(''); } }} className="browser-dialog">
       {panel === 'history' && <>
         <p>最近 5000 条访问记录；保留普通参数和锚点，含登录凭据的地址会脱敏。</p>
@@ -84,7 +130,7 @@ export function BrowserAutomationBar({ workspace, url, ready, onNavigate, onStat
         <div className="browser-records">{history.length ? history.slice(historyPage * 50, (historyPage + 1) * 50).map(item => <div className="browser-history-row" key={item.id}><button className="browser-history-item" onClick={() => { onNavigate(item.url); setPanel(null); }}><strong>{item.title || item.url}</strong><span>{item.url}</span><time>{new Date(item.at).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}</time></button><button className="btn btn-sec" aria-label={`删除历史：${item.title || item.url}`} disabled={busy} onClick={() => void perform(async () => { await api().deleteHistory(workspace, [item.id]); setState(await api().state(workspace)); setHistoryPage(0); })}>删除</button></div>) : <p>{state?.history.length ? '没有匹配的浏览记录。' : '还没有浏览记录。'}</p>}</div>
         <div className="browser-history-actions"><span role="status">{history.length} 条记录{history.length > 50 ? ` · 第 ${historyPage + 1} 页` : ''}</span><button className="btn btn-sec" disabled={!historyPage} onClick={() => setHistoryPage(page => page - 1)}>上一页</button><button className="btn btn-sec" disabled={(historyPage + 1) * 50 >= history.length} onClick={() => setHistoryPage(page => page + 1)}>下一页</button><button className="btn btn-sec" disabled={busy} onClick={() => { setClearKinds(['history']); setClearRange(historyRange); setClearScope('all'); setPanel('clear-history'); }}>清除浏览数据</button></div>
       </>}
-      {panel === 'tasks' && <div className="browser-records">{state?.tasks.length ? [...state.tasks].reverse().map(item => <details key={item.id}><summary>{item.goal} · {browserTaskLabels[item.status]}</summary><p>{item.updatedAt} · {item.origins.join('、')}</p>{item.status === 'interrupted' && <p>重启只恢复地址和记录，不会自动重放网页操作；检查页面后在右侧 AI 助手重新提出操作要求。</p>}{item.steps.map((step, index) => <p key={index}>{step.operation} · {step.status === 'ok' ? '已返回' : '错误'} · {step.detail}</p>)}</details>) : <p>还没有任务记录。</p>}</div>}
+      {panel === 'tasks' && <div className="browser-records">{state?.tasks.length ? [...state.tasks].reverse().map(item => <details key={item.id}><summary>{item.goal} · {browserTaskLabels[item.status]}</summary><BrowserTaskDetails task={item} /></details>) : <p>还没有任务记录。</p>}</div>}
       {(panel === 'clear-site' || panel === 'clear-history') && <div className="browser-clear-data">
         <p>只清理当前浏览器分区。清理 Cookie 后可能需要重新登录；Cookie 可能由同一主域的站点共享。已打开的标签保留。</p>
         {origin && <><label htmlFor="browser-clear-scope">站点范围</label><Select id="browser-clear-scope" aria-label="清理站点范围" value={clearScope} options={[{ value: 'current', label: `当前站点：${origin}` }, { value: 'all', label: '此浏览器分区的所有站点' }]} onChange={setClearScope} /></>}

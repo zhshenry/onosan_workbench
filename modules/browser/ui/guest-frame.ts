@@ -130,6 +130,18 @@ export class GuestFrame {
     if (this.state.canGoForward) this.navigate('goForward');
   }
 
+  /** 使用原生网页缩放；同一分区的同源页面沿用 Chromium 的共享缩放。 */
+  setZoomFactor(factor: number): void {
+    if (!this.ready || this.element === undefined || this.lifetime.signal.aborted) return;
+    this.element.setZoomFactor(factor);
+    this.refreshZoom();
+  }
+
+  /** 切回标签或打开菜单时，回读同源其他页面可能改变的真实比例。 */
+  refreshZoom(): void {
+    this.observe(false);
+  }
+
   /** 重载当前页,或重试失败的 guest 创建。 */
   reload(): void {
     const current = this.state;
@@ -339,15 +351,17 @@ export class GuestFrame {
     const loading = current.error === undefined && element.isLoading();
     const canGoBack = element.canGoBack();
     const canGoForward = element.canGoForward();
+    const zoomFactor = element.getZoomFactor();
     if (
       target?.url !== current.target?.url ||
       target?.title !== current.target?.title ||
       address !== current.address ||
       loading !== current.loading ||
       canGoBack !== current.canGoBack ||
-      canGoForward !== current.canGoForward
+      canGoForward !== current.canGoForward ||
+      zoomFactor !== current.zoomFactor
     ) {
-      this.set({ target, address, loading, canGoBack, canGoForward });
+      this.set({ target, address, loading, canGoBack, canGoForward, zoomFactor });
     }
   }
 
