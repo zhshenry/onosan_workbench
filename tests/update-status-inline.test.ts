@@ -125,7 +125,7 @@ test('应用更新 v2 真实 React 行内展示、错误详情及现有动作隔
     checkAction = installAction = () => Promise.resolve();
   });
 
-  await t.test('动作失败留在更新详情内，事件恢复后清除错误且底部独立说明保留', async () => {
+  await t.test('动作失败留在更新详情内，事件恢复后清除错误且关于页不再显示零漂移说明', async () => {
     await emit(snapshot('latest'));
     checkAction = async () => { throw new Error('合成检查调用失败'); };
     await click(action());
@@ -133,7 +133,9 @@ test('应用更新 v2 真实 React 行内展示、错误详情及现有动作隔
     assert.equal(dom.window.document.querySelector('.settings-page > .error'), null);
     assert.equal(action().disabled, false);
     await emit(snapshot('latest')); assert.equal(row().querySelector('.set-update-details'), null);
-    assert.match(dom.window.document.querySelector('.settings-page > .help')?.textContent ?? '', /零漂移/);
+    assert.equal(dom.window.document.querySelector('.settings-page > .help'), null);
+    assert.doesNotMatch(dom.window.document.body.textContent ?? '', /零漂移/);
+    assert.match(dom.window.document.querySelector('[data-setting-key="todoDb"]')?.textContent ?? '', /与 To-Do-List 同库互通,两侧数据实时一致/);
     await emit(snapshot('ready'));
     installAction = async () => { throw new Error('合成安装调用失败'); };
     await click(action()); assert.equal(row().querySelector('.set-update-details')?.textContent, '合成安装调用失败');

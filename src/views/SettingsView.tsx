@@ -122,7 +122,6 @@ function GeneralSection({ query }: {
       {error && <p className="error" role="alert">{error}</p>}
       {settings && <p className="help">设置即时生效并自动保存。关闭行为中的「退出应用」仍会保留托盘提醒开关,需从托盘菜单彻底退出。</p>}
       {!settings && !error && <p className="help" role="status">正在读取设置…</p>}
-      <p className="help">开机自启在安装版中注册系统登录项;便携/开发模式下注册的是当前执行文件。</p>
     </>
   );
 }
@@ -430,7 +429,6 @@ function AboutSection({ query }: { query: string }) {
     <>
       <Rows rows={rows} query={query} />
       {error && <p className="error" role="alert">{error}</p>}
-      {info && <p className="help">待办模块与上游 To-Do-List 保持零漂移,上游发版后经同步清单移植并跑一致性测试。</p>}
       {!info && !error && <p className="help" role="status">正在读取应用信息…</p>}
     </>
   );
