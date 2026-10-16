@@ -59,19 +59,25 @@ test('UTC instants remain valid even when their source day was skipped locally',
   assert.equal(topbarTodoDate({ dueAt: input }, now), `${local.getFullYear()}-${pad(local.getMonth() + 1)}-${pad(local.getDate())} ${pad(local.getHours())}:${pad(local.getMinutes())}`);
 });
 
-test('compact topbar reserves intrinsic trigger widths instead of shrinking schedule beneath todo', () => {
+test('compact topbar keeps the capsule pair intrinsic and the schedule popover anchored', () => {
   const css = readFileSync(new URL('../src/shell.css', import.meta.url), 'utf8');
-  const compact = css.slice(css.indexOf('@media (max-width: 1180px) {'));
-  assert.match(compact, /\.tb-middle \{[^}]*position: static;[^}]*transform: none;[^}]*flex: none;[^}]*max-width: none;/);
+  const compact = css.slice(css.indexOf('@media (max-width: 1180px) {'), css.indexOf('/* ---------- 设置工作台'));
   assert.match(compact, /\.tb-left \{ flex: none; \}/);
   assert.match(compact, /\.ipop-sched \{ left: 0; margin-left: 0; \}/);
   assert.match(compact, /\.sched-track, \.sdiv, \.tprog \{ display: none; \}/);
+  assert.match(compact, /\.tb-middle \{[^}]*max-width: var\(--tb-middle-cap, max-content\)/);
+  assert.doesNotMatch(compact, /\.tb-middle \{[^}]*position:\s*static/);
+  assert.match(css, /\.sched-track \{[^}]*min-width: 1px;/);
 });
 
-test('mid-width topbar allocates real right-control space instead of a guessed center reserve', () => {
+test('topbar capsule group stays centered using the real right cluster, not a fixed reserve', () => {
   const css = readFileSync(new URL('../src/shell.css', import.meta.url), 'utf8');
+  assert.match(css, /\.tb-middle \{[^}]*left: 50%;[^}]*transform: translateX\(-50%\);[^}]*anchor-size\(--tb-right width\)/);
+  assert.match(css, /\.tb-right \{[^}]*anchor-name: --tb-right;/);
+  assert.doesNotMatch(css, /calc\(100% - (?:520|600)px\)/);
   const adaptive = css.slice(css.indexOf('@media (max-width: 1440px) {'));
   assert.match(adaptive, /\.topbar \{ gap: 8px; \}/);
-  assert.match(adaptive, /\.tb-middle \{[^}]*position: static;[^}]*flex: 0 1 auto;[^}]*max-width: none;/);
-  assert.doesNotMatch(adaptive, /calc\(100% - 520px\)/);
+  assert.doesNotMatch(adaptive.slice(0, adaptive.indexOf('@media (min-width: 1181px)')), /position:\s*static/);
+  const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  assert.match(app, /applyTopbarCapsulePlacement\(bar\)/);
 });
