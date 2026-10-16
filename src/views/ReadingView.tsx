@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  READING_STATUS_LABEL, READING_STATUSES, SCAN_SKIP_HINT, booksPendingImport,
+  READING_STATUS_LABEL, SCAN_SKIP_HINT, booksPendingImport,
   type BookEntry, type ReadingStatus, type ReadingStoreData,
 } from '../../shared/reading-contracts';
 import { Modal, Segmented, Select, errorText } from '../../modules/todo/ui/ui';
@@ -110,6 +110,15 @@ const wb = window.workbench;
 const CUR_KEY = 'wb.reading.curBookId';
 
 const STATUS_ORDER: ReadingStatus[] = ['reading', 'wish', 'done', 'paused'];
+/** 选择器只提供三态。历史「搁置」仍可读、可改选，但不能再选回去。 */
+const STATUS_PICKER: ReadingStatus[] = ['wish', 'reading', 'done'];
+
+function listProgressPct(book: BookEntry): number | undefined {
+  if (book.progressPct !== undefined) return book.progressPct;
+  if (book.chapterCurrent !== undefined && book.chapterTotal) return Math.round((book.chapterCurrent / book.chapterTotal) * 100);
+  if (book.status === 'reading') return 0;
+  return undefined;
+}
 const COVER_TONES = [
   'linear-gradient(140deg,#4a67a3,#31517e)', 'linear-gradient(140deg,#6f5f9e,#57497f)',
   'linear-gradient(140deg,#3e7d44,#2f6234)', 'linear-gradient(140deg,#bd6a2e,#9a5522)',
@@ -152,8 +161,6 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
   const [importBusy, setImportBusy] = useState(false);
   const [scanning, setScanning] = useState(false);
   const importLock = useRef(false);
-  const [commentDraft, setCommentDraft] = useState('');
-  const commentTimer = useRef<number | undefined>(undefined);
   const loadedOnce = useRef(false);
 
   useEffect(() => { if (vaultDialogOpen) vaultInputRef.current?.focus(); }, [vaultDialogOpen]);
@@ -185,8 +192,6 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [book?.id, book?.link?.folder, storeData?.vaultPath]);
-
-  useEffect(() => { setCommentDraft(book?.comment ?? ''); }, [book?.id, book?.comment]);
 
   const apply = (raw: unknown, okMsg?: string): void => {
     setStoreData(raw as ReadingStoreData);
@@ -309,13 +314,6 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
     }, (e) => onPending(errorText(e)));
   };
 
-  const setComment = (text: string): void => {
-    setCommentDraft(text);
-    if (!book) return;
-    window.clearTimeout(commentTimer.current);
-    commentTimer.current = window.setTimeout(() => save({ comment: text.trim() || undefined }), 600);
-  };
-
   const openNew = (): void => {
     setMTitle(''); setMAuthor(''); setMStatus('wish'); setMTags(''); setMFolder('');
     if (storeData?.vaultPath) {
@@ -424,6 +422,7 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
           <div>
             {STATUS_ORDER.map((status) => {
               const list = visibleBooks(storeData.books.filter((b) => b.status === status));
+              if (status === 'paused' && list.length === 0) return null;
               return (
                 <div className="shelf" key={status}>
                   <div className="shelf-head">
@@ -431,9 +430,9 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
                     <span className="shelf-count">{list.length} 本</span>
                   </div>
                   {list.length === 0 ? (
-                    <div className="empty-note">{tagFilter ? '该标签下没有这个状态的书。' : status === 'paused' ? '暂时没有搁置的书。' : '还没有书目。'}</div>
+                    <div className="empty-note">{tagFilter ? '该标签下没有这个状态的书。' : '还没有书目。'}</div>
                   ) : list.map((b) => {
-                    const pct = b.progressPct ?? (b.chapterCurrent !== undefined && b.chapterTotal ? Math.round((b.chapterCurrent / b.chapterTotal) * 100) : undefined);
+                    const pct = listProgressPct(b);
                     return (
                       <div
                         key={b.id}
@@ -456,7 +455,7 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
                           {b.status === 'done' && b.rating
                             ? <span className="stars">{'★'.repeat(b.rating)}<span className="off">{'★'.repeat(5 - b.rating)}</span></span>
                             : pct !== undefined
-                              ? <><span className="b-progress">{b.chapterCurrent !== undefined && b.chapterTotal ? `第 ${b.chapterCurrent} 章 / ${b.chapterTotal}` : `${pct}%`}</span>
+                              ? <><span className="b-progress">{b.status === 'reading' ? `${pct}%` : (b.chapterCurrent !== undefined && b.chapterTotal ? `第 ${b.chapterCurrent} 章 / ${b.chapterTotal}` : `${pct}%`)}</span>
                                   <span className="b-progbar"><i style={{ width: `${pct}%` }} /></span></>
                               : <span className="b-recent">{b.status === 'wish' ? '待开始' : ''}</span>}
                         </div>
@@ -474,8 +473,7 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
                 <div className="phead">
                   <span className="ptitle">书籍详情</span>
                   {book.link && <span className="pcount">关联文件夹:{book.link.folder}</span>}
-                  <button type="button" className="rd-close" aria-label="关闭面板（不删书）" onClick={closeDetail}>
-                    <span>关闭面板（不删书）</span>
+                  <button type="button" className="rd-close" aria-label="关闭面板" onClick={closeDetail}>
                     <span className="rd-close-x" aria-hidden="true"><X size={13} weight="bold" /></span>
                   </button>
                 </div>
@@ -485,9 +483,10 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
                     <div className="d-title">{book.title}</div>
                     {book.author && <div className="d-author">{book.author}</div>}
                     <div className="d-state">
+                      {book.status === 'paused' && <p className="rd-paused-now">当前为搁置</p>}
                       <div className="pseg" role="radiogroup" aria-label="阅读状态">
-                        {READING_STATUSES.map((s) => (
-                          <button key={s} className={book.status === s ? 'on' : ''} onClick={() => save({ status: s })}>
+                        {STATUS_PICKER.map((s) => (
+                          <button key={s} type="button" className={book.status === s ? 'on' : ''} onClick={() => save({ status: s })}>
                             {READING_STATUS_LABEL[s]}
                           </button>
                         ))}
@@ -531,27 +530,6 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
                 </div>
 
                 <div className="d-sec">
-                  <div className="d-label">评分与短评</div>
-                  <div className="rate-row">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        className={book.rating && star <= book.rating ? 'rd-star on' : 'rd-star'}
-                        aria-label={`${star} 星`}
-                        onClick={() => save({ rating: book.rating === star ? undefined : star })}
-                      >★</button>
-                    ))}
-                  </div>
-                  <textarea
-                    className="shortcut"
-                    placeholder="写一句话短评…"
-                    value={commentDraft}
-                    maxLength={300}
-                    onChange={(e) => setComment(e.target.value)}
-                  />
-                </div>
-
-                <div className="d-sec">
                   <div className="d-label">标签</div>
                   <div className="tagrow">
                     {book.tags.map((tag) => (
@@ -575,11 +553,10 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
                 </div>
 
                 {book.link && (
-                  <div className="d-sec">
-                    <div className="d-label">Obsidian 关联<span className="val">只读 · 不改动你的库</span></div>
+                  <div className="d-sec rd-divide">
                     <div className="linkbox">
                       <div className="linkrow">
-                        <span className="k">库</span><span className="v">{vaultName}</span>
+                        <span className="k">Obsidian库</span><span className="v">{vaultName}</span>
                         <button className="open" onClick={() => openInObsidian()}>在 Obsidian 打开</button>
                       </div>
                       {agg ? (
@@ -606,8 +583,8 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
                   </div>
                 )}
 
-                <div className="d-sec ai-card">
-                  <div className="d-label">AI 协助<span className="val">{book.link ? '只读笔记,不改库' : '关联笔记后可用'}</span></div>
+                <div className="d-sec ai-card rd-divide">
+                  <div className="d-label">AI读书</div>
                   <div className="ai-row">
                     <button className="ai-chip" disabled={!book.link} onClick={() => onAskAI(`请基于《${book.title}》的笔记，把主要概念串联成一份结构化总结：先列核心概念与关系，再指出笔记间的引用脉络；资料不足时明确说明。`, book.id)}>串联概念总结</button>
                     <button className="ai-chip" disabled={!book.link} onClick={() => onAskAI(`请基于《${book.title}》的笔记出 10 道自测题（混合概念辨析与应用场景），先只给题目；等我回答后逐题给出参考答案与笔记出处。`, book.id)}>出 10 道自测题</button>
@@ -648,7 +625,7 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
               </div>
               <div className="bazi-form-field">
                 <span className="bazi-form-label">状态</span>
-                <Segmented aria-label="阅读状态" value={mStatus} options={READING_STATUSES.map((s) => ({ value: s, label: READING_STATUS_LABEL[s] }))} onChange={(v: string) => setMStatus(v as ReadingStatus)} />
+                <Segmented aria-label="阅读状态" value={mStatus} options={STATUS_PICKER.map((s) => ({ value: s, label: READING_STATUS_LABEL[s] }))} onChange={(v: string) => setMStatus(v as ReadingStatus)} />
               </div>
               <div className="bazi-form-field bazi-form-wide">
                 <span className="bazi-form-label">标签(逗号分隔,可选)</span>
