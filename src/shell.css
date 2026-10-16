@@ -1705,7 +1705,7 @@ html:has(.float-app) {
 .float-add { border: none; background: none; color: var(--acc-deep); font-size: var(--type-support); font-weight: 700; cursor: pointer; padding: 4px 6px; font-family: var(--font); }
 .float-add:hover { background: var(--acc-soft); border-radius: 8px; }
 .float-app.mini button { -webkit-app-region: no-drag; }
-/* 折叠态顶栏与展开态一致:玻璃底 + 发丝分隔线 */
+/* 折叠态顶栏与展开态同一套尺寸:高度、Logo、标题、按钮都留在 .float-bar,这里只对齐底色。 */
 .float-mini-bar { background: var(--glass-surface); border-bottom-color: var(--hairline); }
 .float-mini-content { flex: none; height: 124px; padding: 9px 12px 11px; overflow: hidden; }
 .float-mini-summary { height: 22px; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; padding: 0 7px; border-radius: 8px; background: rgba(255, 255, 255, 0.42); color: var(--ink-2); font-size: var(--type-caption); }
@@ -1990,11 +1990,14 @@ html:has(.float-app) {
   .todo-proposal-arrow { justify-self: center; transform: rotate(90deg); }
 }
 
-/* Floating group v2: context, a two-row dialog (former chip gap + input), and the quick row. */
-.float-mini-bar { height: 40px; }
-.float-mini-bar .float-brand svg { width: 30px; height: 30px; }
-.float-mini-content { height: 136px; }
-.float-mini-ai { padding: 5px 10px 7px; }
+/* Floating group v2: context, a two-row dialog (former chip gap + input), and the quick row.
+   收起不改顶栏:高度仍是 .float-bar 的 52px,Logo 仍是 40px,标题与按钮尺寸也不在这里缩小。
+   176 窗口扣 1px 窗缘后,52px 顶栏只剩 122px。内容设计高度是 124px(52+124=176);
+   136px 是旧的 40px 顶栏预算,再叠上去会超出窗口。文末 flex:1 / height:auto 才是实际高度。
+   AI 区下内距必须为 0,表面才有 117px:上下边框 2px + 上下内距 10px + 22/3/55/3/22 网格正好装满。
+   少这 7px 时,关联后聚焦底栏会把溢出的表面滚上去,模型按钮跟着移位。 */
+.float-mini-content { height: 124px; }
+.float-mini-ai { padding: 5px 10px 0; }
 .fa-mini-surface { height: 124px; grid-template-rows: 22px 55px 22px; gap: 3px; padding: 5px 8px; }
 .fa-mini-surface.is-asking, .fa-mini-surface.is-working, .fa-mini-surface.is-result { grid-template-rows: 22px minmax(0, 1fr) 22px; }
 .fa-mini-surface.is-proposal { grid-template-rows: 22px minmax(0, 1fr); min-height: 0; max-height: 100%; overflow: hidden; }
