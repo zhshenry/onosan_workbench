@@ -6,7 +6,8 @@ import type { State } from '../../shared/todo-contracts';
 import type { CopyStoreData } from '../../shared/copy-contracts';
 import type { BaziStoreData } from '../../shared/bazi-contracts';
 import { READING_STATUS_LABEL, type ReadingStoreData } from '../../shared/reading-contracts';
-import { isOverdue, scheduleStamp } from '../../shared/todo-format';
+import { scheduleStamp } from '../../shared/todo-format';
+import { matchesTodoPickerFilter, TODO_STATUS_LABEL, TodoPickerFilters, todoPickerStatusKey, type TodoKindFilter, type TodoStatusFilter } from './todo-picker-filters';
 
 export type ReferenceMode = AiReference['module'];
 export interface ReferenceOption {
@@ -26,9 +27,9 @@ export async function loadReferenceOptions(mode: ReferenceMode): Promise<Referen
     const state = await wb.todo.state() as State;
     const categories = new Map(state.categories.map(category => [category.id, category.name]));
     return state.tasks.filter(task => !task.deletedAt).map(task => {
-      const statusKey = task.status === 'done' ? 'done' : isOverdue(task) ? 'overdue' : task.status;
+      const statusKey = todoPickerStatusKey(task);
       return { reference: { module: 'todo', taskId: task.id }, title: task.title, kind: task.kind, statusKey,
-        status: ({ done: '已完成', overdue: '已逾期', doing: '进行中', todo: '待办' })[statusKey],
+        status: TODO_STATUS_LABEL[statusKey],
         detail: [task.kind === 'meeting' ? '日程' : '待办', scheduleStamp(task), task.categoryId ? categories.get(task.categoryId) : ''].filter(Boolean).join(' · ') };
     });
   }
@@ -58,13 +59,16 @@ export function AiReferencePicker({ id, mode, unavailable, options, selected, lo
   const radioName = useId();
   const [query, setQuery] = useState('');
   const [pending, setPending] = useState(selected);
+  const [statusFilter, setStatusFilter] = useState<TodoStatusFilter>('all');
+  const [kindFilter, setKindFilter] = useState<TodoKindFilter>('all');
   const lightList = mode === 'todo';
   const multi = mode === 'copy' || mode === 'bazi';
   const chosen = multi ? pending : selected;
   const limit = mode ? aiReferenceLimit(mode) : 0;
   const label = mode ? REFERENCE_LABELS[mode] : '内容';
   const text = query.trim().toLocaleLowerCase('zh-CN');
-  const matches = lightList ? options : options.filter(option => !text || `${option.title} ${option.detail} ${option.status ?? ''}`.toLocaleLowerCase('zh-CN').includes(text));
+  const searched = lightList ? options : options.filter(option => !text || `${option.title} ${option.detail} ${option.status ?? ''}`.toLocaleLowerCase('zh-CN').includes(text));
+  const matches = lightList ? searched.filter(option => matchesTodoPickerFilter(option, statusFilter, kindFilter)) : searched;
   // A source refresh can invalidate a pending item without ever committing it.
   useEffect(() => {
     if (loading || error) return;
@@ -128,6 +132,7 @@ export function AiReferencePicker({ id, mode, unavailable, options, selected, lo
     }}>
     {!lightList && <header className="ai-reference-head"><strong>关联已有{label}</strong><button ref={closeButton} type="button" aria-label="关闭上下文选择器" onClick={() => onClose()}><X size={15} /></button></header>}
     {mode ? <>
+      {lightList && <TodoPickerFilters status={statusFilter} kind={kindFilter} onStatus={setStatusFilter} onKind={setKindFilter} />}
       {!lightList && <label className="ai-reference-search"><MagnifyingGlass size={15} /><input ref={search} value={query} onChange={event => setQuery(event.target.value)} placeholder={`搜索${label}`} aria-label={`搜索${label}`} />
         {query && <button type="button" aria-label="清空上下文搜索" onClick={() => { setQuery(''); search.current?.focus(); }}><X size={13} /></button>}
       </label>}
@@ -148,7 +153,7 @@ export function AiReferencePicker({ id, mode, unavailable, options, selected, lo
             {lightList && <span className="ai-reference-selected-mark" aria-hidden="true">{checked && <Check size={12} weight="bold" />}</span>}
           </label>;
         })}
-        {!loading && !error && matches.length === 0 && <p className="ai-reference-empty" role="status">{text ? `没有找到匹配的${label}` : `暂无可关联的${label}`}</p>}
+        {!loading && !error && matches.length === 0 && <p className="ai-reference-empty" role="status">{lightList && options.length > 0 ? '没有符合筛选的事项' : text ? `没有找到匹配的${label}` : `暂无可关联的${label}`}</p>}
       </div>
     </> : <p className="ai-reference-empty" role="status">{unavailable}</p>}
     {!lightList && <footer className="ai-reference-footer"><span id={`${id}-help`}>{mode === 'reading' ? '仅添加已记录书目信息，不含全文或附件' : mode === 'bazi' ? '仅添加对话上下文，沿用本轮盘型' : '仅添加对话上下文'}</span>
