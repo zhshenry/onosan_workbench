@@ -1,5 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowCounterClockwise, CheckCircle, ClockCounterClockwise, DotsThree, ListChecks, Minus, Pause, Play, Plus, ShieldCheck, SpinnerGap, Stop, Trash, WarningCircle } from '@phosphor-icons/react';
+import { CheckCircle, ClockCounterClockwise, DotsThree, ListChecks, Pause, Play, ShieldCheck, SpinnerGap, Stop, Trash, WarningCircle } from '@phosphor-icons/react';
 import { Modal, Select, errorText } from '../../todo/ui/ui';
 import type { BrowserClearData, BrowserSavedTab, BrowserTask, BrowserWorkspaceState } from '../../../shared/browser-automation-contracts';
 import { browserClearDataSchema } from '../../../shared/browser-automation-contracts';
@@ -7,11 +7,11 @@ import { browserHistorySince, browserTimeOptions, filterBrowserHistory } from '.
 import type { BrowserPaneProps } from './pane';
 import { BrowserPane } from './pane';
 import { BrowserTaskDetails, browserTaskLabels } from './task-record';
+import { PageZoomControls } from './page-zoom';
 
 export { browserTaskLabels } from './task-record';
 
 const api = () => window.workbench.browserAutomation;
-const ZOOM_STEPS = [25, 33, 50, 67, 75, 80, 90, 100, 110, 125, 150, 175, 200, 250, 300, 400, 500];
 
 /** The entire host stays mounted across workbench switches. Only URLs and IDs restore after restart. */
 export function BrowserWorkspacePane(props: BrowserPaneProps) {
@@ -48,8 +48,6 @@ export function BrowserAutomationBar({ workspace, tabId, url, ready, zoomFactor,
   const history = useMemo(() => filterBrowserHistory(state?.history ?? [], historyQuery, browserHistorySince(historyRange)), [state?.history, historyQuery, historyRange]);
   const running = task && ['ready', 'running', 'paused', 'site-approval'].includes(task.status);
   const anyRunning = tasks.some(task => ['ready', 'running', 'paused', 'site-approval'].includes(task.status));
-  const zoomPercent = Math.round(zoomFactor * 100);
-  const smallerZoom = [...ZOOM_STEPS].reverse().find(value => value < zoomPercent), largerZoom = ZOOM_STEPS.find(value => value > zoomPercent);
   useEffect(() => {
     let mounted = true;
     void api().state(workspace).then(value => { if (mounted) { setState(value); setTasks(previous => [...value.tasks.filter(item => !previous.some(current => current.id === item.id)), ...previous].slice(-40)); } }, cause => { if (mounted) setError(errorText(cause)); });
@@ -76,9 +74,9 @@ export function BrowserAutomationBar({ workspace, tabId, url, ready, zoomFactor,
   const control = (action: 'pause' | 'resume' | 'cancel' | 'approve-site') => perform(async () => {
     if (task) { const next = await api().control(task.id, action, action === 'approve-site' ? task.pendingOrigin : undefined); setTask(next); onState(next); if (action === 'approve-site') menu.current?.hidePopover(); }
   });
-  const zoom = (percent: number) => perform(async () => {
+  const zoom = (factor: number) => perform(async () => {
     if (task?.status === 'running') { const paused = await api().control(task.id, 'pause'); setTask(paused); onState(paused); }
-    onZoomChange(percent / 100);
+    onZoomChange(factor);
   });
   const open = (target: NonNullable<typeof panel>) => perform(async () => {
     menu.current?.hidePopover();
@@ -113,15 +111,7 @@ export function BrowserAutomationBar({ workspace, tabId, url, ready, zoomFactor,
       <button type="button" role="menuitem" disabled={busy} onClick={() => void open('history')}><ClockCounterClockwise size={18} />历史记录</button>
       <button type="button" role="menuitem" disabled={busy} onClick={() => void open('tasks')}><ListChecks size={18} />任务记录</button>
       <hr />
-      <div className="browser-zoom" role="group" aria-label="网页缩放">
-        <span>缩放</span>
-        <div className="browser-zoom-steps">
-          <button type="button" aria-label="缩小网页" title="缩小网页" disabled={busy || !ready || smallerZoom === undefined} onClick={() => smallerZoom !== undefined && void zoom(smallerZoom)}><Minus size={16} /></button>
-          <output aria-label="当前网页缩放" aria-live="polite">{zoomPercent}%</output>
-          <button type="button" aria-label="放大网页" title="放大网页" disabled={busy || !ready || largerZoom === undefined} onClick={() => largerZoom !== undefined && void zoom(largerZoom)}><Plus size={16} /></button>
-        </div>
-        <button type="button" aria-label="重置网页缩放" title="恢复 100%" disabled={busy || !ready || zoomPercent === 100} onClick={() => void zoom(100)}><ArrowCounterClockwise size={18} /></button>
-      </div>
+      <PageZoomControls zoomFactor={zoomFactor} disabled={busy || !ready} onZoomChange={factor => { void zoom(factor); }} />
       <hr />
       <button type="button" role="menuitem" disabled={busy || !ready || anyRunning} onClick={() => void open('clear-site')}><Trash size={18} />清理当前站点数据…</button>
       <button type="button" role="menuitem" disabled={busy || anyRunning} onClick={() => { setClearKinds(['history']); setClearRange('all'); setClearScope('all'); void open('clear-history'); }}><Trash size={18} />清除浏览数据…</button>

@@ -1,3 +1,36 @@
+# AI 连续任务状态验收 · 2026-10-17
+
+## 目标与对照
+
+- Source visual truth：`C:/Myself/vibe_coding/onosan_workbench/design/references/ai-fixed-status-line-2026-10-17.png`，1536×1024 的已选设计板。本次实现对象为输入区上方的状态行；既有消息、思考、工具和上下文卡沿用原组件。
+- 实机证据：`C:/Myself/vibe_coding/onosan_workbench/test-results/ai-activity-1792211578929/`。`activity-mist-1280.png` 为完整窗口，`activity-mist-1280-panel.png` 为侧栏；`activity-mist-1280-status.png`、`activity-replying-status.png` 为局部状态行，`activity-finished-panel.png` 为整轮结束后状态。
+- 目标窗口 1280×820 / 1024×680，Windows 实际 CSS viewport 分别为 1279×820 / 1023×681，deviceScaleFactor=2；完整截图 2558×1640，雾灰侧栏 760×1456。局部截图 756×90 的包围框包含分数坐标向外取整，DOM 实测高度始终为 44 CSS px，不以截图物理像素反推高度。
+- Source 与实机完整/局部图片已放在同一比较输入检查。设计板并非 1:1 运行窗口，不将外部注释、演示内容、侧栏宽度或像素密度差异算作实现误差。实机用隔离的浏览器对话，原稿用博客协作对象；本次没有添加原稿中的演示头像或改造既有工具卡。
+
+## 视觉与交互结果
+
+| 检查面 | 结果 |
+|---|---|
+| 字体与层级 | 主标签使用现有 `--type-control` 13px/600，说明使用 `--type-support` 12px；沿用项目字体回退，说明单行省略且保留完整 title 和可访问文本。 |
+| 布局与间距 | 状态行 44px、左右 14px、元素间距 10px，位于滚动区外；模型/工具/授权切换复用同一个 DOM 元素，状态行与输入框矩形保持一致。授权卡及澄清问题位于状态行上方。 |
+| 色彩 | 背景 `--acc-soft`、主标签 `--ink`、图标 `--acc-deep`、说明 `--ink-3`；授权图标/标签使用 `--avatar-amber`。三主题共享同一结构和运行时 token。 |
+| 图标与素材 | 使用现有 Phosphor 图标，未用图片替代交互组件；等待图标旋转，实际减少动态效果模式关闭动画。状态没有百分比、计时或第二个停止按钮。 |
+| 文案与真实状态 | 模型各轮开始回到“等待模型”，实际收到正文切到“整理回复”；浏览器工具执行和站点授权由原任务/工具事件决定。工具前正文仍存在时，也不会将下一轮等待误判为整理回复。 |
+
+对照后修正两处：主标签由雾蓝改回稿中的墨色；“浏览器标签”工具使用“正在处理浏览器标签…”避免不完整动词。早期原生截图曾早于下一次绘制，验收脚本已等待字体及两帧，并核对当前阶段与授权卡收起状态后重新采集；以上证据均来自修正后的最终构建。
+
+`node tooling/ai-activity-pilot.mjs` 最终 6 组检查通过：真实 SSE → IPC → 浏览器工具 → 授权 → guest 导航 → 下一轮模型 → 正文 → 结束；三主题/两档窗口、上滚阅读位置、减少动态效果、可访问状态及结束清理均已检查。结束为 `unverified` 的浏览器任务仍保留真实核验状态，状态行收起不会冒充验证成功。运行错误与控制台 error 为空。
+
+17 项相关单元/组件/真实协议回归通过，覆盖暂停、工具失败后恢复、普通工具、当前/后台对话、澄清、取消、重启、三种模型协议、图片和参数错误回传；`npm run verify`（排版、双 TypeScript 检查和生产构建）通过。
+
+## 静态审计与边界
+
+- Premium 严格静态审计已执行，结果保存在 `test-results/ai-activity-premium-audit.json`；扫描报告现有阅读页、悬浮窗、既有 popover/textarea 及并行游戏改动共 9 项，不涉及新增状态行组件。既有 textarea 在全局 CSS 已设置 resize，popover 按钮使用原生 popoverTarget；本次不扩展修改这些页面或确认机制。
+- 官方 DESIGN lint 已尝试离线执行，本机未缓存 `@google/design.md`，返回 ENOTCACHED；未为此添加项目依赖。
+- 当前 Browser 技能不提供原生 Electron 控制，验收复用仓库 Playwright Electron 通道，隔离 profile、本机合成模型及网页；没有访问真实账号，不代表外部模型质量、第三方站点兼容、安装包或自动升级验收。
+
+---
+
 # 三主题还原验收 · 2026-09-24
 
 以下先记录默认轻雾修正,再记录本轮冷灰与暖砂修正。
@@ -289,5 +322,36 @@ final result: passed
 - `npm run verify` 通过。隔离 Electron 32/32 实机检查通过，63 次本机合成模型请求；包含允许后实际导航、拒绝不创建标签、旧菜单入口、后台任务、主题布局、历史与正常重启。原始报告复制在同目录 `report.json`；console 无错误。
 - Browser skill 未提供，使用仓库 Playwright Electron 通道。仅使用临时 appData、本机合成网页及模型；百度对照场景在授权前取消，没有访问真实百度页面。未验证真实外部模型输出质量、安装包或跨版本升级。
 - Follow-up polish：无阻塞项；不在此次修改中调整已有浏览器标签和模型配置。
+
+final result: passed
+
+## 游戏项目栏 · 方案 1 · 2026-10-17
+
+范围：按用户选择整理游戏项目顶栏。紧凑单行保留项目、服务状态、启动和面板开关，项目目录与设置收入项目「⋯」；游戏预览菜单、终端会话和原有服务操作继续沿用。
+
+### 视觉对照
+
+- source visual truth：`design/references/game-project-option-1-2026-10-17.png`，1981×793，用户选定的第一张「轻量单行」。
+- implementation screenshot：[最终原生窗口](C:/Users/henry/.codex/visualizations/2026/10/16/01a1428e-2c14-77f3-a87b-7907203e1553/game-project-header/header-final.png)，1600×1000；[参考宽度窗口](C:/Users/henry/.codex/visualizations/2026/10/16/01a1428e-2c14-77f3-a87b-7907203e1553/game-project-header/header-reference-width.png)，1052×720。均为 mist、服务停止、检查展开、项目菜单展开，原生客户区 DPR=1。
+- [完整目标组件组合对照](C:/Users/henry/.codex/visualizations/2026/10/16/01a1428e-2c14-77f3-a87b-7907203e1553/game-project-header/comparison-header.png)与[操作区局部组合对照](C:/Users/henry/.codex/visualizations/2026/10/16/01a1428e-2c14-77f3-a87b-7907203e1553/game-project-header/comparison-actions.png)：左为选定稿，右为实机；按项目栏等比归一至 962px 宽，未拉伸。比较范围为本次修改的项目栏及菜单。
+
+| 维度 | 检查结果 |
+|---|---|
+| 字体与字阶 | 沿用宿主中文字体和共享字阶；项目名突出，目录与服务状态次要，按钮文字保持可读。没有为效果稿另造一套字体。 |
+| 布局与间距 | 64×48 原有缩略图、项目名/目录靠左，状态在标题旁；启动、分隔线、终端、检查和更多按选定顺序排列。选中检查与更多清楚，小窗口允许分组换行。 |
+| 颜色与材质 | 主行动近黑，展开面板与更多为雾蓝选中态，服务运行使用现有青绿。边线、圆角、背景全部复用宿主 mist/cool/warm token。 |
+| 图像与图标 | 缩略图复用游戏雨窗素材，图标沿用 Phosphor，没有用生成图代替真实控件或游戏预览。 |
+| 文案与内容 | 面板按钮固定为「终端」「检查」，以选中态表示展开；菜单显示「打开项目目录」「项目设置」。实际路径、服务错误和外部服务状态来自运行结果。 |
+
+可接受的差异：实机菜单沿用现有浏览器菜单的 240px 宽度、40px 最小行高和共享字号，比等比归一后的生成稿菜单更宽，保持可读与点击区域一致；键盘焦点环是实际可访问状态。生成稿在未运行时仍展示示例游戏画面，实机保留真实停止态插图，本次不修改下方游戏内容来模拟效果稿。没有宣称逐像素一致，项目栏内无剩余 P0/P1/P2 差异。
+
+### 行为与回归验证
+
+- `npm run verify` 通过；最后响应式 CSS 修正后 `npm run build` 通过。游戏服务、终端与 GuestFrame 相关单元回归 11/11 通过。
+- [项目栏原生验收](C:/Users/henry/.codex/visualizations/2026/10/16/01a1428e-2c14-77f3-a87b-7907203e1553/game-project-header/report.json)10/10 通过：菜单键盘与 Escape 回焦、目录原生调用边界、共享设置弹窗、面板切换保留终端 PID、真实服务启动/重启/停止、运行时设置禁用、端口冲突错误、外部服务断开不停止其进程。
+- [预览菜单回归](C:/Users/henry/.codex/visualizations/2026/10/16/01a1428e-2c14-77f3-a87b-7907203e1553/game-preview-menu/report.json)9/9 通过：真实 guest 缩放与重置、实际截图、外部打开调用边界、独立试玩分区、菜单互斥及导航/切页关闭，同一 guest 不重建。两份原生验收报告 errors 均为空。
+- 三主题 1280×820、窄窗 1024×680、1280 宽 AI 停靠及参考宽度窗口均无项目控件重叠或菜单越界；减少动态效果和强制颜色偏好检查通过。1024 下原有 AI 面板为覆盖式，其自身布局不在本次修改范围内。
+- 严格静态审计仍有 8 项其他视图的既有发现，GameView/game.css 无发现；官方 DESIGN lint 为 0 errors、1 条既有无 YAML 提示。不宣称全应用审计通过。
+- Browser skill 未提供，使用仓库 Playwright Electron 通道与隔离 appData；外部打开由测试截获以验证调用，没有操纵用户浏览器。真实游戏源码、安装版与用户档案未修改；未打包发布。
 
 final result: passed

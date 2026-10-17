@@ -144,6 +144,7 @@ export class AiStore {
       let changed = false;
       for (const entry of chat.entries) {
         if (entry.streaming) {
+          delete entry.responsePhase;
           entry.streaming = false; entry.thinkingActive = false; entry.error = '上次回复因应用退出而中断,可以重新发送。'; changed = true;
           for (const tool of entry.tools ?? []) if (tool.status === 'running') tool.status = 'interrupted';
           chat.draft ||= [...chat.entries].reverse().find(item => item.role === 'user')?.content ?? '';

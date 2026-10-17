@@ -1,0 +1,6 @@
+.browser-zoom { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 4px 8px 4px 12px; }
+.browser-zoom > span { flex: 1; }
+.browser-zoom-steps { display: flex; align-items: center; border: 1px solid var(--hairline); border-radius: var(--r-ctl); background: var(--glass-hi); }
+.browser-zoom button { display: grid; place-items: center; width: 30px; height: 32px; border-radius: var(--r-ctl); cursor: pointer; }
+.browser-zoom button:hover:not(:disabled), .browser-zoom button:focus-visible { background: var(--acc-soft); }
+.browser-zoom output { min-width: 52px; padding: 0 5px; border-inline: 1px solid var(--hairline); text-align: center; font-variant-numeric: tabular-nums; }

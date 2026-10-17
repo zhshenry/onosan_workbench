@@ -47,6 +47,7 @@ test('本地发布检查读取五项资产与本版 CHANGELOG，不上传或生�
   assert.equal(result.status, 0, result.stderr);
   for (const file of assets) assert.ok(result.stdout.includes(file));
   assert.match(result.stdout, /gh(?:\.exe)? release create v2\.3\.4 --repo fixture\/workbench --verify-tag --latest/);
+  assert.match(result.stdout, /--title "OnO Workbench v2\.3\.4"/);
   assert.match(result.stdout, /当前版本的变更/);
   assert.doesNotMatch(result.stdout, /旧版变更/);
   assert.equal(existsSync(path.join(directory, 'release/metadata/release-notes.md')), false);
@@ -75,7 +76,7 @@ test('发布检查阻止缺失资产、版本漂移、错误元数据、损坏�
 
 function stubCommands(f: ReturnType<typeof fixture>, state: Record<string, unknown> = {}) {
   const release = {
-    tagName: `v${version}`, isDraft: false, isPrerelease: false, url: 'https://github.com/fixture/workbench/releases/tag/v2.3.4',
+    tagName: `v${version}`, name: `OnO Workbench v${version}`, isDraft: false, isPrerelease: false, url: 'https://github.com/fixture/workbench/releases/tag/v2.3.4',
     assets: assets.map(file => ({ name: path.basename(file), size: statSync(path.join(f.directory, file)).size, url: `https://example.invalid/${path.basename(file)}` })),
   };
   f.write('state.json', JSON.stringify({ release, ...state }));
@@ -116,7 +117,7 @@ test('正式发布使用 gh release 的现有标签和说明文件，并核验�
   const result = run();
   assert.equal(result.status, 0, result.stderr);
   const command = calls().find(call => call.args?.[1] === 'create');
-  assert.deepEqual(command.args, ['release', 'create', 'v2.3.4', '--repo', 'fixture/workbench', '--verify-tag', '--latest', ...assets, '--title', 'Ono Workbench 2.3.4', '--notes-file', 'release/metadata/release-notes.md']);
+  assert.deepEqual(command.args, ['release', 'create', 'v2.3.4', '--repo', 'fixture/workbench', '--verify-tag', '--latest', ...assets, '--title', 'OnO Workbench v2.3.4', '--notes-file', 'release/metadata/release-notes.md']);
   assert.match(readFileSync(path.join(f.directory, 'release/metadata/release-notes.md'), 'utf8'), /当前版本的变更/);
   const downloads = calls().filter(call => call.command === 'curl' || call.command === 'curl.exe');
   assert.equal(downloads.length, 5);
@@ -130,6 +131,7 @@ test('未提交、错误标签、未推送标签阻止上传；远端非正式�
     ['本地标签指向旧提交', { wrongTag: true }, undefined, /必须指向当前提交/],
     ['远端标签缺失', { missingRemoteTag: true }, undefined, /远端 v2.3.4 未推送/],
     ['Draft', { release: { tagName: 'v2.3.4', isDraft: true, isPrerelease: false } }, '--verify', /必须是对应版本的正式发布/],
+    ['标题格式错误', { release: { tagName: 'v2.3.4', name: 'Ono Workbench 2.3.4', isDraft: false, isPrerelease: false } }, '--verify', /标题必须是 OnO Workbench v2\.3\.4/],
     ['下载地址错误', { badDownload: true }, '--verify', /未返回 HTTP 200/],
     ['远端元数据错误', { badMetadata: true }, '--verify', /GitHub latest.yml 与本地产物不一致/],
   ];

@@ -20,11 +20,11 @@ Ono Workbench 与 To-Do-List 采用相同发布顺序：**同步版本与 CHANGE
 3. 在 Windows x64 上安装并登录 GitHub CLI（`gh auth login`），运行 `npm run release`。它先完整验证和打包，再用以下形式创建 Release：
 
    ```text
-   gh release create v版本 --repo zhshenry/onosan_workbench --verify-tag --latest <五项资产> --title "Ono Workbench 版本" --notes-file release/metadata/release-notes.md
+   gh release create v版本 --repo zhshenry/onosan_workbench --verify-tag --latest <五项资产> --title "OnO Workbench v版本" --notes-file release/metadata/release-notes.md
    ```
 
    发布前检查工作区已提交、分支为 `main`、本地及远端标签均指向当前提交；`--verify-tag` 要求 GitHub 上标签已存在。缺失产物、版本漂移、错误文件名/大小/SHA512、SHA256 不匹配，以及缺失或空的 CHANGELOG 条目均会阻止发布。发布说明从当前版本条目生成。
-4. 脚本通过 `gh release view/download` 核验对应 Release 为正式版本（非 Draft、非 Pre-release）、五项资产名称和大小与本地一致，以及下载的 `latest.yml` 与本地完全一致；公开下载地址使用 Windows 自带的 `curl.exe` 检查 HTTP 200。若上传成功但联网核验失败，运行 `npm run release:verify` 重试只读核验；先核对已有 Release，再决定是否重新发布。
+4. 脚本通过 `gh release view/download` 核验对应 Release 为正式版本（非 Draft、非 Pre-release）、标题为 `OnO Workbench v版本`（例如 `OnO Workbench v1.0.0`）、五项资产名称和大小与本地一致，以及下载的 `latest.yml` 与本地完全一致；公开下载地址使用 Windows 自带的 `curl.exe` 检查 HTTP 200。若上传成功但联网核验失败，运行 `npm run release:verify` 重试只读核验；先核对已有 Release，再决定是否重新发布。
 
 ## 本地命令与五项发布资产
 

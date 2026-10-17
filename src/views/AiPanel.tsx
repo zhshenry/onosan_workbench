@@ -9,6 +9,7 @@ import { AiReferencePicker, loadReferenceOptions, REFERENCE_LABELS, type Referen
 import { errorText, Modal, Select as TodoSelect } from '../../modules/todo/ui/ui';
 import { TodoProposalCard } from './TodoProposalCard';
 import { AiResponse } from './AiResponse';
+import { AiActivity } from './AiActivity';
 import { BrowserSiteApprovalCard, useBrowserApprovalTasks } from '../../modules/browser/ui/site-approval';
 import { NAV, workbenchAiContext } from '../nav';
 
@@ -506,7 +507,8 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
   const lastBrowserEntries = new Map(visibleCurrent?.entries.flatMap(entry => entry.browserTask ? [[entry.browserTask.id, entry.id] as const] : []));
   const locateSiteApproval = (): void => { approvalCard.current?.focus({ preventScroll: true }); };
   const activeChat = chats.find(chat => chat.streaming);
-  const currentBusy = visibleCurrent?.entries.some(entry => entry.streaming) ?? false;
+  const streamingEntry = visibleCurrent?.entries.find(entry => entry.role === 'assistant' && entry.streaming);
+  const currentBusy = !!streamingEntry;
   const busy = currentBusy || sending.includes(contextKey);
   const question = visibleCurrent ? questions[visibleCurrent.id] : undefined;
   const answerQuestion = (kind: 'option' | 'text' | 'skip', value?: string): void => {
@@ -711,7 +713,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
                 {entry.role === 'user' && entry.referenceSnapshots?.length ? <span className="ai-message-tag">当时参考：{entry.referenceSnapshots.map(snapshot => snapshot.name).join('、')}</span> : null}
                 {entry.copySource && <button className="ai-source-chip" title={entry.copySource.text} onClick={() => onLocateCopySource(entry.copySource!)}>引用原文 · 定位</button>}
                 {entry.role === 'assistant' && entry.baziSystem === 'bazi' && entry.content.includes('日主') && (entry.contextScope ?? chatScope(visibleCurrent)).module === 'bazi' && <button className="ai-source-chip" onClick={() => { const scope = entry.contextScope ?? chatScope(visibleCurrent); if (scope.module === 'bazi') onLocateBaziDay(scope.profileId); }}>在盘面中定位日主</button>}
-                {entry.role === 'assistant' ? <AiResponse entry={entry} browserTask={entry.browserTask && lastBrowserEntries.get(entry.browserTask.id) === entry.id ? browserApprovals.tasks[entry.browserTask.id] : undefined}
+                {entry.role === 'assistant' ? <AiResponse entry={entry} showTyping={false} browserTask={entry.browserTask && lastBrowserEntries.get(entry.browserTask.id) === entry.id ? browserApprovals.tasks[entry.browserTask.id] : undefined}
                   approvalCardId={approvalCardId} onLocateApproval={locateSiteApproval} /> : <div className="ai-bubble">{entry.content}</div>}
                 {entry.error && <div className="ai-error" role="alert">{entry.error}</div>}
                 {entry.proposal && <TodoProposalCard key={entry.proposal.token} entry={entry} busy={busy}
@@ -748,6 +750,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
               <button type="button" onClick={() => visibleCurrent && wb.ai.cancel(visibleCurrent.id)}>停止此对话</button>
             </div></div>}
             {activeCopyWriteBlocked && <div className="ai-busy-hint">{copySaveHint}</div>}
+            <AiActivity entry={streamingEntry} browserTask={streamingEntry?.browserTask ? browserApprovals.tasks[streamingEntry.browserTask.id] : undefined} question={!!question} />
             {activeContext.scope.module === 'copy' && <div className="ai-copy-actions" aria-label="博客写作快捷指令">
               {COPY_QUICK_ACTIONS.map(action => <button key={action.label} type="button" className="ai-copy-action" title={activeCopyWriteBlocked ? copySaveHint : action.prompt}
                 disabled={!config?.aiEnabled || busy || switchingModel || activeCopyWriteBlocked} onClick={() => onQuickAsk(action.prompt, activeContext.scope)}>{action.label}</button>)}

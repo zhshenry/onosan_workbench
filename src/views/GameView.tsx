@@ -1,7 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useState, useImperativeHandle, type Ref, type RefObject } from 'react';
-import { ArrowClockwise, ArrowLeft, ArrowRight, Camera, CheckCircle, Circle, ClipboardText, FolderOpen, GearSix, Globe, Minus, Play, Stop, TerminalWindow, WarningCircle, XCircle } from '@phosphor-icons/react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, useImperativeHandle, type CSSProperties, type ReactNode, type Ref, type RefObject } from 'react';
+import { ArrowClockwise, ArrowLeft, ArrowRight, ArrowSquareOut, Camera, Check, CheckCircle, Circle, ClipboardText, DotsThree, FolderOpen, GearSix, Globe, Minus, Play, Stop, TerminalWindow, WarningCircle, XCircle } from '@phosphor-icons/react';
 import { GuestFrame } from '../../modules/browser/ui/guest-frame';
 import { WebviewPresentation } from '../../modules/browser/ui/webview-presentation';
+import { PageZoomControls } from '../../modules/browser/ui/page-zoom';
 import { Select as GameSelect, Segmented, Modal, errorText } from '../../modules/todo/ui/ui';
 import { emptyBrowserFrame, type BrowserFrameState } from '../../shared/browser-contracts';
 import { GAME_TASKS, GameConfigSchema, gameProblemReport, gameResultStale, type GameConfig, type GameState, type GameTaskId, type GameTaskStatus } from '../../shared/game-contracts';
@@ -10,7 +11,35 @@ import { GameTerminalPanel } from './GameTerminal';
 import './game.css';
 
 const STATUS: Record<GameTaskStatus, string> = { idle: '未运行', queued: '等待中', running: '运行中', passed: '通过', failed: '失败', cancelled: '已取消', unavailable: '未执行' };
-interface PreviewApi { reload(): void; back(): void; forward(): void; }
+interface PreviewApi { reload(): void; back(): void; forward(): void; setZoomFactor(factor: number): void; refreshZoom(): void; }
+
+function GameOptionsMenu({ kind, active, context, onOpen, children }: { kind: 'project' | 'preview'; active: boolean; context?: string; onOpen?(): void; children(close: () => void): ReactNode }) {
+  const id = useId(), menu = useRef<HTMLDivElement>(null), trigger = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+  const label = kind === 'project' ? '项目更多功能' : '游戏预览更多功能';
+  useLayoutEffect(() => {
+    if (!open || !menu.current || !trigger.current) return;
+    const element = menu.current, anchor = trigger.current.getBoundingClientRect();
+    element.style.left = `${Math.max(8, Math.min(anchor.right - element.offsetWidth, window.innerWidth - element.offsetWidth - 8))}px`;
+    element.style.top = `${Math.max(8, Math.min(anchor.bottom + 6, window.innerHeight - element.offsetHeight - 8))}px`;
+    element.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
+    const dismiss = () => element.hidePopover();
+    window.addEventListener('resize', dismiss); return () => window.removeEventListener('resize', dismiss);
+  }, [open]);
+  useEffect(() => { menu.current?.hidePopover(); }, [active, context]);
+  const close = () => menu.current?.hidePopover();
+  return <>
+    <button ref={trigger} type="button" className="game-icon-button game-options-trigger" aria-label={label} title="更多功能" aria-haspopup="menu" aria-expanded={open} aria-controls={id} onClick={() => menu.current?.togglePopover()} onKeyDown={event => { if (event.key === 'ArrowDown') { event.preventDefault(); menu.current?.showPopover(); } }}><DotsThree size={22} weight="bold" /></button>
+    <div ref={menu} id={id} className={`browser-menu game-options-menu game-${kind}-menu`} popover="auto" role="menu" aria-label={label} onToggle={event => { const next = event.newState === 'open'; setOpen(next); if (next) onOpen?.(); }} onKeyDown={event => {
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); trigger.current?.focus(); return; }
+      if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const items = Array.from(menu.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? []);
+      const index = items.findIndex(item => item === document.activeElement);
+      items[event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
+    }}>{children(close)}</div>
+  </>;
+}
 
 function GamePreview({ url, workspace, tabId, viewport, apiRef, onState }: { url: string; workspace: string; tabId: string; viewport: string; apiRef: Ref<PreviewApi>; onState(state: BrowserFrameState): void }) {
   const host = useRef<HTMLDivElement>(null);
@@ -36,7 +65,7 @@ function GamePreview({ url, workspace, tabId, viewport, apiRef, onState }: { url
     const observer = new ResizeObserver(([entry]) => setSize({ width: entry.contentRect.width, height: entry.contentRect.height }));
     observer.observe(element); return () => observer.disconnect();
   }, []);
-  useImperativeHandle(apiRef, () => ({ reload: () => controller.current?.reload(), back: () => controller.current?.goBack(), forward: () => controller.current?.goForward() }), []);
+  useImperativeHandle(apiRef, () => ({ reload: () => controller.current?.reload(), back: () => controller.current?.goBack(), forward: () => controller.current?.goForward(), setZoomFactor: factor => controller.current?.setZoomFactor(factor), refreshZoom: () => controller.current?.refreshZoom() }), []);
   const width = viewport === 'desktop' ? 1440 : viewport === 'narrow' ? 390 : size.width;
   const height = viewport === 'desktop' ? 1000 : viewport === 'narrow' ? 844 : size.height;
   const scale = Math.min(1, size.width / width, size.height / height);
@@ -66,7 +95,7 @@ function ProjectSettings({ state, close, onSave }: { state: GameState; close(): 
   </Modal>;
 }
 
-function GameView({ onPending }: { onPending(message: string): void }) {
+function GameView({ active, onPending }: { active: boolean; onPending(message: string): void }) {
   const [state, setState] = useState<GameState | null>(null);
   const [failure, setFailure] = useState('');
   const [busy, setBusy] = useState(false);
@@ -74,6 +103,14 @@ function GameView({ onPending }: { onPending(message: string): void }) {
   const [scope, setScope] = useState('quick');
   const [selected, setSelected] = useState<GameTaskId>('rules');
   const [testsOpen, setTestsOpen] = useState(window.innerWidth >= 1180);
+  const grid = useRef<HTMLDivElement>(null);
+  const [availableWidth, setAvailableWidth] = useState(0);
+  const [testsWidth, setTestsWidth] = useState<number | null>(null);
+  const [resizing, setResizing] = useState(false);
+  const drag = useRef<{ x: number; width: number } | null>(null);
+  const maximumTestsWidth = Math.max(330, availableWidth - 12 - 420);
+  const effectiveTestsWidth = Math.max(330, Math.min(maximumTestsWidth, testsWidth ?? availableWidth * .35));
+  const clampTestsWidth = (width: number) => Math.max(330, Math.min(maximumTestsWidth, width));
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [terminalEntered, setTerminalEntered] = useState(false);
   const terminalToggle = useRef<HTMLButtonElement>(null);
@@ -96,6 +133,12 @@ function GameView({ onPending }: { onPending(message: string): void }) {
     const change = () => { if (media.matches) setTestsOpen(false); };
     media.addEventListener('change', change); return () => media.removeEventListener('change', change);
   }, []);
+  useLayoutEffect(() => {
+    const element = grid.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => { if (entry.contentRect.width > 0) setAvailableWidth(entry.contentRect.width); });
+    observer.observe(element); return () => observer.disconnect();
+  }, [state !== null]);
   useEffect(() => { if (!state?.running) return; const timer = setInterval(() => setClock(Date.now()), 1000); return () => clearInterval(timer); }, [state?.running]);
   async function act(action: () => Promise<unknown>) {
     setFailure(''); setBusy(true);
@@ -123,19 +166,22 @@ function GameView({ onPending }: { onPending(message: string): void }) {
   return <section className="game-workspace" aria-label="轨迹侦探运行与测试">
     <header className="game-project glass">
       <img src={office} alt="轨迹侦探事务所" />
-      <div className="game-project-name"><strong>轨迹侦探</strong><span title={state.config.root}>{state.config.root}</span></div>
-      <span className={`game-service ${running ? 'is-ready' : ''}`} role="status"><Circle weight="fill" size={10} />{service.phase === 'starting' ? '正在启动…' : running ? `${service.owned ? '本地服务' : '外部服务'} · 运行中` : '本地服务 · 未运行'}</span>
+      <div className="game-project-name"><div className="game-project-heading"><strong>轨迹侦探</strong><span className={`game-service ${running ? 'is-ready' : ''}`} role="status" title={service.message}><Circle weight="fill" size={10} />{service.phase === 'starting' ? '启动中…' : running ? service.owned ? '运行中' : '外部服务 · 运行中' : service.phase === 'error' ? '启动失败' : '未运行'}</span></div><span title={state.config.root}>{state.config.root}</span></div>
       <div className="game-project-actions">
-        {running ? <><button disabled={projectBusy || !service.owned} onClick={() => { void act(async () => { await window.workbench.game.stop(); await window.workbench.game.start(); setLoadedRevision(''); }); }}><ArrowClockwise />重启</button><button disabled={projectBusy} onClick={() => { void act(() => window.workbench.game.stop()); }}><Stop />{service.owned ? '停止' : '断开'}</button></> : <button className="game-primary" disabled={projectBusy || !!state.sourceError} onClick={() => { setLoadedRevision(state.revision); void act(() => window.workbench.game.start()); }}><Play weight="fill" />启动游戏</button>}
-        <button className="game-icon-button" title="打开项目目录" aria-label="打开项目目录" onClick={() => { void act(() => window.workbench.game.open('root')); }}><FolderOpen /></button>
-        <button disabled={projectBusy || running} title={running ? '停止服务后可修改项目设置' : '项目设置'} onClick={() => setSettings(true)}><GearSix /><span>项目设置</span></button>
-        <button ref={terminalToggle} aria-expanded={terminalOpen} aria-controls="game-project-terminal" onClick={() => { setTerminalEntered(true); setTerminalOpen(!terminalOpen); }}><TerminalWindow />终端</button>
-        <button className="game-test-toggle" aria-expanded={testsOpen} onClick={() => setTestsOpen(!testsOpen)}><ClipboardText />{testsOpen ? '收起检查' : '展开检查'}</button>
+        <div className="game-service-actions">{running ? <><button className="game-primary" disabled={projectBusy || !service.owned} onClick={() => { void act(async () => { await window.workbench.game.stop(); await window.workbench.game.start(); setLoadedRevision(''); }); }}><ArrowClockwise />重启</button><button disabled={projectBusy} onClick={() => { void act(() => window.workbench.game.stop()); }}><Stop />{service.owned ? '停止' : '断开'}</button></> : <button className="game-primary" disabled={projectBusy || !!state.sourceError} onClick={() => { setLoadedRevision(state.revision); void act(() => window.workbench.game.start()); }}><Play weight="fill" />启动游戏</button>}</div>
+        <div className="game-project-panels" role="group" aria-label="面板开关">
+          <button ref={terminalToggle} aria-expanded={terminalOpen} aria-controls="game-project-terminal" title={terminalOpen ? '收起项目终端' : '展开项目终端'} onClick={() => { setTerminalEntered(true); setTerminalOpen(!terminalOpen); }}><TerminalWindow />终端</button>
+          <button className="game-test-toggle" aria-expanded={testsOpen} title={testsOpen ? '收起测试栏' : '展开测试栏'} onClick={() => setTestsOpen(!testsOpen)}><ClipboardText />检查</button>
+        </div>
+        <GameOptionsMenu kind="project" active={active}>{close => <>
+          <button type="button" role="menuitem" onClick={() => { close(); void act(() => window.workbench.game.open('root')); }}><FolderOpen />打开项目目录</button>
+          <button type="button" role="menuitem" disabled={projectBusy || running} title={running ? '停止服务后可修改项目设置' : '项目设置'} onClick={() => { close(); setSettings(true); }}><GearSix />项目设置</button>
+        </>}</GameOptionsMenu>
       </div>
     </header>
     {failure || state.sourceError || service.phase === 'error' ? <div className="game-error" role="alert"><WarningCircle /><span>{failure || state.sourceError || service.message}</span>{service.phase === 'error' ? <button disabled={projectBusy} onClick={() => { void act(() => window.workbench.game.connect()); }}>连接已有服务</button> : null}</div> : null}
     {sourceChanged ? <div className="game-update" role="status">代码已变化 · 刷新查看最新画面，上次测试结果需重新验证。<button disabled={!running} onClick={refresh}>刷新试玩</button></div> : null}
-    <div className="game-panels"><div className={`game-grid${testsOpen ? '' : ' tests-hidden'}`}>
+    <div className="game-panels"><div ref={grid} className={`game-grid${testsOpen ? '' : ' tests-hidden'}`} style={{ '--game-tests-width': `${effectiveTestsWidth}px` } as CSSProperties}>
       <section className="game-preview glass" aria-label="游戏预览">
         <div className="game-pane-heading"><strong><Globe />游戏预览 <small>（本地）</small></strong><span>使用独立的本地试玩存档</span></div>
         <div className="game-preview-toolbar">
@@ -144,14 +190,28 @@ function GameView({ onPending }: { onPending(message: string): void }) {
           <button className="game-icon-button" disabled={!running} title="刷新试玩" aria-label="刷新试玩" onClick={refresh}><ArrowClockwise /></button>
           <span className="game-address" title={browser.target?.url || service.url}>{browser.target?.url || service.url || `127.0.0.1:${state.config.port}`}</span>
           <GameSelect aria-label="预览尺寸" value={viewport} onChange={setViewport} options={[{ value: 'fit', label: '跟随窗口' }, { value: 'desktop', label: '桌面 1440×1000' }, { value: 'narrow', label: '窄屏 390×844' }]} />
-          <GameSelect aria-label="试玩存档" value={profile} onChange={value => { if (value === 'fresh') setFreshId(crypto.randomUUID()); setProfile(value); }} options={[{ value: 'keep', label: '保留试玩档' }, { value: 'fresh', label: '新档试玩' }]} />
-          <button className="game-icon-button" disabled={!running || busy} aria-label="截图记录问题" title="截图记录问题" onClick={() => { void act(async () => { await window.workbench.game.capture(previewTabId); onPending('试玩截图已保存到 Ono，可在附件中打开。'); }); }}><Camera /></button>
-          <button className="game-icon-button" disabled={!running} aria-label="在外部浏览器打开" title="在外部浏览器打开（使用该浏览器自己的存档）" onClick={() => { void act(() => window.workbench.game.open('preview')); }}><Globe /></button>
+          <GameOptionsMenu kind="preview" active={active} context={browser.target?.url} onOpen={() => preview.current?.refreshZoom()}>{close => <>
+            <PageZoomControls zoomFactor={running ? browser.zoomFactor : 1} disabled={!running || browser.loading || !browser.target || !!browser.error || busy} onZoomChange={factor => { void act(async () => preview.current?.setZoomFactor(factor)); }} />
+            <hr />
+            <div className="game-profile-options" role="group" aria-label="试玩存档">
+              <span className="game-menu-label">试玩存档</span>
+              <button type="button" role="menuitemradio" aria-checked={profile === 'keep'} onClick={() => { close(); setProfile('keep'); }}><Check weight="bold" />保留试玩档</button>
+              <button type="button" role="menuitemradio" aria-checked={profile === 'fresh'} onClick={() => { close(); setFreshId(crypto.randomUUID()); setProfile('fresh'); }}><Check weight="bold" />新档试玩</button>
+            </div>
+            <hr />
+            <button type="button" role="menuitem" disabled={!running || busy} onClick={() => { close(); void act(async () => { await window.workbench.game.capture(previewTabId); onPending('试玩截图已保存到 Ono，可在附件中打开。'); }); }}><Camera />截图记录问题</button>
+            <button type="button" role="menuitem" disabled={!running} title="使用该浏览器自己的存档" onClick={() => { close(); void act(() => window.workbench.game.open('preview')); }}><ArrowSquareOut />在外部浏览器打开</button>
+          </>}</GameOptionsMenu>
         </div>
         {running ? <GamePreview key={`${service.url}:${workspace}`} url={service.url} workspace={workspace} tabId={previewTabId} viewport={viewport} apiRef={preview} onState={setBrowser} /> : <div className="game-preview-empty"><img src={office} alt="雨窗前的侦探事务所" /><h1>轨迹侦探</h1><p>{state.sourceError ? '请在项目设置中核对目录。' : '启动游戏，在这里直接试玩最新代码。'}</p><button onClick={() => { void act(() => window.workbench.game.open('docs')); }}>查看项目运行说明</button></div>}
         <div className="game-preview-footer"><span><Circle weight="fill" size={9} />{service.message}</span><span>{browser.loading && running ? '页面载入中…' : running ? '人工试玩 · 自动测试使用独立档案' : '代码继续在现有开发工具中修改'}</span></div>
       </section>
-      {testsOpen ? <aside className="game-tests glass" aria-label="测试检查">
+      {testsOpen ? <><div className="game-column-resize" role="separator" tabIndex={0} aria-label="调整游戏预览和测试检查宽度" title="左右拖动调整宽度（← / →）" aria-orientation="vertical" aria-controls="game-test-panel" aria-valuemin={330} aria-valuemax={Math.round(maximumTestsWidth)} aria-valuenow={Math.round(effectiveTestsWidth)} aria-valuetext={`测试检查 ${Math.round(effectiveTestsWidth)} 像素`} data-dragging={resizing}
+        onPointerDown={event => { if (event.button !== 0) return; event.preventDefault(); event.currentTarget.focus({ preventScroll: true }); drag.current = { x: event.clientX, width: effectiveTestsWidth }; event.currentTarget.setPointerCapture(event.pointerId); setResizing(true); }}
+        onPointerMove={event => { if (drag.current) setTestsWidth(clampTestsWidth(drag.current.width + drag.current.x - event.clientX)); }}
+        onPointerUp={event => { drag.current = null; setResizing(false); if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }} onLostPointerCapture={() => { drag.current = null; setResizing(false); }}
+        onKeyDown={event => { if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return; event.preventDefault(); setTestsWidth(event.key === 'Home' ? 330 : event.key === 'End' ? maximumTestsWidth : clampTestsWidth(effectiveTestsWidth + (event.key === 'ArrowLeft' ? 24 : -24))); }} />
+      <aside id="game-test-panel" className="game-tests glass" aria-label="测试检查">
         <div className="game-pane-heading"><strong><ClipboardText />测试检查</strong><button className="game-icon-button" aria-label="收起测试栏" title="收起测试栏" onClick={() => setTestsOpen(false)}><Minus /></button></div>
         <p className="game-pane-description">运行项目现有测试，查看结果与日志。</p>
         <Segmented aria-label="测试范围" value={scope} onChange={value => { setScope(value); setSelected(value === 'full' ? 'playthrough' : 'rules'); }} options={[{ value: 'quick', label: '快速检查（5项）' }, { value: 'full', label: '完整通关' }]} />
@@ -183,7 +243,7 @@ function GameView({ onPending }: { onPending(message: string): void }) {
           <details className="game-detail"><summary>运行日志</summary><pre tabIndex={0}>{state.logs.join('\n') || '暂无服务日志'}</pre></details>
         </div>
         <p className="game-tests-footer">完整通关使用独立 Edge，不影响左侧试玩档。</p>
-      </aside> : null}
+      </aside></> : null}
     </div>
     {terminalEntered ? <GameTerminalPanel open={terminalOpen} close={() => { setTerminalOpen(false); terminalToggle.current?.focus(); }} onPending={onPending} /> : null}
     </div>
@@ -197,5 +257,5 @@ export function GameHost({ active, focusTarget, onPending }: { active: boolean; 
   useEffect(() => { if (active) setEntered(true); }, [active]);
   useLayoutEffect(() => { if (!active && host.current && (document.activeElement === document.body || host.current.contains(document.activeElement))) focusTarget.current?.focus({ preventScroll: true }); }, [active, focusTarget]);
   if (!active && !entered) return null;
-  return <div ref={host} className="game-host" hidden={!active} inert={!active} aria-hidden={!active} onFocusCapture={event => { if (!active) { (event.target as HTMLElement).blur(); focusTarget.current?.focus({ preventScroll: true }); } }}><GameView onPending={onPending} /></div>;
+  return <div ref={host} className="game-host" hidden={!active} inert={!active} aria-hidden={!active} onFocusCapture={event => { if (!active) { (event.target as HTMLElement).blur(); focusTarget.current?.focus({ preventScroll: true }); } }}><GameView active={active} onPending={onPending} /></div>;
 }

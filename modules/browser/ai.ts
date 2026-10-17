@@ -1,4 +1,4 @@
-import { Type, type TSchema } from 'typebox';
+import { Type, type TObject, type TSchema } from 'typebox';
 import { z } from 'zod';
 import { defineTool } from '@earendil-works/pi-coding-agent';
 import type { WebContents } from 'electron';
@@ -6,6 +6,11 @@ import type { AiModuleContribution } from '../../electron/ai-core';
 import type { BrowserAutomation } from '../../electron/browser/tasks';
 import { BrowserControlError } from '../../electron/browser/driver';
 import { browserActionSchema, browserChecksSchema, browserConditionSchema, browserExtractSchema, browserQuerySchema, type BrowserTask, type BrowserObservation } from '../../shared/browser-automation-contracts';
+
+const observeQueryExamples = [
+  { query: { selector: { by: 'css', value: '#content_left .result' }, offset: 0, limit: 100 } },
+  { query: { selector: { by: 'role', value: 'button', name: '保存' }, within: [{ by: 'css', value: '#orders' }] } },
+];
 
 export function buildBrowserContribution(automation: BrowserAutomation, owner: WebContents, task: BrowserTask, vision: boolean): AiModuleContribution {
   const tabId = Type.String({ description: '明确的任务标签 ID，从 browser_tabs 取得' });
@@ -21,6 +26,20 @@ export function buildBrowserContribution(automation: BrowserAutomation, owner: W
   };
   const tool = (name: keyof typeof labels, description: string, parameters: TSchema, run: (params: any) => Promise<unknown> | unknown) => defineTool({
     name, label: labels[name], description, parameters, executionMode: 'sequential',
+    prepareArguments: name === 'browser_observe' ? raw => {
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return raw;
+      const invalidFields = Object.keys(raw).filter(key => !Object.hasOwn((parameters as TObject).properties, key));
+      const query = browserQuerySchema.safeParse((raw as Record<string, unknown>).query);
+      if (!query.success) for (const issue of query.error.issues) {
+        if (issue.code === 'unrecognized_keys') invalidFields.push(...issue.keys.map(key => ['query', ...issue.path, key].join('.')));
+      }
+      if (invalidFields.length) throw new Error(JSON.stringify({
+        ok: false, code: 'invalid-tool-arguments', message: `不支持的参数字段：${invalidFields.join('、')}。请修正后再调用。`, invalidFields,
+        hint: '定位方式放在 query.selector.by，选择器文本放在 query.selector.value；没有 selectorText 选项，观察结果已包含 text 与 elements。保留实际 tabId，按示例结构修正后重新调用。',
+        examples: observeQueryExamples,
+      }));
+      return raw;
+    } : undefined,
     execute: async (_id, params) => {
       try { return result(await run(params)); }
       catch (error) { throw new Error(JSON.stringify({ ok: false, code: error instanceof BrowserControlError ? error.code : 'browser-error', message: error instanceof Error ? error.message : '浏览器操作失败，请重新观察。', ...(error instanceof BrowserControlError && error.details ? { details: error.details } : {}), retry: '重新观察后决定下一步；超时或错误不代表网页操作未发生。' })); }
@@ -36,7 +55,7 @@ export function buildBrowserContribution(automation: BrowserAutomation, owner: W
         return value.operation === 'list' ? automation.tabs(owner, task.id) : automation.tab(owner, task.id, value.operation, value.tabId ?? '', value.url);
       }),
       tool('browser_navigate', '在明确的任务标签打开 HTTP/HTTPS 网页。不能绕过专用浏览器域名限制。', Type.Object({ tabId, url: Type.String({ maxLength: 4096 }) }, { additionalProperties: false }), raw => automation.navigate(owner, task.id, z.string().parse(raw.tabId), z.string().url().max(4096).parse(raw.url))),
-      tool('browser_observe', '读取页面或局部容器。query.selector 支持 role/name、label、text、placeholder、testId、CSS；within 是祖先容器链，and/or/has/hasNot/hasText/visible 可筛选；nth 从 0 起。用 offset/limit 分页元素，textOffset/textLimit 分段正文；page 返回总数和下一页位置。表格可按 role=row 或 CSS=tr 查询，返回 cells 的列文本、角色与截断标记；未加载的虚拟列表需先滚动或翻页。未读取的 frame 不要声称已读。', Type.Object({ tabId, screenshot: Type.Optional(Type.Boolean()), fullPage: Type.Optional(Type.Boolean()), query: Type.Optional(Type.Unsafe(z.toJSONSchema(browserQuerySchema, { io: 'input' }))) }, { additionalProperties: false }), raw => automation.observe(owner, task.id, z.string().parse(raw.tabId), vision && raw.screenshot === true, raw.fullPage === true, raw.query ? browserQuerySchema.parse(raw.query) : undefined)),
+      tool('browser_observe', `读取页面或局部容器，结果包含 text 正文和 elements 元素。定位方式必须放在 query.selector.by，选择器文本放在 query.selector.value；query.by 和 selectorText 均不是合法字段。保留实际 tabId，查询示例：${observeQueryExamples.map(example => JSON.stringify(example)).join('；')}。query.selector 支持 role/name、label、text、placeholder、testId、CSS；within 是祖先容器链，and/or/has/hasNot/hasText/visible 可筛选；nth 从 0 起。用 query.offset/query.limit 分页元素，query.textOffset/query.textLimit 分段正文；page 返回总数和下一页位置。表格可按 role=row 或 CSS=tr 查询，返回 cells 的列文本、角色与截断标记；未加载的虚拟列表需先滚动或翻页。未读取的 frame 不要声称已读。`, Type.Object({ tabId, screenshot: Type.Optional(Type.Boolean()), fullPage: Type.Optional(Type.Boolean()), query: Type.Optional(Type.Unsafe(z.toJSONSchema(browserQuerySchema, { io: 'input' }))) }, { additionalProperties: false }), raw => automation.observe(owner, task.id, z.string().parse(raw.tabId), vision && raw.screenshot === true, raw.fullPage === true, raw.query ? browserQuerySchema.parse(raw.query) : undefined)),
       tool('browser_act', '操作最新观察的元素或截图。setChecked 设置期望勾选状态，已符合时不反转；pressSequentially 聚焦后逐字追加并触发输入；fill 替换全文；select 按标签或值选择。type=locator 可用 query 和嵌套 action 直接定位并操作，timeoutMs 最长 15 秒；等待唯一可见可操作目标，匹配多个则报错；已发出的输入不自动重放。文字匹配支持 {pattern,flags}（flags 为 i/u/iu）及 ignoreCase；不支持任意 JavaScript。点击前检查位置稳定，歧义错误附候选元素和容器；返回新观察。', Type.Object({ tabId, action: Type.Unsafe(z.toJSONSchema(browserActionSchema, { io: 'input' })) }, { additionalProperties: false }), raw => automation.act(owner, task.id, z.string().parse(raw.tabId), browserActionSchema.parse(raw.action))),
       tool('browser_wait', '有限等待文本、地址或命名元素出现/消失，最长 15 秒；type=state 支持 attached/detached/visible/hidden/enabled/disabled/stable。返回真实条件结果；不作为任务完成验证。', Type.Object({ tabId, condition: Type.Unsafe(z.toJSONSchema(browserConditionSchema, { io: 'input' })), timeoutMs: Type.Optional(Type.Integer({ minimum: 0, maximum: 15000 })) }, { additionalProperties: false }), raw => automation.check(owner, task.id, z.string().parse(raw.tabId), browserConditionSchema.parse(raw.condition), z.number().int().min(0).max(15000).default(5000).parse(raw.timeoutMs), false)),
       tool('browser_check', '根据用户目标声明并逐项核验所有必需条件。operation=plan 配 checks:[{id,label,condition}] 先登记核验清单；operation=verify 不传 condition 时执行该标签全部清单，或传 checks 追加条件后执行。已有条件不能移除或换成较弱条件。兼容单个 condition，会累计保留其失败结果。只在全部必需条件通过时完成；每项记录来源、实际值和时间，后续写操作使全部证据过期。', Type.Object({ tabId, operation: Type.Optional(Type.Union([Type.Literal('plan'), Type.Literal('verify')])), checks: Type.Optional(Type.Unsafe(z.toJSONSchema(browserChecksSchema, { io: 'input' }))), condition: Type.Optional(Type.Unsafe(z.toJSONSchema(browserConditionSchema, { io: 'input' }))) }, { additionalProperties: false }), raw => {

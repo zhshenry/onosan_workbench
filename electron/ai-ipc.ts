@@ -439,6 +439,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
       const latest = ai.chat(chat.id);
       const entry = latest.entries.find(item => item.id === assistantId)!;
       change(entry);
+      if (!entry.streaming) delete entry.responsePhase;
       emitChat(ai.saveChat(latest));
     };
     const revisePending = (): void => {
@@ -480,7 +481,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
         }), (thinking, active) => {
           latestThinking = thinking; latestThinkingActive = active;
           scheduleDelta();
-        });
+        }, phase => updateEntry(entry => { entry.responsePhase = phase; }));
       if (controller.signal.aborted) throw new Error('已取消生成,输入内容已保留。');
       if (deltaTimer) { clearTimeout(deltaTimer); deltaTimer = null; }
       latestThinkingActive = false;

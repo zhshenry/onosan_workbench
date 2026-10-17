@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { ArrowClockwise, CaretDoubleDown, Copy, Stop, TerminalWindow, Trash } from '@phosphor-icons/react';
@@ -98,7 +98,7 @@ export function GameTerminalPanel({ open, close, onPending }: { open: boolean; c
     void act(async () => { await window.workbench.clipboard.write(text.slice(-19000)); onPending(text.length > 19000 ? '已复制最近的终端输出（最多 19000 字符）。' : '终端内容已复制。'); });
   }
   const running = status?.phase === 'running';
-  return <section ref={dock} id="game-project-terminal" className="game-terminal-dock" aria-label="项目终端" hidden={!open} style={{ height: effectiveHeight }}>
+  return <section ref={dock} id="game-project-terminal" className="game-terminal-dock" aria-label="项目终端" hidden={!open} inert={!open} aria-hidden={!open} style={{ '--game-terminal-height': `${effectiveHeight}px` } as CSSProperties}>
     <div className="game-terminal-resize" role="separator" tabIndex={0} aria-label="调整终端高度" aria-orientation="horizontal" aria-valuemin={160} aria-valuemax={maximum} aria-valuenow={Math.round(effectiveHeight)} data-dragging={dragging}
       onPointerDown={event => { if (event.button !== 0) return; event.preventDefault(); drag.current = { y: event.clientY, height: effectiveHeight }; event.currentTarget.setPointerCapture(event.pointerId); setDragging(true); }}
       onPointerMove={event => { if (drag.current) setHeight(Math.max(160, Math.min(maximum, drag.current.height + drag.current.y - event.clientY))); }}

@@ -29,6 +29,7 @@ async function main() {
   requireCheck(lock.version === version && lock.packages[''].version === version, 'package.json 与 package-lock.json 的版本不一致。');
   const repo = `${pkg.build.publish.owner}/${pkg.build.publish.repo}`;
   const tag = `v${version}`;
+  const releaseTitle = `OnO Workbench ${tag}`;
   const installer = `Ono-Workbench-Setup-${version}-x64.exe`;
   const files = [
     `release/installer/${installer}`,
@@ -65,7 +66,7 @@ async function main() {
     '- 应用数据保存在 %APPDATA%/OnoWorkbench；待办使用 %APPDATA%/To-Do-List/tasks.db。',
     '', '## 更新内容', '', changes,
   ].join('\n');
-  const createArgs = ['release', 'create', tag, '--repo', repo, '--verify-tag', '--latest', ...files, '--title', `Ono Workbench ${version}`, '--notes-file', 'release/metadata/release-notes.md'];
+  const createArgs = ['release', 'create', tag, '--repo', repo, '--verify-tag', '--latest', ...files, '--title', releaseTitle, '--notes-file', 'release/metadata/release-notes.md'];
   if (mode === '--dry-run') {
     console.log(`本地发布检查通过：${repo} / ${tag}\n${files.join('\n')}\n\n${gh} ${createArgs.map(arg => /\s/.test(arg) ? JSON.stringify(arg) : arg).join(' ')}\n\n${notes}`);
     return;
@@ -82,8 +83,9 @@ async function main() {
     writeFileSync(path.join(root, 'release/metadata/release-notes.md'), notes, 'utf8');
     run(gh, createArgs, true);
   }
-  const release = JSON.parse(run(gh, ['release', 'view', tag, '--repo', repo, '--json', 'tagName,isDraft,isPrerelease,url,assets']));
+  const release = JSON.parse(run(gh, ['release', 'view', tag, '--repo', repo, '--json', 'tagName,name,isDraft,isPrerelease,url,assets']));
   requireCheck(release.tagName === tag && !release.isDraft && !release.isPrerelease, 'GitHub Release 必须是对应版本的正式发布，不能是 Draft 或 Pre-release。');
+  requireCheck(release.name === releaseTitle, `GitHub Release 标题必须是 ${releaseTitle}。`);
   for (const file of files) {
     const asset = release.assets.find(item => item.name === path.basename(file));
     requireCheck(asset?.size === statSync(path.join(root, file)).size, `GitHub 发布资产缺失或大小不符：${path.basename(file)}。`);

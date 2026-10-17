@@ -110,6 +110,14 @@
 {"tabId":"任务标签ID","query":{"selector":{"by":"role","value":"button","name":"保存"},"within":[{"by":"css","value":"#orders"}]}}
 ```
 
+CSS 与元素分页示例：
+
+```json
+{"tabId":"任务标签ID","query":{"selector":{"by":"css","value":"#content_left .result"},"offset":0,"limit":100}}
+```
+
+定位方式放在 `query.selector.by`，选择器文本放在 `query.selector.value`；`query.by`、`query.selectorText` 均不受支持，观察结果本来就包含 `text` 和 `elements`。`browser_observe` 在工具执行前列出不支持的字段完整路径（包括 selector 和 within 内的额外字段），返回 `invalid-tool-arguments`、修正提示和合法示例，供模型修正后重新调用。不会自动删除字段或执行错误参数；原有严格 schema、类型和范围校验继续生效。
+
 同名按钮可通过 `within` 容器链、`and/or`、`has/hasNot`、`hasText/hasNotText`、`visible`、`nth` 缩小范围。大页面读取使用 `offset/limit` 取得元素页，使用 `textOffset/textLimit` 取得正文段；返回 `page.totalElements/nextOffset/totalTextLength/nextTextOffset`。查询表格 `row` 或 `tr` 返回 `cells` 数组（文字、角色、截断标记），每行最多 50 列、每列 1000 字，超限明确标记。表格相邻列以分隔符匹配，避免订单号和金额拼接造成误匹配。虚拟列表和网站分页仍需滚动/翻页加载。元素引用仍只对最新一次观察有效。
 
 `browser_act` 的 `type=locator` 提供直接定位操作：`query` 保存查找条件，嵌套 `action` 指定点击/输入等动作，`timeoutMs` 最长 15 秒。执行时重新查找并等待唯一、可见、未遮挡的目标；多匹配返回候选角色、名称、frame 和容器；指针操作检查位置动画及两次几何稳定性，已发出输入后不自动重放。它沿用现有 guest/CDP，不依赖生产 Playwright，不开放任意脚本；文字匹配支持字符串或 `{pattern,flags}`，flags 限于空/i/u/iu，正则在可取消、有超时的 Worker 中执行。
@@ -120,11 +128,15 @@
 
 ```text
 npm run verify
-node --import tsx --test tests/browser-automation.test.ts tests/browser-images.test.ts tests/browser-history.test.ts tests/browser-matching.test.ts tests/browser-extract.test.ts tests/ai-concurrency.test.ts tests/ai-concurrent-ui.test.ts tests/browser-site-approval-ui.test.ts
+node --import tsx --test tests/browser-tool-validation.test.ts tests/browser-automation.test.ts tests/browser-images.test.ts tests/browser-history.test.ts tests/browser-matching.test.ts tests/browser-extract.test.ts tests/ai-concurrency.test.ts tests/ai-concurrent-ui.test.ts tests/browser-site-approval-ui.test.ts
+node --import tsx --test tests/ai-activity-ui.test.ts tests/ai-output.test.ts
+node tooling/ai-activity-pilot.mjs
 npm run test:browser
 npm test
 ```
 
 `tooling/browser-automation-pilot.mjs` 使用锁定 Electron、完全隔离的 appData、本机合成网页和合成模型流，覆盖两标签并发真实 guest 输入、可信点击、正则/忽略大小写、动画位置等待、局部 DOM/AX、跨页类型化提取、必需核验清单、并发对话与停止隔离、Shadow DOM、同/跨进程 iframe、键盘/拖动/滚动、坐标/缩放、过期截图、遮挡、AI 工具链、站点授权、弹窗、取消、切工作台及收起助手后的后台输入与焦点、右侧对话澄清续话、空标签打开网页、模型图片开关、历史、三主题/双尺寸、正常重启和分区数据清理。输出日志、截图和报告均放系统临时目录，不接触真实登录数据。本会话未提供独立 Browser 技能，验收沿用仓库的 Playwright Electron 通道。
+
+`tooling/ai-activity-pilot.mjs` 补充真实模型流、IPC、站点授权和 guest 导航期间的固定状态行验收：等待、工具前正文、授权、网页操作、下一轮模型、正文及结束保持正确阶段；三主题、两档窗口测量 44px 高度、单行说明与输入框位置，验证上滚阅读和减少动态效果。仅用隔离 profile 与本机合成模型/网页，证据写入仓库忽略的 `test-results/ai-activity-*`。模型各轮开始后使用等待阶段，只有本轮收到正文才切到整理回复，不能沿用工具前的旧正文判断。
 
 这证明实际代码与协议路径，不代表真实外部模型质量、全部网站兼容性、安装包或跨版本升级已验收。完整回归中本机两项真实文件 symlink 测试受 Windows 权限限制，不跳过或改写测试来宣称全绿。前端严格静态审计还存在旧页面的历史项，新增浏览器 UI 复用共享 Modal/Select 和主题 token。

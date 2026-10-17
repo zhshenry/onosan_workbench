@@ -104,6 +104,7 @@ export interface Proposal extends AIPlan { token: string; preview?: import('./to
 export interface CopyProposal { token: string; message: string; actions: CopyAiAction[]; original?: { title: string; body: string }; }
 export interface CopySource { draftId: string; start: number; end: number; text: string; }
 export interface AIToolEvent { id: string; name: string; label: string; status: 'running' | 'complete' | 'error' | 'interrupted'; output: string; }
+export type AIResponsePhase = 'waiting' | 'replying';
 export interface ChatEntry {
   id: string; role: 'user' | 'assistant'; content: string; proposal?: Proposal;
   /** Runtime-only card details; not a new cross-session history. */
@@ -119,7 +120,7 @@ export interface ChatEntry {
   referenceSnapshots?: import('./ai-reference').AiReferenceSnapshot[];
   baziSystem?: 'bazi' | 'ziwei' | 'astro';
   actionState?: 'pending' | 'applied' | 'discarded' | 'expired' | 'revised' | 'undone'; streaming?: boolean;
-  tools?: AIToolEvent[]; thinking?: string; thinkingActive?: boolean; error?: string;
+  tools?: AIToolEvent[]; thinking?: string; thinkingActive?: boolean; responsePhase?: AIResponsePhase; error?: string;
   /** 本轮实际执行的浏览器任务，不能用会话的最新任务替代历史回复。 */
   browserTask?: Pick<import('./browser-automation-contracts').BrowserTask, 'id' | 'workspace'>;
 }

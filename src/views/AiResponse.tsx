@@ -26,7 +26,7 @@ const AiMarkdown = memo(function AiMarkdown({ text }: { text: string }) {
   </>;
 });
 
-export function AiResponse({ entry, browserTask, approvalCardId = '', onLocateApproval = () => {} }: { entry: ChatEntry; browserTask?: BrowserTask; approvalCardId?: string; onLocateApproval?(): void }) {
+export function AiResponse({ entry, browserTask, showTyping = true, approvalCardId = '', onLocateApproval = () => {} }: { entry: ChatEntry; browserTask?: BrowserTask; showTyping?: boolean; approvalCardId?: string; onLocateApproval?(): void }) {
   const [thinkingExpanded, setThinkingExpanded] = useState<boolean | null>(null);
   const [toolsExpanded, setToolsExpanded] = useState<boolean | null>(null);
   const [recordOpen, setRecordOpen] = useState(false);
@@ -58,7 +58,7 @@ export function AiResponse({ entry, browserTask, approvalCardId = '', onLocateAp
     {entry.content ? <div className="ai-bubble"><AiMarkdown text={entry.content} />{entry.streaming && <span className="ai-caret" aria-hidden="true" />}
       {entry.browserTask && !entry.streaming && <button type="button" className="ai-browser-record" onClick={() => setRecordOpen(true)}>查看操作记录<CaretRight size={13} /></button>}
     </div>
-      : entry.streaming && !(thinkingActive && entry.thinking?.trim()) && !running ? <div className="ai-typing" role="status"><i /><i /><i /><span>正在生成回复…</span></div> : null}
+      : showTyping && entry.streaming && !(thinkingActive && entry.thinking?.trim()) && !running ? <div className="ai-typing" role="status"><i /><i /><i /><span>正在生成回复…</span></div> : null}
     {!entry.content && entry.browserTask && !entry.streaming && <button type="button" className="ai-browser-record" onClick={() => setRecordOpen(true)}>查看操作记录<CaretRight size={13} /></button>}
     {browserTask && <BrowserSiteApprovalReceipts task={browserTask} onLocate={onLocateApproval} cardId={approvalCardId} />}
     {recordOpen && entry.browserTask && <BrowserTaskRecord reference={entry.browserTask} close={() => setRecordOpen(false)} />}

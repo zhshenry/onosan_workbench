@@ -12,7 +12,7 @@ import {
   SettingsManager,
   defineTool,
 } from '@earendil-works/pi-coding-agent';
-import type { AIConversationTurn, AIProtocol, AIToolEvent } from '../shared/todo-contracts';
+import type { AIConversationTurn, AIProtocol, AIResponsePhase, AIToolEvent } from '../shared/todo-contracts';
 
 const providerId = 'workbench';
 const emptyUsage = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } };
@@ -126,7 +126,7 @@ export function mapAiError(error: unknown, signal: AbortSignal): Error {
  * 运行一次会话:历史 + 当前输入 → 流式回复 + 工具事件 → 由 module 侧收集的 actions 组装计划。
  * 业务模块的建议收集与校验在模块工具内完成；浏览器模块在已授权的任务范围内操作网页。
  */
-export async function runAgentLoop(config: { endpoint: string; model: string; protocol: AIProtocol; key: string; supportsImages?: boolean }, text: string, history: AIConversationTurn[], signal: AbortSignal, module: AiModuleContribution, onDelta?: (text: string) => void, onTool?: (event: AIToolEvent) => void, onThinking?: (text: string, active: boolean) => void): Promise<{ reply: string }> {
+export async function runAgentLoop(config: { endpoint: string; model: string; protocol: AIProtocol; key: string; supportsImages?: boolean }, text: string, history: AIConversationTurn[], signal: AbortSignal, module: AiModuleContribution, onDelta?: (text: string) => void, onTool?: (event: AIToolEvent) => void, onThinking?: (text: string, active: boolean) => void, onPhase?: (phase: AIResponsePhase) => void): Promise<{ reply: string }> {
   const endpoint = validateEndpoint(config.endpoint);
   const workspace = mkdtempSync(path.join(tmpdir(), 'workbench-pi-'));
   const settingsManager = SettingsManager.inMemory({ compaction: { enabled: module.directBrowserOperations === true }, retry: { enabled: false } });
@@ -162,8 +162,12 @@ export async function runAgentLoop(config: { endpoint: string; model: string; pr
     const abort = () => { void session?.abort(); };
     signal.addEventListener('abort', abort);
     let completedThinking = '', lastThinking = '', lastThinkingActive = false;
+    let phase: AIResponsePhase | undefined;
+    const emitPhase = (next: AIResponsePhase): void => { if (next !== phase) { phase = next; onPhase?.(next); } };
     const unsubscribe = session.subscribe(event => {
+      if (event.type === 'message_start' && event.message.role === 'assistant') { emitPhase('waiting'); return; }
       if (event.type === 'tool_execution_start' || event.type === 'tool_execution_update' || event.type === 'tool_execution_end') {
+        emitPhase('waiting');
         if (!module.labels[event.toolName]) return;
         const result = event.type === 'tool_execution_end' ? event.result : event.type === 'tool_execution_update' ? event.partialResult : undefined;
         // Forward visible text only; never expose signatures, request headers, or raw events.
@@ -181,10 +185,11 @@ export async function runAgentLoop(config: { endpoint: string; model: string; pr
       }
       if (event.type === 'message_end') completedThinking = thinking;
       const next = visibleReply(assistantText(event.message));
-      if (next) onDelta?.(next);
+      if (next) { emitPhase('replying'); onDelta?.(next); }
     });
     try {
       if (signal.aborted) throw new Error('已取消生成,输入内容已保留。');
+      emitPhase('waiting');
       session.state.messages = historyMessages(history, config.model);
       await session.prompt(text);
       const last = [...session.state.messages].reverse().find(message => message.role === 'assistant');

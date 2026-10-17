@@ -1117,6 +1117,14 @@ kbd {
 .ai-original pre { max-height: 140px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; user-select: text; }
 .ai-undo { margin-left: 8px; color: var(--acc-deep); text-decoration: underline; text-underline-offset: 2px; }
 .ai-compose-wrap { flex: none; border-top: 1px solid var(--hairline); }
+.ai-run-status { display: flex; align-items: center; gap: 10px; height: 44px; box-sizing: border-box; min-width: 0; padding: 0 14px; border-bottom: 1px solid var(--hairline); background: var(--acc-soft); color: var(--acc-deep); }
+.ai-run-status > svg, .ai-run-status > strong { flex: none; }
+.ai-run-status > strong { font-size: var(--type-control); font-weight: 600; color: var(--ink); }
+.ai-run-status > span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: var(--type-support); color: var(--ink-3); }
+.ai-run-status[data-phase="approval"] > svg, .ai-run-status[data-phase="approval"] > strong { color: var(--avatar-amber); }
+.ai-run-spinner { animation: ai-run-spin 1.2s linear infinite; }
+@keyframes ai-run-spin { to { transform: rotate(360deg); } }
+@media (forced-colors: active) { .ai-run-status { border-color: CanvasText; } }
 .ai-site-approval { display: flex; flex-direction: column; gap: 10px; max-height: min(264px, 36vh); margin: 10px 12px 0; padding: 12px; border: 1px solid var(--acc-ring); border-radius: var(--r-card); background: var(--todo-white); box-shadow: var(--shadow-sm); }
 .ai-site-approval > header, .ai-site-approval h3 { display: flex; align-items: center; gap: 8px; }
 .ai-site-approval > header { flex: none; justify-content: space-between; }
