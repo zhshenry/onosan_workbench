@@ -91,3 +91,18 @@ export const ownerOfWorkbench = (view: ViewId): WorkbenchId | undefined =>
 /** 工作台的默认路由(第一个已上线子页;全未上线时由内容区显示规划占位页) */
 export const defaultViewOfWorkbench = (id: WorkbenchId): ViewId =>
   NAV.find((w) => w.id === id)?.subs.find((s) => s.view)?.view ?? 'home';
+
+/**
+ * 工作台范围的助手上下文。主标签是当前大工作台名，对象行是当前子页名。
+ * `workspace:` 没有对应子页，对象行沿用工作台名，避免套到某个具体子页上。
+ */
+export function workbenchAiContext(viewId: string): { label: string; object: string } {
+  if (viewId.startsWith('workspace:')) {
+    const workbench = NAV.find((item) => item.id === viewId.slice('workspace:'.length));
+    const title = workbench?.title ?? '当前工作台';
+    return { label: title, object: title };
+  }
+  const workbench = NAV.find((item) => item.subs.some((sub) => sub.view === viewId));
+  const sub = workbench?.subs.find((item) => item.view === viewId);
+  return { label: workbench?.title ?? '当前工作台', object: sub?.label ?? viewId };
+}

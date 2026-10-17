@@ -10,7 +10,7 @@ import { errorText, Modal, Select as TodoSelect } from '../../modules/todo/ui/ui
 import { TodoProposalCard } from './TodoProposalCard';
 import { AiResponse } from './AiResponse';
 import { BrowserSiteApprovalCard, useBrowserApprovalTasks } from '../../modules/browser/ui/site-approval';
-import { NAV } from '../nav';
+import { NAV, workbenchAiContext } from '../nav';
 
 const wb = window.workbench;
 /** ⓘ 悬浮说明:每个工作台一段固定文案,不拼接 */
@@ -534,8 +534,8 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
     if (scope.module === 'copy') return { scope, label: objectNames[key] ? '博客编辑' : '博客历史', object: objectNames[key] ?? recent?.title ?? '未命名博客' };
     if (scope.module === 'bazi') return { scope, label: objectNames[key] ? '命理解读' : '命理历史', object: objectNames[key] ?? recent?.title ?? '未命名命例', baziSystem: 'bazi' };
     if (scope.module === 'reading') return { scope, label: objectNames[key] ? '阅读助手' : '阅读历史', object: objectNames[key] ?? recent?.title ?? '未关联书目' };
-    if (scope.module === 'workbench' && scope.viewId.startsWith('workspace:')) return { scope, label: '工作台助手', object: NAV.find(workbench => workbench.id === workbenchForScope(scope))?.title ?? '当前工作台' };
-    return { scope, label: '工作台助手', object: NAV.flatMap(workbench => workbench.subs).find(sub => sub.view === scope.viewId)?.label ?? scope.viewId };
+    const page = workbenchAiContext(scope.viewId);
+    return { scope, label: page.label, object: page.object };
   };
   const orderedWorkbenches = [...NAV.filter(workbench => workbench.id === activeWorkbench), ...NAV.filter(workbench => workbench.id !== activeWorkbench)];
   const contextGroups: ChatGroup[] = orderedWorkbenches.filter(workbench =>
