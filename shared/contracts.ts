@@ -29,17 +29,6 @@ export const ViewIdSchema = z.enum([
 ]);
 export type ViewId = z.infer<typeof ViewIdSchema>;
 
-/** 设置工作台的分区(导航与路由共用) */
-export const SETTINGS_VIEWS = {
-  profile: 'settings-profile',
-  general: 'settings-general',
-  appearance: 'settings-appearance',
-  ai: 'settings-ai',
-  data: 'settings-data',
-  notifications: 'settings-notifications',
-  about: 'settings-about',
-} as const;
-
 /** 界面主题:雾灰轻雾(默认)、冷灰凝霜、暖砂柔雾 */
 export const UiThemeSchema = z.enum(['mist', 'cool', 'warm']);
 export type UiTheme = z.infer<typeof UiThemeSchema>;

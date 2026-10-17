@@ -1,6 +1,8 @@
 # 工作台 UI 设计稿 · 方向已选定
 
-界面截图 `_shots/` 与 `references/*.png` 在本机保留，公开提交只保留原型源码、文字规范和生成记录。下文图片链接用于本机查验；克隆仓库后可按对应 HTML 原型和运行时样式重新生成截图。
+2026-10-17：原型、设计图和历史截图现已迁入所属需求；下文保留原日期的演进记录，图片名称与选择结论不改。完整新旧位置见 [资料索引](../docs/RESOURCE-INDEX.md)。
+
+2026-10-17 整理：本页为**设计演进记录**，早期“已实装”“待接入”均按当时日期阅读。当前入口以根目录 PRODUCT / DESIGN / UX-CONTRACT 为准；截图用途、保留范围和固定 CI 原型见 [ASSETS.md](ASSETS.md)。本轮移除无引用的过程截图，本文已有图片和模块前缀引用均保留。
 
 > **已选定:方案 A · 磨砂玻璃**。2026-09-24 新三稿定稿后,当前运行时主题为 **mist「雾灰·轻雾」默认 / cool「冷灰·凝霜」/ warm「暖砂·柔雾」**;旧 sunny「晴蓝 A+」由 cool 替代。最终规范以根目录 `DESIGN.md` 与 `src/shell.css` 为准。以下为 2026-09-23 的原型评审记录,按用户两轮反馈修正:
 > ①整体配色统一并改为浅蓝色系(晴蓝 `#2470b8` 单一强调色,红色仅作逾期/警示);
@@ -13,7 +15,7 @@
 
 ## 已接入 · 常驻 AI 助手（2026-09-28）
 
-方案：[AI-ASSISTANT-DESIGN.md](../docs/AI-ASSISTANT-DESIGN.md) · 高保真：[assistant-workspace.html](mockups/assistant-workspace.html) · 验证：[AI-ASSISTANT-PREVIEW-QA.md](../docs/AI-ASSISTANT-PREVIEW-QA.md)
+方案：[AI-ASSISTANT-DESIGN.md](../docs/requirements/shared/ai-assistant/spec.md) · 高保真：[assistant-workspace.html](../docs/requirements/shared/ai-assistant/prototype/assistant-workspace.html) · 验证：[AI-ASSISTANT-PREVIEW-QA.md](../docs/requirements/shared/ai-assistant/preview-qa-2026-09-28.md)
 
 - 顶栏统一入口，右侧助手宽窗并排、窄窗覆盖，允许收起与调整宽度。
 - 左侧可切首页、博客编辑、命理；切页保留当前对话，可从“正在协助”选择对象，或主动恢复当前页面对象最近的会话与输入。
@@ -21,16 +23,16 @@
 - 下方评审条可选 mist / cool / warm 与 1280×820 / 1024×680。主题、字阶、背景和盘面颜色直接复用项目样式与素材。
 - 本稿为独立交互预览。合成内容与回复仅在预览内存中演示，刷新复原；不连接模型、不读写真实数据。HTML 依赖同目录配套 CSS / JS 和仓库内的主题文件，应在仓库中打开。
 
-## 模块设计稿 · 阅读清单(讨论稿,待评审)
+## 模块设计稿 · 阅读清单（2026-10-11 原型，v1 已实装）
 
-文件:[mockups/reading-glass.html](mockups/reading-glass.html) · 预览图:[mockups/_shots/](mockups/_shots/) 下 `reading-glass / reading-ai.png` · 方案:[../docs/READING-PLAN.md](../docs/READING-PLAN.md)
+文件:[mockups/reading-glass.html](../docs/requirements/life/reading/prototype/reading-glass.html) · 预览图:[mockups/_shots/](../docs/requirements/life/reading/evidence) 下 `reading-glass / reading-ai.png` · 方案:[../docs/requirements/life/reading/spec.md](../docs/requirements/life/reading/spec.md)
 
 - 2026-10-11 讨论稿:小工具工作台「阅读清单」完整形态——左侧书架(在读/想读/已读/搁置分组,书名首字磁贴) + 右侧详情卡(状态切换/进度滑杆/评分短评/标签/**Obsidian 只读关联**:库与文件夹、笔记数与成熟度、章节笔记树点开即 obsidian:// 跳转) + **AI 协助**(串联概念总结/出自测题/结合短评聊书,只读笔记不改库)
 - 数据示例取自用户真实读书库(读书笔记:DMBOK 56 篇 / 置身事内欢迎页);三主题底部切换器可验配适
 
 ## ✅ 选定 · 方案 A · 磨砂玻璃(Sky Glass,浅蓝 v2)
 
-文件:[mockups/design-a-glass.html](mockups/design-a-glass.html) · 预览图:[mockups/_shots/a.png](mockups/_shots/a.png)
+文件:[mockups/design-a-glass.html](mockups/design-a-glass.html) · 预览图:[mockups/_shots/a.png](../docs/requirements/shared/workbench-shell/evidence/a.png)
 
 - 浅色磨砂玻璃面板(blur + 半透明白)浮在浅蓝色彩场上;日程条与待办为顶栏胶囊
 - **配色统一**:晴蓝 `#2470b8` 单一强调色贯穿(标签/角标/图表/按钮),红色仅用于逾期警示,其余为深蓝墨 + 中性灰阶
@@ -38,21 +40,21 @@
 - 数字/时间用 Bahnschrift(DIN 风格),中文回退微软雅黑
 - 圆角体系 18/14/10,玻璃高光边 + 柔和投影
 
-## 模块设计稿 · 自媒体素材浏览器(整页已实装 · 博客侧栏待接入)
+## 模块设计稿 · 自媒体素材浏览器（2026-09-28 历史方案）
 
-文件:[mockups/media-browser-glass.html](mockups/media-browser-glass.html) · 预览图:[mockups/_shots/](mockups/_shots/) 下 `media-browser-start / -loaded / -sidebar.png` · 方案:[../docs/MEDIA-BROWSER-PLAN.md](../docs/MEDIA-BROWSER-PLAN.md)
+文件:[mockups/media-browser-glass.html](../docs/requirements/media/creator-browser/prototype/media-browser-glass.html) · 预览图:[mockups/_shots/](../docs/requirements/media/creator-browser/evidence) 下 `media-browser-start / -loaded / -sidebar.png` · 方案:[../docs/requirements/media/creator-browser/legacy-plan.md](../docs/requirements/media/creator-browser/legacy-plan.md)
 
-- 2026-09-28 设计稿展示两种形态:①整页浏览器(玻璃 chrome/起始页快捷平台/加载态示意/一键采集→最近采集列表) ②博客编辑右侧 400px 可折叠侧栏(精简 chrome + 已采集抽屉)。当前仅整页形态已接入「我的小红书」页面,「找素材」为该页次要入口;博客侧栏仍待接入。
+- 2026-09-28 设计稿展示两种形态:①整页浏览器(玻璃 chrome/起始页快捷平台/加载态示意/一键采集→最近采集列表) ②博客编辑右侧 400px 可折叠侧栏(精简 chrome + 已采集抽屉)。当时整页形态接入「我的小红书」页面，并保留「找素材」入口；后续已按当前 UX 合同移除该入口，采集数据与模块仍保留。博客侧栏原型未接入。
 - 设计稿中的平台 chips 模拟打开、采集按钮/toast/列表联动、侧栏切换与计数均可在静态预览中试用;静态预览的侧栏交互不代表应用内已实装。
 - 浏览器分区已使用确定性的 `persist:wb-browser-<workspace>` 名称,登录态可在重启后保留;方案 §2 保留原设计说明。
 
 ## 模块设计稿 · 命理三盘(已实装)
 
-文件:[mockups/mingli-glass.html](mockups/mingli-glass.html) · 2026-09-26 深色旧预览图:[mockups/_shots/](mockups/_shots/) 下 `mingli-bazi / mingli-ziwei / mingli-astro.png`
+文件:[mockups/mingli-glass.html](../docs/requirements/life/mingli/prototype/mingli-glass.html) · 2026-09-26 深色旧预览图:[mockups/_shots/](../docs/requirements/life/mingli/evidence) 下 `mingli-bazi / mingli-ziwei / mingli-astro.png`
 
 - 2026-09-26 讨论:八字排盘升级为「命理」三系统(八字 / 紫微斗数 / 占星),入口已改名(nav + 首页卡片);视觉走**盘面英雄区**——深色墨面为玄学模块专属表面层,随 mist / cool / warm 主题映射,支撑信息留在浅玻璃
 - 2026-09-28 配色修订:三盘盘面改为雾灰 / 冷蓝 / 暖砂对应的浅雾玻璃;五行颜色在盘面与右侧统计共用,辅助文字和选中标记按浅底对比度加深。当前色值与归属见根目录 `DESIGN.md` 和 `modules/bazi/ui/bazi.css`,上条保留为原方案记录。
-- 2026-09-28 结构修订:按[选定高保真](references/mingli-workspace-card-2026-09-28.png),将「命理」标题至三盘和右侧资料收进一块玻璃主卡;盘面与右侧资料各自为内卡,三主题共用布局。
+- 2026-09-28 结构修订:按[选定高保真](../docs/requirements/life/mingli/design/mingli-workspace-card-2026-09-28.png),将「命理」标题至三盘和右侧资料收进一块玻璃主卡;盘面与右侧资料各自为内卡,三主题共用布局。
 - 三个盘的形态天然区分:八字 = 四柱大字盘(盘内嵌五行环 + 大运轴 + 流年)/ 紫微 = 十二宫方盘(中宫 + 四化彩标)/ 占星 = 黄道圆轮(行星 / 宫位 / 相位线)
 - 八字真算(lunar-javascript),紫微 / 占星为合成示例(实装接 iztro / astronomy-engine);一套命例喂三张盘,笔记三盘共用
 - 底部悬浮切换器可换 mist / cool / warm 验证盘面主题适配;`?theme=` 直达
@@ -61,9 +63,9 @@
 
 ## 模块设计稿 · 八字排盘(历史阶段记录,已被命理三盘替代)
 
-文件:[mockups/bazi-glass.html](mockups/bazi-glass.html)(含 [mockups/vendor/](mockups/vendor/) 内的 lunar-javascript 本体与许可证,两个稿子共用) · 预览图:[mockups/_shots/bazi.png](mockups/_shots/bazi.png) · 实施方案:[../docs/BAZI-PLAN.md](../docs/BAZI-PLAN.md)
+文件:[mockups/bazi-glass.html](../docs/requirements/life/mingli/prototype/bazi-glass.html)(含 [mockups/vendor/](../docs/requirements/life/mingli/prototype/vendor) 内的 lunar-javascript 本体与许可证,两个稿子共用) · 预览图:[mockups/_shots/bazi.png](../docs/requirements/life/mingli/evidence/bazi.png) · 实施方案:[../docs/requirements/life/mingli/bazi-history.md](../docs/requirements/life/mingli/bazi-history.md)
 
-> **2026-09-23 评审通过并实装为单模块;2026-09-26 升级为「命理」三系统后,本稿的常驻输入/白色命例卡已被替代**——当前视觉权威见上方「命理三盘(已实装)」段。保留本段与稿件作为算法链路(四柱/大运/流年/神煞)与视觉演进的记录;八字算法契约见 docs/BAZI-PLAN.md。
+> **2026-09-23 评审通过并实装为单模块;2026-09-26 升级为「命理」三系统后,本稿的常驻输入/白色命例卡已被替代**——当前视觉权威见上方「命理三盘(已实装)」段。保留本段与稿件作为算法链路(四柱/大运/流年/神煞)与视觉演进的记录;八字算法契约见 docs/requirements/life/mingli/bazi-history.md。
 
 - 沿用已选定的 Sky Glass v2,展示「小工具」工作台下八字排盘模块的完整形态:命例条 + 排盘输入、四柱命盘(五行着色/十神/藏干/纳音)、大运与流年(当前步高亮)、五行统计、神煞、笔记
 - **可交互真实排盘**:内嵌 lunar-javascript,双击打开后改生日/时间/性别、切换/新建命例、点大运看流年全部为真实计算;命例与笔记存本机 localStorage
@@ -72,7 +74,7 @@
 
 ## 备查 · 方案 B · 暖纸工作台(Paper Studio,落选)
 
-文件:[mockups/design-b-paper.html](mockups/design-b-paper.html) · 预览图:[mockups/_shots/b.png](mockups/_shots/b.png)
+文件:[mockups/design-b-paper.html](../docs/requirements/shared/workbench-shell/prototype/design-b-paper.html) · 预览图:[mockups/_shots/b.png](../docs/requirements/shared/workbench-shell/evidence/b.png)
 
 - **完全沿用现有 To-Do-List 设计 token**:米白纸感 `#faf8f5` + 标志性 mesh 渐变、砖红强调 `#b54f2b`、暖灰线 `#e4ded6`
 - 扁平实色卡片、细线分隔、暖色低饱和徽章(无模糊、无玻璃)

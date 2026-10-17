@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CopyDraft } from '../../../shared/copy-contracts';
 import { parseXhsNoteUrl } from '../xhs-publish';
-import { errorText } from '../../todo/ui/ui';
+import { errorText } from '../../../src/ui/controls';
 
 type Target = ReturnType<typeof parseXhsNoteUrl> & { draftId: string; input: string };
 

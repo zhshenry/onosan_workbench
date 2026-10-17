@@ -1,16 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   READING_STATUS_LABEL, SCAN_SKIP_HINT, booksPendingImport,
-  type BookEntry, type ReadingStatus, type ReadingStoreData,
+  type BookEntry, type ReadingStatus, type ReadingStoreData, type BookAggregate, type BookCandidate,
 } from '../../shared/reading-contracts';
-import { Modal, Segmented, Select, errorText } from '../../modules/todo/ui/ui';
+import { Modal, Segmented, Select, errorText } from '../ui/controls';
 import { Check, Info, X } from '@phosphor-icons/react';
 
-interface ImportCandidate {
-  folder: string;
-  name: string;
-  noteCount: number;
-}
+type ImportCandidate = Pick<BookCandidate, 'folder' | 'name' | 'noteCount'>;
 
 function ImportConfirmPanel({ candidates, checked, busy, onToggle, onCancel, onConfirm }: {
   candidates: ImportCandidate[];
@@ -126,16 +122,6 @@ const COVER_TONES = [
 ];
 const coverTone = (title: string): string => COVER_TONES[[...title].reduce((sum, c) => sum + c.charCodeAt(0), 0) % COVER_TONES.length];
 
-interface Aggregate {
-  noteCount: number;
-  lastUpdated: string;
-  maturity: { draft: number; shaped: number };
-  totalChapters: number | null;
-  notes: { rel: string; title: string; status: string; updated: string; draft: boolean }[];
-  chapters: { rel: string; name: string; count: number; lastUpdated: string }[];
-}
-
-
 export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
   onPending(message: string): void;
   onAskAI(prompt: string, bookId: string): void;
@@ -143,7 +129,7 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
 }) {
   const [storeData, setStoreData] = useState<ReadingStoreData | null>(null);
   const [curId, setCurId] = useState<string | null>(null);
-  const [agg, setAgg] = useState<Aggregate | null>(null);
+  const [agg, setAgg] = useState<BookAggregate | null>(null);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [mTitle, setMTitle] = useState('');
@@ -168,8 +154,7 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
   useEffect(() => {
     if (loadedOnce.current) return;
     loadedOnce.current = true;
-    void wb.reading.list().then((raw) => {
-      const data = raw as ReadingStoreData;
+    void wb.reading.list().then((data) => {
       setStoreData(data);
       const saved = localStorage.getItem(CUR_KEY);
       setCurId(data.books.some((b) => b.id === saved) ? saved : data.books[0]?.id ?? null);
@@ -187,14 +172,14 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
     setAgg(null);
     if (!storeData?.vaultPath || !book?.link) return;
     void wb.reading.aggregate(book.link.folder).then(
-      (raw) => setAgg(raw as Aggregate),
+      (raw) => setAgg(raw),
       (e) => onPending(errorText(e)),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [book?.id, book?.link?.folder, storeData?.vaultPath]);
 
-  const apply = (raw: unknown, okMsg?: string): void => {
-    setStoreData(raw as ReadingStoreData);
+  const apply = (raw: ReadingStoreData, okMsg?: string): void => {
+    setStoreData(raw);
     if (okMsg) onPending(okMsg);
   };
   const save = (patch: Partial<BookEntry>, id = book!.id, okMsg?: string): void => {
@@ -240,7 +225,7 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
     setVaultError('');
     void (async () => {
       try {
-        const candidates = await wb.reading.scan(value) as ImportCandidate[];
+        const candidates = await wb.reading.scan(value);
         if (value !== storeData?.vaultPath) apply(await wb.reading.setVault(value));
         setVaultDialogOpen(false);
         const fresh = booksPendingImport(candidates, linkedFolders(), candidates.map((candidate) => candidate.folder));
@@ -278,7 +263,7 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
     setImportBusy(true);
     void (async () => {
       try {
-        let latest: unknown = null;
+        let latest!: ReadingStoreData;
         for (const candidate of pending) {
           latest = await wb.reading.save({
             title: candidate.name,
@@ -318,7 +303,7 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
     setMTitle(''); setMAuthor(''); setMStatus('wish'); setMTags(''); setMFolder('');
     if (storeData?.vaultPath) {
       void wb.reading.scan(storeData.vaultPath).then(
-        (raw) => setFolders(raw as { folder: string; name: string; noteCount: number }[]),
+        (raw) => setFolders(raw),
         () => setFolders([]),
       );
     }
@@ -334,8 +319,7 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
       status: mStatus,
       tags,
       link: vaultName && mFolder ? { vault: vaultName, folder: mFolder } : undefined,
-    }).then((raw) => {
-      const data = raw as ReadingStoreData;
+    }).then((data) => {
       apply(data, `已添加「${title}」`);
       setCurId(data.books[data.books.length - 1]?.id ?? null);
       localStorage.setItem(CUR_KEY, data.books[data.books.length - 1]?.id ?? '');

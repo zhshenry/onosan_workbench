@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Plus } from '@phosphor-icons/react';
 import { activeToday, insightTarget, localDay, openToday, type Task } from '../../shared/todo-contracts';
 import { isOverdue } from '../../shared/todo-format';
-import { errorText, Modal } from '../../modules/todo/ui/ui';
+import { errorText, Modal } from '../ui/controls';
 import { TaskEditor, type TaskEditorApi, type TodoState } from '../../modules/todo/ui/TaskEditor';
 import { TodayBoard, type Mutate } from '../../modules/todo/ui/TodayBoard';
 import { TaskLibrary } from '../../modules/todo/ui/TaskLibrary';
@@ -13,15 +13,15 @@ import {
 const wb = window.workbench;
 
 const libraryApi = {
-  update: (id: string, patch: unknown, revision: string) => wb.todo.update(id, patch, revision) as Promise<TodoState>,
-  restore: (id: string) => wb.todo.restore(id) as Promise<TodoState>,
+  update: (id: string, patch: unknown, revision: string) => wb.todo.update(id, patch, revision),
+  restore: (id: string) => wb.todo.restore(id),
 };
 
 const editorApi: TaskEditorApi = {
-  create: (input) => wb.todo.create(input) as Promise<TodoState>,
-  update: (id, patch, revision) => wb.todo.update(id, patch, revision) as Promise<TodoState>,
-  remove: (id, revision) => wb.todo.remove(id, revision) as Promise<TodoState>,
-  createCategory: (input) => wb.todo.createCategory(input) as Promise<TodoState>,
+  create: (input) => wb.todo.create(input),
+  update: (id, patch, revision) => wb.todo.update(id, patch, revision),
+  remove: (id, revision) => wb.todo.remove(id, revision),
+  createCategory: (input) => wb.todo.createCategory(input),
 };
 
 const WEEKDAY_NAMES = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
@@ -124,7 +124,7 @@ export function HomeView({ data, clock, mutate, userName, onPending, onOpenMedia
             <div className="reminder-strip">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8.2" /><path d="M12 7.5V12l3 2" /></svg>
               <span>{dueReminders[0].title}</span>
-              <button onClick={() => { void mutate(() => wb.todo.snooze(dueReminders[0].id) as Promise<TodoState>, '将在10分钟后提醒'); }}>稍后10分钟</button>
+              <button onClick={() => { void mutate(() => wb.todo.snooze(dueReminders[0].id), '将在10分钟后提醒'); }}>稍后10分钟</button>
             </div>
           ) : null}
           {libraryOpen ? (
@@ -256,7 +256,7 @@ export function useTodoData(): { data: TodoState | null; error: string; mutate: 
     let alive = true;
     const load = async (): Promise<void> => {
       try {
-        const state = (await wb.todo.state()) as TodoState;
+        const state = (await wb.todo.state());
         if (alive) { setData(state); setError(''); }
       } catch (e) {
         if (alive) setError(errorText(e));

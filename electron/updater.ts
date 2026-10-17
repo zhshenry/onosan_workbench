@@ -3,6 +3,8 @@ import type { UpdateStatus } from '../shared/contracts';
 
 export type UpdateDriver = Pick<AppUpdater, 'on' | 'checkForUpdates' | 'quitAndInstall' | 'autoDownload' | 'autoInstallOnAppQuit'>;
 
+export const updateNotesUrl = (version: string): string => `https://github.com/zhshenry/onosan_workbench/releases${version ? `/tag/${encodeURIComponent(`v${version}`)}` : ''}`;
+
 /** 更新状态由主进程维护，切换设置页后仍可继续查看下载进度。 */
 export class AppUpdates {
   private current: UpdateStatus;
@@ -16,12 +18,12 @@ export class AppUpdates {
       message: driver ? '启动后自动检查更新，也可手动检查。' : unavailableMessage };
     if (!driver) return;
     driver.autoDownload = true;
-    driver.autoInstallOnAppQuit = true;
+    driver.autoInstallOnAppQuit = false;
     driver.on('checking-for-update', () => this.set({ phase: 'checking', progress: 0, message: '正在检查更新…' }));
     driver.on('update-not-available', () => this.set({ phase: 'latest', version: '', message: '当前已是最新版本。' }));
     driver.on('update-available', info => this.set({ phase: 'downloading', version: info.version, progress: 0, message: `正在下载 v${info.version}…` }));
     driver.on('download-progress', info => this.set({ progress: Math.floor(info.percent), message: `正在下载 v${this.current.version}（${Math.floor(info.percent)}%）` }));
-    driver.on('update-downloaded', info => this.set({ phase: 'ready', version: info.version, progress: 100, message: `v${info.version} 已下载，可重启安装；退出应用时也会安装。` }));
+    driver.on('update-downloaded', info => this.set({ phase: 'ready', version: info.version, progress: 100, message: `v${info.version} 已下载，点击“重启并安装”完成更新。` }));
     driver.on('error', error => this.fail(error));
   }
 

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { CaretRight, CheckCircle, Globe, ShieldCheck } from '@phosphor-icons/react';
 import type { ChatSession } from '../../../shared/todo-contracts';
 import type { BrowserSiteApproval, BrowserTask } from '../../../shared/browser-automation-contracts';
-import { errorText } from '../../todo/ui/ui';
+import { errorText } from '../../../src/ui/controls';
 
 export function useBrowserApprovalTasks(chat: ChatSession | null) {
   const chatId = chat?.id;

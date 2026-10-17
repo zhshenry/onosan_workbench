@@ -2,8 +2,6 @@ import { createRoot } from 'react-dom/client';
 import { StrictMode } from 'react';
 import { App } from './App';
 import { FloatTodoApp } from './views/FloatTodo';
-import { DevBrowserView } from './views/DevBrowserView';
-import { DevOfficeView } from './views/DevOfficeView';
 import './shell.css';
 import '../modules/todo/ui/todo.css';
 import '../modules/bazi/ui/bazi.css';
@@ -20,18 +18,18 @@ if (new URLSearchParams(location.search).get('window') === 'float') {
       <FloatTodoApp />
     </StrictMode>,
   );
-} else if (location.hash.startsWith('#dev/browser')) {
-  root.render(
+} else if ((import.meta.env.DEV || import.meta.env.MODE === 'diagnostics') && location.hash.startsWith('#dev/browser')) {
+  void import('./views/DevBrowserView').then(({ DevBrowserView }) => root.render(
     <StrictMode>
       <DevBrowserView />
     </StrictMode>,
-  );
-} else if (location.hash.startsWith('#dev/office')) {
-  root.render(
+  ));
+} else if ((import.meta.env.DEV || import.meta.env.MODE === 'diagnostics') && location.hash.startsWith('#dev/office')) {
+  void import('./views/DevOfficeView').then(({ DevOfficeView }) => root.render(
     <StrictMode>
       <DevOfficeView />
     </StrictMode>,
-  );
+  ));
 } else {
   root.render(
     <StrictMode>

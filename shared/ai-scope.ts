@@ -1,4 +1,4 @@
-import type { ChatSession } from './todo-contracts';
+import type { ChatSession, ChatSummary } from './todo-contracts';
 import type { ViewId, WorkbenchId } from './contracts';
 
 export const TODO_AI_WORKBENCH_NAME = 'To-Do-List';
@@ -62,6 +62,12 @@ export function sameAiWorkbench(chat: Pick<ChatSession, 'module' | 'draftId' | '
   const original = chatScope(chat);
   const workbench = workbenchForScope(original);
   return workbench ? workbench === workbenchForScope(scope) : aiScopeKey(original) === aiScopeKey(scope);
+}
+
+/** Restore a remembered chat within its workbench, then fall back to its latest chat. */
+export function preferredAiChat(chats: ChatSummary[], scope: AiScope, preferredId?: string): ChatSummary | undefined {
+  const scoped = chats.filter(chat => sameAiWorkbench(chat, scope));
+  return scoped.find(chat => chat.id === preferredId) ?? scoped[0];
 }
 
 export function chatContextScope(chat: Pick<ChatSession, 'module' | 'draftId' | 'profileId' | 'viewId' | 'contextScope'>): AiScope {

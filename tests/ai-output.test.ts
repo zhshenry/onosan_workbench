@@ -73,7 +73,7 @@ test('重启恢复保留正文和思考，标记中断，旧会话仍可读取',
     chat.entries = [
       { id: 'legacy', role: 'assistant', content: '旧消息' },
       { id: 'question', role: 'user', content: '查看任务' },
-      { id: 'reply', role: 'assistant', content: '**部分正文**', thinking: '已收到的思考', thinkingActive: true, streaming: true, responsePhase: 'replying',
+      { id: 'reply', role: 'assistant', content: '**部分正文**', thinking: '已收到的思考', thinkingActive: true, thinkingMs: 18000, thinkingStartedAt: Date.now() - 60000, streaming: true, responsePhase: 'replying',
         tools: [{ id: 'tool', name: 'list_tasks', label: '查询事项', status: 'running', output: '部分结果' }] },
     ];
     store.saveChat(chat);
@@ -84,6 +84,8 @@ test('重启恢复保留正文和思考，标记中断，旧会话仍可读取',
     assert.equal(recovered.entries[2].content, '**部分正文**');
     assert.equal(recovered.entries[2].thinking, '已收到的思考');
     assert.equal(recovered.entries[2].thinkingActive, false);
+    assert.equal(recovered.entries[2].thinkingMs, 18000);
+    assert.equal(recovered.entries[2].thinkingStartedAt, undefined);
     assert.equal(recovered.entries[2].streaming, false);
     assert.equal(recovered.entries[2].responsePhase, undefined);
     assert.equal(recovered.entries[2].tools?.[0].status, 'interrupted');

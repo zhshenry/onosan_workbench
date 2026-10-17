@@ -1,11 +1,20 @@
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import test from 'node:test';
-import { AppUpdates, type UpdateDriver } from '../electron/updater';
+import { AppUpdates, updateNotesUrl, type UpdateDriver } from '../electron/updater';
+
+test('更新说明固定在本项目 Release，版本只作为编码后的标签段', () => {
+  assert.equal(updateNotesUrl(''), 'https://github.com/zhshenry/onosan_workbench/releases');
+  assert.equal(updateNotesUrl('1.0.0'), 'https://github.com/zhshenry/onosan_workbench/releases/tag/v1.0.0');
+  const url = new URL(updateNotesUrl('../../other?redirect=https://example.invalid'));
+  assert.equal(url.origin, 'https://github.com');
+  assert.ok(url.pathname.startsWith('/zhshenry/onosan_workbench/releases/tag/'));
+  assert.equal(url.search, '');
+});
 
 class FakeDriver extends EventEmitter implements UpdateDriver {
   autoDownload = false;
-  autoInstallOnAppQuit = false;
+  autoInstallOnAppQuit = true;
   checks = 0;
   installs = 0;
   checkAction: () => Promise<null> = async () => {
@@ -46,7 +55,7 @@ test('下载进度、完成和安装状态按更新事件衔接，下载中不�
   const driver = new FakeDriver();
   const updates = new AppUpdates(driver, '', () => {});
   assert.equal(driver.autoDownload, true);
-  assert.equal(driver.autoInstallOnAppQuit, true);
+  assert.equal(driver.autoInstallOnAppQuit, false);
   driver.emit('update-available', { version: '0.2.0' });
   driver.emit('download-progress', { percent: 47.9 });
   assert.equal(updates.status().progress, 47);
@@ -58,6 +67,10 @@ test('下载进度、完成和安装状态按更新事件衔接，下载中不�
   driver.emit('update-downloaded', { version: '0.2.0' });
   assert.equal(updates.status().phase, 'ready');
   assert.equal(updates.status().progress, 100);
+  assert.equal(driver.autoInstallOnAppQuit, false);
+  assert.equal(driver.installs, 0, 'Downloading must not trigger installation');
+  assert.doesNotMatch(updates.status().message, /退出.*安装/);
+  assert.match(updates.status().message, /点击“重启并安装”/);
   updates.install();
   assert.equal(driver.installs, 1);
   await updates.check();

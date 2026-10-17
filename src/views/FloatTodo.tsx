@@ -5,9 +5,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowsInLineVertical, ArrowsOutLineVertical, ArrowsOutSimple, ArrowsHorizontal, ArrowLeft, CalendarBlank, CaretDown, Check, Circle, Minus, PaperPlaneRight, Plus, PushPin, Sparkle, Stop, X } from '@phosphor-icons/react';
-import { localDay, openToday, type ChatSession, type ChatSummary, type Task } from '../../shared/todo-contracts';
+import { localDay, openToday, type ChatSession, type Task } from '../../shared/todo-contracts';
 import { scheduleStamp } from '../../shared/todo-format';
-import { errorText, Select as TodoSelect } from '../../modules/todo/ui/ui';
+import type { AiConfig } from '../../shared/workbench-api';
+import { preferredAiChat, sameAiScope } from '../../shared/ai-scope';
+import { errorText, Select as TodoSelect } from '../ui/controls';
 import { AiResponse } from './AiResponse';
 import { TodoProposalCard } from './TodoProposalCard';
 import { matchesTodoPickerFilter, TODO_STATUS_LABEL, TodoPickerFilters, todoPickerStatusKey, type TodoKindFilter, type TodoStatusFilter } from './todo-picker-filters';
@@ -31,15 +33,15 @@ const wb = new Proxy({} as typeof window.workbench, {
 const floatMinHeight = (): number => Math.max(700, Math.round(window.screen.availHeight - 112));
 
 const editorApi: TaskEditorApi = {
-  create: (input) => wb.todo.create(input) as Promise<TodoState>,
-  update: (id, patch, revision) => wb.todo.update(id, patch, revision) as Promise<TodoState>,
-  remove: (id, revision) => wb.todo.remove(id, revision) as Promise<TodoState>,
-  createCategory: (input) => wb.todo.createCategory(input) as Promise<TodoState>,
+  create: (input) => wb.todo.create(input),
+  update: (id, patch, revision) => wb.todo.update(id, patch, revision),
+  remove: (id, revision) => wb.todo.remove(id, revision),
+  createCategory: (input) => wb.todo.createCategory(input),
 };
 
 const libraryApi = {
-  update: (id: string, patch: unknown, revision: string) => wb.todo.update(id, patch, revision) as Promise<TodoState>,
-  restore: (id: string) => wb.todo.restore(id) as Promise<TodoState>,
+  update: (id: string, patch: unknown, revision: string) => wb.todo.update(id, patch, revision),
+  restore: (id: string) => wb.todo.restore(id),
 };
 
 export function FloatTodoApp() {
@@ -86,7 +88,7 @@ export function FloatTodoApp() {
     };
     const load = async (): Promise<void> => {
       try {
-        const state = (await wb.todo.state()) as TodoState;
+        const state = (await wb.todo.state());
         if (alive) { setData(state); setError(''); }
       } catch (e) {
         if (alive) setError(errorText(e));
@@ -269,7 +271,7 @@ export function FloatTodoApp() {
                     </div>
                     <div className="float-mini-meta">
                       <span className="float-mini-category">{focusCategory ? <><i style={{ backgroundColor: focusCategory.color }} />{focusCategory.name}</> : focus.kind === 'meeting' ? '日程安排' : `优先级 · ${focus.priority === 'high' ? '高' : focus.priority === 'medium' ? '中' : '低'}`}{focus.progress !== null && ` · ${focus.progress}%`}</span>
-                      {armedTaskId === focus.id ? <span className="float-mini-confirm"><button type="button" onClick={() => { setArmedTaskId(null); void mutate(() => wb.todo.update(focus.id, { status: 'done' }, focus.updatedAt) as Promise<TodoState>); }}>确认完成</button><button type="button" onClick={() => setArmedTaskId(null)}>取消</button></span> : <span className="float-mini-pager"><span>{currentIndex + 1} / {openTasks.length}</span><button type="button" aria-label="上一项" disabled={openTasks.length < 2} onClick={() => { setArmedTaskId(null); setMiniIndex(index => (index + openTasks.length - 1) % openTasks.length); }}><CaretDown size={10} className="up" /></button><button type="button" aria-label="下一项" disabled={openTasks.length < 2} onClick={() => { setArmedTaskId(null); setMiniIndex(index => (index + 1) % openTasks.length); }}><CaretDown size={10} /></button></span>}
+                      {armedTaskId === focus.id ? <span className="float-mini-confirm"><button type="button" onClick={() => { setArmedTaskId(null); void mutate(() => wb.todo.update(focus.id, { status: 'done' }, focus.updatedAt)); }}>确认完成</button><button type="button" onClick={() => setArmedTaskId(null)}>取消</button></span> : <span className="float-mini-pager"><span>{currentIndex + 1} / {openTasks.length}</span><button type="button" aria-label="上一项" disabled={openTasks.length < 2} onClick={() => { setArmedTaskId(null); setMiniIndex(index => (index + openTasks.length - 1) % openTasks.length); }}><CaretDown size={10} className="up" /></button><button type="button" aria-label="下一项" disabled={openTasks.length < 2} onClick={() => { setArmedTaskId(null); setMiniIndex(index => (index + 1) % openTasks.length); }}><CaretDown size={10} /></button></span>}
                     </div>
                   </article>
                 </>
@@ -352,7 +354,7 @@ export function FloatTodoApp() {
           <div className="reminder-strip">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8.2" /><path d="M12 7.5V12l3 2" /></svg>
             <span>{dueReminders[0].title}</span>
-            <button onClick={() => mutate(() => wb.todo.snooze(dueReminders[0].id) as Promise<TodoState>)}>稍后10分钟</button>
+            <button onClick={() => mutate(() => wb.todo.snooze(dueReminders[0].id))}>稍后10分钟</button>
           </div>
         </footer>
       ) : null}
@@ -413,11 +415,7 @@ function Modal({ title, children, close }: { title: string; children: React.Reac
 // 不是聊天记录界面:输入一句话 → (AI 反问则答题) → 看执行进度 → 确认建议或阅读纯文本回复 → 再回到输入。
 
 // 模型切换只用到 ai:config 返回的字段子集
-type AiConfigBrief = {
-  providers: { id: string; name: string }[];
-  models: { id: string; name: string; providerId: string }[];
-  activeModelId: string;
-};
+type AiConfigBrief = Pick<AiConfig, 'providers' | 'models' | 'activeModelId'>;
 
 
 export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCompactHeight, mini = false, onExpand, onBack }: {
@@ -450,14 +448,16 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
   const consumed = useRef<number | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     void (async () => {
-      const list = (await wb.ai.chatList()) as (ChatSummary & { module?: string })[];
-      const target = list.find((c) => c.module === 'todo') ?? list[0];
-      const selected = target ? (await wb.ai.chatOpen(target.id)) as ChatSession : (await wb.ai.chatNew({ module: 'todo' } as never)) as ChatSession;
+      const list = await wb.ai.chatList();
+      if (cancelled) return;
+      const target = preferredAiChat(list.filter(chat => sameAiScope(chat, { module: 'todo' })), { module: 'todo' });
+      const selected = target ? await wb.ai.chatOpen(target.id) : await wb.ai.chatNew({ module: 'todo' });
+      if (cancelled) return;
       setChat(selected); setBusy(selected.entries.some(entry => entry.streaming));
-    })().catch((e) => setError(errorText(e)));
-    const offChat = wb.ai.onChat((raw) => {
-      const next = raw as ChatSession;
+    })().catch((e) => { if (!cancelled) setError(errorText(e)); });
+    const offChat = wb.ai.onChat((next) => {
       setChat((prev) => (prev && prev.id === next.id ? next : prev));
       if (chatRef.current?.id === next.id) {
         const running = next.entries.some((entry) => entry.streaming);
@@ -465,15 +465,15 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
       }
     });
     const offAsk = wb.ai.onAsk((a) => { if (a.sessionId === chatRef.current?.id) setAsk(a); });
-    return () => { offChat(); offAsk(); };
+    return () => { cancelled = true; offChat(); offAsk(); };
   }, []);
 
   useEffect(() => {
-    if (!seed || consumed.current === seed.nonce) return;
+    if (!seed || consumed.current === seed.nonce || !chat || busy || ask || !seed.text.trim()) return;
     consumed.current = seed.nonce;
     void send(seed.text);
     onSeedConsumed();
-  }, [seed]);
+  }, [seed, chat?.id, busy, ask]);
 
   const conversation = chat?.entries ?? [];
   const pendingProposal = conversation.find((entry) => entry.actionState === 'pending' && entry.proposal?.actions.length);
@@ -530,7 +530,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
   const modelBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    void wb.ai.config().then((raw) => setConfig(raw as AiConfigBrief)).catch(() => undefined);
+    void wb.ai.config().then((raw) => setConfig(raw)).catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -594,7 +594,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
   const selectModel = (id: string): void => {
     setModelOpen(false);
     if (!config || id === config.activeModelId) return;
-    void wb.ai.activateModel(id).then((raw) => setConfig(raw as AiConfigBrief)).catch((e) => setError(errorText(e)));
+    void wb.ai.activateModel(id).then((raw) => setConfig(raw)).catch((e) => setError(errorText(e)));
   };
 
   const modelMenu = modelOpen && config && config.models.length ? createPortal(
@@ -677,7 +677,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
                   </button>
                 ))}
               </div>
-              <form className="fa-mini-askform" onSubmit={(e) => { e.preventDefault(); if (input.trim()) answer('text', input.trim()); }}>
+              <form noValidate className="fa-mini-askform" onSubmit={(e) => { e.preventDefault(); if (input.trim()) answer('text', input.trim()); }}>
                 <input value={input} placeholder="输入回答…" aria-label="自由回答" onChange={(e) => setInput(e.target.value)} />
                 <button type="submit" disabled={!input.trim()}>提交</button>
               </form>
@@ -735,7 +735,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
                 <button type="button" className="fa-mini-continue" onClick={() => { setReplyWatch(null); setLogOpen(false); }}>继续对话</button>
               </div>
             ) : null}
-            <form className="fa-mini-compose" onSubmit={(e) => { e.preventDefault(); void send(input); }}>
+            <form noValidate className="fa-mini-compose" onSubmit={(e) => { e.preventDefault(); void send(input); }}>
               {linkedChip}
               <div className="fa-mini-compose-main">
                 <textarea rows={2} value={input} maxLength={10000} aria-label="AI 对话输入"
@@ -807,7 +807,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
                 ))}
               </div>
             )}
-            <form className="fa-ask-input" onSubmit={(e) => { e.preventDefault(); if (input.trim()) answer('text', input.trim()); }}>
+            <form noValidate className="fa-ask-input" onSubmit={(e) => { e.preventDefault(); if (input.trim()) answer('text', input.trim()); }}>
               <input value={input} placeholder="输入回答…" aria-label="自由回答" onChange={(e) => setInput(e.target.value)} />
               <button type="submit" disabled={!input.trim()}>提交</button>
             </form>

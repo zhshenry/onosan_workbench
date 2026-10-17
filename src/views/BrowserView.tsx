@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
-import { BrowserWorkspacePane } from '../../modules/browser/ui/automation';
+import { BrowserWorkspacePane } from '../../modules/browser/ui/workspace-pane';
 import { DEFAULT_BROWSER_WORKSPACE } from '../../shared/browser-contracts';
 
 export function BrowserHost({ active, focusTarget, onPending }: {

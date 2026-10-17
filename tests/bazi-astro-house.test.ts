@@ -9,9 +9,10 @@ import type { Root } from 'react-dom/client';
 import { BaziStore } from '../modules/bazi/store';
 import { buildAstro, type AstroChart } from '../modules/bazi/astro';
 import { baziStoreDataSchema, type BaziProfile, type BaziStoreData } from '../shared/bazi-contracts';
+import { CHINA_REGIONS } from '../shared/china-region-geo';
 
 const SIGNS = ['白羊', '金牛', '双子', '巨蟹', '狮子', '处女', '天秤', '天蝎', '射手', '摩羯', '水瓶', '双鱼'];
-const HOUSE_HINT = '填写出生地经纬度后可显示宫位。';
+const HOUSE_HINT = '编辑命例选择出生地后可显示宫位。';
 const SHANGHAI = { place: '上海', lat: 31.2304, lon: 121.4737 };
 
 function degreeLabel(lon: number): string {
@@ -218,27 +219,25 @@ describe('占星行星落座宫位列', { concurrency: false }, () => {
         assert.ok(element, selector);
         await act(async () => element.click());
       };
-      const type = async (label: string, value: string) => {
-        const element = harness.doc.querySelector<HTMLInputElement>(`[aria-label="${label}"]`);
-        assert.ok(element, label);
-        const prototype = harness.dom.window.HTMLInputElement.prototype;
-        await act(async () => {
-          Object.getOwnPropertyDescriptor(prototype, 'value')!.set!.call(element, value);
-          element.dispatchEvent(new harness.dom.window.Event('input', { bubbles: true }));
-        });
-      };
       await click('.bazi-psel-btn');
       await click('[aria-label="编辑 林川"]');
-      await type('出生地名称', '上海');
-      await type('纬度', '31.2304');
-      await type('经度', '121.4737');
+      await click('[aria-label="出生省份"]');
+      const shanghai = [...harness.doc.querySelectorAll('.select-option')].find(option => option.textContent === '上海市');
+      assert.ok(shanghai, '省级选项上海市');
+      await act(async () => shanghai.click());
+      await click('[aria-label="出生区县"]');
+      const huangpu = [...harness.doc.querySelectorAll('.select-option')].find(option => option.textContent === '黄浦区');
+      assert.ok(huangpu, '上海区县选项黄浦区');
+      await act(async () => huangpu.click());
       const save = [...harness.doc.querySelectorAll<HTMLButtonElement>('dialog[open] button')].find(button => button.textContent === '保存');
       assert.ok(save);
       await act(async () => save.click());
 
       const saved = store.all().profiles[0];
-      assert.equal(saved.lat, 31.2304);
-      assert.equal(saved.lon, 121.4737);
+      const huangpuNode = (CHINA_REGIONS.find((p) => p.name === '上海市')?.children ?? []).find((d) => d.name === '黄浦区');
+      assert.ok(huangpuNode, '数据中的黄浦区');
+      assert.equal(saved.lat, huangpuNode!.lat);
+      assert.equal(saved.lon, huangpuNode!.lon);
       assert.deepEqual(harness.messages, ['已更新「林川」']);
       panel = await harness.openAstro();
       assertTable(panel, buildAstro(saved), true);

@@ -6,7 +6,8 @@ import type { ChatSession } from '../shared/todo-contracts';
 
 test('sidebar sends a second chat while the first runs, routes questions by chat and stops only the visible chat', async () => {
   const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost', pretendToBeVisual: true });
-  const names = ['window', 'document', 'HTMLElement', 'Node', 'navigator', 'requestAnimationFrame', 'cancelAnimationFrame', 'IS_REACT_ACT_ENVIRONMENT'] as const;
+  (dom.window as any).ResizeObserver = class { observe() {} disconnect() {} };
+  const names = ['window', 'document', 'HTMLElement', 'Node', 'navigator', 'requestAnimationFrame', 'cancelAnimationFrame', 'ResizeObserver', 'IS_REACT_ACT_ENVIRONMENT'] as const;
   const previous = names.map(name => Object.getOwnPropertyDescriptor(globalThis, name));
   names.forEach(name => Object.defineProperty(globalThis, name, { configurable: true, value: name === 'window' ? dom.window : name === 'IS_REACT_ACT_ENVIRONMENT' ? true : dom.window[name] }));
   const makeChat = (id: string, entries: ChatSession['entries'] = []): ChatSession => ({ id, title: id, module: 'todo', contextScope: { module: 'todo' }, pageScope: { module: 'todo' }, entries, draft: '', updatedAt: '2026-10-16' });

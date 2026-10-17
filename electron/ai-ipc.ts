@@ -1,3 +1,4 @@
+import type { AiConfig } from '../shared/workbench-api';
 // AI 编排(移植自上游 electron/main.ts 的 AI 段,存储独立化修订 2026-09-23):
 // - 供应商/模型/Key/启用/会话 → 工作台自有 AiStore(userData,不碰共享库)
 // - 待办数据(tasks/categories/applyPlan)→ 共享库(与 To-Do-List 互通)
@@ -28,6 +29,7 @@ import { aiScopeKey, chatContextScope, chatScope, sameAiWorkbench, type AiScope 
 
 import { aiReferencesSchema, describeAiReference } from '../shared/ai-reference';
 import { resolveAiReferences, withAiReferenceSnapshots } from './ai-reference';
+import { recordThinkingPhase, thinkingElapsedMs, type ThinkingTiming } from '../shared/ai-thinking';
 
 const MAX_PROVIDERS = 8;
 const MAX_MODELS = 8;
@@ -76,7 +78,7 @@ function todoChanged(): void {
 }
 
 export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: BaziStore, reading: ReadingStore, browserAutomation?: BrowserAutomation): void {
-  const configSummary = () => {
+  const configSummary = (): AiConfig => {
     const config = ai.readConfig();
     const providers: AIProvider[] = config.providers.map(({ id, kind, name, endpoint, protocol, apiKey }) => ({ id, kind, name, endpoint, protocol, hasKey: Boolean(apiKey) }));
     const models: AIModel[] = config.models;
@@ -456,10 +458,16 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     const timeout = setTimeout(() => controller.abort(), browserTask ? 600000 : scope.module === 'copy' ? 90000 : 45000);
     let deltaTimer: ReturnType<typeof setTimeout> | null = null;
     let latestDelta = '', latestThinking = '', latestThinkingActive = false;
+    const thinkingTiming: ThinkingTiming = {};
     const applyStream = (entry: ChatSession['entries'][number]): void => {
       if (latestDelta) entry.content = latestDelta;
       if (latestThinking) entry.thinking = latestThinking;
       entry.thinkingActive = latestThinkingActive;
+      if (thinkingTiming.thinkingMs !== undefined) {
+        const now = Date.now();
+        entry.thinkingMs = thinkingElapsedMs(thinkingTiming, now);
+        if (latestThinkingActive) entry.thinkingStartedAt = now; else delete entry.thinkingStartedAt;
+      }
     };
     const scheduleDelta = (): void => {
       if (deltaTimer) return;
@@ -479,12 +487,14 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
           if (index < 0) tools.push(tool); else tools[index] = tool;
           entry.tools = tools;
         }), (thinking, active) => {
+          recordThinkingPhase(thinkingTiming, active);
           latestThinking = thinking; latestThinkingActive = active;
           scheduleDelta();
         }, phase => updateEntry(entry => { entry.responsePhase = phase; }));
       if (controller.signal.aborted) throw new Error('已取消生成,输入内容已保留。');
       if (deltaTimer) { clearTimeout(deltaTimer); deltaTimer = null; }
       latestThinkingActive = false;
+      recordThinkingPhase(thinkingTiming, false);
       if (copyContribution && draft) {
         const actions = copyAiActionsSchema.parse(copyContribution.collect());
         if (!reply.trim() && !actions.length) throw new Error('模型未返回可用内容,请检查服务协议和模型输出');
@@ -521,6 +531,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
       if (browserTask) browserAutomation!.finish(owner, browserTask.id, cause instanceof Error ? cause.message : '请求失败');
       if (deltaTimer) { clearTimeout(deltaTimer); deltaTimer = null; }
       latestThinkingActive = false;
+      recordThinkingPhase(thinkingTiming, false);
       updateEntry(entry => {
         applyStream(entry);
         entry.streaming = false;

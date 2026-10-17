@@ -61,6 +61,7 @@ test('应用更新 v2 真实 React 行内展示、错误详情及现有动作隔
       assert.equal(action().textContent?.trim(), button);
       assert.equal(action().disabled, disabled);
       assert.equal(action().getAttribute('aria-busy'), String(disabled));
+      assert.doesNotMatch(row().textContent ?? '', /退出.*安装/);
       const progress = dom.window.document.querySelector<HTMLProgressElement>('progress');
       assert.equal(!!progress, phase === 'downloading');
       if (progress) { assert.ok(row().contains(progress)); assert.equal(progress.value, 42); assert.equal(progress.max, 100); }

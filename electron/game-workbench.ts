@@ -5,7 +5,9 @@ import { resolve, join, relative, isAbsolute, extname } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { spawn, execFile, type ChildProcess } from 'node:child_process';
-import { DEFAULT_GAME_CONFIG, GAME_TASKS, GameConfigSchema, GameRunScopeSchema, type GameState, type GameRunScope, type GameTaskResult, type GameArtifact } from '../shared/game-contracts';
+import type { GameDocument } from '../shared/game-documents';
+import { GameIssues } from './game-issues';
+import { DEFAULT_GAME_CONFIG, GAME_TASKS, GameConfigSchema, GameOnlineUrlSchema, GameRunScopeSchema, type GameState, type GameRunScope, type GameTaskResult, type GameArtifact } from '../shared/game-contracts';
 
 const MIME: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.woff2': 'font/woff2', '.ico': 'image/x-icon' };
 const message = (error: unknown) => error instanceof Error ? error.message : String(error);
@@ -19,6 +21,7 @@ export interface GameWorkbenchOptions {
 
 /** One local game project; fixed task IDs, no renderer-supplied commands or shell. */
 export class GameWorkbench {
+  readonly issues: GameIssues;
   private state: GameState;
   private server?: Server;
   private watcher?: FSWatcher;
@@ -32,9 +35,10 @@ export class GameWorkbench {
   private listeners = new Set<(state: GameState) => void>();
   private readonly runtime: string;
   constructor(private readonly options: GameWorkbenchOptions) {
+    this.issues = new GameIssues(options.dataDir);
     this.runtime = options.runtime ?? process.execPath;
     const config = { ...DEFAULT_GAME_CONFIG, root: options.root ?? DEFAULT_GAME_CONFIG.root };
-    this.state = { config, revision: '', sourceError: '', service: { phase: 'stopped', owned: false, message: '启动游戏后开始试玩', url: '' }, running: false, results: {}, captures: [], logs: [] };
+    this.state = { config, online: { url: '' }, revision: '', sourceError: '', service: { phase: 'stopped', owned: false, message: '启动游戏后开始试玩', url: '' }, running: false, results: {}, captures: [], logs: [] };
   }
   async initialize(): Promise<void> {
     await mkdir(this.options.dataDir, { recursive: true });
@@ -42,6 +46,8 @@ export class GameWorkbench {
       const saved = JSON.parse(await readFile(join(this.options.dataDir, 'state.json'), 'utf8'));
       const config = GameConfigSchema.safeParse(saved.config);
       if (config.success) this.state.config = config.data;
+      const online = GameOnlineUrlSchema.safeParse(saved.online?.url ?? '');
+      if (online.success) this.state.online = { url: online.data };
       for (const task of GAME_TASKS) {
         const result = saved.results?.[task.id] as GameTaskResult | undefined;
         if (!result || typeof result.output !== 'string' || !Array.isArray(result.artifacts) || !/^[\w-]+$/.test(result.id)) continue;
@@ -59,7 +65,7 @@ export class GameWorkbench {
   private save(): Promise<void> {
     this.saving = this.saving.catch(() => {}).then(async () => {
       const temporary = join(this.options.dataDir, 'state.tmp');
-      await writeFile(temporary, JSON.stringify({ config: this.state.config, results: this.state.results, captures: this.state.captures }, null, 2));
+      await writeFile(temporary, JSON.stringify({ config: this.state.config, online: { url: this.state.online.url }, results: this.state.results, captures: this.state.captures }, null, 2));
       await rename(temporary, join(this.options.dataDir, 'state.json'));
     });
     return this.saving;
@@ -74,6 +80,44 @@ export class GameWorkbench {
     await this.refreshSource();
     this.watchSource();
     await this.save(); this.emit(); return this.snapshot();
+  }
+  async configureOnline(input: unknown): Promise<GameState> {
+    this.state.online = { url: GameOnlineUrlSchema.parse(input) };
+    await this.save(); this.emit(); return this.snapshot();
+  }
+  async readDocument(input: unknown = 'README.md'): Promise<GameDocument> {
+    if (typeof input !== 'string' || !input || input.length > 2000 || input.includes('\0') || input.includes(':') || isAbsolute(input) || !/\.(md|markdown)$/i.test(input)) throw new Error('请使用项目内的 Markdown 文档相对路径。');
+    const root = await realpath(this.state.config.root), candidate = resolve(root, input);
+    if (!inside(root, candidate)) throw new Error('文档必须位于当前游戏项目内。');
+    const file = await realpath(candidate);
+    if (!inside(root, file)) throw new Error('文档必须位于当前游戏项目内。');
+    if (!/\.(md|markdown)$/i.test(file)) throw new Error('应用内说明只支持 Markdown 文档。');
+    const info = await stat(file);
+    if (!info.isFile() || info.size > 1024 * 1024) throw new Error('只支持预览 1 MiB 以内的 Markdown 文档。');
+    return { path: relative(root, file).replaceAll('\\', '/'), content: (await readFile(file, 'utf8')).replace(/^\uFEFF/, '') };
+  }
+  async checkOnline(): Promise<GameState> {
+    const online = this.state.online;
+    if (!online.url) throw new Error('请先设置线上地址。');
+    if (online.check?.status === 'checking') return this.snapshot();
+    online.check = { url: online.url, status: 'checking', message: '正在检查线上访问…' }; this.emit();
+    try {
+      const signal = AbortSignal.timeout(8000);
+      let target = online.url;
+      for (let redirects = 0; redirects <= 5; redirects++) {
+        const response = await fetch(target, { signal, redirect: 'manual' });
+        await response.body?.cancel();
+        const location = response.headers.get('location');
+        if ([301, 302, 303, 307, 308].includes(response.status) && location) {
+          if (redirects === 5) throw new Error('重定向次数过多。');
+          target = GameOnlineUrlSchema.parse(new URL(location, target).href); continue;
+        }
+        online.check = { url: target, status: response.ok ? 'passed' : 'failed', httpStatus: response.status, checkedAt: Date.now(), message: response.ok ? '最近检查可访问' : `访问失败 · HTTP ${response.status}` };
+        break;
+      }
+    } catch (error) { online.check = { url: online.url, status: 'failed', checkedAt: Date.now(), message: `访问检查失败：${message(error)}` }; }
+    if (this.state.online === online) this.emit();
+    return this.snapshot();
   }
   private async webRoot(config = this.state.config): Promise<string> {
     const root = await realpath(config.root);
@@ -228,12 +272,12 @@ export class GameWorkbench {
     else child.kill('SIGTERM');
   }
   async cancel(): Promise<GameState> { this.cancelled = true; await this.killChild(); await this.operation; return this.snapshot(); }
-  async capture(png: string): Promise<GameArtifact> {
+  async capture(png: string, context?: Pick<GameArtifact, 'environment' | 'url' | 'siteUrl'>): Promise<GameArtifact> {
     if (png.length > 28 * 1024 * 1024) throw new Error('截图超过大小上限。');
     const bytes = Buffer.from(png, 'base64');
     if (bytes.length > 20 * 1024 * 1024 || bytes.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') throw new Error('截图必须是 20MB 以内的 PNG。');
     const id = randomUUID();
-    const artifact = { id, name: `试玩截图-${new Date().toLocaleString('zh-CN')}`, file: join(this.options.dataDir, `${id}.png`) };
+    const artifact: GameArtifact = { id, name: `试玩截图-${new Date().toLocaleString('zh-CN')}`, file: join(this.options.dataDir, `${id}.png`), ...context, capturedAt: Date.now() };
     await writeFile(artifact.file, bytes);
     this.state.captures = [...this.state.captures, artifact].slice(-20); await this.save(); this.emit(); return artifact;
   }

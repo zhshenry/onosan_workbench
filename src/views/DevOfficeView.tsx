@@ -37,16 +37,11 @@ export function DevOfficeView() {
   const [file, setFile] = useState<{ name: string; bytes: Uint8Array<ArrayBuffer> } | undefined>(undefined);
   const accept = mode === 'excel' ? '.xlsx,.xls,.csv,.tsv' : '.doc,.docx,.ppt,.pptx';
 
-  const pick = (reset: boolean): void => {
-    setFile(undefined);
-    void reset;
-  };
-
   return (
     <div style={page}>
       <div style={bar}>
-        <button style={btn} onClick={() => { setMode('excel'); pick(true); }}>表格解析</button>
-        <button style={btn} onClick={() => { setMode('office'); pick(true); }}>Office 转 PDF</button>
+        <button style={btn} onClick={() => { setMode('excel'); setFile(undefined); }}>表格解析</button>
+        <button style={btn} onClick={() => { setMode('office'); setFile(undefined); }}>Office 转 PDF</button>
         <label style={btn}>
           {mode === 'excel' ? '选择表格文件(.xlsx / .xls / .csv / .tsv)' : '选择文档(.doc / .docx / .ppt / .pptx)'}
           <input

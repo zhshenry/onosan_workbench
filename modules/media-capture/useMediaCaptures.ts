@@ -4,7 +4,7 @@
  * media-capture:failed(如原图抓取失败)转 toast。
  */
 import { useEffect, useRef, useState } from 'react';
-import { errorText } from '../todo/ui/ui';
+import { errorText } from '../../src/ui/controls';
 import type { MediaCaptureItem } from '../../shared/media-capture-contracts';
 
 const wb = window.workbench;

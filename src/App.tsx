@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from
 import { CheckSquareOffset, GearSix, Sparkle } from '@phosphor-icons/react';
 import { NAV, defaultViewOfWorkbench, ownerOfWorkbench, workbenchById, type WorkbenchDef, type WorkbenchId } from './nav';
 import type { AvatarColor, UiTheme, ViewId } from '../shared/contracts';
-import { localDay, openToday, taskTime, type ChatSession, type CopySource, type Task, type TaskInput } from '../shared/todo-contracts';
+import { localDay, openToday, taskTime, type CopySource, type Task, type TaskInput } from '../shared/todo-contracts';
 import { isOverdue, meetingEndAt } from '../shared/todo-format';
 import { topbarScheduleDate, topbarTodoDate } from './topbar-dates';
 import { applyTopbarCapsulePlacement } from './topbar-layout';
@@ -11,8 +11,9 @@ import { AiPanel, type AiPanelContext, type AiSeed } from './views/AiPanel';
 import { chatContextScope, type AiScope } from '../shared/ai-scope';
 import { pageAiContext } from './ai-page-context';
 import { SettingsView } from './views/SettingsView';
+import { TopbarUpdate } from './views/TopbarUpdate';
 import { BaziView } from '../modules/bazi/ui/BaziView';
-import { TaskEditor, type TaskEditorApi, type TodoState } from '../modules/todo/ui/TaskEditor';
+import { TaskEditor, type TaskEditorApi } from '../modules/todo/ui/TaskEditor';
 import { MediaBrowserHost } from './views/MediaBrowserHost';
 import { BrowserHost } from './views/BrowserView';
 import { GameHost } from './views/GameView';
@@ -26,10 +27,10 @@ import {
 } from './icons';
 
 const topbarTaskEditorApi: TaskEditorApi = {
-  create: (input) => window.workbench.todo.create(input) as Promise<TodoState>,
-  update: (id, patch, revision) => window.workbench.todo.update(id, patch, revision) as Promise<TodoState>,
-  remove: (id, revision) => window.workbench.todo.remove(id, revision) as Promise<TodoState>,
-  createCategory: (input) => window.workbench.todo.createCategory(input) as Promise<TodoState>,
+  create: (input) => window.workbench.todo.create(input),
+  update: (id, patch, revision) => window.workbench.todo.update(id, patch, revision),
+  remove: (id, revision) => window.workbench.todo.remove(id, revision),
+  createCategory: (input) => window.workbench.todo.createCategory(input),
 };
 
 // 设置工作台图标:用户已定 Phosphor GearSix(自绘齿轮「太像太阳」被否),WB_ICONS 渲染无 props,包一层固定尺寸
@@ -139,8 +140,7 @@ export function App() {
   useEffect(() => window.workbench.browserAutomation?.onTask(task => setBrowserTasks(previous => [task, ...previous.filter(item => item.id !== task.id)].slice(0, 40))), []);
   useEffect(() => { if (copyCtx?.id === requestedCopyId) setRequestedCopyId(null); }, [copyCtx?.id, requestedCopyId]);
   useEffect(() => { if (baziCtx?.id === requestedProfileId) setRequestedProfileId(null); }, [baziCtx?.id, requestedProfileId]);
-  useEffect(() => window.workbench.ai.onChat(raw => {
-    const chat = raw as ChatSession;
+  useEffect(() => window.workbench.ai.onChat(chat => {
     const scope = chatContextScope(chat);
     const running = chat.entries.some(entry => entry.streaming);
     const failed = chat.entries.at(-1)?.error;
@@ -196,13 +196,18 @@ export function App() {
       setIslandPop(null);
     };
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') setIslandPop(null);
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        setIslandPop(null);
+        topbarRef.current?.querySelector<HTMLButtonElement>(islandPop === 'sched' ? '.smore' : '.todopill')?.focus();
+      }
     };
     document.addEventListener('pointerdown', onPointerDown);
-    window.addEventListener('keydown', onKey);
+    document.addEventListener('keydown', onKey, true);
     return () => {
       document.removeEventListener('pointerdown', onPointerDown);
-      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('keydown', onKey, true);
     };
   }, [islandPop]);
 
@@ -279,14 +284,15 @@ export function App() {
 
   const renderRailWorkbench = (workbench: WorkbenchDef) => {
     const Icon = WB_ICONS[workbench.id];
-    const menuOpen = aiOpen && railMenu === workbench.id;
+    const menuAvailable = aiOpen || workbench.id !== curWb;
+    const menuOpen = menuAvailable && railMenu === workbench.id;
     return (
       <div
         key={workbench.id}
         className="rail-entry"
-        onMouseEnter={() => { dismissedRailMenu.current = null; if (aiOpen) setRailMenu(workbench.id); }}
+        onMouseEnter={() => { dismissedRailMenu.current = null; setRailMenu(menuAvailable ? workbench.id : null); }}
         onMouseLeave={(event) => { if (!event.currentTarget.contains(document.activeElement)) setRailMenu(null); }}
-        onFocusCapture={() => { if (aiOpen && dismissedRailMenu.current !== workbench.id) setRailMenu(workbench.id); }}
+        onFocusCapture={() => { if (menuAvailable && dismissedRailMenu.current !== workbench.id) setRailMenu(workbench.id); }}
         onBlurCapture={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
             dismissedRailMenu.current = null;
@@ -309,7 +315,7 @@ export function App() {
           className={curWb === workbench.id ? 'ritem on' : workbench.pending ? 'ritem dim' : 'ritem'}
           title={workbench.pending ? `${workbench.title}(即将上线)` : workbench.title}
           aria-label={workbench.title}
-          aria-expanded={aiOpen ? menuOpen : undefined}
+          aria-expanded={menuAvailable ? menuOpen : undefined}
           aria-controls={menuOpen ? `rail-menu-${workbench.id}` : undefined}
           onClick={() => workbench.id === 'settings' ? switchView('settings-general') : activate(workbench.id)}
         >
@@ -463,7 +469,7 @@ export function App() {
       <header className="topbar" ref={topbarRef}>
         <div className="tb-middle">
         <div className="tb-left">
-        <div className="sched" onClick={() => toggleIslandPop('sched')}>
+        <div className="sched" data-open={islandPop === 'sched' || undefined} onClick={() => toggleIslandPop('sched')}>
           <span className="sched-label">
             <IconCalendar />
             <span className="lbl">日程</span>
@@ -488,66 +494,68 @@ export function App() {
               );
             })}
           </div>
-          <button className="smore" title="今日日程面板" onClick={(e) => { e.stopPropagation(); toggleIslandPop('sched'); }}>
-            <IconChevronDown />
+          <button className="smore" title="今日日程面板" aria-expanded={islandPop === 'sched'} aria-controls="topbar-day-panel" onClick={(e) => { e.stopPropagation(); toggleIslandPop('sched'); }}>
+            <IconChevronDown size={12} />
           </button>
-          {islandPop === 'sched' && (
-          <div className="ipop ipop-sched" role="menu" aria-label="今日日程">
-            <div className="ipop-head">今日日程</div>
-            {todaySchedule.length === 0 && <div className="ipop-empty">今天没有日程。</div>}
-            {todaySchedule.map((t) => {
-              return (
-                <div key={t.id} className={t.status === 'done' ? 'ipop-row done' : 'ipop-row'}>
-                  <span className="ipop-time">{topbarScheduleDate(t, todo.clock)}</span>
-                  <button className="ipop-title" title={t.title} onClick={() => openTaskEditor(t)}>{t.title}</button>
-                </div>
-              );
-            })}
-            <div className="ipop-foot">
-              <button className="ipop-link" onClick={() => openTopbarTaskCreator('meeting')}>+ 新增日程</button>
-            </div>
-          </div>
-          )}
         </div>
       </div>
 
       <div className="tb-center">
-        <button className="todopill glass" title="今日待办" aria-expanded={islandPop === 'todo'} onClick={() => toggleIslandPop('todo')}>
+        <button className="todopill glass" title="今日待办" data-overdue={overdueCount > 0 || undefined} aria-expanded={islandPop === 'todo'} aria-controls="topbar-day-panel" onClick={() => toggleIslandPop('todo')}>
           <IconCheckSquare />
           <span className="lbl">待办</span>
           <span className="sdiv" />
           <span className="num">{doneCount}/{totalCount}</span>
           {overdueCount > 0 && <span className="pill-badge">逾期 {overdueCount}</span>}
-          <IconChevronDown size={12} className="pill-caret" />
+          <span className="pill-caret"><IconChevronDown size={12} /></span>
         </button>
-        {islandPop === 'todo' && (
-        <div className="ipop ipop-todo" role="menu" aria-label="今日待办">
-          <div className="ipop-head">今日待办 · {openTodos.length} 项</div>
-          {openTodos.length === 0 && <div className="ipop-empty">今天没有待办,点下方新增。</div>}
-          {openTodos.map((t) => (
-            <div key={t.id} className="ipop-row">
-              <button
-                className={t.status === 'done' ? 'ipop-check done' : 'ipop-check'}
-                title={t.status === 'done' ? '恢复待办' : '完成'}
-                onClick={() => todo.mutate(() => window.workbench.todo.update(t.id, { status: t.status === 'done' ? 'todo' : 'done' }, t.updatedAt) as Promise<never>)}
-              >
-                {t.status === 'done' ? '✓' : ''}
-              </button>
-              <button className="ipop-title" title={t.title} onClick={() => openTaskEditor(t)}>{t.title}</button>
-              <span className="ipop-time">{topbarTodoDate(t, todo.clock)}</span>
-            </div>
-          ))}
+      </div>
+        {islandPop && (
+        <div id="topbar-day-panel" className={'ipop ipop-' + islandPop} role="region" aria-label={islandPop === 'sched' ? '今日日程' : '今日待办'}>
+          <div className="ipop-head">
+            <span>{islandPop === 'sched' ? '今日日程' : '今日待办'}</span>
+            <span className="ipop-count">
+              {islandPop === 'todo' && overdueCount > 0 && <span className="pill-badge">逾期 {overdueCount}</span>}
+              <span>{islandPop === 'sched' ? todaySchedule.length : openTodos.length} 项</span>
+            </span>
+          </div>
+          {islandPop === 'sched' ? <>
+            {todaySchedule.length === 0 && <div className="ipop-empty">今天没有日程。</div>}
+            {todaySchedule.map((t) => (
+              <div key={t.id} className={t.status === 'done' ? 'ipop-row done' : 'ipop-row'}>
+                <button className="ipop-title" title={t.title} onClick={() => openTaskEditor(t)}>{t.title}</button>
+                <span className="ipop-time">{topbarScheduleDate(t, todo.clock)}</span>
+              </div>
+            ))}
+          </> : <>
+            {openTodos.length === 0 && <div className="ipop-empty">今天没有待办,点下方新增。</div>}
+            {openTodos.map((t) => (
+              <div key={t.id} className="ipop-row">
+                <button
+                  className={t.status === 'done' ? 'ipop-check done' : 'ipop-check'}
+                  title={t.status === 'done' ? '恢复待办' : '完成'}
+                  onClick={() => todo.mutate(() => window.workbench.todo.update(t.id, { status: t.status === 'done' ? 'todo' : 'done' }, t.updatedAt))}
+                >
+                  {t.status === 'done' ? '✓' : ''}
+                </button>
+                <button className="ipop-title" title={t.title} onClick={() => openTaskEditor(t)}>{t.title}</button>
+                <span className="ipop-time">{topbarTodoDate(t, todo.clock)}</span>
+              </div>
+            ))}
+          </>}
           <div className="ipop-foot">
-            <button className="ipop-link" onClick={() => openTopbarTaskCreator('task')}>+ 新增待办</button>
+            {islandPop === 'sched'
+              ? <button className="ipop-link" onClick={() => openTopbarTaskCreator('meeting')}>+ 新增日程</button>
+              : <button className="ipop-link" onClick={() => openTopbarTaskCreator('task')}>+ 新增待办</button>}
           </div>
         </div>
         )}
-      </div>
         </div>
 
       <div className="tb-right">
         {aiJob && (!aiOpen || aiJob.chatId !== activeAiChatId) && <button className="ai-job-btn" title="返回生成的对话" onClick={returnToAiJob}>{aiJob.scope.module === 'copy' ? '博客' : aiJob.scope.module === 'bazi' ? '命理' : '助手'}{aiJob.status === 'running' ? '生成中' : aiJob.status === 'error' ? '请求失败' : '已完成'}</button>}
         {browserTask && ['running', 'paused', 'site-approval'].includes(browserTask.status) && curView !== (browserTask.workspace === 'xhs-creator' ? 'media-browser' : 'browser') && <button className="ai-job-btn" title="返回浏览器任务" onClick={() => switchView(browserTask.workspace === 'xhs-creator' ? 'media-browser' : 'browser')}>{browserTask.status === 'site-approval' ? '浏览器等待站点授权' : browserTask.status === 'paused' ? '浏览器已暂停' : '浏览器后台操作中'}</button>}
+        <TopbarUpdate onOpen={() => setIslandPop(null)} />
         <button className="ibtn float-topbar-btn" title={floatVisible ? '隐藏悬浮待办窗' : '打开悬浮待办窗'} aria-label={floatVisible ? '隐藏悬浮待办窗' : '打开悬浮待办窗'} aria-pressed={floatVisible} onClick={() => { setIslandPop(null); void window.workbench.float.toggle(); }}><CheckSquareOffset size={18} weight={floatVisible ? 'fill' : 'regular'} /></button>
         <button className="ibtn ai-topbar-btn" title={aiToggleLabel} aria-label={aiToggleLabel} aria-expanded={aiOpen} aria-controls="workbench-ai-panel" data-background-running={backgroundAiRunning || undefined} onClick={() => setAiOpen(v => !v)}><Sparkle size={18} weight={aiOpen || backgroundAiRunning ? 'fill' : 'regular'} /></button>
         <span className="vdiv" />

@@ -5,7 +5,7 @@ import {
   type CopyStoreData,
 } from '../../../shared/copy-contracts';
 import { PublishAssociation } from './PublishAssociation';
-import { errorText } from '../../todo/ui/ui';
+import { errorText } from '../../../src/ui/controls';
 
 const wb = window.workbench;
 const PUB_KEY = 'wb.copy.pubDraftId';

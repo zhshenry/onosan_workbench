@@ -118,15 +118,6 @@
 .plan-category { display: flex; align-items: center; gap: 5px; min-width: 0; font-size: var(--type-caption); color: var(--todo-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .plan-card-heading { display: flex; align-items: center; gap: 7px; margin: 0 0 6px; }
 .plan-card-heading h2 { font-size: var(--type-control); font-weight: 700; margin: 0; }
-.plan-view-toolbar { display: flex; align-items: center; justify-content: flex-end; gap: 2px; margin-left: auto; padding: 0; }
-.plan-view-toolbar > button { display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; padding: 5px 6px; min-height: 32px; font-size: var(--type-support); color: var(--todo-muted); }
-.plan-more { position: relative; flex-shrink: 0; z-index: 4; }
-.plan-more summary { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 7px; cursor: pointer; color: var(--todo-muted); list-style: none; }
-.plan-more summary::-webkit-details-marker { display: none; }
-.plan-more summary:hover, .plan-more[open] summary { background: var(--todo-subtle); color: var(--todo-ink); }
-.plan-more summary:focus-visible { outline: 2px solid var(--todo-acc); outline-offset: 2px; }
-.plan-more > button { position: absolute; right: 0; top: calc(100% + 4px); display: flex; align-items: center; gap: 7px; width: max-content; padding: 9px 12px; background: var(--todo-paper); border-radius: var(--todo-control-radius); box-shadow: 0 6px 18px rgba(15, 40, 65, 0.12); font-size: var(--type-control); }
-.plan-more > button:hover { background: var(--todo-subtle); }
 
 /* ---- 弹窗与表单(dialog 由 createPortal 挂到 body,token 走 :root 桥) ---- */
 .modal { position: fixed; inset: 0; margin: auto; width: fit-content; height: fit-content; color: var(--todo-ink); background: var(--todo-mesh); border: 1px solid var(--todo-line); border-radius: var(--todo-radius); padding: 0; max-width: min(420px, calc(100vw - 48px)); max-height: calc(100vh - 48px); overflow-y: auto; box-shadow: 0 10px 28px rgba(15, 40, 65, 0.16); font-family: var(--font); font-size: var(--type-body); }

@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { X } from '@phosphor-icons/react';
 import type { AppSettings, AppSettingsPatch, AvatarColor, TodoDbInfo, UiTheme, UpdateStatus, ViewId } from '../../shared/contracts';
-import { errorText, IconButton, Select as TodoSelect } from '../../modules/todo/ui/ui';
+import { errorText, IconButton, Select as TodoSelect } from '../ui/controls';
 import { AiSettings } from './AiSettings';
 
 const wb = window.workbench;
@@ -402,7 +402,7 @@ function AboutSection({ query }: { query: string }) {
           {showDetails ? '收起详情' : '详情'}
         </button>}
       </div>,
-      desc: update?.enabled ? '自动检查并后台下载，下载完成后可重启安装；退出应用时也会安装。' : update?.message ?? (updateError ? '无法读取更新状态，请稍后重新打开此页。' : '正在读取更新状态…'),
+      desc: update?.enabled ? '自动检查并后台下载，下载完成后点击“重启并安装”更新。' : update?.message ?? (updateError ? '无法读取更新状态，请稍后重新打开此页。' : '正在读取更新状态…'),
       content: <>
         {update?.phase === 'downloading' && <progress className="set-update-progress" aria-label="更新下载进度" value={update.progress} max={100} />}
         {fullError && <p id={detailsId} className="set-update-details" hidden={!showDetails}>{fullError}</p>}

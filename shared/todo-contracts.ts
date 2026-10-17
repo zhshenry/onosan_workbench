@@ -121,6 +121,8 @@ export interface ChatEntry {
   baziSystem?: 'bazi' | 'ziwei' | 'astro';
   actionState?: 'pending' | 'applied' | 'discarded' | 'expired' | 'revised' | 'undone'; streaming?: boolean;
   tools?: AIToolEvent[]; thinking?: string; thinkingActive?: boolean; responsePhase?: AIResponsePhase; error?: string;
+  /** 思考阶段累计毫秒；活动阶段的时间锚点仅用于实时显示，恢复中断时移除。 */
+  thinkingMs?: number; thinkingStartedAt?: number;
   /** 本轮实际执行的浏览器任务，不能用会话的最新任务替代历史回复。 */
   browserTask?: Pick<import('./browser-automation-contracts').BrowserTask, 'id' | 'workspace'>;
 }

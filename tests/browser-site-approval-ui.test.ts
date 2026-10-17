@@ -7,7 +7,8 @@ import type { BrowserTask, BrowserWorkspaceState } from '../shared/browser-autom
 
 test('docked site cards follow the visible conversation, ignore stale reads, retry errors and keep real decision receipts', async () => {
   const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost', pretendToBeVisual: true });
-  const names = ['window', 'document', 'HTMLElement', 'Node', 'navigator', 'requestAnimationFrame', 'cancelAnimationFrame', 'IS_REACT_ACT_ENVIRONMENT'] as const;
+  (dom.window as any).ResizeObserver = class { observe() {} disconnect() {} };
+  const names = ['window', 'document', 'HTMLElement', 'Node', 'navigator', 'requestAnimationFrame', 'cancelAnimationFrame', 'ResizeObserver', 'IS_REACT_ACT_ENVIRONMENT'] as const;
   const previous = names.map(name => Object.getOwnPropertyDescriptor(globalThis, name));
   names.forEach(name => Object.defineProperty(globalThis, name, { configurable: true, value: name === 'window' ? dom.window : name === 'IS_REACT_ACT_ENVIRONMENT' ? true : dom.window[name] }));
   const origin = 'https://www.baidu.com';

@@ -3,7 +3,7 @@
  * 数据量小(个人笔记草稿),不建 SQLite;读写全量、写入即落盘,结构经 Zod 校验。
  * 先例与 ai-config.json / bazi-profiles.json 一致:工作台自有数据存自己的 userData。
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import {
@@ -11,6 +11,7 @@ import {
   type CopyDraft, type CopyDraftInput, type CopyStoreData,
 } from '../../shared/copy-contracts';
 import { parseXhsNoteUrl } from './xhs-publish';
+import { writeJsonAtomic } from '../storage/json-file';
 
 const EMPTY: CopyStoreData = { drafts: [] };
 
@@ -34,9 +35,11 @@ export class CopyStore {
     }
   }
 
-  private flush(data: CopyStoreData = this.data): void {
+  private commit(data: CopyStoreData): CopyStoreData {
     mkdirSync(join(this.file, '..'), { recursive: true });
-    writeFileSync(this.file, JSON.stringify(data, null, 2), 'utf8');
+    writeJsonAtomic(this.file, data);
+    this.data = data;
+    return this.data;
   }
 
   all(): CopyStoreData {
@@ -57,13 +60,11 @@ export class CopyStore {
     const draft: CopyDraft = existing
       ? { ...existing, ...patch, updatedAt: now }
       : { ...newCopyDraftInput(), ...patch, id, createdAt: now, updatedAt: now };
-    this.data = {
+    return this.commit({
       drafts: existing
         ? this.data.drafts.map((d) => (d.id === id ? draft : d))
         : [draft, ...this.data.drafts],
-    };
-    this.flush();
-    return this.data;
+    });
   }
 
   /** 人工核对作品直链后关联;发布信息变动不改正文的 updatedAt。 */
@@ -77,9 +78,7 @@ export class CopyStore {
     };
     const next = { drafts: this.data.drafts.map((item) => item.id === id ? draft : item) };
     // A failed association write must not replace the previous in-memory record.
-    this.flush(next);
-    this.data = next;
-    return this.data;
+    return this.commit(next);
   }
 
   clearXhsPublished(id: string): CopyStoreData {
@@ -87,16 +86,12 @@ export class CopyStore {
     if (!existing) throw new Error('博客不存在或已删除');
     const { xhsPublished: _previous, ...draft } = existing;
     const next = { drafts: this.data.drafts.map((item) => item.id === id ? draft : item) };
-    this.flush(next);
-    this.data = next;
-    return this.data;
+    return this.commit(next);
   }
 
   remove(id: string): CopyStoreData {
     if (!this.data.drafts.some((d) => d.id === id)) throw new Error('博客不存在或已删除');
-    this.data = { drafts: this.data.drafts.filter((d) => d.id !== id) };
-    this.flush();
-    return this.data;
+    return this.commit({ drafts: this.data.drafts.filter((d) => d.id !== id) });
   }
 
   close(): void {

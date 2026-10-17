@@ -147,7 +147,9 @@ async function inspectTopbarControls(page, requireAiJob = false) {
 }
 export function assertTopbarDatesGeometry(value) {
   inside(value.menu, value.viewport, 'Topbar popover');
-  assert.ok(Math.abs(value.menu.width - 320) <= 1, 'Topbar popover must remain 320 CSS pixels');
+  inside(value.group, value.viewport, 'Topbar capsule group');
+  assert.ok(Math.abs(value.menu.x - value.group.x) <= 1, 'Shared popover left edge must align with the capsule group');
+  assert.ok(Math.abs(value.menu.width - value.group.width) <= 1, 'Shared popover must have the same width as the capsule group');
   assert.ok(Number.isFinite(value.clientWidth) && value.clientWidth > 0
     && Number.isFinite(value.scrollWidth) && value.scrollWidth <= value.clientWidth, 'Topbar popover must not overflow horizontally');
   assert.ok(value.rows.length > 0, 'Topbar acceptance needs actual visible rows');
@@ -177,7 +179,7 @@ async function inspectGeometry(page, kind) {
         && [...range.getClientRects()].filter(text => text.width > 0 && text.height > 0).every(text => text.left >= bounds.left - 1 && text.right <= bounds.right + 1 && text.top >= bounds.top - 1 && text.bottom <= bounds.bottom + 1);
     };
     return {
-      viewport: { x: 0, y: 0, width: innerWidth, height: innerHeight }, menu: rect(element),
+      viewport: { x: 0, y: 0, width: innerWidth, height: innerHeight }, menu: rect(element), group: rect(element.closest('.tb-middle')),
       scrollWidth: element.scrollWidth, clientWidth: element.clientWidth,
       rows: [...element.querySelectorAll('.ipop-row')].map(row => {
         const title = row.querySelector('.ipop-title'); const time = row.querySelector('.ipop-time'); const check = row.querySelector('.ipop-check');

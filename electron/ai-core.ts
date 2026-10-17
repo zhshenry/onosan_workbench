@@ -129,31 +129,31 @@ export function mapAiError(error: unknown, signal: AbortSignal): Error {
 export async function runAgentLoop(config: { endpoint: string; model: string; protocol: AIProtocol; key: string; supportsImages?: boolean }, text: string, history: AIConversationTurn[], signal: AbortSignal, module: AiModuleContribution, onDelta?: (text: string) => void, onTool?: (event: AIToolEvent) => void, onThinking?: (text: string, active: boolean) => void, onPhase?: (phase: AIResponsePhase) => void): Promise<{ reply: string }> {
   const endpoint = validateEndpoint(config.endpoint);
   const workspace = mkdtempSync(path.join(tmpdir(), 'workbench-pi-'));
-  const settingsManager = SettingsManager.inMemory({ compaction: { enabled: module.directBrowserOperations === true }, retry: { enabled: false } });
-  const loader = new DefaultResourceLoader({
-    cwd: workspace, agentDir: workspace, settingsManager,
-    noExtensions: true, noSkills: true, noPromptTemplates: true, noThemes: true, noContextFiles: true,
-    systemPromptOverride: () => module.systemPrompt(new Date()),
-  });
-  await loader.reload();
-  const modelRuntime = await ModelRuntime.create({
-    authPath: path.join(workspace, 'auth.json'), modelsPath: null, modelsStorePath: path.join(workspace, 'models-store.json'),
-    allowModelNetwork: false, refreshOnCreate: false, signal,
-  });
-  modelRuntime.registerProvider(providerId, {
-    name: 'Ono Workbench', baseUrl: endpoint, api: piApi(config.protocol), apiKey: config.key || 'local',
-    authHeader: config.protocol !== 'anthropic',
-    models: [{
-      id: config.model, name: config.model, reasoning: false, input: config.supportsImages ? ['text', 'image'] : ['text'],
-      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 128000, maxTokens: 3500,
-      compat: { supportsDeveloperRole: false, supportsReasoningEffort: false },
-    }],
-  });
-  await modelRuntime.setRuntimeApiKey(providerId, config.key || 'local');
-  const model = modelRuntime.getModel(providerId, config.model);
-  if (!model) throw new Error('无法创建模型会话,请检查服务协议和模型名称');
   let session: Awaited<ReturnType<typeof createAgentSession>>['session'] | undefined;
   try {
+    const settingsManager = SettingsManager.inMemory({ compaction: { enabled: module.directBrowserOperations === true }, retry: { enabled: false } });
+    const loader = new DefaultResourceLoader({
+      cwd: workspace, agentDir: workspace, settingsManager,
+      noExtensions: true, noSkills: true, noPromptTemplates: true, noThemes: true, noContextFiles: true,
+      systemPromptOverride: () => module.systemPrompt(new Date()),
+    });
+    await loader.reload();
+    const modelRuntime = await ModelRuntime.create({
+      authPath: path.join(workspace, 'auth.json'), modelsPath: null, modelsStorePath: path.join(workspace, 'models-store.json'),
+      allowModelNetwork: false, refreshOnCreate: false, signal,
+    });
+    modelRuntime.registerProvider(providerId, {
+      name: 'Ono Workbench', baseUrl: endpoint, api: piApi(config.protocol), apiKey: config.key || 'local',
+      authHeader: config.protocol !== 'anthropic',
+      models: [{
+        id: config.model, name: config.model, reasoning: false, input: config.supportsImages ? ['text', 'image'] : ['text'],
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 128000, maxTokens: 3500,
+        compat: { supportsDeveloperRole: false, supportsReasoningEffort: false },
+      }],
+    });
+    await modelRuntime.setRuntimeApiKey(providerId, config.key || 'local');
+    const model = modelRuntime.getModel(providerId, config.model);
+    if (!model) throw new Error('无法创建模型会话,请检查服务协议和模型名称');
     session = (await createAgentSession({
       cwd: workspace, agentDir: workspace, model, thinkingLevel: 'off', modelRuntime, settingsManager, resourceLoader: loader,
       sessionManager: SessionManager.inMemory(workspace), noTools: 'builtin', customTools: module.buildTools(),
@@ -201,7 +201,7 @@ export async function runAgentLoop(config: { endpoint: string; model: string; pr
   } catch (error) {
     throw error instanceof Error && /未修改数据|未返回可用|事项格式不正确|无法创建模型|分类|标签/.test(error.message) ? error : mapAiError(error, signal);
   } finally {
-    session?.dispose();
-    rmSync(workspace, { recursive: true, force: true });
+    try { session?.dispose(); }
+    finally { rmSync(workspace, { recursive: true, force: true }); }
   }
 }

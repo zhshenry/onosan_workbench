@@ -1,9 +1,10 @@
 import { useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { CalendarBlank, DotsThree, Flag, Plus, Tag } from '@phosphor-icons/react';
 import { localDay, newTask, taskInputSchema, type Category, type Task, type TaskInput } from '../../../shared/todo-contracts';
+import type { TodoState } from '../../../shared/workbench-api';
 
 /** 工作台注入的待办操作面(上游为 DesktopAPI 的子集,行为一致) */
-export interface TodoState { tasks: Task[]; categories: Category[]; }
+export type { TodoState } from '../../../shared/workbench-api';
 export interface TaskEditorApi {
   create(input: unknown): Promise<TodoState>;
   update(id: string, patch: unknown, revision: string): Promise<TodoState>;

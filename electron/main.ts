@@ -1,8 +1,9 @@
+import type { TodoState } from '../shared/workbench-api';
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, Notification, powerMonitor, session, shell, Tray, nativeImage } from 'electron';
 import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { autoUpdater } from 'electron-updater';
-import { AppUpdates } from './updater';
+import { AppUpdates, updateNotesUrl } from './updater';
 import { Store } from '../modules/todo/store';
 import { BaziStore } from '../modules/bazi/store';
 import { MediaCaptureStore } from '../modules/media-capture/store';
@@ -191,6 +192,7 @@ if (!app.requestSingleInstanceLock()) {
     ipcMain.handle('updater:status', event => { assertUpdateSender(event); return updates!.status(); });
     ipcMain.handle('updater:check', event => { assertUpdateSender(event); return updates!.check(); });
     ipcMain.handle('updater:install', event => { assertUpdateSender(event); updates!.install(); });
+    ipcMain.handle('updater:notes', event => { assertUpdateSender(event); return shell.openExternal(updateNotesUrl(updates!.status().version)); });
     // 外链白名单:渲染层不可打开任意 URL,仅放行小红书创作者中心发布页(发布助手用)
     ipcMain.handle('app:openExternal', (_event, url: unknown) => {
       if (typeof url !== 'string') throw new Error('链接无效');
@@ -252,7 +254,7 @@ if (!app.requestSingleInstanceLock()) {
 
     // 待办模块(数据层;校验在 Store 内经 Zod 执行,失败以中文错误抛回渲染层)
     if (!store) return;
-    const todoState = () => ({ tasks: store!.all(), categories: store!.categories() });
+    const todoState = (): TodoState => ({ tasks: store!.all(), categories: store!.categories() });
     const broadcast = (): void => {
       for (const win of BrowserWindow.getAllWindows()) win.webContents.send('todo:changed');
     };
@@ -383,7 +385,7 @@ if (!app.requestSingleInstanceLock()) {
     updates = new AppUpdates(updateEnabled ? autoUpdater : null, unavailableMessage, status => {
       mainWindow?.webContents.send('updater:status', status);
       if (status.phase === 'ready' && Notification.isSupported()) {
-        const notification = new Notification({ title: `新版本 v${status.version} 已下载`, body: '点击重启并安装，退出应用时也会安装。', icon: nativeImage.createFromPath(join(__dirname, '../assets/tray.png')) });
+        const notification = new Notification({ title: `新版本 v${status.version} 已下载`, body: '点击重启并安装。', icon: nativeImage.createFromPath(join(__dirname, '../assets/tray.png')) });
         notification.on('click', () => updates?.install());
         notification.show();
       }

@@ -37,7 +37,7 @@ test('missing and invalid values fail safely without rolled-over dates or Invali
   const dueAt = at(2026, 10, 12, 14, 0);
   for (const endAt of [undefined, null, 'bad', dueAt, at(2026, 10, 12, 13, 0)]) assert.equal(topbarScheduleDate({ dueAt, endAt }, now), '10-12 14:00–时间待定');
 });
-test('date formatting is read-only and topbar callers retain titles, actions and panel size', () => {
+test('date formatting is read-only and topbar callers retain titles, actions and shared panel alignment', () => {
   const task = Object.freeze({ plannedDate: '2026-10-12', dueAt: at(2026, 10, 12, 14, 0), endAt: at(2026, 10, 12, 15, 0) });
   const before = JSON.stringify(task); topbarTodoDate(task, now); topbarScheduleDate(task, now); assert.equal(JSON.stringify(task), before);
   const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
@@ -47,7 +47,7 @@ test('date formatting is read-only and topbar callers retain titles, actions and
   assert.match(app, /openTopbarTaskCreator\('meeting'\)/);
   assert.match(app, /todo\.mutate\(\(\) => window\.workbench\.todo\.update\(t.id/);
   const css = readFileSync(new URL('../src/shell.css', import.meta.url), 'utf8');
-  assert.match(css, /\.ipop \{[^}]*width: 320px;/s);
+  assert.match(css, /\.ipop \{[^}]*left: 0;[^}]*right: 0;/s);
   assert.match(css, /\.ipop-time \{[^}]*white-space: pre-line;/s);
   assert.match(css, /\.schip \.n \{[^}]*text-overflow: ellipsis;/s);
 });
@@ -59,11 +59,11 @@ test('UTC instants remain valid even when their source day was skipped locally',
   assert.equal(topbarTodoDate({ dueAt: input }, now), `${local.getFullYear()}-${pad(local.getMonth() + 1)}-${pad(local.getDate())} ${pad(local.getHours())}:${pad(local.getMinutes())}`);
 });
 
-test('compact topbar keeps the capsule pair intrinsic and the schedule popover anchored', () => {
+test('compact topbar keeps the capsule pair intrinsic and dates on a separate line', () => {
   const css = readFileSync(new URL('../src/shell.css', import.meta.url), 'utf8');
   const compact = css.slice(css.indexOf('@media (max-width: 1180px) {'), css.indexOf('/* ---------- 设置工作台'));
   assert.match(compact, /\.tb-left \{ flex: none; \}/);
-  assert.match(compact, /\.ipop-sched \{ left: 0; margin-left: 0; \}/);
+  assert.match(compact, /\.ipop-time \{ flex-basis: 100%;/);
   assert.match(compact, /\.sched-track, \.sdiv, \.tprog \{ display: none; \}/);
   assert.match(compact, /\.tb-middle \{[^}]*max-width: var\(--tb-middle-cap, max-content\)/);
   assert.doesNotMatch(compact, /\.tb-middle \{[^}]*position:\s*static/);

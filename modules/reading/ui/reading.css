@@ -1,5 +1,5 @@
 /* ========== 阅读清单模块样式 ==========
-   视觉权威:design/mockups/reading-glass.html(评审通过版)。
+   视觉权威:docs/requirements/life/reading/prototype/reading-glass.html(评审通过版)。
    消费外壳 shell.css token;阅读状态四色为信息编码语义(同命理五行先例)。 */
 
 .rd-cols { display: grid; grid-template-columns: 1.35fr 1fr; gap: 16px; align-items: start; }

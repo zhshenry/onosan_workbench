@@ -5,7 +5,8 @@
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { isNonBookDir, isShaped, parseFrontmatter, parseTotalChapters, type NoteMeta } from '../../shared/reading-contracts';
+import { isNonBookDir, isShaped, parseFrontmatter, parseTotalChapters, type NoteMeta, type BookCandidate, type BookAggregate } from '../../shared/reading-contracts';
+export type { BookCandidate, BookAggregate } from '../../shared/reading-contracts';
 
 const MD_SKIP = new Set(['欢迎.md']);
 
@@ -47,14 +48,6 @@ function noteMeta(rel: string, abs: string): NoteMeta {
   return { rel, title: fm.title || path.basename(rel, '.md'), status: fm.status || '', updated, draft: !isShaped(fm.status ?? '') };
 }
 
-export interface BookCandidate {
-  folder: string;
-  /** 默认书名 = 文件夹名,不用深层笔记 frontmatter title */
-  name: string;
-  noteCount: number;
-  lastUpdated: string;
-}
-
 /** 顶层书文件夹 = 一本书。跳过点开头与约定非书目录;书名用文件夹名。 */
 export function scanBooks(vaultPath: string): BookCandidate[] {
   if (!isVaultDir(vaultPath)) throw new Error('所选文件夹不是 Obsidian 库(未找到 .obsidian)');
@@ -72,15 +65,6 @@ export function scanBooks(vaultPath: string): BookCandidate[] {
       return { folder: entry.name, name: entry.name, noteCount: files.length, lastUpdated: last };
     })
     .sort((a, b) => b.noteCount - a.noteCount || a.folder.localeCompare(b.folder, 'zh-CN'));
-}
-
-export interface BookAggregate {
-  noteCount: number;
-  lastUpdated: string;
-  maturity: { draft: number; shaped: number };
-  totalChapters: number | null;
-  notes: NoteMeta[];
-  chapters: { rel: string; name: string; count: number; lastUpdated: string }[];
 }
 
 /** 聚合一本书在库内的活动(全部现算,不落盘) */

@@ -26,7 +26,7 @@ export function updaterStatusFixtures() {
     { key: 'checking', status: value('checking', '正在检查更新…'), labels: ['正在检查更新…', '检查中…'], action: '检查中…', disabled: true },
     { key: 'latest', status: value('latest', '当前已是最新版本。'), labels: ['当前已是最新版本', '已是最新版本'], action: '检查更新', disabled: false },
     { key: 'downloading', status: value('downloading', '正在下载 v0.1.1（42%）', { version: '0.1.1', progress: 42 }), labels: ['正在下载 42%', '下载 42%'], action: '下载中…', disabled: true },
-    { key: 'ready', status: value('ready', 'v0.1.1 已下载，可重启安装；退出应用时也会安装。', { version: '0.1.1', progress: 100 }), labels: ['已下载，待重启', '待重启'], action: '重启并安装', disabled: false },
+    { key: 'ready', status: value('ready', 'v0.1.1 已下载，点击“重启并安装”完成更新。', { version: '0.1.1', progress: 100 }), labels: ['已下载，待重启', '待重启'], action: '重启并安装', disabled: false },
     { key: 'error', status: value('error', UPDATE_STATUS_ERROR), labels: ['更新失败'], action: '检查更新', disabled: false },
   ];
 }

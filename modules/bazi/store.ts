@@ -3,9 +3,10 @@
  * 数据量小(个人命例+笔记),不建 SQLite;读写全量、写入即落盘,结构经 Zod 校验。
  * 与 AI 配置文件(ai-config.json)同先例:工作台自有数据存自己的 userData。
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { writeJsonAtomic } from '../storage/json-file';
 import {
   baziProfileInputSchema, baziStoreDataSchema,
   type BaziProfile, type BaziStoreData,
@@ -34,9 +35,11 @@ export class BaziStore {
     }
   }
 
-  private flush(): void {
+  private commit(data: BaziStoreData): BaziStoreData {
     mkdirSync(join(this.file, '..'), { recursive: true });
-    writeFileSync(this.file, JSON.stringify(this.data, null, 2), 'utf8');
+    writeJsonAtomic(this.file, data);
+    this.data = data;
+    return this.data;
   }
 
   all(): BaziStoreData {
@@ -52,30 +55,24 @@ export class BaziStore {
     const profile: BaziProfile = existing
       ? { ...existing, ...fields }
       : { ...fields, id, createdAt: new Date().toISOString() };
-    this.data = {
+    return this.commit({
       ...this.data,
       profiles: existing
         ? this.data.profiles.map((p) => (p.id === id ? profile : p))
         : [...this.data.profiles, profile],
-    };
-    this.flush();
-    return this.data;
+    });
   }
 
   removeProfile(id: string): BaziStoreData {
     const { [id]: _removed, ...notes } = this.data.notes;
-    this.data = { profiles: this.data.profiles.filter((p) => p.id !== id), notes };
-    this.flush();
-    return this.data;
+    return this.commit({ profiles: this.data.profiles.filter((p) => p.id !== id), notes });
   }
 
   saveNote(id: string, text: unknown): BaziStoreData {
     if (!this.data.profiles.some((p) => p.id === id)) throw new Error('命例不存在或已删除');
     if (typeof text !== 'string') throw new Error('笔记内容无效');
     if (text.length > 20000) throw new Error('笔记最多2万字');
-    this.data = { ...this.data, notes: { ...this.data.notes, [id]: text } };
-    this.flush();
-    return this.data;
+    return this.commit({ ...this.data, notes: { ...this.data.notes, [id]: text } });
   }
 
   close(): void {

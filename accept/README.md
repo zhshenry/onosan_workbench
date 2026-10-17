@@ -2,7 +2,7 @@
 
 这里描述关口②之前的接受场景。场景文件不是批准，也不会把占位产物当成截图或通过。
 
-JEV 的调用方式、枚举和失败关闭见 [JEV 接受门](../docs/issues/JEV-ACCEPT-GATE.md)。
+JEV 的调用方式、枚举和失败关闭见 [JEV 接受门](../docs/operations/issue-workflow/jev-accept-gate.md)。
 
 ## YAML 字段
 

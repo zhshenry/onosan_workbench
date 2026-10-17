@@ -1,7 +1,7 @@
 {
   "name": "onosan-workbench",
   "productName": "Ono Workbench",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "个人工作台 — 待办/日程、文档中心、内置浏览器与可生长的工作台模块",
   "type": "module",
   "main": "dist-electron/main.cjs",
@@ -11,6 +11,7 @@
     "check:typography": "node tooling/check-typography.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.electron.json",
     "build": "vite build && node tooling/build.mjs",
+    "build:diagnostics": "vite build --mode diagnostics && node tooling/build.mjs",
     "verify": "npm run check:typography && npm run typecheck && npm run build",
     "smoke": "node tooling/smoke.mjs",
     "start": "electron .",

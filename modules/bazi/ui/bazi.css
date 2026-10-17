@@ -1,5 +1,5 @@
 /* ========== 命理模块样式(八字/紫微/占星) ==========
-   视觉权威:design/mockups/mingli-glass.html(2026-09-28 配色修订版)。
+   视觉权威:docs/requirements/life/mingli/prototype/mingli-glass.html(2026-09-28 配色修订版)。
    结构:整页为玻璃主卡,浅雾「盘面」为模块专属内层(--bazi-pan-* 随 mist/cool/warm 主题映射),
    支撑信息(五行/神煞/笔记)为近白内卡;组件语法消费外壳 shell.css。
    字号一律使用 --type-* 刻度;盘面干支大字用模块专属 --bazi-type-pillar。 */
@@ -397,3 +397,7 @@
   .bazi-cols { grid-template-columns: 1fr; }
 }
 .bazi-form-wide { grid-column: 1 / -1; }
+
+/* 出生地省/市/区三联:一行等宽 */
+.bazi-region-row { display: flex; gap: 6px; align-items: center; }
+.bazi-region-row > * { flex: 1; min-width: 0; }

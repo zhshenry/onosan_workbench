@@ -228,3 +228,28 @@ test('命例契约:出生地经纬度成对校验', () => {
   assert.ok(!baziProfileInputSchema.safeParse({ ...base, lon: 121.47 }).success);
   assert.ok(!baziProfileInputSchema.safeParse({ ...base, lat: 95, lon: 121 }).success);
 });
+
+test('中国行政区:34 省级、坐标齐全、反查路径正确', async () => {
+  const { CHINA_REGIONS, findRegionByCoords } = await import('../shared/china-region-geo');
+  assert.equal(CHINA_REGIONS.length, 34);
+  const walk = (nodes: { lat: number; lon: number; children?: unknown[] }[]): number => {
+    let count = 0;
+    for (const node of nodes) {
+      count += 1;
+      assert.ok(Number.isFinite(node.lat) && Number.isFinite(node.lon), '坐标缺失');
+      if (node.children) count += walk(node.children as typeof nodes);
+    }
+    return count;
+  };
+  assert.ok(walk(CHINA_REGIONS) > 3000, '应覆盖三千余行政区');
+  // 市府精确坐标 → 直辖市辖区(黄浦区节点最近)
+  const huangpu = findRegionByCoords(31.232, 121.485);
+  assert.equal(huangpu?.label, '上海市 黄浦区');
+  // 广州市中心 → 省/市/区三级(同坐标平局取最深层级)
+  const guangzhou = findRegionByCoords(23.129, 113.264);
+  assert.equal(guangzhou?.province, '广东省');
+  assert.equal(guangzhou?.city, '广州市');
+  assert.ok(guangzhou?.district, '应命中区级');
+  // 国外坐标 → null(自定义)
+  assert.equal(findRegionByCoords(48.5, 9.1), null);
+});

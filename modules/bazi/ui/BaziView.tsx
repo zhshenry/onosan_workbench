@@ -7,8 +7,9 @@ import {
   findShenSha,
   type BaziChart, type BaziProfile, type BaziStoreData,
 } from '../../../shared/bazi-contracts';
-import { DatePicker, Modal, Segmented, TimePicker, errorText } from '../../todo/ui/ui';
+import { DatePicker, Modal, Segmented, Select, TimePicker, errorText } from '../../../src/ui/controls';
 import { WX_VAR, WUXING_ORDER } from './tokens';
+import { CHINA_REGIONS, findRegionByCoords, regionLabel, type ChinaRegionNode } from '../../../shared/china-region-geo';
 import { BaziPan } from './BaziPan';
 import { ZiweiPan } from './ZiweiPan';
 import { AstroPan } from './AstroPan';
@@ -80,6 +81,9 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
   const [fDate, setFDate] = useState('');
   const [fTime, setFTime] = useState('');
   const [fTag, setFTag] = useState('');
+  const [fProv, setFProv] = useState('none');
+  const [fCity, setFCity] = useState('');
+  const [fDist, setFDist] = useState('');
   const [fPlace, setFPlace] = useState('');
   const [fLat, setFLat] = useState('');
   const [fLon, setFLon] = useState('');
@@ -92,8 +96,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
   useEffect(() => {
     if (loadedOnce.current) return;
     loadedOnce.current = true;
-    void wb.bazi.list().then((raw) => {
-      const data = raw as BaziStoreData;
+    void wb.bazi.list().then((data) => {
       setStoreData(data);
       const saved = requestedProfileId ?? localStorage.getItem(CUR_KEY);
       setCurId(data.profiles.some((p) => p.id === saved) ? saved : data.profiles[0]?.id ?? null);
@@ -168,11 +171,11 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
     };
   }, [pselOpen]);
 
-  const apply = (raw: unknown, okMsg?: string): void => {
-    setStoreData(raw as BaziStoreData);
+  const apply = (raw: BaziStoreData, okMsg?: string): void => {
+    setStoreData(raw);
     if (okMsg) onPending(okMsg);
   };
-  const run = (action: Promise<unknown>, okMsg?: string): void => {
+  const run = (action: Promise<BaziStoreData>, okMsg?: string): void => {
     void action.then((raw) => apply(raw, okMsg), (e) => onPending(errorText(e)));
   };
 
@@ -195,7 +198,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
     const id = profile.id;
     noteTimer.current = window.setTimeout(() => {
       void wb.bazi.saveNote(id, text).then(
-        (raw) => setStoreData(raw as BaziStoreData),
+        (raw) => setStoreData(raw),
         (e) => onPending(errorText(e)),
       );
     }, 500);
@@ -209,10 +212,45 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
     setFTime(target ? target.time : '');
     setFTag(target ? target.tag ?? '' : '');
     setFPlace(target ? target.place ?? '' : '');
+    const region = target && target.lat !== undefined && target.lon !== undefined
+      ? findRegionByCoords(target.lat, target.lon)
+      : null;
+    if (region) {
+      const provinceNode = CHINA_REGIONS.find((p) => p.name === region.province);
+      // 直辖市/港澳:反查把区县记在 city 位(市=省),归位:市级=省名,区县=原 city
+      const direct = Boolean(provinceNode?.children?.length) && (provinceNode?.children ?? []).every((c) => (c.children?.length ?? 0) === 0);
+      setFProv(region.province);
+      setFCity(direct ? region.province : region.city ?? '');
+      setFDist(direct ? region.city ?? region.district ?? '' : region.district ?? '');
+    } else {
+      setFProv(target?.lat !== undefined && target?.lon !== undefined ? 'custom' : 'none');
+      setFCity(''); setFDist('');
+    }
     setFLat(target && target.lat !== undefined ? String(target.lat) : '');
     setFLon(target && target.lon !== undefined ? String(target.lon) : '');
     setModalOpen(true);
   };
+  // 出生地三级联动:省 → 市 → 区/县;直辖市的区县直接挂在省级(无市级);台湾省仅省级
+  const provNode: ChinaRegionNode | null = fProv !== 'none' && fProv !== 'custom'
+    ? CHINA_REGIONS.find((p) => p.name === fProv) ?? null
+    : null;
+  // 直辖市/港澳:区县直接挂省级 → 合成与省同名的市级节点,保证省/市/区三级恒在
+  const isDirect = Boolean(provNode?.children?.length) && (provNode?.children ?? []).every((c) => (c.children?.length ?? 0) === 0);
+  const cityOptions: ChinaRegionNode[] = provNode
+    ? isDirect
+      ? [{ name: provNode.name, lat: provNode.lat, lon: provNode.lon, children: provNode.children ?? [] }]
+      : provNode.children ?? []
+    : [];
+  const applyRegion = (province: ChinaRegionNode | null, cityName: string | null, districtName: string | null): void => {
+    const city = province?.children?.find((c) => c.name === cityName) ?? null;
+    const district = (city?.children ?? province?.children ?? []).find((d) => d.name === districtName) ?? null;
+    const leaf = district ?? city ?? province;
+    if (!leaf) return;
+    setFPlace(regionLabel(province?.name ?? '', cityName, districtName));
+    setFLat(String(leaf.lat));
+    setFLon(String(leaf.lon));
+  };
+
   const saveModal = (): void => {
     const name = fName.trim();
     const date = fDate;
@@ -255,7 +293,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
     window.clearTimeout(noteTimer.current);
     setSavingForAI(true);
     void wb.bazi.saveNote(profile.id, noteDraft).then(raw => {
-      setStoreData(raw as BaziStoreData);
+      setStoreData(raw);
       onAskAI(prompt, profile.id, tab);
     }, error => onPending(errorText(error))).finally(() => setSavingForAI(false));
   };
@@ -502,7 +540,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
                         })}
                       </tbody>
                     </table>
-                    {astro.asc === undefined && <div className="bazi-notehint">填写出生地经纬度后可显示宫位。</div>}
+                    {astro.asc === undefined && <div className="bazi-notehint">编辑命例选择出生地后可显示宫位。</div>}
                   </div>
                   <NoteCard value={noteDraft} onChange={onNote} />
                 </div>
@@ -547,17 +585,90 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
                 <input aria-label="标签" placeholder="如:自己 / 家人 / 朋友" maxLength={6} value={fTag} onChange={(e) => setFTag(e.target.value)} />
               </div>
               <div className="bazi-form-field bazi-form-wide">
-                <span className="bazi-form-label">出生地(可选,用于占星宫位)</span>
-                <input aria-label="出生地名称" placeholder="如:上海" maxLength={30} value={fPlace} onChange={(e) => setFPlace(e.target.value)} />
+                <span className="bazi-form-label">出生地(可选,用于占星宫位与上升点)</span>
+                <div className="bazi-region-row">
+                <Select
+                  aria-label="出生省份"
+                  value={fProv}
+                  options={[
+                    { value: 'none', label: '未填写' },
+                    ...CHINA_REGIONS.map((p) => ({ value: p.name, label: p.name })),
+                    { value: 'custom', label: '自定义坐标…' },
+                  ]}
+                  onChange={(value) => {
+                    setFProv(value); setFCity(''); setFDist('');
+                    setFPlace(''); setFLat(''); setFLon('');
+                    if (value === 'none' || value === 'custom') return;
+                    const province = CHINA_REGIONS.find((p) => p.name === value);
+                    if (!province) return;
+                    const children = province.children ?? [];
+                    const direct = children.length > 0 && children.every((c) => (c.children?.length ?? 0) === 0);
+                    if (direct) {
+                      setFCity(province.name);
+                      const first = children[0];
+                      setFDist(first.name);
+                      applyRegion(province, '', first.name);
+                    } else {
+                      const firstCity = children[0];
+                      if (firstCity) {
+                        setFCity(firstCity.name);
+                        const firstDistrict = firstCity.children?.[0];
+                        if (firstDistrict) setFDist(firstDistrict.name);
+                        applyRegion(province, firstCity.name, firstDistrict?.name ?? null);
+                      } else {
+                        applyRegion(province, null, null);
+                      }
+                    }
+                  }}
+                />
+                {(provNode?.children?.length ?? 0) > 0 && (
+                <Select
+                  aria-label="出生城市"
+                  value={fCity}
+                  options={cityOptions.map((c) => ({ value: c.name, label: c.name }))}
+                  onChange={(value) => {
+                    setFCity(value); setFDist('');
+                    const province = CHINA_REGIONS.find((p) => p.name === fProv);
+                    const direct = (province?.children ?? []).length > 0 && (province?.children ?? []).every((c) => (c.children?.length ?? 0) === 0);
+                    const city = direct
+                      ? { name: province!.name, children: province!.children ?? [] }
+                      : province?.children?.find((c) => c.name === value);
+                    const firstDistrict = city?.children?.[0];
+                    if (firstDistrict) setFDist(firstDistrict.name);
+                    applyRegion(province ?? null, direct ? '' : value, firstDistrict?.name ?? null);
+                  }}
+                />
+                )}
+                {(cityOptions.find((c) => c.name === fCity)?.children?.length ?? 0) > 0 && (
+                <Select
+                  aria-label="出生区县"
+                  value={fDist}
+                  options={(cityOptions.find((c) => c.name === fCity)?.children ?? []).map((d) => ({ value: d.name, label: d.name }))}
+                  onChange={(value) => {
+                    setFDist(value);
+                    const province = CHINA_REGIONS.find((p) => p.name === fProv);
+                    applyRegion(province ?? null, isDirect ? '' : fCity || null, value);
+                  }}
+                />
+                )}
+                </div>
               </div>
-              <div className="bazi-form-field">
-                <span className="bazi-form-label">纬度(可选)</span>
-                <input aria-label="纬度" placeholder="如:31.2304" inputMode="decimal" value={fLat} onChange={(e) => setFLat(e.target.value)} />
-              </div>
-              <div className="bazi-form-field">
-                <span className="bazi-form-label">经度(可选)</span>
-                <input aria-label="经度" placeholder="如:121.4737" inputMode="decimal" value={fLon} onChange={(e) => setFLon(e.target.value)} />
-              </div>
+              {fProv === 'custom' && (
+                <>
+                  <div className="bazi-form-field bazi-form-wide">
+                    <span className="bazi-form-label">地点名称</span>
+                    <input aria-label="地点名称" placeholder="如:国外城市或自定义地点" maxLength={30} value={fPlace} onChange={(e) => setFPlace(e.target.value)} />
+                  </div>
+                  <div className="bazi-form-field">
+                    <span className="bazi-form-label">纬度</span>
+                    <input aria-label="纬度" placeholder="如:31.2304" inputMode="decimal" value={fLat} onChange={(e) => setFLat(e.target.value)} />
+                  </div>
+                  <div className="bazi-form-field">
+                    <span className="bazi-form-label">经度</span>
+                    <input aria-label="经度" placeholder="如:121.4737" inputMode="decimal" value={fLon} onChange={(e) => setFLon(e.target.value)} />
+                  </div>
+                </>
+              )}
             </div>
             <div className="bazi-form-actions">
               <button className="btn btn-sec" onClick={() => setModalOpen(false)}>取消</button>

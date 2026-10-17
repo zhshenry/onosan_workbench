@@ -2,10 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type RefObject } f
 import { createPortal } from 'react-dom';
 import { CalendarBlank, Check, Circle, MagnifyingGlass, X } from '@phosphor-icons/react';
 import { aiReferenceKey, aiReferenceLimit, type AiReference } from '../../shared/ai-reference';
-import type { State } from '../../shared/todo-contracts';
-import type { CopyStoreData } from '../../shared/copy-contracts';
-import type { BaziStoreData } from '../../shared/bazi-contracts';
-import { READING_STATUS_LABEL, type ReadingStoreData } from '../../shared/reading-contracts';
+import { READING_STATUS_LABEL } from '../../shared/reading-contracts';
 import { scheduleStamp } from '../../shared/todo-format';
 import { matchesTodoPickerFilter, TODO_STATUS_LABEL, TodoPickerFilters, todoPickerStatusKey, type TodoKindFilter, type TodoStatusFilter } from './todo-picker-filters';
 
@@ -24,7 +21,7 @@ export const REFERENCE_LABELS: Record<ReferenceMode, string> = { todo: '事项',
 export async function loadReferenceOptions(mode: ReferenceMode): Promise<ReferenceOption[]> {
   const wb = window.workbench;
   if (mode === 'todo') {
-    const state = await wb.todo.state() as State;
+    const state = await wb.todo.state();
     const categories = new Map(state.categories.map(category => [category.id, category.name]));
     return state.tasks.filter(task => !task.deletedAt).map(task => {
       const statusKey = todoPickerStatusKey(task);
@@ -34,16 +31,16 @@ export async function loadReferenceOptions(mode: ReferenceMode): Promise<Referen
     });
   }
   if (mode === 'copy') {
-    const data = await wb.copy.list() as CopyStoreData;
+    const data = await wb.copy.list();
     return data.drafts.map(draft => ({ reference: { module: 'copy', draftId: draft.id }, title: draft.title || '未命名博客',
       detail: draft.updatedAt ? `更新于 ${new Date(draft.updatedAt).toLocaleDateString('zh-CN')}` : '博客草稿' }));
   }
   if (mode === 'bazi') {
-    const data = await wb.bazi.list() as BaziStoreData;
+    const data = await wb.bazi.list();
     return data.profiles.map(profile => ({ reference: { module: 'bazi', profileId: profile.id }, title: profile.name,
       detail: `${profile.date} ${profile.time} · ${profile.gender === 1 ? '男' : '女'}${profile.tag ? ` · ${profile.tag}` : ''}` }));
   }
-  const data = await wb.reading.list() as ReadingStoreData;
+  const data = await wb.reading.list();
   return data.books.map(book => ({ reference: { module: 'reading', profileId: book.id }, title: book.title,
     detail: [book.author, ...(book.tags ?? [])].filter(Boolean).join(' · ') || '已记录书目', status: READING_STATUS_LABEL[book.status], statusKey: book.status }));
 }

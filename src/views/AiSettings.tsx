@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { CaretDown, Eye, EyeSlash, Key, Lightning, PencilSimple, Plus, Trash } from '@phosphor-icons/react';
 import { AI_PROVIDER_PRESETS, RLCD_PROVIDER_PRESETS, type AIModel, type AIProtocol, type AIProvider, type AIProviderKind, type RlcdModel, type RlcdProvider, type RlcdProviderKind } from '../../shared/todo-contracts';
-import { errorText, IconButton, Modal, Select as TodoSelect } from '../../modules/todo/ui/ui';
-import type { AiConfig } from './AiPanel';
+import { errorText, IconButton, Modal, Select as TodoSelect } from '../ui/controls';
+import type { AiConfig } from '../../shared/workbench-api';
 
 const api = window.workbench.ai;
 const PROTOCOL_OPTIONS = [
@@ -61,7 +61,7 @@ function ProviderEditor({ surface, provider, saved, close }: {
       setInvalid('endpoint'); setError('请填写有效的 HTTP 或 HTTPS 服务地址，不含密钥、参数或锚点。'); endpointInput.current?.focus(); return;
     }
     setBusy(true);
-    try { saved(await (rlcd ? api.saveRlcdProvider : api.saveProvider)({ ...draft, id: provider?.id, name: draft.name.trim(), endpoint: draft.endpoint.trim(), apiKey: draft.apiKey || undefined }) as AiConfig); }
+    try { saved(await (rlcd ? api.saveRlcdProvider : api.saveProvider)({ ...draft, id: provider?.id, name: draft.name.trim(), endpoint: draft.endpoint.trim(), apiKey: draft.apiKey || undefined })); }
     catch (cause) { setError(errorText(cause)); }
     finally { setBusy(false); }
   }
@@ -132,7 +132,7 @@ function ModelEditor({ surface, provider, model, saved, close }: {
     setBusy(action);
     try {
       if (action === 'test') setNotice(await (rlcd ? api.testRlcd : api.test)({ providerId: provider.id, model: name.trim() }));
-      else saved(await (rlcd ? api.saveRlcdModel : api.saveModel)({ id: model?.id, providerId: provider.id, name: name.trim() }) as AiConfig);
+      else saved(await (rlcd ? api.saveRlcdModel : api.saveModel)({ id: model?.id, providerId: provider.id, name: name.trim() }));
     } catch (cause) { setError(errorText(cause)); }
     finally { setBusy(null); }
   }
@@ -168,7 +168,7 @@ export function AiSettings({ query }: { query: string }) {
   const [collapsed, setCollapsed] = useState<string[]>([]);
   const [sectionOpen, setSectionOpen] = useState<Record<Surface, boolean>>({ llm: true, rlcd: true });
   const [probe, setProbe] = useState<Probe | null>(null);
-  const [removing, setRemoving] = useState<{ title: string; detail: string; action(): Promise<unknown> } | null>(null);
+  const [removing, setRemoving] = useState<{ title: string; detail: string; action(): Promise<AiConfig> } | null>(null);
   const [removeError, setRemoveError] = useState('');
   const keepButton = useRef<HTMLButtonElement>(null);
 
@@ -177,22 +177,22 @@ export function AiSettings({ query }: { query: string }) {
 
   useEffect(() => {
     let active = true;
-    void api.config().then(raw => { if (active) setConfig(raw as AiConfig); }, cause => { if (active) setError(errorText(cause)); })
+    void api.config().then(raw => { if (active) setConfig(raw); }, cause => { if (active) setError(errorText(cause)); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
 
   async function reload() {
     setLoading(true); setError('');
-    try { setConfig(await api.config() as AiConfig); }
+    try { setConfig(await api.config()); }
     catch (cause) { setError(errorText(cause)); }
     finally { setLoading(false); }
   }
 
-  async function mutate(action: () => Promise<unknown>, message: string) {
+  async function mutate(action: () => Promise<AiConfig>, message: string) {
     if (busy) return;
     setBusy(true); setError(''); setRemoveError(''); setNotice('');
-    try { setConfig(await action() as AiConfig); setNotice(message); setRemoving(null); setProbe(null); }
+    try { setConfig(await action()); setNotice(message); setRemoving(null); setProbe(null); }
     catch (cause) { if (removing) setRemoveError(errorText(cause)); else setError(errorText(cause)); }
     finally { setBusy(false); }
   }

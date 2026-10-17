@@ -1,13 +1,16 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, useImperativeHandle, type CSSProperties, type ReactNode, type Ref, type RefObject } from 'react';
-import { ArrowClockwise, ArrowLeft, ArrowRight, ArrowSquareOut, Camera, Check, CheckCircle, Circle, ClipboardText, DotsThree, FolderOpen, GearSix, Globe, Minus, Play, Stop, TerminalWindow, WarningCircle, XCircle } from '@phosphor-icons/react';
+import { ArrowClockwise, ArrowCounterClockwise, ArrowLeft, ArrowRight, ArrowSquareOut, Camera, Check, CheckCircle, Circle, ClipboardText, DotsThree, FileText, FolderOpen, GearSix, Globe, Minus, Play, Stop, TerminalWindow, Warning, WarningCircle, XCircle } from '@phosphor-icons/react';
 import { GuestFrame } from '../../modules/browser/ui/guest-frame';
 import { WebviewPresentation } from '../../modules/browser/ui/webview-presentation';
 import { PageZoomControls } from '../../modules/browser/ui/page-zoom';
-import { Select as GameSelect, Segmented, Modal, errorText } from '../../modules/todo/ui/ui';
+import { Select as GameSelect, Segmented, Modal, errorText } from '../ui/controls';
 import { emptyBrowserFrame, type BrowserFrameState } from '../../shared/browser-contracts';
-import { GAME_TASKS, GameConfigSchema, gameProblemReport, gameResultStale, type GameConfig, type GameState, type GameTaskId, type GameTaskStatus } from '../../shared/game-contracts';
+import { GAME_TASKS, GameConfigSchema, gameProblemReport, gameTrialReport, gameResultStale, type GameArtifact, type GameConfig, type GameState, type GameTaskId, type GameTaskStatus, type GameTrialReset } from '../../shared/game-contracts';
 import office from '../assets/trail-office.png';
 import { GameTerminalPanel } from './GameTerminal';
+import { GameOnlineAddress, GameOnlineTools } from './GameOnlineTools';
+import { GameDocument } from './GameDocument';
+import { GameIssueDrawer } from './GameIssueDrawer';
 import './game.css';
 
 const STATUS: Record<GameTaskStatus, string> = { idle: '未运行', queued: '等待中', running: '运行中', passed: '通过', failed: '失败', cancelled: '已取消', unavailable: '未执行' };
@@ -27,7 +30,7 @@ function GameOptionsMenu({ kind, active, context, onOpen, children }: { kind: 'p
     window.addEventListener('resize', dismiss); return () => window.removeEventListener('resize', dismiss);
   }, [open]);
   useEffect(() => { menu.current?.hidePopover(); }, [active, context]);
-  const close = () => menu.current?.hidePopover();
+  const close = () => { menu.current?.hidePopover(); trigger.current?.focus(); };
   return <>
     <button ref={trigger} type="button" className="game-icon-button game-options-trigger" aria-label={label} title="更多功能" aria-haspopup="menu" aria-expanded={open} aria-controls={id} onClick={() => menu.current?.togglePopover()} onKeyDown={event => { if (event.key === 'ArrowDown') { event.preventDefault(); menu.current?.showPopover(); } }}><DotsThree size={22} weight="bold" /></button>
     <div ref={menu} id={id} className={`browser-menu game-options-menu game-${kind}-menu`} popover="auto" role="menu" aria-label={label} onToggle={event => { const next = event.newState === 'open'; setOpen(next); if (next) onOpen?.(); }} onKeyDown={event => {
@@ -62,7 +65,7 @@ function GamePreview({ url, workspace, tabId, viewport, apiRef, onState }: { url
   useLayoutEffect(() => {
     const element = stage.current;
     if (!element) return;
-    const observer = new ResizeObserver(([entry]) => setSize({ width: entry.contentRect.width, height: entry.contentRect.height }));
+    const observer = new ResizeObserver(([entry]) => { if (entry.contentRect.width > 0 && entry.contentRect.height > 0) setSize({ width: entry.contentRect.width, height: entry.contentRect.height }); });
     observer.observe(element); return () => observer.disconnect();
   }, []);
   useImperativeHandle(apiRef, () => ({ reload: () => controller.current?.reload(), back: () => controller.current?.goBack(), forward: () => controller.current?.goForward(), setZoomFactor: factor => controller.current?.setZoomFactor(factor), refreshZoom: () => controller.current?.refreshZoom() }), []);
@@ -73,7 +76,7 @@ function GamePreview({ url, workspace, tabId, viewport, apiRef, onState }: { url
     <div className="game-scaled" style={{ width: width * scale, height: height * scale }}>
       <div ref={host} className="game-viewport" style={{ width, height, transform: `scale(${scale})` }} />
     </div>
-    {state.error ? <div className="game-preview-error" role="alert"><WarningCircle size={24} /><p>页面载入失败，请检查本地服务。</p><button onClick={() => controller.current?.reload()}>重新载入</button></div> : null}
+    {state.error ? <div className="game-preview-error" role="alert"><WarningCircle size={24} /><p>页面载入失败，请检查当前环境的地址与连接。</p><button onClick={() => controller.current?.reload()}>重新载入</button></div> : null}
   </div>;
 }
 
@@ -95,11 +98,45 @@ function ProjectSettings({ state, close, onSave }: { state: GameState; close(): 
   </Modal>;
 }
 
+function GameTrialResetDialog({ request, close, reset }: { request: GameTrialReset; close(): void; reset(): Promise<void> }) {
+  const [busy, setBusy] = useState(false), [error, setError] = useState('');
+  const submitting = useRef(false);
+  const cancel = useRef<HTMLButtonElement>(null);
+  useLayoutEffect(() => { cancel.current?.focus(); }, []);
+  const environment = request.environment === 'online' ? '线上试玩' : '本地开发';
+  return <Modal title="重置保留试玩档？" titleIcon={<ArrowCounterClockwise size={28} />} className="game-trial-reset" busy={busy} close={close}>
+    <div className="game-trial-reset-body">
+      <p className="game-trial-reset-intro">将清空{environment}的试玩数据，下次试玩从头开始。</p>
+      <dl className="game-trial-reset-scope"><div><dt>当前环境</dt><dd><span>{environment}</span></dd></div><div><dt>试玩存档</dt><dd>保留试玩档</dd></div></dl>
+      <p className="game-trial-reset-help">本次重置仅影响该站点在此设备保存的进度与网页设置。<br />项目文件和{request.environment === 'online' ? '本地' : '线上'}试玩档会保留。</p>
+      <p className="game-trial-reset-origin" title={request.origin}>{request.origin}</p>
+      {error ? <p className="game-trial-reset-error" role="alert">{error}</p> : null}
+      <footer className="game-trial-reset-footer"><span><Warning size={20} />此操作无法撤销。</span><div className="actions"><button ref={cancel} type="button" autoFocus disabled={busy} onClick={close}>取消</button><button type="button" className="danger" disabled={busy} onClick={() => {
+        if (submitting.current) return;
+        submitting.current = true; setBusy(true); setError('');
+        void reset().then(close, error => setError(errorText(error))).finally(() => { submitting.current = false; setBusy(false); });
+      }}>{busy ? '正在重置…' : '确认重置'}</button></div></footer>
+    </div>
+  </Modal>;
+}
+
 function GameView({ active, onPending }: { active: boolean; onPending(message: string): void }) {
   const [state, setState] = useState<GameState | null>(null);
   const [failure, setFailure] = useState('');
   const [busy, setBusy] = useState(false);
   const [settings, setSettings] = useState(false);
+  const [documentOpen, setDocumentOpen] = useState(false);
+  const [issueOpen, setIssueOpen] = useState(false);
+  const [resetTrial, setResetTrial] = useState<GameTrialReset | null>(null);
+  const [trialVersion, setTrialVersion] = useState({ local: 0, online: 0 });
+  const [environment, setEnvironment] = useState('local');
+  const [onlineEntered, setOnlineEntered] = useState(false);
+  const [onlineSettings, setOnlineSettings] = useState(false);
+  const [onlineViewport, setOnlineViewport] = useState('fit');
+  const [onlineProfile, setOnlineProfile] = useState('keep');
+  const [onlineFreshId, setOnlineFreshId] = useState('');
+  const [onlineBrowser, setOnlineBrowser] = useState(emptyBrowserFrame);
+  const [onlineIssues, setOnlineIssues] = useState<Record<string, { notes: string; artifacts: GameArtifact[] }>>({});
   const [scope, setScope] = useState('quick');
   const [selected, setSelected] = useState<GameTaskId>('rules');
   const [testsOpen, setTestsOpen] = useState(window.innerWidth >= 1180);
@@ -109,7 +146,7 @@ function GameView({ active, onPending }: { active: boolean; onPending(message: s
   const [resizing, setResizing] = useState(false);
   const drag = useRef<{ x: number; width: number } | null>(null);
   const maximumTestsWidth = Math.max(330, availableWidth - 12 - 420);
-  const effectiveTestsWidth = Math.max(330, Math.min(maximumTestsWidth, testsWidth ?? availableWidth * .35));
+  const effectiveTestsWidth = Math.max(330, Math.min(maximumTestsWidth, testsWidth ?? availableWidth * (environment === 'online' ? .3 : .35)));
   const clampTestsWidth = (width: number) => Math.max(330, Math.min(maximumTestsWidth, width));
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [terminalEntered, setTerminalEntered] = useState(false);
@@ -118,10 +155,10 @@ function GameView({ active, onPending }: { active: boolean; onPending(message: s
   const [profile, setProfile] = useState('keep');
   const [freshId, setFreshId] = useState('');
   const [loadedRevision, setLoadedRevision] = useState('');
-  const [browser, setBrowser] = useState(emptyBrowserFrame);
-  const [notes, setNotes] = useState('');
+  const [localBrowser, setBrowser] = useState(emptyBrowserFrame);
   const [clock, setClock] = useState(Date.now());
-  const preview = useRef<PreviewApi>(null);
+  const localPreview = useRef<PreviewApi>(null), onlinePreview = useRef<PreviewApi>(null);
+  useEffect(() => { if (!active) { setDocumentOpen(false); setResetTrial(null); } }, [active]);
   useEffect(() => {
     let observed = false, active = true;
     const off = window.workbench.game.onChanged(next => { observed = true; if (active) setState(next); });
@@ -147,72 +184,107 @@ function GameView({ active, onPending }: { active: boolean; onPending(message: s
   if (!state) return <section className="game-loading" role="status">{failure || '正在读取游戏项目…'}</section>;
   const service = state.service;
   const running = service.phase === 'running';
+  const isOnline = environment === 'online';
+  const browser = isOnline ? onlineBrowser : localBrowser;
+  const preview = isOnline ? onlinePreview : localPreview;
+  const hasPreview = isOnline ? !!state.online.url : running;
+  const currentViewport = isOnline ? onlineViewport : viewport;
+  const currentProfile = isOnline ? onlineProfile : profile;
+  const trialUrl = isOnline ? state.online.url : `http://127.0.0.1:${state.config.port}`;
   const result = state.results[selected];
   const stale = gameResultStale(result, state.revision);
   const task = GAME_TASKS.find(task => task.id === selected)!;
   const quick = GAME_TASKS.filter(task => task.group === 'quick');
   const passed = quick.filter(task => state.results[task.id]?.status === 'passed' && !gameResultStale(state.results[task.id], state.revision)).length;
-  const sourceChanged = !!loadedRevision && loadedRevision !== state.revision;
+  const previewNeedsRefresh = !isOnline && running && !!loadedRevision && loadedRevision !== state.revision;
   const workspace = profile === 'keep' ? 'game-trail-detective' : `game-trail-fresh-${freshId}`;
-  const previewTabId = profile === 'keep' ? 'game-trial-keep' : `game-trial-${freshId}`;
-  const artifacts = [...(result?.artifacts ?? []), ...state.captures];
+  const localTabId = profile === 'keep' ? 'game-trial-keep' : `game-trial-${freshId}`;
+  const onlineWorkspace = onlineProfile === 'keep' ? 'game-trail-online' : `game-trail-fresh-online-${onlineFreshId}`;
+  const onlineTabId = onlineProfile === 'keep' ? 'game-trial-online-keep' : `game-trial-online-${onlineFreshId}`;
+  const previewTabId = isOnline ? onlineTabId : localTabId;
+  const issueKey = `${state.online.url}:${onlineWorkspace}`;
+  const onlineIssue = onlineIssues[issueKey] ?? { notes: '', artifacts: [] };
+  const artifacts = [...(result?.artifacts ?? []), ...state.captures.filter(item => item.environment !== 'online')];
   const projectBusy = busy || state.running || service.phase === 'starting';
-  const refresh = () => { preview.current?.reload(); setLoadedRevision(state.revision); };
+  const refresh = () => { preview.current?.reload(); if (!isOnline) setLoadedRevision(state.revision); };
+  const selectProfile = (value: string) => {
+    if (isOnline) { if (value === 'fresh') setOnlineFreshId(crypto.randomUUID()); setOnlineProfile(value); }
+    else { if (value === 'fresh') setFreshId(crypto.randomUUID()); setProfile(value); }
+  };
+  const capture = () => { void act(async () => {
+    const artifact = await window.workbench.game.capture(previewTabId);
+    if (isOnline) setOnlineIssues(previous => ({ ...previous, [issueKey]: { notes: previous[issueKey]?.notes ?? '', artifacts: [...(previous[issueKey]?.artifacts ?? []), artifact].slice(-10) } }));
+    onPending('试玩截图已保存到 Ono，可在附件中打开。');
+  }); };
+  const viewportLabel = currentViewport === 'fit' ? '跟随窗口' : currentViewport === 'desktop' ? '1440×1000' : '390×844';
+  const copyOnlineReport = () => { void act(async () => {
+    await window.workbench.clipboard.write(gameTrialReport(state.online, browser.target?.url || state.online.url, viewportLabel, browser.zoomFactor, onlineProfile === 'keep' ? '保留线上试玩档' : '新档试玩（临时）', onlineIssue.notes, onlineIssue.artifacts));
+    onPending('线上问题报告已复制，可粘贴到开发工具。');
+  }); };
   const run = (single = false) => { void act(() => window.workbench.game.run(single ? selected : scope === 'full' ? 'full' : 'quick')); };
   const copyReport = () => {
     if (!result) return;
-    void act(async () => { await window.workbench.clipboard.write(gameProblemReport(state, result, browser.target?.url || service.url, viewport === 'fit' ? '跟随窗口' : viewport === 'desktop' ? '1440×1000' : '390×844', notes)); onPending('问题报告已复制，可粘贴到开发工具。'); });
+    void act(async () => { await window.workbench.clipboard.write(gameProblemReport(state, result, browser.target?.url || service.url, viewport === 'fit' ? '跟随窗口' : viewport === 'desktop' ? '1440×1000' : '390×844')); onPending('问题报告已复制，可粘贴到开发工具。'); });
   };
   return <section className="game-workspace" aria-label="轨迹侦探运行与测试">
     <header className="game-project glass">
       <img src={office} alt="轨迹侦探事务所" />
-      <div className="game-project-name"><div className="game-project-heading"><strong>轨迹侦探</strong><span className={`game-service ${running ? 'is-ready' : ''}`} role="status" title={service.message}><Circle weight="fill" size={10} />{service.phase === 'starting' ? '启动中…' : running ? service.owned ? '运行中' : '外部服务 · 运行中' : service.phase === 'error' ? '启动失败' : '未运行'}</span></div><span title={state.config.root}>{state.config.root}</span></div>
+      <div className="game-project-name"><div className="game-project-heading"><strong>轨迹侦探</strong><span className={`game-service ${running ? 'is-ready' : ''}`} role="status" title={service.message}><Circle weight="fill" size={10} />{service.phase === 'starting' ? '本地启动中…' : running ? service.owned ? '本地运行中' : '外部本地服务 · 运行中' : service.phase === 'error' ? '本地启动失败' : '本地未启动'}</span></div><span title={state.config.root}>{state.config.root}</span></div>
       <div className="game-project-actions">
-        <div className="game-service-actions">{running ? <><button className="game-primary" disabled={projectBusy || !service.owned} onClick={() => { void act(async () => { await window.workbench.game.stop(); await window.workbench.game.start(); setLoadedRevision(''); }); }}><ArrowClockwise />重启</button><button disabled={projectBusy} onClick={() => { void act(() => window.workbench.game.stop()); }}><Stop />{service.owned ? '停止' : '断开'}</button></> : <button className="game-primary" disabled={projectBusy || !!state.sourceError} onClick={() => { setLoadedRevision(state.revision); void act(() => window.workbench.game.start()); }}><Play weight="fill" />启动游戏</button>}</div>
+        <div className="game-service-actions">{running ? <><button className="game-primary" disabled={projectBusy || !service.owned} onClick={() => { void act(async () => { await window.workbench.game.stop(); await window.workbench.game.start(); setLoadedRevision(''); }); }}><ArrowClockwise />重启本地</button><button disabled={projectBusy} onClick={() => { void act(() => window.workbench.game.stop()); }}><Stop />{service.owned ? '停止' : '断开'}</button></> : <button className="game-primary" disabled={projectBusy || !!state.sourceError} onClick={() => { setLoadedRevision(state.revision); void act(() => window.workbench.game.start()); }}><Play weight="fill" />启动本地</button>}</div>
         <div className="game-project-panels" role="group" aria-label="面板开关">
           <button ref={terminalToggle} aria-expanded={terminalOpen} aria-controls="game-project-terminal" title={terminalOpen ? '收起项目终端' : '展开项目终端'} onClick={() => { setTerminalEntered(true); setTerminalOpen(!terminalOpen); }}><TerminalWindow />终端</button>
           <button className="game-test-toggle" aria-expanded={testsOpen} title={testsOpen ? '收起测试栏' : '展开测试栏'} onClick={() => setTestsOpen(!testsOpen)}><ClipboardText />检查</button>
         </div>
         <GameOptionsMenu kind="project" active={active}>{close => <>
           <button type="button" role="menuitem" onClick={() => { close(); void act(() => window.workbench.game.open('root')); }}><FolderOpen />打开项目目录</button>
+          <button type="button" role="menuitem" onClick={() => { close(); setDocumentOpen(true); }}><FileText />项目运行说明</button>
           <button type="button" role="menuitem" disabled={projectBusy || running} title={running ? '停止服务后可修改项目设置' : '项目设置'} onClick={() => { close(); setSettings(true); }}><GearSix />项目设置</button>
         </>}</GameOptionsMenu>
       </div>
     </header>
-    {failure || state.sourceError || service.phase === 'error' ? <div className="game-error" role="alert"><WarningCircle /><span>{failure || state.sourceError || service.message}</span>{service.phase === 'error' ? <button disabled={projectBusy} onClick={() => { void act(() => window.workbench.game.connect()); }}>连接已有服务</button> : null}</div> : null}
-    {sourceChanged ? <div className="game-update" role="status">代码已变化 · 刷新查看最新画面，上次测试结果需重新验证。<button disabled={!running} onClick={refresh}>刷新试玩</button></div> : null}
+    {failure || !isOnline && (state.sourceError || service.phase === 'error') ? <div className="game-error" role="alert"><WarningCircle /><span>{failure || state.sourceError || service.message}</span>{!isOnline && service.phase === 'error' ? <button disabled={projectBusy} onClick={() => { void act(() => window.workbench.game.connect()); }}>连接已有服务</button> : null}</div> : null}
     <div className="game-panels"><div ref={grid} className={`game-grid${testsOpen ? '' : ' tests-hidden'}`} style={{ '--game-tests-width': `${effectiveTestsWidth}px` } as CSSProperties}>
       <section className="game-preview glass" aria-label="游戏预览">
-        <div className="game-pane-heading"><strong><Globe />游戏预览 <small>（本地）</small></strong><span>使用独立的本地试玩存档</span></div>
+        <div className="game-pane-heading"><strong><Globe />双环境试玩</strong><span>{isOnline ? '使用独立的线上试玩存档' : '使用独立的本地试玩存档'}</span></div>
+        <div className="game-environments"><Segmented aria-label="试玩环境" value={environment} onChange={value => { setEnvironment(value); setFailure(''); if (value === 'online') setOnlineEntered(true); }} options={[{ value: 'local', label: '本地开发' }, { value: 'online', label: '线上试玩' }]} /></div>
         <div className="game-preview-toolbar">
-          <button className="game-icon-button" disabled={!browser.canGoBack || !running} title="后退" aria-label="后退" onClick={() => preview.current?.back()}><ArrowLeft /></button>
-          <button className="game-icon-button" disabled={!browser.canGoForward || !running} title="前进" aria-label="前进" onClick={() => preview.current?.forward()}><ArrowRight /></button>
-          <button className="game-icon-button" disabled={!running} title="刷新试玩" aria-label="刷新试玩" onClick={refresh}><ArrowClockwise /></button>
-          <span className="game-address" title={browser.target?.url || service.url}>{browser.target?.url || service.url || `127.0.0.1:${state.config.port}`}</span>
-          <GameSelect aria-label="预览尺寸" value={viewport} onChange={setViewport} options={[{ value: 'fit', label: '跟随窗口' }, { value: 'desktop', label: '桌面 1440×1000' }, { value: 'narrow', label: '窄屏 390×844' }]} />
-          <GameOptionsMenu kind="preview" active={active} context={browser.target?.url} onOpen={() => preview.current?.refreshZoom()}>{close => <>
-            <PageZoomControls zoomFactor={running ? browser.zoomFactor : 1} disabled={!running || browser.loading || !browser.target || !!browser.error || busy} onZoomChange={factor => { void act(async () => preview.current?.setZoomFactor(factor)); }} />
+          <button className="game-icon-button" disabled={!browser.canGoBack || !hasPreview} title="后退" aria-label="后退" onClick={() => preview.current?.back()}><ArrowLeft /></button>
+          <button className="game-icon-button" disabled={!browser.canGoForward || !hasPreview} title="前进" aria-label="前进" onClick={() => preview.current?.forward()}><ArrowRight /></button>
+          <button type="button" className={previewNeedsRefresh ? 'game-refresh' : 'game-icon-button'} disabled={!hasPreview} title={previewNeedsRefresh ? '本地代码已更新，刷新试玩查看最新画面。' : '刷新试玩'} aria-label="刷新试玩" aria-description={previewNeedsRefresh ? '本地代码有更新' : undefined} onClick={refresh}><ArrowClockwise />{previewNeedsRefresh ? <><span>刷新试玩</span><span className="game-refresh-badge" role="status"><Circle weight="fill" aria-hidden="true" />有更新</span></> : null}</button>
+          <span className="game-address" title={browser.target?.url || (isOnline ? state.online.url : service.url)}>{browser.target?.url || (isOnline ? state.online.url || '请设置线上地址' : service.url || `127.0.0.1:${state.config.port}`)}</span>
+          <GameSelect aria-label="预览尺寸" value={currentViewport} onChange={isOnline ? setOnlineViewport : setViewport} options={[{ value: 'fit', label: '跟随窗口' }, { value: 'desktop', label: '桌面 1440×1000' }, { value: 'narrow', label: '窄屏 390×844' }]} />
+          <GameOptionsMenu kind="preview" active={active} context={`${environment}:${browser.target?.url}`} onOpen={() => preview.current?.refreshZoom()}>{close => <>
+            <PageZoomControls zoomFactor={hasPreview ? browser.zoomFactor : 1} disabled={!hasPreview || browser.loading || !browser.target || !!browser.error || busy} onZoomChange={factor => { void act(async () => preview.current?.setZoomFactor(factor)); }} />
             <hr />
             <div className="game-profile-options" role="group" aria-label="试玩存档">
               <span className="game-menu-label">试玩存档</span>
-              <button type="button" role="menuitemradio" aria-checked={profile === 'keep'} onClick={() => { close(); setProfile('keep'); }}><Check weight="bold" />保留试玩档</button>
-              <button type="button" role="menuitemradio" aria-checked={profile === 'fresh'} onClick={() => { close(); setFreshId(crypto.randomUUID()); setProfile('fresh'); }}><Check weight="bold" />新档试玩</button>
+              <button type="button" role="menuitemradio" aria-checked={currentProfile === 'keep'} onClick={() => { close(); selectProfile('keep'); }}><Check weight="bold" />保留试玩档</button>
+              <button type="button" role="menuitemradio" aria-checked={currentProfile === 'fresh'} onClick={() => { close(); selectProfile('fresh'); }}><Check weight="bold" />新档试玩</button>
             </div>
             <hr />
-            <button type="button" role="menuitem" disabled={!running || busy} onClick={() => { close(); void act(async () => { await window.workbench.game.capture(previewTabId); onPending('试玩截图已保存到 Ono，可在附件中打开。'); }); }}><Camera />截图记录问题</button>
-            <button type="button" role="menuitem" disabled={!running} title="使用该浏览器自己的存档" onClick={() => { close(); void act(() => window.workbench.game.open('preview')); }}><ArrowSquareOut />在外部浏览器打开</button>
+            <button type="button" role="menuitem" className="game-reset-trial-action" disabled={currentProfile !== 'keep' || !trialUrl || busy || browser.loading} title={currentProfile !== 'keep' ? '切换至保留试玩档后可重置' : '清空当前环境的保留试玩数据'} onClick={() => { close(); setResetTrial({ environment: isOnline ? 'online' : 'local', origin: new URL(trialUrl).origin }); }}><ArrowCounterClockwise />重置保留试玩档…</button>
+            <hr />
+            <button type="button" role="menuitem" disabled={!hasPreview || browser.loading || !!browser.error || busy} onClick={() => { close(); capture(); }}><Camera />截图记录问题</button>
+            <button type="button" role="menuitem" disabled={!hasPreview} title="使用该浏览器自己的存档" onClick={() => { close(); void act(() => isOnline ? window.workbench.game.openOnline(browser.target ? onlineTabId : undefined) : window.workbench.game.open('preview')); }}><ArrowSquareOut />在外部浏览器打开</button>
           </>}</GameOptionsMenu>
         </div>
-        {running ? <GamePreview key={`${service.url}:${workspace}`} url={service.url} workspace={workspace} tabId={previewTabId} viewport={viewport} apiRef={preview} onState={setBrowser} /> : <div className="game-preview-empty"><img src={office} alt="雨窗前的侦探事务所" /><h1>轨迹侦探</h1><p>{state.sourceError ? '请在项目设置中核对目录。' : '启动游戏，在这里直接试玩最新代码。'}</p><button onClick={() => { void act(() => window.workbench.game.open('docs')); }}>查看项目运行说明</button></div>}
-        <div className="game-preview-footer"><span><Circle weight="fill" size={9} />{service.message}</span><span>{browser.loading && running ? '页面载入中…' : running ? '人工试玩 · 自动测试使用独立档案' : '代码继续在现有开发工具中修改'}</span></div>
+        <div className="game-environment" hidden={isOnline} inert={isOnline} aria-hidden={isOnline}>{running ? <GamePreview key={`${service.url}:${workspace}:${trialVersion.local}`} url={service.url} workspace={workspace} tabId={localTabId} viewport={viewport} apiRef={localPreview} onState={setBrowser} /> : <div className="game-preview-empty"><img src={office} alt="雨窗前的侦探事务所" /><h1>轨迹侦探</h1><p>{state.sourceError ? '请在项目设置中核对目录。' : '启动游戏，在这里直接试玩最新代码。'}</p><button onClick={() => setDocumentOpen(true)}>查看项目运行说明</button></div>}</div>
+        <div className="game-environment" hidden={!isOnline} inert={!isOnline} aria-hidden={!isOnline}>{onlineEntered && state.online.url ? <GamePreview key={`${state.online.url}:${onlineWorkspace}:${trialVersion.online}`} url={state.online.url} workspace={onlineWorkspace} tabId={onlineTabId} viewport={onlineViewport} apiRef={onlinePreview} onState={setOnlineBrowser} /> : <div className="game-preview-empty"><Globe size={44} /><h1>线上试玩</h1><p>设置发布地址，直接体验服务器上的游戏。</p><button onClick={() => { setTestsOpen(true); setOnlineSettings(true); }}>设置线上地址</button></div>}</div>
+        <div className="game-preview-footer"><span><Circle weight="fill" size={9} />{isOnline ? onlineProfile === 'keep' ? '线上试玩档 · 与本地独立' : '线上临时新档 · 不覆盖保留档' : service.message}</span><span>{browser.loading && hasPreview ? '页面载入中…' : isOnline ? '本地服务未启动时也可试玩' : running ? '人工试玩 · 自动测试使用独立档案' : '代码继续在现有开发工具中修改'}</span></div>
       </section>
       {testsOpen ? <><div className="game-column-resize" role="separator" tabIndex={0} aria-label="调整游戏预览和测试检查宽度" title="左右拖动调整宽度（← / →）" aria-orientation="vertical" aria-controls="game-test-panel" aria-valuemin={330} aria-valuemax={Math.round(maximumTestsWidth)} aria-valuenow={Math.round(effectiveTestsWidth)} aria-valuetext={`测试检查 ${Math.round(effectiveTestsWidth)} 像素`} data-dragging={resizing}
         onPointerDown={event => { if (event.button !== 0) return; event.preventDefault(); event.currentTarget.focus({ preventScroll: true }); drag.current = { x: event.clientX, width: effectiveTestsWidth }; event.currentTarget.setPointerCapture(event.pointerId); setResizing(true); }}
         onPointerMove={event => { if (drag.current) setTestsWidth(clampTestsWidth(drag.current.width + drag.current.x - event.clientX)); }}
         onPointerUp={event => { drag.current = null; setResizing(false); if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }} onLostPointerCapture={() => { drag.current = null; setResizing(false); }}
         onKeyDown={event => { if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return; event.preventDefault(); setTestsWidth(event.key === 'Home' ? 330 : event.key === 'End' ? maximumTestsWidth : clampTestsWidth(effectiveTestsWidth + (event.key === 'ArrowLeft' ? 24 : -24))); }} />
-      <aside id="game-test-panel" className="game-tests glass" aria-label="测试检查">
-        <div className="game-pane-heading"><strong><ClipboardText />测试检查</strong><button className="game-icon-button" aria-label="收起测试栏" title="收起测试栏" onClick={() => setTestsOpen(false)}><Minus /></button></div>
+      {isOnline ? <GameOnlineTools online={state.online} browser={onlineBrowser} profile={onlineProfile} busy={busy} notes={onlineIssue.notes} artifacts={onlineIssue.artifacts}
+        edit={() => setOnlineSettings(true)} close={() => setTestsOpen(false)} recordIssue={() => setIssueOpen(true)} selectProfile={selectProfile} fresh={() => selectProfile('fresh')} capture={capture}
+        copyReport={copyOnlineReport} copyAddress={() => { void act(async () => { await window.workbench.clipboard.write(state.online.url); onPending('线上地址已复制。'); }); }}
+        openExternal={() => { void act(() => window.workbench.game.openOnline(onlineBrowser.target ? onlineTabId : undefined)); }} openArtifact={id => { void act(() => window.workbench.game.openArtifact(id)); }}
+        removeArtifact={id => setOnlineIssues(previous => ({ ...previous, [issueKey]: { notes: previous[issueKey]?.notes ?? '', artifacts: (previous[issueKey]?.artifacts ?? []).filter(item => item.id !== id) } }))}
+        check={() => { void window.workbench.game.checkOnline().catch(error => setFailure(errorText(error))); }} setNotes={value => setOnlineIssues(previous => ({ ...previous, [issueKey]: { notes: value, artifacts: previous[issueKey]?.artifacts ?? [] } }))} /> : <aside id="game-test-panel" className="game-tests glass" aria-label="测试检查">
+        <div className="game-pane-heading"><strong><ClipboardText />测试检查</strong><div className="game-pane-actions"><button type="button" onClick={() => setIssueOpen(true)}><ClipboardText />记录问题</button><button className="game-icon-button" aria-label="收起测试栏" title="收起测试栏" onClick={() => setTestsOpen(false)}><Minus /></button></div></div>
         <p className="game-pane-description">运行项目现有测试，查看结果与日志。</p>
         <Segmented aria-label="测试范围" value={scope} onChange={value => { setScope(value); setSelected(value === 'full' ? 'playthrough' : 'rules'); }} options={[{ value: 'quick', label: '快速检查（5项）' }, { value: 'full', label: '完整通关' }]} />
         <div className="game-test-scroll">
@@ -239,15 +311,23 @@ function GameView({ active, onPending }: { active: boolean; onPending(message: s
           </>}</div>
           <details className="game-detail" open={result?.status === 'failed' ? true : undefined}><summary>原始输出</summary><pre tabIndex={0}>{result?.output || '脚本暂无输出。运行状态以进程完成结果为准。'}</pre></details>
           <details className="game-detail"><summary>附件 · {artifacts.length ? `${artifacts.length} 项` : '暂无'}</summary>{artifacts.length ? artifacts.map(item => <button key={item.id} onClick={() => { void act(() => window.workbench.game.openArtifact(item.id)); }}><Camera />{item.name}</button>) : <p>脚本已生成的检查点截图和手动试玩截图显示在这里。</p>}</details>
-          <details className="game-detail"><summary>补充问题描述</summary><label htmlFor="game-notes">复现步骤 / 期望表现 / 实际表现</label><textarea id="game-notes" className="resize-none" rows={4} value={notes} onChange={event => setNotes(event.target.value)} /><button disabled={!result || busy} onClick={copyReport}><ClipboardText />复制问题报告</button></details>
+          <details className="game-detail"><summary>问题反馈</summary><p>将问题描述、截图副本、测试输出和服务日志一起保存到本机。</p><button onClick={() => setIssueOpen(true)}><ClipboardText />记录问题 / 查看已保存记录</button></details>
           <details className="game-detail"><summary>运行日志</summary><pre tabIndex={0}>{state.logs.join('\n') || '暂无服务日志'}</pre></details>
         </div>
         <p className="game-tests-footer">完整通关使用独立 Edge，不影响左侧试玩档。</p>
-      </aside></> : null}
+      </aside>}</> : null}
     </div>
     {terminalEntered ? <GameTerminalPanel open={terminalOpen} close={() => { setTerminalOpen(false); terminalToggle.current?.focus(); }} onPending={onPending} /> : null}
     </div>
     {settings ? <ProjectSettings state={state} close={() => setSettings(false)} onSave={async config => { await window.workbench.game.configure(config); setLoadedRevision(''); }} /> : null}
+    {documentOpen ? <GameDocument close={() => setDocumentOpen(false)} /> : null}
+    {resetTrial ? <GameTrialResetDialog request={resetTrial} close={() => setResetTrial(null)} reset={async () => {
+      try { await window.workbench.game.resetTrial(resetTrial); }
+      finally { setTrialVersion(previous => ({ ...previous, [resetTrial.environment]: previous[resetTrial.environment] + 1 })); }
+      onPending(`${resetTrial.environment === 'online' ? '线上' : '本地'}保留试玩档已重置。`);
+    }} /> : null}
+    {issueOpen ? <GameIssueDrawer state={state} environment={isOnline ? 'online' : 'local'} pageUrl={browser.target?.url || (isOnline ? state.online.url : service.url)} viewport={currentViewport} zoom={browser.zoomFactor} profile={currentProfile} taskId={selected} artifacts={isOnline ? onlineIssue.artifacts : artifacts} initialNotes={isOnline ? onlineIssue.notes : ''} capture={hasPreview && !!browser.target && !browser.loading && !browser.error ? () => window.workbench.game.capture(previewTabId) : undefined} close={() => setIssueOpen(false)} /> : null}
+    {onlineSettings ? <GameOnlineAddress url={state.online.url} close={() => setOnlineSettings(false)} save={async url => { await window.workbench.game.configureOnline(url); setOnlineEntered(true); setEnvironment('online'); if (url) void window.workbench.game.checkOnline().catch(error => setFailure(errorText(error))); }} /> : null}
   </section>;
 }
 

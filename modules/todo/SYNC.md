@@ -20,7 +20,7 @@
 | 上游仓库 | C:\Myself\vibe_coding\To-Do-List(GitHub: zhshenry/To-Do-List) |
 | 基准版本 | v0.5.10(上游待办移植基准;与工作台版本无关) |
 | 移植日期 | 2026-09-23 |
-| 工作台自身版本 | `package.json` 的 `0.1.0` |
+| 工作台自身版本 | 以根目录 `package.json` 为准；2026-10-17 为 `1.1.0` |
 
 从 v0.5.9 到 v0.5.10,上游映射文件的变更为 `shared/contracts.ts` 的 `insightTarget`、对应 `tests/store.test.ts` 测试及主窗 `src/styles.css` 的 55:45 固定双区布局。前两项已移植到工作台;固定双区属于上游 440px 窄窗布局,工作台首页继续使用自身宽屏双列布局,不移植该 CSS。
 
@@ -40,10 +40,10 @@
 | `electron/main.ts` AI 编排段 | `electron/ai-ipc.ts` + `electron/ai-store.ts` | ✅ 已移植 | 上游 ask/pending/chat 流转一致。**存储独立(用户决策 2026-09-23 修订:AI 不复用,仅待办数据共享)**:供应商/模型/Key/启用 → `userData/ai-config.json`(Key 仍 safeStorage/DPAPI 加密);会话 → `userData/chats.db`(结构同上游 chats 表,CRUD/恢复逻辑平移到 AiStore);**共享库 settings/chats 表完全不写**;applyPlan 落共享库但不传 proposalToken(会话状态在工作台库) |
 | `src/AssistantApp.tsx`+`AIConversation.tsx`+`AIProposalCards.tsx` | `src/views/AiPanel.tsx` | ✅ 已移植(适配) | 工作台为内嵌右侧面板而非独立气泡窗;流式/工具事件/建议确认/停止生成/会话管理语义一致;**简化**:建议卡为"动词+字段摘要"而非逐字段 diff 视图、`updateProposal`(逐项编辑建议)未移植(待需要时补) |
 | `tests/ai.test.ts`、`tests/ui.test.ts` | — | ⏳ 待补 | 依赖 `miniProposalView`(上游 AIConversation 内),随建议卡 diff 视图增强时移植 |
-| `src/ui.tsx` | `modules/todo/ui/ui.tsx` | ✅ 已移植 | 仅 import 路径(Select/Segmented/DatePicker/TimePicker/Modal/HelpTip/errorText) |
+| `src/ui.tsx` | `modules/todo/ui/ui.tsx` → `src/ui/controls.tsx` | ✅ 已移植 | 2026-10-17 将跨模块控件集中到工作台公共 UI；原路径保留兼容再导出与待办格式函数。移除全仓无调用的 HelpTip 与 BrandMark（现用 LogoMark 在 src/icons.tsx），上游同步仍从此映射逐项比较，避免覆盖其他模块共用的实现。样式继续由 todo.css 桥接 |
 | `src/TagColorPresets.tsx` | `modules/todo/ui/TagColorPresets.tsx` | ✅ 已移植 | 原样 |
-| `src/TaskEditor.tsx` | `modules/todo/ui/TaskEditor.tsx` | ✅ 已移植 | `api: DesktopAPI` 参数化为 `TaskEditorApi`(create/update/remove/createCategory 四方法,行为一致);导出 `TodoState` |
-| `src/App.tsx` 的 TodayBoard/PlanRow | `modules/todo/ui/TodayBoard.tsx` | ✅ 已提取 | App 壳部分(窗口/迷你卡/悬浮卡)不移植;`plan-more` 复盘按钮抽为 `TodayToolbar` 的 `onReview` prop;PlanRow 的 api/mutate 收敛到父级闭包 |
+| `src/TaskEditor.tsx` | `modules/todo/ui/TaskEditor.tsx` | ✅ 已移植 | `api: DesktopAPI` 参数化为 `TaskEditorApi`(create/update/remove/createCategory 四方法,行为一致);`TodoState` 从 shared/workbench-api 兼容再导出 |
+| `src/App.tsx` 的 TodayBoard/PlanRow | `modules/todo/ui/TodayBoard.tsx` | ✅ 已提取 | App 壳部分(窗口/迷你卡/悬浮卡)不移植;2026-10-17 移除无调用的 TodayToolbar 及专属样式，复盘入口由 HomeView/FloatTodo 各自提供;PlanRow 的 api/mutate 收敛到父级闭包 |
 | `src/styles.css`(plan/modal/form/select 等段) | `modules/todo/ui/todo.css` | ✅ 已移植 | token 改名桥接:上游 `--paper/--ink/--accent/...` → `--todo-*`,值为工作台玻璃蓝;字号映射到外壳 `--type-*`;类名与结构保持一致,硬编码暖色换冷色;widget/dock/mini/assistant/settings 段不移植 |
 | `src/TaskLibrary.tsx`(事项库) | `modules/todo/ui/TaskLibrary.tsx` | ✅ 已移植 | `api: DesktopAPI` 参数化为 `TaskLibraryApi`(update/restore);样式段进 todo.css(library-*) |
 | `src/SettingsPanel.tsx` | — | ⏳ 后续 | 工作台将来自建设置页,待办相关项(提醒/自启)届时并入 |

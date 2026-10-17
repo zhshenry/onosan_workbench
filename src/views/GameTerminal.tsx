@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { ArrowClockwise, CaretDoubleDown, Copy, Stop, TerminalWindow, Trash } from '@phosphor-icons/react';
-import { errorText } from '../../modules/todo/ui/ui';
+import { errorText } from '../ui/controls';
 import type { GameTerminalEvent, GameTerminalState } from '../../shared/game-contracts';
 import '@xterm/xterm/css/xterm.css';
 

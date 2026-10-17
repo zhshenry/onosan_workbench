@@ -268,10 +268,6 @@ export class FloatTodoWindow {
     return this.pinned;
   }
 
-  isPinned(): boolean {
-    return this.pinned;
-  }
-
   destroy(): void {
     this.cancelMotion?.();
     if (!this.win) return;

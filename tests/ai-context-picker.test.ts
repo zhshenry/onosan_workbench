@@ -8,9 +8,10 @@ import type { AiPanelContext, AiSeed } from '../src/views/AiPanel';
 
 test('上下文选择器使用真实控件发送所选 ID，并隔离页面、会话和空态', async () => {
   const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost', pretendToBeVisual: true });
+  (dom.window as any).ResizeObserver = class { observe() {} disconnect() {} };
   dom.window.HTMLDialogElement.prototype.showModal = function () { this.open = true; };
   dom.window.HTMLDialogElement.prototype.close = function () { this.open = false; };
-  const globals = ['window', 'document', 'HTMLElement', 'HTMLDialogElement', 'Node', 'navigator', 'requestAnimationFrame', 'cancelAnimationFrame'] as const;
+  const globals = ['window', 'document', 'HTMLElement', 'HTMLDialogElement', 'Node', 'navigator', 'requestAnimationFrame', 'cancelAnimationFrame', 'ResizeObserver'] as const;
   const previous = globals.map(name => Object.getOwnPropertyDescriptor(globalThis, name));
   globals.forEach(name => Object.defineProperty(globalThis, name, { configurable: true, value: name === 'window' ? dom.window : dom.window[name] }));
   const previousAct = Object.getOwnPropertyDescriptor(globalThis, 'IS_REACT_ACT_ENVIRONMENT');

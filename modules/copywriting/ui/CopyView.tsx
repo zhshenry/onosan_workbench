@@ -5,7 +5,7 @@ import {
   type CopyDraft, type CopyStoreData,
 } from '../../../shared/copy-contracts';
 import type { CopySource } from '../../../shared/todo-contracts';
-import { errorText } from '../../todo/ui/ui';
+import { errorText } from '../../../src/ui/controls';
 
 const wb = window.workbench;
 const CUR_KEY = 'wb.copy.curDraftId';

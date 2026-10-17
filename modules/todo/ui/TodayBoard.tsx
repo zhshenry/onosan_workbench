@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { Check, CaretDown, DotsThree, List, Note, SquaresFour } from '@phosphor-icons/react';
+import { Check, CaretDown } from '@phosphor-icons/react';
 import { localDay, openToday, taskTime, type Task } from '../../../shared/todo-contracts';
 import { isOverdue, scheduleStamp, stampLabel } from './ui';
 import type { TaskEditorApi, TodoState } from './TaskEditor';
@@ -79,16 +79,6 @@ export function TodayBoard({ tasks, today, categoryById, planView, mutating, api
         </section>;
       })}</div> : <div className="plan-empty">没有日程。</div>}
     </section>
-  </div>;
-}
-
-export function TodayToolbar({ planView, setPlanView, onReview }: { planView: 'rows' | 'tiles'; setPlanView(v: 'rows' | 'tiles'): void; onReview(): void }) {
-  return <div className="plan-view-toolbar">
-    <button type="button" aria-label={planView === 'rows' ? '切换到方块视图' : '切换到列表视图'} onClick={() => setPlanView(planView === 'rows' ? 'tiles' : 'rows')}>{planView === 'rows' ? <SquaresFour size={15} /> : <List size={15} />}{planView === 'rows' ? '方块视图' : '列表视图'}</button>
-    <details className="plan-more" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) event.currentTarget.open = false; }} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); event.currentTarget.open = false; event.currentTarget.querySelector('summary')?.focus(); } }}>
-      <summary aria-label="更多操作" title="更多操作"><DotsThree size={20} weight="bold" /></summary>
-      <button type="button" onClick={async event => { const menu = event.currentTarget.closest('details'); if (menu) { menu.open = false; menu.querySelector('summary')?.focus(); } onReview(); }}><Note size={17} />今日复盘</button>
-    </details>
   </div>;
 }
 

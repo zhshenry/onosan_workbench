@@ -80,6 +80,32 @@ function Wheel({ chart }: { chart: AstroChart }) {
     );
   });
   rings.push(<circle key="inner" cx={CX} cy={CX} r={120} fill="none" stroke="var(--bazi-pan-line)" />);
+  // 宫位(整宫制,有出生地时):ASC/MC 轴线 + 每星座的宫序号
+  if (chart.asc !== undefined && chart.mc !== undefined) {
+    const ascSign = Math.floor((((chart.asc % 360) + 360) % 360) / 30);
+    for (let i = 0; i < 12; i++) {
+      const house = ((i - ascSign + 12) % 12) + 1;
+      const [hx, hy] = polar(196, i * 30 + 15);
+      rings.push(
+        <text key={`h${i}`} x={hx} y={hy + 3.5} textAnchor="middle" fontSize={10}
+          fontWeight={house === 1 ? 700 : 400}
+          fill={house === 1 ? 'var(--bazi-pan-marker)' : 'var(--bazi-pan-ink-3)'}>
+          {house}
+        </text>,
+      );
+    }
+    for (const [angle, label] of [[chart.asc, 'ASC'], [chart.mc, 'MC']] as const) {
+      const [ax1, ay1] = polar(120, angle);
+      const [ax2, ay2] = polar(244, angle);
+      const [tx, ty] = polar(256, angle);
+      rings.push(
+        <line key={`ax${label}`} x1={ax1} y1={ay1} x2={ax2} y2={ay2}
+          stroke="var(--bazi-pan-marker)" strokeWidth={1.4} strokeDasharray="5 4" strokeOpacity={0.8} />,
+        <text key={`axl${label}`} x={tx} y={ty + 4} textAnchor="middle" fontSize={11} fontWeight={700}
+          fill="var(--bazi-pan-marker)">{label}</text>,
+      );
+    }
+  }
   return (
     <div className="bazi-as-wrap">
       <svg width={500} height={500} viewBox="0 0 520 520" role="img" aria-label="出生星盘(行星落座)">
@@ -99,7 +125,7 @@ export function AstroPan({ profile, chart }: { profile: BaziProfile; chart: Astr
           <div className="bazi-pan-meta">
             公历 {profile.date} {profile.time} · {profile.gender === 1 ? '男' : '女'} · 回归制
           </div>
-          <div className="bazi-pan-meta">所填出生时间按东八区（UTC+8）换算</div>
+          <div className="bazi-pan-meta">所填出生时间按东八区（UTC+8）换算{chart.asc === undefined && ' · 未填出生地,宫位暂缺'}</div>
           {chart.asc !== undefined && <div className="bazi-pan-meta">上升点 {formatAscendant(chart.asc)}</div>}
         </div>
       </div>

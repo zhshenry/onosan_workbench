@@ -63,14 +63,11 @@
 /* ---- AI 建议卡 ---- */
 .copy-ai { border-radius: var(--r-card); border: 1px solid var(--glass-line);
   background: var(--todo-white); box-shadow: var(--shadow-sm); padding: 12px 14px; }
-.copy-ai-head { display: flex; align-items: center; justify-content: space-between; }
 .copy-ai-title { font-size: var(--type-control); font-weight: 800; color: var(--acc-deep); }
-.copy-ai-close { width: 26px; height: 26px; }
 .copy-ai-notes { margin: 8px 0 0 18px; color: var(--ink-2); font-size: var(--type-control); line-height: 1.7; }
 .copy-ai-preview { width: 100%; margin-top: 10px; max-height: 300px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;
   font: inherit; font-size: var(--type-body); line-height: 1.8; color: var(--ink);
   background: var(--module-surface); border-radius: var(--r-ctl); padding: 12px 14px; user-select: text; }
-.copy-ai-foot { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
 .copy-ai-titles { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .copy-title-chip { padding: 7px 13px; border-radius: 999px; border: 1px solid var(--acc-ring); background: var(--acc-soft);
   color: var(--acc-deep); font-size: var(--type-control); font-weight: 600; transition: transform 0.15s var(--ease), background 0.15s var(--ease); }

@@ -19,9 +19,10 @@ test('main AI panel model trigger is capped and its menu can grow past the trigg
 
 test('AI panel model trigger exposes the full name and switching still activates the chosen model', async () => {
   const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost', pretendToBeVisual: true });
+  (dom.window as any).ResizeObserver = class { observe() {} disconnect() {} };
   dom.window.HTMLDialogElement.prototype.showModal = function () { this.open = true; };
   dom.window.HTMLDialogElement.prototype.close = function () { this.open = false; };
-  const globals = ['window', 'document', 'HTMLElement', 'HTMLDialogElement', 'Node', 'navigator', 'requestAnimationFrame', 'cancelAnimationFrame'] as const;
+  const globals = ['window', 'document', 'HTMLElement', 'HTMLDialogElement', 'Node', 'navigator', 'requestAnimationFrame', 'cancelAnimationFrame', 'ResizeObserver'] as const;
   const previous = globals.map(name => Object.getOwnPropertyDescriptor(globalThis, name));
   globals.forEach(name => Object.defineProperty(globalThis, name, { configurable: true, value: name === 'window' ? dom.window : dom.window[name] }));
   const previousAct = Object.getOwnPropertyDescriptor(globalThis, 'IS_REACT_ACT_ENVIRONMENT');

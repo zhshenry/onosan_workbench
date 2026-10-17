@@ -1,32 +1,15 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle, ClockCounterClockwise, DotsThree, ListChecks, Pause, Play, ShieldCheck, SpinnerGap, Stop, Trash, WarningCircle } from '@phosphor-icons/react';
-import { Modal, Select, errorText } from '../../todo/ui/ui';
+import { Modal, Select, errorText } from '../../../src/ui/controls';
 import type { BrowserClearData, BrowserSavedTab, BrowserTask, BrowserWorkspaceState } from '../../../shared/browser-automation-contracts';
 import { browserClearDataSchema } from '../../../shared/browser-automation-contracts';
 import { browserHistorySince, browserTimeOptions, filterBrowserHistory } from '../../../shared/browser-history';
-import type { BrowserPaneProps } from './pane';
-import { BrowserPane } from './pane';
-import { BrowserTaskDetails, browserTaskLabels } from './task-record';
+import { BrowserTaskHistory, browserTaskLabels } from './task-record';
 import { PageZoomControls } from './page-zoom';
 
 export { browserTaskLabels } from './task-record';
 
 const api = () => window.workbench.browserAutomation;
-
-/** The entire host stays mounted across workbench switches. Only URLs and IDs restore after restart. */
-export function BrowserWorkspacePane(props: BrowserPaneProps) {
-  const [saved, setSaved] = useState<BrowserWorkspaceState | null>(null);
-  const [error, setError] = useState('');
-  useEffect(() => {
-    let current = true;
-    if (!api()) { setSaved({ tabs: [], activeId: '', history: [], tasks: [] }); return; }
-    void api().state(props.workspace).then(value => { if (current) setSaved(value); }, cause => { if (current) setError(errorText(cause)); });
-    return () => { current = false; };
-  }, [props.workspace]);
-  if (error) return <div className="mbp-error" role="alert">浏览器记录读取失败：{error}<button className="btn btn-sec" onClick={() => { setError(''); setSaved({ tabs: [], activeId: '', history: [], tasks: [] }); }}>打开新页面</button></div>;
-  if (!saved) return <div className="mbp-start" role="status">正在恢复浏览器标签…</div>;
-  return <BrowserPane {...props} savedTabs={saved.tabs} savedActiveId={saved.activeId} automation={!!api()} />;
-}
 
 export function BrowserAutomationBar({ workspace, tabId, url, ready, zoomFactor, onZoomChange, onRefreshZoom, onNavigate, onState }: {
   workspace: string; url?: string; ready: boolean; onNavigate(url: string): void; onState(task: BrowserTask | null): void;
@@ -125,7 +108,7 @@ export function BrowserAutomationBar({ workspace, tabId, url, ready, zoomFactor,
         <div className="browser-records">{history.length ? history.slice(historyPage * 50, (historyPage + 1) * 50).map(item => <div className="browser-history-row" key={item.id}><button className="browser-history-item" onClick={() => { onNavigate(item.url); setPanel(null); }}><strong>{item.title || item.url}</strong><span>{item.url}</span><time>{new Date(item.at).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}</time></button><button className="btn btn-sec" aria-label={`删除历史：${item.title || item.url}`} disabled={busy} onClick={() => void perform(async () => { await api().deleteHistory(workspace, [item.id]); setState(await api().state(workspace)); setHistoryPage(0); })}>删除</button></div>) : <p>{state?.history.length ? '没有匹配的浏览记录。' : '还没有浏览记录。'}</p>}</div>
         <div className="browser-history-actions"><span role="status">{history.length} 条记录{history.length > 50 ? ` · 第 ${historyPage + 1} 页` : ''}</span><button className="btn btn-sec" disabled={!historyPage} onClick={() => setHistoryPage(page => page - 1)}>上一页</button><button className="btn btn-sec" disabled={(historyPage + 1) * 50 >= history.length} onClick={() => setHistoryPage(page => page + 1)}>下一页</button><button className="btn btn-sec" disabled={busy} onClick={() => { setClearKinds(['history']); setClearRange(historyRange); setClearScope('all'); setPanel('clear-history'); }}>清除浏览数据</button></div>
       </>}
-      {panel === 'tasks' && <div className="browser-records">{state?.tasks.length ? [...state.tasks].reverse().map(item => <details key={item.id}><summary>{item.goal} · {browserTaskLabels[item.status]}</summary><BrowserTaskDetails task={item} /></details>) : <p>还没有任务记录。</p>}</div>}
+      {panel === 'tasks' && <BrowserTaskHistory key={workspace} tasks={state?.tasks ?? []} />}
       {(panel === 'clear-site' || panel === 'clear-history') && <div className="browser-clear-data">
         <p>只清理当前浏览器分区。清理 Cookie 后可能需要重新登录；Cookie 可能由同一主域的站点共享。已打开的标签保留。</p>
         {origin && <><label htmlFor="browser-clear-scope">站点范围</label><Select id="browser-clear-scope" aria-label="清理站点范围" value={clearScope} options={[{ value: 'current', label: `当前站点：${origin}` }, { value: 'all', label: '此浏览器分区的所有站点' }]} onChange={setClearScope} /></>}

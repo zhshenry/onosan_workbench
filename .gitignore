@@ -28,3 +28,26 @@ design/references/*.png
 *.pfx
 *.p12
 *.pem
+
+# Requirement-local design references and local-only QA evidence.
+/docs/requirements/**/design/*.png
+# Keep local evidence private by default; retain the existing 18 reviewed images.
+/docs/requirements/**/evidence/*
+!/docs/requirements/life/mingli/evidence/69-mingli-layout-narrow.png
+!/docs/requirements/life/mingli/evidence/69-mingli-layout-wide.png
+!/docs/requirements/life/mingli/evidence/69-mingli-layout-ziwei.png
+!/docs/requirements/life/reading-details-60-67/evidence/61-paused.png
+!/docs/requirements/life/reading-details-60-67/evidence/61-status.png
+!/docs/requirements/life/reading-details-60-67/evidence/62-ai-closed.png
+!/docs/requirements/life/reading-details-60-67/evidence/62-ai-open.png
+!/docs/requirements/life/reading-details-60-67/evidence/63-no-rating.png
+!/docs/requirements/life/reading-details-60-67/evidence/65-sections.png
+!/docs/requirements/life/reading-details-60-67/evidence/66-progress.png
+!/docs/requirements/life/reading-details-60-67/evidence/67-detail-closed.png
+!/docs/requirements/life/reading-import-51/evidence/reading-delete-popover.png
+!/docs/requirements/life/reading-import-51/evidence/reading-import-confirm.png
+!/docs/requirements/life/reading-import-51/evidence/reading-imported-dmbok.png
+!/docs/requirements/shared/ai-assistant/evidence/68-ai-model-long-ellipsis-1280.png
+!/docs/requirements/shared/ai-assistant/evidence/68-ai-model-menu-open-1280.png
+!/docs/requirements/shared/topbar/evidence/58-topbar-capsules-center-1280.png
+!/docs/requirements/shared/topbar/evidence/58-topbar-capsules-schedule-popover-1280.png

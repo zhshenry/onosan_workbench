@@ -31,6 +31,7 @@ export interface ImageSaveContext {
 export class BrowserGuests {
   private readonly partitions = new Map<string, string>();
   private readonly leases = new Map<BrowserLeaseId, GuestLease>();
+  private readonly resetting = new Set<string>();
   private imageSaver: ((ctx: ImageSaveContext) => void | Promise<void>) | undefined;
   private navigationObserver?: (workspace: string, url: string, title: string, tabId: string) => void;
   private popupObserver?: (owner: WebContents, parentTabId: string) => string | undefined;
@@ -55,6 +56,7 @@ export class BrowserGuests {
     if (typeof workspace !== 'string' || workspace.length === 0 || workspace.length > 4096) {
       throw new Error('内置浏览器:缺少 workspace 存储标识');
     }
+    if (this.resetting.has(workspace)) throw new Error('试玩存档正在重置，请稍后重试。');
     if (tabId !== undefined && (typeof tabId !== 'string' || !/^[a-zA-Z0-9_-]{1,100}$/.test(tabId))) throw new Error('内置浏览器:无效标签标识');
     if (tabId && [...this.leases.values()].some(item => item.owner === owner && item.tabId === tabId)) throw new Error('内置浏览器:标签已经存在');
     let partition = this.partitions.get(workspace);
@@ -95,6 +97,25 @@ export class BrowserGuests {
   async closeTab(owner: WebContents, tabId: string): Promise<void> {
     const entry = [...this.leases].find(([, lease]) => lease.owner === owner && lease.tabId === tabId);
     if (entry) await this.release(owner, entry[0]);
+  }
+
+  async resetGameTrial(owner: WebContents, workspace: 'game-trail-detective' | 'game-trail-online', origin: string): Promise<void> {
+    if (!['game-trail-detective', 'game-trail-online'].includes(workspace) || !URL.canParse(origin) || !['http:', 'https:'].includes(new URL(origin).protocol) || new URL(origin).origin !== origin) throw new Error('试玩存档清理范围无效。');
+    if (this.resetting.has(workspace)) throw new Error('试玩存档正在重置，请稍后重试。');
+    const entries = [...this.leases].filter(([, lease]) => lease.workspace === workspace);
+    for (const [, lease] of entries) {
+      if (lease.owner !== owner) throw new Error('试玩存档正在被其他窗口使用，请关闭后重试。');
+      const url = lease.guest && !lease.guest.isDestroyed() ? lease.guest.getURL() : '';
+      if (url && !url.startsWith('about:blank') && new URL(url).origin !== origin) throw new Error('当前页面已离开配置的游戏站点，请返回后重试。');
+    }
+    this.resetting.add(workspace);
+    try {
+      // Close the page first so its in-memory progress cannot write the old save back.
+      for (const [id] of entries) await this.release(owner, id);
+      const storage = session.fromPartition(this.partitions.get(workspace) ?? `persist:wb-browser-${workspace}`);
+      await storage.clearData({ dataTypes: ['localStorage', 'indexedDB'], origins: [origin], originMatchingMode: 'origin-in-all-contexts' });
+      storage.flushStorageData();
+    } finally { this.resetting.delete(workspace); }
   }
 
   canNavigate(url: string, workspace: string): boolean { return this.allowedNavigation(url, workspace); }

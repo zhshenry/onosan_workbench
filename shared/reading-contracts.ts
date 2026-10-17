@@ -44,7 +44,6 @@ const chapterPairRefine = (data: { chapterCurrent?: number; chapterTotal?: numbe
   (data.chapterCurrent === undefined) === (data.chapterTotal === undefined);
 export const bookCreateSchema = bookEntryFields.omit({ id: true, createdAt: true, updatedAt: true }).refine(chapterPairRefine, { message: '章节进度需成对填写' });
 export const bookPatchSchema = bookEntryFields.omit({ id: true, createdAt: true, updatedAt: true }).partial().refine(chapterPairRefine, { message: '章节进度需成对填写' });
-export const bookInputSchema = bookCreateSchema;
 export type BookInput = z.infer<typeof bookCreateSchema>;
 
 /** 库内书笔记的 frontmatter 子集(解析自笔记头部) */
@@ -132,4 +131,21 @@ export function booksPendingImport<T extends { folder: string }>(
   const linked = new Set(linkedFolders);
   const checked = new Set(checkedFolders);
   return candidates.filter((candidate) => checked.has(candidate.folder) && !linked.has(candidate.folder));
+}
+
+export interface BookCandidate {
+  folder: string;
+  /** 默认书名 = 文件夹名,不用深层笔记 frontmatter title */
+  name: string;
+  noteCount: number;
+  lastUpdated: string;
+}
+
+export interface BookAggregate {
+  noteCount: number;
+  lastUpdated: string;
+  maturity: { draft: number; shaped: number };
+  totalChapters: number | null;
+  notes: NoteMeta[];
+  chapters: { rel: string; name: string; count: number; lastUpdated: string }[];
 }

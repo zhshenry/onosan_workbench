@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, rm, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createServer } from 'node:net';
+import { createServer as createHttpServer } from 'node:http';
 import { setTimeout as delay } from 'node:timers/promises';
 import { GameWorkbench, inside } from '../electron/game-workbench';
-import { GAME_TASKS, gameResultStale, gameProblemReport } from '../shared/game-contracts';
+import { GAME_TASKS, gameResultStale, gameProblemReport, gameTrialReport } from '../shared/game-contracts';
 
 async function port() {
   const server = createServer();
@@ -46,6 +47,96 @@ test('local HTTP serves only the configured web root, no cache; stop does not le
   await assert.rejects(game.configure(state.config), /停止/);
   await game.stop();
   await assert.rejects(fetch(state.service.url));
+});
+
+test('project documentation reads UTF-8 Markdown without changing source or requiring a service', async t => {
+  const { game, root } = await fixture(t);
+  await mkdir(join(root, 'docs'));
+  await writeFile(join(root, 'README.md'), '\ufeff# 游戏运行说明\n\n[下一篇](docs/运行说明.md)');
+  await writeFile(join(root, 'docs/运行说明.md'), '## 启动\n\n```sh\nnode game.js\n```');
+  const main = await game.readDocument(); assert.equal(main.path, 'README.md'); assert(main.content.startsWith('# 游戏运行说明'));
+  const next = await game.readDocument('docs/运行说明.md'); assert.equal(next.path, 'docs/运行说明.md'); assert(next.content.includes('node game.js'));
+  assert.equal((await readFile(join(root, 'README.md'), 'utf8')).charCodeAt(0), 0xfeff);
+  assert.equal(game.snapshot().service.phase, 'stopped');
+});
+
+test('project documentation rejects non-Markdown, oversized files, traversal and symlink escapes', async t => {
+  const { game, root, directory } = await fixture(t);
+  await writeFile(join(directory, 'outside.md'), 'PRIVATE FIXTURE');
+  await writeFile(join(root, 'large.md'), 'x'.repeat(1024 * 1024 + 1));
+  for (const value of ['../outside.md', join(directory, 'outside.md'), 'file:///outside.md', 'private.txt', 'bad\0.md', 7]) await assert.rejects(game.readDocument(value));
+  await assert.rejects(game.readDocument('large.md'), /1 MiB/);
+  await mkdir(join(directory, 'outside-docs')); await writeFile(join(directory, 'outside-docs/secret.md'), 'OUTSIDE');
+  await symlink(join(directory, 'outside-docs'), join(root, 'linked-docs'), process.platform === 'win32' ? 'junction' : 'dir');
+  await assert.rejects(game.readDocument('linked-docs/secret.md'), /当前游戏项目/);
+});
+
+test('online address is independently saved while local service runs and rejects unsafe addresses', async t => {
+  const { game, directory, root } = await fixture(t);
+  assert.equal(game.snapshot().online.url, '');
+  await game.start();
+  for (const url of ['file:///private.md', 'javascript:alert(1)', 'https://user:pass@example.com', 'not a url']) await assert.rejects(game.configureOnline(url));
+  await game.configureOnline(' https://example.com/game/index.html#city/N1 ');
+  assert.equal(game.snapshot().online.url, 'https://example.com/game/index.html#city/N1');
+  assert.equal(game.snapshot().service.phase, 'running');
+  assert.equal(game.snapshot().config.root, root);
+  const restored = new GameWorkbench({ dataDir: join(directory, 'data'), appRoot: resolve('.'), root });
+  t.after(() => restored.dispose()); await restored.initialize();
+  assert.equal(restored.snapshot().online.url, game.snapshot().online.url);
+  assert.equal(restored.snapshot().online.check, undefined);
+  await game.configureOnline('');
+  assert.equal(game.snapshot().online.url, '');
+  assert.equal(game.snapshot().service.phase, 'running');
+});
+
+test('online checks use the configured HTTP site without a local service, follow redirects and retain real failures', async t => {
+  const { game } = await fixture(t);
+  const server = createHttpServer((request, response) => {
+    if (request.url === '/redirect') response.writeHead(302, { location: '/game/index.html' }).end();
+    else response.writeHead(request.url === '/game/index.html' ? 200 : 503).end('fixture');
+  });
+  await new Promise<void>(done => server.listen(0, '127.0.0.1', done));
+  t.after(async () => { server.closeAllConnections(); await new Promise<void>(done => server.close(() => done())); });
+  const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  await game.configureOnline(base + '/redirect'); await game.checkOnline();
+  assert.equal(game.snapshot().online.check?.status, 'passed');
+  assert.equal(game.snapshot().online.check?.url, base + '/game/index.html');
+  assert.equal(game.snapshot().online.check?.httpStatus, 200);
+  assert.equal(game.snapshot().service.phase, 'stopped');
+  assert.deepEqual(game.snapshot().results, {});
+  await game.configureOnline(base + '/missing'); await game.checkOnline();
+  assert.equal(game.snapshot().online.check?.status, 'failed');
+  assert.equal(game.snapshot().online.check?.httpStatus, 503);
+  await game.configureOnline(''); await assert.rejects(game.checkOnline(), /设置线上地址/);
+});
+
+test('changing the online address discards a delayed check from the old site', async t => {
+  const { game } = await fixture(t);
+  let finish: (() => void) | undefined;
+  const server = createHttpServer((_request, response) => { finish = () => response.end('old site'); });
+  await new Promise<void>(done => server.listen(0, '127.0.0.1', done));
+  t.after(async () => { server.closeAllConnections(); await new Promise<void>(done => server.close(() => done())); });
+  const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  await game.configureOnline(base + '/old'); const check = game.checkOnline();
+  await settled(game, () => !!finish);
+  await game.configureOnline(base + '/new'); finish!(); await check;
+  assert.equal(game.snapshot().online.url, base + '/new');
+  assert.equal(game.snapshot().online.check, undefined);
+});
+
+test('online screenshot metadata and problem reports do not contaminate local test reports', async t => {
+  const { game } = await fixture(t);
+  const png = Buffer.from('89504e470d0a1a0a', 'hex').toString('base64');
+  const local = await game.capture(png);
+  const online = await game.capture(png, { environment: 'online', siteUrl: 'https://example.com/game/', url: 'https://example.com/game/scene.html?case=N1' });
+  await game.run('rules'); await settled(game);
+  const state = game.snapshot();
+  const localReport = gameProblemReport(state, state.results.rules!, 'http://127.0.0.1/', '1440×1000');
+  assert(localReport.includes(local.file)); assert(!localReport.includes(online.file));
+  const onlineReport = gameTrialReport({ url: 'https://example.com/game/' }, online.url!, '390×844', 1.1, '新档试玩', '检查刷新后续玩', [online]);
+  assert(onlineReport.includes('环境：线上试玩')); assert(onlineReport.includes('110%')); assert(onlineReport.includes(online.file));
+  assert(onlineReport.includes('检查刷新后续玩')); assert(!onlineReport.includes(local.file));
+  assert.equal(await game.artifactPath(online.id), online.file);
 });
 
 test('port conflicts remain errors until explicitly connected; disconnect does not stop an external server', async t => {

@@ -1,12 +1,13 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import type { AiConfig } from '../../shared/workbench-api';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CaretDown, DotsThree, GearSix, Info, MagnifyingGlass, PaperPlaneRight, Plus, PushPin, SidebarSimple, Sparkle, Stop, Trash, X } from '@phosphor-icons/react';
 import { IconCheckSquare, IconGamepad, IconHome, IconMoon, IconVideo, IconWeb } from '../icons';
-import type { AIModel, AIProvider, ChatSession, ChatSummary, CopySource, RlcdModel, RlcdProvider } from '../../shared/todo-contracts';
-import { aiScopeKey, chatContextScope, chatScope, defaultAiScopeForWorkbench, sameAiWorkbench, TODO_AI_WORKBENCH_NAME, workbenchForScope, type AiScope } from '../../shared/ai-scope';
+import type { ChatSession, ChatSummary, CopySource } from '../../shared/todo-contracts';
+import { aiScopeKey, chatContextScope, chatScope, defaultAiScopeForWorkbench, preferredAiChat, sameAiWorkbench, TODO_AI_WORKBENCH_NAME, workbenchForScope, type AiScope } from '../../shared/ai-scope';
 import { aiReferenceKey, aiReferenceMode, validateAiReferences, type AiReference } from '../../shared/ai-reference';
 import { AiReferencePicker, loadReferenceOptions, REFERENCE_LABELS, type ReferenceOption } from './AiReferencePicker';
-import { errorText, Modal, Select as TodoSelect } from '../../modules/todo/ui/ui';
+import { errorText, Modal, Select as TodoSelect } from '../ui/controls';
 import { TodoProposalCard } from './TodoProposalCard';
 import { AiResponse } from './AiResponse';
 import { AiActivity } from './AiActivity';
@@ -23,11 +24,7 @@ const SCOPE_TIPS: Record<string, string> = {
 };
 const SCOPE_TIP_DEFAULT = 'AI 在这里只回答一般问题,不会读取你的文件内容。';
 const workspaceKey = (scope: AiScope): string => workbenchForScope(scope) ?? aiScopeKey(scope);
-export interface AiConfig {
-  aiEnabled: boolean; providers: AIProvider[]; models: AIModel[];
-  activeModelId: string; hasConnection: boolean;
-  rlcdProviders: RlcdProvider[]; rlcdModels: RlcdModel[]; activeRlcdModelId: string;
-}
+
 export interface AiPanelContext {
   scope: AiScope; label: string; object: string;
   baziSystem?: 'bazi' | 'ziwei' | 'astro';
@@ -218,7 +215,9 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
   const [manageError, setManageError] = useState('');
   const renameInput = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const messageList = useRef<HTMLDivElement>(null);
   const followReply = useRef(true);
+  const [aboveBottom, setAboveBottom] = useState(false);
   const scrollPositions = useRef(new Map<string, number>());
   const selectedChats = useRef(new Map<string, string>());
   const loadSequence = useRef(0);
@@ -226,6 +225,14 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
   const draftTimer = useRef<number | undefined>(undefined);
   const draftSnapshot = useRef<{ id: string; text: string } | null>(null);
   const currentRef = useRef(current);
+  const measureScroll = useCallback((): void => {
+    const element = scrollRef.current;
+    if (!element) return;
+    const above = element.scrollHeight - element.scrollTop - element.clientHeight >= 80;
+    followReply.current = !above;
+    setAboveBottom(above);
+    if (currentRef.current) scrollPositions.current.set(currentRef.current.id, element.scrollTop);
+  }, []);
   const pageContextRef = useRef(context);
   const pageWorkbench = workbenchForScope(context.scope);
   const browserWorkspace = context.scope.module === 'workbench' && pageWorkbench === workbenchForScope(activeContext.scope)
@@ -279,8 +286,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
   pageContextRef.current = context;
   activeScopeKeyRef.current = activeScopeKey;
 
-  const refreshChats = (): Promise<ChatSummary[]> => wb.ai.chatList().then(raw => {
-    const list = raw as ChatSummary[];
+  const refreshChats = (): Promise<ChatSummary[]> => wb.ai.chatList().then(list => {
     setChats(list);
     return list;
   });
@@ -312,20 +318,18 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
     setReferenceDialogOpen(false);
   };
   const restoreWorkbenchChat = (scope: AiScope, sequence: number): void => {
-    void wb.ai.chatList().then(async raw => {
+    void wb.ai.chatList().then(async list => {
       if (sequence !== loadSequence.current) return;
-      const list = raw as ChatSummary[];
       setChats(list);
-      const scoped = list.filter(chat => sameAiWorkbench(chat, scope));
       const wanted = selectedChats.current.get(workspaceKey(scope));
-      const found = scoped.find(chat => chat.id === wanted) ?? scoped[0];
+      const found = preferredAiChat(list, scope, wanted);
       if (!found) return;
-      const chat = await wb.ai.chatOpen(found.id) as ChatSession;
+      const chat = await wb.ai.chatOpen(found.id);
       if (sequence === loadSequence.current) showChat(chat);
     }).catch(e => { if (sequence === loadSequence.current) setError(errorText(e)); });
   };
   useEffect(() => {
-    if (open) void wb.ai.config().then(raw => setConfig(raw as AiConfig), e => setError(errorText(e)));
+    if (open) void wb.ai.config().then(raw => setConfig(raw), e => setError(errorText(e)));
   }, [open]);
   useEffect(() => {
     const sequence = ++loadSequence.current;
@@ -402,8 +406,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
   }, [pageScopeKey, context.label, context.object, context.baziSystem, current?.id, fixedContext]);
   useEffect(() => {
     if (!requestedChatId) return;
-    void wb.ai.chatOpen(requestedChatId).then(raw => {
-      const chat = raw as ChatSession;
+    void wb.ai.chatOpen(requestedChatId).then(chat => {
       ++loadSequence.current;
       flushDraft();
       setActiveContext(context);
@@ -425,9 +428,8 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
       else {
         const list = await refreshChats();
         const wanted = selectedChats.current.get(targetKey);
-        const found = list.find(item => item.id === wanted && sameAiWorkbench(item, seed.scope))
-          ?? list.find(item => sameAiWorkbench(item, seed.scope));
-        chat = found ? await wb.ai.chatOpen(found.id) as ChatSession : await wb.ai.chatNew(seed.scope) as ChatSession;
+        const found = preferredAiChat(list, seed.scope, wanted);
+        chat = found ? await wb.ai.chatOpen(found.id) : await wb.ai.chatNew(seed.scope);
       }
       if (sequence === loadSequence.current) {
         if (existing?.id !== chat.id) flushDraft();
@@ -456,8 +458,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
       if (sequence === loadSequence.current) setError(errorText(e));
     });
   }, [open, seed?.nonce]);
-  useEffect(() => wb.ai.onChat(raw => {
-    const chat = raw as ChatSession;
+  useEffect(() => wb.ai.onChat(chat => {
     const summary = chatSummary(chat);
     setChats(previous => [summary, ...previous.filter(item => item.id !== chat.id)]
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
@@ -480,15 +481,29 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
   }, [current?.id, input]);
   useLayoutEffect(() => {
     const element = scrollRef.current;
-    if (current && element) {
-      element.scrollTop = scrollPositions.current.get(current.id) ?? element.scrollHeight;
-      followReply.current = element.scrollHeight - element.scrollTop - element.clientHeight < 80;
-    }
-  }, [current?.id]);
+    if (!element) return;
+    element.scrollTop = current ? scrollPositions.current.get(current.id) ?? element.scrollHeight : 0;
+    measureScroll();
+    const observer = new ResizeObserver(() => {
+      if (followReply.current) element.scrollTop = element.scrollHeight;
+      measureScroll();
+    });
+    observer.observe(element);
+    if (messageList.current) observer.observe(messageList.current);
+    return () => observer.disconnect();
+  }, [current?.id, open, measureScroll]);
   useLayoutEffect(() => {
     const element = scrollRef.current;
     if (element && followReply.current) element.scrollTop = element.scrollHeight;
-  }, [current?.entries]);
+    measureScroll();
+  }, [current?.entries, measureScroll]);
+  const jumpToBottom = (): void => {
+    const element = scrollRef.current;
+    if (!element) return;
+    element.scrollTop = element.scrollHeight;
+    measureScroll();
+    element.focus({ preventScroll: true });
+  };
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent): void => {
@@ -564,7 +579,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
   const selectModel = (id: string): void => {
     if (id === config?.activeModelId) return;
     setSwitchingModel(true); setModelError('');
-    void wb.ai.activateModel(id).then(raw => setConfig(raw as AiConfig), e => setModelError(errorText(e)))
+    void wb.ai.activateModel(id).then(raw => setConfig(raw), e => setModelError(errorText(e)))
       .finally(() => {
         setSwitchingModel(false);
         requestAnimationFrame(() => {
@@ -576,19 +591,19 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
     flushDraft(); const sequence = ++loadSequence.current; const targetKey = activeScopeKey;
     void wb.ai.chatNew(scope).then(raw => {
       if (sequence !== loadSequence.current || activeScopeKeyRef.current !== targetKey) return;
-      showChat(raw as ChatSession); void refreshChats();
+      showChat(raw); void refreshChats();
     }, e => { if (activeScopeKeyRef.current === targetKey) setError(errorText(e)); });
   };
   const openChat = (id: string): void => {
     flushDraft(); const sequence = ++loadSequence.current; const targetKey = activeScopeKey;
     void wb.ai.chatOpen(id).then(raw => {
-      if (sequence === loadSequence.current && activeScopeKeyRef.current === targetKey) showChat(raw as ChatSession);
+      if (sequence === loadSequence.current && activeScopeKeyRef.current === targetKey) showChat(raw);
     }, e => { if (activeScopeKeyRef.current === targetKey) setError(errorText(e)); });
   };
   const removeChat = (id: string): Promise<void> => {
     flushDraft(); const sequence = ++loadSequence.current; const targetKey = activeScopeKey;
     return wb.ai.chatRemove(id).then(raw => {
-      if (sequence === loadSequence.current && activeScopeKeyRef.current === targetKey && visibleCurrent?.id === id) showChat(raw as ChatSession);
+      if (sequence === loadSequence.current && activeScopeKeyRef.current === targetKey && visibleCurrent?.id === id) showChat(raw);
       setChats(previous => previous.filter(chat => chat.id !== id));
       void refreshChats();
     });
@@ -612,7 +627,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
     setInput(''); markSending(sendingKey, true); setError('');
     void (async () => {
       const browserTabId = browserWorkspace ? (await wb.browserAutomation.tabs(browserWorkspace)).find(tab => tab.active && tab.ready)?.id ?? null : undefined;
-      const chat = visibleCurrent ?? await wb.ai.chatNew(activeContext.scope) as ChatSession;
+      const chat = visibleCurrent ?? await wb.ai.chatNew(activeContext.scope);
       if (sendingKey !== chat.id) { markSending(sendingKey, false); sendingKey = chat.id; markSending(sendingKey, true); }
       if (!visibleCurrent && sequence === loadSequence.current && activeScopeKeyRef.current === targetKey) {
         if (fixedContext) setFixedContexts(previous => ({ ...previous, [chat.id]: fixedContext }));
@@ -694,11 +709,9 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
           <button type="button" className="ai-ctx-new" aria-label={`在${activeWorkbenchName}新建对话`} title={`在${activeWorkbenchName}新建对话`} onClick={() => newChat()}><Plus size={13} weight="bold" /></button>
         </div>
       </div>
-          <div className="ai-messages" ref={scrollRef} onScroll={event => {
-            const element = event.currentTarget;
-            followReply.current = element.scrollHeight - element.scrollTop - element.clientHeight < 80;
-            if (visibleCurrent) scrollPositions.current.set(visibleCurrent.id, element.scrollTop);
-          }}>
+          <div className="ai-chat-viewport">
+          <div className="ai-messages" ref={scrollRef} role="region" aria-label="当前对话消息" tabIndex={0} onScroll={measureScroll}>
+            <div className="ai-message-list" ref={messageList}>
             {!visibleCurrent || visibleCurrent.entries.length === 0 ? (
               <div className="ai-empty">
                 <span className="ai-empty-avatar"><Sparkle size={24} weight="fill" /></span>
@@ -736,6 +749,9 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
               </div>
             ))}
             {error && <div className="ai-error" role="alert">{error}</div>}
+            </div>
+          </div>
+          <AiActivity entry={streamingEntry} browserTask={streamingEntry?.browserTask ? browserApprovals.tasks[streamingEntry.browserTask.id] : undefined} question={!!question} aboveBottom={aboveBottom} onJump={jumpToBottom} />
           </div>
           <div className="ai-compose-wrap">
             {pendingSiteTask && <BrowserSiteApprovalCard key={`${pendingSiteTask.id}:${pendingSiteTask.pendingOrigin}`} task={pendingSiteTask} id={approvalCardId} elementRef={approvalCard} onTask={task => {
@@ -750,7 +766,6 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
               <button type="button" onClick={() => visibleCurrent && wb.ai.cancel(visibleCurrent.id)}>停止此对话</button>
             </div></div>}
             {activeCopyWriteBlocked && <div className="ai-busy-hint">{copySaveHint}</div>}
-            <AiActivity entry={streamingEntry} browserTask={streamingEntry?.browserTask ? browserApprovals.tasks[streamingEntry.browserTask.id] : undefined} question={!!question} />
             {activeContext.scope.module === 'copy' && <div className="ai-copy-actions" aria-label="博客写作快捷指令">
               {COPY_QUICK_ACTIONS.map(action => <button key={action.label} type="button" className="ai-copy-action" title={activeCopyWriteBlocked ? copySaveHint : action.prompt}
                 disabled={!config?.aiEnabled || busy || switchingModel || activeCopyWriteBlocked} onClick={() => onQuickAsk(action.prompt, activeContext.scope)}>{action.label}</button>)}

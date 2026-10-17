@@ -10,6 +10,7 @@ import { taskInputSchema, activeToday } from '../shared/todo-contracts';
 
 const geometry = () => ({
   viewport: { x: 0, y: 0, width: 819, height: 544 },
+  group: { x: 300, y: 12, width: 320, height: 40 },
   menu: { x: 300, y: 60, width: 320, height: 260 }, scrollWidth: 318, clientWidth: 318,
   rows: [{
     bounds: { x: 312, y: 110, width: 296, height: 48 },
@@ -82,12 +83,17 @@ test('Topbar geometry accepts complete multiline times and retained title/comple
   assert.doesNotThrow(() => assertTopbarDatesGeometry(geometry()));
   const schedule = geometry(); delete (schedule.rows[0] as Partial<typeof schedule.rows[0]>).check;
   assert.doesNotThrow(() => assertTopbarDatesGeometry(schedule));
+  const shared = geometry();
+  shared.menu.width = shared.group.width = 392;
+  shared.scrollWidth = shared.clientWidth = 390;
+  assert.doesNotThrow(() => assertTopbarDatesGeometry(shared));
 });
 
 test('Topbar geometry rejects clipped, zero-sized, nonfinite, overlapping or undersized content', () => {
   const samples: Array<[string, (value: ReturnType<typeof geometry>) => void, RegExp]> = [
     ['outside viewport', value => { value.menu.x = 700; }, /clipped|outside/],
-    ['wrong fixed width', value => { value.menu.width = 325; }, /320/],
+    ['wrong shared width', value => { value.menu.width = 325; }, /same width/],
+    ['wrong shared anchor', value => { value.group.x -= 4; }, /left edge/],
     ['horizontal overflow', value => { value.scrollWidth++; }, /horizontally/],
     ['missing client width', value => { value.clientWidth = Number.NaN; }, /horizontally/],
     ['no visible rows', value => { value.rows = []; }, /actual visible rows/],
