@@ -15,6 +15,8 @@
     "smoke": "node tooling/smoke.mjs",
     "start": "electron .",
     "test": "tsx --test tests/*.test.ts",
+    "jev:accept": "node tooling/jev-gate.mjs --gate accept",
+    "accept:float": "node tooling/accept-float.mjs",
     "test:windows-pilot": "node tooling/windows-pilot.mjs",
     "test:browser": "npm run build && node tooling/browser-automation-pilot.mjs",
     "postinstall": "node tooling/patch-excel.mjs",
