@@ -1,3 +1,45 @@
+## 终端工具栏 · 方案 3 · 2026-10-19
+
+范围：调整既有终端的操作层级和解释文案；底部布局、PTY、输入、调高和展开动效继续沿用。
+
+### 视觉对照
+
+- source visual truth：[用户选定的工具栏方案 3](design/game-terminal-toolbar-option-3-2026-10-19.png)，1942×809。
+- implementation screenshot：[原生终端局部](C:/Users/henry/.codex/visualizations/2026/10/16/01a1428e-2c14-77f3-a87b-7907203e1553/game-terminal-toolbar-20261019/terminal-toolbar-component.png)，950×340；原生 Electron 客户区 1280×1000、DPR=1、缩放 1，菜单展开在工具栏下方。
+- [同图上下对照](C:/Users/henry/.codex/visualizations/2026/10/16/01a1428e-2c14-77f3-a87b-7907203e1553/game-terminal-toolbar-20261019/comparison.png)：源图裁取终端内容后等比缩至 950px；实机保持原像素。已打开此合并图逐项检查，没有把两次独立看图冒充对照。
+- [实际游戏与新工具栏](C:/Users/henry/.codex/visualizations/2026/10/16/01a1428e-2c14-77f3-a87b-7907203e1553/game-terminal-toolbar-20261019/terminal-toolbar-final-open.png)；[收起菜单](C:/Users/henry/.codex/visualizations/2026/10/16/01a1428e-2c14-77f3-a87b-7907203e1553/game-terminal-toolbar-20261019/terminal-toolbar-final-closed.png)。
+
+| 必查维度 | 结果 |
+|---|---|
+| 字体与字阶 | 工具栏、操作和辅助说明沿用现有字阶；终端保留真实等宽输出。主操作有明确文字，三项菜单说明完整可读。 |
+| 布局与间距 | 标题、静态 PowerShell、连接状态靠左；停止、更多和收起靠右。菜单宽 320px，原生顶层浮出，不占布局高度；默认 240px 终端放不下时向上展开，340px 对照状态下向下展开。1024×680 全部操作仍可见，无宿主横向溢出。 |
+| 颜色与 token | 外壳保留三主题，终端和菜单使用同一 `--game-terminal-*` 深色业务表面，连接指示使用 `--game-terminal-connected`；菜单退出项与普通项分隔，并以文字和图标表达后果。 |
+| 图像与图标 | 使用已有 Phosphor 的 StopCircle、Copy、Trash、SignOut、CaretDown；没有以整张稿替代界面，也没有自绘图标。实际游戏来自游戏副本的真实网页。 |
+| 文案与内容 | 复制优先选区、清空不停止命令、退出结束 PowerShell；收起的提示说明终端继续运行。源稿中 PowerShell 的无实际选项箭头按既有约束移除。示例输出由真实 `validate-game.cjs` 输出替代。 |
+
+首次视觉对照未发现待修复 P0/P1/P2。P3/预期差异：生成稿的光泽、字形和终端标题图标底色没有单独重制，沿用应用既有材质和图标。实机工具栏保持紧凑高度。用于对照的终端由用户已有拖动功能调到 340px；产品初始高度仍为 240px。QA 会话临时将命令提示符改成真实当前目录的末级名称以便阅读，未改变 cwd、应用默认提示符或用户会话。
+
+### 实机验证
+
+Browser 插件不可用，使用既有 Playwright Electron 流程；独立 Ono 数据目录、PowerShell APPDATA 和游戏副本，不访问真实应用数据、不修改真实游戏或外部服务。
+
+[交互报告与几何记录](C:/Users/henry/.codex/visualizations/2026/10/16/01a1428e-2c14-77f3-a87b-7907203e1553/game-terminal-toolbar-20261019/report.json)中 8 组通过：
+
+1. 首次展开才启动真实 PowerShell；静态 shell 名称、真实已连接状态和三个常驻操作。
+2. 同入口三次开关、菜单说明、无布局推移、Enter/Space/方向键/Home/End/Escape、外部点击和项目/预览菜单互斥。
+3. 菜单复制取得真实终端输出；测试截获剪贴板写入，不覆盖用户剪贴板。
+4. 「停止命令」终止实际前台 Node 进程，PowerShell PID 和变量保持，随后可继续键入命令。
+5. 「清空输出」清除回放缓冲，前台 Node 和 shell 均继续运行；之后仍可停止并继续输入。
+6. 收起面板、切换工作台均关闭菜单且保留同一会话，收起后焦点返回项目栏终端按钮。
+7. 「退出终端」终止 shell 及前台子进程，退出项变为禁用；重新连接生成新会话并能实际执行命令。
+8. mist/cool/warm × 1718×916/1024×680 的菜单边界、控件边界和截图；窗口调整、减少动态效果与高对比度。退出测试应用后拥有的最后 shell PID 已消失。
+
+构建：`npm run verify` 通过（字阶、两套 TypeScript、Vite/Electron 构建）；现有 `tests/game-terminal.test.ts` 4/4 通过。没有改动终端后端。已抽出原有 `GameOptionsMenu` 作为三个游戏菜单的共同所有者，保留 native `popoverTarget`，未重新引入指针按下关闭、click 再打开的旧问题。
+
+严格静态审计返回 8 项：7 项来自既有 ReadingView/SpeechInput/AiPanel/FloatTodo；另 1 项在提取后的 `GameOptionsMenu.tsx`，属于审计器未识别 `popoverTarget` 原生动作的误报。该入口的鼠标、键盘、再次点击和真实菜单结果均已通过上面的实机验证；没有为消除误报添加无意义 click handler。未宣称全应用严格审计通过。官方 `designmd lint DESIGN.md` 为 0 errors、1 条既有的无 YAML 提示。原生验收与截图期间 renderer exception/console error 为 0。
+
+final result: passed
+
 ## 游戏项目终端 · 方案 2 · 2026-10-16
 
 范围：在预览与测试两栏共同下方增加可收起、可调高的真实 PowerShell，保留现有游戏运行和测试行为。

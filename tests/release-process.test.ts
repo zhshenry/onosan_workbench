@@ -37,7 +37,7 @@ function fixture(t: TestContext) {
   write('docs/PORTABLE-README.txt', 'portable usage fixture');
   mkdirSync(path.join(directory, 'tooling'));
   for (const script of ['publish.mjs', 'package-release.ps1']) copyFileSync(path.join(projectRoot, 'tooling', script), path.join(directory, 'tooling', script));
-  const publish = (...args: string[]) => spawnSync(process.execPath, [...args, 'tooling/publish.mjs', '--dry-run'], { cwd: directory, encoding: 'utf8' });
+  const publish = (...args: string[]) => spawnSync(process.execPath, ['tooling/publish.mjs', '--dry-run', ...args], { cwd: directory, encoding: 'utf8' });
   return { directory, write, publish };
 }
 
@@ -50,6 +50,16 @@ test('本地发布检查读取五项资产与本版 CHANGELOG，不上传或生�
   assert.match(result.stdout, /--title "OnO Workbench v2\.3\.4"/);
   assert.match(result.stdout, /当前版本的变更/);
   assert.doesNotMatch(result.stdout, /旧版变更/);
+  assert.equal(existsSync(path.join(directory, 'release/metadata/release-notes.md')), false);
+});
+
+test('预发布检查明确设置 Pre-release 且不替换 Latest', t => {
+  const { directory, publish } = fixture(t);
+  const result = publish('--prerelease');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /--verify-tag --prerelease --latest=false/);
+  assert.doesNotMatch(result.stdout, /--latest\s/);
+  assert.match(result.stdout, /预发布版，请手动下载测试/);
   assert.equal(existsSync(path.join(directory, 'release/metadata/release-notes.md')), false);
 });
 
@@ -76,7 +86,7 @@ test('发布检查阻止缺失资产、版本漂移、错误元数据、损坏�
 
 function stubCommands(f: ReturnType<typeof fixture>, state: Record<string, unknown> = {}) {
   const release = {
-    tagName: `v${version}`, name: `OnO Workbench v${version}`, isDraft: false, isPrerelease: false, url: 'https://github.com/fixture/workbench/releases/tag/v2.3.4',
+    tagName: `v${version}`, name: `OnO Workbench v${version}`, isDraft: false, isPrerelease: state.prerelease === true, url: 'https://github.com/fixture/workbench/releases/tag/v2.3.4',
     assets: assets.map(file => ({ name: path.basename(file), size: statSync(path.join(f.directory, file)).size, url: `https://example.invalid/${path.basename(file)}` })),
   };
   f.write('state.json', JSON.stringify({ release, ...state }));
@@ -106,7 +116,7 @@ cp.spawnSync = (command, args) => {
 };
 require('node:module').syncBuiltinESMExports();
 `);
-  const run = (mode?: string) => spawnSync(process.execPath, ['--require', './stub.cjs', 'tooling/publish.mjs', ...(mode ? [mode] : [])], { cwd: f.directory, encoding: 'utf8' });
+  const run = (...args: (string | undefined)[]) => spawnSync(process.execPath, ['--require', './stub.cjs', 'tooling/publish.mjs', ...args.filter((arg): arg is string => arg !== undefined)], { cwd: f.directory, encoding: 'utf8' });
   const calls = () => readFileSync(path.join(f.directory, 'calls.jsonl'), 'utf8').trim().split('\n').map(line => JSON.parse(line));
   return { run, calls };
 }
@@ -123,6 +133,29 @@ test('正式发布使用 gh release 的现有标签和说明文件，并核验�
   assert.equal(downloads.length, 5);
   assert.ok(downloads.every(call => call.args.includes('--head') && call.args.includes('--location')));
   assert.match(result.stdout, /核验通过/);
+});
+
+test('预发布创建和只读核验均要求 Pre-release，拒绝与正式通道混用', async t => {
+  await t.test('创建预发布', child => {
+    const f = fixture(child), { run, calls } = stubCommands(f, { prerelease: true });
+    const result = run('--prerelease');
+    assert.equal(result.status, 0, result.stderr);
+    const command = calls().find(call => call.args?.[1] === 'create');
+    assert.ok(command.args.includes('--prerelease') && command.args.includes('--latest=false'));
+    assert.ok(!command.args.includes('--latest'));
+    assert.match(result.stdout, /预发布 Release.*核验通过/);
+  });
+  for (const [name, state, args, success] of [
+    ['只读核验预发布', { prerelease: true }, ['--prerelease', '--verify'], true],
+    ['正式校验拒绝预发布', { prerelease: true }, ['--verify'], false],
+    ['预发布校验拒绝正式版', {}, ['--verify', '--prerelease'], false],
+  ] as const) await t.test(name, child => {
+    const f = fixture(child), { run, calls } = stubCommands(f, state);
+    const result = run(...args);
+    assert.equal(result.status, success ? 0 : 1, result.stderr);
+    assert.equal(calls().some(call => call.args?.[1] === 'create'), false);
+    assert.match(success ? result.stdout : result.stderr, success ? /预发布 Release.*核验通过/ : /GitHub Release 必须是/);
+  });
 });
 
 test('未提交、错误标签、未推送标签阻止上传；远端非正式发布和错误下载阻止通过核验', async t => {

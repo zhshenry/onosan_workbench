@@ -1,5 +1,5 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, useImperativeHandle, type CSSProperties, type ReactNode, type Ref, type RefObject } from 'react';
-import { ArrowClockwise, ArrowCounterClockwise, ArrowLeft, ArrowRight, ArrowSquareOut, Camera, Check, CheckCircle, Circle, ClipboardText, DotsThree, FileText, FolderOpen, GearSix, Globe, Play, SidebarSimple, Stop, TerminalWindow, Warning, WarningCircle, XCircle } from '@phosphor-icons/react';
+import { useEffect, useLayoutEffect, useRef, useState, useImperativeHandle, type CSSProperties, type Ref, type RefObject } from 'react';
+import { ArrowClockwise, ArrowCounterClockwise, ArrowLeft, ArrowRight, ArrowSquareOut, Camera, Check, CheckCircle, Circle, ClipboardText, Clock, FileText, FolderOpen, GearSix, Globe, Play, SidebarSimple, Stop, TerminalWindow, Warning, WarningCircle, XCircle } from '@phosphor-icons/react';
 import { GuestFrame } from '../../modules/browser/ui/guest-frame';
 import { WebviewPresentation } from '../../modules/browser/ui/webview-presentation';
 import { PageZoomControls } from '../../modules/browser/ui/page-zoom';
@@ -8,41 +8,40 @@ import { emptyBrowserFrame, type BrowserFrameState } from '../../shared/browser-
 import { GAME_TASKS, GameConfigSchema, gameProblemReport, gameTrialReport, gameResultStale, type GameArtifact, type GameConfig, type GameState, type GameTaskId, type GameTaskStatus, type GameTrialReset } from '../../shared/game-contracts';
 import office from '../assets/trail-office.png';
 import { GameTerminalPanel } from './GameTerminal';
+import { GameOptionsMenu } from './GameOptionsMenu';
 import { GameOnlineAddress, GameOnlineTools } from './GameOnlineTools';
 import { GameDocument } from './GameDocument';
 import { GameIssueDrawer } from './GameIssueDrawer';
 import './game.css';
 
 const STATUS: Record<GameTaskStatus, string> = { idle: '未运行', queued: '等待中', running: '运行中', passed: '通过', failed: '失败', cancelled: '已取消', unavailable: '未执行' };
+const CHECK_DETAILS: Record<GameTaskId, { what: string; how: string }> = {
+  rules: {
+    what: '案件能否推出唯一凶手，人物与物证是否可达。',
+    how: '将每个人分别假设为凶手，结合证词、物证、移动和视线规则求解，再核对预设答案与地图路径。',
+  },
+  progress: {
+    what: '初始案件限制，以及存档损坏、保存失败时的进度处理。',
+    how: '用模拟存储制造丢失、损坏和读写失败，检查无效数据过滤、进度临时保留与恢复写入。',
+  },
+  entry: {
+    what: '进入案件时的页面跳转、防重复点击与返回状态。',
+    how: '在模拟页面中点击案件链接、推进计时器和触发返回事件，核对跳转地址、重复点击拦截与页面恢复。',
+  },
+  theme: {
+    what: '雨夜与晨雾切换、主题记忆，以及游戏存档是否保持。',
+    how: '在模拟页面中切换主题、重新创建页面，核对按钮状态、主题存储、跨页同步与文字对比度。',
+  },
+  loading: {
+    what: '正常加载、资源报错或等待超时后，加载界面如何处理。',
+    how: '用模拟页面和计时器触发加载完成、脚本报错、字体等待与超时，核对加载遮罩和重试提示。',
+  },
+  playthrough: {
+    what: '三个案件的实际通关流程、存档与解锁，以及桌面和窄屏页面。',
+    how: '在独立 Edge 中自动进入案件、移动对话、收集证据并提交预设答案，核对通关结果、进度恢复和页面布局。',
+  },
+};
 interface PreviewApi { reload(): void; back(): void; forward(): void; setZoomFactor(factor: number): void; refreshZoom(): void; }
-
-function GameOptionsMenu({ kind, active, context, onOpen, children }: { kind: 'project' | 'preview'; active: boolean; context?: string; onOpen?(): void; children(close: () => void): ReactNode }) {
-  const id = useId(), menu = useRef<HTMLDivElement>(null), trigger = useRef<HTMLButtonElement>(null);
-  const [open, setOpen] = useState(false);
-  const label = kind === 'project' ? '项目更多功能' : '游戏预览更多功能';
-  useLayoutEffect(() => {
-    if (!open || !menu.current || !trigger.current) return;
-    const element = menu.current, anchor = trigger.current.getBoundingClientRect();
-    element.style.left = `${Math.max(8, Math.min(anchor.right - element.offsetWidth, window.innerWidth - element.offsetWidth - 8))}px`;
-    element.style.top = `${Math.max(8, Math.min(anchor.bottom + 6, window.innerHeight - element.offsetHeight - 8))}px`;
-    element.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
-    const dismiss = () => element.hidePopover();
-    window.addEventListener('resize', dismiss); return () => window.removeEventListener('resize', dismiss);
-  }, [open]);
-  useEffect(() => { menu.current?.hidePopover(); }, [active, context]);
-  const close = () => { menu.current?.hidePopover(); trigger.current?.focus(); };
-  return <>
-    <button ref={trigger} type="button" className="game-icon-button game-options-trigger" aria-label={label} title="更多功能" aria-haspopup="menu" aria-expanded={open} aria-controls={id} onClick={() => menu.current?.togglePopover()} onKeyDown={event => { if (event.key === 'ArrowDown') { event.preventDefault(); menu.current?.showPopover(); } }}><DotsThree size={22} weight="bold" /></button>
-    <div ref={menu} id={id} className={`browser-menu game-options-menu game-${kind}-menu`} popover="auto" role="menu" aria-label={label} onToggle={event => { const next = event.newState === 'open'; setOpen(next); if (next) onOpen?.(); }} onKeyDown={event => {
-      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); trigger.current?.focus(); return; }
-      if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
-      event.preventDefault();
-      const items = Array.from(menu.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? []);
-      const index = items.findIndex(item => item === document.activeElement);
-      items[event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
-    }}>{children(close)}</div>
-  </>;
-}
 
 function GamePreview({ url, workspace, tabId, viewport, apiRef, onState }: { url: string; workspace: string; tabId: string; viewport: string; apiRef: Ref<PreviewApi>; onState(state: BrowserFrameState): void }) {
   const host = useRef<HTMLDivElement>(null);
@@ -141,6 +140,7 @@ function GameView({ active, onPending }: { active: boolean; onPending(message: s
   const [selected, setSelected] = useState<GameTaskId>('rules');
   const [testsOpen, setTestsOpen] = useState(window.innerWidth >= 1180);
   const grid = useRef<HTMLDivElement>(null);
+  const testScroll = useRef<HTMLDivElement>(null);
   const [availableWidth, setAvailableWidth] = useState(0);
   const [testsWidth, setTestsWidth] = useState<number | null>(null);
   const [resizing, setResizing] = useState(false);
@@ -196,6 +196,7 @@ function GameView({ active, onPending }: { active: boolean; onPending(message: s
   const task = GAME_TASKS.find(task => task.id === selected)!;
   const quick = GAME_TASKS.filter(task => task.group === 'quick');
   const passed = quick.filter(task => state.results[task.id]?.status === 'passed' && !gameResultStale(state.results[task.id], state.revision)).length;
+  const outdatedCount = quick.filter(task => gameResultStale(state.results[task.id], state.revision)).length;
   const previewNeedsRefresh = !isOnline && running && !!loadedRevision && loadedRevision !== state.revision;
   const workspace = profile === 'keep' ? 'game-trail-detective' : `game-trail-fresh-${freshId}`;
   const localTabId = profile === 'keep' ? 'game-trial-keep' : `game-trial-${freshId}`;
@@ -284,39 +285,48 @@ function GameView({ active, onPending }: { active: boolean; onPending(message: s
         removeArtifact={id => setOnlineIssues(previous => ({ ...previous, [issueKey]: { notes: previous[issueKey]?.notes ?? '', artifacts: (previous[issueKey]?.artifacts ?? []).filter(item => item.id !== id) } }))}
         check={() => { void window.workbench.game.checkOnline().catch(error => setFailure(errorText(error))); }} setNotes={value => setOnlineIssues(previous => ({ ...previous, [issueKey]: { notes: value, artifacts: previous[issueKey]?.artifacts ?? [] } }))} /> : <aside id="game-test-panel" className="game-tests glass" aria-label="测试检查">
         <div className="game-pane-heading"><strong><ClipboardText />测试检查</strong><div className="game-pane-actions"><button type="button" onClick={() => setIssueOpen(true)}><ClipboardText />记录问题</button><button className="game-icon-button" aria-label="收起测试栏" title="收起测试栏" onClick={() => setTestsOpen(false)}><SidebarSimple /></button></div></div>
-        <p className="game-pane-description">运行项目现有测试，查看结果与日志。</p>
-        <Segmented aria-label="测试范围" value={scope} onChange={value => { setScope(value); setSelected(value === 'full' ? 'playthrough' : 'rules'); }} options={[{ value: 'quick', label: '快速检查（5项）' }, { value: 'full', label: '完整通关' }]} />
-        <div className="game-test-scroll">
-          {scope === 'full' ? <p className="game-quick-summary">快速检查：{passed}/5 项通过</p> : null}
-          <div className="game-task-list">{GAME_TASKS.filter(task => task.group === scope).map(task => {
-            const record = state.results[task.id];
+        <p className="game-pane-description">选择检查项，查看说明与结果。</p>
+        <Segmented aria-label="测试范围" value={scope} onChange={value => { setScope(value); setSelected(value === 'full' ? 'playthrough' : 'rules'); testScroll.current?.scrollTo(0, 0); }} options={[{ value: 'quick', label: '快速检查（5项）' }, { value: 'full', label: '完整通关' }]} />
+        {scope === 'quick' ? <>
+          {outdatedCount ? <p className="game-update game-check-notice" role="status"><WarningCircle size={18} />{outdatedCount}项待重测 · 代码已变化。</p> : null}
+          <div className="game-check-picker"><label htmlFor="game-current-check">当前检查</label><GameSelect id="game-current-check" aria-label="当前检查" value={selected} onChange={value => { setSelected(value as GameTaskId); testScroll.current?.scrollTo(0, 0); }} className="game-check-select" menuClassName="game-check-menu" options={quick.map(task => ({ value: task.id, label: task.label }))} renderOption={option => {
+            const record = state.results[option.value as GameTaskId];
             const outdated = gameResultStale(record, state.revision);
             const status = record?.status ?? 'idle';
-            return <button key={task.id} className={`game-task ${selected === task.id ? 'selected' : ''}`} aria-pressed={selected === task.id} onClick={() => setSelected(task.id)}>
-              <span className={`game-status-icon ${outdated ? 'stale' : status}`}>{status === 'passed' ? <CheckCircle weight="fill" /> : status === 'failed' ? <XCircle weight="fill" /> : <Circle weight={status === 'running' ? 'duotone' : 'regular'} />}</span><span>{task.label}</span><small>{outdated ? '待重测' : STATUS[status]}</small>
-            </button>;
-          })}</div>
-          <div className="game-result" aria-live="polite">
+            return <span className={`game-check-choice ${outdated ? 'stale' : status}`}><span className={`game-status-icon ${outdated ? 'stale' : status}`}>{status === 'passed' ? <CheckCircle weight="fill" /> : status === 'failed' ? <XCircle weight="fill" /> : <Circle weight={status === 'running' ? 'duotone' : 'regular'} />}</span><span>{option.label}</span><small>{outdated ? '待重测' : STATUS[status]}</small></span>;
+          }} /></div>
+        </> : null}
+        <div className="game-test-scroll" ref={testScroll}>
+          {scope === 'full' ? <p className="game-quick-summary">快速检查：{passed}/5 项通过</p> : null}
+          <div className="game-result">
+            <h2 className="game-check-title">{task.label}</h2>
             <span className="game-script">{task.script}</span>
-            {stale ? <p className="game-update">代码已变化，上次结果仅供参考。</p> : null}
-            <p className={`game-result-message ${result?.status === 'failed' ? 'failed' : ''}`}>{result?.message || '尚未运行此项检查。'}</p>
-            {result?.startedAt ? <span className="game-result-time">{new Date(result.startedAt).toLocaleString('zh-CN')} · {Math.max(0, Math.round(((result.finishedAt ?? clock) - result.startedAt) / 1000))} 秒</span> : null}
+            <dl className="game-check-explanation"><div><dt><FileText />检查什么</dt><dd>{CHECK_DETAILS[selected].what}</dd></div><div><dt><GearSix />怎么检查</dt><dd>{CHECK_DETAILS[selected].how}</dd></div></dl>
+            <section className="game-check-result" aria-label="检查结果" aria-live="polite">
+              <div className="game-result-line">
+                <h3><Clock />{result?.status === 'running' || result?.status === 'queued' ? '运行状态' : result ? '上次结果' : '检查结果'}</h3>
+                <span className={`game-result-message ${result?.status === 'failed' ? 'failed' : ''}`}>{result ? STATUS[result.status] : '尚未运行此项检查。'}</span>
+                {result?.startedAt ? <time className="game-result-time" dateTime={new Date(result.startedAt).toISOString()} title={new Date(result.startedAt).toLocaleString('zh-CN')}>{new Date(result.startedAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })} · {Math.max(0, Math.round(((result.finishedAt ?? clock) - result.startedAt) / 1000))} 秒</time> : null}
+              </div>
+              {result?.message && (result.status === 'failed' || result.status === 'unavailable') ? <p className="game-result-note">{result.message}</p> : null}
+              {stale ? <p className="game-check-stale">上次结果仅供参考，请重新运行。</p> : null}
+            </section>
             {result?.status === 'failed' ? <div className="game-next"><strong>下一步</strong><p>查看原始输出，并在试玩中核对对应流程。</p><p>复制问题报告，回开发工具修复后重新运行。</p></div> : null}
           </div>
-          <div className="game-run-actions">{state.running ? <button disabled={busy} onClick={() => { void act(() => window.workbench.game.cancel()); }}><Stop />停止测试</button> : <>
-            {result?.status === 'failed' ? <button className="game-primary" disabled={busy} onClick={copyReport}><ClipboardText />复制问题报告</button> : null}
-            <button className={result?.status === 'failed' ? '' : 'game-primary'} disabled={busy} onClick={() => run()}><Play weight="fill" />{scope === 'full' ? '运行完整通关' : '运行快速检查'}</button>
-            {scope === 'quick' && result ? <button disabled={busy} title="只重跑当前选中任务" onClick={() => run(true)}><ArrowClockwise />重跑此项</button> : null}
-          </>}</div>
-          <details className="game-detail" open={result?.status === 'failed' ? true : undefined}><summary>原始输出</summary><pre tabIndex={0}>{result?.output || '脚本暂无输出。运行状态以进程完成结果为准。'}</pre></details>
+          <details key={selected} className="game-detail" open={result?.status === 'failed' ? true : undefined}><summary>原始输出</summary><pre tabIndex={0}>{result?.output || '脚本暂无输出。运行状态以进程完成结果为准。'}</pre></details>
           <details className="game-detail"><summary>附件 · {artifacts.length ? `${artifacts.length} 项` : '暂无'}</summary>{artifacts.length ? artifacts.map(item => <button key={item.id} onClick={() => { void act(() => window.workbench.game.openArtifact(item.id)); }}><Camera />{item.name}</button>) : <p>脚本已生成的检查点截图和手动试玩截图显示在这里。</p>}</details>
           <details className="game-detail"><summary>问题反馈</summary><p>将问题描述、截图副本、测试输出和服务日志一起保存到本机。</p><button onClick={() => setIssueOpen(true)}><ClipboardText />记录问题 / 查看已保存记录</button></details>
           <details className="game-detail"><summary>运行日志</summary><pre tabIndex={0}>{state.logs.join('\n') || '暂无服务日志'}</pre></details>
         </div>
+        <div className="game-run-actions">{state.running ? <button disabled={busy} onClick={() => { void act(() => window.workbench.game.cancel()); }}><Stop />停止测试</button> : <>
+            {result?.status === 'failed' ? <button className="game-primary" disabled={busy} onClick={copyReport}><ClipboardText />复制问题报告</button> : null}
+            <button className={result?.status === 'failed' ? '' : 'game-primary'} disabled={busy} onClick={() => run()}><Play weight="fill" />{scope === 'full' ? '运行完整通关' : '运行快速检查'}</button>
+            {scope === 'quick' && result ? <button disabled={busy} title="只重跑当前选中任务" onClick={() => run(true)}><ArrowClockwise />重跑此项</button> : null}
+        </>}</div>
         <p className="game-tests-footer">完整通关使用独立 Edge，不影响左侧试玩档。</p>
       </aside>}</> : null}
     </div>
-    {terminalEntered ? <GameTerminalPanel open={terminalOpen} close={() => { setTerminalOpen(false); terminalToggle.current?.focus(); }} onPending={onPending} /> : null}
+    {terminalEntered ? <GameTerminalPanel active={active} open={terminalOpen} close={() => { setTerminalOpen(false); terminalToggle.current?.focus(); }} onPending={onPending} /> : null}
     </div>
     {settings ? <ProjectSettings state={state} close={() => setSettings(false)} onSave={async config => { await window.workbench.game.configure(config); setLoadedRevision(''); }} /> : null}
     {documentOpen ? <GameDocument close={() => setDocumentOpen(false)} /> : null}

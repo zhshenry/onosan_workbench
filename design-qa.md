@@ -1,5 +1,15 @@
 # 设计验收索引
 
+## 游戏终端工具栏 · 方案 3 · 2026-10-19
+
+[查看高保真对照、实机截图与交互验收](docs/requirements/game/terminal/qa.md)
+
+final result: passed
+
+## 游戏测试检查 · 方案三下拉选择 · 2026-10-19
+
+[查看高保真对照、实机截图与交互验收](docs/requirements/game/test-selector/qa.md)
+
 ## 内置离线语音听写 · 方案 2 扁平细化稿 · 2026-10-19
 
 [查看设计、实际截图与功能验收](docs/requirements/shared/voice-input/qa.md)

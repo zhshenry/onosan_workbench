@@ -1,12 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
-import { ArrowClockwise, CaretDoubleDown, Copy, Stop, TerminalWindow, Trash } from '@phosphor-icons/react';
+import { ArrowClockwise, CaretDown, Circle, Copy, SignOut, StopCircle, TerminalWindow, Trash } from '@phosphor-icons/react';
 import { errorText } from '../ui/controls';
+import { GameOptionsMenu } from './GameOptionsMenu';
 import type { GameTerminalEvent, GameTerminalState } from '../../shared/game-contracts';
 import '@xterm/xterm/css/xterm.css';
 
-export function GameTerminalPanel({ open, close, onPending }: { open: boolean; close(): void; onPending(message: string): void }) {
+export function GameTerminalPanel({ active, open, close, onPending }: { active: boolean; open: boolean; close(): void; onPending(message: string): void }) {
   const dock = useRef<HTMLElement>(null);
   const host = useRef<HTMLDivElement>(null);
   const terminal = useRef<Terminal | null>(null);
@@ -106,14 +107,17 @@ export function GameTerminalPanel({ open, close, onPending }: { open: boolean; c
       onKeyDown={event => { if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return; event.preventDefault(); setHeight(event.key === 'Home' ? 160 : event.key === 'End' ? maximum : Math.max(160, Math.min(maximum, effectiveHeight + (event.key === 'ArrowUp' ? 24 : -24)))); }} />
     <div className="game-terminal">
       <header className="game-terminal-heading">
-        <strong><TerminalWindow />项目终端</strong><span className="game-terminal-shell">PowerShell</span>
-        <span className="game-terminal-directory" title={`会话初始目录：${status?.cwd || ''}`}>{status?.cwd || '正在读取项目目录…'}</span>
-        <span className="game-terminal-status" role="status">{busy ? '正在处理…' : status?.message || '正在连接…'}</span>
+        <strong><TerminalWindow />项目终端</strong><span className="game-terminal-shell" title={`会话初始目录：${status?.cwd || '正在读取…'}`}>PowerShell</span>
+        <span className="game-terminal-status" data-connected={running && !busy} role="status"><Circle weight="fill" />{busy ? '正在处理…' : running ? '已连接' : status?.message || '正在连接…'}</span>
         <div className="game-terminal-actions">
-          {running ? <><button className="game-terminal-icon" disabled={busy} title="中断当前命令（Ctrl+C）" aria-label="中断当前命令" onClick={() => { void act(() => bridge.write(session.current, '\x03')); terminal.current?.focus(); }}><Stop /></button><button disabled={busy} title="结束此 PowerShell 及其子进程" onClick={() => { void act(() => bridge.close(session.current)); }}><Stop />结束会话</button></> : <button disabled={busy} onClick={() => reconnect.current()}><ArrowClockwise />重新连接</button>}
-          <button disabled={!status?.id || busy} onClick={() => { void act(() => bridge.clear(session.current)); }}><Trash />清空</button>
-          <button disabled={busy} onClick={copy}><Copy />复制</button>
-          <button aria-label="收起项目终端" onClick={close}><CaretDoubleDown /><span>收起</span></button>
+          {running ? <button type="button" disabled={busy} title="发送 Ctrl+C，停止当前命令并保留 PowerShell" onClick={() => { void act(() => bridge.write(session.current, '\x03')); terminal.current?.focus(); }}><StopCircle />停止命令</button> : <button type="button" disabled={busy} onClick={() => reconnect.current()}><ArrowClockwise />重新连接</button>}
+          <GameOptionsMenu kind="terminal" active={active && open} context={status?.id}>{dismiss => <>
+            <button type="button" role="menuitem" disabled={busy} onClick={() => { copy(); dismiss(); }}><Copy /><span>复制输出<small>有选中文字时，只复制选中部分</small></span></button>
+            <button type="button" role="menuitem" disabled={!status?.id || busy} onClick={() => { dismiss(); void act(async () => { await bridge.clear(session.current); terminal.current?.focus(); }); }}><Trash /><span>清空输出<small>清理显示内容，命令继续运行</small></span></button>
+            <div role="separator" />
+            <button type="button" role="menuitem" className="game-terminal-exit" disabled={!running || busy} onClick={() => { dismiss(); void act(() => bridge.close(session.current)); }}><SignOut /><span>退出终端<small>结束当前 PowerShell，使用时需重新连接</small></span></button>
+          </>}</GameOptionsMenu>
+          <button type="button" className="game-terminal-collapse" aria-label="收起项目终端" title="收起面板，终端继续运行" onClick={close}><CaretDown /><span>收起终端</span></button>
         </div>
       </header>
       {failure || status?.phase === 'error' ? <p className="game-terminal-error" role="alert">{failure || status?.message}</p> : null}

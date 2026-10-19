@@ -1,3 +1,14 @@
+# 更多功能再次点击收起修复 · 2026-10-19
+
+- 已在隔离 Electron 窗口复现。旧逻辑的原生事件顺序为：第二次 pointerdown 时菜单仍开着 → 浏览器自动关闭 → click 时已关闭 → 手动 `togglePopover()` 又打开，因此看起来无法收起。[修复前记录](C:/Users/henry/.codex/visualizations/2026/10/16/01a1428e-2c14-77f3-a87b-7907203e1553/game-menu-toggle-20261019/baseline.json)。
+- `GameOptionsMenu` 的入口改用原生 `popoverTarget`，与现有浏览器选项菜单一致；项目与预览共用这一处修复。保留定位、焦点、方向键、外部点击、Escape、窗口变化和环境切换行为，没有改样式或游戏逻辑。
+- 原生交互回归四组通过：mist/cool/warm × 1718×916 / 1024×680，两个菜单分别连续开关三轮，共 36 轮；另验证外部点击、Escape 与焦点返回、菜单互斥、Enter/Space、ArrowDown/Home/End、窗口调整和环境切换。等待原生 toggle 事件与 React 可访问状态同步后断言，0 条渲染异常。Browser plugin not available，沿用隔离 Playwright Electron 路径；真实游戏与用户配置未修改。
+- [修复后报告](C:/Users/henry/.codex/visualizations/2026/10/16/01a1428e-2c14-77f3-a87b-7907203e1553/game-menu-toggle-20261019/report.json) · [展开实机截图](C:/Users/henry/.codex/visualizations/2026/10/16/01a1428e-2c14-77f3-a87b-7907203e1553/game-menu-toggle-20261019/after-open.png) · [再次点击后的收起截图](C:/Users/henry/.codex/visualizations/2026/10/16/01a1428e-2c14-77f3-a87b-7907203e1553/game-menu-toggle-20261019/after-closed.png)。`npm run verify` 与 `git diff --check` 通过；本次未重跑游戏三案完整通关。
+
+final result: passed
+
+---
+
 # 游戏工作台二级目录恢复 · 2026-10-17
 
 - 用户确认恢复“游戏工作台 → 轨迹侦探”，终端和检查仍是项目内面板。移除 `src/views/game.css` 中隐藏 `.snav` 和将目录列宽压为零的两条游戏专用覆盖，恢复共享导航所有者；没有修改 React 导航状态、试玩或终端实现。

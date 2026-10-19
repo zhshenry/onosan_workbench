@@ -20,8 +20,10 @@ async function hash(file, algorithm, encoding = 'hex') {
 }
 
 async function main() {
-  const mode = process.argv[2];
-  requireCheck(process.argv.length <= 3 && (!mode || mode === '--dry-run' || mode === '--verify'), '用法：node tooling/publish.mjs [--dry-run|--verify]');
+  const args = process.argv.slice(2);
+  requireCheck(args.every(arg => ['--dry-run', '--verify', '--prerelease'].includes(arg)) && new Set(args).size === args.length && !(args.includes('--dry-run') && args.includes('--verify')), '用法：node tooling/publish.mjs [--dry-run|--verify] [--prerelease]');
+  const mode = args.find(arg => arg !== '--prerelease');
+  const prerelease = args.includes('--prerelease');
   const pkg = JSON.parse(read('package.json'));
   const version = pkg.version;
   requireCheck(/^\d+\.\d+\.\d+$/.test(version), '正式发布需要稳定版本号，例如 0.1.0。');
@@ -61,12 +63,13 @@ async function main() {
   requireCheck(changes && /^\s*-\s+\S/m.test(changes), `CHANGELOG.md 中 ${version} 的条目为空。`);
   const notes = [
     `Windows x64，版本 ${version}。`,
+    ...(prerelease ? ['本版为预发布版，请手动下载测试；不替换正式最新版。'] : []),
     '- 安装版（Setup）支持应用内自动下载更新和重启安装。',
     '- 便携版（Portable）需手动下载完整 ZIP 替换。',
     '- 应用数据保存在 %APPDATA%/OnoWorkbench；待办使用 %APPDATA%/To-Do-List/tasks.db。',
     '', '## 更新内容', '', changes,
   ].join('\n');
-  const createArgs = ['release', 'create', tag, '--repo', repo, '--verify-tag', '--latest', ...files, '--title', releaseTitle, '--notes-file', 'release/metadata/release-notes.md'];
+  const createArgs = ['release', 'create', tag, '--repo', repo, '--verify-tag', ...(prerelease ? ['--prerelease', '--latest=false'] : ['--latest']), ...files, '--title', releaseTitle, '--notes-file', 'release/metadata/release-notes.md'];
   if (mode === '--dry-run') {
     console.log(`本地发布检查通过：${repo} / ${tag}\n${files.join('\n')}\n\n${gh} ${createArgs.map(arg => /\s/.test(arg) ? JSON.stringify(arg) : arg).join(' ')}\n\n${notes}`);
     return;
@@ -84,7 +87,7 @@ async function main() {
     run(gh, createArgs, true);
   }
   const release = JSON.parse(run(gh, ['release', 'view', tag, '--repo', repo, '--json', 'tagName,name,isDraft,isPrerelease,url,assets']));
-  requireCheck(release.tagName === tag && !release.isDraft && !release.isPrerelease, 'GitHub Release 必须是对应版本的正式发布，不能是 Draft 或 Pre-release。');
+  requireCheck(release.tagName === tag && !release.isDraft && release.isPrerelease === prerelease, prerelease ? 'GitHub Release 必须是对应版本的 Pre-release，不能是 Draft 或正式发布。' : 'GitHub Release 必须是对应版本的正式发布，不能是 Draft 或 Pre-release。');
   requireCheck(release.name === releaseTitle, `GitHub Release 标题必须是 ${releaseTitle}。`);
   for (const file of files) {
     const asset = release.assets.find(item => item.name === path.basename(file));
@@ -94,11 +97,11 @@ async function main() {
   }
   const publishedMetadata = run(gh, ['release', 'download', tag, '--repo', repo, '--pattern', 'latest.yml', '--output', '-']);
   requireCheck(publishedMetadata.replaceAll('\r\n', '\n') === metadata.trim().replaceAll('\r\n', '\n'), 'GitHub latest.yml 与本地产物不一致。');
-  console.log(`正式 Release 与五项下载资产核验通过：${release.url}`);
+  console.log(`${prerelease ? '预发布' : '正式'} Release 与五项下载资产核验通过：${release.url}`);
 }
 
 main().catch(error => {
   console.error(error.message);
-  console.error('若 Release 已创建但联网核验失败，可运行 npm run release:verify 重试核验。');
+  console.error('若 Release 已创建但联网核验失败，可运行 npm run release:verify 重试核验；预发布版需追加 -- --prerelease。');
   process.exitCode = 1;
 });
