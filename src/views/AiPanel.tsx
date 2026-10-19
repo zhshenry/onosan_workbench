@@ -11,6 +11,7 @@ import { errorText, Modal, Select as TodoSelect } from '../ui/controls';
 import { TodoProposalCard } from './TodoProposalCard';
 import { AiResponse } from './AiResponse';
 import { AiActivity } from './AiActivity';
+import { SpeechInput } from './SpeechInput';
 import { BrowserSiteApprovalCard, useBrowserApprovalTasks } from '../../modules/browser/ui/site-approval';
 import { NAV, workbenchAiContext } from '../nav';
 
@@ -199,6 +200,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
   const approvalCardId = useId();
   const referencePickerId = useId();
   const [input, setInput] = useState('');
+  const [voiceBusy, setVoiceBusy] = useState(false);
   const [sending, setSending] = useState<string[]>([]);
   const sendingRef = useRef(new Set<string>());
   const markSending = (id: string, value: boolean): void => {
@@ -617,6 +619,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
     void wb.ai.chatRename(managing.id, renameDraft).then(() => setManaging(null), e => setManageError(errorText(e))).finally(() => setManageBusy(false));
   };
   const send = (): void => {
+    if (voiceBusy) return;
     const text = input.trim();
     if (question && text) { answerQuestion('text', text); return; }
     if (!text || busy || sendingRef.current.has(contextKey) || switchingModel || !config?.aiEnabled || activeCopyWriteBlocked) return;
@@ -783,10 +786,12 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
                   <button ref={referenceTrigger} type="button" className="ai-add-reference" aria-label="添加上下文" title="添加上下文" aria-haspopup="dialog" aria-controls={referencePickerId} aria-expanded={referenceDialogOpen} onClick={editReferences}><Plus size={19} /></button>
                   {config?.models.length ? <TodoSelect aria-label="选择大模型" className="ai-model-select" menuClassName="ai-model-menu ai-panel-model-menu" title={model?.name} value={model?.id ?? ''} onChange={selectModel}
                     options={modelOptions}
-                    disabled={!open || busy || switchingModel} />
+                    disabled={!open || busy || switchingModel || voiceBusy} />
                     : <button className="ai-text-btn" onClick={onOpenSettings}>配置模型</button>}
+                  <SpeechInput anchor={composeAnchor} contextKey={contextKey + ':' + (visibleCurrent?.id ?? 'new')} draft={input} onChange={setInput}
+                    enabled={!!config?.aiEnabled && !busy && !switchingModel} visible={open} onBusyChange={setVoiceBusy} />
                   {currentBusy && !question ? <button className="ai-send cancel" aria-label="停止生成" title="停止生成" onClick={() => visibleCurrent && wb.ai.cancel(visibleCurrent.id)}><Stop size={16} weight="fill" /></button>
-                    : <button className="ai-send" aria-label={question ? '提交回答' : '发送'} title={question ? '提交回答' : '发送'} disabled={!input.trim() || !config?.aiEnabled || !question && (busy || switchingModel || activeCopyWriteBlocked)} onClick={send}><PaperPlaneRight size={16} weight="fill" /></button>}
+                    : <button className="ai-send" aria-label={question ? '提交回答' : '发送'} title={question ? '提交回答' : '发送'} disabled={voiceBusy || !input.trim() || !config?.aiEnabled || !question && (busy || switchingModel || activeCopyWriteBlocked)} onClick={send}><PaperPlaneRight size={16} weight="fill" /></button>}
                 </div>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, useImperativeHandle, type CSSProperties, type ReactNode, type Ref, type RefObject } from 'react';
-import { ArrowClockwise, ArrowCounterClockwise, ArrowLeft, ArrowRight, ArrowSquareOut, Camera, Check, CheckCircle, Circle, ClipboardText, DotsThree, FileText, FolderOpen, GearSix, Globe, Minus, Play, Stop, TerminalWindow, Warning, WarningCircle, XCircle } from '@phosphor-icons/react';
+import { ArrowClockwise, ArrowCounterClockwise, ArrowLeft, ArrowRight, ArrowSquareOut, Camera, Check, CheckCircle, Circle, ClipboardText, DotsThree, FileText, FolderOpen, GearSix, Globe, Play, SidebarSimple, Stop, TerminalWindow, Warning, WarningCircle, XCircle } from '@phosphor-icons/react';
 import { GuestFrame } from '../../modules/browser/ui/guest-frame';
 import { WebviewPresentation } from '../../modules/browser/ui/webview-presentation';
 import { PageZoomControls } from '../../modules/browser/ui/page-zoom';
@@ -283,7 +283,7 @@ function GameView({ active, onPending }: { active: boolean; onPending(message: s
         openExternal={() => { void act(() => window.workbench.game.openOnline(onlineBrowser.target ? onlineTabId : undefined)); }} openArtifact={id => { void act(() => window.workbench.game.openArtifact(id)); }}
         removeArtifact={id => setOnlineIssues(previous => ({ ...previous, [issueKey]: { notes: previous[issueKey]?.notes ?? '', artifacts: (previous[issueKey]?.artifacts ?? []).filter(item => item.id !== id) } }))}
         check={() => { void window.workbench.game.checkOnline().catch(error => setFailure(errorText(error))); }} setNotes={value => setOnlineIssues(previous => ({ ...previous, [issueKey]: { notes: value, artifacts: previous[issueKey]?.artifacts ?? [] } }))} /> : <aside id="game-test-panel" className="game-tests glass" aria-label="测试检查">
-        <div className="game-pane-heading"><strong><ClipboardText />测试检查</strong><div className="game-pane-actions"><button type="button" onClick={() => setIssueOpen(true)}><ClipboardText />记录问题</button><button className="game-icon-button" aria-label="收起测试栏" title="收起测试栏" onClick={() => setTestsOpen(false)}><Minus /></button></div></div>
+        <div className="game-pane-heading"><strong><ClipboardText />测试检查</strong><div className="game-pane-actions"><button type="button" onClick={() => setIssueOpen(true)}><ClipboardText />记录问题</button><button className="game-icon-button" aria-label="收起测试栏" title="收起测试栏" onClick={() => setTestsOpen(false)}><SidebarSimple /></button></div></div>
         <p className="game-pane-description">运行项目现有测试，查看结果与日志。</p>
         <Segmented aria-label="测试范围" value={scope} onChange={value => { setScope(value); setSelected(value === 'full' ? 'playthrough' : 'rules'); }} options={[{ value: 'quick', label: '快速检查（5项）' }, { value: 'full', label: '完整通关' }]} />
         <div className="game-test-scroll">

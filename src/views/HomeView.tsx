@@ -26,12 +26,13 @@ const editorApi: TaskEditorApi = {
 
 const WEEKDAY_NAMES = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
-export function HomeView({ data, clock, mutate, userName, onPending, onOpenMedia, onOpenBazi, onOpenGame, editor, setEditor, onAskAi }: {
+export function HomeView({ data, clock, mutate, userName, onPending, onOpenMedia, onOpenBazi, onOpenGame, onOpenWeb, editor, setEditor, onAskAi }: {
   data: TodoState; clock: Date; mutate: Mutate; userName: string;
   onPending: (name: string) => void;
   onOpenMedia: () => void;
   onOpenBazi: () => void;
   onOpenGame: () => void;
+  onOpenWeb: () => void;
   editor: Task | 'new' | null;
   setEditor: (t: Task | 'new' | null) => void;
   onAskAi: (prompt: string) => void;
@@ -184,20 +185,21 @@ export function HomeView({ data, clock, mutate, userName, onPending, onOpenMedia
                 </span>
                 <span className="ntag">已上线</span>
               </button>
-              <button type="button" className="mitem" onClick={() => onPending('个人网页')}>
+              <button type="button" className="mitem" onClick={onOpenWeb}>
                 <span className="mtile"><IconWeb /></span>
                 <span className="mtext">
-                  <span className="mname">个人网页</span>
-                  <span className="mdesc">站点搭建、预览与发布管理</span>
+                  <span className="mname">网页工作台</span>
+                  <span className="mdesc">内置浏览器 · 多标签与网页浏览</span>
                 </span>
-                <span className="ntag">规划中</span>
+                <span className="ntag">已上线</span>
               </button>
               <button type="button" className="mitem" onClick={onOpenGame}>
                 <span className="mtile"><IconGamepad /></span>
                 <span className="mtext">
                   <span className="mname">游戏工作台</span>
-                  <span className="mdesc">轨迹侦探 · 本地试玩与自动测试</span>
+                  <span className="mdesc">轨迹侦探 · 双环境试玩与自动测试</span>
                 </span>
+                <span className="ntag">已上线</span>
               </button>
               <button type="button" className="mitem" onClick={onOpenBazi}>
                 <span className="mtile"><IconBagua /></span>

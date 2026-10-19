@@ -304,6 +304,11 @@ const api: WorkbenchApi = {
   ai,
   browser,
   browserAutomation,
+  speech: {
+    prepare: id => ipcRenderer.invoke('speech:prepare', id),
+    transcribe: input => ipcRenderer.invoke('speech:transcribe', input),
+    cancel: id => ipcRenderer.invoke('speech:cancel', id),
+  },
   mediaCapture,
   office,
   settings,

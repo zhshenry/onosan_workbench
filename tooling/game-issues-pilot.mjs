@@ -59,8 +59,9 @@ try {
   await launch();
   await check('entry works without failed tests; validation, dirty close and focus restoration use shared modal', async () => {
     const entry = game.getByRole('button', { name: '记录问题', exact: true });
-    const title = await game.locator('.game-tests > .game-pane-heading > strong').boundingBox(), button = await entry.boundingBox();
-    assert(button.x - title.x - title.width <= 16, 'record entry should sit beside the test heading');
+    const heading = await game.locator('.game-tests > .game-pane-heading').boundingBox(), button = await entry.boundingBox();
+    const collapse = await game.getByRole('button', { name: '收起测试栏', exact: true }).boundingBox();
+    assert(Math.abs(heading.x + heading.width - collapse.x - collapse.width - 5) < 2 && collapse.x - button.x - button.width <= 8, 'record and collapse controls should be grouped on the right');
     await entry.click();
     await drawer().getByRole('button', { name: '提交并保存', exact: true }).click();
     assert.equal(await drawer().locator('[name="title"]').getAttribute('aria-invalid'), 'true');

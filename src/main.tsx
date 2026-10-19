@@ -3,6 +3,7 @@ import { StrictMode } from 'react';
 import { App } from './App';
 import { FloatTodoApp } from './views/FloatTodo';
 import './shell.css';
+import './views/speech.css';
 import '../modules/todo/ui/todo.css';
 import '../modules/bazi/ui/bazi.css';
 import '../modules/copywriting/ui/copy.css';

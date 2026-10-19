@@ -30,3 +30,46 @@
 实施检查：记录入口、表单/失败恢复、独立证据包、最近记录、重启恢复、路径操作、ZIP、环境边界及三主题双尺寸均完成。无剩余 P0/P1/P2 视觉或流程问题；参考画板与当前共享控件密度差异已明确说明。
 
 final result: passed
+
+## 2026-10-18 弹框宽高收紧
+
+- 根据用户反馈，仅调整 `game-issue` 外框：最大宽 700→620px；高度为 `min(820px, 100vh - 96px)`，靠右 12px、垂直居中。沿用正文内滚动及固定标题/保存页脚。
+- `npm run build` 通过。使用独立 appData 的原生 Electron 验收，Browser plugin not available；未启动游戏服务或修改游戏源码。
+- 三主题在 1280×820 / 1024×680 的空表单均无水平溢出；实测外框分别为 620×724 / 620×584；1718×1010 下为 620×820。
+- 实际填写并保存后，长路径与四个底部按钮仍在外框内；校验错误能定位输入框，正文滚动、完成和 Escape 关闭正常，无 renderer error。本次为尺寸调整，不重复宣称已重新验收 ZIP、截图归档等未修改流程。
+- 证据：`C:/Users/henry/.codex/visualizations/2026/10/16/01a1428e-2c14-77f3-a87b-7907203e1553/game-issue-compact-20261018/report.json`、`compact-empty-mist-1280.png`、`compact-saved-1024.png`。截图已打开核对。
+
+final result: passed
+
+## 2026-10-18 再次收窄至 560px
+
+- 按用户「宽度再窄一点」将最大宽度从 620px 收至 560px，高度和位置沿用上次调整。
+- 构建通过；独立 Electron 实测三主题及 1280×820 / 1024×680，外框宽 560px、无水平溢出；实际填写保存成功，长路径和四个页脚按钮均可见，正文滚动及关闭正常，无 renderer error。
+- 截图已打开核对；测量、截图与通过报告位于 `C:/Users/henry/.codex/visualizations/2026/10/16/01a1428e-2c14-77f3-a87b-7907203e1553/game-issue-560-20261018/`。
+
+final result: passed
+
+## 2026-10-18 继续收窄至 500px
+
+- 按用户再次收窄要求，将最大宽度从 560px 调为 500px。
+- 构建及独立 Electron 排版检查通过：三主题、1280×820 / 1024×680、两列表单和保存后的四个页脚按钮均无横向溢出，实际填写保存、正文滚动与关闭正常，无 renderer error。
+- 截图已打开核对；证据位于 `C:/Users/henry/.codex/visualizations/2026/10/16/01a1428e-2c14-77f3-a87b-7907203e1553/game-issue-500-20261018/`。
+
+final result: passed
+
+## 2026-10-18 收窄至 460px
+
+- 根据用户继续收窄要求，将最大宽度由 500px 改为 460px。
+- 构建与独立 Electron 验收通过：三主题、1280×820 / 1024×680 下表单和页脚均无横向溢出，保存后四个操作按钮仍能排开，实际保存、正文滚动、关闭正常，无 renderer error。
+- 截图已打开核对；证据目录：`C:/Users/henry/.codex/visualizations/2026/10/16/01a1428e-2c14-77f3-a87b-7907203e1553/game-issue-460-20261018/`。
+
+final result: passed
+
+## 2026-10-18 标题栏右侧操作与折叠图标
+
+- 根据用户最新截图反馈，将「记录问题」与收起按钮组成标题行右侧操作组，间距 6px；移除两者之间的自动留白。收起图标改用现有 AI 助手侧栏的 `SidebarSimple`，本地测试和线上试玩栏一致。
+- `npm run verify` 通过。更新原生问题反馈 pilot 中已过时的「入口紧邻标题」断言，使其核对右对齐操作组；未改动问题包保存逻辑。
+- 专项隔离 Electron 验收通过：逐一比较实际 SVG 与 AI 助手折叠图标一致；三主题×1718×916 / 1280×820 / 1024×680 下标题栏无横向溢出；记录问题可打开 460px 抽屉并恢复焦点；鼠标与 Enter 均能收起，本地预览随之扩展，项目栏「检查」可以重新展开；线上栏同样可收起，无 renderer error。
+- 验收测量等待现有侧栏/弹框动效结束后进行，避免把过渡中的坐标误判为布局错误。截图已打开核对，证据位于 `C:/Users/henry/.codex/visualizations/2026/10/16/01a1428e-2c14-77f3-a87b-7907203e1553/game-test-heading-20261018/`，包含 `report.json`、`heading-final.png` 和 `heading-online.png`。
+
+final result: passed

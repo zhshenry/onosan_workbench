@@ -1,5 +1,9 @@
 # 设计验收索引
 
+## 内置离线语音听写 · 方案 2 扁平细化稿 · 2026-10-19
+
+[查看设计、实际截图与功能验收](docs/requirements/shared/voice-input/qa.md)
+
 2026-10-17：完整验收正文已按模块和需求迁入 docs/requirements；本页保留原标题作为历史链接入口。当前效果以 DESIGN / UX-CONTRACT 及对应日期的验收记录为准。此次目录整理未重跑历史实机流程。
 
 [需求总索引](docs/requirements/README.md) · [全部资料与原路径映射](docs/RESOURCE-INDEX.md)

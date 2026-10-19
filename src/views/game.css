@@ -26,9 +26,8 @@
 .game-project-panels { display: flex; align-items: center; gap: 7px; padding-left: 14px; margin-left: 7px; border-left: 1px solid var(--hairline); }
 .game-project-panels button[aria-expanded='true'], .game-workspace .game-project-actions > button[aria-expanded='true'] { color: var(--acc-deep); background: var(--acc-soft); border-color: var(--acc-ring); font-weight: 600; }
 .game-workspace button.game-icon-button { padding: 8px; flex: 0 0 auto; border-color: transparent; background: transparent; }
-.game-pane-actions { display: flex; flex: 1; align-items: center; gap: 6px; }
+.game-pane-actions { display: flex; align-items: center; gap: 6px; }
 .game-pane-actions > button { padding-block: 6px; white-space: nowrap; }
-.game-pane-actions > .game-icon-button { margin-left: auto; }
 .game-grid { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 12px var(--game-tests-width, minmax(330px, 35%)); flex: 1; min-height: 0; }
 .game-panels { flex: 1; min-height: 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
 .game-grid.tests-hidden { grid-template-columns: minmax(0, 1fr); }
@@ -212,7 +211,7 @@
 .game-document .game-document-content h2 { font-size: var(--type-lead); }
 .game-document-message { padding: 24px 28px; font-size: var(--type-body); color: var(--ink-3); }
 .game-document-error { padding: 8px 20px; margin: 0; font-size: var(--type-support); color: var(--danger); background: var(--danger-soft); }
-.modal.game-issue { margin: 12px 12px 12px auto; width: min(700px, calc(100vw - 24px)); max-width: min(700px, calc(100vw - 24px)); height: calc(100vh - 24px); max-height: calc(100vh - 24px); display: flex; flex-direction: column; overflow: hidden; background: var(--todo-mesh); }
+.modal.game-issue { margin: auto 12px auto auto; width: min(460px, calc(100vw - 24px)); max-width: min(460px, calc(100vw - 24px)); height: min(820px, calc(100vh - 96px)); max-height: calc(100vh - 96px); display: flex; flex-direction: column; overflow: hidden; background: var(--todo-mesh); }
 .game-issue > .modal-heading { flex-shrink: 0; position: static; padding: 14px 24px 0; border-bottom: 1px solid var(--hairline); }
 .game-issue .modal-heading-lead { flex-wrap: wrap; }
 .game-issue-tag { color: var(--acc-deep); background: var(--acc-soft); border-radius: var(--r-ctl); padding: 3px 8px; font-size: var(--type-caption); overflow-wrap: anywhere; }

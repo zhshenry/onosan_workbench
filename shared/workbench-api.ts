@@ -22,6 +22,7 @@ export interface WorkbenchApi {
   browser: import('./browser-contracts').BrowserBridge;
   game: import('./game-contracts').GameBridge;
   browserAutomation: import('./browser-automation-contracts').BrowserAutomationBridge;
+  speech: import('./speech-contracts').SpeechBridge;
   office: {
     convert(
       filename: string,

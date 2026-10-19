@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { ArrowSquareOut, Camera, Circle, ClipboardText, Copy, Globe, Minus, PencilSimple, Plus, X } from '@phosphor-icons/react';
+import { ArrowSquareOut, Camera, Circle, ClipboardText, Copy, Globe, PencilSimple, Plus, SidebarSimple, X } from '@phosphor-icons/react';
 import { Modal, Select as GameSelect, errorText } from '../ui/controls';
 import { GameOnlineUrlSchema, type GameArtifact, type GameOnlineState } from '../../shared/game-contracts';
 import type { BrowserFrameState } from '../../shared/browser-contracts';
@@ -32,7 +32,7 @@ export function GameOnlineTools({ online, browser, profile, busy, notes, artifac
 }) {
   const ready = !!online.url && !!browser.target && !browser.loading && !browser.error;
   return <aside id="game-test-panel" className="game-tests game-online-tools glass" aria-label="线上试玩工具">
-    <div className="game-pane-heading"><strong><Globe />线上试玩工具 <small className="game-environment-label">正式环境</small></strong><button className="game-icon-button" aria-label="收起线上试玩工具" title="收起线上试玩工具" onClick={close}><Minus /></button></div>
+    <div className="game-pane-heading"><strong><Globe />线上试玩工具 <small className="game-environment-label">正式环境</small></strong><button className="game-icon-button" aria-label="收起线上试玩工具" title="收起线上试玩工具" onClick={close}><SidebarSimple /></button></div>
     <div className="game-online-scroll">
       <section className="game-online-section">
         <div className="game-tools-heading"><h2>线上地址</h2><button className="game-text-button" onClick={edit}><PencilSimple />{online.url ? '编辑' : '设置'}</button></div>

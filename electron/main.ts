@@ -2,6 +2,7 @@ import type { TodoState } from '../shared/workbench-api';
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, Notification, powerMonitor, session, shell, Tray, nativeImage } from 'electron';
 import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { autoUpdater } from 'electron-updater';
 import { AppUpdates, updateNotesUrl } from './updater';
 import { Store } from '../modules/todo/store';
@@ -18,6 +19,8 @@ import { GameWorkbench } from './game-workbench';
 import { GameTerminal } from './game-terminal';
 import { registerGameIpc } from './game-ipc';
 import { registerAiIpc } from './ai-ipc';
+import { SpeechService } from './speech';
+import { registerSpeechIpc } from './speech-ipc';
 import { FloatTodoWindow, registerFloatIpc } from './float-window';
 
 type FloatFactory = () => FloatTodoWindow;
@@ -61,6 +64,7 @@ let mediaCaptureStore: MediaCaptureStore | null = null;
 let readingStore: ReadingStore | null = null;
 let copyStore: CopyStore | null = null;
 let officeConverter: OfficeConverter | null = null;
+let speechService: SpeechService | null = null;
 let tray: Tray | null = null;
 let updates: AppUpdates | null = null;
 let gameWorkbench: GameWorkbench | null = null;
@@ -108,6 +112,8 @@ if (!app.requestSingleInstanceLock()) {
     });
 
     mainWindow.once('ready-to-show', () => mainWindow?.show());
+    mainWindow.on('hide', () => speechService?.cancel());
+    mainWindow.on('blur', () => speechService?.cancel());
     // 内置浏览器租约:在渲染层有机会创建 webview 前装好附加审批
     browserGuests?.bind(mainWindow);
     if (DEV_URL) {
@@ -135,6 +141,7 @@ if (!app.requestSingleInstanceLock()) {
     mainWindow.on('maximize', () => mainWindow?.webContents.send('win:maximized', true));
     mainWindow.on('unmaximize', () => mainWindow?.webContents.send('win:maximized', false));
     mainWindow.on('closed', () => {
+      speechService?.cancel();
       mainWindow = null;
     });
   };
@@ -361,6 +368,8 @@ if (!app.requestSingleInstanceLock()) {
     readingStore = new ReadingStore(app.getPath('userData'));
     copyStore = new CopyStore(app.getPath('userData'));
     settingsStore = new AppSettingsStore(app.getPath('userData'));
+    speechService = new SpeechService(app.isPackaged ? join(process.resourcesPath, 'speech') : join(app.getAppPath(), 'vendor', 'speech'));
+    registerSpeechIpc(speechService, () => mainWindow?.webContents, DEV_URL || pathToFileURL(join(__dirname, '../dist/index.html')).href);
     applyLoginItem(settingsStore.read().launchAtLogin);
     browserGuests = new BrowserGuests(() => (DEV_URL || undefined));
     browserAutomation = new BrowserAutomation(browserGuests, new BrowserStore(join(app.getPath('userData'), 'browser-state.json')));
@@ -528,6 +537,8 @@ if (!app.requestSingleInstanceLock()) {
     tray = null;
     void officeConverter?.dispose();
     officeConverter = null;
+    speechService?.dispose();
+    speechService = null;
     aiStore?.close();
     aiStore = null;
     settingsStore = null;
