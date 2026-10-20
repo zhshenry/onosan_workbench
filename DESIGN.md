@@ -14,6 +14,8 @@
 
 复用 `src/shell.css` 的三主题、字阶、玻璃材质与 Phosphor 图标。游戏模块样式仅在 `src/views/game.css` 下作用于游戏宿主；测试范围使用共享 Segmented 的雾蓝选中变体，设置与视口/存档选择复用共享 Modal/Select。通过用青绿与文字、失败用 danger、待重测用琥珀与文字；服务就绪和测试通过分别表达。行为与验收见 `docs/requirements/game/trail-detective/spec.md`。
 
+2026-10-20 用户选定「窗口内展开 · 顶部细栏」，以 `docs/requirements/game/preview-expand/design/game-preview-expand-approved.png` 为视觉参考。保留左侧一级图标栏和全局日程/待办顶栏，只在工作台主体内隐藏二级目录、项目栏、预览工具栏、测试栏与终端；顶端约 58px 的玻璃细栏显示项目缩略图、当前环境、居中模式提示及约 34px 的刷新/截图记录/还原操作。真实游戏铺满下方剩余空间，不重画游戏页面。退出恢复原预览尺寸和面板状态；沿用现有字阶、主题 token 与 Phosphor 图标。入口位于预览尺寸与「⋯」之间，窄窗保留还原入口。行为与验收见 [窗口内展开](docs/requirements/game/preview-expand/README.md)。
+
 测试检查采用 2026-10-19 用户选定的[方案三](docs/requirements/game/test-selector/design/game-check-select-option-3-2026-10-19.png)：五项快速检查收进「当前检查」共享 Select，下拉选项与触发器同时显示名称和真实状态。下方连续显示检查说明、检查方法、上次结果与可展开的原始输出；完整通关只有一项，直接显示详情。结果区独立滚动，约 34px 的运行/重跑操作固定在侧栏底部。待重测用顶部数量提示、琥珀状态与结果说明共同表达；不把说明文字当作新增测试结果。下拉菜单以 `game-check-menu` 业务变体复用共享 portal、键盘、避让和主题。
 
 后续按用户要求将正常结果摘要压成两行：首行并列标题、状态、简写日期/时间和耗时，次行保留待重测说明。完整时间保留在悬停提示及 `time` 语义中；失败原因仍可阅读。

@@ -1,5 +1,11 @@
 # 设计验收索引
 
+## 窗口内展开试玩 · 顶部细栏 · 2026-10-20
+
+[查看高保真对照、实际截图与交互验收](docs/requirements/game/preview-expand/qa.md)
+
+final result: passed
+
 ## 游戏终端工具栏 · 方案 3 · 2026-10-19
 
 [查看高保真对照、实机截图与交互验收](docs/requirements/game/terminal/qa.md)

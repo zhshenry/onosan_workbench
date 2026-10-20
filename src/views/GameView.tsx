@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, useImperativeHandle, type CSSProperties, type Ref, type RefObject } from 'react';
-import { ArrowClockwise, ArrowCounterClockwise, ArrowLeft, ArrowRight, ArrowSquareOut, Camera, Check, CheckCircle, Circle, ClipboardText, Clock, FileText, FolderOpen, GearSix, Globe, Play, SidebarSimple, Stop, TerminalWindow, Warning, WarningCircle, XCircle } from '@phosphor-icons/react';
+import { ArrowClockwise, ArrowCounterClockwise, ArrowLeft, ArrowRight, ArrowSquareOut, Camera, Check, CheckCircle, Circle, ClipboardText, Clock, CornersIn, CornersOut, FileText, FolderOpen, GearSix, Globe, Play, SidebarSimple, Stop, TerminalWindow, Warning, WarningCircle, XCircle } from '@phosphor-icons/react';
 import { GuestFrame } from '../../modules/browser/ui/guest-frame';
 import { WebviewPresentation } from '../../modules/browser/ui/webview-presentation';
 import { PageZoomControls } from '../../modules/browser/ui/page-zoom';
@@ -126,6 +126,8 @@ function GameView({ active, onPending }: { active: boolean; onPending(message: s
   const [settings, setSettings] = useState(false);
   const [documentOpen, setDocumentOpen] = useState(false);
   const [issueOpen, setIssueOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const expandButton = useRef<HTMLButtonElement>(null), restoreButton = useRef<HTMLButtonElement>(null);
   const [resetTrial, setResetTrial] = useState<GameTrialReset | null>(null);
   const [trialVersion, setTrialVersion] = useState({ local: 0, online: 0 });
   const [environment, setEnvironment] = useState('local');
@@ -158,6 +160,7 @@ function GameView({ active, onPending }: { active: boolean; onPending(message: s
   const [localBrowser, setBrowser] = useState(emptyBrowserFrame);
   const [clock, setClock] = useState(Date.now());
   const localPreview = useRef<PreviewApi>(null), onlinePreview = useRef<PreviewApi>(null);
+  useLayoutEffect(() => { if (active && expanded) restoreButton.current?.focus({ preventScroll: true }); }, [active, expanded]);
   useEffect(() => { if (!active) { setDocumentOpen(false); setResetTrial(null); } }, [active]);
   useEffect(() => {
     let observed = false, active = true;
@@ -227,7 +230,16 @@ function GameView({ active, onPending }: { active: boolean; onPending(message: s
     if (!result) return;
     void act(async () => { await window.workbench.clipboard.write(gameProblemReport(state, result, browser.target?.url || service.url, viewport === 'fit' ? '跟随窗口' : viewport === 'desktop' ? '1440×1000' : '390×844')); onPending('问题报告已复制，可粘贴到开发工具。'); });
   };
-  return <section className="game-workspace" aria-label="轨迹侦探运行与测试">
+  return <section className="game-workspace" data-expanded={expanded} aria-label="轨迹侦探运行与测试">
+    {expanded ? <header className="game-expanded-bar">
+      <div className="game-expanded-identity"><img src={office} alt="" /><strong>轨迹侦探</strong><span className="game-expanded-environment" data-environment={environment} title={browser.target?.url || trialUrl}><Circle weight="fill" size={8} />{isOnline ? '线上试玩' : '本地开发'}</span></div>
+      <span className="game-expanded-label">窗口内展开</span>
+      <div className="game-expanded-actions">
+        <button type="button" className={previewNeedsRefresh ? 'game-expanded-refresh game-refresh' : 'game-expanded-refresh'} disabled={!hasPreview} aria-label="刷新试玩" title={previewNeedsRefresh ? '本地代码已更新，刷新试玩查看最新画面。' : '刷新试玩'} onClick={refresh}><ArrowClockwise /><span>{previewNeedsRefresh ? '刷新试玩' : '刷新'}</span>{previewNeedsRefresh ? <span className="game-refresh-badge" role="status"><Circle weight="fill" aria-hidden="true" />有更新</span> : null}</button>
+        <button type="button" className="game-expanded-capture" disabled={!hasPreview || browser.loading || !browser.target || !!browser.error || busy} aria-label="截图记录" title="截图并保存当前游戏画面" onClick={capture}><Camera /><span>截图记录</span></button>
+        <div className="game-expanded-restore"><button ref={restoreButton} type="button" onClick={() => { setExpanded(false); requestAnimationFrame(() => expandButton.current?.focus({ preventScroll: true })); }}><CornersIn />还原布局</button></div>
+      </div>
+    </header> : null}
     <header className="game-project glass">
       <img src={office} alt="轨迹侦探事务所" />
       <div className="game-project-name"><div className="game-project-heading"><strong>轨迹侦探</strong><span className={`game-service ${running ? 'is-ready' : ''}`} role="status" title={service.message}><Circle weight="fill" size={10} />{service.phase === 'starting' ? '本地启动中…' : running ? service.owned ? '本地运行中' : '外部本地服务 · 运行中' : service.phase === 'error' ? '本地启动失败' : '本地未启动'}</span></div><span title={state.config.root}>{state.config.root}</span></div>
@@ -237,7 +249,7 @@ function GameView({ active, onPending }: { active: boolean; onPending(message: s
           <button ref={terminalToggle} aria-expanded={terminalOpen} aria-controls="game-project-terminal" title={terminalOpen ? '收起项目终端' : '展开项目终端'} onClick={() => { setTerminalEntered(true); setTerminalOpen(!terminalOpen); }}><TerminalWindow />终端</button>
           <button className="game-test-toggle" aria-expanded={testsOpen} title={testsOpen ? '收起测试栏' : '展开测试栏'} onClick={() => setTestsOpen(!testsOpen)}><ClipboardText />检查</button>
         </div>
-        <GameOptionsMenu kind="project" active={active}>{close => <>
+        <GameOptionsMenu kind="project" active={active && !expanded}>{close => <>
           <button type="button" role="menuitem" onClick={() => { close(); void act(() => window.workbench.game.open('root')); }}><FolderOpen />打开项目目录</button>
           <button type="button" role="menuitem" onClick={() => { close(); setDocumentOpen(true); }}><FileText />项目运行说明</button>
           <button type="button" role="menuitem" disabled={projectBusy || running} title={running ? '停止服务后可修改项目设置' : '项目设置'} onClick={() => { close(); setSettings(true); }}><GearSix />项目设置</button>
@@ -254,7 +266,8 @@ function GameView({ active, onPending }: { active: boolean; onPending(message: s
           <button type="button" className={previewNeedsRefresh ? 'game-refresh' : 'game-icon-button'} disabled={!hasPreview} title={previewNeedsRefresh ? '本地代码已更新，刷新试玩查看最新画面。' : '刷新试玩'} aria-label="刷新试玩" aria-description={previewNeedsRefresh ? '本地代码有更新' : undefined} onClick={refresh}><ArrowClockwise />{previewNeedsRefresh ? <><span>刷新试玩</span><span className="game-refresh-badge" role="status"><Circle weight="fill" aria-hidden="true" />有更新</span></> : null}</button>
           <span className="game-address" title={browser.target?.url || (isOnline ? state.online.url : service.url)}>{browser.target?.url || (isOnline ? state.online.url || '请设置线上地址' : service.url || `127.0.0.1:${state.config.port}`)}</span>
           <GameSelect aria-label="预览尺寸" value={currentViewport} onChange={isOnline ? setOnlineViewport : setViewport} options={[{ value: 'fit', label: '跟随窗口' }, { value: 'desktop', label: '桌面 1440×1000' }, { value: 'narrow', label: '窄屏 390×844' }]} />
-          <GameOptionsMenu kind="preview" active={active} context={`${environment}:${browser.target?.url}`} onOpen={() => preview.current?.refreshZoom()}>{close => <>
+          <button ref={expandButton} type="button" className="game-icon-button" disabled={!hasPreview} aria-label="窗口内展开" title="窗口内展开" onClick={() => setExpanded(true)}><CornersOut /></button>
+          <GameOptionsMenu kind="preview" active={active && !expanded} context={`${environment}:${browser.target?.url}`} onOpen={() => preview.current?.refreshZoom()}>{close => <>
             <PageZoomControls zoomFactor={hasPreview ? browser.zoomFactor : 1} disabled={!hasPreview || browser.loading || !browser.target || !!browser.error || busy} onZoomChange={factor => { void act(async () => preview.current?.setZoomFactor(factor)); }} />
             <hr />
             <div className="game-profile-options" role="group" aria-label="试玩存档">
@@ -269,8 +282,8 @@ function GameView({ active, onPending }: { active: boolean; onPending(message: s
             <button type="button" role="menuitem" disabled={!hasPreview} title="使用该浏览器自己的存档" onClick={() => { close(); void act(() => isOnline ? window.workbench.game.openOnline(browser.target ? onlineTabId : undefined) : window.workbench.game.open('preview')); }}><ArrowSquareOut />在外部浏览器打开</button>
           </>}</GameOptionsMenu>
         </div>
-        <div className="game-environment" hidden={isOnline} inert={isOnline} aria-hidden={isOnline}>{running ? <GamePreview key={`${service.url}:${workspace}:${trialVersion.local}`} url={service.url} workspace={workspace} tabId={localTabId} viewport={viewport} apiRef={localPreview} onState={setBrowser} /> : <div className="game-preview-empty"><img src={office} alt="雨窗前的侦探事务所" /><h1>轨迹侦探</h1><p>{state.sourceError ? '请在项目设置中核对目录。' : '启动游戏，在这里直接试玩最新代码。'}</p><button onClick={() => setDocumentOpen(true)}>查看项目运行说明</button></div>}</div>
-        <div className="game-environment" hidden={!isOnline} inert={!isOnline} aria-hidden={!isOnline}>{onlineEntered && state.online.url ? <GamePreview key={`${state.online.url}:${onlineWorkspace}:${trialVersion.online}`} url={state.online.url} workspace={onlineWorkspace} tabId={onlineTabId} viewport={onlineViewport} apiRef={onlinePreview} onState={setOnlineBrowser} /> : <div className="game-preview-empty"><Globe size={44} /><h1>线上试玩</h1><p>设置发布地址，直接体验服务器上的游戏。</p><button onClick={() => { setTestsOpen(true); setOnlineSettings(true); }}>设置线上地址</button></div>}</div>
+        <div className="game-environment" hidden={isOnline} inert={isOnline} aria-hidden={isOnline}>{running ? <GamePreview key={`${service.url}:${workspace}:${trialVersion.local}`} url={service.url} workspace={workspace} tabId={localTabId} viewport={expanded && !isOnline ? 'fit' : viewport} apiRef={localPreview} onState={setBrowser} /> : <div className="game-preview-empty"><img src={office} alt="雨窗前的侦探事务所" /><h1>轨迹侦探</h1><p>{state.sourceError ? '请在项目设置中核对目录。' : '启动游戏，在这里直接试玩最新代码。'}</p><button onClick={() => setDocumentOpen(true)}>查看项目运行说明</button></div>}</div>
+        <div className="game-environment" hidden={!isOnline} inert={!isOnline} aria-hidden={!isOnline}>{onlineEntered && state.online.url ? <GamePreview key={`${state.online.url}:${onlineWorkspace}:${trialVersion.online}`} url={state.online.url} workspace={onlineWorkspace} tabId={onlineTabId} viewport={expanded && isOnline ? 'fit' : onlineViewport} apiRef={onlinePreview} onState={setOnlineBrowser} /> : <div className="game-preview-empty"><Globe size={44} /><h1>线上试玩</h1><p>设置发布地址，直接体验服务器上的游戏。</p><button onClick={() => { setTestsOpen(true); setOnlineSettings(true); }}>设置线上地址</button></div>}</div>
         <div className="game-preview-footer"><span><Circle weight="fill" size={9} />{isOnline ? onlineProfile === 'keep' ? '线上试玩档 · 与本地独立' : '线上临时新档 · 不覆盖保留档' : service.message}</span><span>{browser.loading && hasPreview ? '页面载入中…' : isOnline ? '本地服务未启动时也可试玩' : running ? '人工试玩 · 自动测试使用独立档案' : '代码继续在现有开发工具中修改'}</span></div>
       </section>
       {testsOpen ? <><div className="game-column-resize" role="separator" tabIndex={0} aria-label="调整游戏预览和测试检查宽度" title="左右拖动调整宽度（← / →）" aria-orientation="vertical" aria-controls="game-test-panel" aria-valuemin={330} aria-valuemax={Math.round(maximumTestsWidth)} aria-valuenow={Math.round(effectiveTestsWidth)} aria-valuetext={`测试检查 ${Math.round(effectiveTestsWidth)} 像素`} data-dragging={resizing}
@@ -326,7 +339,7 @@ function GameView({ active, onPending }: { active: boolean; onPending(message: s
         <p className="game-tests-footer">完整通关使用独立 Edge，不影响左侧试玩档。</p>
       </aside>}</> : null}
     </div>
-    {terminalEntered ? <GameTerminalPanel active={active} open={terminalOpen} close={() => { setTerminalOpen(false); terminalToggle.current?.focus(); }} onPending={onPending} /> : null}
+    {terminalEntered ? <GameTerminalPanel active={active} open={terminalOpen && !expanded} close={() => { setTerminalOpen(false); terminalToggle.current?.focus(); }} onPending={onPending} /> : null}
     </div>
     {settings ? <ProjectSettings state={state} close={() => setSettings(false)} onSave={async config => { await window.workbench.game.configure(config); setLoadedRevision(''); }} /> : null}
     {documentOpen ? <GameDocument close={() => setDocumentOpen(false)} /> : null}
