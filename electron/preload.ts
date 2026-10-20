@@ -279,6 +279,28 @@ const game: import('../shared/game-contracts').GameBridge = {
   },
 };
 
+const hushHour: WorkbenchApi['hushHour'] = {
+  open: () => ipcRenderer.invoke('web:hush-hour:open'), state: () => ipcRenderer.invoke('web:hush-hour:state'),
+  stop: () => ipcRenderer.invoke('web:hush-hour:stop'), restart: () => ipcRenderer.invoke('web:hush-hour:restart'),
+  build: () => ipcRenderer.invoke('web:hush-hour:build'), cancelBuild: () => ipcRenderer.invoke('web:hush-hour:cancelBuild'),
+  configureOnline: url => ipcRenderer.invoke('web:hush-hour:configureOnline', url),
+  openFolder: () => ipcRenderer.invoke('web:hush-hour:openFolder'), readDocument: path => ipcRenderer.invoke('web:hush-hour:readDocument', path),
+  openDocumentLink: url => ipcRenderer.invoke('web:hush-hour:openDocumentLink', url),
+  capture: input => ipcRenderer.invoke('web:hush-hour:capture', input), openExternal: tabId => ipcRenderer.invoke('web:hush-hour:openExternal', tabId),
+  onChanged: callback => { const listener = (_event: unknown, state: import('../shared/hush-hour-contracts').HushHourState) => callback(state); ipcRenderer.on('web:hush-hour:changed', listener); return () => ipcRenderer.off('web:hush-hour:changed', listener); },
+  terminal: {
+    state: () => ipcRenderer.invoke('web:hush-hour:terminal:state'), open: size => ipcRenderer.invoke('web:hush-hour:terminal:open', size),
+    write: (id, data) => ipcRenderer.invoke('web:hush-hour:terminal:write', { id, data }), resize: (id, cols, rows) => ipcRenderer.invoke('web:hush-hour:terminal:resize', { id, cols, rows }),
+    clear: id => ipcRenderer.invoke('web:hush-hour:terminal:clear', { id }), close: id => ipcRenderer.invoke('web:hush-hour:terminal:close', { id }),
+    onEvent: callback => { const listener = (_event: unknown, event: import('../shared/game-contracts').GameTerminalEvent) => callback(event); ipcRenderer.on('web:hush-hour:terminal:event', listener); return () => ipcRenderer.off('web:hush-hour:terminal:event', listener); },
+  },
+  issues: {
+    directory: () => ipcRenderer.invoke('web:hush-hour:issues:directory'), list: () => ipcRenderer.invoke('web:hush-hour:issues:list'), read: id => ipcRenderer.invoke('web:hush-hour:issues:read', id),
+    save: draft => ipcRenderer.invoke('web:hush-hour:issues:save', draft), preview: image => ipcRenderer.invoke('web:hush-hour:issues:preview', image), openImage: image => ipcRenderer.invoke('web:hush-hour:issues:openImage', image),
+    openFolder: id => ipcRenderer.invoke('web:hush-hour:issues:openFolder', id), export: id => ipcRenderer.invoke('web:hush-hour:issues:export', id),
+  },
+};
+
 const api: WorkbenchApi = {
   minimize: (): void => {
     ipcRenderer.send('win:minimize');
@@ -303,6 +325,7 @@ const api: WorkbenchApi = {
   copy,
   ai,
   browser,
+  hushHour,
   browserAutomation,
   speech: {
     prepare: id => ipcRenderer.invoke('speech:prepare', id),

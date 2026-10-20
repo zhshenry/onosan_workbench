@@ -4,10 +4,11 @@ import { Modal, Select as GameSelect, errorText } from '../ui/controls';
 import { GameOnlineUrlSchema, type GameArtifact, type GameOnlineState } from '../../shared/game-contracts';
 import type { BrowserFrameState } from '../../shared/browser-contracts';
 
-export function GameOnlineAddress({ url, close, save }: { url: string; close(): void; save(url: string): Promise<void> }) {
+export function GameOnlineAddress({ url, close, save, variant = 'game' }: { url: string; close(): void; save(url: string): Promise<void>; variant?: 'game' | 'website' }) {
   const [draft, setDraft] = useState(url), [saving, setSaving] = useState(false), [error, setError] = useState('');
   const input = useRef<HTMLInputElement>(null);
-  return <Modal title="设置线上地址" close={close} dirty={draft !== url} className="game-settings">
+  const website = variant === 'website', id = website ? 'hush-hour-online-url' : 'game-online-url';
+  return <Modal title={website ? '设置正式网页地址' : '设置线上地址'} close={close} dirty={draft !== url} busy={website && saving} className="game-settings">
     <form noValidate onSubmit={event => {
       event.preventDefault();
       const parsed = GameOnlineUrlSchema.safeParse(draft);
@@ -15,10 +16,10 @@ export function GameOnlineAddress({ url, close, save }: { url: string; close(): 
       setSaving(true); setError('');
       void save(parsed.data).then(close, cause => setError(errorText(cause))).finally(() => setSaving(false));
     }}>
-      <label htmlFor="game-online-url">线上地址</label>
-      <input ref={input} id="game-online-url" type="url" autoComplete="off" value={draft} readOnly={saving} placeholder="https://你的域名/游戏目录/" aria-invalid={!!error} aria-describedby={error ? 'game-online-url-help game-online-url-error' : 'game-online-url-help'} onChange={event => setDraft(event.target.value)} />
-      <p id="game-online-url-help">支持完整页面地址或子目录。保存后打开线上浏览器；留空取消配置，原站点的试玩数据保留。</p>
-      {error ? <p className="game-error" id="game-online-url-error" role="alert">{error}</p> : null}
+      <label htmlFor={id}>{website ? '正式网页地址' : '线上地址'}</label>
+      <input ref={input} id={id} type="url" autoComplete="off" value={draft} readOnly={saving} placeholder={website ? 'https://你的域名/' : 'https://你的域名/游戏目录/'} aria-invalid={!!error} aria-describedby={error ? `${id}-help ${id}-error` : `${id}-help`} onChange={event => setDraft(event.target.value)} />
+      <p id={`${id}-help`}>{website ? '支持完整页面地址或子目录。保存后打开正式网页；留空取消配置，原站点的浏览数据保留。' : '支持完整页面地址或子目录。保存后打开线上浏览器；留空取消配置，原站点的试玩数据保留。'}</p>
+      {error ? <p className="game-error" id={`${id}-error`} role="alert">{error}</p> : null}
       <div className="actions"><button type="button" onClick={close}>取消</button><button type="submit" className="primary" disabled={saving}>{saving ? '正在保存…' : draft.trim() ? '保存并打开' : '保存'}</button></div>
     </form>
   </Modal>;

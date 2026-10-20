@@ -4,6 +4,7 @@
 
 | 需求 | 资料状态 |
 |---|---|
+| [Hush-Hour 本地网页入口](hush-hour/README.md) | 已接入本地静态预览 |
 | [内置浏览器与 AI 操作](browser-automation/README.md) | 当前说明与带日期的历史验收 |
 | [浏览器任务记录](browser-task-record/README.md) | 已选方案 2 与标题栏修订 |
 | [浏览器站点授权](site-authorization/README.md) | 已选方案 3 |

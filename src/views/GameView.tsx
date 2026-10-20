@@ -41,9 +41,9 @@ const CHECK_DETAILS: Record<GameTaskId, { what: string; how: string }> = {
     how: '在独立 Edge 中自动进入案件、移动对话、收集证据并提交预设答案，核对通关结果、进度恢复和页面布局。',
   },
 };
-interface PreviewApi { reload(): void; back(): void; forward(): void; setZoomFactor(factor: number): void; refreshZoom(): void; }
+export interface PreviewApi { reload(): void; back(): void; forward(): void; setZoomFactor(factor: number): void; refreshZoom(): void; }
 
-function GamePreview({ url, workspace, tabId, viewport, apiRef, onState }: { url: string; workspace: string; tabId: string; viewport: string; apiRef: Ref<PreviewApi>; onState(state: BrowserFrameState): void }) {
+export function GamePreview({ url, workspace, tabId, viewport, apiRef, onState }: { url: string; workspace: string; tabId: string; viewport: string; apiRef: Ref<PreviewApi>; onState(state: BrowserFrameState): void }) {
   const host = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const controller = useRef<GuestFrame | null>(null);

@@ -3,8 +3,9 @@ import { ArrowLeft, FileText } from '@phosphor-icons/react';
 import { Modal, errorText } from '../ui/controls';
 import { resolveGameDocumentLink, type GameDocument as DocumentData } from '../../shared/game-documents';
 import { renderMarkdown } from '../markdown';
+import type { GameBridge } from '../../shared/game-contracts';
 
-export function GameDocument({ close }: { close(): void }) {
+export function GameDocument({ close, bridge = window.workbench.game, projectName = '轨迹侦探' }: { close(): void; bridge?: Pick<GameBridge, 'readDocument' | 'openDocumentLink'>; projectName?: string }) {
   const [history, setHistory] = useState([{ path: 'README.md', hash: '' }]);
   const current = history[history.length - 1];
   const [document, setDocument] = useState<DocumentData | null>(null);
@@ -14,9 +15,9 @@ export function GameDocument({ close }: { close(): void }) {
   useEffect(() => {
     let active = true;
     setDocument(null); setError(''); setLinkError('');
-    void window.workbench.game.readDocument(current.path).then(value => { if (active) setDocument(value); }, cause => { if (active) setError(errorText(cause)); });
+    void bridge.readDocument(current.path).then(value => { if (active) setDocument(value); }, cause => { if (active) setError(errorText(cause)); });
     return () => { active = false; };
-  }, [current.path, retry]);
+  }, [bridge, current.path, retry]);
   useEffect(() => {
     const element = content.current;
     if (!element || !document) return;
@@ -40,11 +41,11 @@ export function GameDocument({ close }: { close(): void }) {
     setLinkError('');
     try {
       const target = resolveGameDocumentLink(document.path, anchor.getAttribute('href')!);
-      if (target.kind === 'external') void window.workbench.game.openDocumentLink(target.url).catch(cause => setLinkError(errorText(cause)));
+      if (target.kind === 'external') void bridge.openDocumentLink(target.url).catch(cause => setLinkError(errorText(cause)));
       else if (target.path !== current.path || target.hash !== current.hash) setHistory(previous => [...previous, target]);
     } catch (cause) { setLinkError(errorText(cause)); }
   }
-  return <Modal title="轨迹侦探 · 项目说明" titleIcon={<FileText />} close={close} className="game-document">
+  return <Modal title={`${projectName} · 项目说明`} titleIcon={<FileText />} close={close} className="game-document">
     <nav className="game-document-nav" aria-label="项目说明导航">
       <button type="button" disabled={history.length < 2} onClick={() => setHistory(previous => previous.slice(0, -1))}><ArrowLeft />上一篇</button>
       <button type="button" disabled={history.length === 1} onClick={() => setHistory([{ path: 'README.md', hash: '' }])}>运行说明</button>

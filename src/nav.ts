@@ -49,6 +49,7 @@ export const NAV: WorkbenchDef[] = [
     title: '网页工作台',
     subs: [
       { label: '浏览器', view: 'browser' },
+      { label: 'Hush-Hour', view: 'hush-hour' },
       { label: '站点搭建', pending: true },
       { label: '页面设计', pending: true },
       { label: '发布管理', pending: true },

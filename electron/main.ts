@@ -18,6 +18,8 @@ import { registerBrowserAutomationIpc } from './browser/ipc';
 import { GameWorkbench } from './game-workbench';
 import { GameTerminal } from './game-terminal';
 import { registerGameIpc } from './game-ipc';
+import { HushHourWorkbench } from './hush-hour-workbench';
+import { registerHushHourIpc } from './hush-hour-ipc';
 import { registerAiIpc } from './ai-ipc';
 import { SpeechService } from './speech';
 import { registerSpeechIpc } from './speech-ipc';
@@ -374,6 +376,9 @@ if (!app.requestSingleInstanceLock()) {
     browserGuests = new BrowserGuests(() => (DEV_URL || undefined));
     browserAutomation = new BrowserAutomation(browserGuests, new BrowserStore(join(app.getPath('userData'), 'browser-state.json')));
     registerBrowserAutomationIpc(browserAutomation, browserGuests, () => mainWindow?.webContents);
+    const hushHour = new HushHourWorkbench({ dataDir: join(app.getPath('userData'), 'websites', 'hush-hour') });
+    const hushHourTerminal = new GameTerminal();
+    registerHushHourIpc(hushHour, hushHourTerminal, browserGuests, () => mainWindow?.webContents);
     gameWorkbench = new GameWorkbench({ dataDir: join(app.getPath('userData'), 'games', 'trail-detective'), appRoot: app.getAppPath() });
     await gameWorkbench.initialize();
     const gameTerminal = new GameTerminal();
@@ -382,7 +387,7 @@ if (!app.requestSingleInstanceLock()) {
     app.on('before-quit', event => {
       if (!gameQuitting && gameWorkbench) {
         event.preventDefault(); gameQuitting = true;
-        void Promise.allSettled([gameWorkbench.dispose(), gameTerminal.dispose()]).finally(() => app.quit());
+        void Promise.allSettled([gameWorkbench.dispose(), gameTerminal.dispose(), hushHour.dispose(), hushHourTerminal.dispose()]).finally(() => app.quit());
       }
     });
     officeConverter = new OfficeConverter(OFFICE_CONVERT_OPTIONS);

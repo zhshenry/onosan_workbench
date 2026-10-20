@@ -40,7 +40,7 @@ export class GameTerminal {
     this.output = ''; this.sequence = 0; this.changed();
     try {
       const cwd = await realpath(root);
-      if (!(await stat(cwd)).isDirectory()) throw new Error('游戏项目目录无效');
+      if (!(await stat(cwd)).isDirectory()) throw new Error('项目目录无效');
       if (this.disposed) throw new Error('项目终端已关闭');
       const shell = this.options.shell ?? join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
       if (!existsSync(shell)) throw new Error('未找到 Windows PowerShell');

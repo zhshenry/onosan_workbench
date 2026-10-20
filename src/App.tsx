@@ -16,6 +16,7 @@ import { BaziView } from '../modules/bazi/ui/BaziView';
 import { TaskEditor, type TaskEditorApi } from '../modules/todo/ui/TaskEditor';
 import { MediaBrowserHost } from './views/MediaBrowserHost';
 import { BrowserHost } from './views/BrowserView';
+import { HushHourView } from './views/HushHourView';
 import { GameHost } from './views/GameView';
 import type { BrowserTask } from '../shared/browser-automation-contracts';
 import { CopyView } from '../modules/copywriting/ui/CopyView';
@@ -627,7 +628,7 @@ export function App() {
       <main className="content" ref={contentRef} tabIndex={-1}>
           {todo.error && <div className="todo-load-error" role="alert">{todo.error}</div>}
           {/* 视图切换动效:按 curView 换 key 重挂载,统一淡入上移(见 shell.css .view-fade) */}
-          {(isPlanningWorkbench || curView !== 'media-browser' && curView !== 'browser' && curView !== 'game') && <div className="view-fade" key={curView}>
+          {(isPlanningWorkbench || curView !== 'media-browser' && curView !== 'browser' && curView !== 'hush-hour' && curView !== 'game') && <div className="view-fade" key={curView}>
           {isPlanningWorkbench ? (
             <section className="pending-workbench" role="status">
               <span className="pending-workbench-icon" aria-hidden="true"><ActiveWorkbenchIcon /></span>
@@ -653,6 +654,9 @@ export function App() {
           <MediaBrowserHost active={!isPlanningWorkbench && curView === 'media-browser'} focusTarget={contentRef}
             onPending={showToast} />
           <BrowserHost active={!isPlanningWorkbench && curView === 'browser'} focusTarget={contentRef} onPending={showToast} />
+          <BrowserHost active={!isPlanningWorkbench && curView === 'hush-hour'} focusTarget={contentRef} onPending={showToast}>
+            <HushHourView active={!isPlanningWorkbench && curView === 'hush-hour'} onPending={showToast} />
+          </BrowserHost>
           <GameHost active={!isPlanningWorkbench && curView === 'game'} focusTarget={contentRef} onPending={showToast} />
         </main>
 

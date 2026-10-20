@@ -1,11 +1,11 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { CaretUp, DotsThree } from '@phosphor-icons/react';
 
-export function GameOptionsMenu({ kind, active, context, onOpen, children }: { kind: 'project' | 'preview' | 'terminal'; active: boolean; context?: string; onOpen?(): void; children(close: () => void): ReactNode }) {
+export function GameOptionsMenu({ kind, active, context, onOpen, children, label: customLabel }: { kind: 'project' | 'preview' | 'terminal'; active: boolean; context?: string; onOpen?(): void; children(close: () => void): ReactNode; label?: string }) {
   const id = useId(), menu = useRef<HTMLDivElement>(null), trigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const terminal = kind === 'terminal';
-  const label = terminal ? '终端更多操作' : kind === 'project' ? '项目更多功能' : '游戏预览更多功能';
+  const label = customLabel ?? (terminal ? '终端更多操作' : kind === 'project' ? '项目更多功能' : '游戏预览更多功能');
   useLayoutEffect(() => {
     if (!open || !menu.current || !trigger.current) return;
     const element = menu.current, anchor = trigger.current.getBoundingClientRect();

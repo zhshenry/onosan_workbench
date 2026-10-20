@@ -275,7 +275,7 @@
 .game-issue-form { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .game-issue-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 24px 20px; scrollbar-gutter: stable; }
 .game-issue-intro, .game-issue-help, .game-issue-empty { color: var(--ink-3); font-size: var(--type-support); line-height: 1.6; margin: 8px 0 14px; }
-.game-issue-scroll > label, .game-issue-behavior label { display: flex; gap: 8px; align-items: baseline; margin: 12px 0 6px; font-size: var(--type-control); font-weight: 600; }
+.game-issue-scroll > label, .game-issue-behavior label, .game-issue-field > label { display: flex; gap: 8px; align-items: baseline; margin: 12px 0 6px; font-size: var(--type-control); font-weight: 600; }
 .game-issue label > span:not(:only-child) { color: var(--ink-3); font-size: var(--type-caption); font-weight: 400; }
 .game-issue input:not([type='checkbox']), .game-issue textarea { display: block; width: 100%; box-sizing: border-box; font: inherit; font-size: var(--type-control); padding: 8px 11px; color: var(--ink); background: var(--glass-hi); border: 1px solid var(--hairline); border-radius: var(--r-ctl); }
 .game-issue textarea.resize-none { resize: none; min-height: 0; line-height: 1.6; }

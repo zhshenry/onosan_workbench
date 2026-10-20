@@ -4,10 +4,10 @@ import { FitAddon } from '@xterm/addon-fit';
 import { ArrowClockwise, CaretDown, Circle, Copy, SignOut, StopCircle, TerminalWindow, Trash } from '@phosphor-icons/react';
 import { errorText } from '../ui/controls';
 import { GameOptionsMenu } from './GameOptionsMenu';
-import type { GameTerminalEvent, GameTerminalState } from '../../shared/game-contracts';
+import type { GameTerminalBridge, GameTerminalEvent, GameTerminalState } from '../../shared/game-contracts';
 import '@xterm/xterm/css/xterm.css';
 
-export function GameTerminalPanel({ active, open, close, onPending }: { active: boolean; open: boolean; close(): void; onPending(message: string): void }) {
+export function GameTerminalPanel({ active, open, close, onPending, bridge = window.workbench.game.terminal, id = 'game-project-terminal' }: { active: boolean; open: boolean; close(): void; onPending(message: string): void; bridge?: GameTerminalBridge; id?: string }) {
   const dock = useRef<HTMLElement>(null);
   const host = useRef<HTMLDivElement>(null);
   const terminal = useRef<Terminal | null>(null);
@@ -24,7 +24,6 @@ export function GameTerminalPanel({ active, open, close, onPending }: { active: 
   const drag = useRef<{ y: number; height: number } | null>(null);
   const maximum = Math.max(160, Math.min(520, Math.floor(available - 260)));
   const effectiveHeight = Math.min(height, maximum);
-  const bridge = window.workbench.game.terminal;
   useLayoutEffect(() => {
     const parent = dock.current?.parentElement;
     if (!parent) return;
@@ -99,7 +98,7 @@ export function GameTerminalPanel({ active, open, close, onPending }: { active: 
     void act(async () => { await window.workbench.clipboard.write(text.slice(-19000)); onPending(text.length > 19000 ? '已复制最近的终端输出（最多 19000 字符）。' : '终端内容已复制。'); });
   }
   const running = status?.phase === 'running';
-  return <section ref={dock} id="game-project-terminal" className="game-terminal-dock" aria-label="项目终端" hidden={!open} inert={!open} aria-hidden={!open} style={{ '--game-terminal-height': `${effectiveHeight}px` } as CSSProperties}>
+  return <section ref={dock} id={id} className="game-terminal-dock" aria-label="项目终端" hidden={!open} inert={!open} aria-hidden={!open} style={{ '--game-terminal-height': `${effectiveHeight}px` } as CSSProperties}>
     <div className="game-terminal-resize" role="separator" tabIndex={0} aria-label="调整终端高度" aria-orientation="horizontal" aria-valuemin={160} aria-valuemax={maximum} aria-valuenow={Math.round(effectiveHeight)} data-dragging={dragging}
       onPointerDown={event => { if (event.button !== 0) return; event.preventDefault(); drag.current = { y: event.clientY, height: effectiveHeight }; event.currentTarget.setPointerCapture(event.pointerId); setDragging(true); }}
       onPointerMove={event => { if (drag.current) setHeight(Math.max(160, Math.min(maximum, drag.current.height + drag.current.y - event.clientY))); }}

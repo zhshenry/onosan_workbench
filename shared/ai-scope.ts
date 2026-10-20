@@ -33,7 +33,7 @@ export function sameAiScope(chat: Pick<ChatSession, 'module' | 'draftId' | 'prof
 }
 
 const viewWorkbenches: Record<ViewId, WorkbenchId> = {
-  browser: 'web', game: 'game',
+  browser: 'web', 'hush-hour': 'web', game: 'game',
   home: 'home', bazi: 'life', reading: 'life', copy: 'media', 'copy-publish': 'media', 'media-browser': 'media',
   'settings-profile': 'settings', 'settings-general': 'settings', 'settings-appearance': 'settings',
   'settings-ai': 'settings', 'settings-data': 'settings', 'settings-notifications': 'settings', 'settings-about': 'settings',
