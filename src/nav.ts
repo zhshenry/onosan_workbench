@@ -64,7 +64,16 @@ export const NAV: WorkbenchDef[] = [
     ],
   },
   {
-    // 2026-09-24 定稿方案 C:设置作为第六个大工作台,复用「图标栏 + 二级目录」导航
+    id: 'ai-test',
+    title: 'AI 测试工作台',
+    subs: [
+      { label: '对比测试', view: 'ai-test' },
+      { label: '测试任务', view: 'ai-test-tasks' },
+      { label: '运行记录', view: 'ai-test-history' },
+    ],
+  },
+  {
+    // 设置复用「图标栏 + 二级目录」导航。
     id: 'settings',
     title: '设置',
     subs: [

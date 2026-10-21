@@ -15,6 +15,7 @@ export interface AiConfig {
 
 /** Shared preload/renderer contract; the main process validates mutation inputs. */
 export interface WorkbenchApi {
+  aiTest: import('./ai-test-contracts').AiTestBridge;
   minimize(): void;
   maximizeToggle(): void;
   close(): void;

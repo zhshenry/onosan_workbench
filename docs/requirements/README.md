@@ -10,6 +10,7 @@
 | 游戏工作台 | [game/](game/README.md) |
 | 网页工作台 | [web/](web/README.md) |
 | 小工具：命理与阅读 | [life/](life/README.md) |
+| AI 测试工作台 | [ai-test/](ai-test/README.md) |
 | 设置 | [settings/](settings/README.md) |
 
 [文档与资源逐项索引](../RESOURCE-INDEX.md) · [设计验收历史入口](../../design-qa.md)

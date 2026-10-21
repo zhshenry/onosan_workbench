@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
-import { CheckSquareOffset, GearSix, Sparkle } from '@phosphor-icons/react';
+import { CheckSquareOffset, Flask, GearSix, Sparkle } from '@phosphor-icons/react';
 import { NAV, defaultViewOfWorkbench, ownerOfWorkbench, workbenchById, type WorkbenchDef, type WorkbenchId } from './nav';
 import type { AvatarColor, UiTheme, ViewId } from '../shared/contracts';
 import { localDay, openToday, taskTime, type CopySource, type Task, type TaskInput } from '../shared/todo-contracts';
@@ -18,6 +18,7 @@ import { MediaBrowserHost } from './views/MediaBrowserHost';
 import { BrowserHost } from './views/BrowserView';
 import { HushHourView } from './views/HushHourView';
 import { GameHost } from './views/GameView';
+import { AiTestHost } from './views/AiTestView';
 import type { BrowserTask } from '../shared/browser-automation-contracts';
 import { CopyView } from '../modules/copywriting/ui/CopyView';
 import { PublishView } from '../modules/copywriting/ui/PublishView';
@@ -36,6 +37,7 @@ const topbarTaskEditorApi: TaskEditorApi = {
 
 // 设置工作台图标:用户已定 Phosphor GearSix(自绘齿轮「太像太阳」被否),WB_ICONS 渲染无 props,包一层固定尺寸
 const GearRail = () => <GearSix size={20} />;
+const TestRail = () => <Flask size={20} />;
 
 const WB_ICONS = {
   home: IconHome,
@@ -43,6 +45,7 @@ const WB_ICONS = {
   game: IconGamepad,
   web: IconWeb,
   life: IconMoon,
+  'ai-test': TestRail,
   settings: GearRail,
 } as const;
 
@@ -628,7 +631,7 @@ export function App() {
       <main className="content" ref={contentRef} tabIndex={-1}>
           {todo.error && <div className="todo-load-error" role="alert">{todo.error}</div>}
           {/* 视图切换动效:按 curView 换 key 重挂载,统一淡入上移(见 shell.css .view-fade) */}
-          {(isPlanningWorkbench || curView !== 'media-browser' && curView !== 'browser' && curView !== 'hush-hour' && curView !== 'game') && <div className="view-fade" key={curView}>
+          {(isPlanningWorkbench || !curView.startsWith('ai-test') && curView !== 'media-browser' && curView !== 'browser' && curView !== 'hush-hour' && curView !== 'game') && <div className="view-fade" key={curView}>
           {isPlanningWorkbench ? (
             <section className="pending-workbench" role="status">
               <span className="pending-workbench-icon" aria-hidden="true"><ActiveWorkbenchIcon /></span>
@@ -658,6 +661,7 @@ export function App() {
             <HushHourView active={!isPlanningWorkbench && curView === 'hush-hour'} onPending={showToast} />
           </BrowserHost>
           <GameHost active={!isPlanningWorkbench && curView === 'game'} focusTarget={contentRef} onPending={showToast} />
+          <AiTestHost active={!isPlanningWorkbench && curView.startsWith('ai-test')} view={curView} onNavigate={switchView} />
         </main>
 
       </div>

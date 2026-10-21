@@ -17,7 +17,7 @@ export default defineConfig(({ command }) => ({
             "font-src 'self' data:",
             `connect-src 'self' wb-pdf:${command === 'serve' ? ' ws://localhost:5174' : ''}`,
             "worker-src 'self' blob:",
-            "frame-src 'self' http: https:",
+            "frame-src 'self' http: https: ono-ai-test:",
             "object-src 'none'",
             "base-uri 'none'",
             "form-action 'none'",

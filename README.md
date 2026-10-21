@@ -4,6 +4,8 @@ Windows 个人工作台，使用 Electron、React 和 TypeScript。包含待办/
 
 ## 本地开发
 
+AI 测试入口位于「AI 测试工作台 → 对比测试」。先在 AI 设置中配置并启用模型；可保存同一套提示词、材料与校验，分别比较模型直出和 Agent 执行。当前支持网页 / 浏览器 JavaScript 运行，其他代码保留供查看与导出，详见 [使用及边界](docs/requirements/ai-test/workbench/README.md)。
+
 ```powershell
 npm ci
 npm run dev

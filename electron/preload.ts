@@ -47,6 +47,24 @@ const reading: WorkbenchApi['reading'] = {
   openObsidian: (vault: string, rel?: string): Promise<void> => ipcRenderer.invoke('reading:openObsidian', vault, rel),
 };
 
+const aiTest: WorkbenchApi['aiTest'] = {
+  tasks: () => ipcRenderer.invoke('ai-test:tasks'),
+  saveTask: input => ipcRenderer.invoke('ai-test:save', input),
+  runs: () => ipcRenderer.invoke('ai-test:runs'),
+  run: id => ipcRenderer.invoke('ai-test:run', id),
+  start: input => ipcRenderer.invoke('ai-test:start', input),
+  cancel: (runId, laneId) => ipcRenderer.invoke('ai-test:cancel', runId, laneId),
+  materials: () => ipcRenderer.invoke('ai-test:materials'),
+  preview: (runId, laneId) => ipcRenderer.invoke('ai-test:preview', runId, laneId),
+  validate: (runId, laneId) => ipcRenderer.invoke('ai-test:validate', runId, laneId),
+  export: (runId, laneId) => ipcRenderer.invoke('ai-test:export', runId, laneId),
+  onChanged: callback => {
+    const listener = (_event: unknown, run: import('../shared/ai-test-contracts').TestRun): void => callback(run);
+    ipcRenderer.on('ai-test:changed', listener);
+    return () => ipcRenderer.off('ai-test:changed', listener);
+  },
+};
+
 const ai: WorkbenchApi['ai'] = {
   openLink: (url: string): Promise<void> => ipcRenderer.invoke('ai:openLink', url),
   config: () => ipcRenderer.invoke('ai:config'),
@@ -324,6 +342,7 @@ const api: WorkbenchApi = {
   bazi,
   copy,
   ai,
+  aiTest,
   browser,
   hushHour,
   browserAutomation,

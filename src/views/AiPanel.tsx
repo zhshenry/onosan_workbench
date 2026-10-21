@@ -1,7 +1,7 @@
 import type { AiConfig } from '../../shared/workbench-api';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { CaretDown, DotsThree, GearSix, Info, MagnifyingGlass, PaperPlaneRight, Plus, PushPin, SidebarSimple, Sparkle, Stop, Trash, X } from '@phosphor-icons/react';
+import { CaretDown, DotsThree, Flask, GearSix, Info, MagnifyingGlass, PaperPlaneRight, Plus, PushPin, SidebarSimple, Sparkle, Stop, Trash, X } from '@phosphor-icons/react';
 import { IconCheckSquare, IconGamepad, IconHome, IconMoon, IconVideo, IconWeb } from '../icons';
 import type { ChatSession, ChatSummary, CopySource } from '../../shared/todo-contracts';
 import { aiScopeKey, chatContextScope, chatScope, defaultAiScopeForWorkbench, preferredAiChat, sameAiWorkbench, TODO_AI_WORKBENCH_NAME, workbenchForScope, type AiScope } from '../../shared/ai-scope';
@@ -685,7 +685,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
       <div className={fixedContext ? 'ai-ctxcard pinned' : 'ai-ctxcard'}>
         <div className="ai-ctx-main">
           <span className="ai-ctx-modicon" aria-hidden="true" title={activeContext.label}>
-            {activeContext.scope.module === 'copy' ? <IconVideo /> : activeContext.scope.module === 'bazi' ? <IconMoon /> : activeContext.scope.module === 'todo' ? <IconCheckSquare /> : pageWorkbench === 'settings' ? <GearSix size={16} /> : ({ home: IconHome, media: IconVideo, game: IconGamepad, web: IconWeb, life: IconMoon } as const)[pageWorkbench ?? 'home']({})}
+            {activeContext.scope.module === 'copy' ? <IconVideo /> : activeContext.scope.module === 'bazi' ? <IconMoon /> : activeContext.scope.module === 'todo' ? <IconCheckSquare /> : pageWorkbench === 'settings' ? <GearSix size={16} /> : pageWorkbench === 'ai-test' ? <Flask size={16} /> : ({ home: IconHome, media: IconVideo, game: IconGamepad, web: IconWeb, life: IconMoon } as const)[pageWorkbench ?? 'home']({})}
           </span>
           <div className="ai-ctx-body">
             <div className="ai-ctx-kicker">

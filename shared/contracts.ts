@@ -6,7 +6,7 @@
 import { z } from 'zod';
 
 /** 大工作台标识(图标栏一级导航;settings = 设置工作台,2026-09-24 定稿方案 C) */
-export const WorkbenchIdSchema = z.enum(['home', 'media', 'game', 'web', 'life', 'settings']);
+export const WorkbenchIdSchema = z.enum(['home', 'media', 'game', 'web', 'life', 'ai-test', 'settings']);
 export type WorkbenchId = z.infer<typeof WorkbenchIdSchema>;
 
 /** 工作台内页面标识(设置工作台分区对应 settings-* view) */
@@ -20,6 +20,9 @@ export const ViewIdSchema = z.enum([
   'browser',
   'hush-hour',
   'game',
+  'ai-test',
+  'ai-test-tasks',
+  'ai-test-history',
   'settings-profile',
   'settings-general',
   'settings-appearance',

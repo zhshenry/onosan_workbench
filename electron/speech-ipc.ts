@@ -18,9 +18,10 @@ export function registerSpeechIpc(service: SpeechService, primary: () => WebCont
   });
   ipcMain.handle('speech:cancel', (event, input: unknown) => { assertSender(event); service.cancel(id.parse(input)); });
   session.defaultSession.setPermissionCheckHandler((contents, permission, _origin, details) =>
-    permission === 'media' && trusted(contents, details.isMainFrame, contents?.mainFrame.url ?? '') && details.mediaType === 'audio');
+    trusted(contents, details.isMainFrame, contents?.mainFrame.url ?? '') &&
+    (permission === 'fullscreen' || permission === 'media' && details.mediaType === 'audio'));
   session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) => {
-    callback(permission === 'media' && trusted(contents, details.isMainFrame, details.requestingUrl)
-      && 'mediaTypes' in details && details.mediaTypes?.length === 1 && details.mediaTypes[0] === 'audio');
+    callback(trusted(contents, details.isMainFrame, details.requestingUrl) &&
+      (permission === 'fullscreen' || permission === 'media' && 'mediaTypes' in details && details.mediaTypes?.length === 1 && details.mediaTypes[0] === 'audio'));
   });
 }

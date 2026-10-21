@@ -21,6 +21,8 @@ import { registerGameIpc } from './game-ipc';
 import { HushHourWorkbench } from './hush-hour-workbench';
 import { registerHushHourIpc } from './hush-hour-ipc';
 import { registerAiIpc } from './ai-ipc';
+import { AiTestService, registerAiTestIpc } from './ai-test-ipc';
+import { guardAiTestPreview, registerAiTestScheme } from './ai-test-browser';
 import { SpeechService } from './speech';
 import { registerSpeechIpc } from './speech-ipc';
 import { FloatTodoWindow, registerFloatIpc } from './float-window';
@@ -44,6 +46,7 @@ if (process.env.WORKBENCH_TEST_DATA_DIR) {
 
 // 自定义资源协议必须在 ready 前注册(PDF.js cMap/标准字体/wasm 本地加载)
 registerPdfAssetScheme();
+registerAiTestScheme();
 
 app.setPath('userData', join(app.getPath('appData'), 'OnoWorkbench'));
 // WORKBENCH_ISOLATED=1:以独立 userData 启动(截图/测试用,不与正在运行的实例抢单实例锁)
@@ -135,6 +138,7 @@ if (!app.requestSingleInstanceLock()) {
 
     // 外壳为无边框自绘窗口:拦截一切外跳与嵌入式导航
     mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    guardAiTestPreview(mainWindow.webContents);
     mainWindow.webContents.on('will-navigate', (event, url) => {
       const allowed = DEV_URL ? url.startsWith(DEV_URL) : url.startsWith('file://');
       if (!allowed) event.preventDefault();
@@ -434,6 +438,9 @@ if (!app.requestSingleInstanceLock()) {
     floatTodoFactory = () => floatTodo;
     registerFloatIpc(floatTodoFactory);
     aiStore = new AiStore(app.getPath('userData'));
+    const aiTests = new AiTestService(app.getPath('userData'), aiStore);
+    registerAiTestIpc(aiTests, () => mainWindow?.webContents);
+    app.once('before-quit', () => aiTests.shutdown());
     registerAiIpc(store, aiStore, copyStore, baziStore, readingStore, browserAutomation);
     registerCopyIpc(copyStore);
     createWindow();
