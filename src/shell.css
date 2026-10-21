@@ -1534,7 +1534,7 @@ kbd {
 .set-empty { font-size: var(--type-control); color: var(--ink-3); padding: 14px 4px; }
 .help { font-size: var(--type-support); color: var(--ink-3); margin-top: 12px; padding-left: 4px; line-height: 1.7; }
 
-/* AI 配置:供应商卡片内管理模型,编辑复用应用弹窗。 */
+/* AI 配置:同级用途分区内按供应商左右分栏,编辑复用应用弹窗。 */
 .settings-ai-page { container-type: inline-size; }
 .ai-config-section + .ai-config-section { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--hairline); }
 .ai-config-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
@@ -1562,31 +1562,41 @@ kbd {
   pointer-events: none;
 }
 .ai-config-surface-clip { min-height: 0; overflow: hidden; }
-.ai-config-surface-clip > .ai-config-list { margin-top: 12px; }
+.ai-config-surface-clip > .ai-config-workspace, .ai-config-surface-clip > .ai-config-empty { margin-top: 12px; }
 @media (prefers-reduced-motion: no-preference) {
   .ai-config-surface-panel { transition: grid-template-rows 250ms ease, opacity 250ms ease; }
 }
 .ai-config-status { min-height: 24px; padding: 3px 0; color: var(--ink-2); font-size: var(--type-support); overflow-wrap: anywhere; }
 .ai-config-list { display: flex; flex-direction: column; gap: 14px; }
-.ai-config-card { padding: 18px 20px; border: 1px solid var(--glass-line); border-radius: var(--r-card); background: var(--glass-surface); box-shadow: var(--shadow-sm); }
+.ai-config-workspace { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 14px 18px; padding: 16px; border: 1px solid var(--glass-line); border-radius: var(--r-card); background: var(--glass-surface); box-shadow: var(--shadow-sm); }
+.ai-config-suppliers { min-width: 0; padding-right: 14px; border-right: 1px solid var(--hairline); }
+.ai-config-suppliers h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: var(--type-body); font-weight: 600; }
+.ai-config-suppliers h3 > span { color: var(--ink-3); font-size: var(--type-support); font-weight: 400; }
+.ai-config-provider-list { display: flex; flex-direction: column; gap: 6px; }
+.ai-config-provider-choice { display: flex; flex-direction: column; gap: 5px; width: 100%; min-width: 0; padding: 10px; border-left: 3px solid transparent; border-radius: var(--r-ctl); text-align: left; }
+.ai-config-provider-choice > span { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
+.ai-config-provider-choice strong { min-width: 0; overflow-wrap: anywhere; font-size: var(--type-control); font-weight: 600; }
+.ai-config-provider-choice small { color: var(--ink-3); font-size: var(--type-caption); }
+.ai-config-provider-choice:hover:not(:disabled), .ai-config-provider-choice[aria-pressed='true'] { background: var(--acc-soft); }
+.ai-config-provider-choice[aria-pressed='true'] { border-left-color: var(--acc-deep); color: var(--acc-deep); }
+.ai-config-provider-choice:disabled { cursor: default; opacity: .6; }
+.ai-config-card { min-width: 0; }
+.ai-config-workspace > .ai-config-list { min-width: 0; }
+.ai-config-workspace-help { grid-column: 1 / -1; margin: 0; padding-top: 10px; border-top: 1px solid var(--hairline); font-size: var(--type-caption); color: var(--ink-3); }
 .ai-config-card-head, .ai-config-card-actions, .ai-config-model-head, .ai-config-model-row, .ai-config-model-actions { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.ai-config-disclosure { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; padding: 3px 0; border-radius: 6px; text-align: left; }
-.ai-config-disclosure > svg { flex: none; color: var(--ink-3); transition: transform 180ms var(--ease); }
-.ai-config-disclosure[aria-expanded='false'] > svg { transform: rotate(-90deg); }
-.ai-config-disclosure > span { min-width: 0; }
-.ai-config-disclosure strong { display: block; font-size: var(--type-section); font-weight: 700; overflow-wrap: anywhere; }
-.ai-config-disclosure:hover strong { color: var(--acc-deep); }
-.ai-config-endpoint { display: block; margin-top: 3px; color: var(--ink-3); font-size: var(--type-support); overflow-wrap: anywhere; }
+.ai-config-provider-title { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; flex: 1; min-width: 0; }
+.ai-config-provider-title > strong { font-size: var(--type-section); font-weight: 700; overflow-wrap: anywhere; }
+.ai-config-endpoint { min-width: 0; overflow-wrap: anywhere; user-select: text; }
 .ai-config-card-actions { flex: none; }
 .ai-config-badge { color: var(--acc-deep); background: var(--acc-soft); border-radius: 999px; padding: 4px 9px; font-size: var(--type-caption); font-weight: 600; white-space: nowrap; }
-.ai-config-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px; margin: 10px 0 0 26px; color: var(--ink-3); font-size: var(--type-support); }
+.ai-config-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; color: var(--ink-3); font-size: var(--type-support); }
 .ai-config-meta > span { display: inline-flex; align-items: center; gap: 5px; }
-.ai-config-models { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--hairline); }
+.ai-config-models { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--hairline); }
 .ai-config-model-head { justify-content: space-between; margin-bottom: 10px; }
 .ai-config-model-head h3 { color: var(--ink-2); font-size: var(--type-support); font-weight: 600; }
 .ai-config-models ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
 .ai-config-models li { min-width: 0; border: 1px solid var(--todo-line); border-radius: var(--r-ctl); background: var(--todo-white); }
-.ai-config-model-row { padding: 9px 10px 9px 14px; gap: 12px; }
+.ai-config-model-row { padding: 6px 10px; gap: 12px; }
 .ai-config-model-name { flex: 1; min-width: 0; font-size: var(--type-control); font-weight: 600; overflow-wrap: anywhere; }
 .ai-config-model-actions { flex: none; gap: 6px; }
 .ai-config-button { display: inline-flex; align-items: center; justify-content: center; flex: none; gap: 6px; min-height: 36px; padding: 7px 13px; border: 1px solid var(--todo-line); border-radius: var(--r-ctl); background: var(--todo-white); color: var(--ink-2); font: inherit; font-size: var(--type-control); font-weight: 500; white-space: nowrap; cursor: pointer; }
@@ -1647,6 +1657,12 @@ kbd {
   .ai-config-model-row { flex-wrap: wrap; gap: 8px; }
   .ai-config-model-name { flex-basis: 100%; }
   .ai-config-model-actions { margin-left: auto; }
+}
+@container (max-width: 720px) {
+  .ai-config-workspace { grid-template-columns: minmax(0, 1fr); }
+  .ai-config-suppliers { padding: 0 0 10px; border-right: 0; border-bottom: 1px solid var(--hairline); }
+  .ai-config-provider-list { flex-direction: row; overflow: auto; }
+  .ai-config-provider-choice { flex: 0 0 180px; }
 }
 
 /* ---------- 外观:三款磨砂玻璃主题(mist 默认) ---------- */

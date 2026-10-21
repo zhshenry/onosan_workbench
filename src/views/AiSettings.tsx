@@ -165,7 +165,7 @@ export function AiSettings({ query }: { query: string }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [editor, setEditor] = useState<Editor | null>(null);
-  const [collapsed, setCollapsed] = useState<string[]>([]);
+  const [selectedProviders, setSelectedProviders] = useState<Partial<Record<Surface, string>>>({});
   const [sectionOpen, setSectionOpen] = useState<Record<Surface, boolean>>({ llm: true, rlcd: true });
   const [probe, setProbe] = useState<Probe | null>(null);
   const [removing, setRemoving] = useState<{ title: string; detail: string; action(): Promise<AiConfig> } | null>(null);
@@ -173,7 +173,7 @@ export function AiSettings({ query }: { query: string }) {
   const keepButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => { if (removing) keepButton.current?.focus(); }, [removing]);
-  useEffect(() => { if (query.trim()) { setCollapsed([]); setSectionOpen({ llm: true, rlcd: true }); } }, [query]);
+  useEffect(() => { if (query.trim()) setSectionOpen({ llm: true, rlcd: true }); }, [query]);
 
   useEffect(() => {
     let active = true;
@@ -206,6 +206,11 @@ export function AiSettings({ query }: { query: string }) {
   }
 
   function saved(next: AiConfig) {
+    if (editor?.type === 'provider' && !editor.provider && config) {
+      const before = editor.surface === 'llm' ? config.providers : config.rlcdProviders;
+      const added = (editor.surface === 'llm' ? next.providers : next.rlcdProviders).find(provider => !before.some(previous => previous.id === provider.id));
+      if (added) setSelectedProviders(previous => ({ ...previous, [editor.surface]: added.id }));
+    }
     setConfig(next); setEditor(null); setError(''); setProbe(null); setNotice('配置已保存');
   }
 
@@ -228,6 +233,8 @@ export function AiSettings({ query }: { query: string }) {
     {sections.map(section => {
       const surface = section.surface;
       const providers = section.providers.filter(provider => includes(`${provider.name} ${provider.endpoint} ${protocolLabel(provider.protocol)}`) || section.models.some(model => model.providerId === provider.id && includes(model.name)));
+      const preferred = selectedProviders[surface] ?? (surface === 'llm' ? current?.providerId : undefined);
+      const selected = providers.find(provider => provider.id === preferred) ?? providers[0];
       return <section className="ai-config-section" key={surface} aria-label={section.title}>
         <div className="ai-config-heading"><div>
           <h2><button type="button" className="ai-config-surface-toggle" aria-expanded={sectionOpen[surface]} aria-controls={`ai-surface-${surface}`} onClick={() => setSectionOpen(previous => ({ ...previous, [surface]: !previous[surface] }))}><CaretDown size={16} /><span>{section.title}</span><span className={`ai-config-surface-badge ${surface}`}>{section.badge}</span></button></h2>
@@ -235,23 +242,29 @@ export function AiSettings({ query }: { query: string }) {
         </div><button type="button" className="ai-config-button primary" disabled={busy || section.providers.length >= 8} title={section.providers.length >= 8 ? '最多保存 8 个供应商' : undefined} onClick={() => setEditor({ type: 'provider', surface, provider: null })}><Plus size={16} />添加供应商</button></div>
         <div className="ai-config-surface-panel" id={`ai-surface-${surface}`} data-open={sectionOpen[surface] ? 'true' : 'false'} inert={!sectionOpen[surface]} aria-hidden={!sectionOpen[surface]}>
         <div className="ai-config-surface-clip">
-        <div className="ai-config-list">
-          {providers.map(provider => {
+        {providers.length > 0 && <div className="ai-config-workspace">
+          <nav className="ai-config-suppliers" aria-label={`${section.title}供应商`}>
+            <h3>供应商 <span>{providers.length}</span></h3>
+            <div className="ai-config-provider-list">{providers.map(provider => <button type="button" key={provider.id} className="ai-config-provider-choice"
+              aria-label={`查看${section.title}供应商 ${provider.name}`} aria-pressed={provider.id === selected.id} aria-controls={`ai-provider-details-${surface}`}
+              disabled={busy} onClick={() => setSelectedProviders(previous => ({ ...previous, [surface]: provider.id }))}>
+              <span><strong>{provider.name}</strong>{surface === 'llm' && current?.providerId === provider.id && <span className="ai-config-badge">当前</span>}</span>
+              <small>{section.models.filter(model => model.providerId === provider.id).length} 个模型 · {provider.hasKey ? '密钥已保存' : '未设置密钥'}</small>
+            </button>)}</div>
+          </nav>
+        <div className="ai-config-list" id={`ai-provider-details-${surface}`}>
+          {providers.filter(provider => provider.id === selected.id).map(provider => {
             const models = section.models.filter(model => model.providerId === provider.id);
-            const open = !collapsed.includes(provider.id);
             return <article className="ai-config-card" key={provider.id} aria-label={`${provider.name} 配置`}>
               <header className="ai-config-card-head">
-                <button type="button" className="ai-config-disclosure" aria-expanded={open} aria-controls={`ai-models-${provider.id}`} onClick={() => setCollapsed(open ? [...collapsed, provider.id] : collapsed.filter(id => id !== provider.id))}>
-                  <CaretDown size={16} /><span><strong>{provider.name}</strong><span className="ai-config-endpoint">{provider.endpoint}</span></span>
-                </button>
+                <div className="ai-config-provider-title"><strong>{provider.name}</strong>{surface === 'llm' && current?.providerId === provider.id && <span className="ai-config-badge">当前供应商</span>}</div>
                 <div className="ai-config-card-actions">
-                  {surface === 'llm' && current?.providerId === provider.id && <span className="ai-config-badge">当前供应商</span>}
                   <IconButton label={`编辑供应商 ${provider.name}`} disabled={busy} onClick={() => setEditor({ type: 'provider', surface, provider })}><PencilSimple size={17} /></IconButton>
                   <IconButton label={`删除供应商 ${provider.name}`} className="ai-config-danger" disabled={busy} onClick={() => { setRemoveError(''); setRemoving({ title: `删除${surface === 'rlcd' ? ' RLCD ' : ''}供应商「${provider.name}」？`, detail: `将移除该供应商、已保存的密钥及其 ${models.length} 个模型。此操作无法撤销。`, action: () => (surface === 'rlcd' ? api.removeRlcdProvider : api.removeProvider)(provider.id) }); }}><Trash size={17} /></IconButton>
                 </div>
               </header>
-              <div className="ai-config-meta"><span>{protocolLabel(provider.protocol)}</span><span><Key size={13} />{provider.hasKey ? '密钥已保存' : '未设置密钥'}</span><span>{models.length} 个模型</span></div>
-              <div className="ai-config-models" id={`ai-models-${provider.id}`} hidden={!open}>
+              <div className="ai-config-meta"><span className="ai-config-endpoint">{provider.endpoint}</span><span>{protocolLabel(provider.protocol)}</span><span><Key size={13} />{provider.hasKey ? '密钥已保存' : '未设置密钥'}</span><span>{models.length} 个模型</span></div>
+              <div className="ai-config-models" id={`ai-models-${provider.id}`}>
                 <div className="ai-config-model-head"><h3>模型列表</h3><button type="button" className="ai-config-link" disabled={busy || models.length >= 8} title={models.length >= 8 ? '每个供应商最多保存 8 个模型' : undefined} onClick={() => setEditor({ type: 'model', surface, provider })}><Plus size={14} />添加模型</button></div>
                 {models.length ? <ul>{models.map(model => {
                   const supportsImages = 'supportsImages' in model && model.supportsImages === true;
@@ -270,8 +283,10 @@ export function AiSettings({ query }: { query: string }) {
               </div>
             </article>;
           })}
-          {!providers.length && <div className="ai-config-empty" role="status"><strong>{needle ? '没有匹配的供应商或模型' : '还没有供应商'}</strong><p>{needle ? '试试供应商名称、服务地址或模型 ID。' : surface === 'rlcd' ? '可添加 TypeSafe、OpenRouter 或自定义服务；当前仅保存配置。' : '从“添加供应商”开始，再为它添加模型。支持 DeepSeek、OpenAI、Anthropic 和自定义服务。'}</p></div>}
         </div>
+          <p className="ai-config-workspace-help">选择供应商，查看对应的地址、协议与模型。</p>
+        </div>}
+          {!providers.length && <div className="ai-config-empty" role="status"><strong>{needle ? '没有匹配的供应商或模型' : '还没有供应商'}</strong><p>{needle ? '试试供应商名称、服务地址或模型 ID。' : surface === 'rlcd' ? '可添加 TypeSafe、OpenRouter 或自定义服务；当前仅保存配置。' : '从“添加供应商”开始，再为它添加模型。支持 DeepSeek、OpenAI、Anthropic 和自定义服务。'}</p></div>}
         </div>
         </div>
       </section>;

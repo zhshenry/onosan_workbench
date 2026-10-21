@@ -73,7 +73,6 @@ export const NAV: WorkbenchDef[] = [
       { label: '外观', view: 'settings-appearance' },
       { label: 'AI 助手', view: 'settings-ai' },
       { label: '待办与数据', view: 'settings-data' },
-      { label: '通知', view: 'settings-notifications' },
       { label: '关于', view: 'settings-about' },
     ],
   },
