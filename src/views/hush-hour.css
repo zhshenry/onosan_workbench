@@ -1,4 +1,16 @@
 .hush-hour-workspace .hush-hour-project-icon { width: 38px; height: 38px; flex: none; color: var(--acc-deep); }
+.hush-hour-project-status { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; }
+.hush-hour-status[data-phase='pending'] { color: var(--avatar-amber); }
+.hush-hour-status[data-phase='building'] { color: var(--acc-deep); }
+.hush-hour-status[data-phase='synced'] { color: var(--avatar-teal); }
+.hush-hour-status[data-phase='failed'] { color: var(--danger); }
+.hush-hour-workspace button.hush-hour-status-details { padding: 0; border: 0; background: transparent; border-radius: 4px; color: var(--acc-deep); text-decoration: underline; text-underline-offset: 3px; }
+.hush-hour-workspace .game-service-actions > .game-primary { min-width: 176px; }
+.hush-hour-workspace .game-primary .game-refresh-badge { color: var(--avatar-amber); background: color-mix(in srgb, var(--avatar-amber) 12%, var(--glass-hi)); }
+.hush-hour-build-spinner { animation: hush-hour-build-spin 1s linear infinite; }
+@keyframes hush-hour-build-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .hush-hour-build-spinner { animation: none; } }
+@media (forced-colors: active) { .hush-hour-status[data-phase] { color: CanvasText; } }
 .hush-hour-workspace .game-preview { flex: 1; }
 .hush-hour-workspace .game-preview-footer { justify-content: space-between; }
 .hush-hour-workspace .game-preview-footer button { font-size: var(--type-caption); padding: 4px 8px; }

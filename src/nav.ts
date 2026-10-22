@@ -56,20 +56,20 @@ export const NAV: WorkbenchDef[] = [
     ],
   },
   {
-    id: 'life',
-    title: '小工具',
-    subs: [
-      { label: '命理', view: 'bazi' },
-      { label: '阅读清单', view: 'reading' },
-    ],
-  },
-  {
     id: 'ai-test',
     title: 'AI 测试工作台',
     subs: [
       { label: '对比测试', view: 'ai-test' },
       { label: '测试任务', view: 'ai-test-tasks' },
       { label: '运行记录', view: 'ai-test-history' },
+    ],
+  },
+  {
+    id: 'life',
+    title: '小工具',
+    subs: [
+      { label: '命理', view: 'bazi' },
+      { label: '阅读清单', view: 'reading' },
     ],
   },
   {

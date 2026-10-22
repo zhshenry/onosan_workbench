@@ -53,6 +53,7 @@ test('fixed website builds are deduplicated and source changes remain stale unti
   site.subscribe(value => snapshots.push(value));
   await delay(15); await writeFile(join(root, 'app/page.tsx'), 'updated source');
   await until(() => site.snapshot().sourceChanged, 'source update notice');
+  assert.equal(site.snapshot().build.phase, 'idle'); assert.equal(site.snapshot().build.output, '');
   const first = site.build(), second = site.build(); assert.equal(first, second);
   const built = await first;
   assert.equal(built.build.phase, 'passed'); assert.equal(built.sourceChanged, false); assert.notEqual(built.buildRevision, initial.buildRevision);

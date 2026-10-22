@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ArrowClockwise, ArrowLeft, ArrowRight, ArrowSquareOut, Camera, Circle, ClipboardText, CornersIn, CornersOut, FileText, FolderOpen, GearSix, Globe, Play, Stop, TerminalWindow, WarningCircle } from '@phosphor-icons/react';
+import { ArrowClockwise, ArrowLeft, ArrowRight, ArrowSquareOut, Camera, CheckCircle, Circle, ClipboardText, CornersIn, CornersOut, FileText, FolderOpen, GearSix, Globe, Play, Stop, TerminalWindow, WarningCircle } from '@phosphor-icons/react';
 import { emptyBrowserFrame } from '../../shared/browser-contracts';
 import type { HushHourArtifact, HushHourEnvironment, HushHourState } from '../../shared/hush-hour-contracts';
 import { PageZoomControls } from '../../modules/browser/ui/page-zoom';
@@ -28,7 +28,7 @@ export function HushHourView({ active, onPending }: { active: boolean; onPending
   const localPreview = useRef<PreviewApi>(null), onlinePreview = useRef<PreviewApi>(null), expandButton = useRef<HTMLButtonElement>(null), restoreButton = useRef<HTMLButtonElement>(null), terminalToggle = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     let current = true;
-    const off = api().onChanged(value => { if (current) setState(value); });
+    const off = api().onChanged(value => { if (current) { setState(value); if (value.service.phase === 'running' || value.build.phase === 'running') setLocalFailure(''); } });
     void api().open().then(value => { if (current) { setState(value); setLoadedRevision(value.buildRevision); } }, error => { if (current) setLocalFailure(errorText(error)); });
     return () => { current = false; off(); };
   }, []);
@@ -46,7 +46,11 @@ export function HushHourView({ active, onPending }: { active: boolean; onPending
   const previewBusy = busy || !isOnline && building;
   const ready = !!hasPreview && !!browser.target && !browser.loading && !browser.error;
   const needsRefresh = !isOnline && !!state?.buildRevision && !!loadedRevision && loadedRevision !== state.buildRevision;
-  const error = failure || (!isOnline ? localFailure || state?.sourceError || (state?.service.phase === 'error' ? state.service.message : '') || (state?.build.phase === 'failed' ? state.build.message : '') : '');
+  const buildFailed = state?.build.phase === 'failed';
+  const error = building ? '' : failure || (buildFailed ? state.build.message : '') || (!isOnline ? state?.sourceError || (!running ? localFailure || (state?.service.phase === 'error' ? state.service.message : '') : '') : '');
+  const statusPhase = building ? 'building' : error ? 'failed' : state?.sourceChanged || needsRefresh ? 'pending' : state?.buildRevision ? 'synced' : 'idle';
+  const statusLabel = building ? '正在构建…' : error ? failure ? '操作失败' : buildFailed ? '构建失败' : state?.sourceError ? '项目读取失败' : '本地启动失败'
+    : state?.sourceChanged ? '有更新，待构建' : needsRefresh ? '有新构建，待刷新' : state?.buildRevision ? '已同步' : state?.service.message || '正在读取项目…';
   const refresh = () => { preview.current?.reload(); if (!isOnline) setLoadedRevision(state?.buildRevision ?? ''); };
   async function build() {
     setLocalFailure('');
@@ -80,9 +84,14 @@ export function HushHourView({ active, onPending }: { active: boolean; onPending
     </header> : null}
     <header className="game-project glass">
       <Globe className="hush-hour-project-icon" aria-hidden="true" />
-      <div className="game-project-name"><div className="game-project-heading"><strong>Hush-Hour</strong><span className={`game-service ${running ? 'is-ready' : ''}`} role="status"><Circle weight="fill" size={10} />{building ? '正在构建…' : state?.service.message || '正在读取项目…'}</span></div><span title={state?.root}>{state?.root || '正在读取项目目录…'}</span></div>
+      <div className="game-project-name"><div className="game-project-heading"><strong>Hush-Hour</strong><div className="hush-hour-project-status">
+        <span className="game-service hush-hour-status" data-phase={statusPhase} role="status" aria-live="polite" aria-atomic="true" title={error || state?.service.message}>
+          {building ? <ArrowClockwise className="hush-hour-build-spinner" size={14} aria-hidden="true" /> : error ? <WarningCircle size={14} aria-hidden="true" /> : statusPhase === 'synced' ? <CheckCircle weight="fill" size={14} aria-hidden="true" /> : <Circle weight="fill" size={10} aria-hidden="true" />}{statusLabel}
+        </span>
+        {error ? <button type="button" className="hush-hour-status-details" onClick={() => setLogsOpen(true)}>{buildFailed && !failure ? '查看日志' : '查看详情'}</button> : null}
+      </div></div><span title={state?.root}>{state?.root || '正在读取项目目录…'}</span></div>
       <div className="game-project-actions">
-        <div className="game-service-actions"><button type="button" className="game-primary" disabled={!state || pending} onClick={() => { void build(); }}><ArrowClockwise />{isOnline ? '构建本地' : '构建并刷新'}{state?.sourceChanged ? <span className="game-refresh-badge">有更新</span> : null}</button>
+        <div className="game-service-actions"><button type="button" className="game-primary" title="自动检测源码更新，点击后手动构建并刷新本地预览" disabled={!state || pending} aria-busy={building} onClick={() => { void build(); }}><ArrowClockwise className={building ? 'hush-hour-build-spinner' : undefined} />{building ? '正在构建…' : buildFailed ? '重新构建' : isOnline ? '构建本地' : '构建并刷新'}{statusPhase === 'pending' && state?.sourceChanged ? <span className="game-refresh-badge">有更新</span> : null}</button>
           {running ? <><button type="button" disabled={pending} onClick={() => { void start(true); }}><ArrowClockwise />重启本地</button><button type="button" disabled={pending} onClick={() => { void act(async () => { setState(await api().stop()); }); }}><Stop />停止</button></> : <button type="button" disabled={pending} onClick={() => { void start(); }}><Play weight="fill" />启动本地</button>}
         </div>
         <div className="game-project-panels"><button ref={terminalToggle} type="button" aria-expanded={terminalOpen} aria-controls="hush-hour-project-terminal" onClick={() => { setTerminalEntered(true); setTerminalOpen(value => !value); }}><TerminalWindow />终端</button><button type="button" disabled={!state || isOnline && !siteUrl} title={isOnline && !siteUrl ? '请先设置正式网页地址' : undefined} onClick={() => setIssueOpen(true)}><ClipboardText />记录问题</button></div>
@@ -94,7 +103,6 @@ export function HushHourView({ active, onPending }: { active: boolean; onPending
         </>}</GameOptionsMenu>
       </div>
     </header>
-    {error ? <div className="game-error" role="alert"><WarningCircle /><span>{error}</span>{state?.build.output ? <button type="button" onClick={() => setLogsOpen(true)}>查看日志</button> : null}</div> : null}
     <div className="game-panels">
       <section className="game-preview glass" aria-label="网页预览">
         <div className="game-pane-heading game-preview-heading"><div className="game-preview-heading-main"><strong><Globe />双环境预览</strong><div className="game-environments"><Segmented aria-label="网页环境" value={environment} onChange={value => { setEnvironment(value === 'online' ? 'online' : 'local'); setFailure(''); if (value === 'online') setOnlineEntered(true); }} options={[{ value: 'local', label: '本地预览' }, { value: 'online', label: '正式网页' }]} /></div></div><button type="button" className="game-text-button" disabled={!state} onClick={() => setOnlineSettings(true)}><GearSix />设置正式地址</button></div>
@@ -120,7 +128,7 @@ export function HushHourView({ active, onPending }: { active: boolean; onPending
     </div>
     {documentOpen ? <GameDocument projectName="Hush-Hour" bridge={api()} close={() => setDocumentOpen(false)} /> : null}
     {onlineSettings && state ? <GameOnlineAddress variant="website" url={state.online.url} close={() => setOnlineSettings(false)} save={async url => { const next = await api().configureOnline(url); if (next.online.url !== state.online.url) setOnlineBrowser(emptyBrowserFrame()); setState(next); setEnvironment('online'); setOnlineEntered(true); setFailure(''); }} /> : null}
-    {logsOpen ? <Modal title="Hush-Hour · 构建日志" className="game-document" close={() => setLogsOpen(false)}><div className="game-document-nav"><span role="status">{state?.build.message || '尚未构建'}</span></div><pre className="hush-hour-build-output">{state?.build.output || '尚无构建日志。点击「构建并刷新」后在这里查看输出。'}</pre></Modal> : null}
+    {logsOpen ? <Modal title={error && (!buildFailed || failure) ? 'Hush-Hour · 错误详情' : 'Hush-Hour · 构建日志'} className="game-document" close={() => setLogsOpen(false)}><div className="game-document-nav"><span role={error ? 'alert' : 'status'}>{error || state?.build.message || '尚未构建'}</span></div><pre className="hush-hour-build-output">{state?.build.output || error || '尚无构建日志。点击「构建并刷新」后在这里查看输出。'}</pre></Modal> : null}
     {issueOpen && state ? <HushHourIssueDrawer key={`${environment}:${isOnline ? siteUrl : ''}`} state={state} environment={environment} siteUrl={siteUrl} pageUrl={browser.target?.url || (isOnline ? siteUrl : '')} viewport={currentViewport as 'fit' | 'desktop' | 'narrow'} zoom={browser.zoomFactor} previewRevision={isOnline ? '' : loadedRevision} canCapture={ready && !previewBusy} capture={capture} close={() => setIssueOpen(false)} /> : null}
   </section>;
 }

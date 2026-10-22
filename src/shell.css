@@ -1578,7 +1578,7 @@ kbd {
 .ai-config-provider-choice strong { min-width: 0; overflow-wrap: anywhere; font-size: var(--type-control); font-weight: 600; }
 .ai-config-provider-choice small { color: var(--ink-3); font-size: var(--type-caption); }
 .ai-config-provider-choice:hover:not(:disabled), .ai-config-provider-choice[aria-pressed='true'] { background: var(--acc-soft); }
-.ai-config-provider-choice[aria-pressed='true'] { border-left-color: var(--acc-deep); color: var(--acc-deep); }
+.ai-config-provider-choice[aria-pressed='true'] { color: var(--acc-deep); }
 .ai-config-provider-choice:disabled { cursor: default; opacity: .6; }
 .ai-config-card { min-width: 0; }
 .ai-config-workspace > .ai-config-list { min-width: 0; }
