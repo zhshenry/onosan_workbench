@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { ArrowClockwise, ArrowSquareOut, CheckCircle, Code, Columns, CornersOut, DownloadSimple, Eye, FileCode, FileText, Flask, FolderOpen, LockSimple, Play, Plus, Robot, Stop, X } from '@phosphor-icons/react';
+import { ArrowClockwise, ArrowSquareOut, CaretDown, CaretRight, CheckCircle, Code, Columns, CornersOut, DownloadSimple, Eye, FileCode, FileText, Flask, FolderOpen, LockSimple, Play, Plus, Robot, SlidersHorizontal, Stop, X } from '@phosphor-icons/react';
 import type { ViewId } from '../../shared/contracts';
 import type { AiConfig } from '../../shared/workbench-api';
 import { DEFAULT_TEST_TASK, testTaskSchema, testCheckSchema, type TestLane, type TestRun, type TestRunSummary, type TestTask, type TestTaskInput } from '../../shared/ai-test-contracts';
@@ -12,6 +12,13 @@ const statusText: Record<TestLane['status'], string> = { queued: '等待中', ru
 const modeName = (mode: TestTaskInput['mode']) => mode === 'agent' ? 'Agent 执行' : '模型直出';
 const stamp = (value: string) => new Date(value).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 const tabKey = (runId: string, laneId: string) => runId + '/' + laneId;
+type ModelSettings = Pick<TestTaskInput, 'temperature' | 'maxTokens' | 'timeoutSeconds' | 'maxToolCalls'>;
+const modelSettingsFields = [
+  { key: 'temperature', label: '温度', ariaLabel: '温度', min: 0, max: 2, step: 0.1, unit: '' },
+  { key: 'maxTokens', label: '单次输出上限', ariaLabel: '输出上限 tokens', min: 256, max: 16000, step: 256, unit: 'tokens' },
+  { key: 'timeoutSeconds', label: '限时', ariaLabel: '执行限时秒', min: 15, max: 600, step: 1, unit: '秒' },
+  { key: 'maxToolCalls', label: '工具上限', ariaLabel: '工具调用上限', min: 1, max: 40, step: 1, unit: '次' },
+] as const;
 function taskInput(task: TestTask): TestTaskInput {
   const { updatedAt: _updatedAt, ...input } = task;
   return input;
@@ -50,6 +57,9 @@ function AiTestView({ active, view, onNavigate }: { active: boolean; view: ViewI
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [material, setMaterial] = useState<{ path: string; content: string } | null>(null);
+  const [promptDraft, setPromptDraft] = useState<Pick<TestTaskInput, 'system' | 'prompt'> | null>(null);
+  const [settingsDraft, setSettingsDraft] = useState<ModelSettings | null>(null);
+  const [settingsError, setSettingsError] = useState<{ key: keyof ModelSettings; message: string } | null>(null);
   const initialized = useRef(false);
   const refreshHistoryTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const tabStrip = useRef<HTMLDivElement>(null);
@@ -148,26 +158,25 @@ function AiTestView({ active, view, onNavigate }: { active: boolean; view: ViewI
       <section className="at-task" aria-label="统一测试配置">
         <div className="at-task-top">
           <input aria-label="测试任务名称" value={task.title} maxLength={80} onChange={event => change('title', event.target.value)} />
-          <span className="at-muted at-task-notice" role="status">{notice || '配置可保存 · 结果自动留存'}</span>
+          <span className="at-muted at-task-notice" role="status">{notice}</span>
           <button className="btn btn-sec btn-sm" disabled={busy || isRunning} onClick={() => void perform(saveTask)}>保存任务</button>
-          <button className="btn btn-sec btn-sm" disabled={isRunning} onClick={() => void perform(async () => { const files = await api().materials(); change('materials', [...task.materials, ...files]); })}><Plus size={14} />添加材料</button>
         </div>
-        <fieldset disabled={isRunning || busy} className="at-inputs">
-          <label><span><FileText size={15} />System</span><textarea aria-label="System 提示词" value={task.system} onChange={event => change('system', event.target.value)} /></label>
-          <label><span><FileText size={15} />User</span><textarea aria-label="User 提示词" value={task.prompt} onChange={event => change('prompt', event.target.value)} /></label>
-        </fieldset>
-        {task.materials.length > 0 && <div className="at-materials">{task.materials.map((file, index) => <span key={file.path + index}><button onClick={() => setMaterial(file)}><FileCode size={13} />{file.path}</button><button aria-label={'移除材料 ' + file.path} disabled={isRunning} onClick={() => change('materials', task.materials.filter((_, i) => i !== index))}><X size={12} /></button></span>)}</div>}
         <div className="at-options">
-          <details className="at-model-picker"><summary>对比模型 <b>{task.modelIds.length}</b></summary>
-            <div className="at-model-menu">{config?.models.map(model => <label key={model.id}><input type="checkbox" checked={task.modelIds.includes(model.id)} disabled={isRunning || !task.modelIds.includes(model.id) && task.modelIds.length >= 4} onChange={event => change('modelIds', event.target.checked ? [...task.modelIds, model.id] : task.modelIds.filter(id => id !== model.id))} /><span>{model.name}<small>{config.providers.find(provider => provider.id === model.providerId)?.name}</small></span></label>)}<p>最多同时对比 4 个模型</p></div>
-          </details>
-          <label>温度 <input type="number" aria-label="温度" min={0} max={2} step={0.1} value={task.temperature} disabled={isRunning} onChange={event => change('temperature', Number(event.target.value))} /></label>
-          <label>单次输出上限 <input type="number" aria-label="输出上限 tokens" min={256} max={16000} step={256} value={task.maxTokens} disabled={isRunning} onChange={event => change('maxTokens', Number(event.target.value))} /><span>tokens</span></label>
-          <label>限时 <input type="number" aria-label="执行限时秒" min={15} max={600} value={task.timeoutSeconds} disabled={isRunning} onChange={event => change('timeoutSeconds', Number(event.target.value))} /><span>秒</span></label>
-          {task.mode === 'agent' && <label>工具上限 <input type="number" aria-label="工具调用上限" min={1} max={40} value={task.maxToolCalls} disabled={isRunning} onChange={event => change('maxToolCalls', Number(event.target.value))} /><span>次</span></label>}
-          <details className="at-check-editor"><summary>统一校验配置</summary><p>网页断言独立运行，只有返回 true 才通过。可编辑或清空此数组。支持异步函数；setup 可返回刷新前的值供 expression 使用。</p><textarea aria-label="统一校验 JSON" spellCheck={false} value={checksJson} disabled={isRunning} onChange={event => { setChecksJson(event.target.value); setNotice(''); }} /></details>
+          <div className="at-config-group" role="group" aria-label="输入"><span className="at-config-label" aria-hidden="true">输入</span><div className="at-config-controls">
+            <button className="btn btn-sec btn-sm" aria-haspopup="dialog" aria-expanded={!!promptDraft} onClick={() => setPromptDraft({ system: task.system, prompt: task.prompt })}><FileText size={14} />提示词</button>
+            <button className="btn btn-sec btn-sm" disabled={isRunning} onClick={() => void perform(async () => { const files = await api().materials(); change('materials', [...task.materials, ...files]); })}><Plus size={14} />添加材料</button>
+          </div></div>
+          <div className="at-config-group" role="group" aria-label="模型"><span className="at-config-label" aria-hidden="true">模型</span><div className="at-config-controls">
+            <details className="at-model-picker"><summary className="btn btn-sec btn-sm"><Columns size={14} />对比模型 <b>{task.modelIds.length}</b><CaretDown size={12} className="at-config-caret" /></summary>
+              <div className="at-model-menu">{config?.models.map(model => <label key={model.id}><input type="checkbox" checked={task.modelIds.includes(model.id)} disabled={isRunning || !task.modelIds.includes(model.id) && task.modelIds.length >= 4} onChange={event => change('modelIds', event.target.checked ? [...task.modelIds, model.id] : task.modelIds.filter(id => id !== model.id))} /><span>{model.name}<small>{config.providers.find(provider => provider.id === model.providerId)?.name}</small></span></label>)}<p>最多同时对比 4 个模型</p></div>
+            </details>
+            <button className="btn btn-sec btn-sm" aria-haspopup="dialog" aria-expanded={!!settingsDraft} onClick={() => { setSettingsDraft({ temperature: task.temperature, maxTokens: task.maxTokens, timeoutSeconds: task.timeoutSeconds, maxToolCalls: task.maxToolCalls }); setSettingsError(null); }}><SlidersHorizontal size={14} />模型设置</button>
+          </div></div>
+          <div className="at-config-group at-config-checks" role="group" aria-label="校验"><span className="at-config-label" aria-hidden="true">校验</span><div className="at-config-controls">
+            <details className="at-check-editor"><summary className="btn btn-sec btn-sm"><CheckCircle size={14} />统一校验配置<CaretDown size={12} className="at-config-caret" /></summary><p>网页断言独立运行，只有返回 true 才通过。可编辑或清空此数组。支持异步函数；setup 可返回刷新前的值供 expression 使用。</p><textarea aria-label="统一校验 JSON" spellCheck={false} value={checksJson} disabled={isRunning} onChange={event => { setChecksJson(event.target.value); setNotice(''); }} /></details>
+          </div></div>
         </div>
-        <div className="at-mode-note">{task.mode === 'direct' ? '一次生成，无工具循环。代码自动提取为只读文件，预览和功能校验单独运行。' : '相同材料的独立项目副本 · 文件读写、网页操作、JavaScript 和统一校验 · 时间与工具限额一致。'}<span>运行环境：HTML / 浏览器 JavaScript；其他代码保留源码供导出。</span></div>
+        {task.materials.length > 0 && <div className="at-materials">{task.materials.map((file, index) => <span key={file.path + index}><button onClick={() => setMaterial(file)}><FileCode size={13} />{file.path}</button><button aria-label={'移除材料 ' + file.path} disabled={isRunning} onClick={() => change('materials', task.materials.filter((_, i) => i !== index))}><X size={12} /></button></span>)}</div>}
       </section>
       <section className="at-results" aria-label="模型对比结果">
         <div className="at-results-heading"><div><h2>本次结果</h2>{current && <span className="at-muted">{current.task.title} · {modeName(current.task.mode)} · {stamp(current.createdAt)}</span>}</div>
@@ -192,6 +201,32 @@ function AiTestView({ active, view, onNavigate }: { active: boolean; view: ViewI
     {view === 'ai-test-history' && <div className="at-library"><header className="at-heading"><div><h1>运行记录</h1><p>每次测试独立保存输入快照和各模型结果。复跑会创建新记录，使用当前供应商连接。</p></div><button className="btn btn-sec" onClick={() => void perform(refresh)}><ArrowClockwise size={15} />刷新记录</button></header>
       {history.length ? history.map(summary => <article key={summary.id} className="at-record"><Flask size={22} /><div><h3>{summary.title}</h3><p>{modeName(summary.mode)} · {summary.modelCount} 个模型 · {stamp(summary.createdAt)} · {summary.running ? '执行中' : '已结束'}</p></div><button className="btn btn-sec btn-sm" onClick={() => void perform(() => openRun(summary.id))}>查看结果</button><button className="btn btn-sec btn-sm" disabled={busy || isRunning} onClick={() => void perform(async () => { const run = await api().run(summary.id); loadTask(run.task); })}>载入输入</button></article>) : <div className="at-empty"><Flask size={32} /><h3>还没有运行记录</h3><p>完成第一次测试后，提示词和真实结果会保存在这里。</p></div>}</div>}
     {material && <Modal title={material.path} close={() => setMaterial(null)} className="at-material-modal"><p className="at-muted">本轮相同参考材料 · 只读</p><pre>{material.content}</pre></Modal>}
+    {settingsDraft && <Modal title="模型设置" close={() => setSettingsDraft(null)} dirty={modelSettingsFields.some(field => settingsDraft[field.key] !== task[field.key])} className="at-settings-modal">
+      <form className="form-body" noValidate onSubmit={event => {
+        event.preventDefault();
+        if (isRunning || busy) return;
+        for (const field of modelSettingsFields) {
+          if (!testTaskSchema.shape[field.key].safeParse(settingsDraft[field.key]).success) {
+            setSettingsError({ key: field.key, message: field.label + '需为 ' + field.min + '–' + field.max + (field.key === 'temperature' ? ' 之间的数值。' : ' 之间的整数。') });
+            document.getElementById('at-setting-' + field.key)?.focus(); return;
+          }
+        }
+        setTask(previous => ({ ...previous, ...settingsDraft })); setNotice(''); setSettingsDraft(null);
+      }}>
+        <p className="at-muted">{isRunning || busy ? '测试执行中，参数仅供查看。' : '所有对比模型使用相同参数。应用后用于下一次测试。'}</p>
+        <div className="at-settings-fields">{modelSettingsFields.filter(field => field.key !== 'maxToolCalls' || task.mode === 'agent').map(field => <label key={field.key} htmlFor={'at-setting-' + field.key}>{field.label}<span className="at-setting-value"><input id={'at-setting-' + field.key} type="number" aria-label={field.ariaLabel} aria-invalid={settingsError?.key === field.key || undefined} aria-describedby={settingsError?.key === field.key ? 'at-settings-error' : undefined} min={field.min} max={field.max} step={field.step} readOnly={isRunning || busy} value={settingsDraft[field.key]} onChange={event => { setSettingsDraft({ ...settingsDraft, [field.key]: Number(event.target.value) }); setSettingsError(null); }} />{field.unit && <span>{field.unit}</span>}</span></label>)}</div>
+        {settingsError && <p className="at-settings-error" role="alert" id="at-settings-error">{settingsError.message}</p>}
+        <div className="actions"><button type="button" className="btn btn-sec" onClick={() => setSettingsDraft(null)}>{isRunning || busy ? '完成' : '取消'}</button>{!isRunning && !busy && <button type="submit" className="primary">应用</button>}</div>
+      </form>
+    </Modal>}
+    {promptDraft && <Modal title="提示词" close={() => setPromptDraft(null)} dirty={promptDraft.system !== task.system || promptDraft.prompt !== task.prompt} className="at-prompt-modal">
+      <p className="at-prompt-note">{isRunning || busy ? '测试执行中，提示词仅供查看。' : '统一用于所有选定模型。应用后可开始测试，或保存为任务。'}</p>
+      <div className="at-prompt-fields">
+        <label><span><FileText size={15} />系统提示词 · System</span><textarea className="resize-none" aria-label="System 提示词" maxLength={30000} readOnly={isRunning || busy} value={promptDraft.system} onChange={event => setPromptDraft({ ...promptDraft, system: event.target.value })} /></label>
+        <label><span><FileText size={15} />用户提示词 · User</span><textarea className="resize-none" aria-label="User 提示词" maxLength={50000} readOnly={isRunning || busy} value={promptDraft.prompt} onChange={event => setPromptDraft({ ...promptDraft, prompt: event.target.value })} /></label>
+      </div>
+      <div className="actions at-prompt-actions"><button className="btn btn-sec" onClick={() => setPromptDraft(null)}>{isRunning || busy ? '完成' : '取消'}</button>{!isRunning && !busy && <button className="primary" onClick={() => { setTask(previous => ({ ...previous, ...promptDraft })); setNotice(''); setPromptDraft(null); }}>应用</button>}</div>
+    </Modal>}
   </div>;
 }
 
@@ -226,8 +261,9 @@ function LaneCard({ run, lane, view, open, stop }: { run: TestRun; lane: TestLan
     <Evidence lane={lane} />
     {lane.error && <p className="at-lane-error">{lane.error}</p>}
     {view === 'reply' ? <pre className="at-reply">{lane.reply || '等待回复…'}</pre> : view === 'files' ? <div className="at-file-list">{lane.files.length ? lane.files.map(file => <button key={file.path} onClick={open}><FileCode size={15} /><span>{file.path}</span><small>{file.content.length.toLocaleString()} 字符</small></button>) : <p>尚无文件产物</p>}</div> : <div className="at-card-artifact">
-      <div className="at-code-caption"><FileCode size={13} /><span>{first?.path ?? '生成内容'}</span><LockSimple size={12} /></div>
-      <pre className="at-code-snippet">{first?.content || lane.reply || '等待模型输出…'}</pre>
+      <details className="at-code-disclosure"><summary className="at-code-caption" aria-label={'代码 ' + lane.model.name}><CaretRight size={13} className="at-code-caret" /><FileCode size={13} /><span>{first?.path ?? '生成内容'}</span><small className="at-code-show">查看代码</small><small className="at-code-hide">收起代码</small><LockSimple size={12} aria-label="只读" /></summary>
+        <pre className="at-code-snippet">{first?.content || lane.reply || '等待模型输出…'}</pre>
+      </details>
       <span className="at-preview-label">产物预览</span><div className="at-mini-preview"><ArtifactPreview run={run} lane={lane} compact /></div>
     </div>}
     {run.task.mode === 'agent' && <div className="at-steps-mini">{lane.toolCalls} 次工具调用{lane.steps.at(-1) ? ' · ' + lane.steps.at(-1)!.name : ''}</div>}

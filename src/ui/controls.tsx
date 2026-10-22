@@ -495,7 +495,7 @@ export function Modal({ title, children, close, dirty = false, busy = false, sub
     const element = ref.current!;
     const previous = document.activeElement;
     element.showModal();
-    return () => { element.close(); if (previous instanceof HTMLElement && previous.isConnected) previous.focus(); };
+    return () => { discard.current?.close(); element.close(); if (previous instanceof HTMLElement && previous.isConnected) previous.focus(); };
   }, []);
   function requestClose() { if (busy) return; if (dirty) discard.current?.showModal(); else close(); }
   return <>

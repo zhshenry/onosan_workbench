@@ -1,5 +1,35 @@
 # 设计验收索引
 
+## AI 测试工作台 · 配置工具栏分组 · 2026-10-22
+
+按用户明确的分类要求，标题行保留任务名、操作状态和保存任务；工具栏分为「输入」（提示词、添加材料）、「模型」（对比模型、模型设置）、「校验」（统一校验配置）。每组提供小标题和可访问分组名称，桌面用细竖线分隔，空间受限时保留标题并省略竖线。按钮保持 32px 轻量描边样式，展开校验编辑独占下方整行。材料标签放在工具栏下方，标题和保存状态沿用原字阶及主题。
+
+Browser plugin not available，使用新的 WORKBENCH_TEST_DATA_DIR 与 WORKBENCH_ISOLATED=1，通过 Playwright Electron 验证 1490×1040 和 1024×680。5 组验收通过，覆盖页面身份、非空内容、三个分组名称与五入口同高顺序、两个弹框及焦点恢复、实际材料导入/只读查看/移除、模型勾选、键盘展开校验编辑、实际保存及窄窗弹层边界。无框架错误层、页面错误或控制台错误；未启动模型测试。npm run verify 及最后 CSS 调整后的构建通过，静态审计仍为 10 项既有提示。
+
+桌面和窄窗截图、脚本、几何记录位于本机 Codex 可视化目录 2026/10/21/01a15c43-42fc-7ad1-8a96-c3e5358f675e/ai-test-grouped-toolbar-qa。
+
+final result: passed for task-card layout and configuration controls
+
+## AI 测试工作台 · 模型设置与代码折叠 · 2026-10-21
+
+温度、单次输出上限、限时及 Agent 工具上限移入「模型设置」共享 Modal，保留应用、取消、未应用关闭确认和执行中只读。错误复用任务字段 schema 校验，关联并聚焦对应输入。「对比模型」仍为模型名、供应商和复选框组成的菜单，数字表示已选数量，最多四个。结果代码默认折叠，保留文件名、查看代码入口及只读标识；每列独立切换，将 112px 高度交给预览。
+
+Browser plugin not available，使用 Playwright Electron、WORKBENCH_TEST_DATA_DIR 与 WORKBENCH_ISOLATED=1，配置本地受控模型。1490×1040 和 1024×680 的 7 组验收通过：页面身份与非空内容、实际模型菜单及四模型上限、参数应用/取消/错误聚焦/放弃确认、保存及直出真实请求中的一致参数、执行中只读、代码独立折叠与 iframe 状态保留、大预览标签、Agent 工具限额、窄窗菜单和弹框边界。无框架错误层、页面错误或控制台警告。模型调用仅来自显式开始测试，折叠和查看不发起调用。
+
+npm run verify 与 11 项相关回归通过。全仓静态审计仍为 10 项既有提示，无新增项。截图和脚本保存在本机 Codex 可视化目录 2026/10/21/01a15c43-42fc-7ad1-8a96-c3e5358f675e/ai-test-compact-qa；预览来自合成模型产物，本轮不评价真实模型能力。
+
+final result: passed for compact settings, model picker and code disclosures
+
+## AI 测试工作台 · 提示词弹框 · 2026-10-21
+
+按用户截图反馈，System/User 从总览任务卡移入共享 Modal，主界面仅保留「提示词」入口。应用更新当前配置，取消丢弃弹框草稿；执行中只读。关闭放弃确认时先关闭子弹框，再恢复入口焦点。其余参数和结果布局沿用现有实现。
+
+Browser plugin not available，使用隔离数据目录与本地合成模型的 Playwright Electron。1490×1040、1024×680 验证 6 组通过，覆盖紧凑总览、弹框初值与应用、取消和 Escape/放弃确认、键盘焦点、长内容、保存、直出及 Agent 实际发送的输入和执行中只读。页面身份、非空内容、无框架错误层、控制台健康与截图均通过；npm run verify 和 11 项相关回归通过。截图、脚本与请求证据位于本机 Codex 可视化目录 2026/10/21/01a15c43-42fc-7ad1-8a96-c3e5358f675e/ai-test-prompt-qa。本轮使用受控夹具验证输入链路，不评估真实模型质量。
+
+全仓静态审计仍报告 10 项既有 Select 识别、textarea 和按钮项，本轮弹框无新增项；不以此声明全仓审计通过。DESIGN.md 官方 lint 的离线包缓存缺失（ENOTCACHED），未为此新增项目依赖。
+
+final result: passed for prompt-dialog interaction and controlled model inputs
+
 ## AI 测试工作台 · 方案 1 与最终大预览 · 2026-10-21
 
 [行为边界与已选高保真](docs/requirements/ai-test/workbench/README.md)。保留现有共享导航、三主题和 authored 控件；详情默认大预览，代码及校验过程按需展开。实际模型名称和状态取代设计稿中的示意内容。
