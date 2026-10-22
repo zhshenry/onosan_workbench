@@ -245,7 +245,14 @@ export async function runContextPickerPilot({ application, page, check, screensh
   try {
     await check('Context picker: explicit isolated loopback provider, no external model or credentials', async () => {
       await navigate(page, 'settings', 'AI 助手');
-      await page.getByRole('button', { name: '编辑供应商 本机合成验收', exact: true }).click();
+      // Split-pane AI settings render 编辑供应商 only inside the selected detail.
+      // The floating pilot leaves another provider active, so select this fixture first.
+      const supplier = page.getByRole('button', { name: '查看对话模型供应商 本机合成验收', exact: true });
+      await supplier.click();
+      const detail = page.locator('#ai-provider-details-llm').getByRole('article', { name: '本机合成验收 配置', exact: true });
+      await detail.waitFor({ state: 'visible' });
+      assert.equal(await supplier.getAttribute('aria-pressed'), 'true', 'Synthetic supplier detail is shown only while that supplier is selected');
+      await detail.getByRole('button', { name: '编辑供应商 本机合成验收', exact: true }).click();
       const dialog = page.getByRole('dialog', { name: '编辑供应商', exact: true });
       await dialog.getByRole('textbox', { name: '服务地址', exact: true }).fill(`http://127.0.0.1:${server.address().port}/v1`);
       await dialog.getByRole('button', { name: '保存供应商', exact: true }).click(); await dialog.waitFor({ state: 'hidden' });
