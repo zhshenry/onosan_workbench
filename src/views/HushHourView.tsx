@@ -61,10 +61,10 @@ export function HushHourView({ active, onPending }: { active: boolean; onPending
       else onPending(next.build.message);
     }
   }
-  async function start(restart = false) {
+  async function start() {
     setLocalFailure('');
-    const next = await act(() => restart ? api().restart() : api().open());
-    if (next) { setState(next); setLoadedRevision(next.buildRevision); if (restart) requestAnimationFrame(() => localPreview.current?.reload()); }
+    const next = await act(() => api().open());
+    if (next) { setState(next); setLoadedRevision(next.buildRevision); }
   }
   async function capture(): Promise<HushHourArtifact | undefined> {
     if (!ready) return;
@@ -92,7 +92,7 @@ export function HushHourView({ active, onPending }: { active: boolean; onPending
       </div></div><span title={state?.root}>{state?.root || '正在读取项目目录…'}</span></div>
       <div className="game-project-actions">
         <div className="game-service-actions"><button type="button" className="game-primary" title="自动检测源码更新，点击后手动构建并刷新本地预览" disabled={!state || pending} aria-busy={building} onClick={() => { void build(); }}><ArrowClockwise className={building ? 'hush-hour-build-spinner' : undefined} />{building ? '正在构建…' : buildFailed ? '重新构建' : isOnline ? '构建本地' : '构建并刷新'}{statusPhase === 'pending' && state?.sourceChanged ? <span className="game-refresh-badge">有更新</span> : null}</button>
-          {running ? <><button type="button" disabled={pending} onClick={() => { void start(true); }}><ArrowClockwise />重启本地</button><button type="button" disabled={pending} onClick={() => { void act(async () => { setState(await api().stop()); }); }}><Stop />停止</button></> : <button type="button" disabled={pending} onClick={() => { void start(); }}><Play weight="fill" />启动本地</button>}
+          {running ? <button type="button" disabled={pending} onClick={() => { void act(async () => { setState(await api().stop()); }); }}><Stop />停止</button> : <button type="button" disabled={pending} onClick={() => { void start(); }}><Play weight="fill" />启动本地</button>}
         </div>
         <div className="game-project-panels"><button ref={terminalToggle} type="button" aria-expanded={terminalOpen} aria-controls="hush-hour-project-terminal" onClick={() => { setTerminalEntered(true); setTerminalOpen(value => !value); }}><TerminalWindow />终端</button><button type="button" disabled={!state || isOnline && !siteUrl} title={isOnline && !siteUrl ? '请先设置正式网页地址' : undefined} onClick={() => setIssueOpen(true)}><ClipboardText />记录问题</button></div>
         <GameOptionsMenu kind="project" active={active && !expanded}>{close => <>

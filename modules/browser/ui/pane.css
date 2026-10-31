@@ -303,11 +303,15 @@
 .mbp-tabstrip { display: flex; align-items: center; gap: 6px; padding: 8px 12px 0; flex: none; min-width: 0; }
 .mbp-tabs { display: flex; align-items: center; gap: 6px; overflow-x: auto; min-width: 0; }
 .mbp-tab {
-  display: flex; align-items: center; gap: 4px; min-width: 100px; max-width: 210px; height: 36px; padding: 0 6px 0 10px; flex: 0 1 auto;
+  display: flex; align-items: center; gap: 4px; min-width: 0; height: 36px; padding: 0 6px 0 10px; flex: 0 0 180px;
   border: 1px solid transparent; border-radius: var(--r-ctl); font-size: var(--type-control); font-weight: 500; color: var(--ink-3);
 }
 .mbp-tab.on { background: var(--glass-hi); color: var(--ink); border-color: var(--hairline); }
-.mbp-tab-btn { display: flex; align-items: center; gap: 8px; min-width: 0; height: 100%; padding: 0; cursor: pointer; }
+.mbp-tab:not(.on):hover { background: var(--glass-lo); color: var(--ink-2); }
+@media (prefers-reduced-motion: no-preference) {
+  .mbp-tab { transition: background-color 160ms var(--ease), color 160ms var(--ease); }
+}
+.mbp-tab-btn { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; height: 100%; padding: 0; cursor: pointer; }
 .mbp-tab-btn > svg { flex: none; }
 .mbp-tab-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mbp-tab-x {
