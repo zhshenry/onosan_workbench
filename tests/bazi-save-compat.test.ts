@@ -25,9 +25,11 @@ test('命例编辑仅提交输入字段，保存并重载保留 id、创建时�
   dom.window.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
   dom.window.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
   const inputs: Record<string, unknown>[] = [];
+  let noteWrites = 0;
   Object.defineProperty(dom.window, 'workbench', { value: { bazi: {
     list: async () => store.all(),
     saveProfile: async (input: Record<string, unknown>) => { inputs.push(input); return store.saveProfile(input); },
+    saveNote: async (id: string, text: string) => { noteWrites++; return store.saveNote(id, text); },
   } } });
   const { createRoot } = await import('react-dom/client');
   const { BaziView } = await import('../modules/bazi/ui/BaziView');
@@ -39,12 +41,29 @@ test('命例编辑仅提交输入字段，保存并重载保留 id、创建时�
     if (previousAct) Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', previousAct); else Reflect.deleteProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT');
   });
   const messages: string[] = [];
-  await act(async () => root.render(createElement(BaziView, { onPending: message => messages.push(message), onAskAI: () => {}, onCurrentProfile: () => {}, onDayLocated: () => {} })));
+  const requests: { prompt: string; profileId: string; system: string }[] = [];
+  await act(async () => root.render(createElement(BaziView, { onPending: message => messages.push(message), onAskAI: (prompt, profileId, system) => requests.push({ prompt, profileId, system }), onCurrentProfile: () => {}, onDayLocated: () => {} })));
   const click = async (selector: string) => {
     const element = dom.window.document.querySelector<HTMLElement>(selector);
     assert.ok(element, selector);
     await act(async () => element.click());
   };
+  for (const [label, system] of [['八字', 'bazi'], ['紫微斗数', 'ziwei'], ['占星', 'astro']]) {
+    const tab = [...dom.window.document.querySelectorAll<HTMLElement>('[role="tab"]')].find(element => element.textContent === label);
+    assert.ok(tab, label);
+    await act(async () => tab.click());
+    const panel = dom.window.document.querySelector('[role="tabpanel"]:not([hidden])');
+    assert.ok(panel, label);
+    assert.equal(panel.querySelector('textarea'), null, `${label}不再提供笔记编辑`);
+    assert.equal([...panel.querySelectorAll('.ptitle')].some(element => element.textContent === '笔记'), false);
+    await click('.bazi-top .btn-pri');
+    assert.equal(requests.at(-1)?.profileId, original.id);
+    assert.equal(requests.at(-1)?.system, system);
+    assert.ok(requests.at(-1)?.prompt.includes(label));
+    assert.equal(noteWrites, 0, 'AI 解读不再触发笔记写入');
+    assert.equal(store.all().notes[original.id], '仅测试使用的笔记');
+  }
+  assert.equal(requests.length, 3);
   await click('.bazi-psel-btn');
   await click('[aria-label="编辑 测试命例"]');
   await click('.date-picker > button');

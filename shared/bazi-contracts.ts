@@ -4,6 +4,10 @@
  * lunar-javascript 的引用只出现在 modules/bazi/compute.ts,本文件保持纯函数以便测试。
  */
 import { z } from 'zod';
+import { resolveAstroTime } from './astro-time';
+
+const astroHouseSystemSchema = z.enum(['placidus', 'whole-sign']);
+export type AstroHouseSystem = z.infer<typeof astroHouseSystemSchema>;
 
 /** 命例档案(1=男 0=女;性别影响大运顺逆;tag 为自填分类标签;出生地经纬度用于占星宫位,可选) */
 const baziProfileFields = z.object({
@@ -15,11 +19,17 @@ const baziProfileFields = z.object({
   place: z.string().trim().max(30, '地点名称最多30字').optional(),
   lat: z.number().min(-90, '纬度需在 -90 至 90 之间').max(90, '纬度需在 -90 至 90 之间').optional(),
   lon: z.number().min(-180, '经度需在 -180 至 180 之间').max(180, '经度需在 -180 至 180 之间').optional(),
+  astroHouseSystem: astroHouseSystemSchema.optional(),
+  astroTimeZone: z.string().trim().min(1).max(100).optional(),
+  astroTimeChoice: z.enum(['earlier', 'later']).optional(),
 }).strict();
 export const baziProfileInputSchema = baziProfileFields.refine(
   data => (data.lat === undefined) === (data.lon === undefined),
   { message: '经纬度需成对填写' },
-);
+).superRefine((data, ctx) => {
+  const time = resolveAstroTime(data);
+  if (time.status !== 'ready') ctx.addIssue({ code: 'custom', path: [time.status === 'ambiguous' ? 'astroTimeChoice' : time.field], message: time.message });
+});
 export type BaziProfileInput = z.infer<typeof baziProfileInputSchema>;
 export interface BaziProfile extends BaziProfileInput { id: string; createdAt: string; }
 
@@ -35,6 +45,9 @@ export const baziStoreDataSchema = z.object({
     place: baziProfileFields.shape.place,
     lat: baziProfileFields.shape.lat,
     lon: baziProfileFields.shape.lon,
+    astroHouseSystem: baziProfileFields.shape.astroHouseSystem,
+    astroTimeZone: baziProfileFields.shape.astroTimeZone,
+    astroTimeChoice: baziProfileFields.shape.astroTimeChoice,
     createdAt: z.string(),
   })),
   notes: z.record(z.string(), z.string()),

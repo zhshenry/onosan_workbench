@@ -4,7 +4,7 @@ import type { AiModuleContribution } from '../../electron/ai-core';
 import { findShenSha, type BaziChart, type BaziProfile } from '../../shared/bazi-contracts';
 import { buildChart } from './compute';
 import { buildZiwei, buildZiweiHoroscope } from './ziwei';
-import { buildAstro } from './astro';
+import { ASTRO_HOUSE_LABELS, buildAstro } from './astro';
 
 export type BaziSystem = 'bazi' | 'ziwei' | 'astro';
 
@@ -84,13 +84,19 @@ export function buildBaziContribution(profile: BaziProfile, system: BaziSystem, 
     const asc = chart.asc;
     const mc = chart.mc;
     const place = chart.place;
-    const houses = asc !== undefined && mc !== undefined && place !== undefined;
-    const header = houses
-      ? `占星(回归制，整宫制)。出生地：${place.name || '未命名'}(纬 ${place.lat}，经 ${place.lon})。上升点(ASC) ${signOf(asc)}${degInSign(asc)}；天顶(MC) ${signOf(mc)}${degInSign(mc)}。`
+    const header = place
+      ? `占星(回归制，${ASTRO_HOUSE_LABELS[chart.houseSystem]})。出生地：${place.name || '未命名'}(纬 ${place.lat}，经 ${place.lon})。${asc !== undefined && mc !== undefined ? `上升点(ASC) ${signOf(asc)}${degInSign(asc)}；天顶(MC) ${signOf(mc)}${degInSign(mc)}。` : ''}`
       : '占星(回归制)。当前未填写出生地经纬度，不能推断宫位与上升点；解读仅基于行星与星座，请向用户说明这一限制。';
-    chartText = header + '\n'
-      + chart.bodies.map(b => `${b.name} ${signOf(b.lon)}${degInSign(b.lon)}${b.retro ? ' 逆行' : ''}${b.house !== undefined ? `，落第${b.house}宫` : ''}`).join('；')
-      + '\n主要相位：' + chart.aspects.slice(0, 18).map(a => `${a.a}-${a.b} ${a.type} ${a.orb}°`).join('；');
+    const birthTime = chart.birthTime;
+    chartText = `出生钟表时间：${profile.date} ${profile.time}；占星时区：${birthTime.timeZone}；实际采用 UTC${birthTime.offset}；UTC 时刻：${birthTime.utc}。`
+      + (birthTime.legacy ? '旧命例沿用固定 UTC+8，未自动应用历史夏令时。' : '已按所选时区的历史规则换算，无需再次扣除夏令时。')
+      + (birthTime.choice ? `重复钟表时间选用${birthTime.choice === 'earlier' ? '第一次（拨回前）' : '第二次（拨回后）'}。` : '')
+      + '\n' + header + (chart.houseWarning ? `\n${chart.houseWarning}不能推断宫位。` : '')
+      + (chart.houseCusps ? `\n宫头：${chart.houseCusps.map((cusp, index) => `${index + 1}宫 ${signOf(cusp)}${degInSign(cusp)}`).join('；')}。` : '') + '\n'
+      + chart.bodies.map(b => `${b.name}${b.basis ? `（${b.basis}）` : ''} ${signOf(b.lon)}${degInSign(b.lon)}${b.retro ? ' 逆行' : ''}${b.house !== undefined ? `，落第${b.house}宫` : ''}`).join('；')
+      + '\n扩展口径：交点为平均交点；莉莉丝为平均月球远地点；福点按昼夜公式，缺少地点或有效上升点时不计算；小天体使用内置 JPL 星历。元素分布仍只统计十颗主要星体。'
+      + '\n主要星体相位：' + chart.aspects.filter(a => [a.a, a.b].every(name => chart.bodies.some(b => b.name === name && b.kind === 'planet'))).slice(0, 18).map(a => `${a.a}-${a.b} ${a.type} ${a.orb}°`).join('；')
+      + '\n扩展对象相位（容许度最多3°，不计点位互相相位）：' + chart.aspects.filter(a => [a.a, a.b].some(name => chart.bodies.some(b => b.name === name && b.kind !== 'planet'))).slice(0, 18).map(a => `${a.a}-${a.b} ${a.type} ${a.orb}°`).join('；');
   } else {
     const chart = buildChart(profile);
     chartText = now => baziChartText(chart, now);

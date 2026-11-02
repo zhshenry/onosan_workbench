@@ -147,7 +147,7 @@ test('紫微:时辰序号 23 点为晚子时', () => {
 
 test('占星:林川 太阳约狮子 23°(黄经 143°),土星逆行', () => {
   const a = buildAstro(LIN_CHUAN);
-  assert.equal(a.bodies.length, 10);
+  assert.equal(a.bodies.filter(body => body.kind === 'planet').length, 10);
   const sun = a.bodies.find((b) => b.key === 'Sun')!;
   assert.ok(Math.abs(sun.lon - 143.15) < 1, `太阳黄经 ${sun.lon}`);
   const saturn = a.bodies.find((b) => b.key === 'Saturn')!;
@@ -199,7 +199,7 @@ test('紫微流运:非法日期被拒', () => {
 const SHANGHAI = { place: '上海', lat: 31.2304, lon: 121.4737 };
 
 test('占星:上海命例获得上升/天顶与整宫制宫位', () => {
-  const chart = buildAstroFull({ ...LIN_CHUAN, ...SHANGHAI });
+  const chart = buildAstroFull({ ...LIN_CHUAN, ...SHANGHAI, astroHouseSystem: 'whole-sign' });
   assert.ok(chart.asc !== undefined && chart.mc !== undefined);
   assert.ok(chart.asc! >= 0 && chart.asc! < 360);
   for (const body of chart.bodies) {

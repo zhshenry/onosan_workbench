@@ -1,0 +1,54 @@
+{
+  "source": "Swiss Ephemeris 2.10.03 official swetest64; Moshier, tropical, UT; -pmA -emos -fPls -g,",
+  "cases": [
+    {
+      "astroTimeZone": "+00:00",
+      "lilith": 296.6131773,
+      "northNode": 167.3375947,
+      "date": "1700-01-01",
+      "time": "00:30"
+    },
+    {
+      "astroTimeZone": "+00:00",
+      "lilith": 62.6676368,
+      "northNode": 25.0064282,
+      "date": "1800-06-05",
+      "time": "13:22"
+    },
+    {
+      "astroTimeZone": "+00:00",
+      "lilith": 186.7843887,
+      "northNode": 243.8122353,
+      "date": "1900-10-17",
+      "time": "20:14"
+    },
+    {
+      "astroTimeZone": "+00:00",
+      "lilith": 263.4643327,
+      "northNode": 125.0406461,
+      "date": "2000-01-01",
+      "time": "12:00"
+    },
+    {
+      "astroTimeZone": "+00:00",
+      "lilith": 8.1611341,
+      "northNode": 92.9884945,
+      "date": "2020-04-09",
+      "time": "03:34"
+    },
+    {
+      "astroTimeZone": "+00:00",
+      "lilith": 37.5095236,
+      "northNode": 338.9083601,
+      "date": "2100-08-16",
+      "time": "04:30"
+    },
+    {
+      "astroTimeZone": "+00:00",
+      "lilith": 161.9404922,
+      "northNode": 197.5352543,
+      "date": "2200-12-31",
+      "time": "23:00"
+    }
+  ]
+}

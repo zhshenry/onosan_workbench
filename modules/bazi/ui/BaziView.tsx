@@ -5,14 +5,17 @@ import { buildZiwei, type ZiweiChart } from '../ziwei';
 import { buildAstro, type AstroChart } from '../astro';
 import {
   findShenSha,
-  type BaziChart, type BaziProfile, type BaziStoreData,
+  type AstroHouseSystem, type BaziChart, type BaziProfile, type BaziStoreData,
 } from '../../../shared/bazi-contracts';
 import { DatePicker, Modal, Segmented, Select, TimePicker, errorText } from '../../../src/ui/controls';
 import { WX_VAR, WUXING_ORDER } from './tokens';
 import { CHINA_REGIONS, findRegionByCoords, regionLabel, type ChinaRegionNode } from '../../../shared/china-region-geo';
 import { BaziPan } from './BaziPan';
 import { ZiweiPan } from './ZiweiPan';
-import { AstroPan } from './AstroPan';
+import { AstroDetails, AstroPan, AstroSummary } from './AstroPan';
+import { DEFAULT_ASPECT_FILTER, matchingAspect, type AstroAspectFilter, type AstroSection, type AstroSelection } from './astro-insights';
+import { resolveAstroTime, type AstroTimeChoice } from '../../../shared/astro-time';
+import { AstroTimeFields } from './AstroTimeFields';
 
 const wb = window.workbench;
 const CUR_KEY = 'wb.bazi.curProfileId';
@@ -36,27 +39,6 @@ function collectShenSha(chart: BaziChart): { key: string; name: string; pos: str
     .filter((h) => h.pos);
 }
 
-function NoteCard({ value, onChange }: {
-  value: string;
-  onChange(text: string): void;
-}) {
-  return (
-    <div className="panel glass">
-      <div className="phead">
-        <span className="ptitle">笔记</span>
-        <span className="pcount">{value.trim() ? '已自动保存' : '随命例保存'}</span>
-      </div>
-      <textarea
-        className="bazi-noteta"
-        value={value}
-        placeholder="记下用神取舍、流年应期、大运体会……"
-        onChange={(e) => onChange(e.target.value)}
-      />
-      <div className="bazi-notehint">笔记随命例保存在本机,三张盘共用。</div>
-    </div>
-  );
-}
-
 export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfileId, requestedDayLocate, onDayLocated }: {
   onPending(message: string): void;
   onAskAI(prompt: string, profileId: string, system: 'bazi' | 'ziwei' | 'astro'): void;
@@ -69,10 +51,14 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
   const [loadError, setLoadError] = useState('');
   const [curId, setCurId] = useState<string | null>(null);
   const [tab, setTab] = useState<TabKey>('bazi');
+  const [houseSystemSaving, setHouseSystemSaving] = useState(false);
+  const [astroSection, setAstroSection] = useState<AstroSection>('positions');
+  const [astroSelection, setAstroSelection] = useState<AstroSelection>(null);
+  const [astroFilter, setAstroFilter] = useState<AstroAspectFilter>(DEFAULT_ASPECT_FILTER);
+  const [astroShowPoints, setAstroShowPoints] = useState(true);
+  const [astroShowMinor, setAstroShowMinor] = useState(true);
   const [openDy, setOpenDy] = useState(-1);
   const [pselOpen, setPselOpen] = useState(false);
-  const [noteDraft, setNoteDraft] = useState('');
-  const [savingForAI, setSavingForAI] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<BaziProfile | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -80,6 +66,11 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
   const [fGender, setFGender] = useState('1');
   const [fDate, setFDate] = useState('');
   const [fTime, setFTime] = useState('');
+  const [fTimeZone, setFTimeZone] = useState<string | undefined>();
+  const [fTimeChoice, setFTimeChoice] = useState<AstroTimeChoice | undefined>();
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const saveErrorRef = useRef<HTMLDivElement>(null);
   const [fTag, setFTag] = useState('');
   const [fProv, setFProv] = useState('none');
   const [fCity, setFCity] = useState('');
@@ -88,10 +79,13 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
   const [fLat, setFLat] = useState('');
   const [fLon, setFLon] = useState('');
   const pselRef = useRef<HTMLDivElement>(null);
-  const noteTimer = useRef<number | undefined>(undefined);
   const loadedOnce = useRef(false);
   const handledRequest = useRef<string | null>(null);
   const handledLocate = useRef(0);
+  const formTime = useMemo(() => fDate && fTime
+    ? resolveAstroTime({ date: fDate, time: fTime, astroTimeZone: fTimeZone, astroTimeChoice: fTimeChoice }) : null,
+  [fDate, fTime, fTimeZone, fTimeChoice]);
+  useEffect(() => { if (saveError) saveErrorRef.current?.focus(); }, [saveError]);
 
   useEffect(() => {
     if (loadedOnce.current) return;
@@ -135,24 +129,61 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
   const charts = useMemo(() => {
     if (!profile) return null;
     try {
+      let astro: AstroChart | null = null;
+      let astroError = '';
+      try { astro = buildAstro(profile); } catch (e) { astroError = errorText(e); }
       return {
         bazi: buildChart(profile),
         ziwei: buildZiwei(profile),
-        astro: buildAstro(profile),
+        astro, astroError,
         error: '',
       };
     } catch (e) {
-      return { bazi: null as BaziChart | null, ziwei: null as ZiweiChart | null, astro: null as AstroChart | null, error: errorText(e) };
+      return { bazi: null as BaziChart | null, ziwei: null as ZiweiChart | null, astro: null as AstroChart | null, astroError: '', error: errorText(e) };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.id, profile?.date, profile?.time, profile?.gender, profile?.lat, profile?.lon]);
+  }, [profile?.id, profile?.date, profile?.time, profile?.gender, profile?.lat, profile?.lon, profile?.astroHouseSystem, profile?.astroTimeZone, profile?.astroTimeChoice]);
 
-  // 切换命例:重置流年展开,并载入该命例笔记
+  const visibleAstro = useMemo(() => {
+    if (!charts?.astro) return null;
+    const bodies = charts.astro.bodies.filter(body => body.kind === 'planet' || (body.kind === 'point' ? astroShowPoints : astroShowMinor));
+    const names = new Set(bodies.map(body => body.name));
+    return { ...charts.astro, bodies, aspects: charts.astro.aspects.filter(aspect => names.has(aspect.a) && names.has(aspect.b)) };
+  }, [charts?.astro, astroShowPoints, astroShowMinor]);
+
+  const changeAstroDisplay = (kind: 'point' | 'minor', show: boolean): void => {
+    if (kind === 'point') setAstroShowPoints(show); else setAstroShowMinor(show);
+    setAstroSelection(null);
+    setAstroFilter(DEFAULT_ASPECT_FILTER);
+  };
+
+  // 切换命例:重置流年展开
   useEffect(() => {
     setOpenDy(-1);
-    setNoteDraft(profile ? (storeData?.notes[profile.id] ?? '') : '');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);
+
+  useEffect(() => {
+    setAstroSelection(null);
+    setAstroSection('positions');
+    setAstroFilter(DEFAULT_ASPECT_FILTER);
+  }, [profile?.id, profile?.date, profile?.time, profile?.lat, profile?.lon, profile?.astroTimeZone, profile?.astroTimeChoice]);
+
+  useEffect(() => {
+    if (astroSelection?.kind === 'house' && !charts?.astro?.houseCusps) setAstroSelection(null);
+  }, [charts?.astro?.houseCusps, astroSelection]);
+
+  const selectAstro = (next: AstroSelection): void => {
+    const same = (next?.kind === 'body' && astroSelection?.kind === 'body' && next.key === astroSelection.key)
+      || (next?.kind === 'house' && astroSelection?.kind === 'house' && next.number === astroSelection.number)
+      || (next?.kind === 'aspect' && astroSelection?.kind === 'aspect' && next.index === astroSelection.index);
+    setAstroSelection(same ? null : next);
+    if (next && astroSection !== 'reading') setAstroSection(next.kind === 'body' ? 'positions' : next.kind === 'house' ? 'houses' : 'aspects');
+    if (next?.kind === 'body') setAstroFilter(DEFAULT_ASPECT_FILTER);
+  };
+  const filterAstro = (filter: AstroAspectFilter): void => {
+    setAstroFilter(filter);
+    if (astroSelection?.kind !== 'aspect' || !visibleAstro || !matchingAspect(visibleAstro.aspects[astroSelection.index], filter)) setAstroSelection(null);
+  };
 
   // 命例下拉:点外部关闭
   useEffect(() => {
@@ -179,29 +210,27 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
     void action.then((raw) => apply(raw, okMsg), (e) => onPending(errorText(e)));
   };
 
+  const changeHouseSystem = async (astroHouseSystem: AstroHouseSystem): Promise<void> => {
+    if (!profile || houseSystemSaving) return;
+    const { createdAt: _createdAt, ...input } = profile;
+    setHouseSystemSaving(true);
+    try {
+      apply(await wb.bazi.saveProfile({ ...input, astroHouseSystem }));
+    } catch (error) {
+      onPending(errorText(error));
+    } finally {
+      setHouseSystemSaving(false);
+    }
+  };
+
   const switchProfile = (id: string): void => {
     setCurId(id);
-    setNoteDraft(storeData?.notes[id] ?? '');
     localStorage.setItem(CUR_KEY, id);
   };
   const removeProfile = (target: BaziProfile): void => {
-    if (target.id === profile?.id) window.clearTimeout(noteTimer.current);
-    run(wb.bazi.removeProfile(target.id), `已删除「${target.name}」,笔记一并清除`);
+    run(wb.bazi.removeProfile(target.id), `已删除「${target.name}」`);
     if (target.id === profile?.id) localStorage.removeItem(CUR_KEY);
     setDeleteTarget(null);
-  };
-
-  const onNote = (text: string): void => {
-    setNoteDraft(text);
-    if (!profile) return;
-    window.clearTimeout(noteTimer.current);
-    const id = profile.id;
-    noteTimer.current = window.setTimeout(() => {
-      void wb.bazi.saveNote(id, text).then(
-        (raw) => setStoreData(raw),
-        (e) => onPending(errorText(e)),
-      );
-    }, 500);
   };
 
   const startEdit = (target: BaziProfile | null): void => {
@@ -210,6 +239,9 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
     setFGender(target ? String(target.gender) : '1');
     setFDate(target ? target.date : '');
     setFTime(target ? target.time : '');
+    setFTimeZone(target ? target.astroTimeZone : 'Asia/Shanghai');
+    setFTimeChoice(target?.astroTimeChoice);
+    setSaveError('');
     setFTag(target ? target.tag ?? '' : '');
     setFPlace(target ? target.place ?? '' : '');
     const region = target && target.lat !== undefined && target.lon !== undefined
@@ -251,7 +283,9 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
     setFLon(String(leaf.lon));
   };
 
-  const saveModal = (): void => {
+  const saveModal = async (): Promise<void> => {
+    if (profileSaving) return;
+    setSaveError('');
     const name = fName.trim();
     const date = fDate;
     const time = fTime;
@@ -271,31 +305,30 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
       return;
     }
     if (!time) { onPending('请选择出生时间'); return; }
-    if (editingId) {
-      const target = profiles.find((p) => p.id === editingId);
-      if (!target) { onPending('命例不存在或已删除'); return; }
-      run(wb.bazi.saveProfile({ id: target.id, name, gender: Number(fGender), date, time, tag: tag || undefined, place: birth.place, lat: birth.lat, lon: birth.lon }), `已更新「${name}」`);
-    } else {
-      const id = crypto.randomUUID();
-      run(
-        wb.bazi.saveProfile({ id, name, gender: Number(fGender), date, time, tag: tag || undefined, place: birth.place, lat: birth.lat, lon: birth.lon }),
-        `已保存「${name}」并排盘`,
-      );
-      switchProfile(id);
+    if (formTime?.status !== 'ready') { setSaveError(formTime?.message ?? '请检查出生日期和时间。'); return; }
+    if (editingId && !profiles.some(p => p.id === editingId)) { setSaveError('命例不存在或已删除'); return; }
+    const id = editingId ?? crypto.randomUUID();
+    const target = profiles.find(p => p.id === editingId);
+    // 未改时区的旧档案不新增字段；已保存过时区时，显式清除过期的重复时间选择。
+    const timeFields = fTimeZone !== undefined || target?.astroTimeZone !== undefined
+      ? { astroTimeZone: fTimeZone, astroTimeChoice: formTime.value.choice } : {};
+    setProfileSaving(true);
+    try {
+      apply(await wb.bazi.saveProfile({ id, name, gender: Number(fGender), date, time, tag: tag || undefined, ...birth, ...timeFields }),
+        editingId ? `已更新「${name}」` : `已保存「${name}」并排盘`);
+      if (!editingId) switchProfile(id);
+      setModalOpen(false);
+    } catch (error) {
+      setSaveError(`保存失败：${errorText(error)}。填写的内容已保留，请重试。`);
+    } finally {
+      setProfileSaving(false);
     }
-    setModalOpen(false);
   };
 
   const askAI = (): void => {
-    if (!profile || !charts?.bazi || savingForAI) return;
+    if (!profile || !charts?.bazi || (tab === 'astro' && !charts.astro)) return;
     const prompt = `请解读当前命例的${TABS.find(item => item.key === tab)!.label}盘面，先概述最重要的特征，再说明依据与资料限制。`;
-    if (noteDraft === (storeData?.notes[profile.id] ?? '')) { onAskAI(prompt, profile.id, tab); return; }
-    window.clearTimeout(noteTimer.current);
-    setSavingForAI(true);
-    void wb.bazi.saveNote(profile.id, noteDraft).then(raw => {
-      setStoreData(raw);
-      onAskAI(prompt, profile.id, tab);
-    }, error => onPending(errorText(error))).finally(() => setSavingForAI(false));
+    onAskAI(prompt, profile.id, tab);
   };
 
   if (loadError) {
@@ -316,7 +349,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
   const profiles = storeData.profiles;
   const chart = charts?.bazi ?? null;
   const ziwei = charts?.ziwei ?? null;
-  const astro = charts?.astro ?? null;
+  const astro = visibleAstro;
   const soulPalace = ziwei?.palaces.find((p) => p.name === '命宫') ?? null;
   const mutagenList = ziwei
     ? ziwei.palaces.flatMap((p) => [...p.majorStars, ...p.minorStars]
@@ -332,30 +365,33 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
           <div className="greet">
             <div>
               <h1>命理</h1>
-              <div className="gsub">从出生那一刻聊起：填好出生信息，八字、紫微斗数和占星三种命盘就到齐了。边看边记，还能请 AI 一起琢磨。</div>
+              <div className="gsub">从出生那一刻聊起：填好出生信息，八字、紫微斗数和占星三种命盘就到齐了。还能请 AI 一起琢磨。</div>
             </div>
           </div>
           {hasProfiles && (
-            <div className="bazi-syseg" role="tablist" aria-label="命理系统">
-              {TABS.map((t) => (
-                <button
-                  key={t.key}
-                  role="tab"
-                  aria-selected={tab === t.key}
-                  className={tab === t.key ? 'on' : ''}
-                  onClick={() => setTab(t.key)}
-                >
-                  {t.label}
-                </button>
-              ))}
+            <div className="bazi-top-switches">
+              <div className="bazi-syseg" role="tablist" aria-label="命理系统">
+                {TABS.map((t) => (
+                  <button
+                    key={t.key}
+                    role="tab"
+                    aria-selected={tab === t.key}
+                    className={tab === t.key ? 'on' : ''}
+                    onClick={() => setTab(t.key)}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              {tab === 'astro' && astro && <AstroSummary chart={astro} />}
             </div>
           )}
         </div>
         <div className="bazi-top-side">
           <div className="gbtns">
             <button className="btn btn-sec" onClick={() => startEdit(null)}><Plus size={15} weight="bold" />新建命例</button>
-            <button className="btn btn-pri" disabled={!profile || !chart || savingForAI} onClick={askAI}>
-              <Sparkle size={15} weight="fill" />{savingForAI ? '保存笔记…' : 'AI 解读'}
+            <button className="btn btn-pri" disabled={!profile || !chart || (tab === 'astro' && !astro)} onClick={askAI}>
+              <Sparkle size={15} weight="fill" />AI 解读
             </button>
           </div>
           {hasProfiles && (
@@ -434,6 +470,9 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
       ) : (
         <>
           {charts?.error && <div className="bazi-chart-error" role="alert">{charts.error}</div>}
+          {tab === 'astro' && charts?.astroError && <div className="bazi-chart-error" role="alert">
+            <p>{charts.astroError}</p><button className="btn btn-sec" onClick={() => startEdit(profile)}>修改出生时间与时区</button>
+          </div>}
 
           {profile && chart && (
             <div className="bazi-tabview" role="tabpanel" hidden={tab !== 'bazi'}>
@@ -476,7 +515,6 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
                       )) : <div className="bazi-ssempty">本命盘未检出常用神煞。</div>}
                     </div>
                   </div>
-                  <NoteCard value={noteDraft} onChange={onNote} />
                 </div>
               </div>
             </div>
@@ -505,45 +543,20 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
                       ))}
                     </div>
                   </div>
-                  <NoteCard value={noteDraft} onChange={onNote} />
                 </div>
               </div>
             </div>
           )}
 
           {profile && astro && (
-            <div className="bazi-tabview" role="tabpanel" hidden={tab !== 'astro'}>
-              <div className="bazi-cols">
-                <div><AstroPan profile={profile} chart={astro} /></div>
-                <div>
-                  <div className="panel glass">
-                    <div className="phead"><span className="ptitle">行星落座</span><span className="pcount">回归制 · 东八区</span></div>
-                    <table className="bazi-astab">
-                      <thead>
-                        <tr><th aria-label="符号" /><th>行星</th><th>星座</th><th>度数</th><th>宫位</th></tr>
-                      </thead>
-                      <tbody>
-                        {astro.bodies.map((b) => {
-                          const deg = Math.floor(b.lon % 30);
-                          const min = Math.round((b.lon % 1) * 60);
-                          const sign = Math.floor(b.lon / 30);
-                          const names = ['白羊', '金牛', '双子', '巨蟹', '狮子', '处女', '天秤', '天蝎', '射手', '摩羯', '水瓶', '双鱼'];
-                          return (
-                            <tr key={b.key}>
-                              <td className="glyph">{b.glyph}</td>
-                              <td>{b.name}</td>
-                              <td>{names[sign]}</td>
-                              <td>{deg}°{String(min).padStart(2, '0')}′{b.retro && <span className="bazi-rx">℞</span>}</td>
-                              <td>{b.house !== undefined ? `${b.house}宫` : '—'}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                    {astro.asc === undefined && <div className="bazi-notehint">编辑命例选择出生地后可显示宫位。</div>}
-                  </div>
-                  <NoteCard value={noteDraft} onChange={onNote} />
-                </div>
+            <div className="bazi-tabview bazi-astro-view" role="tabpanel" hidden={tab !== 'astro'}>
+              <div className="bazi-cols bazi-as-cols">
+                <div><AstroPan profile={profile} chart={astro} onHouseSystemChange={changeHouseSystem} houseSystemSaving={houseSystemSaving}
+                  selection={astroSelection} onSelect={selectAstro}
+                  visibleAspects={astroSection === 'aspects' ? astro.aspects.flatMap((aspect, index) => matchingAspect(aspect, astroFilter) ? [index] : []) : undefined} /></div>
+                <AstroDetails chart={astro} section={astroSection} onSectionChange={setAstroSection}
+                  selection={astroSelection} onSelect={selectAstro} filter={astroFilter} onFilterChange={filterAstro}
+                  showPoints={astroShowPoints} showMinor={astroShowMinor} onDisplayChange={changeAstroDisplay} />
               </div>
             </div>
           )}
@@ -553,11 +566,13 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
       {modalOpen && (
         <Modal
           title={editingId ? '编辑命例' : '新建命例'}
-          close={() => setModalOpen(false)}
+          className="bazi-profile-modal"
+          busy={profileSaving}
+          close={() => { if (!profileSaving) setModalOpen(false); }}
           subhead={<span className="field-help">填好公历生日、出生时间和性别，就能查看三种命盘。</span>}
         >
           <div className="form-body">
-            <div className="bazi-form">
+            <fieldset className="bazi-form" disabled={profileSaving}>
               <div className="bazi-form-field">
                 <span className="bazi-form-label">姓名 / 备注</span>
                 <input aria-label="姓名或备注" placeholder="如:林川" maxLength={12} value={fName} onChange={(e) => setFName(e.target.value)} />
@@ -573,12 +588,12 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
               </div>
               <div className="bazi-form-field">
                 <span className="bazi-form-label">公历生日</span>
-                <DatePicker value={fDate} onChange={setFDate} yearRange={{ min: BAZI_MIN_YEAR, max: BAZI_MAX_YEAR }} />
+                <DatePicker value={fDate} onChange={value => { setFDate(value); setFTimeChoice(undefined); setSaveError(''); }} yearRange={{ min: BAZI_MIN_YEAR, max: BAZI_MAX_YEAR }} />
               </div>
               <div className="bazi-form-field">
                 <span className="bazi-form-label">出生时间</span>
-                <TimePicker value={fTime} onChange={setFTime} />
-                <span className="field-help">按出生时的钟表时间填写；占星暂按东八区换算。</span>
+                <TimePicker value={fTime} onChange={value => { setFTime(value); setFTimeChoice(undefined); setSaveError(''); }} />
+                <span className="field-help">按出生记录上的当地钟表时间填写。</span>
               </div>
               <div className="bazi-form-field">
                 <span className="bazi-form-label">标签(可选)</span>
@@ -669,10 +684,14 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
                   </div>
                 </>
               )}
-            </div>
+              <AstroTimeFields zone={fTimeZone} choice={fTimeChoice} resolution={formTime} disabled={profileSaving}
+                onZoneChange={value => { setFTimeZone(value); setFTimeChoice(undefined); setSaveError(''); }}
+                onChoiceChange={value => { setFTimeChoice(value); setSaveError(''); }} />
+            </fieldset>
+            {saveError && <div ref={saveErrorRef} className="bazi-save-error" role="alert" tabIndex={-1}>{saveError}</div>}
             <div className="bazi-form-actions">
-              <button className="btn btn-sec" onClick={() => setModalOpen(false)}>取消</button>
-              <button className="btn btn-pri" onClick={saveModal}>{editingId ? '保存' : '保存并排盘'}</button>
+              <button className="btn btn-sec" disabled={profileSaving} onClick={() => setModalOpen(false)}>取消</button>
+              <button className="btn btn-pri" disabled={profileSaving} onClick={() => void saveModal()}>{profileSaving ? '正在保存…' : editingId ? '保存' : '保存并排盘'}</button>
             </div>
           </div>
         </Modal>
@@ -681,7 +700,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
       {deleteTarget && (
         <Modal title="删除命例" close={() => setDeleteTarget(null)}>
           <div className="form-body">
-            <p>删除「{deleteTarget.name}」？对应的笔记也会一并删除，且无法恢复。</p>
+            <p>删除「{deleteTarget.name}」？此操作无法恢复。{storeData.notes[deleteTarget.id] ? '该命例的历史笔记也会一并删除。' : ''}</p>
             <div className="bazi-form-actions">
               <button className="btn btn-sec" onClick={() => setDeleteTarget(null)}>取消</button>
               <button className="btn btn-pri" onClick={() => removeProfile(deleteTarget)}>确认删除</button>

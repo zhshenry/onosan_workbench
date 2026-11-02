@@ -55,6 +55,12 @@ export class BaziStore {
     const profile: BaziProfile = existing
       ? { ...existing, ...fields }
       : { ...fields, id, createdAt: new Date().toISOString() };
+    if (existing && !Object.hasOwn(rest, 'astroTimeChoice')
+      && (existing.date !== profile.date || existing.time !== profile.time || existing.astroTimeZone !== profile.astroTimeZone)) {
+      delete profile.astroTimeChoice;
+    }
+    const { id: _id, createdAt: _createdAt, ...mergedFields } = profile;
+    baziProfileInputSchema.parse(mergedFields);
     return this.commit({
       ...this.data,
       profiles: existing

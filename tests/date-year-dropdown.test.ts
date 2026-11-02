@@ -175,7 +175,7 @@ test('其他日期调用默认不显示年份下拉并保留原有日期行为',
   await f.key('.date-grid .is-active', 'Enter');
   assert.deepEqual(f.changes, ['2026-09-13']);
   const bazi = readFileSync(new URL('../modules/bazi/ui/BaziView.tsx', import.meta.url), 'utf8');
-  assert.match(bazi, /<DatePicker value=\{fDate\} onChange=\{setFDate\} yearRange=\{\{ min: BAZI_MIN_YEAR, max: BAZI_MAX_YEAR \}\}/);
+  assert.match(bazi, /<DatePicker value=\{fDate\} [^\n]*yearRange=\{\{ min: BAZI_MIN_YEAR, max: BAZI_MAX_YEAR \}\}/);
 });
 
 // Unlike the key helper above, this deliberately sends the key to the actual focus.
