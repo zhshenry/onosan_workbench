@@ -68,7 +68,9 @@
 .personal-preview { min-height: 0; min-width: 0; overflow: hidden; display: flex; flex-direction: column; }
 .personal-preview-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 16px 16px 8px; }
 .personal-preview-heading strong { margin-right: auto; font-size: var(--type-body); }
-.personal-preview-heading .segmented button { padding: 5px 8px; }
+.personal-workspace .personal-preview-heading .segmented button,
+.personal-workspace .personal-preview-heading .segmented button:hover:not(:disabled),
+.personal-workspace .personal-preview-heading .segmented button:active:not(:disabled) { padding: 5px 8px; border: 0; background: transparent; transform: none; }
 .personal-online { font-size: var(--type-support); padding: 6px 8px; color: var(--ink-3); }
 .personal-online[aria-pressed="true"] { color: var(--acc-deep); background: var(--acc-soft); }
 .personal-preview .game-preview-toolbar { padding: 8px 12px 12px; border: 0; }
