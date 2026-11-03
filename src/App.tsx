@@ -17,6 +17,7 @@ import { TaskEditor, type TaskEditorApi } from '../modules/todo/ui/TaskEditor';
 import { MediaBrowserHost } from './views/MediaBrowserHost';
 import { BrowserHost } from './views/BrowserView';
 import { HushHourView } from './views/HushHourView';
+import { PersonalWebsiteView } from './views/PersonalWebsiteView';
 import { GameHost } from './views/GameView';
 import { AiTestHost } from './views/AiTestView';
 import type { BrowserTask } from '../shared/browser-automation-contracts';
@@ -631,7 +632,7 @@ export function App() {
       <main className="content" ref={contentRef} tabIndex={-1}>
           {todo.error && <div className="todo-load-error" role="alert">{todo.error}</div>}
           {/* 视图切换动效:按 curView 换 key 重挂载,统一淡入上移(见 shell.css .view-fade) */}
-          {(isPlanningWorkbench || !curView.startsWith('ai-test') && curView !== 'media-browser' && curView !== 'browser' && curView !== 'hush-hour' && curView !== 'game') && <div className="view-fade" key={curView}>
+          {(isPlanningWorkbench || !curView.startsWith('ai-test') && curView !== 'media-browser' && curView !== 'browser' && curView !== 'hush-hour' && curView !== 'personal-website' && curView !== 'game') && <div className="view-fade" key={curView}>
           {isPlanningWorkbench ? (
             <section className="pending-workbench" role="status">
               <span className="pending-workbench-icon" aria-hidden="true"><ActiveWorkbenchIcon /></span>
@@ -661,6 +662,9 @@ export function App() {
             <HushHourView active={!isPlanningWorkbench && curView === 'hush-hour'} onPending={showToast} />
           </BrowserHost>
           <GameHost active={!isPlanningWorkbench && curView === 'game'} focusTarget={contentRef} onPending={showToast} />
+          <BrowserHost active={!isPlanningWorkbench && curView === 'personal-website'} focusTarget={contentRef} onPending={showToast}>
+            <PersonalWebsiteView active={!isPlanningWorkbench && curView === 'personal-website'} onPending={showToast} onAskAI={prompt => askAI(prompt, { module: 'workbench', viewId: 'personal-website' })} />
+          </BrowserHost>
           <AiTestHost active={!isPlanningWorkbench && curView.startsWith('ai-test')} view={curView} onNavigate={switchView} />
         </main>
 

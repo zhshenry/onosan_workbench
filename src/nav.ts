@@ -50,6 +50,7 @@ export const NAV: WorkbenchDef[] = [
     subs: [
       { label: '浏览器', view: 'browser' },
       { label: 'Hush-Hour', view: 'hush-hour' },
+      { label: '个人网站', view: 'personal-website' },
       { label: '站点搭建', pending: true },
       { label: '页面设计', pending: true },
       { label: '发布管理', pending: true },

@@ -297,6 +297,20 @@ const game: import('../shared/game-contracts').GameBridge = {
   },
 };
 
+const personalWebsite: WorkbenchApi['personalWebsite'] = {
+  state: () => ipcRenderer.invoke('web:personal:state'), start: () => ipcRenderer.invoke('web:personal:start'), stop: () => ipcRenderer.invoke('web:personal:stop'),
+  build: () => ipcRenderer.invoke('web:personal:build'), cancelBuild: () => ipcRenderer.invoke('web:personal:cancelBuild'), checkPages: () => ipcRenderer.invoke('web:personal:checkPages'),
+  list: () => ipcRenderer.invoke('web:personal:list'), read: id => ipcRenderer.invoke('web:personal:read', id), save: input => ipcRenderer.invoke('web:personal:save', input), previewSave: input => ipcRenderer.invoke('web:personal:previewSave', input),
+  chooseCover: () => ipcRenderer.invoke('web:personal:chooseCover'), coverPreview: path => ipcRenderer.invoke('web:personal:coverPreview', path),
+  configureOnline: url => ipcRenderer.invoke('web:personal:configureOnline', url), openFolder: () => ipcRenderer.invoke('web:personal:openFolder'), openExternal: url => ipcRenderer.invoke('web:personal:openExternal', url),
+  onChanged: callback => { const listener = (_event: unknown, state: import('../shared/personal-website-contracts').WebsiteState) => callback(state); ipcRenderer.on('web:personal:changed', listener); return () => ipcRenderer.off('web:personal:changed', listener); },
+  terminal: {
+    state: () => ipcRenderer.invoke('web:personal:terminal:state'), open: size => ipcRenderer.invoke('web:personal:terminal:open', size),
+    write: (id, data) => ipcRenderer.invoke('web:personal:terminal:write', { id, data }), resize: (id, cols, rows) => ipcRenderer.invoke('web:personal:terminal:resize', { id, cols, rows }),
+    clear: id => ipcRenderer.invoke('web:personal:terminal:clear', { id }), close: id => ipcRenderer.invoke('web:personal:terminal:close', { id }),
+    onEvent: callback => { const listener = (_event: unknown, event: import('../shared/game-contracts').GameTerminalEvent) => callback(event); ipcRenderer.on('web:personal:terminal:event', listener); return () => ipcRenderer.off('web:personal:terminal:event', listener); },
+  },
+};
 const hushHour: WorkbenchApi['hushHour'] = {
   open: () => ipcRenderer.invoke('web:hush-hour:open'), state: () => ipcRenderer.invoke('web:hush-hour:state'),
   stop: () => ipcRenderer.invoke('web:hush-hour:stop'), restart: () => ipcRenderer.invoke('web:hush-hour:restart'),
@@ -345,6 +359,7 @@ const api: WorkbenchApi = {
   aiTest,
   browser,
   hushHour,
+  personalWebsite,
   browserAutomation,
   speech: {
     prepare: id => ipcRenderer.invoke('speech:prepare', id),

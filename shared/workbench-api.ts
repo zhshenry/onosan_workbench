@@ -22,6 +22,7 @@ export interface WorkbenchApi {
   onMaximized(callback: (maximized: boolean) => void): () => void;
   browser: import('./browser-contracts').BrowserBridge;
   hushHour: import('./hush-hour-contracts').HushHourBridge;
+  personalWebsite: import('./personal-website-contracts').PersonalWebsiteBridge;
   game: import('./game-contracts').GameBridge;
   browserAutomation: import('./browser-automation-contracts').BrowserAutomationBridge;
   speech: import('./speech-contracts').SpeechBridge;

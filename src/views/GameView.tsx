@@ -68,8 +68,8 @@ export function GamePreview({ url, workspace, tabId, viewport, apiRef, onState }
     observer.observe(element); return () => observer.disconnect();
   }, []);
   useImperativeHandle(apiRef, () => ({ reload: () => controller.current?.reload(), back: () => controller.current?.goBack(), forward: () => controller.current?.goForward(), setZoomFactor: factor => controller.current?.setZoomFactor(factor), refreshZoom: () => controller.current?.refreshZoom() }), []);
-  const width = viewport === 'desktop' ? 1440 : viewport === 'narrow' ? 390 : size.width;
-  const height = viewport === 'desktop' ? 1000 : viewport === 'narrow' ? 844 : size.height;
+  const width = viewport === 'website-desktop' ? 1024 : viewport === 'desktop' ? 1440 : viewport === 'narrow' ? 390 : size.width;
+  const height = viewport === 'website-desktop' ? Math.max(768, size.height * width / Math.max(1, size.width)) : viewport === 'desktop' ? 1000 : viewport === 'narrow' ? 844 : size.height;
   const scale = Math.min(1, size.width / width, size.height / height);
   return <div className="game-stage" ref={stage}>
     <div className="game-scaled" style={{ width: width * scale, height: height * scale }}>
