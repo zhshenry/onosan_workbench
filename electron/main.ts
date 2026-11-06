@@ -27,9 +27,9 @@ import { AiTestService, registerAiTestIpc } from './ai-test-ipc';
 import { guardAiTestPreview, registerAiTestScheme } from './ai-test-browser';
 import { SpeechService } from './speech';
 import { registerSpeechIpc } from './speech-ipc';
-import { FloatTodoWindow, registerFloatIpc } from './float-window';
+import { DesktopIsland } from './desktop-island';
 
-type FloatFactory = () => FloatTodoWindow;
+type FloatFactory = () => DesktopIsland;
 import { registerCopyIpc } from './copy-ipc';
 import { AiStore } from './ai-store';
 import { AppSettingsStore } from './app-settings';
@@ -437,11 +437,11 @@ if (!app.requestSingleInstanceLock()) {
         owner.send('media-capture:failed', message);
       }
     });
-    const floatTodo = new FloatTodoWindow(DEV_URL || undefined, join(__dirname, 'preload.cjs'));
+    const floatTodo = new DesktopIsland(DEV_URL || undefined, join(__dirname, 'preload.cjs'), app.getPath('userData'), () => mainWindow, store);
     // A normal window close only hides the float; application quit must release it.
     app.once('before-quit', () => floatTodo.destroy());
     floatTodoFactory = () => floatTodo;
-    registerFloatIpc(floatTodoFactory);
+    floatTodo.register();
     aiStore = new AiStore(app.getPath('userData'));
     const aiTests = new AiTestService(app.getPath('userData'), aiStore);
     registerAiTestIpc(aiTests, () => mainWindow?.webContents);
@@ -449,6 +449,7 @@ if (!app.requestSingleInstanceLock()) {
     registerAiIpc(store, aiStore, copyStore, baziStore, readingStore, browserAutomation);
     registerCopyIpc(copyStore);
     createWindow();
+    if (floatTodo.isVisible()) floatTodo.show();
     void createTray();
     startReminders();
     if (updateEnabled) {
@@ -471,6 +472,10 @@ if (!app.requestSingleInstanceLock()) {
     if (settingsStore && !settingsStore.read().remindersEnabled) return;
     const tasks = store.claimDue();
     if (!tasks.length) return;
+    if (floatTodoFactory) {
+      try { if (floatTodoFactory().remindTasks(tasks)) return; }
+      catch { /* The existing system notification path remains available if island storage fails. */ }
+    }
     if (!Notification.isSupported()) {
       store.markNotified(tasks);
       return;
@@ -534,7 +539,7 @@ if (!app.requestSingleInstanceLock()) {
     tray.setContextMenu(
       Menu.buildFromTemplate([
         { label: '打开工作台', click: showApp },
-        { label: '待办悬浮窗', click: () => floatTodoFactory?.().showOrHide() },
+        { label: '桌面灵动岛', click: () => floatTodoFactory?.().showOrHide() },
         { label: '打开数据目录', click: () => { void shell.openPath(dirname(TODO_DB)); } },
         { type: 'separator' },
         {

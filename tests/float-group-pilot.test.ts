@@ -74,10 +74,10 @@ test('Installed pilot uses actual float surfaces, physical UI, native bounds and
   assert.match(source, /\['no-preference', 'reduce'\]/); assert.match(source, /stable >= 6/);
   assert.match(source, /requests\.length, initialCalls/); assert.match(source, /assert\.equal\(floatWireText\(userMessages\.at\(-1\)\.content\), expectedText/);
   assert.match(source, /full same-installed-executable restart/);
-  assert.ok(entry.indexOf('await runFloatEmptyPilot(') < entry.indexOf("await check('Create one synthetic task"));
-  assert.ok(entry.indexOf('aiCardsFixture = await runAiCardsPilot(') < entry.indexOf('floatGroupFixture = await runFloatGroupPilot('));
-  assert.ok(entry.indexOf('floatGroupFixture = await runFloatGroupPilot(') < entry.indexOf("await check('Choose exit-on-close"));
-  assert.ok(entry.indexOf('await verifyFloatGroupRelaunch(') > entry.indexOf("await check('Relaunch same installed executable"));
+  assert.ok(entry.indexOf('await runIslandEmptyPilot(') < entry.indexOf("await check('Create one synthetic task"));
+  assert.ok(entry.indexOf('aiCardsFixture = await runAiCardsPilot(') < entry.indexOf('islandFixture = await runIslandPilot('));
+  assert.ok(entry.indexOf('islandFixture = await runIslandPilot(') < entry.indexOf("await check('Choose exit-on-close"));
+  assert.ok(entry.indexOf('await verifyIslandRelaunch(') > entry.indexOf("await check('Relaunch same installed executable"));
   for (const name of ['verifyAiCardsRelaunch', 'verifyYearDropdownRelaunch', 'verifyTopbarDatesRelaunch']) assert.match(entry, new RegExp(`await ${name}\\(`));
 });
 

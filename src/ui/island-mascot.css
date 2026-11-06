@@ -1,0 +1,5 @@
+:root { --island-bg: #090a0c; --island-text: #f5f6f8; --island-blue: #76aeff; --island-purple: #b79aff; }
+.island-mascot { display: inline-flex; align-items: center; justify-content: center; gap: 5px; border: 3px solid currentColor; border-bottom-color: var(--island-purple); border-radius: 50%; width: 46px; height: 46px; box-sizing: border-box; flex: none; color: var(--island-blue); background: var(--island-bg); }
+.island-mascot i { width: 4px; height: 8px; border-radius: 4px; background: var(--island-text); }
+.island-mascot.can-blink i { animation: island-blink 6s infinite; }
+@keyframes island-blink { 0%, 44%, 48%, 100% { transform: scaleY(1); } 46% { transform: scaleY(.15); } }

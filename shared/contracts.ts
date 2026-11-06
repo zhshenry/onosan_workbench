@@ -27,6 +27,7 @@ export const ViewIdSchema = z.enum([
   'settings-profile',
   'settings-general',
   'settings-appearance',
+  'settings-island',
   'settings-ai',
   'settings-data',
   'settings-notifications',

@@ -96,6 +96,8 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
   };
   const mutateConfig = (change: (config: ReturnType<AiStore['readConfig']>) => ReturnType<AiStore['readConfig']>): void => {
     ai.writeConfig(change(ai.readConfig()));
+    const summary = configSummary();
+    for (const win of BrowserWindow.getAllWindows()) win.webContents.send('ai:config-changed', summary);
   };
 
   ipcMain.handle('ai:config', () => configSummary());
@@ -176,7 +178,8 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
       next = { id: randomUUID(), providerId: data.providerId, name: data.name, ...(data.supportsImages === undefined ? {} : { supportsImages: data.supportsImages }) };
       models.push(next);
     }
-    mutateConfig(current => ({ ...current, models: [...models], activeModelId: current.activeModelId || next.id }));
+    mutateConfig(current => ({ ...current, models: [...models], activeModelId: current.activeModelId || next.id,
+      aiEnabled: current.aiEnabled || !current.hasConfiguredModel, hasConfiguredModel: true }));
     return configSummary();
   });
   ipcMain.handle('ai:model:remove', (_event, id: unknown) => {

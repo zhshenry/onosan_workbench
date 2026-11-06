@@ -34,7 +34,6 @@ export const NAV: WorkbenchDef[] = [
       { label: '博客编辑', view: 'copy' },
       { label: '图文发布', view: 'copy-publish' },
       { label: '我的小红书', view: 'media-browser' },
-      { label: '封面设计', pending: true },
     ],
   },
   {
@@ -51,9 +50,6 @@ export const NAV: WorkbenchDef[] = [
       { label: '浏览器', view: 'browser' },
       { label: 'Hush-Hour', view: 'hush-hour' },
       { label: '个人网站', view: 'personal-website' },
-      { label: '站点搭建', pending: true },
-      { label: '页面设计', pending: true },
-      { label: '发布管理', pending: true },
     ],
   },
   {
@@ -79,14 +75,17 @@ export const NAV: WorkbenchDef[] = [
     title: '设置',
     subs: [
       { label: '个人资料', view: 'settings-profile' },
-      { label: '通用', view: 'settings-general' },
-      { label: '外观', view: 'settings-appearance' },
+      { label: '通用&外观', view: 'settings-general' },
+      { label: '桌面灵动岛', view: 'settings-island' },
       { label: 'AI 助手', view: 'settings-ai' },
       { label: '待办与数据', view: 'settings-data' },
       { label: '关于', view: 'settings-about' },
     ],
   },
 ];
+
+export const resolveView = (view: ViewId): ViewId =>
+  view === 'settings-appearance' || view === 'settings-notifications' ? 'settings-general' : view;
 
 export const workbenchById = (id: WorkbenchId): WorkbenchDef => {
   const wb = NAV.find((w) => w.id === id);
@@ -96,7 +95,7 @@ export const workbenchById = (id: WorkbenchId): WorkbenchDef => {
 
 /** 页面归属的大工作台(用于从内容区链接跳转时联动一级导航) */
 export const ownerOfWorkbench = (view: ViewId): WorkbenchId | undefined =>
-  NAV.find((w) => w.subs.some((s) => s.view === view))?.id;
+  NAV.find((w) => w.subs.some((s) => s.view === resolveView(view)))?.id;
 
 /** 工作台的默认路由(第一个已上线子页;全未上线时由内容区显示规划占位页) */
 export const defaultViewOfWorkbench = (id: WorkbenchId): ViewId =>
@@ -112,7 +111,8 @@ export function workbenchAiContext(viewId: string): { label: string; object: str
     const title = workbench?.title ?? '当前工作台';
     return { label: title, object: title };
   }
-  const workbench = NAV.find((item) => item.subs.some((sub) => sub.view === viewId));
-  const sub = workbench?.subs.find((item) => item.view === viewId);
+  const view = resolveView(viewId as ViewId);
+  const workbench = NAV.find((item) => item.subs.some((sub) => sub.view === view));
+  const sub = workbench?.subs.find((item) => item.view === view);
   return { label: workbench?.title ?? '当前工作台', object: sub?.label ?? viewId };
 }

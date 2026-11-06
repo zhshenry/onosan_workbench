@@ -19,9 +19,10 @@ export interface AiConfigFile {
   rlcdModels: StoredModel[];
   activeRlcdModelId: string;
   aiEnabled: boolean;
+  hasConfiguredModel?: boolean;
 }
 
-const emptyConfig = (): AiConfigFile => ({ providers: [], models: [], activeModelId: '', rlcdProviders: [], rlcdModels: [], activeRlcdModelId: '', aiEnabled: false });
+const emptyConfig = (): AiConfigFile => ({ providers: [], models: [], activeModelId: '', rlcdProviders: [], rlcdModels: [], activeRlcdModelId: '', aiEnabled: false, hasConfiguredModel: false });
 
 export class AiStore {
   private readonly todoCards = new Map<string, Pick<ChatSession['entries'][number], 'todoReceipt' | 'todoApplyError' | 'actionState'> & { preview?: import('../shared/todo-proposal').ProposalPreview[] }>();
@@ -44,14 +45,16 @@ export class AiStore {
     try {
       if (!existsSync(this.configPath)) return emptyConfig();
       const parsed = JSON.parse(readFileSync(this.configPath, 'utf8')) as Partial<AiConfigFile>;
+      const models = Array.isArray(parsed.models) ? parsed.models.filter(m => m && typeof m.id === 'string') : [];
       return {
         providers: Array.isArray(parsed.providers) ? parsed.providers.filter(p => p && typeof p.id === 'string') : [],
-        models: Array.isArray(parsed.models) ? parsed.models.filter(m => m && typeof m.id === 'string') : [],
+        models,
         activeModelId: typeof parsed.activeModelId === 'string' ? parsed.activeModelId : '',
         rlcdProviders: Array.isArray(parsed.rlcdProviders) ? parsed.rlcdProviders.filter(p => p && typeof p.id === 'string') : [],
         rlcdModels: Array.isArray(parsed.rlcdModels) ? parsed.rlcdModels.filter(m => m && typeof m.id === 'string') : [],
         activeRlcdModelId: typeof parsed.activeRlcdModelId === 'string' ? parsed.activeRlcdModelId : '',
         aiEnabled: parsed.aiEnabled === true,
+        hasConfiguredModel: parsed.hasConfiguredModel === true || models.length > 0,
       };
     } catch {
       return emptyConfig();

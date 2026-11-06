@@ -54,3 +54,23 @@ test('旧 AI 配置可读取，RLCD 与对话模型独立保存并在重启后�
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('旧配置已手动关闭 AI 时，删除全部模型并重启仍保留已完成首次配置的记录', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'wb-ai-surfaces-'));
+  const path = join(dir, 'ai-config.json');
+  writeFileSync(path, JSON.stringify({ providers: [], models: [{ id: 'legacy', providerId: 'provider', name: 'legacy-model' }], aiEnabled: false }));
+  let store = new AiStore(dir);
+  try {
+    const legacy = store.readConfig();
+    assert.equal(legacy.hasConfiguredModel, true);
+    assert.equal(legacy.aiEnabled, false);
+    store.writeConfig({ ...legacy, models: [], activeModelId: '' });
+    store.close();
+    store = new AiStore(dir);
+    assert.equal(store.readConfig().hasConfiguredModel, true);
+    assert.equal(store.readConfig().aiEnabled, false);
+  } finally {
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

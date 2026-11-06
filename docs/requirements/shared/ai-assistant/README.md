@@ -8,6 +8,10 @@
 
 - [spec.md](spec.md)
 - [preview-qa-2026-09-28.md](preview-qa-2026-09-28.md)
+- [供应商页内配置与验收（2026-11-05）](qa-inline-provider-2026-11-05.md)
+- [双栏直编修订稿](design/provider-inline-approved-2026-11-05.png)
+- [首次配置引导与验收（2026-11-05）](qa-setup-hint-2026-11-05.md)
+- [顶栏配置气泡确认稿](design/ai-setup-hint-approved-2026-11-05.png)
 
 ## 原型与依赖
 

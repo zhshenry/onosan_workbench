@@ -302,7 +302,7 @@ export async function runYearDropdownPilot({ application, page, check, screensho
     await check(`Year picker: ${fixture.theme} ${fixture.width}x${fixture.height} actual app, scroll visibility and overlay boundaries`, async () => {
       await page.emulateMedia({ reducedMotion: fixture.reducedMotion });
       await page.locator('.rail [data-workbench="settings"]').click();
-      await page.locator('.tree').getByRole('button', { name: '外观', exact: true }).click();
+      await page.locator('.tree').getByRole('button', { name: '通用&外观', exact: true }).click();
       await page.getByRole('radio', { name: fixture.label, exact: true }).click();
       await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, fixture.theme);
       assert.equal((await page.evaluate(() => window.workbench.settings.get())).uiTheme, fixture.theme);

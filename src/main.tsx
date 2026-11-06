@@ -1,9 +1,10 @@
 import { createRoot } from 'react-dom/client';
 import { StrictMode } from 'react';
 import { App } from './App';
-import { FloatTodoApp } from './views/FloatTodo';
+import { DesktopIslandApp } from './views/DesktopIsland';
 import './shell.css';
 import './views/speech.css';
+import './views/island-settings.css';
 import '../modules/todo/ui/todo.css';
 import '../modules/bazi/ui/bazi.css';
 import '../modules/copywriting/ui/copy.css';
@@ -12,11 +13,11 @@ import '../modules/reading/ui/reading.css';
 
 const root = createRoot(document.getElementById('root')!);
 
-// 悬浮待办窗:独立小窗经 ?window=float 载入同一 bundle
+// 桌面灵动岛:沿用独立窗口查询参数载入同一 bundle
 if (new URLSearchParams(location.search).get('window') === 'float') {
   root.render(
     <StrictMode>
-      <FloatTodoApp />
+      <DesktopIslandApp />
     </StrictMode>,
   );
 } else if ((import.meta.env.DEV || import.meta.env.MODE === 'diagnostics') && location.hash.startsWith('#dev/browser')) {

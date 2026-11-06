@@ -331,7 +331,16 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
     }).catch(e => { if (sequence === loadSequence.current) setError(errorText(e)); });
   };
   useEffect(() => {
-    if (open) void wb.ai.config().then(raw => setConfig(raw), e => setError(errorText(e)));
+    if (!open) return;
+    let live = true, updated = false;
+    const unsubscribe = wb.ai.onConfigChanged?.(raw => {
+      if (!live) return;
+      updated = true;
+      setConfig(raw);
+    });
+    // A saved update takes precedence over an older initial read.
+    void wb.ai.config().then(raw => { if (live && !updated) setConfig(raw); }, e => { if (live && !updated) setError(errorText(e)); });
+    return () => { live = false; unsubscribe?.(); };
   }, [open]);
   useEffect(() => {
     const sequence = ++loadSequence.current;

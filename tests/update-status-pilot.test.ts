@@ -310,6 +310,6 @@ test('Native pilot uses normal installed UI/preload transport, bounded fixture a
   assert.match(source, /Transport probe requires safe synthetic handlers/);
   assert.match(source, /action\.getAttribute\('aria-busy'\) === 'true'\) === expected\.busy/);
   assert.doesNotMatch(source, /force:\s*true/);
-  assert.ok(entry.indexOf('await runUpdateStatusPilot(') > entry.indexOf('floatGroupFixture = await runFloatGroupPilot('));
+  assert.ok(entry.indexOf('await runUpdateStatusPilot(') > entry.indexOf('islandFixture = await runIslandPilot('));
   assert.ok(entry.indexOf('await runUpdateStatusPilot(') < entry.indexOf("await check('Choose exit-on-close"));
 });

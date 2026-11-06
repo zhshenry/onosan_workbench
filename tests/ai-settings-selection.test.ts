@@ -6,6 +6,7 @@ import type { AiConfig } from '../shared/workbench-api';
 
 test('peer model sections select suppliers independently; search reveals matches without changing the active model or stored configuration', async () => {
   const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost', pretendToBeVisual: true });
+  dom.window.HTMLElement.prototype.hidePopover = function () {};
   const names = ['window', 'document', 'HTMLElement', 'Node', 'navigator', 'IS_REACT_ACT_ENVIRONMENT'] as const;
   const previous = names.map(name => Object.getOwnPropertyDescriptor(globalThis, name));
   names.forEach(name => Object.defineProperty(globalThis, name, { configurable: true, value: name === 'window' ? dom.window : name === 'IS_REACT_ACT_ENVIRONMENT' ? true : dom.window[name] }));
@@ -54,7 +55,7 @@ test('peer model sections select suppliers independently; search reveals matches
     assert.doesNotMatch(llm().querySelector('article')!.textContent!, /minimax/);
     await choose(llm(), 'OpenRouter'); await choose(rlcd(), 'Local RLCD');
     assert.equal(selected(llm()), 'OpenRouter'); assert.equal(selected(rlcd()), 'Local RLCD');
-    assert.match(llm().querySelector('article')!.textContent!, /https:\/\/openrouter.ai\/api/);
+    assert.equal(llm().querySelector<HTMLInputElement>('.ai-provider-endpoint input')!.value, 'https://openrouter.ai/api');
     for (const button of dom.window.document.querySelectorAll('nav button[aria-controls]')) {
       assert.ok(dom.window.document.getElementById(button.getAttribute('aria-controls')!));
     }

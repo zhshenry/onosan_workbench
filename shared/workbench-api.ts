@@ -15,6 +15,7 @@ export interface AiConfig {
 
 /** Shared preload/renderer contract; the main process validates mutation inputs. */
 export interface WorkbenchApi {
+  island: import('./island-contracts').IslandBridge;
   aiTest: import('./ai-test-contracts').AiTestBridge;
   minimize(): void;
   maximizeToggle(): void;
@@ -80,6 +81,7 @@ export interface WorkbenchApi {
   ai: {
     openLink(url: string): Promise<void>;
     config(): Promise<AiConfig>;
+    onConfigChanged(callback: (config: AiConfig) => void): () => void;
     setEnabled(enabled: boolean): Promise<AiConfig>;
     saveProvider(input: unknown): Promise<AiConfig>;
     removeProvider(id: string): Promise<AiConfig>;

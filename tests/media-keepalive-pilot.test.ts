@@ -264,7 +264,7 @@ test('keepalive screenshots share existing raw/ZIP ceilings and three-day single
 test('installed keepalive acceptance keeps prior suites and exercises physical input and native lifetime APIs', async () => {
   const source=await readFile(new URL('../tooling/media-keepalive-pilot.mjs',import.meta.url),'utf8');
   const entry=await readFile(new URL('../tooling/windows-pilot.mjs',import.meta.url),'utf8');
-  assert.ok(entry.indexOf('await runMediaKeepalivePilot(')>entry.indexOf('floatGroupFixture = await runFloatGroupPilot('));
+  assert.ok(entry.indexOf('await runMediaKeepalivePilot(')>entry.indexOf('islandFixture = await runIslandPilot('));
   assert.ok(entry.indexOf('await runMediaKeepalivePilot(')<entry.indexOf("await check('Choose exit-on-close"));
   for(const fragment of ['getWebContentsId()', 'getFocusedWebContents()', 'guest.isFocused()', 'navigationHistory.getAllEntries()', 'forcefullyCrashRenderer()',
     "page.keyboard.type('Synthetic unsent draft for Issue 35')", 'page.mouse.wheel(0, 900)', 'page.mouse.click(', 'Accessibility.getPartialAXTree', 'await page.reload()',

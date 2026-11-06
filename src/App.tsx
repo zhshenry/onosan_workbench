@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
-import { CheckSquareOffset, Flask, GearSix, Sparkle } from '@phosphor-icons/react';
-import { NAV, defaultViewOfWorkbench, ownerOfWorkbench, workbenchById, type WorkbenchDef, type WorkbenchId } from './nav';
+import { Flask, GearSix, Sparkle } from '@phosphor-icons/react';
+import { NAV, defaultViewOfWorkbench, ownerOfWorkbench, resolveView, workbenchById, type WorkbenchDef, type WorkbenchId } from './nav';
 import type { AvatarColor, UiTheme, ViewId } from '../shared/contracts';
 import { localDay, openToday, taskTime, type CopySource, type Task, type TaskInput } from '../shared/todo-contracts';
 import { isOverdue, meetingEndAt } from '../shared/todo-format';
@@ -11,7 +11,10 @@ import { AiPanel, type AiPanelContext, type AiSeed } from './views/AiPanel';
 import { chatContextScope, type AiScope } from '../shared/ai-scope';
 import { pageAiContext } from './ai-page-context';
 import { SettingsView } from './views/SettingsView';
+import { errorText } from './ui/controls';
+import { IslandMascot } from './ui/IslandMascot';
 import { TopbarUpdate } from './views/TopbarUpdate';
+import { AiSetupHint } from './views/AiSetupHint';
 import { BaziView } from '../modules/bazi/ui/BaziView';
 import { TaskEditor, type TaskEditorApi } from '../modules/todo/ui/TaskEditor';
 import { MediaBrowserHost } from './views/MediaBrowserHost';
@@ -63,6 +66,7 @@ export function App() {
   const toastTimer = useRef<number | undefined>(undefined);
   const todo = useTodoData();
   const topbarRef = useRef<HTMLElement>(null);
+  const aiTrigger = useRef<HTMLButtonElement>(null);
   const [homeEditor, setHomeEditor] = useState<Task | 'new' | null>(null);
   const [topbarEditorKind, setTopbarEditorKind] = useState<TaskInput['kind'] | null>(null);
   const [islandPop, setIslandPop] = useState<null | 'sched' | 'todo'>(null);
@@ -260,6 +264,7 @@ export function App() {
   };
 
   const switchView = (view: ViewId): void => {
+    view = resolveView(view);
     setRailMenu(null);
     setCurView(view);
     const owner = ownerOfWorkbench(view);
@@ -273,6 +278,18 @@ export function App() {
     setAiOpen(true);
     if (aiJob.status !== 'running') setAiJobs(previous => previous.filter(item => item.chatId !== aiJob.chatId));
   };
+
+  useEffect(() => window.workbench.island?.onNavigate(target => {
+    switchView(target.view);
+    if (target.taskId) void window.workbench.todo.state().then(data => {
+      const task = data.tasks.find(t => t.id === target.taskId && !t.deletedAt);
+      if (task) setHomeEditor(task);
+    }).catch(error => showToast(errorText(error)));
+    if (target.section) {
+      sessionStorage.setItem('island-settings-section', target.section);
+      window.dispatchEvent(new CustomEvent('island-settings-section', { detail: target.section }));
+    }
+  }));
 
   const activeWorkbench = workbenchById(curWb);
   const ActiveWorkbenchIcon = WB_ICONS[curWb];
@@ -561,8 +578,9 @@ export function App() {
         {aiJob && (!aiOpen || aiJob.chatId !== activeAiChatId) && <button className="ai-job-btn" title="返回生成的对话" onClick={returnToAiJob}>{aiJob.scope.module === 'copy' ? '博客' : aiJob.scope.module === 'bazi' ? '命理' : '助手'}{aiJob.status === 'running' ? '生成中' : aiJob.status === 'error' ? '请求失败' : '已完成'}</button>}
         {browserTask && ['running', 'paused', 'site-approval'].includes(browserTask.status) && curView !== (browserTask.workspace === 'xhs-creator' ? 'media-browser' : 'browser') && <button className="ai-job-btn" title="返回浏览器任务" onClick={() => switchView(browserTask.workspace === 'xhs-creator' ? 'media-browser' : 'browser')}>{browserTask.status === 'site-approval' ? '浏览器等待站点授权' : browserTask.status === 'paused' ? '浏览器已暂停' : '浏览器后台操作中'}</button>}
         <TopbarUpdate onOpen={() => setIslandPop(null)} />
-        <button className="ibtn float-topbar-btn" title={floatVisible ? '隐藏悬浮待办窗' : '打开悬浮待办窗'} aria-label={floatVisible ? '隐藏悬浮待办窗' : '打开悬浮待办窗'} aria-pressed={floatVisible} onClick={() => { setIslandPop(null); void window.workbench.float.toggle(); }}><CheckSquareOffset size={18} weight={floatVisible ? 'fill' : 'regular'} /></button>
-        <button className="ibtn ai-topbar-btn" title={aiToggleLabel} aria-label={aiToggleLabel} aria-expanded={aiOpen} aria-controls="workbench-ai-panel" data-background-running={backgroundAiRunning || undefined} onClick={() => setAiOpen(v => !v)}><Sparkle size={18} weight={aiOpen || backgroundAiRunning ? 'fill' : 'regular'} /></button>
+        <button className="ibtn float-topbar-btn" title={floatVisible ? '隐藏桌面灵动岛' : '打开桌面灵动岛'} aria-label={floatVisible ? '隐藏桌面灵动岛' : '打开桌面灵动岛'} aria-pressed={floatVisible} onClick={() => { setIslandPop(null); void window.workbench.float.toggle().catch(e => showToast(errorText(e))); }}><span className="topbar-mascot-icon" aria-hidden="true"><IslandMascot /></span></button>
+        <button ref={aiTrigger} className="ibtn ai-topbar-btn" title={aiToggleLabel} aria-label={aiToggleLabel} aria-expanded={aiOpen} aria-controls="workbench-ai-panel" data-background-running={backgroundAiRunning || undefined} onClick={() => setAiOpen(v => !v)}><Sparkle size={18} weight={aiOpen || backgroundAiRunning ? 'fill' : 'regular'} /></button>
+        <AiSetupHint trigger={aiTrigger} active={curView !== 'settings-ai'} onConfigure={() => { setAiOpen(false); switchView('settings-ai'); }} />
         <span className="vdiv" />
         <button type="button" className="avatar" data-avatar-color={profileAvatarColor} title={profileName} aria-label={`打开个人资料：${profileName}`} onClick={() => switchView('settings-profile')}>
           {profileName.trim().charAt(0).toUpperCase() || 'O'}

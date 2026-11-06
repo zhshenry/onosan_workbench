@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { NAV, workbenchAiContext } from '../src/nav';
+import { NAV, ownerOfWorkbench, resolveView, workbenchAiContext } from '../src/nav';
 import { pageAiContext, type PageAiSelection } from '../src/ai-page-context';
 
 const none: PageAiSelection = { copy: null, bazi: null, reading: null };
@@ -38,11 +38,19 @@ test('工作台页面的助手卡片主标签和对象行来自导航', () => {
     scope: { module: 'workbench', viewId: 'copy-publish' }, label: '自媒体工作台', object: '图文发布',
   });
   assert.deepEqual(pageAiContext('settings-general', none), {
-    scope: { module: 'workbench', viewId: 'settings-general' }, label: '设置', object: '通用',
+    scope: { module: 'workbench', viewId: 'settings-general' }, label: '设置', object: '通用&外观',
   });
   assert.deepEqual(pageAiContext('settings-ai', none), {
     scope: { module: 'workbench', viewId: 'settings-ai' }, label: '设置', object: 'AI 助手',
   });
+});
+
+test('历史设置路径归并到通用与外观，保留设置归属与助手名称', () => {
+  for (const view of ['settings-general', 'settings-appearance', 'settings-notifications'] as const) {
+    assert.equal(resolveView(view), 'settings-general');
+    assert.equal(ownerOfWorkbench(view), 'settings');
+    assert.deepEqual(workbenchAiContext(view), { label: '设置', object: '通用&外观' });
+  }
 });
 
 test('待办、博客、命理和阅读的专用名称不随工作台文案改动', () => {

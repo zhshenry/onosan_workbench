@@ -23,11 +23,8 @@ test('应用更新 v2 真实 React 行内展示、错误详情及现有动作隔
   let checkAction = () => Promise.resolve();
   let installAction = () => Promise.resolve();
   let checks = 0, installs = 0, unsubscribes = 0;
-  let directoryAction = () => Promise.resolve();
-  let libraryAction = () => Promise.resolve();
   Object.defineProperty(dom.window, 'workbench', { value: {
-    appInfo: { about: async () => ({ name: '个人工作台', version: '0.1.0', electron: '44.4.4', chrome: '152', userDataPath: 'synthetic', todoDbPath: 'synthetic' }),
-      openUserDataDir: () => directoryAction(), openTodoDir: () => libraryAction() },
+    appInfo: { about: async () => ({ name: '个人工作台', version: '0.1.0', electron: '44.4.4', chrome: '152', userDataPath: 'synthetic', todoDbPath: 'synthetic' }) },
     updater: { status: () => statusRead(), onStatus: (callback: (value: UpdateStatus) => void) => { listener = callback; return () => { listener = undefined; unsubscribes++; }; },
       check: () => { checks++; return checkAction(); }, install: () => { installs++; return installAction(); } },
   } });
@@ -136,7 +133,8 @@ test('应用更新 v2 真实 React 行内展示、错误详情及现有动作隔
     await emit(snapshot('latest')); assert.equal(row().querySelector('.set-update-details'), null);
     assert.equal(dom.window.document.querySelector('.settings-page > .help'), null);
     assert.doesNotMatch(dom.window.document.body.textContent ?? '', /零漂移/);
-    assert.match(dom.window.document.querySelector('[data-setting-key="todoDb"]')?.textContent ?? '', /与 To-Do-List 同库互通,两侧数据实时一致/);
+    assert.equal(dom.window.document.querySelector('[data-setting-key="userData"]'), null);
+    assert.equal(dom.window.document.querySelector('[data-setting-key="todoDb"]'), null);
     await emit(snapshot('ready'));
     installAction = async () => { throw new Error('合成安装调用失败'); };
     await click(action()); assert.equal(row().querySelector('.set-update-details')?.textContent, '合成安装调用失败');
@@ -156,20 +154,6 @@ test('应用更新 v2 真实 React 行内展示、错误详情及现有动作隔
     checkAction = () => Promise.resolve();
   });
 
-  await t.test('目录和共享库失败不被更新操作清除，也不冒充更新错误', async () => {
-    await emit(snapshot('latest'));
-    directoryAction = async () => { throw new Error('合成目录错误'); };
-    await click(dom.window.document.querySelector<HTMLElement>('[data-setting-key="userData"] button')!);
-    assert.equal(dom.window.document.querySelector('.settings-page > .error')?.textContent, '应用数据目录：合成目录错误');
-    await click(action());
-    assert.equal(dom.window.document.querySelector('.settings-page > .error')?.textContent, '应用数据目录：合成目录错误');
-    assert.equal(row().querySelector('.set-update-details'), null);
-    libraryAction = async () => { throw new Error('合成共享库错误'); };
-    await click(dom.window.document.querySelector<HTMLElement>('[data-setting-key="todoDb"] button')!);
-    assert.equal(dom.window.document.querySelector('.settings-page > .error')?.textContent, '待办共享库：合成共享库错误');
-    directoryAction = libraryAction = () => Promise.resolve();
-  });
-
   await t.test('搜索过滤整个更新行及进度/详情，清空搜索恢复且焦点返回输入', async () => {
     await emit(snapshot('downloading', { progress: 42 }));
     const input = dom.window.document.querySelector<HTMLInputElement>('[aria-label="搜索当前页设置"]')!;
@@ -177,7 +161,7 @@ test('应用更新 v2 真实 React 行内展示、错误详情及现有动作隔
       Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value')!.set!.call(input, text);
       input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
     });
-    await search('应用数据目录');
+    await search('个人工作台');
     assert.equal(dom.window.document.querySelector('.set-update-row'), null);
     assert.equal(dom.window.document.querySelector('progress'), null);
     await click(dom.window.document.querySelector<HTMLElement>('[aria-label="清空设置搜索"]')!);

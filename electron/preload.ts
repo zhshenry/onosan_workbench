@@ -1,8 +1,8 @@
-import type { WorkbenchApi } from '../shared/workbench-api';
+import type { AiConfig, WorkbenchApi } from '../shared/workbench-api';
 import type { ChatSession } from '../shared/todo-contracts';
 import type { MediaCaptureItem } from '../shared/media-capture-contracts';
 import type { BrowserTask, BrowserTabCommand } from '../shared/browser-automation-contracts';
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webUtils } from 'electron';
 
 const onAsk = (callback: (ask: { id: string; sessionId: string; question: string; options: { label: string; description?: string }[] }) => void): (() => void) => {
   const listener = (_event: unknown, ask: { id: string; sessionId: string; question: string; options: { label: string; description?: string }[] }): void => callback(ask);
@@ -68,6 +68,11 @@ const aiTest: WorkbenchApi['aiTest'] = {
 const ai: WorkbenchApi['ai'] = {
   openLink: (url: string): Promise<void> => ipcRenderer.invoke('ai:openLink', url),
   config: () => ipcRenderer.invoke('ai:config'),
+  onConfigChanged: callback => {
+    const listener = (_event: unknown, config: AiConfig): void => callback(config);
+    ipcRenderer.on('ai:config-changed', listener);
+    return () => ipcRenderer.off('ai:config-changed', listener);
+  },
   setEnabled: (enabled: boolean) => ipcRenderer.invoke('ai:setEnabled', { aiEnabled: enabled }),
   saveProvider: (input: unknown) => ipcRenderer.invoke('ai:provider:save', input),
   removeProvider: (id: string) => ipcRenderer.invoke('ai:provider:remove', id),
@@ -229,6 +234,38 @@ const clipboard = {
   write: (text: string): Promise<void> => ipcRenderer.invoke('clipboard:write', text),
 };
 
+const island: WorkbenchApi['island'] = {
+  state: () => ipcRenderer.invoke('island:state'),
+  patch: patch => ipcRenderer.invoke('island:patch', patch),
+  mode: (mode, reducedMotion) => ipcRenderer.invoke('island:mode', mode, reducedMotion),
+  pin: () => ipcRenderer.invoke('island:pin'),
+  hold: value => ipcRenderer.send('island:hold', value),
+  speechHeight: value => ipcRenderer.send('island:speechHeight', value),
+  onChanged: callback => { const listener = (_: unknown, state: import('../shared/island-contracts').IslandState) => callback(state); ipcRenderer.on('island:changed', listener); return () => ipcRenderer.off('island:changed', listener); },
+  onError: callback => { const listener = (_: unknown, message: string) => callback(message); ipcRenderer.on('island:error', listener); return () => ipcRenderer.off('island:error', listener); },
+  navigate: target => ipcRenderer.invoke('island:navigate', target),
+  onNavigate: callback => { const listener = (_: unknown, target: import('../shared/island-contracts').IslandNavigation) => callback(target); ipcRenderer.on('island:navigate', listener); return () => ipcRenderer.off('island:navigate', listener); },
+  displays: () => ipcRenderer.invoke('island:displays'),
+  filesAdd: (paths, directory) => ipcRenderer.invoke('island:filesAdd', paths, directory),
+  filePath: file => webUtils.getPathForFile(file),
+  fileIcon: id => ipcRenderer.invoke('island:fileIcon', id),
+  fileOpen: id => ipcRenderer.invoke('island:fileOpen', id),
+  fileDrag: id => ipcRenderer.send('island:fileDrag', id),
+  fileRelocate: id => ipcRenderer.invoke('island:fileRelocate', id),
+  filesRemove: id => ipcRenderer.invoke('island:filesRemove', id),
+  noteDraft: draft => ipcRenderer.invoke('island:noteDraft', draft),
+  noteSave: (text, id) => ipcRenderer.invoke('island:noteSave', text, id),
+  noteRemove: id => ipcRenderer.invoke('island:noteRemove', id),
+  focus: (action, minutes, taskId) => ipcRenderer.invoke('island:focus', action, minutes, taskId),
+  water: action => ipcRenderer.invoke('island:water', action),
+  dismiss: id => ipcRenderer.invoke('island:dismiss', id),
+  quotas: () => ipcRenderer.invoke('island:quotas'),
+  quotaRefresh: () => ipcRenderer.invoke('island:quotaRefresh'),
+  quotaConnect: (provider, key) => ipcRenderer.invoke('island:quotaConnect', provider, key),
+  quotaDisconnect: provider => ipcRenderer.invoke('island:quotaDisconnect', provider),
+  quotaOfficial: provider => ipcRenderer.invoke('island:quotaOfficial', provider),
+};
+
   const float = {
   toggle: (): Promise<boolean> => ipcRenderer.invoke('float:toggle'),
   show: (): Promise<void> => ipcRenderer.invoke('float:show'),
@@ -351,6 +388,7 @@ const api: WorkbenchApi = {
     };
   },
   todo,
+  island,
   reading,
   float,
   bazi,

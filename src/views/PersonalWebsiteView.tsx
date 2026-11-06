@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowClockwise, ArrowLeft, ArrowRight, ArrowSquareOut, CaretDown, CaretRight, CheckCircle, Circle, Desktop, FileText, Folder, FolderOpen, Globe, Play, Plus, Sparkle, Stop, TerminalWindow, DeviceMobile, WarningCircle } from '@phosphor-icons/react';
+import { ArrowClockwise, ArrowLeft, ArrowRight, ArrowSquareOut, CaretDown, CaretRight, CheckCircle, Circle, CornersIn, CornersOut, Desktop, FileText, FolderOpen, Globe, Play, Plus, SidebarSimple, Sparkle, Stop, TerminalWindow, DeviceMobile, WarningCircle } from '@phosphor-icons/react';
 import { emptyBrowserFrame } from '../../shared/browser-contracts';
 import { WEBSITE_COLLECTIONS, WebsiteSaveSchema, websitePreviewPath, type WebsiteCollection, type WebsiteContent, type WebsiteContentSummary, type WebsiteFields, type WebsiteSave, type WebsiteState } from '../../shared/personal-website-contracts';
 import { localDay } from '../../shared/todo-contracts';
-import { DatePicker, Modal, Select as WebsiteSelect, Segmented, errorText } from '../ui/controls';
+import { DatePicker, IconButton, Modal, Select as WebsiteSelect, Segmented, errorText } from '../ui/controls';
 import { GamePreview, type PreviewApi } from './GameView';
 import { GameOptionsMenu } from './GameOptionsMenu';
 import { GameOnlineAddress } from './GameOnlineTools';
@@ -26,7 +26,8 @@ export function PersonalWebsiteView({ active, onPending, onAskAI }: { active: bo
   const [state, setState] = useState<WebsiteState>();
   const [items, setItems] = useState<WebsiteContentSummary[]>([]), [document, setDocument] = useState<WebsiteContent>(), [draft, setDraft] = useState<WebsiteSave>();
   const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false), [failure, setFailure] = useState(''), [notice, setNotice] = useState('');
-  const [tab, setTab] = useState('edit'), [groups, setGroups] = useState<Record<WebsiteCollection, boolean>>({ works: true, blog: false, library: false });
+  const [previewMode, setPreviewMode] = useState<'split' | 'hidden' | 'expanded'>('split'), [compact, setCompact] = useState(false);
+  const [checksOpen, setChecksOpen] = useState(false), [groups, setGroups] = useState<Record<WebsiteCollection, boolean>>({ works: true, blog: false, library: false });
   const [viewport, setViewport] = useState('website-desktop'), [environment, setEnvironment] = useState('local'), [onlineEntered, setOnlineEntered] = useState(false);
   const [browser, setBrowser] = useState(emptyBrowserFrame), [onlineBrowser, setOnlineBrowser] = useState(emptyBrowserFrame);
   const [cover, setCover] = useState(''), [coverFailure, setCoverFailure] = useState('');
@@ -36,12 +37,25 @@ export function PersonalWebsiteView({ active, onPending, onAskAI }: { active: bo
   const [terminalOpen, setTerminalOpen] = useState(false), [terminalEntered, setTerminalEntered] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const localPreview = useRef<PreviewApi>(null), onlinePreview = useRef<PreviewApi>(null), readSequence = useRef(0), form = useRef<HTMLFormElement>(null);
+  const workspace = useRef<HTMLElement>(null), showPreview = useRef<HTMLButtonElement>(null), hidePreview = useRef<HTMLButtonElement>(null);
   const [sessionId] = useState(() => crypto.randomUUID());
   const dirty = !!draft && (!draft.version || !document || draft.version !== document.version || draft.body !== document.body || JSON.stringify(draft.fields) !== JSON.stringify(document.fields));
   const running = state?.service.phase === 'running', starting = state?.service.phase === 'starting', building = state?.build.phase === 'running';
   const collection = (draft?.id.split('/')[0] ?? 'works') as WebsiteCollection;
   const isOnline = environment === 'online', currentBrowser = isOnline ? onlineBrowser : browser, preview = isOnline ? onlinePreview : localPreview;
   const previewUrl = isOnline ? state?.onlineUrl || '' : state?.service.url ? new URL(websitePreviewPath(document), state.service.url).href : '';
+  const previewVisible = previewMode !== 'hidden' && (!compact || previewMode === 'expanded');
+  const checkStatus = building ? '构建中…' : state?.checks.phase === 'running' ? '检查中…' : state?.build.phase === 'failed' ? '构建失败' : state?.checks.phase === 'failed' ? '页面检查失败' : '';
+
+  useEffect(() => {
+    const observer = new ResizeObserver(([entry]) => { if (entry.contentRect.width > 0) setCompact(entry.contentRect.width < 900); });
+    observer.observe(workspace.current!); return () => observer.disconnect();
+  }, []);
+
+  function changePreview(mode: typeof previewMode) {
+    setPreviewMode(mode);
+    requestAnimationFrame(() => (mode !== 'hidden' && (!compact || mode === 'expanded') ? hidePreview : showPreview).current?.focus());
+  }
 
   useEffect(() => {
     let alive = true;
@@ -121,13 +135,15 @@ export function PersonalWebsiteView({ active, onPending, onAskAI }: { active: bo
     {fieldErrors[key] ? <span className="personal-field-error" id={`personal-${key}-error`}>{fieldErrors[key]}</span> : null}
   </div>;
 
-  return <section className="view on media-browser-view game-workspace personal-workspace" aria-label="个人网站内容工作室" data-tab={tab}>
-    <header className="game-project glass">
+  return <section ref={workspace} className="view on media-browser-view game-workspace personal-workspace" aria-label="个人网站内容工作室" data-preview={previewMode} data-preview-visible={previewVisible} onKeyDown={event => { if (event.key === 'Escape' && !event.defaultPrevented && previewMode === 'expanded' && !(event.target as HTMLElement).closest('dialog, [popover]')) { event.preventDefault(); changePreview('split'); } }}>
+    <header className="game-project personal-project glass">
       <Globe className="personal-project-icon" aria-hidden="true" />
-      <div className="game-project-name"><div className="game-project-heading"><strong>个人网站</strong><span className={`game-service ${running ? 'is-ready' : ''}`} data-phase={state?.service.phase} role="status"><Circle weight="fill" size={9} />{state?.service.message || '正在读取项目…'}</span></div><span title={state?.root}>{state?.root || 'C:/Myself/Personal_Website'}</span></div>
+      <div className="game-project-name" title={state?.root || 'C:/Myself/Personal_Website'}><div className="game-project-heading"><strong>个人网站</strong><span className={`game-service ${running ? 'is-ready' : ''}`} data-phase={state?.service.phase} role="status" title={state?.service.message}><Circle weight="fill" size={9} />{state?.service.message || '正在读取项目…'}</span></div></div>
+      {checkStatus ? <button type="button" className="personal-check-status" data-failed={!building && state?.checks.phase !== 'running'} onClick={() => setChecksOpen(true)}>{building || state?.checks.phase === 'running' ? <Circle weight="fill" /> : <WarningCircle />}{checkStatus}</button> : null}
       <div className="game-project-actions"><button type="button" className="game-primary" disabled={busy || starting} onClick={() => { void act(async () => setState(await (running ? api().stop() : api().start()))); }}>{running ? <Stop /> : <Play />}{running ? '停止' : starting ? '正在启动…' : '启动本地'}</button>
         <button type="button" aria-expanded={terminalOpen} aria-controls="personal-site-terminal" onClick={() => { setTerminalEntered(true); setTerminalOpen(value => !value); }}><TerminalWindow />终端</button>
         <GameOptionsMenu kind="project" active={active} label="个人网站更多功能">{close => <>
+          <button type="button" role="menuitem" onClick={() => { close(); setChecksOpen(true); }}><CheckCircle />网站检查</button>
           <button type="button" role="menuitem" onClick={() => { close(); void act(() => api().openFolder()); }}><FolderOpen />打开项目目录</button>
           <button type="button" role="menuitem" onClick={() => { close(); setAddressOpen(true); }}><Globe />设置正式网页地址</button>
           <button type="button" role="menuitem" onClick={() => { close(); setLogs('dev'); }}><TerminalWindow />查看开发日志</button>
@@ -135,19 +151,18 @@ export function PersonalWebsiteView({ active, onPending, onAskAI }: { active: bo
         </>}</GameOptionsMenu>
       </div>
     </header>
-    <div className="personal-tabs"><Segmented aria-label="个人网站工作区" value={tab} onChange={setTab} options={[{ value: 'edit', label: '内容编辑' }, { value: 'preview', label: '网页预览' }, { value: 'checks', label: '页面检查' }]} /></div>
     {failure ? <div className="personal-error" role="alert"><WarningCircle /><span>{failure}</span><button type="button" onClick={() => setFailure('')}>收起</button></div> : null}
     <div className="personal-body">
-      <section className="personal-content glass" aria-label="网站内容编辑" hidden={tab !== 'edit'} inert={tab !== 'edit'}>
-        <aside className="personal-tree" aria-label="网站内容目录"><div className="personal-tree-heading"><strong>网站内容</strong><button type="button" disabled={busy || loading} onClick={() => guard(() => setNewOpen(true))}><Plus />新建内容</button></div>
+      <section className="personal-content glass" aria-label="网站内容编辑" hidden={previewMode === 'expanded'} inert={previewMode === 'expanded'}>
+        <aside className="personal-tree" aria-label="网站内容目录"><div className="personal-tree-heading"><strong>网站内容</strong><IconButton label="新建内容" disabled={busy || loading} onClick={() => guard(() => setNewOpen(true))}><Plus /></IconButton></div>
           {collectionOptions.map(({ value, label }) => { const key = value as WebsiteCollection, entries = items.filter(item => item.collection === key); return <div className="personal-tree-group" key={key}>
-            <button type="button" className="personal-folder" aria-expanded={groups[key]} onClick={() => setGroups(previous => ({ ...previous, [key]: !previous[key] }))}>{groups[key] ? <CaretDown /> : <CaretRight />}<Folder />{label}<span>{entries.length}</span></button>
+            <button type="button" className="personal-folder" aria-expanded={groups[key]} onClick={() => setGroups(previous => ({ ...previous, [key]: !previous[key] }))}>{groups[key] ? <CaretDown /> : <CaretRight />}{label}{entries.length ? <span>{entries.length}</span> : null}</button>
             {groups[key] ? <div className="personal-tree-items">{entries.map(item => <button type="button" key={item.id} disabled={busy || loading} aria-current={draft?.id === item.id ? 'true' : undefined} title={`src/content/${item.id}`} onClick={() => { if (draft?.id !== item.id) guard(() => { void select(item.id); }); }}><FileText /><span>{item.title}</span>{item.error ? <WarningCircle /> : null}</button>)}{!entries.length ? <p>暂无{label}，可新建内容。</p> : null}</div> : null}
           </div>; })}
         </aside>
         <div className="personal-editor">
+          <header className="personal-editor-heading"><div className="personal-editor-identity"><div><strong>{draft ? `${WEBSITE_COLLECTIONS[collection]} / ${draft.fields.title || '未命名'}` : '内容编辑'}</strong>{draft ? <span className="personal-save-state" data-dirty={dirty} role="status"><Circle weight="fill" size={7} />{busy ? '处理中…' : dirty ? '未保存' : '已保存'}</span> : null}</div>{draft ? <span title={`src/content/${draft.id}`}>src/content/{draft.id}</span> : null}</div><button ref={showPreview} type="button" className="personal-show-preview" hidden={previewVisible} aria-controls="personal-site-preview" aria-expanded={previewVisible} onClick={() => changePreview(compact ? 'expanded' : 'split')}><SidebarSimple />显示预览</button></header>
           {loading ? <div className="personal-empty" role="status">正在读取内容…</div> : draft && document ? <>
-            <header className="personal-editor-heading"><div><strong>{WEBSITE_COLLECTIONS[collection]} / {draft.fields.title || '未命名'}</strong><span className="personal-save-state" data-dirty={dirty} role="status"><Circle weight="fill" size={7} />{busy ? '处理中…' : dirty ? '未保存' : '已保存'}</span></div><span title={`src/content/${draft.id}`}>src/content/{draft.id}</span></header>
             <form ref={form} id="personal-content-form" className="personal-form" noValidate onSubmit={event => { event.preventDefault(); void save(); }}>
               <fieldset disabled={busy}>
                 {textField('title', '标题')}
@@ -165,16 +180,8 @@ export function PersonalWebsiteView({ active, onPending, onAskAI }: { active: bo
           </> : <div className="personal-empty"><FileText size={32} /><h2>从内容开始</h2><p>选择作品、博客或文库，开始编辑。</p><button type="button" onClick={() => setNewOpen(true)}><Plus />新建内容</button></div>}
         </div>
       </section>
-      <section className="personal-checks glass" aria-label="个人网站检查" hidden={tab !== 'checks'} inert={tab !== 'checks'}>
-        <header><h2>页面检查</h2><p>构建与页面可访问性分别检查，结果来自实际运行。</p></header>
-        <div className="personal-check-block"><div><strong>构建检查</strong><span>{state?.build.message || '尚未构建'}</span></div><button type="button" className="personal-primary" disabled={building} onClick={() => { void api().build().then(setState, error => setFailure(errorText(error))); }}><Play />{building ? '正在构建…' : '运行构建'}</button>{building ? <button type="button" onClick={() => { void act(() => api().cancelBuild()); }}>取消构建</button> : null}<small>上次完成：{timestamp(state?.build.finishedAt)}</small><button type="button" onClick={() => setLogs('build')}>查看构建日志</button></div>
-        <div className="personal-check-block"><div><strong>页面可访问性</strong><span>首页、作品、博客、文库和关于</span></div><button type="button" disabled={!running || state?.checks.phase === 'running'} onClick={() => { void api().checkPages().then(setState, error => setFailure(errorText(error))); }}><ArrowClockwise />{state?.checks.phase === 'running' ? '正在检查…' : '检查页面'}</button><small>上次完成：{timestamp(state?.checks.finishedAt)}</small>
-          {state?.checks.results.map(item => <div className="personal-check-result" data-status={item.status} key={item.path}>{item.status === 'passed' ? <CheckCircle /> : <WarningCircle />}<span>{item.label}<small>{item.message}</small></span></div>)}
-          <p>验证页面 HTTP 响应，不代表布局、交互或全部链接已通过测试。</p>
-        </div>
-      </section>
-      <section className="personal-preview glass" aria-label="个人网站实时预览">
-        <header className="personal-preview-heading"><strong>{isOnline ? '正式网页' : '实时预览'}</strong><Segmented aria-label="预览设备" value={viewport} onChange={setViewport} options={[{ value: 'website-desktop', label: '桌面', icon: <Desktop /> }, { value: 'narrow', label: '手机', icon: <DeviceMobile /> }]} /><button type="button" className="personal-online" aria-pressed={isOnline} onClick={() => { if (!state?.onlineUrl) setAddressOpen(true); else { setEnvironment(isOnline ? 'local' : 'online'); setOnlineEntered(true); } }}>{isOnline ? '返回开发预览' : state?.onlineUrl ? '正式网页' : '正式网页 · 未配置'}</button></header>
+      <section id="personal-site-preview" className="personal-preview glass" aria-label="个人网站实时预览" hidden={!previewVisible} inert={!previewVisible}>
+        <header className="personal-preview-heading"><strong>{isOnline ? '正式网页' : '实时预览'}</strong><Segmented aria-label="预览设备" value={viewport} onChange={setViewport} options={[{ value: 'website-desktop', label: '桌面', icon: <Desktop /> }, { value: 'narrow', label: '手机', icon: <DeviceMobile /> }]} /><button type="button" className="personal-online" aria-pressed={isOnline} title={isOnline ? '返回本地开发预览' : state?.onlineUrl || '尚未配置正式网页，点击设置地址'} onClick={() => { if (!state?.onlineUrl) setAddressOpen(true); else { setEnvironment(isOnline ? 'local' : 'online'); setOnlineEntered(true); } }}>{isOnline ? '开发预览' : '正式网页'}</button><button type="button" className="game-icon-button" aria-label={previewMode === 'expanded' ? '返回编辑' : '展开预览'} title={previewMode === 'expanded' ? '返回编辑' : '展开预览'} aria-pressed={previewMode === 'expanded'} onClick={() => changePreview(previewMode === 'expanded' ? 'split' : 'expanded')}>{previewMode === 'expanded' ? <CornersIn /> : <CornersOut />}</button><button ref={hidePreview} type="button" className="game-icon-button" aria-label="收起预览" title="收起预览" aria-controls="personal-site-preview" aria-expanded={previewVisible} onClick={() => changePreview('hidden')}><SidebarSimple /></button></header>
         <div className="game-preview-toolbar"><button type="button" className="game-icon-button" title="后退" aria-label="后退" disabled={!currentBrowser.canGoBack} onClick={() => preview.current?.back()}><ArrowLeft /></button><button type="button" className="game-icon-button" title="前进" aria-label="前进" disabled={!currentBrowser.canGoForward} onClick={() => preview.current?.forward()}><ArrowRight /></button><button type="button" className="game-icon-button" title="刷新预览" aria-label="刷新预览" disabled={!previewUrl} onClick={() => preview.current?.reload()}><ArrowClockwise /></button><span className="game-address" title={currentBrowser.target?.url || previewUrl}>{currentBrowser.target?.url || previewUrl || '开发预览未启动'}</span><button type="button" className="game-icon-button" title="在外部浏览器打开" aria-label="在外部浏览器打开" disabled={!previewUrl} onClick={() => { void act(() => api().openExternal(currentBrowser.target?.url || previewUrl)); }}><ArrowSquareOut /></button></div>
         <div className="personal-preview-surface" hidden={isOnline} inert={isOnline}>{running && state ? <GamePreview url={new URL(websitePreviewPath(document), state.service.url).href} workspace="personal-website" tabId={`personal-website-${sessionId}`} viewport={viewport} apiRef={localPreview} onState={setBrowser} /> : <div className="personal-empty"><Globe size={40} /><h2>个人网站</h2><p>{state?.service.message || '正在读取项目…'}</p><button type="button" disabled={starting || busy} onClick={() => { void act(async () => setState(await api().start())); }}><Play />启动开发预览</button><button type="button" onClick={() => setLogs('dev')}>查看开发日志</button></div>}</div>
         <div className="personal-preview-surface" hidden={!isOnline} inert={!isOnline}>{onlineEntered && state?.onlineUrl ? <GamePreview url={state.onlineUrl} workspace="personal-website-online" tabId={`personal-website-online-${sessionId}`} viewport={viewport} apiRef={onlinePreview} onState={setOnlineBrowser} /> : null}</div>
@@ -183,6 +190,16 @@ export function PersonalWebsiteView({ active, onPending, onAskAI }: { active: bo
       </section>
     </div>
     {terminalEntered ? <GameTerminalPanel id="personal-site-terminal" bridge={api().terminal} active={active} open={terminalOpen} close={() => setTerminalOpen(false)} onPending={onPending} /> : null}
+    {checksOpen ? <Modal title="网站检查" className="personal-checks-drawer" close={() => setChecksOpen(false)} subhead={<p>构建与页面可访问性分别检查，结果来自实际运行。</p>}>
+      <div className="personal-checks">
+        {failure ? <p className="personal-field-error" role="alert">{failure}</p> : null}
+        <section className="personal-check-block"><div><strong>构建检查</strong><span role="status" data-phase={state?.build.phase}>{state?.build.message || '尚未构建'}</span></div><button type="button" disabled={building} aria-busy={building} onClick={() => { setFailure(''); void api().build().then(setState, error => setFailure(errorText(error))); }}><Play />{building ? '正在构建…' : '运行构建'}</button>{building ? <button type="button" onClick={() => { void act(() => api().cancelBuild()); }}>取消构建</button> : null}<small>上次完成：{timestamp(state?.build.finishedAt)}</small><button type="button" onClick={() => setLogs('build')}>查看构建日志</button></section>
+        <section className="personal-check-block"><div><strong>页面可访问性</strong><span role="status" data-phase={state?.checks.phase}>{state?.checks.phase === 'running' ? '正在检查…' : state?.checks.phase === 'passed' ? '全部通过' : state?.checks.phase === 'failed' ? '检查未通过' : '尚未运行'}</span></div><button type="button" disabled={!running || state?.checks.phase === 'running'} aria-busy={state?.checks.phase === 'running'} onClick={() => { setFailure(''); void api().checkPages().then(setState, error => setFailure(errorText(error))); }}><ArrowClockwise />{state?.checks.phase === 'running' ? '正在检查…' : '检查页面'}</button><small>上次完成：{timestamp(state?.checks.finishedAt)}</small>
+          {state?.checks.results.map(item => <div className="personal-check-result" data-status={item.status} key={item.path}>{item.status === 'passed' ? <CheckCircle /> : <WarningCircle />}<span>{item.label}<small>{item.message}</small></span></div>)}
+          <p>验证页面 HTTP 响应，不代表布局、交互或全部链接已通过测试。</p>
+        </section>
+      </div><footer className="personal-checks-footer"><button type="button" onClick={() => setChecksOpen(false)}>关闭</button></footer>
+    </Modal> : null}
     {newOpen ? <NewWebsiteContent close={() => setNewOpen(false)} create={newContent} existing={items.map(item => item.id)} /> : null}
     {discard ? <Modal title="放弃当前未保存的修改？" className="personal-discard-modal" close={() => setDiscard(null)}><p>切换内容前，可以继续编辑并保存当前草稿。</p><div className="actions"><button type="button" autoFocus onClick={() => setDiscard(null)}>继续编辑</button><button type="button" className="danger" onClick={() => { const next = discard; setDiscard(null); next(); }}>放弃修改</button></div></Modal> : null}
     {addressOpen ? <GameOnlineAddress variant="website" url={state?.onlineUrl || ''} close={() => setAddressOpen(false)} save={async url => { const next = await api().configureOnline(url); setState(next); setOnlineBrowser(emptyBrowserFrame()); setEnvironment(next.onlineUrl ? 'online' : 'local'); setOnlineEntered(!!next.onlineUrl); }} /> : null}

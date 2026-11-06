@@ -134,7 +134,7 @@ export async function runAiCardsPilot({ application, page, check, screenshot, ru
       await separator.focus(); for (let i = 0; i < 10; i++) await page.keyboard.press('ArrowRight');
       for (const [theme, label] of [['mist', '雾灰 · 轻雾'], ['cool', '冷灰 · 凝霜'], ['warm', '暖砂 · 柔雾']]) {
         await closePanel(page); await page.locator('.rail [data-workbench="settings"]').click();
-        await page.locator('.tree').getByRole('button', { name: '外观', exact: true }).click(); await page.getByRole('radio', { name: label, exact: true }).click();
+        await page.locator('.tree').getByRole('button', { name: '通用&外观', exact: true }).click(); await page.getByRole('radio', { name: label, exact: true }).click();
         await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, theme);
         const win = await application.browserWindow(page); await win.evaluate(win => win.setContentSize(1024, 680));
         await home(page); await openPanel(page);

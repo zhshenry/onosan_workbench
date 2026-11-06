@@ -1,7 +1,7 @@
 {
   "name": "onosan-workbench",
   "productName": "Ono Workbench",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "个人工作台 — 待办/日程、文档中心、内置浏览器与可生长的工作台模块",
   "type": "module",
   "main": "dist-electron/main.cjs",
@@ -19,6 +19,7 @@
     "test": "tsx --test tests/*.test.ts",
     "jev:accept": "node tooling/jev-gate.mjs --gate accept",
     "accept:float": "node tooling/accept-float.mjs",
+    "test:island": "npm run build && node tooling/island-pilot.mjs",
     "test:windows-pilot": "node tooling/windows-pilot.mjs",
     "test:browser": "npm run build && node tooling/browser-automation-pilot.mjs",
     "postinstall": "node tooling/patch-excel.mjs",

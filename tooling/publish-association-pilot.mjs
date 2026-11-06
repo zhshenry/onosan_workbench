@@ -588,9 +588,9 @@ export async function runPublishAssociationPilot({ application, page, check, scr
     for (const entry of PUBLISH_ASSOCIATION_MATRIX) {
       await page.locator('.rail [data-workbench="settings"]').click();
       await settledNavigation(page, 'settings');
-      await page.locator('.snav:not(.closing) .tree[data-switching="false"]').getByRole('button', { name: '外观', exact: true }).click();
+      await page.locator('.snav:not(.closing) .tree[data-switching="false"]').getByRole('button', { name: '通用&外观', exact: true }).click();
       await settledNavigation(page, 'settings', '外观');
-      await page.locator('.content').getByRole('heading', { name: '外观', exact: true }).waitFor({ state: 'visible' });
+      await page.locator('.content').getByRole('heading', { name: '通用&外观', exact: true }).waitFor({ state: 'visible' });
       const themeLabel = { mist: '雾灰 · 轻雾', cool: '冷灰 · 凝霜', warm: '暖砂 · 柔雾' }[entry.theme];
       await page.getByRole('radio', { name: themeLabel, exact: true }).click();
       await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, entry.theme);

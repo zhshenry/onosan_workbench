@@ -254,7 +254,6 @@ test('narrow float bar keeps the wide left anchor and width requests honor reduc
 test('collapsed float chrome keeps the expanded top bar metrics', () => {
   const view = readFileSync('src/views/FloatTodo.tsx', 'utf8');
   const css = readFileSync('src/shell.css', 'utf8');
-  const contract = readFileSync('UX-CONTRACT.md', 'utf8');
   assert.match(view, /<header className=\{collapsed \? 'float-bar float-mini-bar' : 'float-bar'\}>/);
   assert.match(view, /<LogoMark size=\{40\} \/>/);
   assert.match(view, /<PushPin size=\{19\}/);
@@ -275,8 +274,6 @@ test('collapsed float chrome keeps the expanded top bar metrics', () => {
     if (!collapsedChrome) continue;
     assert.doesNotMatch(body, /(?:^|[^-\w])(?:height|width|font-size|gap|padding)\s*:/, `collapsed chrome must not restyle ${selector.trim()}`);
   }
-  assert.match(contract, /展开与收起共用 52px 标题栏、40px Logo、16px\/600「待办」和 30px 按钮/);
-  assert.doesNotMatch(contract, /收起标题栏40px/);
 });
 
 test('collapsed mini body fits the 176px window under the shared 52px bar', () => {

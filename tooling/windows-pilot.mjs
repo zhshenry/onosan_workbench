@@ -6,7 +6,7 @@ import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { _electron as electron } from 'playwright';
 import { runAiCardsPilot, verifyAiCardsRelaunch } from './ai-cards-pilot.mjs';
-import { runFloatEmptyPilot, runFloatGroupPilot, verifyFloatGroupRelaunch } from './float-group-pilot.mjs';
+import { openInstalledIsland, runIslandEmptyPilot, runIslandPilot, verifyIslandRelaunch } from './island-installed-pilot.mjs';
 import { runContextPickerPilot, verifyContextPickerRelaunch } from './context-picker-pilot.mjs';
 import { runMediaKeepalivePilot, prepareMediaKeepaliveQuit, verifyMediaKeepaliveRelaunch } from './media-keepalive-pilot.mjs';
 import { inspectPilotArtifacts } from './pilot-artifacts.mjs';
@@ -125,20 +125,8 @@ async function normalExit(label, trigger) {
     application = undefined; page = undefined;
   } finally { clearTimeout(timer); child.removeListener('exit', onExit); }
 }
-async function showLifecycleFloat() {
-  await page.locator('.topbar').getByRole('button', { name: '打开悬浮待办窗', exact: true }).click();
-  const started = Date.now(); let floating;
-  while (!floating && Date.now() - started < 15000) {
-    floating = application.windows().find(candidate => !candidate.isClosed() && /[?&]window=float(?:&|$)/.test(candidate.url()));
-    if (!floating) await page.waitForTimeout(100);
-  }
-  assert.ok(floating, 'Normal toolbar must create the real floating page');
-  floating.setDefaultTimeout(15000);
-  floating.on('pageerror', error => report.errors.push(`float lifecycle: ${error.message}`));
-  await floating.locator('.float-app').waitFor({ state: 'visible' });
-  const native = await application.browserWindow(floating);
-  assert.equal(await native.evaluate(win => win.isVisible()), true, 'Floating native window must be shown at exit');
-  return { floating, native };
+async function showLifecycleIsland() {
+  return openInstalledIsland({ application, page, report });
 }
 async function doneLibrary() {
   const home = page.locator('#view-home');
@@ -152,7 +140,7 @@ let taskId;
 let birthdayFixture;
 let aiCardsFixture;
 let topbarDatesFixture;
-let floatGroupFixture;
+let islandFixture;
 let contextPickerFixture;
 let publishAssociationFixture;
 try {
@@ -168,7 +156,7 @@ try {
     assert.equal((await state()).tasks.length, 0);
   });
   await screenshot('initial.png');
-  await runFloatEmptyPilot({ application, page, check, screenshot, report });
+  await runIslandEmptyPilot({ application, page, check, screenshot, report });
   await check('Collapse default AI overlay through its normal toolbar control', async () => {
     await page.locator('.topbar').getByRole('button', { name: '收起 AI 助手', exact: true }).click();
     await page.locator('#workbench-ai-panel').waitFor({ state: 'hidden' });
@@ -217,14 +205,14 @@ try {
   birthdayFixture = await runYearDropdownPilot({ application, page, check, screenshot, runId, report });
   topbarDatesFixture = await runTopbarDatesPilot({ application, page, check, screenshot, runId, report });
   aiCardsFixture = await runAiCardsPilot({ application, page, check, screenshot, runId, report });
-  floatGroupFixture = await runFloatGroupPilot({ application, page, check, screenshot, runId, report });
+  islandFixture = await runIslandPilot({ application, page, check, screenshot, runId, report });
   contextPickerFixture = await runContextPickerPilot({ application, page, check, screenshot, runId, report, birthdayFixture });
   publishAssociationFixture = await runPublishAssociationPilot({ application, page, check, screenshot, runId, report, dataRoot });
   await runUpdateStatusPilot({ application, page, check, screenshot, report });
   await runMediaKeepalivePilot({ application, page, check, screenshot, report });
   await check('Choose exit-on-close in settings and quit through the window close button', async () => {
     await page.locator('.rail [data-workbench="settings"]').click();
-    await page.locator('.tree').getByRole('button', { name: '通用', exact: true }).click();
+    await page.locator('.tree').getByRole('button', { name: '通用&外观', exact: true }).click();
     await page.getByRole('button', { name: '退出应用', exact: true }).click();
     await page.waitForFunction(() => window.workbench.settings.get().then(value => value.closeAction === 'exit'));
     await prepareMediaKeepaliveQuit({ application, page, report });
@@ -252,34 +240,37 @@ try {
   await verifyAiCardsRelaunch({ page, check, screenshot, fixture: aiCardsFixture });
   await verifyContextPickerRelaunch({ application, page, check, screenshot, fixture: contextPickerFixture });
   await verifyTopbarDatesRelaunch({ page, check, screenshot, fixture: topbarDatesFixture });
-  await verifyFloatGroupRelaunch({ application, page, check, screenshot, fixture: floatGroupFixture });
+  await verifyIslandRelaunch({ application, page, check, screenshot, report, fixture: islandFixture });
   await verifyPublishAssociationRelaunch({ application, page, check, fixture: publishAssociationFixture, report });
-  await check('Floating group: visible native window permits normal main-window exit', async () => {
-    const { floating, native } = await showLifecycleFloat();
-    await floating.getByRole('button', { name: '收窄悬浮窗', exact: true }).click();
-    await floating.waitForFunction(() => document.querySelector('.float-app')?.classList.contains('narrow'));
-    assert.equal(await native.evaluate(win => win.getBounds().width), 330);
+  await check('Desktop island: visible native window permits normal main-window exit', async () => {
+    const { island, native } = await showLifecycleIsland();
+    if (await island.locator('.island-summary').count()) await island.locator('.island-summary').hover();
+    await island.locator('.desktop-island.is-expanded').waitFor();
+    assert.equal(await native.evaluate(win => win.getBounds().width), 580);
     assert.equal(await native.evaluate(win => win.isVisible()), true);
     await page.bringToFront();
     await normalExit('visible floating window', () => page.locator('.wbtn.close').click());
   });
-  await check('Floating group: repeated same-version relaunch preserves task and resets width to 440', async () => {
+  await check('Desktop island: repeated same-version relaunch preserves task and collapsed mode', async () => {
     await launch();
     const persisted = (await state()).tasks.filter(task => task.id === taskId);
     assert.equal(persisted.length, 1);
     assert.equal(persisted[0].title, editedTitle); assert.equal(persisted[0].note, note); assert.equal(persisted[0].status, 'done');
     assert.equal((await page.evaluate(() => window.workbench.settings.get())).closeAction, 'exit');
-    const { native } = await showLifecycleFloat();
-    assert.equal(await native.evaluate(win => win.getBounds().width), 440);
+    const { island, native } = await showLifecycleIsland();
+    await island.mouse.move(-10, -10);
+    await island.locator('.desktop-island.is-collapsed').waitFor();
+    assert.equal(await native.evaluate(win => win.getBounds().width), 580);
   });
-  await check('Floating group: repeated hide-show lifecycle still permits normal main-window exit', async () => {
+  await check('Desktop island: repeated hide-show lifecycle still permits normal main-window exit', async () => {
     for (let cycle = 0; cycle < 2; cycle++) {
       const floating = application.windows().find(candidate => /[?&]window=float(?:&|$)/.test(candidate.url()));
       assert.ok(floating);
       const native = await application.browserWindow(floating);
-      await floating.getByRole('button', { name: '隐藏悬浮待办窗', exact: true }).click();
+      if (await floating.locator('.island-summary').count()) await floating.locator('.island-summary').hover();
+      await floating.getByRole('button', { name: '隐藏桌面灵动岛', exact: true }).click();
       assert.equal(await native.evaluate(win => win.isVisible()), false);
-      await showLifecycleFloat();
+      await showLifecycleIsland();
     }
     await page.bringToFront();
     await normalExit('repeated floating lifecycle', () => page.locator('.wbtn.close').click());

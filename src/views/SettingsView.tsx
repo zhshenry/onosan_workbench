@@ -1,23 +1,24 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { X } from '@phosphor-icons/react';
 import type { AppSettings, AppSettingsPatch, AvatarColor, TodoDbInfo, UiTheme, UpdateStatus, ViewId } from '../../shared/contracts';
+import { resolveView } from '../nav';
 import { errorText, IconButton, Select as TodoSelect } from '../ui/controls';
 import { AiSettings } from './AiSettings';
+import { IslandSettingsSection } from './IslandSettings';
 
 const wb = window.workbench;
 
 // ---------- 分区元信息(页头标题) ----------
 const SECTION_META: Partial<Record<ViewId, { title: string; sub: string }>> = {
   'settings-profile': { title: '个人资料', sub: '称呼与头像,只用于界面展示,存在本机' },
-  'settings-general': { title: '通用', sub: '启动、窗口行为与待办提醒' },
-  'settings-appearance': { title: '外观', sub: '界面主题与观感' },
+  'settings-general': { title: '通用&外观', sub: '启动、窗口行为、待办提醒与界面主题' },
+  'settings-island': { title: '桌面灵动岛', sub: '设置桌面窗口、页面与提醒' },
   'settings-ai': { title: 'AI 助手', sub: '管理对话模型与决策模型配置' },
-  'settings-data': { title: '待办与数据', sub: '与 To-Do-List 的共享库状态(只读展示)' },
-  'settings-notifications': { title: '通用', sub: '启动、窗口行为与待办提醒' },
-  'settings-about': { title: '关于', sub: '版本与数据位置' },
+  'settings-data': { title: '待办与数据', sub: '应用数据目录与待办共享库状态' },
+  'settings-about': { title: '关于', sub: '版本与应用更新' },
 };
 
-interface RowSpec {
+export interface RowSpec {
   key: string;
   title: string;
   desc: string;
@@ -31,7 +32,7 @@ interface RowSpec {
 const matches = (query: string, row: { title: string; desc: string }): boolean =>
   !query.trim() || row.title.includes(query.trim()) || row.desc.includes(query.trim());
 
-function Rows({ rows, query }: { rows: RowSpec[]; query: string }) {
+export function Rows({ rows, query }: { rows: RowSpec[]; query: string }) {
   const visible = rows.filter((r) => matches(query, r));
   if (!visible.length) return <p className="set-empty" role="status">没有匹配的设置</p>;
   return (
@@ -79,9 +80,17 @@ function useAppSettings() {
   return { settings, error, apply };
 }
 
-// ---------- 通用 ----------
-function GeneralSection({ query }: {
+// ---------- 通用与外观 ----------
+const THEME_OPTIONS: { value: UiTheme; label: string; desc: string; swatches: string[] }[] = [
+  { value: 'mist', label: '雾灰 · 轻雾', desc: '默认 · 中性珍珠灰', swatches: ['#e9eaee', '#f7f8fa', '#dce2e9', '#232529'] },
+  { value: 'cool', label: '冷灰 · 凝霜', desc: '冷灰蓝 · 清透分层', swatches: ['#b5c9e6', '#e5eefb', '#8ea9d1', '#232529'] },
+  { value: 'warm', label: '暖砂 · 柔雾', desc: '暖砂灰 · 乳白玻璃', swatches: ['#eee8e3', '#fffaf5', '#e8cfc4', '#232529'] },
+];
+
+function GeneralAppearanceSection({ query, uiTheme, onUiThemeChange }: {
   query: string;
+  uiTheme: UiTheme;
+  onUiThemeChange(theme: UiTheme): void;
 }) {
   const { settings, error, apply } = useAppSettings();
 
@@ -123,14 +132,30 @@ function GeneralSection({ query }: {
       desc: '界面显示语言,更多语言包规划中',
       control: <span className="set-value">简体中文</span>,
     },
+    {
+      key: 'uiTheme',
+      title: '界面主题',
+      desc: '全局色场与玻璃质感,即时生效;布局与按钮位置不受影响',
+      control: (
+        <div className="theme-pick" role="radiogroup" aria-label="界面主题">
+          {THEME_OPTIONS.map((t) => (
+            <button key={t.value} type="button" className={uiTheme === t.value ? 'theme-card on' : 'theme-card'}
+              role="radio" aria-checked={uiTheme === t.value} aria-label={t.label}
+              onClick={() => { if (uiTheme !== t.value) apply({ uiTheme: t.value }, () => onUiThemeChange(t.value)); }}>
+              <span className="sw">{t.swatches.map((c, i) => <i key={i} style={{ background: c }} />)}</span>
+              <b>{t.label}</b>
+              <span>{t.desc}</span>
+            </button>
+          ))}
+        </div>
+      ),
+    },
   ] : [];
 
   return (
     <>
       <Rows rows={rows} query={query} />
       {error && <p className="error" role="alert">{error}</p>}
-      {settings && <p className="help">设置即时生效并自动保存。关闭行为中的「退出应用」仍会保留托盘提醒开关,需从托盘菜单彻底退出。</p>}
-      {settings && <p className="help">提醒由常驻托盘的轮询驱动,关闭后不再弹窗;更改在下一轮询周期(约 15 秒)内生效。</p>}
       {!settings && !error && <p className="help" role="status">正在读取设置…</p>}
     </>
   );
@@ -211,58 +236,12 @@ function ProfileSection({ query, onAvatarColorChange }: {
     <>
       <Rows rows={rows} query={query} />
       {error && <p className="error" role="alert">{error}</p>}
-      {settings && <p className="help">资料保存在本机应用数据,不与任何账户或 To-Do-List 同步。</p>}
       {!settings && !error && <p className="help" role="status">正在读取设置…</p>}
     </>
   );
 }
 
-// ---------- 外观(雾灰轻雾默认,冷灰凝霜与暖砂柔雾可选) ----------
-const THEME_OPTIONS: { value: UiTheme; label: string; desc: string; swatches: string[] }[] = [
-  { value: 'mist', label: '雾灰 · 轻雾', desc: '默认 · 中性珍珠灰', swatches: ['#e9eaee', '#f7f8fa', '#dce2e9', '#232529'] },
-  { value: 'cool', label: '冷灰 · 凝霜', desc: '冷灰蓝 · 清透分层', swatches: ['#b5c9e6', '#e5eefb', '#8ea9d1', '#232529'] },
-  { value: 'warm', label: '暖砂 · 柔雾', desc: '暖砂灰 · 乳白玻璃', swatches: ['#eee8e3', '#fffaf5', '#e8cfc4', '#232529'] },
-];
-
-function AppearanceSection({ query, uiTheme, onUiThemeChange }: {
-  query: string;
-  uiTheme: UiTheme;
-  onUiThemeChange(theme: UiTheme): void;
-}) {
-  const { settings, error, apply } = useAppSettings();
-
-  const rows: RowSpec[] = settings ? [
-    {
-      key: 'uiTheme',
-      title: '界面主题',
-      desc: '全局色场与玻璃质感,即时生效;布局与按钮位置不受影响',
-      control: (
-        <div className="theme-pick" role="radiogroup" aria-label="界面主题">
-          {THEME_OPTIONS.map((t) => (
-            <button key={t.value} type="button" className={uiTheme === t.value ? 'theme-card on' : 'theme-card'}
-              role="radio" aria-checked={uiTheme === t.value} aria-label={t.label}
-              onClick={() => { if (uiTheme !== t.value) apply({ uiTheme: t.value }, () => onUiThemeChange(t.value)); }}>
-              <span className="sw">{t.swatches.map((c, i) => <i key={i} style={{ background: c }} />)}</span>
-              <b>{t.label}</b>
-              <span>{t.desc}</span>
-            </button>
-          ))}
-        </div>
-      ),
-    },
-  ] : [];
-
-  return (
-    <>
-      <Rows rows={rows} query={query} />
-      {error && <p className="error" role="alert">{error}</p>}
-      {settings && <p className="help">三款主题共用布局、圆角与字体;背景色场、玻璃白度和内层表面随主题切换。</p>}
-      {!settings && !error && <p className="help" role="status">正在读取设置…</p>}
-    </>
-  );
-}
-
-// ---------- 待办与数据(只读状态页,策略上游为源) ----------
+// ---------- 待办与数据(目录入口与共享库只读状态) ----------
 function DataSection({ query }: { query: string }) {
   const [info, setInfo] = useState<TodoDbInfo | null>(null);
   const [error, setError] = useState('');
@@ -271,13 +250,21 @@ function DataSection({ query }: { query: string }) {
     void wb.todo.info().then(setInfo, (e) => setError(errorText(e)));
   }, []);
 
-  const rows: RowSpec[] = info ? [
+  const rows: RowSpec[] = [
+    {
+      key: 'userData',
+      title: '应用数据目录',
+      desc: 'AI 配置、对话库与八字命例库都在这里',
+      control: <button className="set-btn" aria-label="打开应用数据目录" onClick={() => void wb.appInfo.openUserDataDir().catch(e => setError(`应用数据目录：${errorText(e)}`))}>打开目录</button>,
+    },
     {
       key: 'dbPath',
-      title: '共享库路径',
-      desc: info.path,
-      control: <button className="set-btn" onClick={() => void wb.appInfo.openTodoDir()}>打开目录</button>,
+      title: '待办共享库',
+      desc: info?.path ?? '与 To-Do-List 共用的数据目录',
+      control: <button className="set-btn" aria-label="打开待办共享库目录" onClick={() => void wb.appInfo.openTodoDir().catch(e => setError(`待办共享库：${errorText(e)}`))}>打开目录</button>,
     },
+  ];
+  if (info) rows.push(
     {
       key: 'syncState',
       title: '同步状态',
@@ -297,13 +284,12 @@ function DataSection({ query }: { query: string }) {
       title: '数据规模',
       desc: `${info.taskCount} 项事项(含日程与待办)· ${info.categoryCount} 个标签`,
     },
-  ] : [];
+  );
 
   return (
     <>
       <Rows rows={rows} query={query} />
       {error && <p className="error" role="alert">{error}</p>}
-      {info && <p className="help">待办数据以上游 To-Do-List 为单一事实源:工作台不做上游没有的私有功能,上游发版后按固定清单同步移植;工作台不写此库的 settings/chats 表。</p>}
       {!info && !error && <p className="help" role="status">正在读取共享库状态…</p>}
     </>
   );
@@ -395,18 +381,6 @@ function AboutSection({ query }: { query: string }) {
         {update?.phase === 'ready' ? '重启并安装' : update?.phase === 'checking' ? '检查中…' : update?.phase === 'downloading' ? '下载中…' : '检查更新'}
       </button>,
     },
-    {
-      key: 'userData',
-      title: '应用数据目录',
-      desc: 'AI 配置、对话库与八字命例库都在这里',
-      control: <button className="set-btn" onClick={() => void wb.appInfo.openUserDataDir().catch(e => setError(`应用数据目录：${errorText(e)}`))}>打开</button>,
-    },
-    {
-      key: 'todoDb',
-      title: '待办共享库',
-      desc: '与 To-Do-List 同库互通,两侧数据实时一致',
-      control: <button className="set-btn" onClick={() => void wb.appInfo.openTodoDir().catch(e => setError(`待办共享库：${errorText(e)}`))}>打开</button>,
-    },
   ] : [];
 
   return (
@@ -425,6 +399,7 @@ export function SettingsView({ view, uiTheme, onUiThemeChange, onAvatarColorChan
   onUiThemeChange(theme: UiTheme): void;
   onAvatarColorChange(color: AvatarColor): void;
 }) {
+  view = resolveView(view);
   const [query, setQuery] = useState('');
   const searchInput = useRef<HTMLInputElement>(null);
   // 切换分区时清空搜索,避免"看起来没内容"的错觉
@@ -432,7 +407,7 @@ export function SettingsView({ view, uiTheme, onUiThemeChange, onAvatarColorChan
   const meta = SECTION_META[view] ?? { title: '设置', sub: '' };
 
   return (
-    <div className={view === 'settings-ai' ? 'settings-page settings-ai-page' : view === 'settings-about' ? 'settings-page settings-about-page' : 'settings-page'}>
+    <div className={view === 'settings-ai' ? 'settings-page settings-ai-page' : view === 'settings-about' ? 'settings-page settings-about-page' : view === 'settings-island' ? 'settings-page settings-island-page' : 'settings-page'}>
       <div className="page-head">
         <div>
           <h1>{meta.title}</h1>
@@ -446,8 +421,8 @@ export function SettingsView({ view, uiTheme, onUiThemeChange, onAvatarColorChan
         </div>
       </div>
       {view === 'settings-profile' && <ProfileSection query={query} onAvatarColorChange={onAvatarColorChange} />}
-      {(view === 'settings-general' || view === 'settings-notifications') && <GeneralSection query={query} />}
-      {view === 'settings-appearance' && <AppearanceSection query={query} uiTheme={uiTheme} onUiThemeChange={onUiThemeChange} />}
+      {view === 'settings-general' && <GeneralAppearanceSection query={query} uiTheme={uiTheme} onUiThemeChange={onUiThemeChange} />}
+      {view === 'settings-island' && <IslandSettingsSection query={query} resetSearch={() => setQuery('')} />}
       {view === 'settings-ai' && <AiSettings query={query} />}
       {view === 'settings-data' && <DataSection query={query} />}
       {view === 'settings-about' && <AboutSection query={query} />}

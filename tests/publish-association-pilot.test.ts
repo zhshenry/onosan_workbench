@@ -423,12 +423,12 @@ test('Installed association pilot uses twelve checks, real UI storage writes, bo
   assert.match(source, /originals = assertPublishAssociationInventory\(createdState, existingState, ownedIds\)/);
   assert.equal(source.split('assert.deepEqual(await state(page), createdState)').length - 1, 3, 'All pre-confirmation no-write checks retain the complete earlier plus owned store');
   assert.doesNotMatch(source, /originals = \(await state\(page\)\)\.drafts|assert\.deepEqual\(await state\(page\), \{ drafts: \[\] \}\)/);
-  assert.ok(entry.indexOf('floatGroupFixture = await runFloatGroupPilot(') < entry.indexOf('publishAssociationFixture = await runPublishAssociationPilot('));
+  assert.ok(entry.indexOf('islandFixture = await runIslandPilot(') < entry.indexOf('publishAssociationFixture = await runPublishAssociationPilot('));
   assert.ok(entry.indexOf('contextPickerFixture = await runContextPickerPilot(') < entry.indexOf('publishAssociationFixture = await runPublishAssociationPilot('));
   assert.ok(entry.indexOf('publishAssociationFixture = await runPublishAssociationPilot(') < entry.indexOf('await runUpdateStatusPilot('));
   assert.ok(entry.indexOf('publishAssociationFixture = await runPublishAssociationPilot(') < entry.indexOf("await check('Choose exit-on-close"));
   assert.ok(entry.indexOf('await verifyPublishAssociationRelaunch(') > entry.indexOf("await check('Relaunch same installed executable"));
-  for (const older of ['verifyAiCardsRelaunch', 'verifyYearDropdownRelaunch', 'verifyTopbarDatesRelaunch', 'verifyFloatGroupRelaunch', 'verifyContextPickerRelaunch']) assert.match(entry, new RegExp(`await ${older}\\(`));
+  for (const older of ['verifyAiCardsRelaunch', 'verifyYearDropdownRelaunch', 'verifyTopbarDatesRelaunch', 'verifyIslandRelaunch', 'verifyContextPickerRelaunch']) assert.match(entry, new RegExp(`await ${older}\\(`));
   for (const name of PUBLISH_ASSOCIATION_SCREENSHOTS) assert.equal(source.split(`name: '${name}'`).length - 1, 1, 'Each approved screenshot is captured once through the frame guard');
   assert.equal(source.split('await screenshot(name)').length - 1, 1, 'One unchanged full-page screenshot call captures only guarded frames');
   const capture = source.slice(source.indexOf('async function captureAssociationFrame'), source.indexOf('// Bounded main-frame-only'));

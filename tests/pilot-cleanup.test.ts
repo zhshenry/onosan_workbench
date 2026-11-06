@@ -117,7 +117,7 @@ test('normal-exit acceptance observes real zero-code exits and clears applicatio
   const { EventEmitter } = await import('node:events');
   const { runInNewContext } = await import('node:vm');
   const source = await readFile(new URL('../tooling/windows-pilot.mjs', import.meta.url), 'utf8');
-  const helper = source.slice(source.indexOf('async function normalExit('), source.indexOf('async function showLifecycleFloat('));
+  const helper = source.slice(source.indexOf('async function normalExit('), source.indexOf('async function showLifecycleIsland('));
   for (const exitCode of [0, 7]) {
     const child = new EventEmitter();
     const application = { process: () => child };
@@ -144,7 +144,7 @@ test('normal-exit acceptance preserves trigger failure for fallback cleanup', as
   const { EventEmitter } = await import('node:events');
   const { runInNewContext } = await import('node:vm');
   const source = await readFile(new URL('../tooling/windows-pilot.mjs', import.meta.url), 'utf8');
-  const helper = source.slice(source.indexOf('async function normalExit('), source.indexOf('async function showLifecycleFloat('));
+  const helper = source.slice(source.indexOf('async function normalExit('), source.indexOf('async function showLifecycleIsland('));
   const child = new EventEmitter(); const application = { process: () => child };
   const context = { application, page: {}, report: {}, Date, setTimeout, clearTimeout };
   const exit = runInNewContext(`${helper}; normalExit`, context);
@@ -157,14 +157,14 @@ test('exit acceptance adds four checks without changing original hidden-window e
   const source = await readFile(new URL('../tooling/windows-pilot.mjs', import.meta.url), 'utf8');
   const additions = [
     'Normal quit without any floating window exits cleanly and relaunches empty',
-    'Floating group: visible native window permits normal main-window exit',
-    'Floating group: repeated same-version relaunch preserves task and resets width to 440',
-    'Floating group: repeated hide-show lifecycle still permits normal main-window exit',
+    'Desktop island: visible native window permits normal main-window exit',
+    'Desktop island: repeated same-version relaunch preserves task and collapsed mode',
+    'Desktop island: repeated hide-show lifecycle still permits normal main-window exit',
   ];
   for (const name of additions) assert.equal(source.split(`await check('${name}'`).length - 1, 1);
-  assert.ok(source.indexOf(additions[0]) < source.indexOf('await runFloatEmptyPilot('));
+  assert.ok(source.indexOf(additions[0]) < source.indexOf('await runIslandEmptyPilot('));
   assert.ok(source.includes("await check('Choose exit-on-close in settings and quit through the window close button'"));
-  assert.ok(source.indexOf('await verifyFloatGroupRelaunch(') < source.indexOf(additions[1]));
+  assert.ok(source.indexOf('await verifyIslandRelaunch(') < source.indexOf(additions[1]));
   assert.match(source, /setTimeout\(\(\) => app\.quit\(\), 0\)/);
   assert.equal((source.match(/name: '退出应用', exact: true/g) ?? []).length, 1);
   assert.equal((source.match(/await normalExit\(/g) ?? []).length, 3);
