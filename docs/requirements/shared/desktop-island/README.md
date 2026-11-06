@@ -39,7 +39,7 @@ AI 额度采用用户选定的[方案 3](design/quota-master-detail-selected-202
 
 Z Code 的周期除 `windowDurationMins` 外，也读取 `unit + number`：`unit=3` 表示小时，`unit=6` 表示周；例如 `3×5` 显示 5h，`6×1` 显示周。`CREDIT_LIMIT` 的周期未知时显示积分配额，不凭数组位置猜测周期。百分比仍按接口已用比例换算为剩余比例。
 
-- Codex：用户点击「连接账户」后，通过本机 PATH 中的 Codex CLI app-server 登录 ChatGPT；使用独立 `island-codex` 目录与系统 keyring，不读取其他客户端登录文件。只调用初始化、账户登录／读取／退出和 rate limits 接口，不发起模型任务。
+- Codex：用户点击「连接账户」后，通过本机 Codex CLI app-server 登录 ChatGPT；Windows 优先查找 PATH 中的原生程序，也识别标准独立安装目录、npm 安装的原生程序和 Codex 桌面版附带的 CLI，以绝对路径启动，避免安装版依赖开发终端临时 PATH。使用独立 `island-codex` 目录与系统 keyring，不读取其他客户端登录文件。只调用初始化、账户登录／读取／退出和 rate limits 接口，不发起模型任务。
 - Z Code / GLM Coding Plan：用户主动输入个人套餐 API Key，以 Electron safeStorage 加密后本机保存，固定调用官方额度查询端点。密钥不写入渲染状态、日志或测试截图。
 - Cursor：使用系统默认浏览器完成 Cursor 账号授权，避免内嵌窗口的人机验证兼容问题。采用 Cursor 客户端的 `loginDeepControl` 一次性随机标识与 SHA-256 proof key，工作台经 `api2.cursor.sh/auth/poll` 接收本次结果；不启动模型任务。仅将本次签发的有效会话存入自己的 `persist:island-quota-cursor` Chromium Cookie 存储（Secure、HttpOnly、真实过期时间）。通过网站的 `GET /api/usage-summary` 读取 Cursor 模型与其他模型池的真实百分比，缺少分池时使用返回的总额度；仅在返回 `billingCycleEnd` 时显示重置时间。
 - Grok Bot：使用同样的系统浏览器流程，登录 Bot 绑定的 Cursor 账号；本次会话独立保存在 `persist:island-quota-grokbot`。通过 `POST /api/dashboard/get-sand-usage-status` 读取 `usagePercent` 与 `nextResetTimestampUtc`。没有个人配额或使用团队共享池时明确说明，不显示假百分比。两个来源可能共享套餐用量，分别展示返回值，不合计。

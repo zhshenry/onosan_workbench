@@ -65,6 +65,7 @@ function fixture(t: any, authUrl = 'https://auth.openai.com/synthetic-test') {
   new Function('require', 'module', 'exports', code)((name: string) => name === 'electron' ? electron
     : name === 'node:child_process' ? { spawn: (...args: any[]) => { launches.push(args); return child; } }
     : name === 'node:timers/promises' ? { setTimeout: delay }
+    : name === './codex-cli' ? { resolveCodexExecutable: () => join(dir, 'Codex CLI', 'codex.exe') }
     : name === '../modules/storage/json-file' ? { writeJsonAtomic } : name === '../shared/island-quota' ? parsers : require(name), module, module.exports);
   const service = new module.exports.IslandQuotas(dir, () => undefined);
   t.after(async () => { service.stop(); await settled(); rmSync(dir, { recursive: true, force: true }); });
@@ -87,7 +88,8 @@ test('island quota: Codex uses independent keyring authorization and only accoun
   await f.service.connect('codex');
   assert.equal(f.opened.length, 1);
   const [command, args, options] = f.launches[0];
-  assert.equal(command, 'codex'); assert.ok(args.includes('cli_auth_credentials_store="keyring"'));
+  assert.equal(command, join(f.dir, 'Codex CLI', 'codex.exe')); assert.ok(args.includes('cli_auth_credentials_store="keyring"'));
+  assert.notEqual(options.shell, true);
   assert.equal(options.env.CODEX_HOME, join(f.dir, 'island-codex')); assert.equal(options.windowsHide, true);
   assert.equal(options.env.OPENAI_API_KEY, undefined); assert.equal(options.env.CODEX_API_KEY, undefined);
   f.send({ method: 'account/login/completed', params: { success: true, loginId: 'synthetic-login' } });
@@ -106,6 +108,15 @@ test('island quota: untrusted authorization URL never opens in the browser', asy
   const f = fixture(t, 'https://unexpected.example.test/login');
   const result = await f.service.connect('codex');
   assert.equal(result[0].status, 'error'); assert.match(result[0].message, /授权地址无效/); assert.equal(f.opened.length, 0);
+});
+
+test('island quota: an unavailable Codex executable reports startup failure without opening a browser', async t => {
+  const f = fixture(t);
+  const connected = f.service.connect('codex');
+  f.child.emit('error', Object.assign(new Error('synthetic missing executable'), { code: 'ENOENT' }));
+  const result = await connected;
+  assert.equal(result[0].status, 'error'); assert.match(result[0].message, /无法启动 Codex CLI/);
+  assert.equal(f.opened.length, 0); assert.equal(f.child.killed, true);
 });
 
 test('island quota: Z Code encrypts credentials, throttles reads, retains last snapshot on failure and backs off', async t => {

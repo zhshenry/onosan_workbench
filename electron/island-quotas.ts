@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { writeJsonAtomic } from '../modules/storage/json-file';
+import { resolveCodexExecutable } from './codex-cli';
 import { codexQuotaWindows, cursorQuotaWindows, grokbotQuotaWindows, zcodeQuotaWindows } from '../shared/island-quota';
 import { ISLAND_QUOTA_LABELS, ISLAND_QUOTA_PROVIDERS, type QuotaProvider } from '../shared/island-contracts';
 
@@ -112,11 +113,11 @@ export class IslandQuotas {
       const home = join(this.dir, 'island-codex'); mkdirSync(home, { recursive: true });
       const env: NodeJS.ProcessEnv = { ...process.env, CODEX_HOME: home };
       delete env.OPENAI_API_KEY; delete env.CODEX_API_KEY;
-      const child = spawn('codex', ['app-server', '--listen', 'stdio://', '-c', 'cli_auth_credentials_store="keyring"'], { cwd: home, env, windowsHide: true, stdio: 'pipe' });
+      const child = spawn(resolveCodexExecutable(env), ['app-server', '--listen', 'stdio://', '-c', 'cli_auth_credentials_store="keyring"'], { cwd: home, env, windowsHide: true, stdio: 'pipe' });
       this.child = child; started = child;
       const fail = () => {
         if (this.child !== child) return;
-        for (const request of this.pending.values()) { clearTimeout(request.timer); request.reject(new Error('无法连接 Codex CLI，请确认已安装并可从 PATH 启动')); }
+        for (const request of this.pending.values()) { clearTimeout(request.timer); request.reject(new Error('无法启动 Codex CLI，请确认已安装且可运行')); }
         this.pending.clear(); this.child = null; this.ready = null; child.kill();
       };
       child.once('error', fail); child.once('exit', fail);
