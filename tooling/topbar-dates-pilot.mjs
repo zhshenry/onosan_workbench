@@ -123,6 +123,22 @@ export function assertTopbarControlGeometry(value, requireAiJob = false) {
   }
 }
 async function inspectTopbarControls(page, requireAiJob = false) {
+  await page.locator('.topbar').evaluate(async element => {
+    await document.fonts.ready;
+    await new Promise((resolve, reject) => {
+      let previous = '', stable = 0, frame;
+      const timer = setTimeout(() => { cancelAnimationFrame(frame); reject(new Error('Topbar geometry did not settle')); }, 5000);
+      const inspect = () => {
+        const signature = JSON.stringify([element, ...element.querySelectorAll('.sched, .todopill, .tb-right')].map(node => {
+          const { x, y, width, height } = node.getBoundingClientRect(); return [x, y, width, height];
+        }));
+        stable = signature === previous ? stable + 1 : 0; previous = signature;
+        if (stable >= 4) { clearTimeout(timer); resolve(); }
+        else frame = requestAnimationFrame(inspect);
+      };
+      frame = requestAnimationFrame(inspect);
+    });
+  });
   const geometry = await page.locator('.topbar').evaluate(element => {
     const rect = node => { const { x, y, width, height } = node.getBoundingClientRect(); return { x, y, width, height }; };
     const hit = node => { const bounds = node.getBoundingClientRect(); const target = document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2); return target === node || node.contains(target); };
@@ -142,7 +158,8 @@ async function inspectTopbarControls(page, requireAiJob = false) {
       labels: { schedule: label(element.querySelector('.sched-label .lbl')), todo: label(todo.querySelector('.lbl')), count: label(todo.querySelector('.num')) },
     };
   });
-  assertTopbarControlGeometry(geometry, requireAiJob);
+  try { assertTopbarControlGeometry(geometry, requireAiJob); }
+  catch (error) { error.message += `\nMeasured topbar: ${JSON.stringify(geometry)}`; throw error; }
   return geometry;
 }
 export function assertTopbarDatesGeometry(value) {
