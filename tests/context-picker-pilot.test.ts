@@ -258,7 +258,7 @@ test('Installed reference pilot uses normal UI writes, bounded loopback transpor
   assert.doesNotMatch(source, /\.route\(|setContent\(|addInitScript\(|localStorage\.setItem|--no-sandbox|page\.screenshot\(/);
   assert.match(source, /assertTransmittedReferenceSnapshots\(requests\[requestIndex\]\.messages, turn\.snapshots\)/);
   assert.match(source, /await openPanel\(page\); await model\(page\)\.click\(\)/);
-  assert.match(source, /getByRole\('option', \{ name: 'synthetic-card-acceptance', exact: true \}\)\.click\(\)/);
+  assert.ok(source.includes("getByRole('option').filter({ hasText: /^synthetic-card-acceptance$/ }).click()"));
   const selectSupplier = source.indexOf("getByRole('button', { name: '查看对话模型供应商 本机合成验收', exact: true })");
   const editSupplier = source.indexOf("getByRole('form', { name: '本机合成验收连接配置', exact: true })");
   assert.ok(selectSupplier >= 0 && editSupplier > selectSupplier, 'Select the synthetic supplier before editing its inline connection fields');

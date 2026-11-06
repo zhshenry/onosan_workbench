@@ -257,7 +257,7 @@ export async function runContextPickerPilot({ application, page, check, screensh
       await page.waitForFunction(endpoint => window.workbench.ai.config().then(config => config.providers.some(provider => provider.name === '本机合成验收' && provider.endpoint === endpoint)), `http://127.0.0.1:${server.address().port}/v1`);
       // Explicitly select this fixture through the same real model picker.
       await openPanel(page); await model(page).click();
-      await page.getByRole('option', { name: 'synthetic-card-acceptance', exact: true }).click();
+      await page.getByRole('option').filter({ hasText: /^synthetic-card-acceptance$/ }).click();
       const config = await eventually(() => page.evaluate(() => window.workbench.ai.config()),
         config => config.models.find(item => item.id === config.activeModelId)?.name === 'synthetic-card-acceptance', 'Reference acceptance model did not settle');
       assertContextPilotConfig(config, `http://127.0.0.1:${server.address().port}/v1`);
