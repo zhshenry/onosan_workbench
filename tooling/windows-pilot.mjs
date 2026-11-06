@@ -84,7 +84,14 @@ async function launch() {
   const env = { ...process.env, WORKBENCH_TEST_DATA_DIR: dataRoot };
   for (const key of ['WORKBENCH_SMOKE', 'WORKBENCH_DEV_URL', 'WORKBENCH_ISOLATED', 'ELECTRON_RUN_AS_NODE']) delete env[key];
   application = await electron.launch({ executablePath, args: [], cwd: installDirectory, env, timeout: 60000, chromiumSandbox: true });
-  page = await application.firstWindow({ timeout: 30000 });
+  await application.firstWindow({ timeout: 30000 });
+  page = undefined;
+  const mainDeadline = Date.now() + 30000;
+  while (!page && Date.now() < mainDeadline) {
+    page = application.windows().find(candidate => !candidate.isClosed() && candidate.url().startsWith('file:') && !/[?&]window=float(?:&|$)/.test(candidate.url()));
+    if (!page) await new Promise(resolve => setTimeout(resolve, 50));
+  }
+  assert.ok(page, 'Installed main page must be available independently of island startup order');
   page.setDefaultTimeout(15000);
   page.on('pageerror', error => report.errors.push(error.message.slice(0, 1000)));
   await page.locator('#view-home').waitFor({ state: 'visible' });
