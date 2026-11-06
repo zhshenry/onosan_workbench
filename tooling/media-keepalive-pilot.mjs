@@ -507,7 +507,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       await native.evaluate(win=>{win.webContents.setZoomFactor(1);win.setContentSize(1024,680);});
       homeTasks=await page.evaluate(()=>window.workbench.todo.state());
       homeBefore=await settledMediaHomeGeometry(native,page);assert.equal(homeBefore.hosts.length,0);
-      const longTitlePresent=homeTasks.tasks.some(task=>task.title.startsWith('CI floating ')&&task.title.includes('长标题关联与窄屏验收'));
+      const longTitlePresent=homeTasks.tasks.some(task=>task.title.startsWith('CI参考')&&task.title.includes('长标题键盘与窄面板验收'));
       assert.equal(longTitlePresent,true,'The matched home comparison must include the existing synthetic long task title');
       report.mediaKeepaliveHomeLayout={beforeCreator:homeBefore,taskData:{taskCount:homeTasks.tasks.length,longTitlePresent,
         longestTitleLength:Math.max(0,...homeTasks.tasks.map(task=>task.title.length))},
