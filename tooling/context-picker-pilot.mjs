@@ -245,19 +245,17 @@ export async function runContextPickerPilot({ application, page, check, screensh
   try {
     await check('Context picker: explicit isolated loopback provider, no external model or credentials', async () => {
       await navigate(page, 'settings', 'AI 助手');
-      // Split-pane AI settings render 编辑供应商 only inside the selected detail.
-      // The floating pilot leaves another provider active, so select this fixture first.
+      // Connection fields are edited inline in the selected supplier detail.
       const supplier = page.getByRole('button', { name: '查看对话模型供应商 本机合成验收', exact: true });
       await supplier.click();
       const detail = page.locator('#ai-provider-details-llm').getByRole('article', { name: '本机合成验收 配置', exact: true });
       await detail.waitFor({ state: 'visible' });
       assert.equal(await supplier.getAttribute('aria-pressed'), 'true', 'Synthetic supplier detail is shown only while that supplier is selected');
-      await detail.getByRole('button', { name: '编辑供应商 本机合成验收', exact: true }).click();
-      const dialog = page.getByRole('dialog', { name: '编辑供应商', exact: true });
-      await dialog.getByRole('textbox', { name: '服务地址', exact: true }).fill(`http://127.0.0.1:${server.address().port}/v1`);
-      await dialog.getByRole('button', { name: '保存供应商', exact: true }).click(); await dialog.waitFor({ state: 'hidden' });
-      // The preceding floating pilot intentionally changes the active model.
-      // Restore this fixture through the same real picker used by the user.
+      const connection = detail.getByRole('form', { name: '本机合成验收连接配置', exact: true });
+      await connection.getByRole('textbox', { name: 'Base URL', exact: true }).fill(`http://127.0.0.1:${server.address().port}/v1`);
+      await connection.getByRole('button', { name: '保存配置', exact: true }).click();
+      await page.waitForFunction(endpoint => window.workbench.ai.config().then(config => config.providers.some(provider => provider.name === '本机合成验收' && provider.endpoint === endpoint)), `http://127.0.0.1:${server.address().port}/v1`);
+      // Explicitly select this fixture through the same real model picker.
       await openPanel(page); await model(page).click();
       await page.getByRole('option', { name: 'synthetic-card-acceptance', exact: true }).click();
       const config = await eventually(() => page.evaluate(() => window.workbench.ai.config()),
@@ -423,7 +421,7 @@ export async function runContextPickerPilot({ application, page, check, screensh
     });
     await check('Context picker: settings and enabled game/browser show explanations without stale chips', async () => {
       for (const workspace of ['settings', 'game', 'web']) {
-        await navigate(page, workspace, workspace === 'settings' ? '通用' : null);
+        await navigate(page, workspace, workspace === 'settings' ? '通用&外观' : null);
         await openPanel(page); assert.equal(await chips(page).count(), 0);
         await add(page).click(); await picker(page).waitFor({ state: 'visible' });
         assert.equal(await picker(page).locator('.ai-reference-option').count(), 0);
@@ -439,7 +437,7 @@ export async function runContextPickerPilot({ application, page, check, screensh
     report.contextPicker = { synthetic: true, model: 'Loopback synthetic SSE only; actual installed renderer, IPC, source resolution and SQLite persistence. No external model/provider verification.', privacyBoundary: 'Only the added reference lane is selection-bounded. The existing latest-120 todo/category context remains unchanged.', themeBoundary: 'mist/cool/warm are app themes; OS light/dark preference is emulated separately and does not claim a new dark app theme.', matrix: [], providerRequests: 0, savedTurns: [] };
     for (const fixture of CONTEXT_PICKER_MATRIX) {
       await check(`Context picker: ${fixture.theme} ${fixture.width}x${fixture.height} OS ${fixture.colorScheme}, long title and stable model/send controls`, async () => {
-        await navigate(page, 'settings', '外观'); await page.getByRole('radio', { name: fixture.label, exact: true }).click();
+        await navigate(page, 'settings', '通用&外观'); await page.getByRole('radio', { name: fixture.label, exact: true }).click();
         await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, fixture.theme);
         await page.emulateMedia({ colorScheme: fixture.colorScheme, reducedMotion: 'reduce' });
         await resize(application, page, fixture.width, fixture.height);

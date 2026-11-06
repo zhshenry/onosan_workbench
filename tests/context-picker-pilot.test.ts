@@ -260,8 +260,8 @@ test('Installed reference pilot uses normal UI writes, bounded loopback transpor
   assert.match(source, /await openPanel\(page\); await model\(page\)\.click\(\)/);
   assert.match(source, /getByRole\('option', \{ name: 'synthetic-card-acceptance', exact: true \}\)\.click\(\)/);
   const selectSupplier = source.indexOf("getByRole('button', { name: '查看对话模型供应商 本机合成验收', exact: true })");
-  const editSupplier = source.indexOf("getByRole('button', { name: '编辑供应商 本机合成验收', exact: true })");
-  assert.ok(selectSupplier >= 0 && editSupplier > selectSupplier, 'Select the synthetic supplier before editing; its edit control exists only in the selected detail');
+  const editSupplier = source.indexOf("getByRole('form', { name: '本机合成验收连接配置', exact: true })");
+  assert.ok(selectSupplier >= 0 && editSupplier > selectSupplier, 'Select the synthetic supplier before editing its inline connection fields');
   assert.match(source, /#ai-provider-details-llm/);
   assert.match(source, /getByRole\('article', \{ name: '本机合成验收 配置', exact: true \}\)/);
   assert.match(source, /aria-pressed/);
