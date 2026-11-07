@@ -17,7 +17,7 @@ export async function openInstalledIsland({ application, page, report }) {
 }
 
 async function expand(island) {
-  if (await island.locator('.desktop-island.is-collapsed').count()) await island.locator('.desktop-island').hover({ position: { x: 40, y: 20 } });
+  if (await island.locator('.desktop-island.is-collapsed').count()) await island.getByRole('button', { name: '展开桌面灵动岛', exact: true }).hover();
   await island.locator('.desktop-island.is-expanded').waitFor();
   const pin = island.getByRole('button', { name: '固定展开', exact: true });
   if (await pin.count()) await pin.click();
