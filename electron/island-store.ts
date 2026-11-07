@@ -11,7 +11,8 @@ const SavedSchema = z.object({
   files: z.array(z.object({ id: z.string(), path: z.string(), name: z.string(), directory: z.boolean(), addedAt: z.number() })).max(200),
   focus: z.object({ durationMs: z.number().positive(), remainingMs: z.number().nonnegative(), endsAt: z.number().nullable(), taskId: z.string().nullable() }).nullable(),
   water: z.object({ day: z.string(), count: z.number().int().nonnegative(), nextAt: z.number().nullable(), pausedDay: z.string().nullable() }),
-  reminders: z.array(z.object({ id: z.string(), kind: z.enum(['task', 'meeting', 'focus', 'water', 'quota']), title: z.string(), createdAt: z.number(), taskId: z.string().optional() })).max(100),
+  sedentary: z.object({ nextAt: z.number().nullable(), pausedDay: z.string().nullable() }).default({ nextAt: null, pausedDay: null }),
+  reminders: z.array(z.object({ id: z.string(), kind: z.enum(['task', 'meeting', 'focus', 'water', 'sedentary', 'quota', 'agent']), title: z.string(), createdAt: z.number(), taskId: z.string().optional() })).max(100),
   quotaAlerts: z.array(z.string()).max(200).default([]),
   notes: z.array(z.object({ id: z.string(), text: z.string().max(ISLAND_NOTE_MAX_LENGTH).refine(text => Boolean(text.trim())), createdAt: z.number(), updatedAt: z.number() })).max(ISLAND_NOTE_LIMIT).default([]),
   noteDraft: IslandNoteDraftSchema.default({ text: '', noteId: null }),
@@ -54,6 +55,13 @@ export class IslandStore {
       data.reminders = data.reminders.filter(r => r.kind !== 'water');
     } else if (!data.water.nextAt || 'waterMinutes' in input || 'waterStart' in input || 'waterEnd' in input) {
       data.water.nextAt = nextWater(data.settings, this.now());
+    }
+    if (!data.settings.sedentaryEnabled) {
+      data.sedentary.nextAt = null;
+      data.reminders = data.reminders.filter(r => r.kind !== 'sedentary');
+    } else if (input.sedentaryEnabled === true || 'sedentaryMinutes' in input) {
+      data.sedentary = { nextAt: this.now() + data.settings.sedentaryMinutes * 60000, pausedDay: null };
+      data.reminders = data.reminders.filter(r => r.kind !== 'sedentary');
     }
     if (!data.settings.focusEnabled && data.focus?.endsAt) {
       data.focus.remainingMs = focusRemaining(data.focus, this.now());
@@ -143,11 +151,27 @@ export class IslandStore {
     data.reminders = data.reminders.filter(r => r.kind !== 'water');
     return this.commit(data);
   }
+  sedentary(action: 'reset' | 'snooze' | 'pause'): IslandData {
+    const data = this.read(), now = this.now(), day = localDay(new Date(now));
+    if (!data.settings.sedentaryEnabled) throw new Error('请先启用久坐提醒');
+    if (action === 'snooze' && data.sedentary.pausedDay === day) throw new Error('久坐提醒今天已暂停，请先恢复');
+    data.sedentary.pausedDay = action === 'pause' ? day : null;
+    data.sedentary.nextAt = action === 'pause' ? null : now + (action === 'snooze' ? 10 : data.settings.sedentaryMinutes) * 60000;
+    data.reminders = data.reminders.filter(r => r.kind !== 'sedentary');
+    return this.commit(data);
+  }
+  restartSedentary(): void {
+    if (this.loadError || !this.data.settings.sedentaryEnabled) return;
+    const data = this.read(), now = this.now();
+    data.sedentary.nextAt = data.sedentary.pausedDay === localDay(new Date(now)) ? null : now + data.settings.sedentaryMinutes * 60000;
+    data.reminders = data.reminders.filter(r => r.kind !== 'sedentary');
+    this.commit(data);
+  }
   private mergeReminders(data: IslandData, reminders: IslandReminder[]): void {
     const day = localDay(new Date(this.now()));
     data.reminders = data.reminders.filter(r => localDay(new Date(r.createdAt)) === day);
     for (const reminder of reminders) if (!data.reminders.some(r => r.id === reminder.id)) data.reminders.push(reminder);
-    const priority = { task: 0, meeting: 0, focus: 1, water: 2, quota: 3 };
+    const priority = { task: 0, meeting: 0, focus: 1, water: 2, sedentary: 2, quota: 3, agent: 0 };
     data.reminders.sort((a, b) => priority[a.kind] - priority[b.kind] || a.createdAt - b.createdAt);
     data.reminders = data.reminders.slice(0, 100);
   }
@@ -157,7 +181,7 @@ export class IslandStore {
     const data = this.read(); data.quotaAlerts = [...data.quotaAlerts, key].slice(-200); this.commit(data); return true;
   }
   dismiss(id: string): IslandData { const data = this.read(); data.reminders = data.reminders.filter(r => r.id !== id); return this.commit(data); }
-  tick(): IslandReminder[] {
+  tick(sedentaryPaused = false): IslandReminder[] {
     if (this.loadError) return [];
     const data = this.read(), now = this.now(), day = localDay(new Date(now));
     const alerts: IslandReminder[] = [];
@@ -171,6 +195,16 @@ export class IslandStore {
     if (data.settings.waterEnabled && data.water.nextAt !== null && data.water.nextAt <= now) {
       if (data.water.pausedDay !== day && inWaterHours(data, now)) alerts.push({ id: randomUUID(), kind: 'water', title: '喝口水，稍作休息', createdAt: now });
       data.water.nextAt = nextWater(data.settings, now); changed = true;
+    }
+    if (data.settings.sedentaryEnabled && !sedentaryPaused && data.sedentary.pausedDay !== day) {
+      if (data.sedentary.nextAt === null) {
+        data.sedentary = { nextAt: now + data.settings.sedentaryMinutes * 60000, pausedDay: null }; changed = true;
+      } else if (data.sedentary.nextAt <= now) {
+        if (!data.reminders.some(r => r.kind === 'sedentary')) alerts.push({ id: randomUUID(), kind: 'sedentary', title: '到活动时间了，起来走走吧。', createdAt: now });
+        data.sedentary.nextAt = now + data.settings.sedentaryMinutes * 60000; changed = true;
+      }
+    } else if (data.sedentary.nextAt !== null || data.reminders.some(r => r.kind === 'sedentary')) {
+      data.sedentary.nextAt = null; data.reminders = data.reminders.filter(r => r.kind !== 'sedentary'); changed = true;
     }
     if (changed) { this.mergeReminders(data, alerts); this.commit(data); }
     return alerts;

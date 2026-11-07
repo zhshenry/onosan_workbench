@@ -1,0 +1,64 @@
+.desktop-island .island-mascot-entry { position: relative; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 28px; width: 28px; height: 28px; min-height: 28px; padding: 0; border: 0; background: transparent; }
+.island-mascot-entry .island-mascot { width: 24px; height: 24px; border-width: 2px; gap: 3px; }
+.island-mascot-entry .island-mascot i { width: 2px; height: 5px; }
+.island-message-badge, .island-message-pending-dot { position: absolute; top: -2px; right: -4px; min-width: 13px; height: 13px; padding: 0 2px; box-sizing: border-box; border-radius: 99px; background: var(--island-blue); color: var(--island-bg); font-size: var(--type-micro); line-height: 13px; text-align: center; font-variant-numeric: tabular-nums; }
+.island-message-pending-dot { top: 0; right: -1px; min-width: 7px; width: 7px; height: 7px; padding: 0; background: var(--island-orange); }
+.desktop-island .island-summary-row { gap: 10px; }
+.desktop-island.is-messages::before { background: transparent; }
+.desktop-island[data-dock="top"].is-messages::before { height: calc(40px * var(--island-scale, 1)); background: var(--island-bg); }
+.desktop-island[data-dock="top"].is-messages .island-summary-row { height: calc(40px * var(--island-scale, 1)); flex: 0 0 calc(40px * var(--island-scale, 1)); }
+.island-messages { position: absolute; top: 52px; left: 12px; width: min(432px, calc(100vw / var(--island-scale, 1) - 24px)); height: calc(100vh / var(--island-scale, 1) - 64px); max-height: 336px; box-sizing: border-box; padding: 12px; border-radius: 14px; background: var(--island-surface); display: flex; flex-direction: column; gap: 10px; zoom: var(--island-scale, 1); animation: island-reveal 160ms ease-out; }
+.island-messages .island-speech-tail { left: var(--agent-tail-x, 18px); }
+.island-messages-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; flex: none; }
+.desktop-island .island-messages-header h2 { font-size: var(--type-lead); line-height: 1.3; margin-bottom: 3px; }
+.island-messages-header small { display: block; line-height: 1.3; }
+.island-messages-header .icon-button { margin-top: -5px; margin-right: -5px; }
+.island-messages-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; flex: none; }
+.island-messages-filters .segmented { width: auto; gap: 3px; padding: 2px; }
+.island-messages-filters .segmented button { min-height: 24px; padding: 2px 12px; font-size: var(--type-caption); }
+.island-messages-filters .segmented button[aria-checked="true"] { background: var(--island-blue); color: var(--island-bg); }
+.island-message-list { min-height: 0; flex: 1; overflow: auto; scrollbar-gutter: stable; }
+.island-agent-message { display: grid; grid-template-columns: 6px 24px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--island-line); }
+.island-message-provider-marker .island-mascot { width: 24px; height: 24px; border-width: 2px; gap: 3px; }
+.island-message-provider-marker .island-mascot i { width: 2px; height: 5px; }
+.island-agent-message[data-provider="codex"] .island-message-provider-marker { --island-blue: var(--island-purple); }
+.island-message-unread { width: 6px; height: 6px; border-radius: 50%; background: transparent; }
+.island-message-unread[data-unread="true"] { background: var(--island-blue); }
+.island-message-copy { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.island-message-copy > small, .island-agent-source { line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.island-message-copy b { font-size: var(--type-control); line-height: 1.35; font-weight: 500; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.island-message-copy p { margin: 0; max-height: 3em; overflow: auto; font-size: var(--type-caption); line-height: 1.3; color: var(--island-muted); overflow-wrap: anywhere; }
+.island-message-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--island-muted); font-size: var(--type-micro); line-height: 1.4; }
+.island-message-meta [data-status] { padding: 1px 5px; border-radius: 999px; background: var(--island-line); }
+.island-message-meta [data-status="approval"] { color: var(--island-orange); background: color-mix(in srgb, var(--island-orange) 14%, transparent); }
+.island-message-meta [data-status="failed"] { color: #ff9c95; background: var(--danger-soft); }
+.island-message-meta [data-status="reply"] { color: var(--island-blue); background: var(--todo-acc-soft); }
+.island-message-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.desktop-island .island-message-actions > button { min-height: 24px; min-width: 0; padding: 3px 10px; background: var(--island-line); font-size: var(--type-caption); white-space: nowrap; }
+.desktop-island .island-message-actions > button.primary { color: var(--island-bg); background: var(--island-blue); }
+.island-message-actions > div { display: flex; }
+.desktop-island .island-message-actions .icon-button { width: 24px; min-height: 24px; height: 24px; flex-basis: 24px; color: var(--island-muted); }
+.island-message-empty { padding: 22px 0; text-align: center; color: var(--island-muted); font-size: var(--type-caption); }
+.island-message-empty button { display: inline-flex; align-items: center; gap: 5px; font-size: var(--type-caption); }
+.desktop-island:not([data-dock="top"]).is-messages .island-summary-row { width: calc(64px * var(--island-scale, 1)); height: min(calc(360px * var(--island-scale, 1)), 100%); margin-top: max(0px, calc((100vh - min(calc(360px * var(--island-scale, 1)), 100vh)) / 2)); flex: none; flex-direction: column; padding: 24px 4px 12px; box-sizing: border-box; border-radius: 0 28px 28px 0; background: var(--island-bg); }
+.desktop-island[data-dock="right"].is-messages .island-summary-row { margin-left: auto; border-radius: 28px 0 0 28px; }
+.desktop-island:not([data-dock="top"]).is-messages .island-summary-details { flex-direction: column; justify-content: flex-start; gap: 8px; height: 100%; }
+.desktop-island:not([data-dock="top"]).is-messages .island-summary-schedule { flex: none; }
+.desktop-island:not([data-dock="top"]).is-messages .island-summary-schedule > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.desktop-island:not([data-dock="top"]).is-messages .island-quota-summary { flex: 1; min-height: 0; flex-direction: column; justify-content: center; gap: 8px; max-width: 100%; padding: 8px 0; border: 0; border-top: 1px solid var(--island-line); }
+.desktop-island:not([data-dock="top"]).is-messages .island-quota-summary > span { flex-direction: column; gap: 2px; max-width: 100%; }
+.desktop-island:not([data-dock="top"]).is-messages .island-quota-caption { align-items: center; max-width: 100%; }
+.desktop-island:not([data-dock="top"]).is-messages .island-quota-provider, .desktop-island:not([data-dock="top"]).is-messages .island-quota-value { max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: var(--type-micro); line-height: 12px; }
+.desktop-island:not([data-dock="top"]).is-messages .island-messages { top: 12px; left: 76px; width: min(312px, calc(100vw / var(--island-scale, 1) - 88px)); height: calc(100vh / var(--island-scale, 1) - 24px); max-height: 536px; }
+.desktop-island[data-dock="right"].is-messages .island-messages { left: auto; right: 76px; }
+.desktop-island:not([data-dock="top"]).is-messages .island-speech-tail { left: -13px; top: var(--agent-tail-y, 122px); }
+.desktop-island[data-dock="right"].is-messages .island-speech-tail { left: auto; right: -13px; }
+@container island-body (max-width: 280px) { .island-messages .island-agent-message { grid-template-columns: 6px 24px minmax(0, 1fr); } .island-messages .island-message-actions { grid-column: 3; flex-direction: row; justify-content: space-between; } }
+@container island-body (max-height: 280px) {
+  .desktop-island:not([data-dock="top"]).is-messages .island-summary-row { padding: 6px 0; gap: 2px; }
+  .desktop-island:not([data-dock="top"]).is-messages .island-summary-details { gap: 4px; }
+  .desktop-island:not([data-dock="top"]).is-messages .island-quota-summary { gap: 2px; padding: 2px 0; }
+  .desktop-island:not([data-dock="top"]).is-messages .island-quota-summary > span { gap: 1px; }
+  .desktop-island:not([data-dock="top"]).is-messages .island-quota-rings.compact { width: 18px; height: 18px; }
+  .desktop-island:not([data-dock="top"]).is-messages .island-summary-schedule svg { width: 14px; height: 14px; }
+}

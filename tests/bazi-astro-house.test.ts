@@ -7,7 +7,7 @@ import { JSDOM } from 'jsdom';
 import { act, createElement } from 'react';
 import type { Root } from 'react-dom/client';
 import { BaziStore } from '../modules/bazi/store';
-import { ASTRO_HOUSE_LABELS, buildAstro, type AstroChart } from '../modules/bazi/astro';
+import { buildAstro, type AstroChart } from '../modules/bazi/astro';
 import { baziStoreDataSchema, type BaziProfile, type BaziStoreData } from '../shared/bazi-contracts';
 import { CHINA_REGIONS } from '../shared/china-region-geo';
 
@@ -133,7 +133,7 @@ async function createHarness(): Promise<Harness> {
 }
 
 function assertTable(panel: HTMLElement, chart: AstroChart, withHouses: boolean): void {
-  assert.equal(panel.querySelector('.bazi-as-detail-meta')?.textContent, `回归制 · 东八区${withHouses ? ` · ${ASTRO_HOUSE_LABELS[chart.houseSystem]}` : ''}`);
+  assert.equal(panel.querySelector('.bazi-as-detail-meta'), null);
   const table = panel.querySelector('table.bazi-astab');
   assert.ok(table, '行星落座表');
   assert.deepEqual(
@@ -314,9 +314,10 @@ describe('占星行星落座宫位列', { concurrency: false }, () => {
     assert.equal(moon.getAttribute('aria-pressed'), 'true');
     assert.equal(moonButton().closest('tr')!.getAttribute('data-selected'), 'true');
     const detail = panel.querySelector('[aria-label="月亮详情"]')!;
-    assert.match(detail.textContent!, /天蝎 4°37′ · 第4宫 · 顺行/);
+    assert.equal(detail.querySelector('.bazi-as-selection-facts')!.textContent, '天蝎 · 第4宫 · 顺行');
     assert.match(detail.textContent!, /家庭、根基与私人生活/);
-    assert.equal(detail.querySelectorAll('.bazi-as-related li').length, 3);
+    assert.equal(detail.querySelectorAll('.bazi-as-meanings dt').length, 4);
+    assert.doesNotMatch(detail.textContent!, /相关相位/);
     assert.equal(panel.querySelectorAll('.bazi-as-aspect-target:not(.is-dimmed)').length, 5);
     await act(async () => moon.dispatchEvent(new harness.dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
     assert.equal(moon.getAttribute('aria-pressed'), 'false');
@@ -335,22 +336,44 @@ describe('占星行星落座宫位列', { concurrency: false }, () => {
     assert.deepEqual(harness.messages, []);
   });
 
+  test('星体详情提供四项含义,组合随星体和宫位变化,扩展对象也不显示相关相位', async () => {
+    const data = chartData({ ...SHANGHAI, date: '2020-04-09', time: '11:34' });
+    const original = structuredClone(data), chart = buildAstro(data.profiles[0]);
+    await harness.show(data);
+    const panel = await harness.openAstro();
+    for (const body of chart.bodies) {
+      await act(async () => panel.querySelector<HTMLButtonElement>(`[aria-label="查看${body.name}"]`)!.click());
+      const detail = panel.querySelector(`[aria-label="${body.name}详情"]`)!;
+      const terms = [...detail.querySelectorAll('dt')].map(term => term.textContent);
+      assert.equal(terms.length, 4);
+      assert.match(terms[0]!, /星体含义|点位含义/);
+      assert.match(terms[1]!, new RegExp(`星座含义.*${SIGNS[Math.floor(body.lon / 30)]}座`));
+      assert.match(terms[2]!, new RegExp(`宫位含义.*第${body.house}宫`));
+      assert.equal(terms[3], '结合解读');
+      assert.doesNotMatch(detail.textContent!, /相关相位|查看全部|undefined/);
+      if (body.key === 'Sun') assert.match(detail.querySelector('.bazi-as-combined')!.textContent!, /建立自我认同、表达个人意志/);
+      if (body.key === 'Moon') assert.match(detail.querySelector('.bazi-as-combined')!.textContent!, /照顾情绪需求、寻找内在安全感/);
+    }
+    assert.deepEqual(data, original);
+  });
+
   test('相位按星体、类型和容许度组合筛选,连线同步,空结果可恢复且不改命例', async () => {
     const data = chartData({ ...SHANGHAI, date: '2020-04-09', time: '11:34' });
     const original = structuredClone(data), chart = buildAstro(data.profiles[0]);
     await harness.show(data);
     const panel = await harness.openAstro();
     await act(async () => panel.querySelector<HTMLButtonElement>('[aria-label="查看月亮"]')!.click());
-    const all = [...panel.querySelectorAll<HTMLButtonElement>('.bazi-as-selection button')].find(button => button.textContent === '查看全部')!;
-    await act(async () => all.click());
-    assert.equal(panel.querySelectorAll('.bazi-as-aspect-table tbody tr').length, 5);
-    assert.equal(panel.querySelectorAll('.bazi-as-aspect-target').length, 5);
+    const aspects = [...panel.querySelectorAll<HTMLButtonElement>('[role="radio"]')].find(button => button.textContent === '相位')!;
+    await act(async () => aspects.click());
     const choose = async (name: string, text: string) => {
       await act(async () => panel.querySelector<HTMLButtonElement>(`[aria-label="${name}"]`)!.click());
       const option = [...harness.doc.querySelectorAll<HTMLElement>('.select-option')].find(item => item.textContent === text)!;
       assert.ok(option, text);
       await act(async () => option.click());
     };
+    await choose('相位星体', '月亮');
+    assert.equal(panel.querySelectorAll('.bazi-as-aspect-table tbody tr').length, 5);
+    assert.equal(panel.querySelectorAll('.bazi-as-aspect-target').length, 5);
     await choose('相位类型', '冲相');
     await choose('最大容许度', '≤ 1°');
     const rows = panel.querySelectorAll('.bazi-as-aspect-table tbody tr');
@@ -382,6 +405,9 @@ describe('占星行星落座宫位列', { concurrency: false }, () => {
       assert.ok(panel.querySelector('.bazi-notehint')!.textContent!.length > 0);
       await act(async () => panel.querySelector('[data-body="Moon"]')!.dispatchEvent(new harness.dom.window.MouseEvent('click', { bubbles: true })));
       assert.match(panel.querySelector('[aria-label="月亮详情"]')!.textContent!, /宫位待补/);
+      const combined = panel.querySelector('.bazi-as-combined')!;
+      assert.match(combined.textContent!, /宫位尚未确定/);
+      assert.doesNotMatch(combined.textContent!, /第\d+宫/);
     }
   });
 
@@ -391,8 +417,11 @@ describe('占星行星落座宫位列', { concurrency: false }, () => {
     await harness.show(data);
     const panel = await harness.openAstro();
     await act(async () => panel.querySelector<HTMLButtonElement>('[aria-label="查看月亮"]')!.click());
-    const all = [...panel.querySelectorAll<HTMLButtonElement>('.bazi-as-selection button')].find(button => button.textContent === '查看全部')!;
-    await act(async () => all.click());
+    const aspects = [...panel.querySelectorAll<HTMLButtonElement>('[role="radio"]')].find(button => button.textContent === '相位')!;
+    await act(async () => aspects.click());
+    await act(async () => panel.querySelector<HTMLButtonElement>('[aria-label="相位星体"]')!.click());
+    const moonOption = [...harness.doc.querySelectorAll<HTMLElement>('.select-option')].find(option => option.textContent === '月亮')!;
+    await act(async () => moonOption.click());
     await act(async () => harness.doc.querySelector<HTMLButtonElement>('.bazi-psel-btn')!.click());
     const another = [...harness.doc.querySelectorAll<HTMLButtonElement>('.bazi-psel-menu [role="option"]')].find(button => button.textContent?.includes('另一命例'))!;
     await act(async () => another.click());
@@ -411,7 +440,8 @@ describe('占星行星落座宫位列', { concurrency: false }, () => {
     await act(async () => panel.querySelector<HTMLButtonElement>('[aria-label="查看婚神星"]')!.click());
     assert.equal(panel.querySelector('[data-body="Juno"]')!.getAttribute('aria-pressed'), 'true');
     assert.match(panel.querySelector('.bazi-as-selection-capsule')!.textContent!, /婚神星.*逆行.*JPL/s);
-    assert.match(panel.querySelector('.bazi-as-selection-capsule')!.textContent!, /相关相位/);
+    assert.match(panel.querySelector('.bazi-as-selection-capsule')!.textContent!, /结合解读/);
+    assert.doesNotMatch(panel.querySelector('.bazi-as-selection-capsule')!.textContent!, /相关相位/);
     const toggles = panel.querySelectorAll<HTMLInputElement>('.bazi-as-object-options input');
     await act(async () => toggles[1].click());
     assert.equal(panel.querySelector('[data-body="Juno"]'), null);
@@ -494,7 +524,7 @@ describe('占星行星落座宫位列', { concurrency: false }, () => {
     await clickTimeControl('.bazi-form-actions .btn-pri');
     assert.equal(harness.doc.querySelector('dialog[open]'), null);
     assert.equal(new BaziStore(directory).all().profiles[0].astroTimeZone, 'Asia/Shanghai');
-    assert.match(panel.querySelector('.bazi-as-detail-meta')!.textContent!, /UTC\+09:00/);
+    assert.match(panel.querySelector('.bazi-as-pan')!.textContent!, /UTC\+09:00/);
     assert.equal(panel.querySelector('.bazi-as-selection'), null, '改变时间依据后不沿用旧选择');
   });
 

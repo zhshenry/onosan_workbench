@@ -8,6 +8,9 @@ import { IslandStore } from './island-store';
 import { IslandQuotas } from './island-quotas';
 import { watchFullscreen } from './island-fullscreen';
 import { readIslandFileIcons } from './island-file-icons';
+import { AgentHooks } from './agent-hooks';
+import { agentMessageUrl } from './agent-message-store';
+import { AGENT_PROVIDERS, agentPending } from '../shared/agent-message-contracts';
 
 export class DesktopIsland {
   private win: BrowserWindow | null = null;
@@ -17,6 +20,7 @@ export class DesktopIsland {
   private pinned = false;
   private held = false;
   private locked = false;
+  private suspended = false;
   private fullscreen = false;
   private fullscreenDetection = false;
   private motion: NodeJS.Timeout | null = null;
@@ -28,8 +32,11 @@ export class DesktopIsland {
   private lastQuotaRead = 0;
   private error = '';
   private icons: Promise<Record<string, string>> | null = null;
+  private agents: AgentHooks;
   constructor(private devUrl: string | undefined, private preload: string, dir: string, private main: () => BrowserWindow | null, private todo: Store) {
     this.store = new IslandStore(dir);
+    this.agents = new AgentHooks(dir);
+    try { this.store.restartSedentary(); } catch { this.error = '久坐提醒恢复失败，请检查数据目录权限'; }
     this.quotas = new IslandQuotas(dir, () => {
       try { if (!this.store.loadError) this.checkLowQuota(); }
       catch { this.error = '低额度提醒保存失败，请检查数据目录权限'; }
@@ -37,7 +44,7 @@ export class DesktopIsland {
     });
     screen.on('display-removed', this.reposition); screen.on('display-metrics-changed', this.reposition);
     powerMonitor.on('lock-screen', this.lock); powerMonitor.on('unlock-screen', this.unlock);
-    powerMonitor.on('resume', this.tick);
+    powerMonitor.on('suspend', this.suspend); powerMonitor.on('resume', this.resume);
     this.stopFullscreen = watchFullscreen(value => {
       const changed = !this.fullscreenDetection || this.fullscreen !== value;
       this.fullscreenDetection = true; this.fullscreen = value;
@@ -47,9 +54,9 @@ export class DesktopIsland {
   }
   get window(): BrowserWindow | null { return this.win; }
   isVisible(): boolean { return this.store.read().settings.enabled; }
-  private quiet(): boolean { const s = this.store.read().settings; return this.locked || inTimeRange(new Date(), s.dndStart, s.dndEnd) && s.dnd; }
+  private quiet(): boolean { const s = this.store.read().settings; return this.locked || this.suspended || inTimeRange(new Date(), s.dndStart, s.dndEnd) && s.dnd; }
   state(): IslandState {
-    return { ...this.store.read(), files: this.store.files(), mode: this.mode, pinned: this.pinned, quiet: this.quiet(), fullscreenDetection: this.fullscreenDetection, error: this.store.loadError || this.error || undefined };
+    return { ...this.store.read(), files: this.store.files(), agentMessages: this.agents.messages.read(), mode: this.mode, pinned: this.pinned, quiet: this.quiet(), fullscreenDetection: this.fullscreenDetection, error: this.store.loadError || this.agents.messages.loadError || this.error || undefined };
   }
   private async fileIcon(id: string): Promise<string> {
     this.store.file(id);
@@ -64,11 +71,13 @@ export class DesktopIsland {
       win.webContents.send('float:visibility-changed', state.settings.enabled);
     }
   };
-  private lock = (): void => { this.locked = true; this.visibility(); };
-  private unlock = (): void => { this.locked = false; this.mode = this.pinned ? 'expanded' : 'collapsed'; this.reposition(); this.visibility(); };
+  private lock = (): void => { this.locked = true; this.tick(); this.visibility(); };
+  private unlock = (): void => { this.locked = false; this.mode = this.pinned ? 'expanded' : 'collapsed'; this.reposition(); this.visibility(); this.tick(); };
+  private suspend = (): void => { this.suspended = true; this.tick(); this.visibility(); };
+  private resume = (): void => { this.suspended = false; this.tick(); this.visibility(); };
   private visibility(): void {
     const s = this.store.read().settings;
-    if (s.enabled && !this.locked && !(s.hideFullscreen && this.fullscreen)) {
+    if (s.enabled && !this.locked && !this.suspended && !(s.hideFullscreen && this.fullscreen)) {
       this.win?.showInactive();
       this.win?.setAlwaysOnTop(true, 'floating');
     }
@@ -100,33 +109,39 @@ export class DesktopIsland {
     const display = screen.getAllDisplays().find(d => d.id === s.displayId) ?? screen.getPrimaryDisplay();
     return islandBounds(mode, display.workArea, s.topOffset, s.dock);
   }
+  private frameBounds(): Rectangle { return this.bounds(this.mode === 'messages' ? 'messages' : 'expanded'); }
   private shapeBounds(): Rectangle {
-    const frame = this.bounds('expanded'), bounds = this.bounds();
+    const frame = this.frameBounds(), bounds = this.bounds();
     return { x: bounds.x - frame.x, y: bounds.y - frame.y, width: bounds.width, height: bounds.height };
   }
   private applyShape(shape: Rectangle): void {
     this.shape = shape;
-    if (this.mode !== 'speech') { this.win?.setShape([shape]); return; }
-    const frame = this.bounds('expanded'), bar = this.bounds('collapsed'), bounds = this.shapeBounds();
+    if (this.mode !== 'speech' && this.mode !== 'messages') { this.win?.setShape([shape]); return; }
+    const frame = this.frameBounds(), bar = this.bounds('collapsed'), bounds = this.shapeBounds();
     const summary = { x: bar.x - frame.x, y: bar.y - frame.y, width: bar.width, height: bar.height };
     const dock = this.store.read().settings.dock;
-    const width = Math.min(224, bounds.width - (dock === 'top' ? 24 : summary.width + 24));
+    const messages = this.mode === 'messages';
+    const width = Math.min(messages ? 432 : 224, bounds.width - (dock === 'top' ? 24 : summary.width + 24));
+    const height = messages ? bounds.height - (dock === 'top' ? summary.height + 24 : 24) : this.speechHeight;
     const bubble = dock === 'top'
-      ? { x: bounds.x + 12, y: summary.y + summary.height, width, height: Math.min(this.speechHeight + 12, bounds.height - summary.height) }
-      : { x: dock === 'left' ? summary.x + summary.width : summary.x - width - 12, y: bounds.y + 12, width: width + 12, height: Math.min(this.speechHeight, bounds.height - 12) };
+      ? { x: bounds.x + 12, y: summary.y + summary.height, width, height: Math.min(height + 12, bounds.height - summary.height) }
+      : { x: dock === 'left' ? summary.x + summary.width : summary.x - width - 12, y: bounds.y + 12, width: width + 12, height: Math.min(height, bounds.height - 12) };
     this.win?.setShape([summary, bubble]);
   }
   private reposition = (): void => {
     if (this.motion) clearTimeout(this.motion); this.motion = null;
-    this.win?.setBounds(this.bounds('expanded')); this.applyShape(this.shapeBounds());
+    this.win?.setBounds(this.frameBounds()); this.applyShape(this.shapeBounds());
   };
   setMode(mode: IslandMode, reduce = false): void {
-    if (this.pinned && mode !== 'expanded') return;
+    if (this.pinned && mode !== 'expanded' && mode !== 'messages') return;
+    const frame = this.frameBounds();
     this.mode = mode;
     const win = this.win;
     if (this.motion) clearTimeout(this.motion);
     this.motion = null;
     if (!win || win.isDestroyed()) return;
+    const nextFrame = this.frameBounds();
+    if (frame.width !== nextFrame.width || frame.height !== nextFrame.height) { this.reposition(); this.publish(); return; }
     const to = this.shapeBounds(), from = this.shape ?? to;
     if (reduce || this.store.read().settings.reducedMotion || this.quiet()) this.applyShape(to);
     else {
@@ -143,9 +158,28 @@ export class DesktopIsland {
   }
   private tick = (): void => {
     try {
-      const before = this.store.read(), alerts = this.store.tick();
+      const incoming = this.agents.poll();
+      if (incoming.error && this.error !== incoming.error) { this.error = incoming.error; this.publish(); }
+      if (incoming.changed) {
+        const messages = this.agents.messages.read();
+        for (const reminder of this.store.read().reminders) {
+          if (reminder.kind !== 'agent') continue;
+          const message = messages.find(value => reminder.id === `agent:${value.id}`);
+          if (!message || message.readAt || message.kind === 'approval' && !agentPending(message)) this.store.dismiss(reminder.id);
+        }
+        const alerts = incoming.alerts.filter(message => message.kind !== 'approval' || agentPending(this.agents.messages.get(message.id)));
+        if (alerts.length) this.notify(alerts.map(message => ({ id: `agent:${message.id}`, kind: 'agent', title: message.title, createdAt: Date.now() })));
+        else if (!this.store.read().reminders.length && (this.mode === 'speech' || this.mode === 'reminder')) this.setMode('collapsed');
+        this.publish();
+      }
+    } catch { this.error = 'Agent 消息保存失败，待收取的事件已保留，请检查数据目录权限'; this.publish(); }
+    try {
+      const before = this.store.read(), alerts = this.store.tick(this.quiet());
       if (alerts.length) this.notify(alerts);
-      else if (JSON.stringify(before) !== JSON.stringify(this.store.read())) this.publish();
+      else if (JSON.stringify(before) !== JSON.stringify(this.store.read())) {
+        if (before.reminders.length && !this.store.read().reminders.length && (this.mode === 'reminder' || this.mode === 'speech')) this.setMode('collapsed');
+        else this.publish();
+      }
       const interval = this.mode === 'expanded' && before.settings.lastPage === 'quota' && this.win?.isVisible() ? 60000 : 300000;
       if (Date.now() - this.lastQuotaRead >= interval) { this.lastQuotaRead = Date.now(); void this.quotas.refresh(); }
     } catch { this.error = '灵动岛状态保存失败，请检查数据目录权限'; this.win?.webContents.send('island:error', this.error); }
@@ -171,7 +205,7 @@ export class DesktopIsland {
       else if (this.mode === 'speech') this.armReminderTimer();
       return;
     }
-    const systemAlerts = alerts.filter(alert => alert.kind !== 'water');
+    const systemAlerts = alerts.filter(alert => alert.kind !== 'water' && alert.kind !== 'sedentary' && alert.kind !== 'agent');
     if (systemAlerts.length && Notification.isSupported()) {
       const notification = new Notification({ title: systemAlerts.length > 1 ? `${systemAlerts.length} 条提醒` : systemAlerts[0].title, body: '点击在工作台中查看', silent: !this.store.read().settings.sound });
       if (failed) notification.once('failed', failed);
@@ -205,8 +239,9 @@ export class DesktopIsland {
     ipcMain.on('float:subscribe', event => { if ([this.main()?.webContents, this.win?.webContents].includes(event.sender)) event.sender.send('float:visibility-changed', this.isVisible()); });
     handle('island:state', () => this.state());
     handle('island:patch', input => {
-      const previousDock = this.store.read().settings.dock;
+      const previous = this.store.read(), previousDock = previous.settings.dock;
       this.store.patch(z.record(z.string(), z.unknown()).parse(input));
+      if (previous.reminders.length && !this.store.read().reminders.length && (this.mode === 'reminder' || this.mode === 'speech')) this.mode = 'collapsed';
       if (this.mode === 'speech' && !this.store.read().settings.mascotEnabled) this.mode = 'reminder';
       if (!this.isVisible()) { this.pinned = false; this.mode = 'collapsed'; this.held = false; }
       if (this.isVisible() && !this.win) this.create();
@@ -219,7 +254,7 @@ export class DesktopIsland {
       }
       this.visibility(); return this.state();
     });
-    handle('island:mode', (mode, reduce) => { this.setMode(z.enum(['collapsed', 'expanded', 'reminder', 'speech']).parse(mode), reduce === true); });
+    handle('island:mode', (mode, reduce) => { this.setMode(z.enum(['collapsed', 'expanded', 'reminder', 'speech', 'messages']).parse(mode), reduce === true); });
     handle('island:pin', () => { this.pinned = !this.pinned; if (this.pinned) this.setMode('expanded'); else this.publish(); return this.state(); });
     ipcMain.on('island:hold', (event, held) => {
       if (event.sender !== this.win?.webContents || event.senderFrame !== event.sender.mainFrame) return;
@@ -232,7 +267,7 @@ export class DesktopIsland {
       if (this.speechHeight === value) return;
       this.speechHeight = value; this.applyShape(this.shapeBounds());
     });
-    handle('island:navigate', target => this.navigate(z.object({ view: z.enum(['home', 'settings-island', 'settings-general']), taskId: z.string().optional(), section: z.literal('quota').optional() }).parse(target)));
+    handle('island:navigate', target => this.navigate(z.object({ view: z.enum(['home', 'settings-island', 'settings-general']), taskId: z.string().optional(), section: z.enum(['quota', 'water', 'sedentary', 'agents']).optional() }).parse(target)));
     handle('island:displays', () => screen.getAllDisplays().map((d, i) => ({ id: d.id, label: `${d.label || `显示器 ${i + 1}`} · ${d.size.width}×${d.size.height}${d.id === screen.getPrimaryDisplay().id ? ' · 主屏' : ''}` })));
     const changed = () => {
       if (!this.store.read().reminders.length && (this.mode === 'reminder' || this.mode === 'speech')) this.setMode('collapsed');
@@ -265,7 +300,17 @@ export class DesktopIsland {
       this.store.focus(z.enum(['start', 'pause', 'resume', 'stop']).parse(action), minutes, taskId); return changed();
     });
     handle('island:water', action => { this.store.water(z.enum(['drink', 'snooze', 'pause']).parse(action)); return changed(); });
+    handle('island:sedentary', action => { this.store.sedentary(z.enum(['reset', 'snooze', 'pause']).parse(action)); return changed(); });
     handle('island:dismiss', id => { this.store.dismiss(z.string().parse(id)); return changed(); });
+    handle('island:agentConnections', () => this.agents.status());
+    handle('island:agentConnect', (provider, enabled) => this.agents.connect(z.enum(AGENT_PROVIDERS).parse(provider), z.boolean().parse(enabled)));
+    const agentRead = (id: string) => { this.agents.messages.markRead(id); this.store.dismiss(`agent:${id}`); return changed(); };
+    handle('island:agentRead', id => agentRead(z.string().parse(id)));
+    handle('island:agentOpen', async id => {
+      const message = this.agents.messages.get(z.string().parse(id));
+      await shell.openExternal(agentMessageUrl(message));
+      return agentRead(message.id);
+    });
     handle('island:quotas', () => this.quotas.read());
     handle('island:quotaRefresh', () => this.quotas.refresh());
     handle('island:quotaConnect', (provider, key) => this.quotas.connect(z.enum(ISLAND_QUOTA_PROVIDERS).parse(provider), key === undefined ? undefined : z.string().parse(key)));
@@ -276,7 +321,8 @@ export class DesktopIsland {
     clearInterval(this.timer); if (this.motion) clearTimeout(this.motion); if (this.reminderTimer) clearTimeout(this.reminderTimer);
     this.stopFullscreen(); this.quotas.stop();
     screen.off('display-removed', this.reposition); screen.off('display-metrics-changed', this.reposition);
-    powerMonitor.off('lock-screen', this.lock); powerMonitor.off('unlock-screen', this.unlock); powerMonitor.off('resume', this.tick);
+    powerMonitor.off('lock-screen', this.lock); powerMonitor.off('unlock-screen', this.unlock);
+    powerMonitor.off('suspend', this.suspend); powerMonitor.off('resume', this.resume);
     if (this.store.read().settings.clearFilesOnExit) { try { this.store.removeFiles(); } catch { /* Preserve references if saving fails. */ } }
     this.win?.destroy(); this.win = null;
   }

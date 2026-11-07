@@ -20,7 +20,7 @@
 .island-settings-layout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; min-width: 0; scroll-margin-top: 16px; }
 .island-setting-card { min-width: 0; overflow: clip; border: 1px solid var(--glass-line); border-radius: var(--r-card); background: var(--glass-hi); }
 .island-card-wide { grid-column: 1 / -1; }
-.island-settings-tools [data-group="water"] { grid-column: 1 / -1; }
+.island-settings-tools [data-group="water"], .island-settings-tools [data-group="sedentary"] { grid-column: 1 / -1; }
 .island-setting-card > header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 14px 16px; border-bottom: 1px solid var(--hairline); }
 .island-setting-card h2 { margin: 0; font-size: var(--type-body); font-weight: 600; }
 .island-setting-card > header p { margin: 4px 0 0; color: var(--ink-3); font-size: var(--type-support); }
@@ -115,8 +115,8 @@
 .island-threshold-help > span { position: absolute; bottom: calc(100% + 8px); left: -70px; z-index: 2; display: none; width: max-content; max-width: 230px; padding: 8px 10px; border: 1px solid var(--hairline); border-radius: 8px; background: var(--todo-white); box-shadow: var(--shadow-sm); color: var(--ink-2); font-size: var(--type-support); line-height: 1.6; }
 .island-threshold-help:is(:hover, :focus-visible) > span { display: block; }
 @container island-settings (min-width: 641px) {
-  .island-settings-tools [data-group="water"] .set-rows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .island-settings-tools [data-group="water"] .set-row:nth-child(2) { border-top: 0; border-left: 1px solid var(--hairline); }
+  .island-settings-tools [data-group="water"] .set-rows, .island-settings-tools [data-group="sedentary"] .set-rows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .island-settings-tools [data-group="water"] .set-row:nth-child(2), .island-settings-tools [data-group="sedentary"] .set-row:nth-child(2) { border-top: 0; border-left: 1px solid var(--hairline); }
   .island-settings-tools [data-group="water"] .island-period-row { grid-column: 1 / -1; }
 }
 @container island-settings (max-width: 760px) { .island-page-options { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -135,6 +135,8 @@
 @container island-settings (max-width: 560px) { .settings-island-page .page-head { flex-wrap: wrap; } .settings-island-page .page-head > div:first-child { flex-basis: 100%; } .settings-island-page .page-head .spacer { display: none; } .settings-island-page .set-search { width: 100%; } .island-settings-overview { padding: 8px 12px; } }
 @container island-settings (max-width: 400px) { .island-page-options { grid-template-columns: repeat(2, minmax(0, 1fr)); } .island-settings .set-row { flex-wrap: wrap; } .island-settings .set-row .ctl { max-width: 100%; margin-left: auto; } .island-settings-tabs .segmented { gap: 18px; } }
 @container island-settings (max-width: 360px) {
+  .island-settings [data-group="sedentary"] .set-row { flex-direction: column; align-items: stretch; }
+  .island-settings [data-group="sedentary"] .set-row .txt { flex: none; }
   .island-settings-overview { align-items: flex-start; gap: 8px; }
   .island-settings-symbol { width: 24px; height: 24px; }
   .island-settings-overview-copy { flex-direction: column; align-items: flex-start; gap: 4px; }

@@ -23,6 +23,75 @@ test('island: opt-in defaults and partial page settings survive restart', t => {
   assert.throws(() => store.patch({ topOffset: -1 })); assert.equal(store.read().settings.topOffset, 30);
 });
 
+test('island sedentary: legacy data stays intact and new reminder is opt-in', t => {
+  const { dir, store, now } = fixture(t), path = join(dir, 'desktop-island.json');
+  const { sedentary, settings: { sedentaryEnabled, sedentaryMinutes, ...settings }, ...legacy } = store.read();
+  const original = JSON.stringify({ ...legacy, settings }); writeFileSync(path, original);
+  const loaded = new IslandStore(dir, now);
+  assert.equal(loaded.loadError, ''); assert.equal(loaded.read().settings.sedentaryEnabled, false);
+  assert.equal(loaded.read().settings.sedentaryMinutes, 60); assert.equal(loaded.read().sedentary.nextAt, null);
+  assert.deepEqual(loaded.read().water, legacy.water); assert.deepEqual(loaded.read().notes, legacy.notes);
+  assert.equal(readFileSync(path, 'utf8'), original);
+  assert.throws(() => loaded.sedentary('reset'), /启用/);
+});
+
+test('island sedentary: one pending reminder, explicit reset and snooze keep water independent', t => {
+  const { store, advance, now } = fixture(t);
+  store.patch({ sedentaryEnabled: true });
+  assert.equal(store.read().sedentary.nextAt, now() + 3600000);
+  advance(3599999); assert.equal(store.tick().length, 0);
+  advance(1); assert.equal(store.tick()[0].kind, 'sedentary');
+  const id = store.read().reminders[0].id;
+  advance(5 * 3600000); assert.equal(store.tick().length, 0);
+  assert.deepEqual(store.read().reminders.map(reminder => reminder.id), [id]);
+  store.sedentary('snooze'); assert.equal(store.read().sedentary.nextAt, now() + 600000);
+  assert.equal(store.read().reminders.length, 0); assert.equal(store.read().water.count, 0);
+  advance(600000); assert.equal(store.tick().length, 1);
+  store.sedentary('reset'); assert.equal(store.read().sedentary.nextAt, now() + 3600000);
+  assert.equal(store.read().reminders.length, 0); assert.equal(store.read().water.nextAt, null);
+});
+
+test('island sedentary: today pause survives restart, resets next day and can be resumed explicitly', t => {
+  const { dir, store, advance, now } = fixture(t);
+  store.patch({ sedentaryEnabled: true, focusEnabled: false, waterEnabled: false, mascotEnabled: false, lastPage: 'tools' });
+  assert.equal(islandPage(store.read().settings), 'tools');
+  store.sedentary('pause'); const loaded = new IslandStore(dir, now); loaded.restartSedentary();
+  assert.equal(loaded.read().sedentary.nextAt, null); assert.throws(() => loaded.sedentary('snooze'), /暂停/);
+  advance(3600000); assert.equal(loaded.tick().length, 0);
+  loaded.sedentary('reset'); assert.equal(loaded.read().sedentary.pausedDay, null);
+  assert.equal(loaded.read().sedentary.nextAt, now() + 3600000);
+  loaded.sedentary('pause'); advance(24 * 3600000); assert.equal(loaded.tick().length, 0);
+  assert.equal(loaded.read().sedentary.nextAt, now() + 3600000);
+  loaded.patch({ sedentaryEnabled: false }); assert.equal(islandPages(loaded.read().settings).includes('tools'), false);
+});
+
+test('island sedentary: lock, sleep and quiet periods discard elapsed time without catching up', t => {
+  const { dir, store, advance, now } = fixture(t);
+  store.patch({ sedentaryEnabled: true }); advance(3600000); store.tick();
+  assert.equal(store.read().reminders.length, 1);
+  store.tick(true); assert.equal(store.read().sedentary.nextAt, null); assert.equal(store.read().reminders.length, 0);
+  advance(8 * 3600000); assert.equal(store.tick(true).length, 0);
+  assert.equal(store.tick(false).length, 0); assert.equal(store.read().sedentary.nextAt, now() + 3600000);
+  advance(7200000); const restarted = new IslandStore(dir, now); restarted.restartSedentary();
+  assert.equal(restarted.tick().length, 0); assert.equal(restarted.read().sedentary.nextAt, now() + 3600000);
+});
+
+test('island sedentary: interval, disable and failed writes preserve other tools and persisted state', t => {
+  const { dir, store, advance, now } = fixture(t);
+  store.patch({ sedentaryEnabled: true, waterEnabled: true }); advance(3600000);
+  assert.deepEqual(store.tick().map(reminder => reminder.kind), ['water', 'sedentary']);
+  store.patch({ sedentaryMinutes: 30 }); assert.equal(store.read().sedentary.nextAt, now() + 1800000);
+  assert.deepEqual(store.read().reminders.map(reminder => reminder.kind), ['water']);
+  const before = store.read(), saved = readFileSync(join(dir, 'desktop-island.json'), 'utf8');
+  assert.throws(() => store.patch({ sedentaryMinutes: 0 })); assert.deepEqual(store.read(), before);
+  mkdirSync(join(dir, 'desktop-island.json.tmp'));
+  assert.throws(() => store.sedentary('reset')); assert.deepEqual(store.read(), before);
+  assert.equal(readFileSync(join(dir, 'desktop-island.json'), 'utf8'), saved);
+  rmSync(join(dir, 'desktop-island.json.tmp'), { recursive: true });
+  store.patch({ sedentaryEnabled: false }); assert.equal(store.read().sedentary.nextAt, null);
+  assert.deepEqual(store.read().reminders.map(reminder => reminder.kind), ['water']); assert.equal(store.read().settings.waterEnabled, true);
+});
+
 test('island shelf: legacy file records load with an empty notes area and draft', t => {
   const { dir, store, now } = fixture(t), file = join(dir, 'existing.lnk'); writeFileSync(file, 'shortcut');
   store.addFiles([file]); store.patch({ lastPage: 'files' });

@@ -49,7 +49,7 @@ try {
   assert.match(fixedSummary, /Codex/); assert.match(fixedSummary, /Z Code/);
   await island.screenshot({ path: join(output, 'collapsed.png') }); mark('collapsed 580×40 with schedule and quotas');
   const summaryPosition = await island.locator('.island-summary').evaluate(button => {
-    const icon = button.querySelector('.island-mascot').getBoundingClientRect(), text = button.querySelector('.island-summary-details').getBoundingClientRect();
+    const icon = button.closest('.island-summary-row').querySelector('.island-mascot-entry .island-mascot').getBoundingClientRect(), text = button.querySelector('.island-summary-details').getBoundingClientRect();
     return { x: (icon.left + text.right) / 2, iconY: (icon.top + icon.bottom) / 2, textY: (text.top + text.bottom) / 2 };
   });
   assert.ok(Math.abs(summaryPosition.x - 290) <= 1); assert.ok(Math.abs(summaryPosition.iconY - 20) <= 1); assert.ok(Math.abs(summaryPosition.textY - 20) <= 1);

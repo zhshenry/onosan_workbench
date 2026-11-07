@@ -1,16 +1,17 @@
 import { z } from 'zod';
 import { localDay } from './todo-contracts';
+import type { AgentConnection, AgentMessage, AgentProvider } from './agent-message-contracts';
 
 export const ISLAND_PAGES = ['schedule', 'files', 'quota', 'tools'] as const;
 export type IslandPage = typeof ISLAND_PAGES[number];
 export const ISLAND_LABELS: Record<IslandPage, string> = { schedule: '日程待办', files: '置物架', quota: 'AI 额度', tools: '小工具' };
-export type IslandMode = 'collapsed' | 'expanded' | 'reminder' | 'speech';
+export type IslandMode = 'collapsed' | 'expanded' | 'reminder' | 'speech' | 'messages';
 export const ISLAND_DOCKS = ['top', 'left', 'right'] as const;
 export type IslandDock = typeof ISLAND_DOCKS[number];
 export const ISLAND_DOCK_LABELS: Record<IslandDock, string> = { top: '顶部', left: '左侧', right: '右侧' };
-export const ISLAND_SIZES = { collapsed: [580, 40], expanded: [580, 270], reminder: [440, 144], speech: [580, 184] } as const;
-const ISLAND_SIDE_SIZES = { collapsed: [64, 360], expanded: [320, 560], reminder: [320, 180], speech: [320, 360] } as const;
-export const ISLAND_MOTION_MS = { collapsed: 160, expanded: 200, reminder: 200, speech: 200 } as const;
+export const ISLAND_SIZES = { collapsed: [580, 40], expanded: [580, 270], reminder: [440, 144], speech: [580, 184], messages: [580, 400] } as const;
+const ISLAND_SIDE_SIZES = { collapsed: [64, 360], expanded: [320, 560], reminder: [320, 180], speech: [320, 360], messages: [400, 560] } as const;
+export const ISLAND_MOTION_MS = { collapsed: 160, expanded: 200, reminder: 200, speech: 200, messages: 200 } as const;
 const time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
 export const IslandSettingsSchema = z.object({
   enabled: z.boolean().default(false),
@@ -28,6 +29,7 @@ export const IslandSettingsSchema = z.object({
   focusEnabled: z.boolean().default(true), focusMinutes: z.number().int().min(1).max(180).default(25),
   waterEnabled: z.boolean().default(false), waterMinutes: z.number().int().min(10).max(240).default(60),
   waterStart: time.default('09:00'), waterEnd: time.default('18:00'),
+  sedentaryEnabled: z.boolean().default(false), sedentaryMinutes: z.number().int().min(10).max(240).default(60),
   mascotEnabled: z.boolean().default(true), mascotMotion: z.boolean().default(true),
   lowQuota: z.number().int().min(0).max(50).default(10),
 });
@@ -40,16 +42,17 @@ export interface IslandNote { id: string; text: string; createdAt: number; updat
 export const IslandNoteDraftSchema = z.object({ text: z.string().max(ISLAND_NOTE_MAX_LENGTH, '文字最多 20000 字'), noteId: z.string().max(128).nullable() }).strict();
 export type IslandNoteDraft = z.infer<typeof IslandNoteDraftSchema>;
 export interface IslandFocus { durationMs: number; remainingMs: number; endsAt: number | null; taskId: string | null; }
-export interface IslandReminder { id: string; kind: 'task' | 'meeting' | 'focus' | 'water' | 'quota'; title: string; createdAt: number; taskId?: string; }
+export interface IslandReminder { id: string; kind: 'task' | 'meeting' | 'focus' | 'water' | 'sedentary' | 'quota' | 'agent'; title: string; createdAt: number; taskId?: string; }
 export interface IslandData {
   settings: IslandSettings; files: IslandFile[]; focus: IslandFocus | null;
   water: { day: string; count: number; nextAt: number | null; pausedDay: string | null };
+  sedentary: { nextAt: number | null; pausedDay: string | null };
   reminders: IslandReminder[];
   quotaAlerts: string[];
   notes: IslandNote[];
   noteDraft: IslandNoteDraft;
 }
-export interface IslandState extends IslandData { mode: IslandMode; pinned: boolean; quiet: boolean; fullscreenDetection: boolean; error?: string; }
+export interface IslandState extends IslandData { mode: IslandMode; pinned: boolean; quiet: boolean; fullscreenDetection: boolean; agentMessages?: AgentMessage[]; error?: string; }
 export interface QuotaWindow { label: string; remaining: number; resetsAt: number | null; }
 export const ISLAND_QUOTA_PROVIDERS = ['codex', 'zcode', 'cursor', 'grokbot'] as const;
 export const ISLAND_QUOTA_LABELS = { codex: 'Codex', zcode: 'Z Code', cursor: 'Cursor', grokbot: 'Grok Bot' } as const;
@@ -57,7 +60,7 @@ export interface QuotaProvider {
   id: typeof ISLAND_QUOTA_PROVIDERS[number]; status: 'disconnected' | 'connecting' | 'ready' | 'error' | 'unsupported';
   account: string; accountKey?: string; plan: string; windows: QuotaWindow[]; updatedAt: number | null; message: string;
 }
-export type IslandNavigation = { view: 'home' | 'settings-island' | 'settings-general'; taskId?: string; section?: 'quota' };
+export type IslandNavigation = { view: 'home' | 'settings-island' | 'settings-general'; taskId?: string; section?: 'quota' | 'water' | 'sedentary' | 'agents' };
 export interface IslandBridge {
   state(): Promise<IslandState>;
   patch(patch: IslandSettingsPatch): Promise<IslandState>;
@@ -82,7 +85,12 @@ export interface IslandBridge {
   noteRemove(id: string): Promise<IslandState>;
   focus(action: 'start' | 'pause' | 'resume' | 'stop', minutes?: number, taskId?: string): Promise<IslandState>;
   water(action: 'drink' | 'snooze' | 'pause'): Promise<IslandState>;
+  sedentary(action: 'reset' | 'snooze' | 'pause'): Promise<IslandState>;
   dismiss(id: string): Promise<IslandState>;
+  agentConnections(): Promise<AgentConnection[]>;
+  agentConnect(provider: AgentProvider, enabled: boolean): Promise<AgentConnection[]>;
+  agentRead(id: string): Promise<IslandState>;
+  agentOpen(id: string): Promise<IslandState>;
   quotas(): Promise<QuotaProvider[]>;
   quotaRefresh(): Promise<QuotaProvider[]>;
   quotaConnect(provider: QuotaProvider['id'], key?: string): Promise<QuotaProvider[]>;
@@ -91,7 +99,7 @@ export interface IslandBridge {
 }
 
 export function islandPages(settings: IslandSettings): IslandPage[] {
-  return ISLAND_PAGES.filter(page => settings.pages[page] && (page !== 'tools' || settings.focusEnabled || settings.waterEnabled || settings.mascotEnabled));
+  return ISLAND_PAGES.filter(page => settings.pages[page] && (page !== 'tools' || settings.focusEnabled || settings.waterEnabled || settings.sedentaryEnabled || settings.mascotEnabled));
 }
 export function islandPage(settings: IslandSettings): IslandPage | null {
   const pages = islandPages(settings);
@@ -115,7 +123,7 @@ export function focusRemaining(focus: IslandFocus | null, now: number): number {
   return focus ? Math.max(0, focus.endsAt === null ? focus.remainingMs : focus.endsAt - now) : 0;
 }
 export function initialIslandData(now = Date.now()): IslandData {
-  return { settings: IslandSettingsSchema.parse({}), files: [], focus: null, water: { day: localDay(new Date(now)), count: 0, nextAt: null, pausedDay: null }, reminders: [], quotaAlerts: [], notes: [], noteDraft: { text: '', noteId: null } };
+  return { settings: IslandSettingsSchema.parse({}), files: [], focus: null, water: { day: localDay(new Date(now)), count: 0, nextAt: null, pausedDay: null }, sedentary: { nextAt: null, pausedDay: null }, reminders: [], quotaAlerts: [], notes: [], noteDraft: { text: '', noteId: null } };
 }
 export function islandSize(mode: IslandMode, dock: IslandDock = 'top') {
   return (dock === 'top' ? ISLAND_SIZES : ISLAND_SIDE_SIZES)[mode];
@@ -125,6 +133,9 @@ export function islandBounds(mode: IslandMode, area: { x: number; y: number; wid
   const width = Math.max(1, Math.min(w, area.width - 24)), height = Math.max(1, Math.min(h, area.height - 12));
   const [expandedWidth, expandedHeight] = islandSize('expanded', dock);
   const inset = Math.min(offset, dock === 'top' ? area.height - Math.max(1, Math.min(expandedHeight, area.height - 12)) : area.width - Math.max(1, Math.min(expandedWidth, area.width - 24)));
-  if (dock !== 'top') return { x: dock === 'left' ? area.x + inset : area.x + area.width - width - inset, y: Math.round(area.y + (area.height - height) / 2), width, height };
-  return { x: Math.round(area.x + (area.width - width) / 2), y: area.y + inset, width, height };
+  if (dock !== 'top') {
+    const panelWidth = mode === 'messages' ? Math.min(width, area.width - inset) : width;
+    return { x: dock === 'left' ? area.x + inset : area.x + area.width - panelWidth - inset, y: Math.round(area.y + (area.height - height) / 2), width: panelWidth, height };
+  }
+  return { x: Math.round(area.x + (area.width - width) / 2), y: area.y + inset, width, height: mode === 'messages' ? Math.min(height, area.height - inset) : height };
 }

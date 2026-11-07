@@ -5,6 +5,7 @@ import { errorText, IconButton, Segmented, Select, TimePicker } from '../ui/cont
 import { Rows, type RowSpec } from './SettingsView';
 import { useIslandState } from './island-state';
 import { GameOptionsMenu } from './GameOptionsMenu';
+import type { AgentConnection } from '../../shared/agent-message-contracts';
 
 const sections = [
   { value: 'display', label: '显示与交互' },
@@ -15,7 +16,7 @@ const sections = [
 ] as const;
 type Section = typeof sections[number]['value'];
 const pageIcons = { schedule: CalendarBlank, files: Folder, quota: Sparkle, tools: SquaresFour };
-const pageDescriptions = { schedule: '月历、日程与待办', files: '文件与文件夹引用', quota: 'Codex 与 Z Code 额度', tools: '专注、喝水与圆环伙伴' };
+const pageDescriptions = { schedule: '月历、日程与待办', files: '文件与文件夹引用', quota: 'Codex 与 Z Code 额度', tools: '专注、喝水、久坐与圆环伙伴' };
 const providerLogos = {
   codex: new URL('../assets/quota-providers/codex.png', import.meta.url).href,
   zcode: new URL('../assets/quota-providers/zcode.png', import.meta.url).href,
@@ -44,8 +45,9 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
   const [displays, setDisplays] = useState<{ id: number; label: string }[]>([]);
   const [providers, setProviders] = useState<QuotaProvider[]>([]), [key, setKey] = useState(''), [showKey, setShowKey] = useState(false), [clear, setClear] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<QuotaProvider['id']>('codex'), [editingKey, setEditingKey] = useState(false), [quotaLoading, setQuotaLoading] = useState(true);
+  const [agentConnections, setAgentConnections] = useState<AgentConnection[] | null>(null);
   const editKeyButton = useRef<HTMLButtonElement>(null);
-  const quotaGroup = useRef<HTMLDivElement>(null), revealQuota = useRef(false), fieldId = useId();
+  const quotaGroup = useRef<HTMLDivElement>(null), revealGroup = useRef<'quota' | 'water' | 'sedentary' | 'agents' | null>(null), fieldId = useId();
   const api = window.workbench.island;
   const run = async (action: () => Promise<unknown>) => {
     if (busyRef.current) return;
@@ -55,19 +57,24 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
   const patch = (value: IslandSettingsPatch) => { void run(async () => { setState(await api.patch(value)); }); };
   useEffect(() => {
     void api.displays().then(setDisplays).catch(e => setError(errorText(e)));
+    if (api.agentConnections) void api.agentConnections().then(setAgentConnections).catch(e => setError(errorText(e)));
   }, []);
   useEffect(() => {
-    const showQuota = () => { revealQuota.current = true; setActive('quota'); resetSearch(); sessionStorage.removeItem('island-settings-section'); };
-    if (sessionStorage.getItem('island-settings-section') === 'quota') showQuota();
-    const listener = (event: Event) => { if ((event as CustomEvent).detail === 'quota') showQuota(); };
+    const showGroup = (group: string | null) => {
+      if (group !== 'quota' && group !== 'water' && group !== 'sedentary' && group !== 'agents') return;
+      revealGroup.current = group; setActive(group === 'quota' ? 'quota' : group === 'agents' ? 'reminders' : 'tools'); resetSearch(); sessionStorage.removeItem('island-settings-section');
+    };
+    showGroup(sessionStorage.getItem('island-settings-section'));
+    const listener = (event: Event) => showGroup((event as CustomEvent).detail);
     window.addEventListener('island-settings-section', listener);
     return () => window.removeEventListener('island-settings-section', listener);
   }, [resetSearch]);
   useEffect(() => {
     let alive = true;
     void api.quotas().then(value => { if (alive) setProviders(value); }).catch(e => { if (alive) setError(errorText(e)); }).finally(() => { if (alive) setQuotaLoading(false); });
-    if (state && active === 'quota' && revealQuota.current && quotaGroup.current) {
-      quotaGroup.current.scrollIntoView({ block: 'nearest' }); revealQuota.current = false;
+    if (state && revealGroup.current && quotaGroup.current) {
+      const target = quotaGroup.current.querySelector(`[data-group="${revealGroup.current}"]`) ?? quotaGroup.current;
+      target.scrollIntoView({ block: 'nearest' }); revealGroup.current = null;
     }
     return () => { alive = false; };
   }, [state, active]);
@@ -75,7 +82,7 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
   if (!state) return <p role={error ? 'alert' : 'status'}>{error || '正在读取灵动岛设置…'}</p>;
   const settings = state.settings;
   const toggle = (field: keyof IslandSettingsPatch, label: string) => <button type="button" className="toggle" role="switch" aria-checked={Boolean(settings[field as keyof typeof settings])} aria-label={label} disabled={busy} onClick={() => patch({ [field]: !settings[field as keyof typeof settings] })} />;
-  const number = (field: 'topOffset' | 'focusMinutes' | 'waterMinutes' | 'lowQuota', label: string, min: number, max: number, unit: string) => <NumberSetting label={label} value={settings[field]} min={min} max={max} unit={unit} disabled={busy} save={value => patch({ [field]: value })} />;
+  const number = (field: 'topOffset' | 'focusMinutes' | 'waterMinutes' | 'sedentaryMinutes' | 'lowQuota', label: string, min: number, max: number, unit: string) => <NumberSetting label={label} value={settings[field]} min={min} max={max} unit={unit} disabled={busy} save={value => patch({ [field]: value })} />;
   const period = (start: 'dndStart' | 'waterStart', end: 'dndEnd' | 'waterEnd', label: string) => <fieldset className="island-setting-period" aria-label={label} disabled={busy}>
     <div><label htmlFor={`${fieldId}-${start}`}>开始</label><TimePicker id={`${fieldId}-${start}`} value={settings[start]} onChange={value => patch({ [start]: value })} /></div><span>—</span>
     <div><label htmlFor={`${fieldId}-${end}`}>结束</label><TimePicker id={`${fieldId}-${end}`} value={settings[end]} onChange={value => patch({ [end]: value })} /></div>
@@ -104,6 +111,10 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
       { key: 'dnd', title: '定时勿扰', desc: '不弹开、不播放声音，提醒留待处理', control: toggle('dnd', '勿扰时段') },
       { key: 'dndTime', title: '勿扰时间', desc: '', className: 'island-period-row', control: period('dndStart', 'dndEnd', '勿扰时间') },
     ] },
+    { id: 'agents', section: 'reminders', title: 'Agent 消息', rows: (['codex', 'cursor'] as const).map(provider => {
+      const connection = agentConnections?.find(value => value.provider === provider), name = provider === 'codex' ? 'Codex' : 'Cursor';
+      return { key: `agent-${provider}`, title: name, desc: connection?.error || (!api.agentConnections ? '请完整重启测试环境以加载消息接口' : `${connection?.connected ? '已启用 · 新会话生效 · ' : ''}${provider === 'codex' ? '回复完成、待授权' : '回复、运行失败'} · 消息仅保存在本机`), control: <button className="set-btn" disabled={busy || agentConnections === null} onClick={() => void run(async () => { const enabled = !connection?.connected; setAgentConnections(await api.agentConnect(provider, enabled)); if (enabled) setState(await api.patch({ mascotEnabled: true })); })}>{connection?.connected ? '断开' : '连接'}</button> };
+    }) },
     { id: 'quota-alerts', section: 'quota', title: '额度提醒', rows: [
       { key: 'threshold', title: '低额度阈值', desc: '每账户、每周期提醒一次；0 为关闭', control: number('lowQuota', '低额度阈值', 0, 50, '%') },
     ] },
@@ -119,6 +130,10 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
       { key: 'water', title: '启用喝水提醒', desc: '只统计主动确认的次数', control: toggle('waterEnabled', '喝水提醒') },
       { key: 'interval', title: '提醒间隔', desc: '休眠后不连续补弹', control: number('waterMinutes', '喝水间隔', 10, 240, '分钟') },
       { key: 'waterTime', title: '提醒时间', desc: '', className: 'island-period-row', control: period('waterStart', 'waterEnd', '喝水时间段') },
+    ] },
+    { id: 'sedentary', section: 'tools', title: '久坐提醒', rows: [
+      { key: 'enabled', title: '启用久坐提醒', desc: '按使用时长提醒，不识别坐姿或离座', control: toggle('sedentaryEnabled', '久坐提醒') },
+      { key: 'interval', title: '提醒间隔', desc: '锁屏、睡眠和勿扰时暂停，恢复后重新计时', control: number('sedentaryMinutes', '久坐间隔', 10, 240, '分钟') },
     ] },
   ];
   const term = query.trim().toLowerCase().replace(/\s+/g, '');
@@ -146,7 +161,7 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
     });
   };
   const count = (term && matches('显示灵动岛 桌面显示 启用') ? 1 : 0) + selectedGroups.reduce((total, group) => total + group.rows.length, 0) + visiblePages.length + visibleProviders.length;
-  const toolsEnabled = settings.focusEnabled || settings.waterEnabled || settings.mascotEnabled;
+  const toolsEnabled = settings.focusEnabled || settings.waterEnabled || settings.sedentaryEnabled || settings.mascotEnabled;
   return <div className="island-settings">
     <div className="island-settings-overview">
       <span className="island-settings-symbol"><Monitor size={18} /></span>
