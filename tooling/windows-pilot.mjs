@@ -251,7 +251,7 @@ try {
   await verifyPublishAssociationRelaunch({ application, page, check, fixture: publishAssociationFixture, report });
   await check('Desktop island: visible native window permits normal main-window exit', async () => {
     const { island, native } = await showLifecycleIsland();
-    await island.getByRole('button', { name: '展开桌面灵动岛', exact: true }).hover();
+    if (await island.locator('.desktop-island.is-collapsed').count()) await island.getByRole('button', { name: '展开桌面灵动岛', exact: true }).hover();
     await island.locator('.desktop-island.is-expanded').waitFor();
     assert.equal(await native.evaluate(win => win.getBounds().width), 580);
     assert.equal(await native.evaluate(win => win.isVisible()), true);
@@ -274,7 +274,7 @@ try {
       const floating = application.windows().find(candidate => /[?&]window=float(?:&|$)/.test(candidate.url()));
       assert.ok(floating);
       const native = await application.browserWindow(floating);
-      await floating.getByRole('button', { name: '展开桌面灵动岛', exact: true }).hover();
+      if (await floating.locator('.desktop-island.is-collapsed').count()) await floating.getByRole('button', { name: '展开桌面灵动岛', exact: true }).hover();
       await floating.getByRole('button', { name: '隐藏桌面灵动岛', exact: true }).click();
       await page.waitForFunction(() => window.workbench.island.state().then(value => !value.settings.enabled));
       assert.equal(await native.evaluate(win => win.isVisible()), false);
