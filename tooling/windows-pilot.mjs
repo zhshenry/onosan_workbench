@@ -6,7 +6,7 @@ import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { _electron as electron } from 'playwright';
 import { runAiCardsPilot, verifyAiCardsRelaunch } from './ai-cards-pilot.mjs';
-import { openInstalledIsland, runIslandEmptyPilot, runIslandPilot, verifyIslandRelaunch } from './island-installed-pilot.mjs';
+import { hoverExpandInstalledIsland, openInstalledIsland, runIslandEmptyPilot, runIslandPilot, verifyIslandRelaunch } from './island-installed-pilot.mjs';
 import { runContextPickerPilot, verifyContextPickerRelaunch } from './context-picker-pilot.mjs';
 import { runMediaKeepalivePilot, prepareMediaKeepaliveQuit, verifyMediaKeepaliveRelaunch } from './media-keepalive-pilot.mjs';
 import { inspectPilotArtifacts } from './pilot-artifacts.mjs';
@@ -251,8 +251,7 @@ try {
   await verifyPublishAssociationRelaunch({ application, page, check, fixture: publishAssociationFixture, report });
   await check('Desktop island: visible native window permits normal main-window exit', async () => {
     const { island, native } = await showLifecycleIsland();
-    if (await island.locator('.desktop-island.is-collapsed').count()) await island.getByRole('button', { name: '展开桌面灵动岛', exact: true }).hover();
-    await island.locator('.desktop-island.is-expanded').waitFor();
+    await hoverExpandInstalledIsland(island);
     assert.equal(await native.evaluate(win => win.getBounds().width), 580);
     assert.equal(await native.evaluate(win => win.isVisible()), true);
     await page.bringToFront();
@@ -274,7 +273,7 @@ try {
       const floating = application.windows().find(candidate => /[?&]window=float(?:&|$)/.test(candidate.url()));
       assert.ok(floating);
       const native = await application.browserWindow(floating);
-      if (await floating.locator('.desktop-island.is-collapsed').count()) await floating.getByRole('button', { name: '展开桌面灵动岛', exact: true }).hover();
+      await hoverExpandInstalledIsland(floating);
       await floating.getByRole('button', { name: '隐藏桌面灵动岛', exact: true }).click();
       await page.waitForFunction(() => window.workbench.island.state().then(value => !value.settings.enabled));
       assert.equal(await native.evaluate(win => win.isVisible()), false);

@@ -16,9 +16,22 @@ export async function openInstalledIsland({ application, page, report }) {
   return { island, native };
 }
 
-async function expand(island) {
-  if (await island.locator('.desktop-island.is-collapsed').count()) await island.getByRole('button', { name: '展开桌面灵动岛', exact: true }).hover();
+export async function hoverExpandInstalledIsland(island) {
+  await island.locator('.desktop-island:is(.is-collapsed, .is-expanded)').waitFor();
+  // Expansion replaces the summary button while native pointer entry can race a
+  // locator's stability check. Move to its measured position without retrying it.
+  const point = await island.locator('.desktop-island').evaluate(element => {
+    const summary = element.querySelector('.island-summary');
+    if (!summary) return null;
+    const box = summary.getBoundingClientRect();
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  });
+  if (point) await island.mouse.move(point.x, point.y);
   await island.locator('.desktop-island.is-expanded').waitFor();
+}
+
+async function expand(island) {
+  await hoverExpandInstalledIsland(island);
   const pin = island.getByRole('button', { name: '固定展开', exact: true });
   if (await pin.count()) await pin.click();
 }
