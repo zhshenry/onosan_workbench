@@ -71,12 +71,16 @@ while ([DateTime]::UtcNow -lt $deadline) {
     $package = Get-Content -LiteralPath (Join-Path $resolvedInstall 'resources\app\package.json') -Raw | ConvertFrom-Json
     if ($package.version -ne $TargetVersion) { Start-Sleep -Milliseconds 500; continue }
     $restarted = $running[0]
+    # Get-Process has no retained query handle. Without acquiring it before exit,
+    # WaitForExit can succeed while ExitCode stays null for this non-child process.
+    $retainedProcessHandle = $restarted.Handle
     $result = @{ status = 'passed'; version = $package.version; autoRestartPid = $restarted.Id; executable = $restarted.Path; wizardActions = @($actions.ToArray()) }
     # Exit-on-close was selected in the old version through the UI before updating.
     [void][UpgradeWindows]::PostMessage($restarted.MainWindowHandle, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero)
     if (-not $restarted.WaitForExit(30000)) { throw 'Auto-restarted app did not exit normally after WM_CLOSE.' }
     $restarted.Refresh()
-    if ($restarted.ExitCode -ne 0) { throw 'Auto-restarted app exited with an error.' }
+    $result.normalExitCode = $restarted.ExitCode
+    if ($restarted.ExitCode -ne 0) { throw "Auto-restarted app exited with code $($restarted.ExitCode)." }
     $result | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $Report -Encoding utf8
     exit 0
   }
