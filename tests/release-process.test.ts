@@ -36,7 +36,7 @@ function fixture(t: TestContext) {
   write(assets[4], `\uFEFF${digest('installer fixture')} *installer/${installer}\r\n${digest('portable fixture')} *portable/${portable}\r\n`);
   write('docs/PORTABLE-README.txt', 'portable usage fixture');
   mkdirSync(path.join(directory, 'tooling'));
-  for (const script of ['publish.mjs', 'package-release.ps1']) copyFileSync(path.join(projectRoot, 'tooling', script), path.join(directory, 'tooling', script));
+  for (const script of ['publish.mjs', 'release-assets.mjs', 'package-release.ps1']) copyFileSync(path.join(projectRoot, 'tooling', script), path.join(directory, 'tooling', script));
   const publish = (...args: string[]) => spawnSync(process.execPath, ['tooling/publish.mjs', '--dry-run', ...args], { cwd: directory, encoding: 'utf8' });
   return { directory, write, publish };
 }
@@ -46,7 +46,7 @@ test('本地发布检查读取五项资产与本版 CHANGELOG，不上传或生�
   const result = publish();
   assert.equal(result.status, 0, result.stderr);
   for (const file of assets) assert.ok(result.stdout.includes(file));
-  assert.match(result.stdout, /gh(?:\.exe)? release create v2\.3\.4 --repo fixture\/workbench --verify-tag --latest/);
+  assert.match(result.stdout, /gh(?:\.exe)? release create v2\.3\.4 --repo fixture\/workbench --verify-tag --draft/);
   assert.match(result.stdout, /--title "OnO Workbench v2\.3\.4"/);
   assert.match(result.stdout, /当前版本的变更/);
   assert.doesNotMatch(result.stdout, /旧版变更/);
@@ -57,7 +57,7 @@ test('预发布检查明确设置 Pre-release 且不替换 Latest', t => {
   const { directory, publish } = fixture(t);
   const result = publish('--prerelease');
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /--verify-tag --prerelease --latest=false/);
+  assert.match(result.stdout, /--verify-tag --draft --prerelease/);
   assert.doesNotMatch(result.stdout, /--latest\s/);
   assert.match(result.stdout, /预发布版，请手动下载测试/);
   assert.equal(existsSync(path.join(directory, 'release/metadata/release-notes.md')), false);
@@ -86,10 +86,11 @@ test('发布检查阻止缺失资产、版本漂移、错误元数据、损坏�
 
 function stubCommands(f: ReturnType<typeof fixture>, state: Record<string, unknown> = {}) {
   const release = {
-    tagName: `v${version}`, name: `OnO Workbench v${version}`, isDraft: false, isPrerelease: state.prerelease === true, url: 'https://github.com/fixture/workbench/releases/tag/v2.3.4',
-    assets: assets.map(file => ({ name: path.basename(file), size: statSync(path.join(f.directory, file)).size, url: `https://example.invalid/${path.basename(file)}` })),
+    id: 123, tag_name: `v${version}`, name: `OnO Workbench v${version}`, draft: state.draft === true, prerelease: state.prerelease === true, html_url: 'https://github.com/fixture/workbench/releases/tag/v2.3.4',
+    assets: assets.map((file, index) => ({ id: index + 1, state: 'uploaded', name: path.basename(file), size: statSync(path.join(f.directory, file)).size, digest: `sha256:${digest(readFileSync(path.join(f.directory, file)))}`, browser_download_url: `https://github.com/fixture/workbench/releases/download/v2.3.4/${path.basename(file)}` })),
   };
-  f.write('state.json', JSON.stringify({ release, ...state }));
+  const content = Object.fromEntries(assets.map(file => [path.basename(file), readFileSync(path.join(f.directory, file)).toString('base64')]));
+  f.write('state.json', JSON.stringify({ release, content, exists: true, ...state }));
   f.write('stub.cjs', `
 const fs = require('node:fs');
 const cp = require('node:child_process');
@@ -102,15 +103,26 @@ cp.spawnSync = (command, args) => {
     if (args[0] === 'status') stdout = state.dirty ? ' M source.ts' : '';
     else if (args[0] === 'branch') stdout = 'main';
     else if (args[0] === 'rev-parse') stdout = args[1] === 'HEAD' ? 'abc123' : (state.wrongTag ? 'def456' : 'abc123');
-    else if (args[0] === 'ls-remote') stdout = state.missingRemoteTag ? '' : 'abc123\\trefs/tags/v2.3.4';
+    else if (args[0] === 'ls-remote') stdout = args.includes('refs/heads/main') ? 'abc123\\trefs/heads/main' : state.missingRemoteTag ? '' : 'abc123\\trefs/tags/v2.3.4';
     else throw new Error('Unexpected git command');
   } else if (command === 'gh' || command === 'gh.exe') {
-    if (args[0] === '--version' || args[1] === 'create') stdout = '';
-    else if (args[1] === 'view') stdout = JSON.stringify(state.release);
-    else if (args[1] === 'download') stdout = state.badMetadata ? 'version: 1.0.0' : fs.readFileSync('release/metadata/latest.yml', 'utf8');
+    if (args[0] === '--version') stdout = '';
+    else if (args[1] === 'create') { state.exists = true; state.release.draft = true; }
+    else if (args[1] === 'upload') stdout = '';
+    else if (args[0] === 'api' && args.includes('PATCH')) state.release.draft = false;
+    else if (args[0] === 'api' && args.includes('--paginate')) stdout = state.exists ? '123' : '';
+    else if (args[0] === 'api' && args[1] === 'repos/fixture/workbench/releases/123') stdout = JSON.stringify(state.release);
+    else if (args[1] === 'download') {
+      const name = args[args.indexOf('--pattern') + 1];
+      fs.writeFileSync(args[args.indexOf('--output') + 1], Buffer.from(state.content[name], 'base64'));
+    }
     else throw new Error('Unexpected gh command');
   } else if (command === 'curl' || command === 'curl.exe') {
-    stdout = state.badDownload ? '404' : '200';
+    if (state.badDownload) return { status: 22, stdout: '', stderr: 'HTTP 404' };
+    const name = args.at(-1).split('/').at(-1);
+    let content = Buffer.from(state.content[name], 'base64');
+    if (state.corruptDownload === name) { content = Buffer.from(content); content[0] ^= 1; }
+    fs.writeFileSync(args[args.indexOf('--output') + 1], content);
   } else throw new Error('Unexpected external command');
   return { status: 0, stdout, stderr: '' };
 };
@@ -121,29 +133,36 @@ require('node:module').syncBuiltinESMExports();
   return { run, calls };
 }
 
-test('正式发布使用 gh release 的现有标签和说明文件，并核验五项下载与远端元数据', t => {
+test('创建草稿后按 ID 核验完整下载，通过后才发布并再下载公开文件', t => {
   const f = fixture(t);
-  const { run, calls } = stubCommands(f);
+  const { run, calls } = stubCommands(f, { exists: false });
   const result = run();
   assert.equal(result.status, 0, result.stderr);
   const command = calls().find(call => call.args?.[1] === 'create');
-  assert.deepEqual(command.args, ['release', 'create', 'v2.3.4', '--repo', 'fixture/workbench', '--verify-tag', '--latest', ...assets, '--title', 'OnO Workbench v2.3.4', '--notes-file', 'release/metadata/release-notes.md']);
+  assert.deepEqual(command.args, ['release', 'create', 'v2.3.4', '--repo', 'fixture/workbench', '--verify-tag', '--draft', '--title', 'OnO Workbench v2.3.4', '--notes-file', 'release/metadata/release-notes.md']);
   assert.match(readFileSync(path.join(f.directory, 'release/metadata/release-notes.md'), 'utf8'), /当前版本的变更/);
   const downloads = calls().filter(call => call.command === 'curl' || call.command === 'curl.exe');
   assert.equal(downloads.length, 5);
-  assert.ok(downloads.every(call => call.args.includes('--head') && call.args.includes('--location')));
-  assert.match(result.stdout, /核验通过/);
+  assert.ok(downloads.every(call => !call.args.includes('--head') && call.args.includes('--output') && call.args.includes('--location')));
+  const entries = calls();
+  assert.equal(entries.filter(call => call.args?.[1] === 'download').length, 5);
+  const patch = entries.findIndex(call => call.args?.includes('PATCH'));
+  assert.ok(patch > entries.findLastIndex(call => call.args?.[1] === 'download'));
+  assert.ok(entries.slice(0, patch).some(call => call.args?.includes('repos/fixture/workbench/releases/123')));
+  assert.ok(!entries.some(call => call.args?.some((arg: string) => arg.includes('releases/tags/'))));
+  assert.match(result.stdout, /完整下载.*SHA256\/SHA512/);
 });
 
 test('预发布创建和只读核验均要求 Pre-release，拒绝与正式通道混用', async t => {
   await t.test('创建预发布', child => {
-    const f = fixture(child), { run, calls } = stubCommands(f, { prerelease: true });
+    const f = fixture(child), { run, calls } = stubCommands(f, { prerelease: true, exists: false });
     const result = run('--prerelease');
     assert.equal(result.status, 0, result.stderr);
     const command = calls().find(call => call.args?.[1] === 'create');
-    assert.ok(command.args.includes('--prerelease') && command.args.includes('--latest=false'));
+    assert.ok(command.args.includes('--prerelease') && command.args.includes('--draft'));
     assert.ok(!command.args.includes('--latest'));
-    assert.match(result.stdout, /预发布 Release.*核验通过/);
+    assert.ok(calls().find(call => call.args?.includes('PATCH')).args.includes('make_latest=false'));
+    assert.match(result.stdout, /预发布 Release.*完整下载/);
   });
   for (const [name, state, args, success] of [
     ['只读核验预发布', { prerelease: true }, ['--prerelease', '--verify'], true],
@@ -154,7 +173,7 @@ test('预发布创建和只读核验均要求 Pre-release，拒绝与正式通�
     const result = run(...args);
     assert.equal(result.status, success ? 0 : 1, result.stderr);
     assert.equal(calls().some(call => call.args?.[1] === 'create'), false);
-    assert.match(success ? result.stdout : result.stderr, success ? /预发布 Release.*核验通过/ : /GitHub Release 必须是/);
+    assert.match(success ? result.stdout : result.stderr, success ? /预发布 Release.*完整下载/ : /GitHub Release 必须是/);
   });
 });
 
@@ -163,10 +182,10 @@ test('未提交、错误标签、未推送标签阻止上传；远端非正式�
     ['未提交', { dirty: true }, undefined, /工作区尚未提交/],
     ['本地标签指向旧提交', { wrongTag: true }, undefined, /必须指向当前提交/],
     ['远端标签缺失', { missingRemoteTag: true }, undefined, /远端 v2.3.4 未推送/],
-    ['Draft', { release: { tagName: 'v2.3.4', isDraft: true, isPrerelease: false } }, '--verify', /必须是对应版本的正式发布/],
-    ['标题格式错误', { release: { tagName: 'v2.3.4', name: 'Ono Workbench 2.3.4', isDraft: false, isPrerelease: false } }, '--verify', /标题必须是 OnO Workbench v2\.3\.4/],
-    ['下载地址错误', { badDownload: true }, '--verify', /未返回 HTTP 200/],
-    ['远端元数据错误', { badMetadata: true }, '--verify', /GitHub latest.yml 与本地产物不一致/],
+    ['Draft', { draft: true }, '--verify', /必须是对应版本的正式发布/],
+    ['标题格式错误', { release: { tag_name: 'v2.3.4', name: 'Ono Workbench 2.3.4', draft: false, prerelease: false } }, '--verify', /标题必须是 OnO Workbench v2\.3\.4/],
+    ['下载地址错误', { badDownload: true }, '--verify', /HTTP 404/],
+    ['下载后同等大小的文件损坏', { corruptDownload: installer }, '--verify', /Downloaded file size or SHA256 mismatch/],
   ];
   for (const [name, state, mode, message] of cases) await t.test(name, child => {
     const f = fixture(child);
@@ -176,6 +195,62 @@ test('未提交、错误标签、未推送标签阻止上传；远端非正式�
     assert.match(result.stderr, message);
     assert.equal(calls().some(call => call.args?.[1] === 'create'), false);
   });
+});
+
+test('草稿校验与公开版本重试均只读，重试会重新计算缓存文件哈希', t => {
+  const f = fixture(t), { run, calls } = stubCommands(f);
+  assert.equal(run('--verify').status, 0);
+  const verifiedFile = path.join(f.directory, 'release/downloads/v2.3.4-published', installer);
+  writeFileSync(verifiedFile, 'corrupted cache');
+  assert.equal(run('--verify').status, 0);
+  assert.equal(readFileSync(verifiedFile, 'utf8'), 'installer fixture');
+  const entries = calls();
+  assert.equal(entries.filter(call => call.command.startsWith('curl')).length, 6);
+  assert.ok(!entries.some(call => call.args?.includes('PATCH') || ['create', 'upload'].includes(call.args?.[1])));
+  const report = JSON.parse(readFileSync(path.join(path.dirname(verifiedFile), 'verification.json'), 'utf8'));
+  assert.equal(report.status, 'passed'); assert.equal(report.assets.length, 5);
+});
+
+test('独立远端校验不要求重建安装包，仍校验实际下载的元数据与校验清单', t => {
+  const f = fixture(t), { run } = stubCommands(f);
+  for (const file of assets) rmSync(path.join(f.directory, file));
+  const result = run('--verify', '--remote-only');
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('独立远端校验拒绝自洽服务端哈希下的错误更新元数据及多余资产', async t => {
+  for (const kind of ['metadata', 'extra-asset']) await t.test(kind, child => {
+    const f = fixture(child), { run } = stubCommands(f);
+    const stateFile = path.join(f.directory, 'state.json');
+    const state = JSON.parse(readFileSync(stateFile, 'utf8'));
+    if (kind === 'metadata') {
+      const content = Buffer.from('version: 0.0.0');
+      state.content['latest.yml'] = content.toString('base64');
+      const asset = state.release.assets.find((value: { name: string }) => value.name === 'latest.yml');
+      asset.size = content.length; asset.digest = `sha256:${digest(content)}`;
+    } else state.release.assets.push({ name: 'unexpected.exe' });
+    writeFileSync(stateFile, JSON.stringify(state));
+    const result = run('--verify', '--remote-only');
+    assert.equal(result.status, 1); assert.match(result.stderr, kind === 'metadata' ? /latest.yml 版本不一致/ : /exactly the five expected/);
+  });
+});
+
+test('真实升级脚本在开发者主机提前拒绝，不能修改本机安装和更新缓存', () => {
+  const result = spawnSync(process.execPath, ['tooling/windows-upgrade-pilot.mjs'], {
+    cwd: projectRoot, encoding: 'utf8', env: { ...process.env, GITHUB_ACTIONS: 'false' },
+  });
+  assert.equal(result.status, 1); assert.match(result.stderr, /never run a real upgrade on a developer profile/);
+});
+
+test('草稿文件与候选构建不一致时阻止发布，已上传草稿可以只验收不发布', t => {
+  const f = fixture(t), { run, calls } = stubCommands(f, { draft: true });
+  const result = run('--verify-draft');
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(calls().some(call => call.args?.includes('PATCH')), false);
+  f.write(assets[1], 'different accepted blockmap');
+  const rejected = run('--publish');
+  assert.equal(rejected.status, 1); assert.match(rejected.stderr, /differs from the accepted build/);
+  assert.equal(calls().some(call => call.args?.includes('PATCH')), false);
 });
 
 test('完整发行打包保留运行文件、剥离便携更新源、归档旧版本并清理展开目录', { skip: process.platform !== 'win32' }, t => {

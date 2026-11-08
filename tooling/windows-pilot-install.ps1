@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 if (-not $env:RUNNER_TEMP -or -not $env:GITHUB_RUN_ID) { throw 'This installer pilot requires a fresh GitHub-hosted runner.' }
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $version = (Get-Content (Join-Path $projectRoot 'package.json') -Raw | ConvertFrom-Json).version
-$installer = Join-Path $projectRoot "release\Ono-Workbench-Setup-$version-x64.exe"
+$installer = if ($env:WORKBENCH_PILOT_INSTALLER) { $env:WORKBENCH_PILOT_INSTALLER } else { Join-Path $projectRoot "release\Ono-Workbench-Setup-$version-x64.exe" }
 $root = Join-Path $env:RUNNER_TEMP "ono-windows-pilot-$($env:GITHUB_RUN_ID)-$($env:GITHUB_RUN_ATTEMPT)"
 $installDirectory = Join-Path $root 'Installed App'
 $dataDirectory = Join-Path $root 'Synthetic Data'
@@ -12,7 +12,7 @@ New-Item -ItemType Directory -Path $root, $dataDirectory -Force | Out-Null
 New-Item -ItemType Directory -Path $reportDirectory -Force | Out-Null
 if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) { throw 'Real NSIS installer was not built.' }
 # /D must be last. NSIS accepts spaces without quoting its directory argument.
-$process = Start-Process -FilePath $installer -ArgumentList "/S /currentuser /D=$installDirectory" -PassThru
+$process = Start-Process -FilePath $installer -ArgumentList "/S /currentuser /D=$installDirectory" -WindowStyle Hidden -PassThru
 if (-not $process.WaitForExit(180000)) { $process.Kill(); throw 'Silent NSIS install timed out after 180 seconds.' }
 $process.Refresh()
 if ($process.ExitCode -ne 0) { throw "NSIS installer failed with exit code $($process.ExitCode)." }

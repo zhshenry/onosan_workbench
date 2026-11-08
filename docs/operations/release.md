@@ -1,6 +1,6 @@
 # Windows 发布、安装与更新
 
-Ono Workbench 与 To-Do-List 采用相同发布顺序：**同步版本与 CHANGELOG → 测试、提交及推送 main 和版本标签 → `npm run release` → 核验正式 Release 与下载资产**。统一通过 GitHub CLI 的 `gh release` 发布到 `zhshenry/onosan_workbench`。
+Ono Workbench 的发布顺序为：**同步版本与 CHANGELOG → 测试、推送 main 和版本标签 → 构建一次 → 草稿上传 → 完整下载校验 → 下载包装机验收 → 正式发布 → 公开下载与真实跨版本更新验收**。安装验收和发布必须使用同一份构建产物。
 
 ## OnO 审批边界（规范草稿）
 
@@ -17,14 +17,30 @@ Ono Workbench 与 To-Do-List 采用相同发布顺序：**同步版本与 CHANGE
    git push origin main v0.1.0
    ```
 
-3. 在 Windows x64 上安装并登录 GitHub CLI（`gh auth login`），运行 `npm run release`。它先完整验证和打包，再用以下形式创建 Release：
+3. 在 Windows x64 上安装并登录 GitHub CLI（`gh auth login`），完整运行一次 `npm run dist:installer`。后续上传、重试和校验不再重新构建。使用以下独立阶段：
 
    ```text
-   gh release create v版本 --repo zhshenry/onosan_workbench --verify-tag --latest <五项资产> --title "OnO Workbench v版本" --notes-file release/metadata/release-notes.md
+   npm run release:upload
+   npm run release:verify-draft
+   # 用下载的同一安装包完成 Windows 装机验收后：
+   npm run release:publish
+   npm run release:verify
    ```
 
    发布前检查工作区已提交、分支为 `main`、本地及远端标签均指向当前提交；`--verify-tag` 要求 GitHub 上标签已存在。缺失产物、版本漂移、错误文件名/大小/SHA512、SHA256 不匹配，以及缺失或空的 CHANGELOG 条目均会阻止发布。发布说明从当前版本条目生成。
-4. 脚本通过 `gh release view/download` 核验对应 Release 为正式版本（非 Draft、非 Pre-release）、标题为 `OnO Workbench v版本`（例如 `OnO Workbench v1.0.0`）、五项资产名称和大小与本地一致，以及下载的 `latest.yml` 与本地完全一致；公开下载地址使用 Windows 自带的 `curl.exe` 检查 HTTP 200。若上传成功但联网核验失败，运行 `npm run release:verify` 重试只读核验；先核对已有 Release，再决定是否重新发布。
+4. 创建/恢复草稿时从有权限的发行版列表取得数字 ID，后续查询和发布使用该 ID；不通过仅支持已发布版本的 `releases/tags/{tag}` 查询草稿。脚本要求恰好五个预期资产，完整下载每个文件，逐个计算 SHA256，与 GitHub digest 及本地构建比较，再核对安装器 SHA512、大小、版本和 `SHA256SUMS.txt`。草稿和公开下载分别保存在 `release/downloads/v版本-draft` 与 `v版本-published`，结果写入各目录的 `verification.json`。失败后重跑对应阶段；已下载文件只有重新计算哈希通过才复用，已发布资产不会重新上传或覆盖。
+
+5. 真实跨版本更新由 GitHub 托管的全新 Windows runner 验收：安装指定旧版本，经 UI 创建合成待办并保存设置，通过正常更新入口读取公开 GitHub 更新源、下载、点击“重启并安装”，完成原有 NSIS 向导，观察自动重启，再启动更新后的程序检查版本、任务 ID 和设置保留。下载缓存内的安装器必须与已完整下载校验的公开安装器具有相同 SHA256。普通 `WORKBENCH_TEST_DATA_DIR` 测试模式会禁用自动更新，不能代替此项；升级脚本拒绝在开发者机器运行。
+
+## 云端发布与补验
+
+在 `Windows cloud acceptance pilot` 的手动运行入口选择：
+
+- `acceptance`：原有全新安装和同版本持久化验收；PR/main push 仍只运行这一项。
+- `publish`：指定 `release_tag` 和更早的 `upgrade_from`；从版本标签构建一次，分步上传/下载校验草稿，安装下载包并通过 UI 验收后按 ID 正式发布，再在独立 Windows job 完成公开文件和真实升级验收。标签需指向远端 main；只用于包含本流程的新候选版本。
+- `verify`：对已公开版本只读补验，不重建或修改 Release。指定 `release_tag=v2.1.2`、`upgrade_from=v2.1.1` 即可独立补验现有版本。文件下载和升级测试为独立步骤，失败可重跑，不产生新的版本分支或发行版。
+
+仅在完整下载和跨版本更新均通过后，才报告“发布验收完成”。云端保留有大小限制的合成截图和 JSON 报告三天，不上传安装器、缓存或真实用户数据。
 
 ## 预发布（Pre-release）
 
@@ -37,19 +53,20 @@ node tooling/publish.mjs --prerelease
 npm run release:verify -- --prerelease
 ```
 
-预发布沿用同一次构建的五项资产，创建时明确使用 `--prerelease --latest=false`，不会替换已有正式 Latest。校验同时要求远端为对应的 Pre-release 且非 Draft；正式版校验继续拒绝预发布。测试者手动下载安装包或完整便携 ZIP；正式安装版默认不接收预发布。未带 `--prerelease` 的原有命令继续执行正式发布。
+预发布沿用同一次构建的五项资产，先建草稿再按 ID 发布，并明确设置 `prerelease=true`、`make_latest=false`，不会替换已有正式 Latest。校验同时要求远端为对应的 Pre-release 且非 Draft；正式版校验继续拒绝预发布。测试者手动下载安装包或完整便携 ZIP；正式安装版默认不接收预发布，因此正常公开源升级验收只用于正式通道。
 
 ## 本地命令与五项发布资产
 
-`npm ci` 安装开发依赖。打包命令使用 `--publish never`；实际上传只发生在发布脚本调用 `gh release create` 时。
+`npm ci` 安装开发依赖。打包命令使用 `--publish never`；实际上传只发生在发布脚本的上传阶段。
 
 | 命令 | 行为 |
 |---|---|
 | `npm run dist:installer` / `npm run dist:all` | 完整验证并生成安装包与便携 ZIP，同时生成元数据及校验清单；仅本地构建 |
 | `npm run dist:portable` / `npm run dist:win` | 验证并生成完整便携 ZIP，更新本地 SHA256 清单；单独执行不能代替完整发行构建 |
 | `npm run release:check` | 只读检查本地五项资产及 CHANGELOG，显示待执行的发布命令和说明；不要求工作区已提交，不联网或上传 |
-| `npm run release` | 完整构建 → 发布前检查 → `gh release create` → 联网核验 |
-| `npm run release:verify` | 只读核验当前版本在 GitHub 上的正式 Release 和下载资产 |
+| `npm run release` | 使用已有构建，上传/恢复草稿、完整下载校验后正式发布，再校验公开下载；不重新构建，不代替云端装机/升级验收 |
+| `npm run release:upload` / `release:verify-draft` / `release:publish` | 独立执行草稿上传、完整下载校验及正式发布，可从失败阶段继续 |
+| `npm run release:verify` | 只读完整下载并校验当前版本的五个公开文件；追加 `-- --remote-only` 可不依赖本地构建，云端通过 `WORKBENCH_RELEASE_TAG` 指定历史版本 |
 
 以 `0.1.0` 为例，每次 Release 必须同时包含以下五项；构建结束后不额外保留约 729 MiB 的展开程序目录。
 

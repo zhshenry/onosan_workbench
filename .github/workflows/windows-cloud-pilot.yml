@@ -9,6 +9,19 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      release_action:
+        type: choice
+        options: [acceptance, verify, publish]
+        default: acceptance
+        description: Installed acceptance, read-only release verification, or publish a new version
+      release_tag:
+        type: string
+        description: Exact stable tag for release verification/publication (e.g. v2.1.2)
+      upgrade_from:
+        type: string
+        default: v2.1.1
+        description: Older published stable tag for the real auto-update test
 
 permissions:
   contents: read
@@ -26,6 +39,7 @@ env:
 
 jobs:
   windows-installed-app:
+    if: github.event_name != 'workflow_dispatch' || inputs.release_action == 'acceptance'
     runs-on: windows-2022
     timeout-minutes: 25
     env:
@@ -98,3 +112,96 @@ jobs:
           if-no-files-found: error
           retention-days: 3
           compression-level: 6
+
+  release-candidate:
+    if: github.event_name == 'workflow_dispatch' && inputs.release_action == 'publish'
+    runs-on: windows-2022
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      WORKBENCH_RELEASE_TAG: ${{ inputs.release_tag }}
+      ELECTRON_MIRROR: 'https://github.com/electron/electron/releases/download/'
+      ELECTRON_BUILDER_BINARIES_MIRROR: 'https://github.com/electron-userland/electron-builder-binaries/releases/download/'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci --no-audit --no-fund
+      - run: node node_modules/electron/install.js
+      - run: npm test
+      - name: Build the five release files exactly once
+        run: npm run dist:installer
+      - name: Upload or resume the release draft
+        run: node tooling/publish.mjs --upload
+      - name: Download and hash all five draft files
+        run: node tooling/publish.mjs --verify-draft
+      - name: Install the exact downloaded candidate
+        shell: pwsh
+        run: |
+          $env:WORKBENCH_PILOT_INSTALLER = Join-Path $PWD "release/downloads/$($env:WORKBENCH_RELEASE_TAG)-draft/Ono-Workbench-Setup-$($env:WORKBENCH_RELEASE_TAG.Substring(1))-x64.exe"
+          ./tooling/windows-pilot-install.ps1
+      - name: Installed candidate UI and persistence acceptance
+        run: npm run test:windows-pilot
+      - name: Publish the verified draft by release ID
+        run: node tooling/publish.mjs --publish
+
+  release-verification:
+    needs: release-candidate
+    if: >-
+      always() && github.event_name == 'workflow_dispatch' &&
+      (inputs.release_action == 'verify' ||
+      (inputs.release_action == 'publish' && needs.release-candidate.result == 'success'))
+    runs-on: windows-2022
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      WORKBENCH_RELEASE_TAG: ${{ inputs.release_tag }}
+      WORKBENCH_UPGRADE_FROM: ${{ inputs.upgrade_from }}
+      # Playwright launches the downloaded installed executable, not local Electron.
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci --no-audit --no-fund
+      - name: Keep binary downloads outside uploaded evidence
+        shell: pwsh
+        run: |
+          "WORKBENCH_RELEASE_DOWNLOAD_DIR=$(Join-Path $env:RUNNER_TEMP 'ono-release-downloads')" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          New-Item -ItemType Directory -Force -Path test-results/release-validation | Out-Null
+      - name: Download and hash the five public release files
+        run: node tooling/publish.mjs --verify --remote-only
+      - name: Real older-version download, restart installation and data preservation
+        run: node tooling/windows-upgrade-pilot.mjs
+      - name: Bound release evidence to synthetic screenshots and reports
+        id: release-evidence
+        if: always()
+        shell: pwsh
+        run: |
+          $verification = Join-Path $env:WORKBENCH_RELEASE_DOWNLOAD_DIR "$($env:WORKBENCH_RELEASE_TAG)-published/verification.json"
+          if (Test-Path -LiteralPath $verification) { Copy-Item -LiteralPath $verification -Destination test-results/release-validation/install.json -Force }
+          if ((Test-Path -LiteralPath test-results/release-validation) -and (Get-ChildItem -LiteralPath test-results/release-validation -File)) {
+            node tooling/pilot-artifacts.mjs test-results/release-validation
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            'safe=true' | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          }
+      - name: Retain release validation evidence for three days
+        if: always() && steps.release-evidence.outputs.safe == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-validation-${{ github.run_id }}
+          overwrite: true
+          path: test-results/release-validation/*
+          if-no-files-found: error
+          retention-days: 3
