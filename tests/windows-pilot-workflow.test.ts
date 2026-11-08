@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { parse } from 'yaml';
 
 // These are intentionally narrow source-contract checks, not a YAML parser or
 // a simulation of GitHub's event delivery. Real PR CI verifies the parsed file.
@@ -9,22 +10,40 @@ function sourceContract(text: string) {
   // Windows checkout normally uses CRLF; match the same config on both runners.
   return text.replace(/\r\n?/g, '\n').split('\n').filter(line => !line.trimStart().startsWith('#')).join('\n');
 }
-const source = sourceContract(workflow);
+const source = sourceContract(workflow).split('\n  release-candidate:')[0];
 const triggers = source.split('\non:\n')[1]?.split('\npermissions:\n')[0];
 
 test('Windows CI source contract accepts both LF and CRLF checkout line endings', () => {
   const lf = workflow.replace(/\r\n?/g, '\n');
-  assert.equal(sourceContract(lf), source);
-  assert.equal(sourceContract(lf.replace(/\n/g, '\r\n')), source);
+  assert.equal(sourceContract(lf).split('\n  release-candidate:')[0], source);
+  assert.equal(sourceContract(lf.replace(/\n/g, '\r\n')).split('\n  release-candidate:')[0], source);
   assert.doesNotMatch(source, /\r/);
 });
 
 test('Windows CI has PR, main push and manual routes without duplicate feature pushes', () => {
-  assert.equal(triggers?.trim(), [
+  assert.equal(triggers?.split('  workflow_dispatch:')[0]?.trim(), [
     'pull_request:', '    branches: [main]', '    types: [opened, reopened, synchronize]',
-    '  push:', '    branches: [main]', '  workflow_dispatch:',
+    '  push:', '    branches: [main]',
   ].join('\n'));
   assert.doesNotMatch(source, /pull_request_target|\bdraft\b|\bsecrets\b/);
+});
+
+test('Release workflow separates candidate publication from read-only public download and real upgrade acceptance', () => {
+  const value = parse(workflow);
+  assert.deepEqual(value.on.workflow_dispatch.inputs.release_action.options, ['acceptance', 'verify', 'publish']);
+  const candidate = value.jobs['release-candidate'];
+  const verification = value.jobs['release-verification'];
+  assert.equal(candidate.permissions.contents, 'write');
+  assert.equal(verification.permissions.contents, 'read');
+  const commands = candidate.steps.map((step: { run?: string }) => step.run).filter(Boolean).join('\n');
+  assert.equal(commands.split('npm run dist:installer').length - 1, 1);
+  const ordered = ['--upload', '--verify-draft', 'WORKBENCH_PILOT_INSTALLER', 'npm run test:windows-pilot', '--publish'];
+  assert.ok(ordered.every((command, index) => commands.includes(command) && (index === 0 || commands.indexOf(command) > commands.indexOf(ordered[index - 1]))));
+  const readOnly = verification.steps.map((step: { run?: string }) => step.run).filter(Boolean).join('\n');
+  assert.match(readOnly, /publish\.mjs --verify --remote-only/);
+  assert.match(readOnly, /windows-upgrade-pilot\.mjs/);
+  assert.doesNotMatch(readOnly, /--publish|release upload|release create|--clobber/);
+  assert.equal(verification['runs-on'], 'windows-2022');
 });
 
 test('Windows CI keeps only read access and does not persist checkout credentials', () => {
