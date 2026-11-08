@@ -46,6 +46,11 @@ async function launch(version) {
   page = await application.firstWindow(); page.setDefaultTimeout(20000);
   page.on('pageerror', error => report.errors.push(error.message));
   await page.locator('#view-home').waitFor();
+  const collapseAi = page.locator('.topbar').getByRole('button', { name: '收起 AI 助手', exact: true });
+  if (await collapseAi.isVisible()) {
+    await collapseAi.click();
+    await page.locator('#workbench-ai-panel').waitFor({ state: 'hidden' });
+  }
   const identity = await application.evaluate(({ app }) => ({ version: app.getVersion(), isPackaged: app.isPackaged, executable: process.execPath, userData: app.getPath('userData'), appData: app.getPath('appData') }));
   assert.equal(identity.version, version); assert.equal(identity.isPackaged, true);
   assert.equal(identity.executable.toLowerCase(), executablePath.toLowerCase());
