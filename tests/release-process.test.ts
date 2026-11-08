@@ -95,6 +95,8 @@ function stubCommands(f: ReturnType<typeof fixture>, state: Record<string, unkno
 const fs = require('node:fs');
 const cp = require('node:child_process');
 const state = JSON.parse(fs.readFileSync('state.json', 'utf8'));
+const expectedAssets = structuredClone(state.release.assets);
+if (state.partialDraft) state.release.assets = [expectedAssets[0], { ...expectedAssets[1], size: 1 }];
 const log = value => fs.appendFileSync('calls.jsonl', JSON.stringify(value) + '\\n');
 cp.spawnSync = (command, args) => {
   log({ command, args });
@@ -107,8 +109,12 @@ cp.spawnSync = (command, args) => {
     else throw new Error('Unexpected git command');
   } else if (command === 'gh' || command === 'gh.exe') {
     if (args[0] === '--version') stdout = '';
-    else if (args[1] === 'create') { state.exists = true; state.release.draft = true; }
-    else if (args[1] === 'upload') stdout = '';
+    else if (args[1] === 'create') { state.exists = true; state.release.draft = true; state.release.assets = []; }
+    else if (args[1] === 'upload') {
+      const name = require('node:path').basename(args[5]);
+      state.release.assets = state.release.assets.filter(asset => asset.name !== name);
+      state.release.assets.push(expectedAssets.find(asset => asset.name === name));
+    }
     else if (args[0] === 'api' && args.includes('PATCH')) state.release.draft = false;
     else if (args[0] === 'api' && args.includes('--paginate')) stdout = state.exists ? '123' : '';
     else if (args[0] === 'api' && args[1] === 'repos/fixture/workbench/releases/123') stdout = JSON.stringify(state.release);
@@ -145,12 +151,24 @@ test('创建草稿后按 ID 核验完整下载，通过后才发布并再下载�
   assert.equal(downloads.length, 5);
   assert.ok(downloads.every(call => !call.args.includes('--head') && call.args.includes('--output') && call.args.includes('--location')));
   const entries = calls();
+  assert.equal(entries.filter(call => call.args?.[1] === 'upload').length, 5);
   assert.equal(entries.filter(call => call.args?.[1] === 'download').length, 5);
   const patch = entries.findIndex(call => call.args?.includes('PATCH'));
   assert.ok(patch > entries.findLastIndex(call => call.args?.[1] === 'download'));
   assert.ok(entries.slice(0, patch).some(call => call.args?.includes('repos/fixture/workbench/releases/123')));
   assert.ok(!entries.some(call => call.args?.some((arg: string) => arg.includes('releases/tags/'))));
   assert.match(result.stdout, /完整下载.*SHA256\/SHA512/);
+});
+
+test('部分上传失败后的草稿只补传缺失或不同的文件，保持草稿并允许后续独立验收', t => {
+  const f = fixture(t), { run, calls } = stubCommands(f, { draft: true, partialDraft: true });
+  const result = run('--upload');
+  assert.equal(result.status, 0, result.stderr);
+  const uploads = calls().filter(call => call.args?.[1] === 'upload');
+  assert.equal(uploads.length, 4);
+  assert.equal(uploads.some(call => path.basename(call.args[5]) === installer), false);
+  assert.equal(calls().some(call => call.args?.includes('PATCH')), false);
+  assert.equal(calls().some(call => call.command.startsWith('curl')), false);
 });
 
 test('预发布创建和只读核验均要求 Pre-release，拒绝与正式通道混用', async t => {
