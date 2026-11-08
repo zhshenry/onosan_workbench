@@ -253,6 +253,16 @@ test('草稿文件与候选构建不一致时阻止发布，已上传草稿可�
   assert.equal(calls().some(call => call.args?.includes('PATCH')), false);
 });
 
+test('独立发布阶段核验草稿后仅发布，公开下载由独立只读阶段验收', t => {
+  const f = fixture(t), { run, calls } = stubCommands(f, { draft: true });
+  const result = run('--publish');
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(calls().filter(call => call.args?.includes('PATCH')).length, 1);
+  assert.equal(calls().filter(call => call.args?.[1] === 'download').length, 5);
+  assert.equal(calls().filter(call => call.command.startsWith('curl')).length, 0);
+  assert.match(result.stdout, /separate remaining stages/);
+});
+
 test('完整发行打包保留运行文件、剥离便携更新源、归档旧版本并清理展开目录', { skip: process.platform !== 'win32' }, t => {
   const f = fixture(t);
   f.write('release/win-unpacked/Ono Workbench.exe', 'app fixture');

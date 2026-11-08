@@ -89,6 +89,10 @@ async function main() {
     run(gh, ['api', '--method', 'PATCH', `repos/${repo}/releases/${release.id}`, '--field', 'draft=false', '--field', `prerelease=${prerelease}`, '--raw-field', `make_latest=${!prerelease}`]);
     release = JSON.parse(run(gh, ['api', `repos/${repo}/releases/${release.id}`]));
     requireCheck(!release.draft, 'Release is still a draft.');
+    if (mode === '--publish') {
+      console.log(`Release published: ${release.html_url}; public download and upgrade acceptance are separate remaining stages.`);
+      return;
+    }
     await verify(false);
   }
   console.log(`${release.draft ? '草稿' : prerelease ? '预发布' : '正式'} Release 五项文件已完整下载并通过 SHA256/SHA512 校验：${release.html_url}`);
