@@ -19,8 +19,11 @@ export const AgentMessageSchema = z.object({
   createdAt: z.number(), updatedAt: z.number(), readAt: z.number().nullable(), resolvedAt: z.number().nullable(),
 });
 export type AgentMessage = z.infer<typeof AgentMessageSchema>;
+export type AgentReadTarget = Pick<AgentMessage, 'id' | 'updatedAt'>;
 // connected confirms local hook configuration, not the client's trust decision or actual delivery.
 export interface AgentConnection { provider: AgentProvider; connected: boolean; error?: string; }
+// PermissionRequest runs before Codex's approval flow, including automatic review; it cannot prove user action is needed.
+export function agentMessageVisible(message: AgentMessage): boolean { return message.provider !== 'codex' || message.kind !== 'approval'; }
 export function agentPending(message: AgentMessage): boolean { return message.kind === 'approval' && message.resolvedAt === null; }
 export function agentMessageStatus(message: AgentMessage): string {
   return agentPending(message) ? '待授权' : message.kind === 'approval' ? '已结束' : message.kind === 'failed' ? '运行失败' : message.readAt ? '已读' : '有新回复';

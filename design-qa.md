@@ -1,14 +1,50 @@
 # 设计验收索引
 
+## v2.1.5 发布候选（2026-11-10）
+
+用户确认本版同时包含待办助手／消息改动及占星扩展相位。版本、锁文件和 CHANGELOG 已同步至 2.1.5。`npm run verify` 通过；全仓 1006 项测试在本机 1004 项通过，另外两项因 Windows 创建符号链接权限 EPERM 未能执行，保留原测试并由云端 Windows 流程完整验收。发布检查补齐旧占星测试的上限断言：按每组对象的 maxOrb 校验实际偏差，并限制六分不超过 6°、其余不超过 10°，不改变生产计算。
+
+本条记录为发布前本地候选快照；正式发布仍须完成同一构建的五项文件校验、下载包装机及公开跨版本更新验收。日志：`C:/Users/henry/.codex/visualizations/2026/11/08/01a1bb32-d93e-7333-9ccd-ece9f90bfb10/release-v2.1.5-{tests-final,verify}.log`。功能专项证据见下方消息与相位条目。
+
+## 消息 · Codex 权限检查误报修复 · 2026-11-10
+
+final result: passed。截图中的工具验证描述来自 PermissionRequest，自动审核也会产生；旧实现将请求直接认定为待授权，PostToolUse 后又保留为未读「已结束」，并不代表会话完成。新中继忽略该类请求，主进程过滤存储及旧中继送入的 Codex approval，列表、计数、琥珀点和气泡使用一致规则；底层历史及原始已读／处理状态保留，旧提醒队列单独清理。Stop 仍提醒本轮回复，设置不再承诺没有可靠状态源的待授权提醒。权限检查时长不作为用户等待证据；未修改客户端授权决定或信任记录。
+
+78/78 相关回归、`npm run verify` 及 7 项隔离原生 Electron 验收通过。覆盖旧 pending／resolved 记录启动过滤、旧中继迟到请求不弹气泡、保留原始历史与其他事项、一键已读及跨窗口计数、真实 PowerShell 中继忽略请求但仍送达最终回复、重新加载与 320×420 布局，以及设置文案。主窗口和助手 URL／标题及非空内容正确，无框架错误覆盖层、无运行错误或控制台错误／警告。Browser 插件不可用，使用已有 Playwright 驱动 Electron。所有数据均为隔离合成内容，没有修改真实消息、客户端配置或凭据。
+
+静态审计仍有 14 项既有发现，按规则及文件与上一轮报告比较无新增；DESIGN lint 0 错误，保留原有 YAML 提示。`git diff --check` 通过。沙箱首次回归因临时目录原子重命名 EPERM 失败，正常 Windows 权限下隔离重跑全部通过；早期原生脚本缺少测试收件目录，补建后 7 项通过，均非应用逻辑失败。
+
+证据目录 `C:/Users/henry/.codex/visualizations/2026/11/08/01a1bb32-d93e-7333-9ccd-ece9f90bfb10/`：`agent-noise-{tests-native.log,verify.log,pilot.mjs,result.json,audit.json,design-lint.log}`，以及 `agent-noise-{filtered,final-reply,narrow}.png`。实际运行的是新构建的隔离实例；没有替换正在运行的安装版或真实中继，尚未打包发布。旧中继在更新工作台后同样受到主进程过滤，无需重复账户授权。
+
+## 消息 · 一键全部已读 · 2026-11-10
+
+final result: passed。在消息筛选主行右侧加入「全部已读」，无未读时禁用但不隐藏；待授权与事项提醒操作另行排列，固定尺寸筛选保持稳定。复用现有 Check 图标和 island token；消息按编号、更新时间快照批量保存，跳过后到消息及同编号的新版本，不把已读当作授权完成。保存成功后广播状态，批量清除对应 Agent 提醒并保留其他提醒。
+
+74 项相关回归、9 组真实 Electron 交互／布局检查及 `npm run verify` 通过。新增回归验证历史和原已读时间保留、待授权不解除、晚到与更新消息保护、消息存储失败不改内存或旧文件、主 frame 权限校验及提醒队列隔离。实际 Electron 验证 Codex／Cursor 混合消息、一键清零、失败重试、跨窗口角标同步、持久化、版本冲突、320×420 及 150%／200% 缩放；预期写入失败被正常提示，无意外运行错误或控制台错误／警告。未使用 Browser 插件（不可用），通过已安装 Playwright 驱动原生 Electron；所有数据位于隔离目录，没有标记用户真实消息。
+
+证据目录 `C:/Users/henry/.codex/visualizations/2026/11/08/01a1bb32-d93e-7333-9ccd-ece9f90bfb10/`：`agent-read-all-{tests.log,verify.log,pilot.mjs,result.json}`、`agent-read-all-{before,after}.png` 及缩放截图。当前改动尚未打包更新。
+
+严格静态审计保留原有 14 项，按规则及文件比较无新增；DESIGN lint 无错误，保留 YAML 提示。`git diff --check` 通过。
+
+## 待办助手 · 页签与筛选尺寸固定 · 2026-11-09
+
+final result: passed。固定「对话／消息」页签宽度基准和「未读／全部」组宽，计数不再自动撑开按钮；两组使用等宽数字，窄视口可收缩，超长页签文字省略并可悬停查看全文。消息筛选的间距改用共享 `--segment-gap`，让实际按钮与选中背景按同一数值布局。未修改共享 Segmented 的全局样式、计数或消息逻辑。
+
+生产构建及 6 组真实 Electron 布局检查通过：0／1／9／10／99／100／999／1000 条合成未读数据下，四个按钮的坐标、宽高与选中背景宽度均一致；切换筛选、页签和键盘焦点不改变几何尺寸，待授权入口出现时主按钮保持位置。复验 320×420、150% 和 200% 缩放，按钮可见且根容器无横向溢出。运行错误和控制台错误／警告为 0；使用隔离数据与已安装 Playwright 驱动 Electron（Browser 插件不可用），未修改真实消息。
+
+证据目录 `C:/Users/henry/.codex/visualizations/2026/11/08/01a1bb32-d93e-7333-9ccd-ece9f90bfb10/`：`assistant-fixed-tabs-{result.json,pilot.mjs,pilot.log,verify.log}`、`assistant-fixed-tabs-{0,1000,comparison}.png` 和缩放截图。当前安装版未替换。
+
+严格静态审计仍为原有 14 项，按规则与文件比较无新增；DESIGN lint 无错误，保留 YAML 提示。`git diff --check` 通过。
+
 ## Codex 消息 · 真实接入排查与信任审核 · 2026-11-09
 
-final result: blocked。阻塞项为用户在 Codex 中审核并信任新 Hook，以及审核后的真实回调验证；配置和本机中继自检已完成，不能把它们宣称为真实 Codex 消息已接通。
+final result: passed。初次接入在配置和本机中继自检完成后等待用户审核；后续四项 Hook 已记录信任，2026-11-09 23:41（Asia/Shanghai）只读检查实际消息库，确认 9 条回复与 4 条授权消息，共 13 条真实 Codex 消息，不含接入自检。各会话标识符合 Codex UUID 格式，补充证据为 `real-codex-delivery-confirmed.json`；未保存正文或读取完整对话。
 
-只读排查确认运行中的安装版为 2.1.3；工作台对应的用户级 `~/.codex/hooks.json`、消息中继、收件目录及消息库均不存在。此前只有额度授权，消息监听未接入。采用现有 `AgentHooks.connect` 合并配置至真实用户目录，保留其他设置，不改额度授权或 Codex 信任记录；运行实际 PowerShell 中继发送一条明确标记「接入自检」的合成消息，运行中的工作台已消费并保存该条消息。未将合成测试冒充真实 Codex 回调。
+初次只读排查时，运行中的安装版为 2.1.3；工作台对应的用户级 `~/.codex/hooks.json`、消息中继、收件目录及消息库均不存在。此前只有额度授权，消息监听未接入。采用现有 `AgentHooks.connect` 合并配置至真实用户目录，保留其他设置，不改额度授权或 Codex 信任记录；运行实际 PowerShell 中继发送一条明确标记「接入自检」的合成消息，运行中的工作台已消费并保存该条消息。未将合成测试冒充真实 Codex 回调。
 
-源码修正「已开启」的误导性状态：本机配置存在显示「监听已配置」，说明 Codex 设置 → Hooks 的审核信任步骤；未配置显示「尚未接入，需单独开启」。消息空态增加同样引导，入口改为「接入与管理消息提醒」。`connected` 的配置含义已写入契约注释；真实端到端接入仍等待用户审核和后续新会话。
+源码修正「已开启」的误导性状态：本机配置存在显示「监听已配置」，说明 Codex 设置 → Hooks 的审核信任步骤；未配置显示「尚未接入，需单独开启」。消息空态增加同样引导，入口改为「接入与管理消息提醒」。`connected` 的配置含义已写入契约注释，不能把配置状态单独当作真实回调通过的证据。
 
-11 项相关回归、生产构建与 12 条隔离 Electron 检查通过，运行错误和控制台错误／警告为 0；已查看空消息页的审核说明。严格静态审计仍为原有 14 项；DESIGN lint 无错误，保留 YAML 提示。日志位于同一证据目录：`codex-message-setup-{tests.log,verify.log,result.json,pilot.mjs}`。真实接入的独立证据为 `real-codex-message-connection.json`，明确区分 `receivedByRunningWorkbench: true` 与未确认的 Codex 信任及真实回调。证据目录：`C:/Users/henry/.codex/visualizations/2026/11/08/01a1bb32-d93e-7333-9ccd-ece9f90bfb10/`。界面提示为源码修改，当前安装版二进制未替换。
+11 项相关回归、生产构建与 12 条隔离 Electron 检查通过，运行错误和控制台错误／警告为 0；已查看空消息页的审核说明。严格静态审计仍为原有 14 项；DESIGN lint 无错误，保留 YAML 提示。日志位于同一证据目录：`codex-message-setup-{tests.log,verify.log,result.json,pilot.mjs}`。`real-codex-message-connection.json` 是初次合成自检快照，不能替代后续 `real-codex-delivery-confirmed.json` 的真实回调记录。证据目录：`C:/Users/henry/.codex/visualizations/2026/11/08/01a1bb32-d93e-7333-9ccd-ece9f90bfb10/`。该次诊断未替换安装版二进制。
 
 ## 消息提醒 · 并入账户详情 · 2026-11-09
 
@@ -661,3 +697,12 @@ final result: passed
 - 版本同步后 `npm run verify` 通过。完整本机测试在允许回环服务的环境运行，995 项中 993 通过；2 项真实文件符号链接夹具因本机 EPERM 未完成，未跳过或修改测试，发布须由全新云端 Windows 环境覆盖全量回归及装机验收。受限沙箱中的首次完整测试因回环服务／文件权限不满足而终止，不计作通过。
 - 已定位到 Codex 随附的 Python 运行时并补跑 premium 严格静态检查，报告 14 项启发式结果（6 项归属识别、8 项字面模式提示），没有计作全仓静态通过。共享 React Select 在旧版即存在；其余按钮／textarea 命中位于本次未修改的文件，未为发版扩大无关改动。此前「未找到 Python」记录指当次默认入口不可用、未定位到随附运行时，并非确认整台机器没有解释器。
 - 证据：C:/Users/henry/.codex/visualizations/2026/11/04/01a1a746-c52f-7451-8935-d81fa6f8fde7/release-v2.1.4/，含 tests-unrestricted.log、verify.log、premium-audit.json。正式验收沿用仓库已有流程：同一次构建的五项资产经草稿完整下载校验、下载包装机验收后发布，再独立校验公开文件及 v2.1.3→v2.1.4 的真实更新。
+
+## Astrodienst 相位规则与分组（2026-11-10）
+
+- 用户确认以有出处的 Astrodienst 规则为参照，并明确选择「只计算已有官方依据的对象，其他对象仍显示位置」。采用 2.GW / Liz Greene 100% 的五大相位子集：十星及凯龙星 10°／六分 6°；数学点为 0°，配对取平均得到 5°／六分 3°，点位间不计算、不启用 to all objects、不增加四轴相位。谷神、智神、婚神、灶神仅保留位置、落宫、顺逆行和详情。原星历、时区、平均交点与宫制算法保留。来源及适用范围已写入 UX-CONTRACT。
+- 相位页复用既有表格、共享 Select 与 caption 字阶，主星及扩展关系分表，组内按偏差升序；新增「实际偏差」「上限」两列及按需展开的规则和官方来源。筛选、索引选中、取消及盘面连线仍使用同一结果；AI 上下文同步来源、实际偏差与上限，不再声明扩展统一 3°。TEST 命例新结果为 39 条（主星 23、扩展 16），没有为了减少数量修改官方上限。
+- `npm run verify` 通过字阶检查、前后端类型及生产构建；五份占星计算／界面／解读测试共 52 项通过。新增边界、跨零点、舍入前判定、点位配对、位置对象不参与相位及完整 AI 上下文回归。首次受限测试中的存储 EPERM 在专用临时目录及允许原子写入的运行环境中消除，未改动存储实现或弱化断言。
+- Browser plugin not available，采用独立合成数据的 Playwright Electron 实测：页面身份、23/16 分组、四列数据、原生 disclosure 键盘、共享 combobox Escape 与焦点恢复、组合筛选／盘面连线、空结果恢复、扩展行索引、全部位置及详情、三主题、1488×900／1024×680／200% 缩放均通过，9 组检查且无渲染或控制台错误。已查看主表、展开规则、窄窗口和原生缩放截图。QA 脚本早期的英文标题／button 角色定位已按真实中文标题和 combobox 语义修正，未为脚本修改产品。
+- Premium 严格静态审计仍报告 14 项既有提示，均位于本次相位改动之外（6 项归属识别、8 项字面模式），未计作全仓静态通过；没有扩大到其他任务的灵动岛、AI 或语音页面。未运行全仓发布验收，未发布或重启用户实例；隔离验收实例已关闭。
+- 证据：C:/Users/henry/.codex/visualizations/2026/11/04/01a1a746-c52f-7451-8935-d81fa6f8fde7/astro-aspects-2026-11-10/，含 tests.log、verify.log、pilot.mjs、pilot.log、report.json、premium-audit.json、aspects-main.png、aspects-rules.png、aspects-extended.png、aspects-filtered.png、三主题截图及窄窗／200% 原生截图。

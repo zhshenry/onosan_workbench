@@ -180,7 +180,7 @@ export class IslandStore {
     if (this.data.quotaAlerts.includes(key)) return false;
     const data = this.read(); data.quotaAlerts = [...data.quotaAlerts, key].slice(-200); this.commit(data); return true;
   }
-  dismiss(id: string): IslandData { const data = this.read(); data.reminders = data.reminders.filter(r => r.id !== id); return this.commit(data); }
+  dismiss(id: string | string[]): IslandData { const data = this.read(), ids = new Set(Array.isArray(id) ? id : [id]); data.reminders = data.reminders.filter(r => !ids.has(r.id)); return this.commit(data); }
   tick(sedentaryPaused = false): IslandReminder[] {
     if (this.loadError) return [];
     const data = this.read(), now = this.now(), day = localDay(new Date(now));

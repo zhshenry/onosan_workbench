@@ -159,7 +159,8 @@ test('占星:相位非空且类型合法', () => {
   assert.ok(a.aspects.length > 0);
   for (const asp of a.aspects) {
     assert.ok(['合', '六分', '三分', '刑', '冲'].includes(asp.type));
-    assert.ok(asp.orb >= 0 && asp.orb <= 8);
+    assert.ok(asp.maxOrb > 0 && asp.maxOrb <= (asp.type === '六分' ? 6 : 10));
+    assert.ok(asp.orb >= 0 && asp.orb <= asp.maxOrb);
   }
 });
 

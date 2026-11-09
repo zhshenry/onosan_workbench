@@ -113,7 +113,7 @@ test('island Agent: eight seconds closes only the bubble; opening and closing th
   f.invoke('island:dismiss', f.owner.state().reminders[0].id); assert.equal(f.owner.state().agentMessages[0].readAt, null);
 });
 
-test('island Agent: read and launch are guarded; failed launch cannot discard unread/pending state', async t => {
+test('island Agent: read and launch are guarded; legacy checks stay off the message feed and retain stored state', async t => {
   const f = fixture(t), message = f.owner.agents.messages.ingest({ provider: 'codex', sessionId: 'session-1', turnId: 'turn-1', kind: 'approval', requestKey: 'request-1', occurredAt: Date.now(), title: '执行验证' });
   f.owner.show();
   for (const channel of ['island:agentRead', 'island:agentOpen', 'island:agentConnect', 'island:agentConnections']) {
@@ -121,11 +121,33 @@ test('island Agent: read and launch are guarded; failed launch cannot discard un
   }
   f.electron.shell.openExternal = () => { throw new Error('client unavailable'); };
   await assert.rejects(f.invoke('island:agentOpen', message.id), /client unavailable/);
-  assert.equal(f.owner.state().agentMessages[0].readAt, null); assert.equal(f.owner.state().agentMessages[0].resolvedAt, null);
+  assert.deepEqual(f.owner.state().agentMessages, []);
+  assert.equal(f.owner.agents.messages.get(message.id).readAt, null); assert.equal(f.owner.agents.messages.get(message.id).resolvedAt, null);
   const destinations: string[] = []; f.electron.shell.openExternal = (url: string) => { destinations.push(url); };
   await f.invoke('island:agentOpen', message.id);
   assert.deepEqual(destinations, ['codex://threads/session-1']);
-  assert.ok(f.owner.state().agentMessages[0].readAt); assert.equal(f.owner.state().agentMessages[0].resolvedAt, null);
+  assert.ok(f.owner.agents.messages.get(message.id).readAt); assert.equal(f.owner.agents.messages.get(message.id).resolvedAt, null);
+});
+
+test('island Agent: old and new Codex permission checks never trigger badges or bubbles; final replies still do', t => {
+  const f = fixture(t), now = Date.now(); f.owner.show();
+  const pending = f.owner.agents.messages.ingest({ provider: 'codex', sessionId: 'checks', turnId: 'legacy', kind: 'approval', requestKey: 'pending', occurredAt: now });
+  const resolved = f.owner.agents.messages.ingest({ provider: 'codex', sessionId: 'checks', turnId: 'legacy', kind: 'approval', requestKey: 'resolved', occurredAt: now });
+  f.owner.agents.messages.ingest({ provider: 'codex', sessionId: 'checks', turnId: 'legacy', kind: 'resolved', requestKey: 'resolved', occurredAt: now + 1 });
+  f.owner.store.enqueue([pending, resolved].map(message => ({ id: `agent:${message.id}`, kind: 'agent', title: '权限检查', createdAt: now })));
+  assert.deepEqual(f.owner.state().agentMessages, []); assert.deepEqual(f.owner.state().reminders, []);
+  f.owner.tick(); assert.deepEqual(f.owner.store.read().reminders, []); assert.equal(f.owner.state().mode, 'collapsed');
+  const inbox = join(f.dir, 'agent-inbox'); mkdirSync(inbox);
+  const base = { provider: 'codex', sessionId: 'checks', turnId: 'current', requestKey: 'auto-review', occurredAt: now + 2 };
+  writeFileSync(join(inbox, '1000-aa.json'), JSON.stringify({ ...base, kind: 'approval', title: '继续隔离 Electron 界面验收' }));
+  f.owner.tick(); assert.deepEqual(f.owner.state().agentMessages, []); assert.deepEqual(f.owner.state().reminders, []);
+  assert.equal(f.owner.state().mode, 'collapsed');
+  assert.equal(f.owner.agents.messages.read().length, 3, 'underlying records are retained');
+  assert.equal(f.owner.agents.messages.get(pending.id).readAt, null);
+  writeFileSync(join(inbox, '1001-bb.json'), JSON.stringify({ ...base, kind: 'reply', occurredAt: now + 3, title: '本轮最终回复' }));
+  f.owner.tick(); assert.equal(f.owner.state().agentMessages.length, 1);
+  assert.equal(f.owner.state().agentMessages[0].kind, 'reply'); assert.equal(f.owner.state().agentMessages[0].readAt, null);
+  assert.equal(f.owner.state().reminders.length, 1); assert.equal(f.owner.state().mode, 'speech');
 });
 
 test('island Agent: silent when hidden or quiet, and pinned page survives a visit to messages', t => {
@@ -138,6 +160,28 @@ test('island Agent: silent when hidden or quiet, and pinned page survives a visi
   f.invoke('island:pin'); f.invoke('island:mode', 'messages', true);
   assert.equal(f.owner.state().pinned, true); assert.equal(f.owner.state().mode, 'messages');
   f.invoke('island:mode', 'expanded', true); assert.equal(f.owner.state().pinned, true); assert.equal(f.owner.state().mode, 'expanded');
+});
+
+test('island Agent: assistant bulk read is frame-guarded and clears only the selected Agent reminders', t => {
+  const f = fixture(t);
+  const reply = f.owner.agents.messages.ingest({ provider: 'codex', sessionId: 'bulk', turnId: 'reply', kind: 'reply', occurredAt: 1000 });
+  const approval = f.owner.agents.messages.ingest({ provider: 'codex', sessionId: 'bulk', turnId: 'approval', kind: 'approval', requestKey: 'pending', occurredAt: 1000 });
+  const targets = [reply, approval].map(({ id, updatedAt }: any) => ({ id, updatedAt }));
+  const late = f.owner.agents.messages.ingest({ provider: 'cursor', sessionId: 'bulk', turnId: 'late', kind: 'reply', occurredAt: 2000 });
+  const now = Date.now();
+  f.owner.store.enqueue([...([reply, approval, late].map(message => ({ id: `agent:${message.id}`, kind: 'agent', title: '合成消息', createdAt: now }))), { id: 'keep-water', kind: 'water', title: '喝水', createdAt: now }]);
+  f.invoke('island:assistant', 'show'); const assistant = f.windows.at(-1);
+  const handler = f.handlers.get('island:agentReadAll')!;
+  assert.throws(() => handler({ sender: f.other.webContents, senderFrame: f.other.webContents.mainFrame }, targets), /仅工作台/);
+  assert.throws(() => handler({ sender: assistant.webContents, senderFrame: {} }, targets), /仅工作台/);
+  assert.throws(() => f.invoke('island:agentReadAll', 'invalid snapshot'));
+  const state = handler({ sender: assistant.webContents, senderFrame: assistant.webContents.mainFrame }, targets);
+  assert.ok(state.agentMessages.find((message: any) => message.id === reply.id).readAt);
+  assert.equal(state.agentMessages.some((message: any) => message.id === approval.id), false);
+  assert.equal(f.owner.agents.messages.get(approval.id).resolvedAt, null);
+  assert.equal(state.agentMessages.find((message: any) => message.id === late.id).readAt, null);
+  assert.deepEqual(state.reminders.map((reminder: any) => reminder.id), [`agent:${late.id}`, 'keep-water']);
+  assert.ok(f.messages.some(message => message.channel === 'island:changed' && message.owner === f.main));
 });
 
 test('island sedentary: authorized actions share the reminder queue and never invent a drink count', t => {

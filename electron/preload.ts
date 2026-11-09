@@ -263,6 +263,7 @@ const island: WorkbenchApi['island'] = {
   agentConnections: () => ipcRenderer.invoke('island:agentConnections'),
   agentConnect: (provider, enabled) => ipcRenderer.invoke('island:agentConnect', provider, enabled),
   agentRead: id => ipcRenderer.invoke('island:agentRead', id),
+  agentReadAll: targets => ipcRenderer.invoke('island:agentReadAll', targets),
   agentOpen: id => ipcRenderer.invoke('island:agentOpen', id),
   quotas: () => ipcRenderer.invoke('island:quotas'),
   quotaRefresh: (force?: boolean) => ipcRenderer.invoke('island:quotaRefresh', force),

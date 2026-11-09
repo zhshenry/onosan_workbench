@@ -10,7 +10,7 @@ import { watchFullscreen } from './island-fullscreen';
 import { readIslandFileIcons } from './island-file-icons';
 import { AgentHooks } from './agent-hooks';
 import { agentMessageUrl } from './agent-message-store';
-import { AGENT_PROVIDERS, agentPending } from '../shared/agent-message-contracts';
+import { AGENT_PROVIDERS, agentMessageVisible, agentPending } from '../shared/agent-message-contracts';
 
 export class DesktopIsland {
   private win: BrowserWindow | null = null;
@@ -58,7 +58,9 @@ export class DesktopIsland {
   isVisible(): boolean { return this.store.read().settings.enabled; }
   private quiet(): boolean { const s = this.store.read().settings; return this.locked || this.suspended || inTimeRange(new Date(), s.dndStart, s.dndEnd) && s.dnd; }
   state(): IslandState {
-    return { ...this.store.read(), files: this.store.files(), agentMessages: this.agents.messages.read(), mode: this.mode, pinned: this.pinned, quiet: this.quiet(), fullscreenDetection: this.fullscreenDetection, error: this.store.loadError || this.agents.messages.loadError || this.error || undefined };
+    const data = this.store.read(), messages = this.agents.messages.read();
+    const ignored = new Set(messages.filter(message => !agentMessageVisible(message)).map(message => `agent:${message.id}`));
+    return { ...data, reminders: data.reminders.filter(reminder => !ignored.has(reminder.id)), files: this.store.files(), agentMessages: messages.filter(agentMessageVisible), mode: this.mode, pinned: this.pinned, quiet: this.quiet(), fullscreenDetection: this.fullscreenDetection, error: this.store.loadError || this.agents.messages.loadError || this.error || undefined };
   }
   private async fileIcon(id: string): Promise<string> {
     this.store.file(id);
@@ -191,14 +193,15 @@ export class DesktopIsland {
     try {
       const incoming = this.agents.poll();
       if (incoming.error && this.error !== incoming.error) { this.error = incoming.error; this.publish(); }
-      if (incoming.changed) {
-        const messages = this.agents.messages.read();
-        for (const reminder of this.store.read().reminders) {
-          if (reminder.kind !== 'agent') continue;
-          const message = messages.find(value => reminder.id === `agent:${value.id}`);
-          if (!message || message.readAt || message.kind === 'approval' && !agentPending(message)) this.store.dismiss(reminder.id);
-        }
-        const alerts = incoming.alerts.filter(message => message.kind !== 'approval' || agentPending(this.agents.messages.get(message.id)));
+      const messages = this.agents.messages.read();
+      const stale = this.store.read().reminders.filter(reminder => {
+        if (reminder.kind !== 'agent') return false;
+        const message = messages.find(value => reminder.id === `agent:${value.id}`);
+        return !message || !agentMessageVisible(message) || message.readAt !== null || message.kind === 'approval' && !agentPending(message);
+      });
+      if (stale.length) this.store.dismiss(stale.map(reminder => reminder.id));
+      if (incoming.changed || stale.length) {
+        const alerts = incoming.alerts.filter(message => agentMessageVisible(message) && (message.kind !== 'approval' || agentPending(this.agents.messages.get(message.id))));
         if (alerts.length) this.notify(alerts.map(message => ({ id: `agent:${message.id}`, kind: 'agent', title: message.title, createdAt: Date.now() })));
         else if (!this.store.read().reminders.length && (this.mode === 'speech' || this.mode === 'reminder')) this.setMode('collapsed');
         this.publish();
@@ -338,6 +341,12 @@ export class DesktopIsland {
     handle('island:agentConnect', (provider, enabled) => this.agents.connect(z.enum(AGENT_PROVIDERS).parse(provider), z.boolean().parse(enabled)));
     const agentRead = (id: string) => { this.agents.messages.markRead(id); this.store.dismiss(`agent:${id}`); return changed(); };
     handle('island:agentRead', id => agentRead(z.string().parse(id)), true);
+    handle('island:agentReadAll', input => {
+      const targets = z.array(z.object({ id: z.string(), updatedAt: z.number() }).strict()).parse(input);
+      const marked = this.agents.messages.markReadAll(targets);
+      if (marked.length) this.store.dismiss(marked.map(id => `agent:${id}`));
+      return changed();
+    }, true);
     handle('island:agentOpen', async id => {
       const message = this.agents.messages.get(z.string().parse(id));
       await shell.openExternal(agentMessageUrl(message));

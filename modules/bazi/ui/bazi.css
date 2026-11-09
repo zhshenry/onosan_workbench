@@ -464,6 +464,9 @@
 .bazi-as-row-button { padding: 3px 0; border-radius: 3px; color: inherit; font: inherit; text-align: left; }
 .bazi-as-details .bazi-as-house-table td:first-child { width: auto; }
 .bazi-as-details .bazi-as-aspect-table td:first-child { width: auto; font-weight: 500; color: var(--ink-2); }
+.bazi-as-aspect-table + .bazi-as-aspect-table { margin-top: 20px; }
+.bazi-as-aspect-table caption { padding: 12px 5px 4px; text-align: left; font-size: var(--type-control); font-weight: 600; color: var(--ink); }
+.bazi-as-aspect-table caption span { margin-left: 8px; font-size: var(--type-caption); font-weight: 400; color: var(--ink-3); }
 .bazi-as-details .bazi-as-aspect-table .easy { color: var(--acc-deep); }
 .bazi-as-details .bazi-as-aspect-table .hard,
 .bazi-as-details .bazi-as-aspect-table tr[data-selected='true'] td.hard { color: var(--bazi-hua-ji); }
@@ -484,6 +487,12 @@
 .bazi-as-meanings dd { margin: 0; color: var(--ink-2); font-size: var(--type-control); line-height: 1.55; }
 .bazi-as-meanings .bazi-as-combined { padding-top: 10px; border-top: 1px solid var(--hairline); }
 .bazi-as-filters { display: grid; grid-template-columns: 1fr 1fr 1.1fr; gap: 6px; padding: 4px 0; }
+.bazi-as-aspect-rules { margin: 8px 4px; color: var(--ink-3); font-size: var(--type-caption); line-height: 1.65; }
+.bazi-as-aspect-rules summary { width: fit-content; min-height: 24px; cursor: pointer; color: var(--acc-deep); }
+.bazi-as-aspect-rules summary:hover { text-decoration: underline; }
+.bazi-as-aspect-rules summary:focus-visible { outline: 2px solid var(--acc-ring); outline-offset: 2px; }
+.bazi-as-aspect-rules p { margin: 8px 0; }
+.bazi-as-rule-sources { display: flex; gap: 12px; }
 .bazi-as-filters .select { min-width: 0; }
 .bazi-as-filters .select-trigger { min-height: 30px; padding: 4px 8px; font-size: var(--type-caption); }
 .bazi-as-filter-summary { display: flex; justify-content: space-between; align-items: center; margin: 6px 4px 10px; font-size: var(--type-caption); color: var(--ink-3); }

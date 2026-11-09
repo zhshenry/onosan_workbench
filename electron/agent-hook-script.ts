@@ -14,11 +14,10 @@ try {
   if ($Provider -eq 'codex') {
     switch ($name) {
       'Stop' { $kind = 'reply'; $title = [string]$event.last_assistant_message }
-      'PermissionRequest' { $kind = 'approval'; $detail = [string]$event.tool_input.description; $title = if ($detail) { $detail } else { '有操作需要你授权' }; if ($detail.Length -le 200) { $detail = '' } }
       'PostToolUse' { $kind = 'resolved' }
       'Interrupt' { $kind = 'finished' }
     }
-    if ($name -eq 'PermissionRequest' -or $name -eq 'PostToolUse') {
+    if ($name -eq 'PostToolUse') {
       $identity = [string]$event.tool_name + ':' + [string]$event.tool_input.command
       $hash = [System.Security.Cryptography.SHA256]::Create()
       try { $requestKey = ([BitConverter]::ToString($hash.ComputeHash([Text.Encoding]::UTF8.GetBytes($identity)))).Replace('-','').ToLowerInvariant() } finally { $hash.Dispose() }

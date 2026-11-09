@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AgentMessageStore, agentMessageUrl } from '../electron/agent-message-store';
 import { AgentHooks } from '../electron/agent-hooks';
-import { agentPending, type AgentEvent } from '../shared/agent-message-contracts';
+import { agentMessageVisible, agentPending, type AgentEvent } from '../shared/agent-message-contracts';
 
 function fixture(t: any) {
   const dir = mkdtempSync(join(tmpdir(), 'ono-agent-'));
@@ -14,6 +14,17 @@ function fixture(t: any) {
   return { dir, store: new AgentMessageStore(dir, () => 2000), hooks: new AgentHooks(dir, join(dir, 'clients'), join(dir, 'clients', '.codex')) };
 }
 const event = (patch: Partial<AgentEvent> = {}): AgentEvent => ({ provider: 'codex', sessionId: 'session-1', turnId: 'turn-1', kind: 'reply', workspace: 'C:\\project', title: '修复已完成', detail: '', requestKey: '', occurredAt: 1000, ...patch });
+
+test('Agent messages: Codex permission checks never imply user action or a completed conversation', t => {
+  const f = fixture(t), approval = f.store.ingest(event({ kind: 'approval', requestKey: 'automatic-review' }))!;
+  assert.equal(agentMessageVisible(approval), false);
+  f.store.ingest(event({ kind: 'resolved', requestKey: 'automatic-review', occurredAt: 3000 }));
+  assert.equal(agentMessageVisible(f.store.get(approval.id)), false);
+  assert.equal(f.store.get(approval.id).readAt, null, 'filtering does not mark the underlying record read');
+  const reply = f.store.ingest(event({ occurredAt: 4000 }))!;
+  assert.equal(agentMessageVisible(reply), true);
+  assert.equal(agentMessageVisible(f.store.ingest(event({ kind: 'failed', occurredAt: 5000 }))!), true);
+});
 
 test('Agent messages: close/restart never loses unread or pending state; reading is not resolving', t => {
   const f = fixture(t), approval = f.store.ingest(event({ kind: 'approval', requestKey: 'command-1' }))!;
@@ -36,6 +47,36 @@ test('Agent messages: deduplicates client completion callbacks without making a 
   assert.equal(f.store.get(message.id).title, '修复已完成'); assert.equal(f.store.get(message.id).readAt, 2000);
   f.store.ingest(event({ turnId: 'next-turn', occurredAt: 4000 }));
   assert.equal(f.store.read().length, 2); assert.equal(f.store.read()[0].readAt, null);
+});
+
+test('Agent messages: bulk read persists once, preserves approvals, and skips new or updated messages', t => {
+  const f = fixture(t), read = f.store.ingest(event({ turnId: 'already-read' }))!;
+  f.store.markRead(read.id);
+  const store = new AgentMessageStore(f.dir, () => 6000);
+  const approval = store.ingest(event({ kind: 'approval', requestKey: 'pending' }))!;
+  const reply = store.ingest(event({ provider: 'cursor', turnId: 'changing' }))!;
+  const targets = [read, approval, reply].map(({ id, updatedAt }) => ({ id, updatedAt }));
+  const late = store.ingest(event({ turnId: 'arrived-after-click', occurredAt: 3000 }))!;
+  const updated = store.ingest(event({ provider: 'cursor', turnId: 'changing', kind: 'failed', occurredAt: 4000 }))!;
+  assert.equal(updated.id, reply.id);
+  assert.deepEqual(store.markReadAll(targets), [approval.id]);
+  assert.equal(store.get(read.id).readAt, 2000);
+  assert.equal(store.get(approval.id).readAt, 6000); assert.equal(agentPending(store.get(approval.id)), true);
+  assert.equal(store.get(late.id).readAt, null); assert.equal(store.get(updated.id).readAt, null);
+  const recovered = new AgentMessageStore(f.dir);
+  assert.equal(recovered.read().length, 4); assert.equal(recovered.get(approval.id).readAt, 6000);
+  assert.deepEqual(store.markReadAll(targets), []);
+  assert.deepEqual(store.markReadAll([]), []);
+});
+
+test('Agent messages: failed bulk persistence leaves every message unread and keeps the old file', t => {
+  const f = fixture(t);
+  const first = f.store.ingest(event())!, second = f.store.ingest(event({ turnId: 'second' }))!;
+  const saved = readFileSync(join(f.dir, 'agent-messages.json'), 'utf8');
+  mkdirSync(join(f.dir, 'agent-messages.json.tmp'));
+  assert.throws(() => f.store.markReadAll([first, second].map(({ id, updatedAt }) => ({ id, updatedAt }))));
+  assert.equal(f.store.get(first.id).readAt, null); assert.equal(f.store.get(second.id).readAt, null);
+  assert.equal(readFileSync(join(f.dir, 'agent-messages.json'), 'utf8'), saved);
 });
 
 test('Agent messages: failures supersede a turn reply; completion resolves only its own pending requests', t => {
@@ -115,11 +156,14 @@ test('Agent hooks: real Windows relay forwards only allowed fields and never ret
   const relay = (provider: string, input: unknown) => execFileSync('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', join(f.dir, 'agent-hooks', 'ono-message-relay.ps1'), '-Provider', provider], { input: JSON.stringify(input), encoding: 'utf8', windowsHide: true });
   const base = { session_id: 'session-1', turn_id: 'turn-1', cwd: 'C:\\项目', tool_name: 'Bash', tool_input: { command: 'secret-command', description: '执行验证' }, private_token: 'NEVER-SAVE', transcript_path: 'private-transcript' };
   assert.equal(relay('codex', { ...base, hook_event_name: 'PermissionRequest' }).trim(), '{}');
-  const pending = f.hooks.poll().alerts[0]; assert.equal(pending.kind, 'approval'); assert.equal(pending.title, '执行验证'); assert.equal(pending.detail, '');
+  assert.equal(f.hooks.poll().alerts.length, 0); assert.deepEqual(f.hooks.messages.read(), []);
+  const pending = f.hooks.messages.ingest(event({ kind: 'approval', requestKey: 'legacy-request' }))!;
   assert.equal(relay('codex', { ...base, hook_event_name: 'PostToolUse' }).trim(), '{}');
-  f.hooks.poll(); assert.equal(agentPending(f.hooks.messages.get(pending.id)), false);
+  assert.equal(f.hooks.poll().alerts.length, 0);
+  assert.equal(agentPending(f.hooks.messages.get(pending.id)), true, 'unrelated legacy requests are not resolved');
   assert.equal(relay('codex', { ...base, hook_event_name: 'Stop', last_assistant_message: '验证完成\n后续正文不保存' }).trim(), '{}');
   f.hooks.poll();
+  assert.equal(agentPending(f.hooks.messages.get(pending.id)), false, 'a final response still resolves legacy requests');
   assert.equal(relay('cursor', { hook_event_name: 'afterAgentResponse', conversation_id: 'cursor-1', generation_id: 'generation-1', workspace_roots: ['C:\\网站项目'], text: '首页已完成', private_token: 'NEVER-SAVE' }).trim(), '{}');
   f.hooks.poll();
   const saved = readFileSync(join(f.dir, 'agent-messages.json'), 'utf8');

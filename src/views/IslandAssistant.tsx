@@ -130,7 +130,7 @@ export function IslandAssistant() {
       <IconButton label="关闭待办助手" onClick={close}><X size={18} /></IconButton>
     </div></header>
     <div className="island-assistant-tabs" role="tablist" aria-label="助手内容">
-      {[{ value: 'chat', label: '对话' }, { value: 'messages', label: `消息${unread ? ` ${unread}` : ''}` }].map((item, index) => <button key={item.value} role="tab" id={`assistant-tab-${item.value}`} aria-controls={`assistant-${item.value}`} aria-selected={tab === item.value} tabIndex={tab === item.value ? 0 : -1}
+      {[{ value: 'chat', label: '对话' }, { value: 'messages', label: `消息${unread ? ` ${unread}` : ''}` }].map((item, index) => <button key={item.value} role="tab" id={`assistant-tab-${item.value}`} title={item.label} aria-controls={`assistant-${item.value}`} aria-selected={tab === item.value} tabIndex={tab === item.value ? 0 : -1}
         onClick={() => setTab(item.value)} onKeyDown={event => { if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); const next = index ? 'chat' : 'messages'; setTab(next); document.getElementById(`assistant-tab-${next}`)?.focus(); } }}>{item.label}</button>)}
     </div>
     {tab === 'messages' ? <section className="island-assistant-messages" id="assistant-messages" role="tabpanel" aria-labelledby="assistant-tab-messages">

@@ -69,7 +69,7 @@ test('福点按出生地昼夜分式,无地点或极点不捏造,不依赖所选
   }
 });
 
-test('新增九个对象有真实落宫与受限相位,十星统计口径不变', () => {
+test('新增九个对象保留真实落宫,已核实对象采用新相位规则,十星分布不变', () => {
   const chart = buildAstro(sample);
   assert.equal(chart.bodies.length, 19);
   assert.equal(chart.bodies.filter(body => body.kind === 'minor').length, 5);
@@ -79,9 +79,10 @@ test('新增九个对象有真实落宫与受限相位,十星统计口径不变'
   const kinds = new Map(chart.bodies.map(body => [body.name, body.kind]));
   for (const aspect of chart.aspects) {
     assert.equal(kinds.get(aspect.a) === 'point' && kinds.get(aspect.b) === 'point', false);
-    if (kinds.get(aspect.a) !== 'planet' || kinds.get(aspect.b) !== 'planet') assert.ok(aspect.orb <= 3);
+    assert.ok(aspect.orb <= aspect.maxOrb);
+    if (kinds.get(aspect.a) === 'point' || kinds.get(aspect.b) === 'point') assert.equal(aspect.maxOrb, aspect.type === '六分' ? 3 : 5);
   }
-  assert.equal(chart.aspects.filter(aspect => kinds.get(aspect.a) === 'planet' && kinds.get(aspect.b) === 'planet').length, 17);
+  assert.equal(chart.aspects.filter(aspect => kinds.get(aspect.a) === 'planet' && kinds.get(aspect.b) === 'planet').length, 23);
 });
 
 test('同一真实时刻的小天体结果一致,AI 上下文包括扩展名称及算法口径', () => {

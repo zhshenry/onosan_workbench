@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { localDay } from './todo-contracts';
-import type { AgentConnection, AgentMessage, AgentProvider } from './agent-message-contracts';
+import type { AgentConnection, AgentMessage, AgentProvider, AgentReadTarget } from './agent-message-contracts';
 
 export const ISLAND_PAGES = ['schedule', 'files', 'quota', 'tools'] as const;
 export type IslandPage = typeof ISLAND_PAGES[number];
@@ -93,6 +93,7 @@ export interface IslandBridge {
   agentConnections(): Promise<AgentConnection[]>;
   agentConnect(provider: AgentProvider, enabled: boolean): Promise<AgentConnection[]>;
   agentRead(id: string): Promise<IslandState>;
+  agentReadAll(targets: AgentReadTarget[]): Promise<IslandState>;
   agentOpen(id: string): Promise<IslandState>;
   quotas(): Promise<QuotaProvider[]>;
   quotaRefresh(force?: boolean): Promise<QuotaProvider[]>;

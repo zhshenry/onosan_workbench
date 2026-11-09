@@ -4,7 +4,7 @@ import type { AiModuleContribution } from '../../electron/ai-core';
 import { findShenSha, type BaziChart, type BaziProfile } from '../../shared/bazi-contracts';
 import { buildChart } from './compute';
 import { buildZiwei, buildZiweiHoroscope } from './ziwei';
-import { ASTRO_HOUSE_LABELS, buildAstro } from './astro';
+import { ASTRO_ASPECT_POLICY, ASTRO_HOUSE_LABELS, buildAstro } from './astro';
 import { ASTRO_READING_TOPICS, type AstroReadingTopic } from '../../shared/astro-reading';
 
 export type BaziSystem = 'bazi' | 'ziwei' | 'astro';
@@ -96,8 +96,9 @@ export function buildBaziContribution(profile: BaziProfile, system: BaziSystem, 
       + (chart.houseCusps ? `\n宫头：${chart.houseCusps.map((cusp, index) => `${index + 1}宫 ${signOf(cusp)}${degInSign(cusp)}`).join('；')}。` : '') + '\n'
       + chart.bodies.map(b => `${b.name}${b.basis ? `（${b.basis}）` : ''} ${signOf(b.lon)}${degInSign(b.lon)}${b.retro ? ' 逆行' : ''}${b.house !== undefined ? `，落第${b.house}宫` : ''}`).join('；')
       + '\n扩展口径：交点为平均交点；莉莉丝为平均月球远地点；福点按昼夜公式，缺少地点或有效上升点时不计算；小天体使用内置 JPL 星历。元素分布仍只统计十颗主要星体。'
-      + '\n主要星体相位：' + chart.aspects.filter(a => [a.a, a.b].every(name => chart.bodies.some(b => b.name === name && b.kind === 'planet'))).map(a => `${a.a}-${a.b} ${a.type} ${a.orb}°`).join('；')
-      + '\n扩展对象相位（容许度最多3°，不计点位互相相位）：' + chart.aspects.filter(a => [a.a, a.b].some(name => chart.bodies.some(b => b.name === name && b.kind !== 'planet'))).map(a => `${a.a}-${a.b} ${a.type} ${a.orb}°`).join('；');
+      + `\n相位口径：${ASTRO_ASPECT_POLICY.name}，100% 容许度，仅五大相位。十星和凯龙星上限为合/刑/三分/冲10°、六分6°；数学点为0°，配对取平均，因此数学点与十星或凯龙星为5°/3°。不计点位互相相位和四轴相位。谷神星、智神星、婚神星、灶神星仅有位置数据，不推断它们的相位。来源：${ASTRO_ASPECT_POLICY.source}；${ASTRO_ASPECT_POLICY.pointsSource}。`
+      + '\n主要星体相位：' + chart.aspects.filter(a => [a.a, a.b].every(name => chart.bodies.some(b => b.name === name && b.kind === 'planet'))).map(a => `${a.a}-${a.b} ${a.type}，实际偏差${a.orb}°，上限${a.maxOrb}°`).join('；')
+      + '\n扩展对象相位：' + chart.aspects.filter(a => [a.a, a.b].some(name => chart.bodies.some(b => b.name === name && b.kind !== 'planet'))).map(a => `${a.a}-${a.b} ${a.type}，实际偏差${a.orb}°，上限${a.maxOrb}°`).join('；');
   } else {
     const chart = buildChart(profile);
     chartText = now => baziChartText(chart, now);

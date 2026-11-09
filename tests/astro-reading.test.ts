@@ -18,7 +18,7 @@ test('主题只改变分析重点，完整星体、宫头和全部相位始终�
   assert.equal(overview.contextText(now), wealth.contextText(now));
   const context = wealth.contextText(now);
   for (const body of chart.bodies) assert.ok(context.includes(body.name), body.name);
-  for (const aspect of chart.aspects) assert.ok(context.includes(`${aspect.a}-${aspect.b} ${aspect.type} ${aspect.orb}°`));
+  for (const aspect of chart.aspects) assert.ok(context.includes(`${aspect.a}-${aspect.b} ${aspect.type}，实际偏差${aspect.orb}°，上限${aspect.maxOrb}°`));
   for (let house = 1; house <= 12; house++) assert.ok(context.includes(`${house}宫 `));
   assert.match(wealth.systemPrompt(now), /本次解读主题：财运与金钱观/);
   assert.match(wealth.systemPrompt(now), /优先回答用户的具体问题/);

@@ -3,7 +3,7 @@ import { basename, isAbsolute, join, win32 } from 'node:path';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { writeJsonAtomic } from '../modules/storage/json-file';
-import { AgentEventSchema, AgentMessageSchema, agentPending, type AgentMessage } from '../shared/agent-message-contracts';
+import { AgentEventSchema, AgentMessageSchema, agentPending, type AgentMessage, type AgentReadTarget } from '../shared/agent-message-contracts';
 
 export class AgentMessageStore {
   private messages: AgentMessage[] = [];
@@ -30,6 +30,15 @@ export class AgentMessageStore {
     this.get(id);
     if (this.messages.find(message => message.id === id)!.readAt !== null) return;
     this.commit(this.messages.map(message => message.id === id ? { ...message, readAt: this.now() } : message));
+  }
+  markReadAll(targets: AgentReadTarget[]): string[] {
+    const versions = new Map(targets.map(target => [target.id, target.updatedAt])), marked: string[] = [], now = this.now();
+    const messages = this.messages.map(message => {
+      if (message.readAt !== null || versions.get(message.id) !== message.updatedAt) return message;
+      marked.push(message.id); return { ...message, readAt: now };
+    });
+    if (marked.length) this.commit(messages);
+    return marked;
   }
   ingest(input: unknown): AgentMessage | null {
     const event = AgentEventSchema.parse(input), messages = this.read();

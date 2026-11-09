@@ -29,8 +29,10 @@ export interface AstroAspect {
   b: string;
   /** 合 / 六分 / 三分 / 刑 / 冲 */
   type: string;
-  /** 出入度数,如 3.4 */
+  /** 实际夹角与标准相位角度的偏差,如 3.4 */
   orb: number;
+  /** 本次对象配对允许的最大偏差 */
+  maxOrb: number;
   harmonious: boolean;
 }
 
@@ -63,14 +65,26 @@ const BODIES: { key: string; glyph: string; name: string }[] = [
   { key: 'Pluto', glyph: '♇', name: '冥王' },
 ];
 
-/** 主要相位的容许度 */
+export const ASTRO_ASPECT_POLICY = {
+  name: 'Astrodienst 2.GW',
+  source: 'https://www.astro.com/astrology/in_aspect_e.htm',
+  pointsSource: 'https://www.astro.com/faq/fq_fh_setup_e.htm',
+};
+
+/** Astrodienst 2.GW / Liz Greene，100% 容许度，仅取五大相位。 */
 const ASPECTS: { type: string; angle: number; orb: number; harmonious: boolean }[] = [
-  { type: '合', angle: 0, orb: 8, harmonious: true },
-  { type: '六分', angle: 60, orb: 5, harmonious: true },
-  { type: '三分', angle: 120, orb: 7, harmonious: true },
-  { type: '刑', angle: 90, orb: 6, harmonious: false },
-  { type: '冲', angle: 180, orb: 8, harmonious: false },
+  { type: '合', angle: 0, orb: 10, harmonious: true },
+  { type: '六分', angle: 60, orb: 6, harmonious: true },
+  { type: '三分', angle: 120, orb: 10, harmonious: true },
+  { type: '刑', angle: 90, orb: 10, harmonious: false },
+  { type: '冲', angle: 180, orb: 10, harmonious: false },
 ];
+const ASPECT_POINTS = new Set(['NorthNode', 'SouthNode', 'Lilith', 'Fortune']);
+
+/** 未核实相位规则的对象仍保留位置、落宫和顺逆行。 */
+export function hasAspectRules(body: AstroBody): boolean {
+  return body.kind === 'planet' || body.key === 'Chiron' || ASPECT_POINTS.has(body.key);
+}
 
 function eclipticLon(key: string, time: Astronomy.AstroTime): number {
   const vec = key === 'Moon'
@@ -97,18 +111,20 @@ function lunarPoints(time: Astronomy.AstroTime): AstroBody[] {
   ];
 }
 
-function buildAspects(bodies: AstroBody[]): AstroAspect[] {
+export function buildAspects(bodies: AstroBody[]): AstroAspect[] {
   const aspects: AstroAspect[] = [];
   for (let i = 0; i < bodies.length; i++) {
     for (let j = i + 1; j < bodies.length; j++) {
       const a = bodies[i], b = bodies[j];
+      if (!hasAspectRules(a) || !hasAspectRules(b)) continue;
       if (a.kind === 'point' && b.kind === 'point') continue;
       const diff = Math.abs(norm360(a.lon - b.lon + 180) - 180);
       for (const asp of ASPECTS) {
         const orb = Math.abs(diff - asp.angle);
-        const limit = a.kind === 'planet' && b.kind === 'planet' ? asp.orb : Math.min(3, asp.orb);
+        // 配对取两对象容许度的平均值；数学点本身为 0，不开启 “to all objects”。
+        const limit = ((a.kind === 'point' ? 0 : asp.orb) + (b.kind === 'point' ? 0 : asp.orb)) / 2;
         if (orb <= limit) {
-          aspects.push({ a: a.name, b: b.name, type: asp.type, orb: Math.round(orb * 100) / 100, harmonious: asp.harmonious });
+          aspects.push({ a: a.name, b: b.name, type: asp.type, orb: Math.round(orb * 100) / 100, maxOrb: limit, harmonious: asp.harmonious });
           break;
         }
       }

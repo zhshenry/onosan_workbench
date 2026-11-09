@@ -138,7 +138,7 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
   const matches = (value: string) => !term || value.toLowerCase().replace(/\s+/g, '').includes(term);
   const selectedGroups = groups.filter(group => term || group.section === active).map(group => ({ ...group, rows: group.rows.filter(row => matches(`${sections.find(s => s.value === group.section)?.label} ${group.title} ${row.title} ${row.desc}`)) })).filter(group => group.rows.length);
   const visiblePages = (term || active === 'pages') ? ISLAND_PAGES.filter(page => matches(`页面 ${ISLAND_LABELS[page]} ${pageDescriptions[page]}`)) : [];
-  const visibleProviders = (term || active === 'quota') ? ISLAND_QUOTA_PROVIDERS.filter(id => matches(`AI 额度 ${ISLAND_QUOTA_LABELS[id]} 账户 ${id === 'codex' ? 'ChatGPT Agent 消息提醒 回复完成 待授权 本机 新会话' : id === 'cursor' ? '登录 套餐 Agent 消息提醒 回复 运行失败 本机 新会话' : id === 'zcode' ? 'GLM Coding Plan API Key 密钥' : '登录 套餐'}`)) : [];
+  const visibleProviders = (term || active === 'quota') ? ISLAND_QUOTA_PROVIDERS.filter(id => matches(`AI 额度 ${ISLAND_QUOTA_LABELS[id]} 账户 ${id === 'codex' ? 'ChatGPT Agent 消息提醒 本轮回复完成 本机 新会话' : id === 'cursor' ? '登录 套餐 Agent 消息提醒 回复 运行失败 本机 新会话' : id === 'zcode' ? 'GLM Coding Plan API Key 密钥' : '登录 套餐'}`)) : [];
   const providerId = visibleProviders.includes(selectedProvider) ? selectedProvider : visibleProviders[0];
   const provider = providers.find(item => item.id === providerId);
   const agentProvider = providerId === 'codex' || providerId === 'cursor' ? providerId : undefined;
@@ -207,7 +207,7 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
             </div>
             {agentProvider && <div className="island-provider-messages" data-group="agents"><Rows query="" rows={[{
               key: `agent-${agentProvider}`, title: '消息提醒',
-              desc: agentConnection?.error || (!api.agentConnections ? '请完整重启测试环境以加载消息接口' : agentConnections === null ? '正在读取提醒状态…' : `${agentConnection?.connected ? agentProvider === 'codex' ? '监听已配置 · 请在 Codex 设置 → Hooks 中审核并信任，新会话生效' : '监听已配置 · 新会话生效' : '尚未接入 · 需单独开启消息监听，无需再次登录'} · ${agentProvider === 'codex' ? '回复完成、待授权' : '回复、运行失败'} · 消息仅保存在本机`),
+              desc: agentConnection?.error || (!api.agentConnections ? '请完整重启测试环境以加载消息接口' : agentConnections === null ? '正在读取提醒状态…' : `${agentConnection?.connected ? agentProvider === 'codex' ? '监听已配置 · 请在 Codex 设置 → Hooks 中审核并信任，新会话生效' : '监听已配置 · 新会话生效' : '尚未接入 · 需单独开启消息监听，无需再次登录'} · ${agentProvider === 'codex' ? '本轮回复完成' : '回复、运行失败'} · 消息仅保存在本机`),
               control: <button type="button" className="toggle" role="switch" aria-label={`${ISLAND_QUOTA_LABELS[agentProvider]} 消息提醒`} aria-checked={Boolean(agentConnection?.connected)} disabled={busy || agentConnections === null} onClick={() => void run(async () => {
                 const enabled = !agentConnection?.connected;
                 setAgentConnections(await api.agentConnect(agentProvider, enabled));

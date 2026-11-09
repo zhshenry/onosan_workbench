@@ -1,6 +1,6 @@
 import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { CaretRight } from '@phosphor-icons/react';
-import { houseOfLongitude, type AstroChart } from '../astro';
+import { ASTRO_ASPECT_POLICY, hasAspectRules, houseOfLongitude, type AstroChart } from '../astro';
 import { Segmented, Select } from '../../../src/ui/controls';
 import {
   ASPECT_MEANINGS, BODY_EXPRESSIONS, BODY_MEANINGS, DEFAULT_ASPECT_FILTER, EXTENDED_BODY_NOTES, HOUSE_TOPICS, PLANETS, SIGN_MEANINGS, SIGN_NAMES, SIGN_STYLES,
@@ -97,8 +97,8 @@ function SelectionDetails({ chart, selection, onSelect, detached = false }: Deta
   const meaning = ASPECT_MEANINGS[aspect.type];
   return <section className="bazi-as-selection" aria-label="相位详情">
     <div className="bazi-as-selection-title"><h3>{aspect.a} — {aspect.b}</h3><button className="bazi-as-text-button" onClick={() => onSelect(null)}>取消选择</button></div>
-    <p className="bazi-as-selection-facts">{aspect.type}相 · 标准夹角 {meaning.angle}° · 容许度 {aspect.orb.toFixed(2)}°</p>
-    <p>{meaning.text}</p><p className="bazi-as-reading-note">容许度是与标准角度的差距，越小越接近。盘面高亮这两个对象的连线。</p>
+    <p className="bazi-as-selection-facts">{aspect.type}相 · 标准夹角 {meaning.angle}° · 实际偏差 {aspect.orb.toFixed(2)}° · 上限 {aspect.maxOrb}°</p>
+    <p>{meaning.text}</p><p className="bazi-as-reading-note">实际偏差不超过这组对象的上限时，才计为相位。盘面高亮这两个对象的连线。</p>
   </section>;
 }
 
@@ -107,6 +107,12 @@ export function AstroDetails(props: DetailProps) {
   const houses = houseRows(chart);
   const missingHouses = chart.houseWarning ?? '编辑命例选择出生地后可显示宫位。';
   const aspects = chart.aspects.map((aspect, index) => ({ ...aspect, index })).filter(aspect => matchingAspect(aspect, filter));
+  const mainBodies = new Set(chart.bodies.filter(body => body.kind === 'planet').map(body => body.name));
+  const mainAspect = (aspect: { a: string; b: string }) => mainBodies.has(aspect.a) && mainBodies.has(aspect.b);
+  const aspectGroups = [
+    { title: '主要星体相位', aspects: aspects.filter(mainAspect) },
+    { title: '扩展相位', aspects: aspects.filter(aspect => !mainAspect(aspect)) },
+  ];
   const bodyRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = 0; }, [section]);
   const selected = (kind: NonNullable<AstroSelection>['kind'], value: string | number) =>
@@ -163,20 +169,31 @@ export function AstroDetails(props: DetailProps) {
       </>}
       {section === 'aspects' && <>
         {selection?.kind === 'aspect' && <SelectionDetails {...props} />}
+        <details className="bazi-as-aspect-rules">
+          <summary>规则：{ASTRO_ASPECT_POLICY.name}</summary>
+          <p>采用 100% 容许度的五大相位：主要十星与凯龙星，合、刑、三分、冲上限 10°，六分上限 6°。</p>
+          <p>南北交点、莉莉丝和福点本身的容许度为 0°；配对取两对象的平均值，因此与主星或凯龙星的上限为 5°，六分为 3°。点位之间不计算，不启用“对所有对象计算相位”。</p>
+          <p>谷神星、智神星、婚神星、灶神星只显示位置，暂不计算相位；四轴相位不在本方案内。</p>
+          <div className="bazi-as-rule-sources">
+            <button className="bazi-as-text-button" onClick={() => { void window.workbench.appInfo.openExternal(ASTRO_ASPECT_POLICY.source); }}>官方相位表</button>
+            <button className="bazi-as-text-button" onClick={() => { void window.workbench.appInfo.openExternal(ASTRO_ASPECT_POLICY.pointsSource); }}>官方点位规则</button>
+          </div>
+        </details>
         <div className="bazi-as-filters">
-          <Select aria-label="相位星体" value={filter.body} onChange={body => onFilterChange({ ...filter, body })} options={[{ value: 'all', label: '全部星体' }, ...chart.bodies.map(body => ({ value: body.name, label: body.name }))]} />
+          <Select aria-label="相位星体" value={filter.body} onChange={body => onFilterChange({ ...filter, body })} options={[{ value: 'all', label: '全部星体' }, ...chart.bodies.filter(hasAspectRules).map(body => ({ value: body.name, label: body.name }))]} />
           <Select aria-label="相位类型" value={filter.type} onChange={type => onFilterChange({ ...filter, type })} options={[{ value: 'all', label: '全部相位' }, ...Object.keys(ASPECT_MEANINGS).map(type => ({ value: type, label: `${type}相` }))]} />
-          <Select aria-label="最大容许度" value={filter.orb} onChange={orb => onFilterChange({ ...filter, orb })} options={[{ value: 'all', label: '全部容许度' }, ...[1, 3, 5].map(orb => ({ value: String(orb), label: `≤ ${orb}°` }))]} />
+          <Select aria-label="最大实际偏差" value={filter.orb} onChange={orb => onFilterChange({ ...filter, orb })} options={[{ value: 'all', label: '全部偏差' }, ...[1, 3, 5].map(orb => ({ value: String(orb), label: `≤ ${orb}°` }))]} />
         </div>
         <div className="bazi-as-filter-summary"><span role="status">显示 {aspects.length} / {chart.aspects.length} 条</span><button className="bazi-as-text-button" disabled={Object.values(filter).every(value => value === 'all')} onClick={() => onFilterChange(DEFAULT_ASPECT_FILTER)}>清除筛选</button></div>
-        {aspects.length ? <table className="bazi-astab bazi-as-aspect-table" aria-label="主要相位">
-          <thead><tr><th>星体／点位关系</th><th>相位</th><th>容许度</th></tr></thead>
-          <tbody>{aspects.map(aspect => <tr key={aspect.index} data-selected={selected('aspect', aspect.index)} onClick={() => onSelect({ kind: 'aspect', index: aspect.index })}>
+        {aspects.length ? aspectGroups.filter(group => group.aspects.length).map(group => <table key={group.title} className="bazi-astab bazi-as-aspect-table" aria-label={group.title}>
+          <caption>{group.title}<span>{group.aspects.length} 条</span></caption>
+          <thead><tr><th scope="col">星体／点位关系</th><th scope="col">相位</th><th scope="col">实际偏差</th><th scope="col">上限</th></tr></thead>
+          <tbody>{group.aspects.map(aspect => <tr key={aspect.index} data-selected={selected('aspect', aspect.index)} onClick={() => onSelect({ kind: 'aspect', index: aspect.index })}>
             <td><button className="bazi-as-row-button" aria-pressed={selected('aspect', aspect.index)} onClick={event => { event.stopPropagation(); onSelect({ kind: 'aspect', index: aspect.index }); }}>{aspect.a} — {aspect.b}</button></td>
-            <td className={aspect.harmonious ? 'easy' : 'hard'}>{aspect.type}</td><td>{aspect.orb}°</td>
+            <td className={aspect.harmonious ? 'easy' : 'hard'}>{aspect.type}</td><td>{aspect.orb}°</td><td>{aspect.maxOrb}°</td>
           </tr>)}</tbody>
-        </table> : <p className="bazi-as-none">{chart.aspects.length ? '没有符合筛选条件的相位。可放宽条件或清除筛选。' : '主要相位区间内无显著相位。'}</p>}
-        <p className="bazi-as-reading-note">容许度越小，越接近标准相位角度。涉及小天体或点位时最多 3°，点位之间不计相位；主要星体沿用原规则。筛选同步作用于盘面连线。</p>
+        </table>) : <p className="bazi-as-none">{chart.aspects.length ? '没有符合筛选条件的相位。可放宽条件或清除筛选。' : '主要相位区间内无显著相位。'}</p>}
+        <p className="bazi-as-reading-note">实际偏差是与标准角度的差距，上限是允许的最大偏差。筛选同步作用于盘面连线。</p>
       </>}
       {section === 'reading' && props.reading}
     </div>

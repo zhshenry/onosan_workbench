@@ -26,7 +26,10 @@ export function IslandAgentMessages({ state, busy, run, close, showReminders, no
   const api = window.workbench.island;
   return <>
     {!embedded && <header className="island-messages-header"><div><h2 id="island-messages-title">Agent 消息</h2><small role="status">{unread} 条未读{pending ? ` · ${pending} 条待授权` : ''}</small></div><IconButton label="关闭消息列表" onClick={close}><X size={16} /></IconButton></header>}
-    <div className="island-messages-filters"><Segmented value={filter} onChange={setFilter} aria-label="消息范围" options={[{ value: 'unread', label: `未读 ${unread}` }, { value: 'all', label: '全部' }]} />{pending > 0 && <button className="island-text-button" onClick={() => setFilter('all')}>待授权 {pending}</button>}{reminders > 0 && <button className="island-text-button" onClick={showReminders}>事项提醒 {reminders}</button>}</div>
+    <div className="island-messages-filters"><div className="island-message-filter-row">
+      <Segmented value={filter} onChange={setFilter} aria-label="消息范围" options={[{ value: 'unread', label: `未读 ${unread}` }, { value: 'all', label: '全部' }]} />
+      <button type="button" className="island-text-button island-messages-read-all" disabled={busy || !unread} title="将当前未读消息全部标为已读，待授权事项仍需处理" onClick={() => void run(() => api.agentReadAll(messages.filter(message => message.readAt === null).map(({ id, updatedAt }) => ({ id, updatedAt }))))}><Check size={14} />全部已读</button>
+    </div>{pending > 0 && <button className="island-text-button" onClick={() => setFilter('all')}>待授权 {pending}</button>}{reminders > 0 && <button className="island-text-button" onClick={showReminders}>事项提醒 {reminders}</button>}</div>
     <div className="island-message-list">
       {visible.map(message => <article key={message.id} className="island-agent-message" data-provider={message.provider} data-read={message.readAt !== null}>
         <span className="island-message-unread" data-unread={message.readAt === null} aria-label={message.readAt === null ? '未读' : '已读'} />

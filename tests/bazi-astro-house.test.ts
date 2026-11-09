@@ -217,8 +217,10 @@ describe('占星行星落座宫位列', { concurrency: false }, () => {
     assert.deepEqual(buttons.map(button => button.textContent), ['星体', '宫位', '相位', '解读']);
     await act(async () => buttons[2].click());
     const rows = [...panel.querySelectorAll('.bazi-as-aspect-table tbody tr')];
-    assert.deepEqual(rows.map(row => [...row.querySelectorAll('td')].map(cell => cell.textContent)), chart.aspects.map(aspect => [
-      `${aspect.a} — ${aspect.b}`, aspect.type, `${aspect.orb}°`,
+    const mainNames = new Set(chart.bodies.filter(body => body.kind === 'planet').map(body => body.name));
+    const isMain = (aspect: { a: string; b: string }) => mainNames.has(aspect.a) && mainNames.has(aspect.b);
+    assert.deepEqual(rows.map(row => [...row.querySelectorAll('td')].map(cell => cell.textContent)), [...chart.aspects.filter(isMain), ...chart.aspects.filter(aspect => !isMain(aspect))].map(aspect => [
+      `${aspect.a} — ${aspect.b}`, aspect.type, `${aspect.orb}°`, `${aspect.maxOrb}°`,
     ]));
     assert.equal(buttons[2].getAttribute('aria-checked'), 'true');
     assert.equal(panel.querySelector('.bazi-as-wrap svg')!.outerHTML, wheel);
@@ -324,7 +326,7 @@ describe('占星行星落座宫位列', { concurrency: false }, () => {
     assert.match(detail.textContent!, /家庭、根基与私人生活/);
     assert.equal(detail.querySelectorAll('.bazi-as-meanings dt').length, 4);
     assert.doesNotMatch(detail.textContent!, /相关相位/);
-    assert.equal(panel.querySelectorAll('.bazi-as-aspect-target:not(.is-dimmed)').length, 5);
+    assert.equal(panel.querySelectorAll('.bazi-as-aspect-target:not(.is-dimmed)').length, 8);
     await act(async () => moon.dispatchEvent(new harness.dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
     assert.equal(moon.getAttribute('aria-pressed'), 'false');
     assert.equal(panel.querySelector('.bazi-as-selection'), null);
@@ -425,10 +427,10 @@ describe('占星行星落座宫位列', { concurrency: false }, () => {
       await act(async () => option.click());
     };
     await choose('相位星体', '月亮');
-    assert.equal(panel.querySelectorAll('.bazi-as-aspect-table tbody tr').length, 5);
-    assert.equal(panel.querySelectorAll('.bazi-as-aspect-target').length, 5);
+    assert.equal(panel.querySelectorAll('.bazi-as-aspect-table tbody tr').length, 8);
+    assert.equal(panel.querySelectorAll('.bazi-as-aspect-target').length, 8);
     await choose('相位类型', '冲相');
-    await choose('最大容许度', '≤ 1°');
+    await choose('最大实际偏差', '≤ 1°');
     const rows = panel.querySelectorAll('.bazi-as-aspect-table tbody tr');
     assert.equal(rows.length, 1);
     assert.match(rows[0].textContent!, /月亮 — 天王冲1°/);
@@ -444,6 +446,40 @@ describe('占星行星落座宫位列', { concurrency: false }, () => {
     await act(async () => clear.click());
     assert.equal(panel.querySelectorAll('.bazi-as-aspect-target').length, chart.aspects.length);
     assert.equal(panel.querySelectorAll('.bazi-as-aspect-table tbody tr').length, chart.aspects.length);
+    assert.deepEqual(data, original);
+  });
+
+  test('相位按主星与扩展分组,展示真实偏差和配对上限,未核实小行星只显示位置', async () => {
+    const data = chartData({ ...SHANGHAI, date: '2020-04-09', time: '11:34' });
+    const original = structuredClone(data);
+    await harness.show(data);
+    const panel = await harness.openAstro();
+    assert.equal(panel.querySelectorAll('[aria-label="小天体"] tbody tr').length, 9);
+    const starTab = [...panel.querySelectorAll<HTMLButtonElement>('[role="radio"]')].find(button => button.textContent === '星体')!;
+    await act(async () => [...panel.querySelectorAll<HTMLButtonElement>('[role="radio"]')].find(button => button.textContent === '相位')!.click());
+    const tables = [...panel.querySelectorAll('.bazi-as-aspect-table')];
+    assert.deepEqual(tables.map(table => table.getAttribute('aria-label')), ['主要星体相位', '扩展相位']);
+    assert.deepEqual(tables.map(table => table.querySelectorAll('tbody tr').length), [23, 16]);
+    assert.deepEqual([...tables[0].querySelectorAll('th')].map(th => th.textContent), ['星体／点位关系', '相位', '实际偏差', '上限']);
+    assert.doesNotMatch(tables.map(table => table.textContent).join(''), /谷神星|智神星|婚神星|灶神星/);
+    assert.match(tables[1].textContent!, /5°/);
+    const rules = panel.querySelector<HTMLDetailsElement>('.bazi-as-aspect-rules')!;
+    assert.match(rules.querySelector('summary')!.textContent!, /Astrodienst 2.GW/);
+    const opened: string[] = [];
+    Object.assign(harness.dom.window.workbench, { appInfo: { openExternal: async (url: string) => { opened.push(url); } } });
+    await act(async () => rules.querySelector('button')!.click());
+    assert.deepEqual(opened, ['https://www.astro.com/astrology/in_aspect_e.htm']);
+    await act(async () => panel.querySelector<HTMLButtonElement>('[aria-label="相位星体"]')!.click());
+    const options = [...harness.doc.querySelectorAll<HTMLElement>('.select-option')];
+    assert.doesNotMatch(options.map(option => option.textContent).join(''), /谷神星|智神星|婚神星|灶神星/);
+    await act(async () => options.find(option => option.textContent === '凯龙星')!.click());
+    assert.equal(panel.querySelector('[aria-label="主要星体相位"]'), null);
+    const row = panel.querySelector<HTMLButtonElement>('.bazi-as-aspect-table tbody button')!;
+    await act(async () => row.dispatchEvent(new harness.dom.window.MouseEvent('click', { bubbles: true })));
+    assert.match(panel.querySelector('[aria-label="相位详情"]')!.textContent!, /实际偏差.*上限/);
+    assert.equal(panel.querySelectorAll('.bazi-as-aspect-target[aria-pressed="true"]').length, 1);
+    await act(async () => starTab.click());
+    assert.equal(panel.querySelectorAll('[aria-label="小天体"] tbody tr').length, 9);
     assert.deepEqual(data, original);
   });
 
