@@ -23,7 +23,7 @@ const providerLogos = {
   cursor: new URL('../assets/quota-providers/cursor.svg', import.meta.url).href,
   grokbot: new URL('../assets/quota-providers/grokbot.png', import.meta.url).href,
 };
-const providerStatuses = { disconnected: '未连接', connecting: '待授权', ready: '已连接', error: '连接异常', unsupported: '暂无数据' };
+const providerStatuses = { disconnected: '未连接', connecting: '待授权', ready: '已连接', stale: '更新延迟', recovering: '恢复中', error: '连接异常', unsupported: '暂无数据' };
 
 function NumberSetting({ label, value, min, max, unit, disabled, save }: {
   label: string; value: number; min: number; max: number; unit: string; disabled: boolean; save(value: number): void;
@@ -143,12 +143,13 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
   const visibleProviders = (term || active === 'quota') ? ISLAND_QUOTA_PROVIDERS.filter(id => matches(`AI 额度 ${ISLAND_QUOTA_LABELS[id]} 账户 ${id === 'codex' ? 'ChatGPT' : id === 'zcode' ? 'GLM Coding Plan API Key 密钥' : '登录 套餐'}`)) : [];
   const providerId = visibleProviders.includes(selectedProvider) ? selectedProvider : visibleProviders[0];
   const provider = providers.find(item => item.id === providerId);
-  const connected = provider?.status === 'ready' || provider?.status === 'unsupported';
+  const connected = provider?.status === 'ready' || provider?.status === 'unsupported' || provider?.status === 'stale';
   const keyEditor = providerId === 'zcode' && provider && (editingKey || !connected) && provider.status !== 'connecting';
-  const providerStatus = (value?: QuotaProvider) => value ? providerStatuses[value.status] : quotaLoading ? '读取中' : '未读取';
+  const providerStatus = (value?: QuotaProvider) => value ? value.issue === 'auth-required' ? '需重新登录' : providerStatuses[value.status] : quotaLoading ? '读取中' : '未读取';
   const connect = () => {
     if (!providerId || !provider || provider.status === 'connecting' || providerId === 'zcode' && !key.trim()) return;
     void run(async () => {
+      if (providerId === 'codex' && provider.status !== 'disconnected' && provider.issue !== 'auth-required') { setProviders(await api.quotaRefresh(true)); return; }
       const next = await api.quotaConnect(providerId, providerId === 'zcode' ? key : undefined); setProviders(next);
       if (providerId === 'zcode' && next.some(item => item.id === providerId && ['ready', 'unsupported'].includes(item.status))) { setKey(''); setShowKey(false); setEditingKey(false); }
     });
@@ -176,7 +177,7 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
         return <div className="island-page-option" key={page} data-enabled={settings.pages[page]}><div><PageIcon size={21} /><button type="button" className="toggle" role="switch" aria-label={`显示${ISLAND_LABELS[page]}页`} aria-checked={settings.pages[page]} disabled={busy} onClick={() => patch({ pages: { [page]: !settings.pages[page] } })} /></div><b>{ISLAND_LABELS[page]}</b><small>{page === 'tools' && !toolsEnabled ? '启用任一工具后显示' : pageDescriptions[page]}</small></div>;
       })}</div></section>}
       {providerId && <section className="island-connection-manager" aria-labelledby={`${fieldId}-connections`}>
-        <header><h2 id={`${fieldId}-connections`}>账户连接</h2><button type="button" className="island-settings-link" disabled={busy} onClick={() => void run(async () => setProviders(await api.quotaRefresh()))}><ArrowClockwise size={15} />刷新额度</button></header>
+        <header><h2 id={`${fieldId}-connections`}>账户连接</h2><button type="button" className="island-settings-link" disabled={busy} onClick={() => void run(async () => setProviders(await api.quotaRefresh(true)))}><ArrowClockwise size={15} />刷新额度</button></header>
         <div className="island-connection-layout">
           <nav className="island-connection-sources" aria-label="额度来源">{visibleProviders.map(id => {
             const item = providers.find(value => value.id === id);
@@ -197,10 +198,11 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
                 <h4>{connected || editingKey ? '更新密钥' : '连接账户'}</h4><div className="island-key-field"><label htmlFor="island-zcode-key">{connected || editingKey ? '新 API Key' : 'API Key'}</label><div><input id="island-zcode-key" type={showKey ? 'text' : 'password'} autoComplete="off" spellCheck={false} maxLength={4096} disabled={busy} value={key} onChange={event => setKey(event.target.value)} placeholder="输入 API Key" aria-describedby={`${fieldId}-key-help`} autoFocus={editingKey} /><IconButton label={showKey ? '隐藏密钥' : '显示密钥'} disabled={busy} onClick={() => setShowKey(!showKey)}>{showKey ? <EyeSlash size={18} /> : <Eye size={18} />}</IconButton></div><small id={`${fieldId}-key-help`}>{connected || editingKey ? '替换已保存的密钥' : '本机加密保存'}</small></div>
                 <div className="island-provider-actions"><button type="submit" className="set-btn island-settings-primary" disabled={busy || !key.trim()}>{busy ? '处理中…' : connected || editingKey ? '更新密钥' : '连接'}</button>{editingKey && <button type="button" className="island-settings-link" disabled={busy} onClick={() => { setKey(''); setShowKey(false); setEditingKey(false); window.requestAnimationFrame(() => editKeyButton.current?.focus()); }}>取消</button>}</div>
               </form> : <>
-                <h4>{provider.status === 'connecting' ? '等待账户授权' : connected ? '账户已连接' : provider.status === 'error' ? '连接需要重试' : '连接账户'}</h4>
-                {!connected && providerId !== 'zcode' && providerId !== 'cursor' && <p className="island-provider-description">{providerId === 'codex' ? '需安装 Codex CLI' : '使用 Cursor 账号登录'}</p>}
+                <h4>{provider.status === 'connecting' ? '等待账户授权' : provider.issue === 'auth-required' ? '需要重新登录' : provider.status === 'stale' ? '已连接 · 更新延迟' : provider.status === 'recovering' ? '正在恢复额度服务' : connected ? '账户已连接' : provider.status === 'error' ? '连接需要重试' : '连接账户'}</h4>
+                {providerId === 'codex' && provider.issue === 'cli-unavailable' && <p className="island-provider-description">需安装 Codex CLI</p>}
+                {!connected && providerId === 'grokbot' && <p className="island-provider-description">使用 Cursor 账号登录</p>}
                 {providerId === 'zcode' && connected && <p className="island-provider-description">密钥已保存</p>}
-                <div className="island-provider-actions">{providerId === 'zcode' && connected ? <button ref={editKeyButton} type="button" className="set-btn island-settings-primary" disabled={busy} onClick={() => setEditingKey(true)}>更新密钥</button> : <button type="button" className="set-btn island-settings-primary" disabled={busy || provider.status === 'connecting'} onClick={connect}>{provider.status === 'connecting' ? '授权中…' : busy ? '处理中…' : provider.status === 'error' ? '重试' : connected ? '重连' : '连接'}</button>}{provider.status === 'connecting' && <button type="button" className="island-settings-link" disabled={busy} onClick={disconnect}>取消授权</button>}</div>
+                <div className="island-provider-actions">{providerId === 'zcode' && connected ? <button ref={editKeyButton} type="button" className="set-btn island-settings-primary" disabled={busy} onClick={() => setEditingKey(true)}>更新密钥</button> : <button type="button" className="set-btn island-settings-primary" disabled={busy || provider.status === 'connecting'} onClick={connect}>{provider.status === 'connecting' ? '授权中…' : busy ? '处理中…' : provider.issue === 'auth-required' ? '重新登录' : providerId === 'codex' && provider.status !== 'disconnected' ? connected && provider.status !== 'stale' ? '刷新额度' : '重试' : provider.status === 'error' ? '重试' : connected ? '重连' : '连接'}</button>}{provider.status === 'connecting' && <button type="button" className="island-settings-link" disabled={busy} onClick={disconnect}>取消授权</button>}</div>
               </>}
             </div>
           </section>

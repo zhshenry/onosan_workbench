@@ -49,6 +49,43 @@ function fixture(t: any) {
 }
 const task = (kind: 'task' | 'meeting' = 'task') => ({ ...newTask('合成验收提醒'), kind, id: 'task-1', remindAt: new Date().toISOString(), updatedAt: new Date().toISOString(), deletedAt: null });
 
+test('island assistant: opens once, hides without losing its renderer, pins independently and rejects unrelated frames', t => {
+  const f = fixture(t);
+  f.owner.show();
+  const before = f.windows.length;
+  f.invoke('island:assistant', 'show');
+  assert.equal(f.windows.length, before + 1);
+  const assistant = f.windows.at(-1)!;
+  assistant.emit('ready-to-show');
+  assert.equal(assistant.visible, true); assert.equal(assistant.focused, true); assert.equal(assistant.topmost, true);
+  assert.equal(assistant.bounds.webPreferences.sandbox, true);
+  assistant.emit('blur'); assert.equal(assistant.visible, true);
+  let prevented = false;
+  assistant.emit('close', { preventDefault: () => { prevented = true; } });
+  assert.equal(prevented, true); assert.equal(assistant.visible, false); assert.equal(assistant.destroyed, false);
+  f.invoke('island:assistant', 'show'); assert.equal(f.windows.length, before + 1); assert.equal(assistant.visible, true);
+  const own = { sender: assistant.webContents, senderFrame: assistant.webContents.mainFrame };
+  assert.equal(f.handlers.get('island:assistant')!(own, 'pin').pinned, false); assert.equal(assistant.topmost, false);
+  assert.equal(f.owner.state().pinned, false, 'assistant pin does not change island pin');
+  assert.equal(f.handlers.get('island:state')!(own).settings.enabled, true);
+  assert.throws(() => f.handlers.get('island:patch')!(own, { enabled: false }), /仅工作台/);
+  assert.throws(() => f.handlers.get('island:assistant')!({ ...own, senderFrame: {} }, 'show'), /仅工作台/);
+  assert.throws(() => f.handlers.get('island:assistant')!({ sender: f.other.webContents, senderFrame: f.other.webContents.mainFrame }, 'show'), /仅工作台/);
+  f.owner.destroy(); assert.equal(assistant.destroyed, true);
+});
+
+test('island assistant: all dock directions stay inside the selected work area, including negative coordinates and small screens', () => {
+  for (const area of [{ x: -1200, y: 30, width: 1200, height: 900 }, { x: 0, y: 0, width: 320, height: 360 }]) {
+    for (const dock of contracts.ISLAND_DOCKS) {
+      const anchor = contracts.islandBounds('collapsed', area, 0, dock), panel = contracts.islandAssistantBounds(anchor, area, dock);
+      assert.ok(panel.x >= area.x && panel.y >= area.y);
+      assert.ok(panel.x + panel.width <= area.x + area.width && panel.y + panel.height <= area.y + area.height);
+      if (area.width > 500 && dock === 'left') assert.ok(panel.x >= anchor.x + anchor.width);
+      if (area.width > 500 && dock === 'right') assert.ok(panel.x + panel.width <= anchor.x);
+    }
+  }
+});
+
 test('island Agent: message canvas preserves the bar anchor at configured offsets and stays inside small work areas', () => {
   for (const area of [{ x: -800, y: 40, width: 800, height: 500 }, { x: 0, y: 0, width: 600, height: 260 }]) for (const dock of contracts.ISLAND_DOCKS) for (const offset of [0, 200, 300]) {
     const bar = contracts.islandBounds('collapsed', area, offset, dock), panel = contracts.islandBounds('messages', area, offset, dock);
@@ -457,4 +494,14 @@ test('island native: only trusted workbench frames can connect new quota provide
   }
   assert.deepEqual(connected, ['cursor', 'grokbot']);
   assert.throws(() => f.invoke('island:quotaConnect', 'unknown-provider'));
+});
+
+test('island native: manual quota refresh forwards force and rejects invalid or untrusted requests', async t => {
+  const f = fixture(t), refreshes: boolean[] = [];
+  f.owner.quotas.refresh = async (force: boolean) => { refreshes.push(force); return []; };
+  await f.invoke('island:quotaRefresh'); await f.invoke('island:quotaRefresh', true);
+  assert.deepEqual(refreshes, [false, true]);
+  assert.throws(() => f.invoke('island:quotaRefresh', 'force'), /参数不正确/);
+  assert.throws(() => f.handlers.get('island:quotaRefresh')!({ sender: f.other.webContents, senderFrame: f.other.webContents.mainFrame }, true), /仅工作台/);
+  assert.deepEqual(refreshes, [false, true]);
 });

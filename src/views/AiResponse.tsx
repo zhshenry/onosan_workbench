@@ -27,7 +27,7 @@ const AiMarkdown = memo(function AiMarkdown({ text }: { text: string }) {
   </>;
 });
 
-export function AiResponse({ entry, browserTask, showTyping = true, approvalCardId = '', onLocateApproval = () => {} }: { entry: ChatEntry; browserTask?: BrowserTask; showTyping?: boolean; approvalCardId?: string; onLocateApproval?(): void }) {
+export function AiResponse({ entry, browserTask, showTyping = true, showTools = true, approvalCardId = '', onLocateApproval = () => {} }: { entry: ChatEntry; browserTask?: BrowserTask; showTyping?: boolean; showTools?: boolean; approvalCardId?: string; onLocateApproval?(): void }) {
   const [thinkingOpen, setThinkingExpanded] = useState(false);
   const [toolsOpen, setToolsExpanded] = useState(false);
   const [recordOpen, setRecordOpen] = useState(false);
@@ -42,7 +42,7 @@ export function AiResponse({ entry, browserTask, showTyping = true, approvalCard
   const thinkingCharacters = useMemo(() => Array.from((entry.thinking ?? '').replace(/\s/g, '')).length, [entry.thinking]);
   const thinkingSeconds = Math.floor(thinkingElapsedMs(thinkingActive ? entry : { thinkingMs: entry.thinkingMs }, now) / 1000);
   const thinkingMetrics = `${thinkingCharacters.toLocaleString('zh-CN')} 字 · ${entry.thinkingMs === undefined ? '耗时未记录' : `${thinkingSeconds} 秒`}`;
-  const tools = entry.tools ?? [];
+  const tools = showTools ? entry.tools ?? [] : [];
   const running = tools.some(tool => tool.status === 'running');
   const failed = tools.filter(tool => tool.status === 'error' || tool.status === 'interrupted').length;
   const waitingForSite = browserTask?.status === 'site-approval';

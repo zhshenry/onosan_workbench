@@ -5,6 +5,7 @@ import { findShenSha, type BaziChart, type BaziProfile } from '../../shared/bazi
 import { buildChart } from './compute';
 import { buildZiwei, buildZiweiHoroscope } from './ziwei';
 import { ASTRO_HOUSE_LABELS, buildAstro } from './astro';
+import { ASTRO_READING_TOPICS, type AstroReadingTopic } from '../../shared/astro-reading';
 
 export type BaziSystem = 'bazi' | 'ziwei' | 'astro';
 
@@ -71,7 +72,7 @@ export function ziweiHoroscopeText(profile: BaziProfile, date: string): string {
 function toolText(text: string) { return { content: [{ type: 'text' as const, text }], details: {} }; }
 
 /** 仅注入当前命例与当前盘型的已计算结果；命理助手没有写入工具。 */
-export function buildBaziContribution(profile: BaziProfile, system: BaziSystem, notes = ''): AiModuleContribution & { contextText(now: Date): string } {
+export function buildBaziContribution(profile: BaziProfile, system: BaziSystem, notes = '', readingTopic?: AstroReadingTopic): AiModuleContribution & { contextText(now: Date): string } {
   const identity = `命例 ID：${profile.id}；命例：${profile.name}${profile.tag ? `（${profile.tag}）` : ''}，${profile.gender === 1 ? '男' : '女'}，公历 ${profile.date} ${profile.time}。`;
   let chartText: string | ((now: Date) => string);
   if (system === 'ziwei') {
@@ -95,8 +96,8 @@ export function buildBaziContribution(profile: BaziProfile, system: BaziSystem, 
       + (chart.houseCusps ? `\n宫头：${chart.houseCusps.map((cusp, index) => `${index + 1}宫 ${signOf(cusp)}${degInSign(cusp)}`).join('；')}。` : '') + '\n'
       + chart.bodies.map(b => `${b.name}${b.basis ? `（${b.basis}）` : ''} ${signOf(b.lon)}${degInSign(b.lon)}${b.retro ? ' 逆行' : ''}${b.house !== undefined ? `，落第${b.house}宫` : ''}`).join('；')
       + '\n扩展口径：交点为平均交点；莉莉丝为平均月球远地点；福点按昼夜公式，缺少地点或有效上升点时不计算；小天体使用内置 JPL 星历。元素分布仍只统计十颗主要星体。'
-      + '\n主要星体相位：' + chart.aspects.filter(a => [a.a, a.b].every(name => chart.bodies.some(b => b.name === name && b.kind === 'planet'))).slice(0, 18).map(a => `${a.a}-${a.b} ${a.type} ${a.orb}°`).join('；')
-      + '\n扩展对象相位（容许度最多3°，不计点位互相相位）：' + chart.aspects.filter(a => [a.a, a.b].some(name => chart.bodies.some(b => b.name === name && b.kind !== 'planet'))).slice(0, 18).map(a => `${a.a}-${a.b} ${a.type} ${a.orb}°`).join('；');
+      + '\n主要星体相位：' + chart.aspects.filter(a => [a.a, a.b].every(name => chart.bodies.some(b => b.name === name && b.kind === 'planet'))).map(a => `${a.a}-${a.b} ${a.type} ${a.orb}°`).join('；')
+      + '\n扩展对象相位（容许度最多3°，不计点位互相相位）：' + chart.aspects.filter(a => [a.a, a.b].some(name => chart.bodies.some(b => b.name === name && b.kind !== 'planet'))).map(a => `${a.a}-${a.b} ${a.type} ${a.orb}°`).join('；');
   } else {
     const chart = buildChart(profile);
     chartText = now => baziChartText(chart, now);
@@ -129,7 +130,7 @@ export function buildBaziContribution(profile: BaziProfile, system: BaziSystem, 
   return {
     contextText,
     toolNames: [], labels: {}, buildTools: () => [],
-    systemPrompt: now => `${basePrompt(now)}\n${contextText(now)}`,
+    systemPrompt: now => `${basePrompt(now)}\n${system === 'astro' && readingTopic ? `本次解读主题：${ASTRO_READING_TOPICS[readingTopic].label}。${ASTRO_READING_TOPICS[readingTopic].description}始终结合以下完整本命星盘，优先回答用户的具体问题，说明采用的盘面依据；不受界面星体显示或相位筛选影响。当前没有占星行运、推运计算结果，不虚构具体时段的预测。\n` : ''}${contextText(now)}`,
   };
 }
 

@@ -1,10 +1,10 @@
 import type { AiConfig } from '../../shared/workbench-api';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { CaretDown, DotsThree, Flask, GearSix, Info, MagnifyingGlass, PaperPlaneRight, Plus, PushPin, SidebarSimple, Sparkle, Stop, Trash, X } from '@phosphor-icons/react';
+import { ArrowsClockwise, CaretDown, Copy, DotsThree, Flask, GearSix, Info, MagnifyingGlass, PaperPlaneRight, Plus, PushPin, SidebarSimple, Sparkle, Stop, Trash, X } from '@phosphor-icons/react';
 import { IconCheckSquare, IconGamepad, IconHome, IconMoon, IconVideo, IconWeb } from '../icons';
 import type { ChatSession, ChatSummary, CopySource } from '../../shared/todo-contracts';
-import { aiScopeKey, chatContextScope, chatScope, defaultAiScopeForWorkbench, preferredAiChat, sameAiWorkbench, TODO_AI_WORKBENCH_NAME, workbenchForScope, type AiScope } from '../../shared/ai-scope';
+import { aiScopeKey, chatContextScope, chatScope, defaultAiScopeForWorkbench, preferredAiChat, sameAiScope, sameAiWorkbench, TODO_AI_WORKBENCH_NAME, workbenchForScope, type AiScope } from '../../shared/ai-scope';
 import { aiReferenceKey, aiReferenceMode, validateAiReferences, type AiReference } from '../../shared/ai-reference';
 import { AiReferencePicker, loadReferenceOptions, REFERENCE_LABELS, type ReferenceOption } from './AiReferencePicker';
 import { errorText, Modal, Select as TodoSelect } from '../ui/controls';
@@ -14,6 +14,7 @@ import { AiActivity } from './AiActivity';
 import { SpeechInput } from './SpeechInput';
 import { BrowserSiteApprovalCard, useBrowserApprovalTasks } from '../../modules/browser/ui/site-approval';
 import { NAV, workbenchAiContext } from '../nav';
+import { ASTRO_READING_TOPICS, type AstroReadingTopic } from '../../shared/astro-reading';
 
 const wb = window.workbench;
 /** ⓘ 悬浮说明:每个工作台一段固定文案,不拼接 */
@@ -32,6 +33,7 @@ export interface AiPanelContext {
 }
 export interface AiSeed {
   text: string; nonce: number; scope: AiScope; baziSystem?: AiPanelContext['baziSystem']; copySource?: CopySource;
+  astroReadingTopic?: AstroReadingTopic;
 }
 const COPY_QUICK_ACTIONS = [
   { label: '帮我成稿', prompt: '根据我们聊过的内容和当前草稿,帮我写一版可以直接发布的正文;材料不够就先问我。' },
@@ -172,12 +174,14 @@ function chatSummary(chat: ChatSession): ChatSummary {
   const lastReply = [...chat.entries].reverse().find(entry => entry.role === 'assistant');
   return { id: chat.id, title: chat.title, updatedAt: chat.updatedAt, module: chat.module,
     draftId: chat.draftId, profileId: chat.profileId, viewId: chat.viewId, contextScope: chat.contextScope, pageScope: chat.pageScope,
+    baziSystem: [...chat.entries].reverse().find(entry => entry.baziSystem)?.baziSystem,
     streaming: chat.entries.some(entry => entry.streaming), completed: !!lastReply && !lastReply.streaming && !lastReply.error };
 }
 
-export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, onActiveChatChange, onOpenSettings, onLocateCopySource, onLocateBaziDay, onQuickAsk, context, width, onWidthChange, copySaveState, plannedWorkbench = false }: {
+export function AiPanel({ open, onClose, seed, onSeedFinished, requestedChatId, onChatLocated, onActiveChatChange, onOpenSettings, onLocateCopySource, onLocateBaziDay, onQuickAsk, context, width, onWidthChange, copySaveState, plannedWorkbench = false }: {
   open: boolean; onClose(): void; seed?: AiSeed | null; requestedChatId?: string | null; onChatLocated(): void; onOpenSettings(): void;
   onActiveChatChange(id: string | null): void;
+  onSeedFinished?(nonce: number): void;
   onLocateCopySource(source: CopySource): void;
   onLocateBaziDay(profileId: string): void;
   onQuickAsk(prompt: string, scope: AiScope): void;
@@ -209,6 +213,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
   };
   const [questions, setQuestions] = useState<Record<string, { id: string; sessionId: string; question: string; options: { label: string; description?: string }[] }>>({});
   const [error, setError] = useState('');
+  const [copiedEntry, setCopiedEntry] = useState('');
   const [switchingModel, setSwitchingModel] = useState(false);
   const [modelError, setModelError] = useState('');
   const [managing, setManaging] = useState<{ id: string; title: string } | null>(null);
@@ -428,6 +433,8 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
   useEffect(() => {
     if (!open || !seed || consumedSeed.current === seed.nonce) return;
     consumedSeed.current = seed.nonce;
+    setError('');
+    followReply.current = true; setAboveBottom(false);
     const sequence = ++loadSequence.current;
     const targetKey = workspaceKey(seed.scope);
     void (async () => {
@@ -435,11 +442,14 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
       const seedBrowserTabId = seedBrowserWorkspace ? (await wb.browserAutomation.tabs(seedBrowserWorkspace)).find(tab => tab.active && tab.ready)?.id ?? null : undefined;
       const existing = currentRef.current;
       let chat: ChatSession;
-      if (existing && sameAiWorkbench(existing, seed.scope)) chat = existing;
+      const astroReading = seed.baziSystem === 'astro';
+      const existingSystem = existing && [...existing.entries].reverse().find(entry => entry.baziSystem)?.baziSystem;
+      if (existing && (astroReading ? sameAiScope(chatContextScope(existing), seed.scope) && (!existing.entries.length || existingSystem === 'astro') : sameAiWorkbench(existing, seed.scope))) chat = existing;
       else {
         const list = await refreshChats();
         const wanted = selectedChats.current.get(targetKey);
-        const found = preferredAiChat(list, seed.scope, wanted);
+        const eligible = astroReading ? list.filter(item => sameAiScope(chatContextScope(item), seed.scope) && item.baziSystem === 'astro') : list;
+        const found = preferredAiChat(eligible, seed.scope, wanted);
         chat = found ? await wb.ai.chatOpen(found.id) : await wb.ai.chatNew(seed.scope);
       }
       if (sequence === loadSequence.current) {
@@ -451,6 +461,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
         setCurrent(chat);
         if (existing?.id !== chat.id) setInput(chat.draft);
       }
+      if (astroReading && (sendingRef.current.has(chat.id) || chat.entries.some(entry => entry.streaming))) return;
       markSending(chat.id, true);
       try {
         const unsentDraft = existing?.id === chat.id ? input : chat.draft;
@@ -458,7 +469,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
         const seedPageScope = workbenchForScope(seed.scope) === pageWorkbench ? context.scope : seed.scope;
         const seedReferences = await checkedReferences(chosen, seedPageScope, seed.scope, referenceContextKey);
         if (!existing && sequence === loadSequence.current && seedReferences.length) setReferenceSelection({ key: referenceKeyForChat(chat.id), values: seedReferences });
-        const request = wb.ai.ask(chat.id, seed.text, { scope: seed.scope, pageScope: seedPageScope, ...(seedBrowserWorkspace ? { browserTabId: seedBrowserTabId } : {}), references: seedReferences, baziSystem: seed.baziSystem, copySource: seed.copySource });
+        const request = wb.ai.ask(chat.id, seed.text, { scope: seed.scope, pageScope: seedPageScope, ...(seedBrowserWorkspace ? { browserTabId: seedBrowserTabId } : {}), references: seedReferences, baziSystem: seed.baziSystem, astroReadingTopic: seed.astroReadingTopic, copySource: seed.copySource });
         if (unsentDraft) void wb.ai.chatDraft(chat.id, unsentDraft).catch(() => undefined);
         await request;
       } catch (e) {
@@ -467,7 +478,7 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
       finally { markSending(chat.id, false); }
     })().catch(e => {
       if (sequence === loadSequence.current) setError(errorText(e));
-    });
+    }).finally(() => onSeedFinished?.(seed.nonce));
   }, [open, seed?.nonce]);
   useEffect(() => wb.ai.onChat(chat => {
     const summary = chatSummary(chat);
@@ -657,6 +668,17 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
       } finally { markSending(sendingKey, false); }
     })().catch(e => { if (sequence === loadSequence.current && referenceContextKeyRef.current === referenceContextKey && activeScopeKeyRef.current === targetKey) { setError(errorText(e)); setInput(previous => previous || text); } markSending(sendingKey, false); });
   };
+  const retryAstro = (entryId: string): void => {
+    const chat = visibleCurrent;
+    if (!chat || busy || sendingRef.current.has(chat.id) || !config?.aiEnabled) return;
+    const index = chat.entries.findIndex(entry => entry.id === entryId);
+    const question = chat.entries.slice(0, index).reverse().find(entry => entry.role === 'user');
+    if (!question) return;
+    markSending(chat.id, true); setError('');
+    void wb.ai.ask(chat.id, question.content, { scope: question.contextScope ?? chatContextScope(chat),
+      pageScope: question.pageScope, references: question.references, baziSystem: 'astro', astroReadingTopic: question.astroReading?.topic })
+      .catch(cause => setError(errorText(cause))).finally(() => markSending(chat.id, false));
+  };
   const closePanel = (): void => {
     flushDraft(); onClose();
     requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('.ai-topbar-btn')?.focus());
@@ -734,13 +756,19 @@ export function AiPanel({ open, onClose, seed, requestedChatId, onChatLocated, o
               <div key={entry.id} className={entry.role === 'user' ? 'ai-msg user' : 'ai-msg'}>
                 {entry.role === 'user' && entry.contextScope && (aiScopeKey(entry.contextScope) !== activeScopeKey || (entry.pageScope && aiScopeKey(entry.pageScope) !== aiScopeKey(entry.contextScope))) &&
                   <span className="ai-message-tag">关联：{contextForScope(entry.contextScope).object}{entry.pageScope && aiScopeKey(entry.pageScope) !== aiScopeKey(entry.contextScope) ? ` · ${contextForScope(entry.pageScope).object}` : ''}</span>}
-                {entry.baziSystem && entry.role === 'user' && <span className="ai-message-tag">{entry.baziSystem === 'ziwei' ? '紫微斗数' : entry.baziSystem === 'astro' ? '占星' : '八字'}</span>}
+                {entry.baziSystem && entry.role === 'user' && <span className="ai-message-tag">{entry.baziSystem === 'ziwei' ? '紫微斗数' : entry.baziSystem === 'astro' ? '占星' : '八字'}{entry.astroReading && ` · ${ASTRO_READING_TOPICS[entry.astroReading.topic].label} · ${entry.astroReading.profileName}`}</span>}
                 {entry.role === 'user' && entry.referenceSnapshots?.length ? <span className="ai-message-tag">当时参考：{entry.referenceSnapshots.map(snapshot => snapshot.name).join('、')}</span> : null}
                 {entry.copySource && <button className="ai-source-chip" title={entry.copySource.text} onClick={() => onLocateCopySource(entry.copySource!)}>引用原文 · 定位</button>}
                 {entry.role === 'assistant' && entry.baziSystem === 'bazi' && entry.content.includes('日主') && (entry.contextScope ?? chatScope(visibleCurrent)).module === 'bazi' && <button className="ai-source-chip" onClick={() => { const scope = entry.contextScope ?? chatScope(visibleCurrent); if (scope.module === 'bazi') onLocateBaziDay(scope.profileId); }}>在盘面中定位日主</button>}
                 {entry.role === 'assistant' ? <AiResponse entry={entry} showTyping={false} browserTask={entry.browserTask && lastBrowserEntries.get(entry.browserTask.id) === entry.id ? browserApprovals.tasks[entry.browserTask.id] : undefined}
                   approvalCardId={approvalCardId} onLocateApproval={locateSiteApproval} /> : <div className="ai-bubble">{entry.content}</div>}
                 {entry.error && <div className="ai-error" role="alert">{entry.error}</div>}
+                {entry.role === 'assistant' && entry.baziSystem === 'astro' && !entry.streaming && <div className="ai-reading-actions">
+                  {!!entry.content && <button type="button" onClick={() => {
+                    void wb.clipboard.write(entry.content).then(() => setCopiedEntry(entry.id), cause => setError(`复制失败：${errorText(cause)}`));
+                  }}><Copy size={14} aria-hidden="true" />{copiedEntry === entry.id ? '已复制' : '复制'}</button>}
+                  <button type="button" disabled={busy || !config?.aiEnabled} onClick={() => retryAstro(entry.id)}><ArrowsClockwise size={14} aria-hidden="true" />重试</button>
+                </div>}
                 {entry.proposal && <TodoProposalCard key={entry.proposal.token} entry={entry} busy={busy}
                   apply={(token, indices) => wb.ai.apply(token, indices)} discard={token => wb.ai.discard(token)} />}
                 {entry.copyProposal && entry.actionState === 'pending' && <div className="ai-proposal">

@@ -1,6 +1,20 @@
 # DESIGN — Ono Workbench 视觉系统(磨砂玻璃 · 三主题)
 
+## 灵动岛待办助手（2026-11-08）
+
+采用用户选定的[随身对话窗](docs/requirements/shared/desktop-island/design/ai-assistant-approved-2026-11-08.png)。点击岛上的吉祥物打开独立、可拖动及缩放的 400×610 深色对话窗；近屏幕边缘自动向内布局并约束在工作区内。标题为「待办助手」，右上角置顶和关闭，下方为「对话／消息」。对话独立滚动，输入框、现有模型选择和发送／停止操作固定在底部。顶部停靠展开时，入口继续位于左下角。
+
+复用 IslandMascot、IconButton、共享 authored Select、AiResponse 与 TodoProposalCard 的岛内变体，沿用 island token、共享字阶及面板圆角；无新图标或全局 token。真实修改预览保留全部变更字段、前后值与状态，不把示意图里的消息数量、模型或回复写入产品。三种停靠方式使用同一窗口，移出不收起，关闭仅隐藏。新窗口取代吉祥物原来的默认消息列表入口；Agent 列表在「消息」页保留。行为与视觉验收见[桌面灵动岛](docs/requirements/shared/desktop-island/README.md)和[待办助手验收](docs/requirements/shared/desktop-island/qa-ai-assistant-2026-11-08.md)。
+
+## 占星主题解读（2026-11-08）
+
+采用用户确认的[主题与问题联动稿](docs/requirements/life/mingli/design/astro-reading-approved-2026-11-08.png)。解读页以标题、主题下拉、三条问题示例、可选问题框及「开始解读」组织阅读顺序；问题共用一个细边表面和分隔线，选中以雾蓝底、文字及勾选图标表达。移除该页的术语字典、对象详情及扩展显示开关，不增加解读范围、模型选择或结果卡。回复与续聊沿用现有右侧助手；顶部 AI 解读使用同一份主题和问题。
+
+复用共享 Select、Phosphor 图标、近黑主按钮及三主题的 glass／hairline／acc／ink token；标题使用 18px lead，控件使用 13px control，说明使用 12px support。形状沿用控件 10px 与面板 18px 圆角，分组间距 20px。运行时归属 `AstroReading.tsx`、`modules/bazi/ui/bazi.css` 和助手的 `src/shell.css` 业务变体，不新增全局 token。解读页随内容自然增高，避免表格的 contain/零高度约束裁掉表单；其他信息页保留原高度与滚动规则。窄窗口继续使用外壳既有的助手覆盖模式，收起助手后可完整操作表单。行为与验证见[主题解读](docs/requirements/life/mingli/astro-reading.md)。
+
 ## 吉祥物消息入口（2026-11-08）
+
+按用户最新位置要求，顶部停靠展开时，吉祥物入口放在底栏左下角、四个页面导航之前；左右侧停靠与收起摘要沿用原位置。复用既有 28px 点击区和 24px 伙伴，不调整导航尺寸、颜色。点击行为以上方「灵动岛待办助手」为准。
 
 采用用户确认的[吉祥物入口稿](docs/requirements/shared/desktop-island/design/agent-mascot-entry-approved-2026-11-08.png)：移除灵动岛独立铃铛，将角标和消息入口放在既有圆环伙伴上。顶部列表从伙伴下方展开，侧边朝屏幕内展开；近黑顶栏、深灰单层列表、蓝色未读与主操作、琥珀待授权、红色失败沿用岛内 token。复用 IslandMascot、IconButton、Segmented、Rows，不增加底部页面。普通气泡保留紧凑尺寸，消息列表单独限高并内部滚动。伙伴装饰关闭后，已有消息仍保留静态入口。
 

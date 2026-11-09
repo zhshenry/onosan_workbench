@@ -265,10 +265,12 @@ const island: WorkbenchApi['island'] = {
   agentRead: id => ipcRenderer.invoke('island:agentRead', id),
   agentOpen: id => ipcRenderer.invoke('island:agentOpen', id),
   quotas: () => ipcRenderer.invoke('island:quotas'),
-  quotaRefresh: () => ipcRenderer.invoke('island:quotaRefresh'),
+  quotaRefresh: (force?: boolean) => ipcRenderer.invoke('island:quotaRefresh', force),
   quotaConnect: (provider, key) => ipcRenderer.invoke('island:quotaConnect', provider, key),
   quotaDisconnect: provider => ipcRenderer.invoke('island:quotaDisconnect', provider),
   quotaOfficial: provider => ipcRenderer.invoke('island:quotaOfficial', provider),
+  assistant: action => ipcRenderer.invoke('island:assistant', action),
+  onAssistantOpen: callback => { const listener = () => callback(); ipcRenderer.on('island:assistant-open', listener); return () => ipcRenderer.off('island:assistant-open', listener); },
 };
 
   const float = {

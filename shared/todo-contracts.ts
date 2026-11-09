@@ -119,6 +119,7 @@ export interface ChatEntry {
   /** Server-resolved content captured for this turn, never trusted renderer data. */
   referenceSnapshots?: import('./ai-reference').AiReferenceSnapshot[];
   baziSystem?: 'bazi' | 'ziwei' | 'astro';
+  astroReading?: { topic: import('./astro-reading').AstroReadingTopic; profileName: string };
   actionState?: 'pending' | 'applied' | 'discarded' | 'expired' | 'revised' | 'undone'; streaming?: boolean;
   tools?: AIToolEvent[]; thinking?: string; thinkingActive?: boolean; responsePhase?: AIResponsePhase; error?: string;
   /** 思考阶段累计毫秒；活动阶段的时间锚点仅用于实时显示，恢复中断时移除。 */
@@ -128,7 +129,7 @@ export interface ChatEntry {
 }
 /** 缺省 module 为旧版待办会话；原始对象用于工作台归类，contextScope 是当前业务对象，pageScope 是明确关联的页面。 */
 export interface ChatSession { id: string; title: string; titleEdited?: boolean; updatedAt: string; entries: ChatEntry[]; draft: string; module?: 'todo' | 'copy' | 'bazi' | 'workbench' | 'reading'; draftId?: string; profileId?: string; viewId?: string; contextScope?: import('./ai-scope').AiScope; pageScope?: import('./ai-scope').AiScope; browserTaskId?: string; }
-export interface ChatSummary { id: string; title: string; updatedAt: string; module?: ChatSession['module']; draftId?: string; profileId?: string; viewId?: string; contextScope?: import('./ai-scope').AiScope; pageScope?: import('./ai-scope').AiScope; streaming?: boolean; completed?: boolean; }
+export interface ChatSummary { id: string; title: string; updatedAt: string; module?: ChatSession['module']; draftId?: string; profileId?: string; viewId?: string; contextScope?: import('./ai-scope').AiScope; pageScope?: import('./ai-scope').AiScope; baziSystem?: ChatEntry['baziSystem']; streaming?: boolean; completed?: boolean; }
 export interface AIProvider {
   id: string; kind: AIProviderKind; name: string; endpoint: string; protocol: AIProtocol; hasKey: boolean;
 }

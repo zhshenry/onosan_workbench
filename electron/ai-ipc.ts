@@ -30,6 +30,7 @@ import { aiScopeKey, chatContextScope, chatScope, sameAiWorkbench, type AiScope 
 import { aiReferencesSchema, describeAiReference } from '../shared/ai-reference';
 import { resolveAiReferences, withAiReferenceSnapshots } from './ai-reference';
 import { recordThinkingPhase, thinkingElapsedMs, type ThinkingTiming } from '../shared/ai-thinking';
+import { ASTRO_READING_TOPICS, ASTRO_READING_TOPIC_IDS } from '../shared/astro-reading';
 
 const MAX_PROVIDERS = 8;
 const MAX_MODELS = 8;
@@ -352,6 +353,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     const request = z.object({ sessionId: z.string().uuid(), text: z.string().trim().min(1).max(10000, '输入最多10000字') }).strict().parse({ sessionId, text });
     const context = z.object({
       baziSystem: z.enum(['bazi', 'ziwei', 'astro']).optional(),
+      astroReadingTopic: z.enum(ASTRO_READING_TOPIC_IDS).optional(),
       copySource: z.object({ draftId: z.string().min(1), start: z.number().int().nonnegative(), end: z.number().int().positive(), text: z.string().min(1).max(1000) }).strict().optional(),
       scope: scopeSchema.optional(),
       pageScope: scopeSchema.optional(),
@@ -368,6 +370,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     if (!sameAiWorkbench(chat, requestedScope)) throw new Error('只能在同一工作台内延续这条对话');
     if (context.pageScope && !sameAiWorkbench(chat, context.pageScope)) throw new Error('当前页面不属于这条对话的工作台');
     const scope = requestedScope;
+    if (context.astroReadingTopic && (scope.module !== 'bazi' || selectedSystem !== 'astro')) throw new Error('解读主题仅用于当前命例的占星解读');
     const pageScope = context.pageScope ?? (aiScopeKey(requestedScope) === aiScopeKey(priorScope) ? chat.pageScope ?? scope : requestedScope);
     const isBrowserPage = pageScope.module === 'workbench' && ['browser', 'media-browser'].includes(pageScope.viewId);
     if (isBrowserPage && !isMainFrame) throw new Error('浏览器任务仅允许主窗口文档。');
@@ -395,7 +398,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     }), selectedTaskIds) : null;
     const copyContribution = draft ? buildCopyContribution(draft) : null;
     let contribution: AiModuleContribution = scope.module === 'bazi' && profile
-      ? buildBaziContribution(profile, selectedSystem, baziData?.notes[profile.id] ?? '')
+      ? buildBaziContribution(profile, selectedSystem, baziData?.notes[profile.id] ?? '', context.astroReadingTopic)
       : scope.module === 'reading' ? (() => {
         const bookData = reading.all();
         const book = bookData.books.find(item => item.id === (scope as { profileId: string }).profileId);
@@ -421,12 +424,14 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     const history = chat.entries.filter(entry => !entry.streaming && !entry.error && entry.content.trim()).slice(-12).map(entry => {
       const earlierScope = entry.contextScope ?? chatScope(chat);
       const earlierSystem = earlierScope.module === 'bazi' && entry.baziSystem ? `[${entry.baziSystem === 'ziwei' ? '紫微斗数' : entry.baziSystem === 'astro' ? '占星' : '八字'}]\n` : '';
+      const earlierReading = entry.astroReading ? `[解读主题：${ASTRO_READING_TOPICS[entry.astroReading.topic].label}；命例：${entry.astroReading.profileName}]\n` : '';
       const earlierContext = aiScopeKey(earlierScope) === aiScopeKey(scope) ? '' : `[历史关联：${describeAiScope(earlierScope)}]\n`;
       const earlierPage = entry.pageScope && aiScopeKey(entry.pageScope) !== aiScopeKey(earlierScope) ? `[当时页面：${describeAiScope(entry.pageScope)}]\n` : '';
       const earlierReferences = entry.references?.length ? `[历史参考（非本轮选择）：${entry.references.map(describeAiReference).join('、')}]\n` : '';
-      return { role: entry.role, content: earlierContext + earlierPage + earlierSystem + earlierReferences + entry.content };
+      return { role: entry.role, content: earlierContext + earlierPage + earlierSystem + earlierReading + earlierReferences + entry.content };
     });
-    const systemTag = scope.module === 'bazi' ? { baziSystem: selectedSystem } : {};
+    const systemTag = scope.module === 'bazi' ? { baziSystem: selectedSystem,
+      ...(context.astroReadingTopic && profile ? { astroReading: { topic: context.astroReadingTopic, profileName: profile.name } } : {}) } : {};
     const controller = new AbortController();
     if (browserTask) browserAutomation!.bind(owner, browserTask.id, chat.id, controller.signal);
     chat.contextScope = scope;

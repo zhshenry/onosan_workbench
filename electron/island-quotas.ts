@@ -1,7 +1,7 @@
 import { safeStorage, session, shell } from 'electron';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createInterface } from 'node:readline';
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -13,6 +13,18 @@ import { ISLAND_QUOTA_LABELS, ISLAND_QUOTA_PROVIDERS, type QuotaProvider } from 
 type Provider = QuotaProvider['id'];
 type RpcResult = Record<string, unknown>;
 const blank = (id: Provider): QuotaProvider => ({ id, status: 'disconnected', account: '', plan: '', windows: [], updatedAt: null, message: '未连接' });
+type CodexFailure = 'timeout' | 'transport' | 'auth' | 'cli-unavailable' | 'request';
+class CodexQuotaError extends Error {
+  constructor(readonly kind: CodexFailure, readonly rpcCode?: number) {
+    super({ timeout: 'Codex 查询暂未完成', transport: 'Codex 后台连接暂不可用', auth: '登录授权已失效，请重新登录', 'cli-unavailable': '未找到 Codex CLI，请安装后重试', request: 'Codex 额度暂时无法查询' }[kind]);
+  }
+}
+function codexRequestError(error: { message?: unknown; code?: unknown }): CodexQuotaError {
+  const message = typeof error.message === 'string' ? error.message : '';
+  const kind = /refresh_token_(?:reused|expired|invalidated)|invalid_grant|not (?:logged in|authenticated)|authentication required|\b401\s+unauthorized/i.test(message) ? 'auth'
+    : /timed?\s*out|timeout/i.test(message) ? 'timeout' : /error sending request|ECONN|ENOTFOUND|connection|transport/i.test(message) ? 'transport' : 'request';
+  return new CodexQuotaError(kind, typeof error.code === 'number' ? error.code : undefined);
+}
 
 export class IslandQuotas {
   private providers: QuotaProvider[] = ISLAND_QUOTA_PROVIDERS.map(blank);
@@ -24,6 +36,13 @@ export class IslandQuotas {
   private pending = new Map<number, { resolve(value: RpcResult): void; reject(error: Error): void; timer: NodeJS.Timeout }>();
   private refreshing: Promise<QuotaProvider[]> | null = null;
   private nextRead = 0;
+  private codexRefreshing: Promise<void> | null = null;
+  private codexNextRead = 0;
+  private codexRetry: NodeJS.Timeout | null = null;
+  private codexFailures = 0;
+  private codexTimeouts = 0;
+  private codexRevision = 0;
+  private stopped = false;
   private generation = { codex: 0, zcode: 0, cursor: 0, grokbot: 0 };
   private path: string;
   constructor(private dir: string, private changed: () => void) {
@@ -34,7 +53,7 @@ export class IslandQuotas {
         this.credentials = { codex: saved.codex === true, zcode: typeof saved.zcode === 'string' ? saved.zcode : '', cursor: saved.cursor === true, grokbot: saved.grokbot === true };
       } catch { /* Connections remain disconnected when the credential record is unreadable. */ }
     }
-    for (const p of this.providers) if (this.credentials[p.id]) Object.assign(p, { status: 'error', message: '等待更新' });
+    for (const p of this.providers) if (this.credentials[p.id]) Object.assign(p, { status: p.id === 'codex' ? 'recovering' : 'error', message: '等待更新' });
   }
   read(): QuotaProvider[] { return structuredClone(this.providers); }
   private save(): void { writeJsonAtomic(this.path, this.credentials); }
@@ -95,14 +114,27 @@ export class IslandQuotas {
       if (pendingCookie) await account.cookies.remove('https://cursor.com', 'WorkosCursorSessionToken').catch(() => undefined);
     }
   }
-  private rpc(method: string, params?: unknown): Promise<RpcResult> {
+  private diagnostic(method: string, durationMs: number, outcome: string, code?: number): void {
+    try {
+      const file = join(this.dir, 'island-codex-diagnostics.jsonl');
+      if (existsSync(file) && statSync(file).size >= 65536) writeFileSync(file, '');
+      appendFileSync(file, `${JSON.stringify({ at: new Date().toISOString(), method, durationMs, outcome, ...(code === undefined ? {} : { code }) })}\n`);
+    } catch { /* Diagnostics must not interrupt quota reads. Never record RPC payloads. */ }
+  }
+  private rpc(method: string, params?: unknown, timeout = 30000): Promise<RpcResult> {
     return new Promise((resolve, reject) => {
-      if (!this.child) { reject(new Error('Codex 连接已关闭')); return; }
-      const id = ++this.serial;
-      const timer = setTimeout(() => { this.pending.delete(id); reject(new Error('Codex 查询超时，请重试')); }, 20000);
-      this.pending.set(id, { resolve, reject, timer });
+      if (!this.child) { reject(new CodexQuotaError('transport')); return; }
+      const id = ++this.serial, started = Date.now();
+      const finish = (error?: Error, value: RpcResult = {}) => {
+        if (!this.pending.delete(id)) return;
+        clearTimeout(timer);
+        this.diagnostic(method, Date.now() - started, error instanceof CodexQuotaError ? error.kind : error ? 'request' : 'ok', error instanceof CodexQuotaError ? error.rpcCode : undefined);
+        if (error) reject(error); else resolve(value);
+      };
+      const timer = setTimeout(() => finish(new CodexQuotaError('timeout')), timeout);
+      this.pending.set(id, { resolve: value => finish(undefined, value), reject: error => finish(error), timer });
       this.child.stdin.write(`${JSON.stringify({ id, method, ...(params ? { params } : {}) })}\n`, error => {
-        if (error && this.pending.delete(id)) { clearTimeout(timer); reject(new Error('Codex 连接已关闭')); }
+        if (error) finish(new CodexQuotaError('transport'));
       });
     });
   }
@@ -115,13 +147,22 @@ export class IslandQuotas {
       delete env.OPENAI_API_KEY; delete env.CODEX_API_KEY;
       const child = spawn(resolveCodexExecutable(env), ['app-server', '--listen', 'stdio://', '-c', 'cli_auth_credentials_store="keyring"'], { cwd: home, env, windowsHide: true, stdio: 'pipe' });
       this.child = child; started = child;
-      const fail = () => {
+      const fail = (error: CodexQuotaError) => {
         if (this.child !== child) return;
-        for (const request of this.pending.values()) { clearTimeout(request.timer); request.reject(new Error('无法启动 Codex CLI，请确认已安装且可运行')); }
-        this.pending.clear(); this.child = null; this.ready = null; child.kill();
+        const waiting = this.pending.size > 0;
+        this.child = null; this.ready = null;
+        for (const request of this.pending.values()) request.reject(error);
+        child.kill();
+        if (!waiting && this.credentials.codex && !this.stopped && this.providers[0].issue !== 'auth-required') {
+          const provider = this.providers[0];
+          if (provider.status === 'connecting') Object.assign(provider, { status: 'error', issue: 'auth-required', message: '授权未完成，请重新登录' });
+          else { Object.assign(provider, { status: provider.account ? 'stale' : 'recovering', message: '额度服务已中断，正在自动恢复' }); this.scheduleCodexRetry(); }
+          this.changed();
+        }
       };
-      child.once('error', fail); child.once('exit', fail);
-      child.stdin.once('error', fail);
+      child.once('error', (error: NodeJS.ErrnoException) => fail(new CodexQuotaError(error.code === 'ENOENT' ? 'cli-unavailable' : 'transport')));
+      child.once('exit', code => { if (this.child === child) this.diagnostic('process/exit', 0, 'transport', code ?? undefined); fail(new CodexQuotaError('transport')); });
+      child.stdin.once('error', () => fail(new CodexQuotaError('transport')));
       child.stderr.resume(); // Never forward authentication payloads or CLI diagnostics to the UI/log.
       createInterface({ input: child.stdout }).on('line', line => {
         if (this.child !== child) return;
@@ -129,18 +170,22 @@ export class IslandQuotas {
           const message = JSON.parse(line);
           const request = this.pending.get(message.id);
           if (request) {
-            clearTimeout(request.timer); this.pending.delete(message.id);
-            if (message.error) request.reject(new Error('Codex 请求失败，请重新连接账户或稍后重试'));
+            if (message.error) request.reject(codexRequestError(message.error));
             else request.resolve(message.result ?? {});
           } else if (message.method === 'account/login/completed' && this.credentials.codex) {
             const provider = this.providers[0];
             provider.status = message.params?.success ? 'ready' : 'error';
+            provider.issue = message.params?.success ? undefined : 'auth-required';
             provider.message = message.params?.success ? '' : '连接未完成，请重新连接';
-            this.nextRead = 0; this.changed();
+            this.nextRead = 0; this.codexNextRead = 0; this.changed();
             if (message.params?.success) void this.refresh();
-          } else if (message.method === 'account/rateLimits/updated' && this.credentials.codex) {
+          } else if (message.method === 'account/updated' && message.params?.authMode === null && this.credentials.codex && this.providers[0].status !== 'connecting') {
+            this.generation.codex++; this.cancelCodexRetry();
+            Object.assign(this.providers[0], { status: 'error', issue: 'auth-required', message: '登录授权已失效，请重新登录' });
+            this.stopCodex(); this.changed();
+          } else if (message.method === 'account/rateLimits/updated' && this.credentials.codex && this.providers[0].status !== 'connecting' && this.providers[0].issue !== 'auth-required') {
             const windows = codexQuotaWindows(message.params);
-            if (windows.length) { Object.assign(this.providers[0], { windows, updatedAt: Date.now(), status: 'ready', message: '' }); this.changed(); }
+            if (windows.length) { this.codexRevision++; this.codexFailures = 0; this.codexTimeouts = 0; this.cancelCodexRetry(); Object.assign(this.providers[0], { windows, updatedAt: Date.now(), status: 'ready', issue: undefined, message: '' }); this.changed(); }
           }
         } catch { /* Ignore non-protocol output. */ }
       });
@@ -168,18 +213,21 @@ export class IslandQuotas {
       await this.refreshing; this.nextRead = 0;
       return this.refresh();
     }
+    this.cancelCodexRetry(); this.codexFailures = 0; this.codexTimeouts = 0; this.codexNextRead = 0;
+    this.stopCodex(); await this.codexRefreshing;
+    if (generation !== this.generation.codex) return this.read();
     this.credentials.codex = true; this.save();
     Object.assign(this.providers[0], { status: 'connecting', message: '请在浏览器中完成连接' }); this.changed();
     try {
       await this.start();
       if (generation !== this.generation.codex) return this.read();
-      const login = await this.rpc('account/login/start', { type: 'chatgpt' });
+      const login = await this.rpc('account/login/start', { type: 'chatgpt' }, 60000);
       if (generation !== this.generation.codex) return this.read();
       if (typeof login.authUrl !== 'string') throw new Error('Codex 未返回授权地址');
       const url = new URL(login.authUrl);
       if (url.protocol !== 'https:' || !['auth.openai.com', 'chatgpt.com', 'auth0.openai.com'].includes(url.hostname)) throw new Error('Codex 授权地址无效');
       await shell.openExternal(url.href);
-    } catch (error) { if (generation === this.generation.codex) { Object.assign(this.providers[0], { status: 'error', message: error instanceof Error ? error.message : '连接失败' }); this.changed(); } }
+    } catch (error) { if (generation === this.generation.codex) { Object.assign(this.providers[0], { status: 'error', issue: error instanceof CodexQuotaError && error.kind === 'cli-unavailable' ? 'cli-unavailable' : 'auth-required', message: error instanceof Error ? error.message : '连接失败' }); this.changed(); } }
     return this.read();
   }
   async disconnect(provider: Provider): Promise<QuotaProvider[]> {
@@ -194,31 +242,81 @@ export class IslandQuotas {
     if (provider === 'codex') {
       // This app owns a separate Codex home/keyring entry; other clients stay signed in.
       const connected = this.credentials.codex;
+      this.cancelCodexRetry();
       this.credentials.codex = false;
       try { if (connected) { await this.start(); await this.rpc('account/logout'); } }
       finally { this.stopCodex(); this.save(); this.providers[0] = blank('codex'); this.changed(); }
     } else if (provider === 'zcode') this.credentials.zcode = '';
     this.save(); this.providers[this.providers.findIndex(p => p.id === provider)] = blank(provider); this.changed(); return this.read();
   }
-  refresh(): Promise<QuotaProvider[]> {
-    if (this.refreshing) return this.refreshing;
-    if (Date.now() < this.nextRead) return Promise.resolve(this.read());
+  private cancelCodexRetry(): void { if (this.codexRetry) clearTimeout(this.codexRetry); this.codexRetry = null; }
+  private scheduleCodexRetry(): void {
+    this.cancelCodexRetry();
+    if (this.stopped || !this.credentials.codex || this.providers[0].issue === 'auth-required') return;
+    const generation = this.generation.codex;
+    const wait = [10000, 30000, 60000][Math.min(this.codexFailures++, 2)];
+    this.codexNextRead = Date.now() + wait;
+    this.codexRetry = setTimeout(() => {
+      this.codexRetry = null;
+      if (!this.stopped && this.credentials.codex && generation === this.generation.codex) void this.refreshCodex(true);
+    }, wait);
+    this.codexRetry.unref();
+  }
+  private async readCodex(next: QuotaProvider, refreshToken = false): Promise<void> {
+    const response = await this.rpc('account/read', { refreshToken }, refreshToken ? 60000 : 30000);
+    const account = response.account as { type?: string; email?: string; planType?: string } | null;
+    if (account?.type !== 'chatgpt') throw new CodexQuotaError('auth');
+    const windows = codexQuotaWindows(await this.rpc('account/rateLimits/read'));
+    next.account = account.email ? account.email.replace(/^(.).+(@.*)$/, '$1***$2') : '已连接 ChatGPT';
+    next.accountKey = createHash('sha256').update(account.email ?? 'chatgpt').digest('hex');
+    next.plan = account.planType ?? '';
+    next.windows = windows;
+  }
+  private refreshCodex(force: boolean): Promise<void> {
+    if (this.codexRefreshing) return this.codexRefreshing;
+    const provider = this.providers[0], generation = this.generation.codex, revision = this.codexRevision;
+    if (this.stopped || !this.credentials.codex || provider.status === 'connecting' || provider.issue === 'auth-required' || !force && Date.now() < this.codexNextRead) return Promise.resolve();
+    this.cancelCodexRetry(); this.codexNextRead = Date.now() + 60000;
+    this.codexRefreshing = (async () => {
+      const next = { ...provider };
+      try {
+        await this.start();
+        try { await this.readCodex(next); }
+        catch (error) { if (!(error instanceof CodexQuotaError) || error.kind !== 'auth') throw error; await this.readCodex(next, true); }
+        if (generation !== this.generation.codex || revision !== this.codexRevision) return;
+        this.codexFailures = 0; this.codexTimeouts = 0;
+        Object.assign(next, { status: next.windows.length ? 'ready' : 'unsupported', issue: undefined, updatedAt: Date.now(), message: next.windows.length ? '' : '当前套餐未返回可用指标，请去官方查看' });
+        this.providers[0] = next; this.changed();
+      } catch (error) {
+        if (generation !== this.generation.codex || revision !== this.codexRevision) return;
+        const kind = error instanceof CodexQuotaError ? error.kind : 'request';
+        if (kind === 'auth' || kind === 'cli-unavailable') {
+          Object.assign(next, { status: 'error', issue: kind === 'auth' ? 'auth-required' : 'cli-unavailable', message: error instanceof Error ? error.message : '连接暂不可用' });
+          this.providers[0] = next; this.changed(); return;
+        }
+        this.codexTimeouts = kind === 'timeout' ? this.codexTimeouts + 1 : 0;
+        Object.assign(next, { status: next.account ? 'stale' : 'recovering', issue: undefined, message: '额度更新延迟，将自动重试' });
+        this.providers[0] = next; this.changed();
+        if (this.codexTimeouts >= 2 && this.child) {
+          // A local account read checks the RPC service without forcing network auth.
+          try { await this.rpc('account/read', { refreshToken: false }, 5000); }
+          catch { if (generation === this.generation.codex && revision === this.codexRevision) { this.stopCodex(); next.message = '额度服务无响应，正在自动恢复'; this.changed(); } }
+        }
+        if (generation === this.generation.codex && revision === this.codexRevision) this.scheduleCodexRetry();
+      }
+    })().finally(() => { this.codexRefreshing = null; });
+    return this.codexRefreshing;
+  }
+  refresh(force = false): Promise<QuotaProvider[]> {
+    const codex = this.refreshCodex(force);
+    if (this.refreshing || Date.now() < this.nextRead) return Promise.all([this.refreshing, codex]).then(() => this.read());
     this.nextRead = Date.now() + 60000;
     const generation = { ...this.generation };
     this.refreshing = Promise.all(this.providers.map(async (provider, index) => {
-      if (!this.credentials[provider.id] || provider.status === 'connecting') return;
+      if (provider.id === 'codex' || !this.credentials[provider.id] || provider.status === 'connecting') return;
       const next = { ...provider };
       try {
-        if (provider.id === 'codex') {
-          await this.start();
-          const response = await this.rpc('account/read', { refreshToken: true });
-          const account = response.account as { type?: string; email?: string; planType?: string } | null;
-          if (account?.type !== 'chatgpt') throw new Error('请连接 ChatGPT 账户以读取编程额度');
-          next.account = account.email ? account.email.replace(/^(.).+(@.*)$/, '$1***$2') : '已连接 ChatGPT';
-          next.accountKey = createHash('sha256').update(account.email ?? 'chatgpt').digest('hex');
-          next.plan = account.planType ?? '';
-          next.windows = codexQuotaWindows(await this.rpc('account/rateLimits/read'));
-        } else if (provider.id === 'zcode') {
+        if (provider.id === 'zcode') {
           const key = safeStorage.decryptString(Buffer.from(this.credentials.zcode, 'base64'));
           const response = await fetch('https://open.bigmodel.cn/api/monitor/usage/quota/limit', { headers: { Authorization: key, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(15000), redirect: 'error' });
           if (response.status === 429) { this.nextRead = Date.now() + Math.max(300, Math.min(3600, Number(response.headers.get('retry-after')) || 300)) * 1000; throw new Error('请求较多，稍后自动重试'); }
@@ -257,15 +355,16 @@ export class IslandQuotas {
       }
       if (generation[provider.id] === this.generation[provider.id]) this.providers[index] = next;
     })).then(() => { this.changed(); return this.read(); }).finally(() => { this.refreshing = null; });
-    return this.refreshing;
+    return Promise.all([this.refreshing, codex]).then(() => this.read());
   }
   stop(): void {
+    this.stopped = true; this.generation.codex++; this.cancelCodexRetry();
     for (const provider of ['cursor', 'grokbot'] as const) { this.generation[provider]++; this.browserLogins.get(provider)?.controller.abort(); }
     this.stopCodex();
   }
   private stopCodex(): void {
-    this.child?.kill(); this.child = null; this.ready = null;
-    for (const request of this.pending.values()) { clearTimeout(request.timer); request.reject(new Error('连接已关闭')); }
+    const child = this.child; this.child = null; this.ready = null; child?.kill();
+    for (const request of this.pending.values()) request.reject(new CodexQuotaError('transport'));
     this.pending.clear();
   }
 }

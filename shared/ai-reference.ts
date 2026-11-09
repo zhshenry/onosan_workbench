@@ -82,6 +82,7 @@ export interface AiTurnContext {
   browserTabId?: string | null;
   references?: AiReference[];
   baziSystem?: 'bazi' | 'ziwei' | 'astro';
+  astroReadingTopic?: import('./astro-reading').AstroReadingTopic;
   copySource?: CopySource;
 }
 

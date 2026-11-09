@@ -4,7 +4,7 @@ import { EventEmitter } from 'node:events';
 import { PassThrough, Writable } from 'node:stream';
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { transformSync } from 'esbuild';
@@ -43,18 +43,25 @@ function fixture(t: any, authUrl = 'https://auth.openai.com/synthetic-test') {
       this.authorization = { accessToken: token, refreshToken: 'synthetic-refresh-token' }; return token;
     }
   }
-  const child: any = new EventEmitter();
-  child.stdout = new PassThrough(); child.stderr = new PassThrough();
-  child.kill = () => { child.killed = true; child.emit('exit'); };
-  const send = (message: unknown) => child.stdout.write(`${JSON.stringify(message)}\n`);
-  child.stdin = new Writable({ write(chunk, _encoding, callback) {
-    const request = JSON.parse(chunk.toString()); requests.push(request);
-    const result = request.method === 'account/login/start' ? { authUrl, loginId: 'synthetic-login' }
+  const defaultReply = (request: any) => ({ result: request.method === 'account/login/start' ? { authUrl, loginId: 'synthetic-login' }
       : request.method === 'account/read' ? { account: { type: 'chatgpt', email: 'synthetic@example.test', planType: 'plus' } }
-      : request.method === 'account/rateLimits/read' ? { rateLimits: { primary: { usedPercent: 28, windowDurationMins: 300, resetsAt: 1794000000 } } } : {};
-    if (request.id) queueMicrotask(() => send({ id: request.id, result }));
-    callback();
-  } });
+      : request.method === 'account/rateLimits/read' ? { rateLimits: { primary: { usedPercent: 28, windowDurationMins: 300, resetsAt: 1794000000 } } } : {} });
+  let reply: (request: any) => { result?: unknown; error?: unknown } | undefined = defaultReply;
+  const children: any[] = [];
+  const send = (message: unknown, target = children.at(-1)) => target.stdout.write(`${JSON.stringify(message)}\n`);
+  const makeChild = () => {
+    const child: any = new EventEmitter();
+    child.stdout = new PassThrough(); child.stderr = new PassThrough();
+    child.kill = () => { child.killed = true; child.emit('exit'); };
+    child.stdin = new Writable({ write(chunk, _encoding, callback) {
+      const request = JSON.parse(chunk.toString()); requests.push(request);
+      const response = reply(request);
+      if (request.id && response) queueMicrotask(() => send({ id: request.id, ...response }, child));
+      callback();
+    } });
+    children.push(child); return child;
+  };
+  const child = makeChild();
   const electron = { session: { fromPartition: (name: string) => { if (!sessions.has(name)) sessions.set(name, new AccountSession()); return sessions.get(name); } }, shell: { openExternal: async (url: string) => { opened.push(url); } }, safeStorage: {
     isEncryptionAvailable: () => true,
     encryptString: (key: string) => { const id = `protected-${secrets.size}`; secrets.set(id, key); return Buffer.from(id); },
@@ -63,18 +70,28 @@ function fixture(t: any, authUrl = 'https://auth.openai.com/synthetic-test') {
   const module = { exports: {} as any };
   const code = transformSync(readFileSync('electron/island-quotas.ts', 'utf8'), { loader: 'ts', format: 'cjs' }).code;
   new Function('require', 'module', 'exports', code)((name: string) => name === 'electron' ? electron
-    : name === 'node:child_process' ? { spawn: (...args: any[]) => { launches.push(args); return child; } }
+    : name === 'node:child_process' ? { spawn: (...args: any[]) => { const child = children[launches.length] ?? makeChild(); launches.push(args); return child; } }
     : name === 'node:timers/promises' ? { setTimeout: delay }
     : name === './codex-cli' ? { resolveCodexExecutable: () => join(dir, 'Codex CLI', 'codex.exe') }
     : name === '../modules/storage/json-file' ? { writeJsonAtomic } : name === '../shared/island-quota' ? parsers : require(name), module, module.exports);
   const service = new module.exports.IslandQuotas(dir, () => undefined);
   t.after(async () => { service.stop(); await settled(); rmSync(dir, { recursive: true, force: true }); });
-  return { service, dir, requests, launches, opened, child, send, electron, sessions, waits,
+  return { service, dir, requests, launches, opened, child, children, send, electron, sessions, waits, defaultReply,
+    setReply: (value: typeof reply) => { reply = value; },
     poll: async () => { await settled(); for (const entry of [...waits]) entry.run(); await settled(); },
     restore: () => new module.exports.IslandQuotas(dir, () => undefined) };
 }
 const settled = () => new Promise(resolve => setImmediate(resolve));
 const quotaResponse = () => Response.json({ success: true, data: { limits: [{ type: 'TOKENS_LIMIT', percentage: 37, windowDurationMins: 300 }] } });
+const advance = async (t: any, milliseconds: number) => { t.mock.timers.tick(milliseconds); await settled(); };
+async function connectedCodex(t: any) {
+  const f = fixture(t);
+  await f.service.connect('codex');
+  f.send({ method: 'account/login/completed', params: { success: true } });
+  await settled(); await f.service.refresh();
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: Date.now() });
+  return f;
+}
 
 test('island quota: disconnected providers perform no network requests or CLI reads', async t => {
   const f = fixture(t); let reads = 0;
@@ -112,11 +129,185 @@ test('island quota: untrusted authorization URL never opens in the browser', asy
 
 test('island quota: an unavailable Codex executable reports startup failure without opening a browser', async t => {
   const f = fixture(t);
+  f.setReply(request => request.method === 'initialize' ? undefined : f.defaultReply(request));
   const connected = f.service.connect('codex');
+  await settled();
   f.child.emit('error', Object.assign(new Error('synthetic missing executable'), { code: 'ENOENT' }));
   const result = await connected;
-  assert.equal(result[0].status, 'error'); assert.match(result[0].message, /无法启动 Codex CLI/);
+  assert.equal(result[0].status, 'error'); assert.equal(result[0].issue, 'cli-unavailable'); assert.match(result[0].message, /安装/);
   assert.equal(f.opened.length, 0); assert.equal(f.child.killed, true);
+});
+
+test('island Codex: routine reads do not force token refresh and a 22-second query succeeds', async t => {
+  const f = await connectedCodex(t);
+  f.setReply(request => request.method === 'account/read' ? undefined : f.defaultReply(request));
+  const pending = f.service.refresh(true); await settled();
+  const account = f.requests.at(-1);
+  assert.equal(account.method, 'account/read'); assert.deepEqual(account.params, { refreshToken: false });
+  await advance(t, 22000);
+  assert.equal(f.service.read()[0].status, 'ready');
+  f.send({ id: account.id, ...f.defaultReply(account) }); await pending;
+  assert.equal(f.service.read()[0].status, 'ready');
+  assert.equal(f.requests.some(request => request.params?.refreshToken === true), false);
+  assert.equal(f.opened.length, 1);
+});
+
+test('island Codex: timeout retains the last quota and automatically recovers after ten seconds', async t => {
+  const f = await connectedCodex(t), snapshot = f.service.read()[0];
+  f.setReply(request => request.method === 'account/rateLimits/read' ? undefined : f.defaultReply(request));
+  const pending = f.service.refresh(true); await settled();
+  await advance(t, 30000); await pending;
+  const stale = f.service.read()[0];
+  assert.equal(stale.status, 'stale'); assert.equal(stale.issue, undefined);
+  assert.deepEqual(stale.windows, snapshot.windows); assert.equal(stale.updatedAt, snapshot.updatedAt);
+  assert.equal(JSON.parse(readFileSync(join(f.dir, 'island-connections.json'), 'utf8')).codex, true);
+  const count = f.requests.length; f.setReply(f.defaultReply);
+  await advance(t, 9999); assert.equal(f.requests.length, count);
+  await advance(t, 1); assert.equal(f.service.read()[0].status, 'ready');
+  assert.ok(f.service.read()[0].updatedAt > snapshot.updatedAt);
+  assert.equal(f.opened.length, 1); assert.equal(f.launches.length, 1);
+});
+
+test('island Codex: transient failures back off at 10, 30 and 60 seconds without reauthorizing', async t => {
+  const f = await connectedCodex(t);
+  f.setReply(request => request.method === 'account/rateLimits/read' ? { error: { code: -32001, message: 'Server overloaded; auth session remains valid' } } : f.defaultReply(request));
+  await f.service.refresh(true);
+  for (const wait of [10000, 30000, 60000]) {
+    const count = f.requests.length;
+    await advance(t, wait - 1); assert.equal(f.requests.length, count);
+    await advance(t, 1); assert.equal(f.requests.length, count + 2);
+    assert.equal(f.service.read()[0].status, 'stale'); assert.equal(f.service.read()[0].issue, undefined);
+  }
+  f.setReply(f.defaultReply);
+  await f.service.refresh(true);
+  assert.equal(f.service.read()[0].status, 'ready');
+  const count = f.requests.length; await advance(t, 120000); assert.equal(f.requests.length, count);
+  assert.equal(f.opened.length, 1); assert.equal(f.launches.length, 1);
+});
+
+test('island Codex: manual refresh bypasses cooldown, shares an in-flight read and cancels retry', async t => {
+  const f = await connectedCodex(t);
+  f.setReply(request => request.method === 'account/read' ? undefined : f.defaultReply(request));
+  const first = f.service.refresh(true), second = f.service.refresh(true); await settled();
+  const account = f.requests.at(-1), count = f.requests.length;
+  assert.equal(account.method, 'account/read');
+  f.send({ id: account.id, error: { message: 'error sending request: synthetic offline' } });
+  await Promise.all([first, second]); assert.equal(f.requests.length, count);
+  assert.equal(f.service.read()[0].status, 'stale');
+  f.setReply(f.defaultReply); await f.service.refresh(true);
+  assert.equal(f.service.read()[0].status, 'ready'); assert.equal(f.requests.length, count + 2);
+  await advance(t, 60000); assert.equal(f.requests.length, count + 2);
+  assert.equal(f.requests.filter(request => request.method === 'account/login/start').length, 1);
+});
+
+test('island Codex: only confirmed auth failure forces one refresh with a 60-second budget', async t => {
+  const f = await connectedCodex(t);
+  f.setReply(request => request.method !== 'account/read' ? f.defaultReply(request)
+    : request.params.refreshToken ? undefined : { error: { message: 'authentication required', code: -32600 } });
+  const pending = f.service.refresh(true); await settled();
+  const refresh = f.requests.at(-1);
+  assert.deepEqual(refresh.params, { refreshToken: true });
+  await advance(t, 50000);
+  f.send({ id: refresh.id, ...f.defaultReply(refresh) }); await pending;
+  assert.equal(f.service.read()[0].status, 'ready');
+  assert.equal(f.requests.filter(request => request.params?.refreshToken === true).length, 1);
+  assert.equal(f.opened.length, 1);
+});
+
+test('island Codex: invalid authorization requires an explicit login and never retries in the background', async t => {
+  const f = await connectedCodex(t);
+  f.setReply(request => request.method === 'account/read' ? { result: { account: null } } : f.defaultReply(request));
+  await f.service.refresh(true);
+  assert.equal(f.service.read()[0].issue, 'auth-required'); assert.equal(f.service.read()[0].status, 'error');
+  const count = f.requests.length;
+  await advance(t, 300000); await f.service.refresh(true);
+  assert.equal(f.requests.length, count); assert.equal(f.opened.length, 1);
+  f.setReply(f.defaultReply); await f.service.connect('codex');
+  assert.equal(f.opened.length, 2);
+  f.send({ method: 'account/login/completed', params: { success: true } }); await settled();
+  assert.equal(f.service.read()[0].status, 'ready'); assert.equal(f.service.read()[0].issue, undefined);
+});
+
+test('island Codex: a health check restarts only an unresponsive private quota service', async t => {
+  for (const responsive of [true, false]) await t.test(responsive ? 'responsive CLI stays alive' : 'hung CLI restarts without login', async t => {
+    const f = await connectedCodex(t);
+    f.setReply(request => request.method === 'account/rateLimits/read' ? undefined : f.defaultReply(request));
+    const first = f.service.refresh(true); await settled(); await advance(t, 30000); await first;
+    await advance(t, 10000);
+    if (!responsive) f.setReply(() => undefined);
+    await advance(t, 30000);
+    if (!responsive) await advance(t, 5000);
+    assert.equal(Boolean(f.child.killed), !responsive);
+    assert.equal(f.service.read()[0].status, 'stale');
+    f.setReply(f.defaultReply); await advance(t, 30000);
+    assert.equal(f.service.read()[0].status, 'ready');
+    assert.equal(f.launches.length, responsive ? 1 : 2);
+    assert.equal(f.opened.length, 1);
+    assert.equal(f.requests.filter(request => request.method === 'account/login/start').length, 1);
+    assert.equal(f.requests.some(request => request.method === 'account/logout'), false);
+  });
+});
+
+test('island Codex: disconnect or shutdown cancels recovery and ignores delayed replies', async t => {
+  for (const disconnect of [true, false]) await t.test(disconnect ? 'disconnect' : 'shutdown', async t => {
+    const f = await connectedCodex(t);
+    f.setReply(request => request.method === 'account/rateLimits/read' ? undefined : f.defaultReply(request));
+    const pending = f.service.refresh(true); await settled();
+    const held = f.requests.at(-1);
+    await advance(t, 30000); await pending;
+    if (disconnect) await f.service.disconnect('codex'); else f.service.stop();
+    const count = f.requests.length;
+    f.send({ id: held.id, ...f.defaultReply(held) }); await advance(t, 300000);
+    assert.equal(f.requests.length, count); assert.equal(f.launches.length, 1);
+    if (disconnect) assert.equal(f.service.read()[0].status, 'disconnected');
+    else assert.equal(f.service.read()[0].status, 'stale');
+  });
+});
+
+test('island Codex: auth-invalidated notifications cannot be revived by an older quota reply', async t => {
+  const f = await connectedCodex(t);
+  f.setReply(request => request.method === 'account/rateLimits/read' ? undefined : f.defaultReply(request));
+  const pending = f.service.refresh(true); await settled(); const held = f.requests.at(-1);
+  f.send({ method: 'account/updated', params: { authMode: null } }); await pending;
+  f.send({ id: held.id, ...f.defaultReply(held) }); await advance(t, 300000);
+  assert.equal(f.service.read()[0].issue, 'auth-required'); assert.equal(f.child.killed, true);
+  assert.equal(f.opened.length, 1); assert.equal(f.launches.length, 1);
+});
+
+test('island Codex: a fresh quota notification wins over an older timed-out query', async t => {
+  const f = await connectedCodex(t);
+  f.setReply(request => request.method === 'account/rateLimits/read' ? undefined : f.defaultReply(request));
+  const pending = f.service.refresh(true); await settled();
+  f.send({ method: 'account/rateLimits/updated', params: { rateLimits: { primary: { usedPercent: 55, windowDurationMins: 300 } } } });
+  await advance(t, 30000); await pending;
+  assert.equal(f.service.read()[0].status, 'ready'); assert.equal(f.service.read()[0].windows[0].remaining, 45);
+  const count = f.requests.length; await advance(t, 60000); assert.equal(f.requests.length, count);
+});
+
+test('island Codex: a private service exit recovers automatically using the saved authorization', async t => {
+  const f = await connectedCodex(t);
+  f.child.emit('exit', 1);
+  assert.equal(f.service.read()[0].status, 'stale');
+  await advance(t, 10000);
+  assert.equal(f.service.read()[0].status, 'ready'); assert.equal(f.launches.length, 2);
+  assert.equal(f.opened.length, 1);
+  assert.equal(f.requests.filter(request => request.method === 'account/login/start').length, 1);
+});
+
+test('island Codex: diagnostics record timing and failure category without account or credential payloads', async t => {
+  const f = await connectedCodex(t);
+  f.setReply(request => request.method === 'account/rateLimits/read'
+    ? { error: { code: -32001, message: 'error sending request token=synthetic-secret user=synthetic@example.test https://secret.example/auth' } } : f.defaultReply(request));
+  await f.service.refresh(true);
+  const log = readFileSync(join(f.dir, 'island-codex-diagnostics.jsonl'), 'utf8');
+  const entries = log.trim().split('\n').map(line => JSON.parse(line));
+  assert.ok(entries.some(entry => entry.method === 'account/rateLimits/read' && entry.outcome === 'transport' && entry.code === -32001));
+  assert.ok(entries.every(entry => Number.isFinite(entry.durationMs) && entry.at));
+  for (const secret of ['synthetic-secret', 'synthetic@example.test', 'secret.example', 'authUrl', 'refreshToken', 'synthetic-login']) assert.equal(log.includes(secret), false);
+  writeFileSync(join(f.dir, 'island-codex-diagnostics.jsonl'), 'x'.repeat(65536));
+  f.setReply(f.defaultReply); await f.service.refresh(true);
+  const rotated = readFileSync(join(f.dir, 'island-codex-diagnostics.jsonl'), 'utf8');
+  assert.ok(rotated.length < 65536); assert.doesNotThrow(() => rotated.trim().split('\n').forEach(line => JSON.parse(line)));
 });
 
 test('island quota: Z Code encrypts credentials, throttles reads, retains last snapshot on failure and backs off', async t => {

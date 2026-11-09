@@ -1,0 +1,80 @@
+html:has(.island-assistant-app), html:has(.island-assistant-app) body, html:has(.island-assistant-app) #root { margin: 0; width: 100%; height: 100%; min-height: 0; background: transparent; overflow: hidden; }
+.island-assistant-app { display: flex; flex-direction: column; width: 100%; height: 100%; box-sizing: border-box; border: 1px solid var(--island-line); border-radius: var(--r-panel); background: var(--island-surface); color: var(--island-text); font-size: var(--type-body); overflow: hidden; }
+.island-assistant-app button { color: inherit; cursor: pointer; }
+.island-assistant-app button:disabled { opacity: .45; cursor: default; }
+.island-assistant-app button:focus-visible, .island-assistant-app textarea:focus-visible { outline: 2px solid var(--island-blue); outline-offset: 2px; }
+.island-assistant-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px 4px; -webkit-app-region: drag; flex: none; }
+.island-assistant-header > .island-mascot { width: 26px; height: 26px; border-width: 2px; gap: 4px; }
+.island-assistant-header > .island-mascot i { width: 3px; height: 7px; }
+.island-assistant-header h1 { min-width: 0; margin: 0; font-size: var(--type-lead); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.island-assistant-header > div { display: flex; flex: none; gap: 2px; margin-left: auto; -webkit-app-region: no-drag; }
+.island-assistant-app .icon-button { display: inline-flex; align-items: center; justify-content: center; min-height: 32px; width: 32px; padding: 0; border-radius: var(--r-ctl); background: transparent; }
+.island-assistant-app .icon-button:hover { background: var(--todo-subtle); }
+.island-assistant-header .icon-button[aria-pressed='true'] { color: var(--island-blue); }
+.island-assistant-tabs { display: flex; gap: 16px; margin: 0 16px; border-bottom: 1px solid var(--island-line); flex: none; }
+.island-assistant-tabs button { min-height: 34px; padding: 4px 12px; border-bottom: 2px solid transparent; font-size: var(--type-body); color: var(--island-muted); }
+.island-assistant-tabs button[aria-selected='true'] { color: var(--island-blue); border-bottom-color: var(--island-blue); }
+.island-assistant-tabs button:hover { color: var(--island-text); }
+.island-assistant-conversation { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.island-assistant-scroll { flex: 1; min-height: 0; overflow: auto; padding: 12px 14px; scrollbar-gutter: stable; }
+.island-assistant-message { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 14px; min-width: 0; }
+.island-assistant-message > .island-mascot { flex: 0 0 22px; width: 22px; height: 22px; border-width: 2px; gap: 3px; margin-top: 4px; }
+.island-assistant-message > .island-mascot i { width: 2px; height: 5px; }
+.island-assistant-message > div { min-width: 0; flex: 1; }
+.island-assistant-message.user { justify-content: flex-end; padding-left: 32px; }
+.island-assistant-message.user > div { flex: 0 1 auto; max-width: 100%; }
+.island-assistant-user { margin: 0; padding: 9px 12px; border: 1px solid var(--island-line); border-radius: var(--r-card); background: var(--todo-acc-soft); line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+.island-assistant-message .ai-bubble { padding: 0; border: 0; background: transparent; box-shadow: none; }
+.island-assistant-message .ai-markdown { color: var(--island-text); font-size: var(--type-body); line-height: 1.65; }
+.island-assistant-message .ai-markdown > :first-child { margin-top: 0; }
+.island-assistant-message .ai-markdown > :last-child { margin-bottom: 0; }
+.island-assistant-message .ai-activity { color: var(--island-muted); border-color: var(--island-line); background: transparent; }
+.island-assistant-message .ai-activity > summary { min-height: 24px; padding: 3px 8px; font-size: var(--type-caption); }
+.island-assistant-empty { padding: 30px 12px; color: var(--island-muted); text-align: center; line-height: 1.7; }
+.island-assistant-empty > .island-mascot { margin: 0 auto 14px; }
+.island-assistant-empty h2 { font-size: var(--type-section); color: var(--island-text); }
+.island-assistant-empty p { margin-top: 10px; }
+.island-assistant-error { color: var(--danger); font-size: var(--type-support); line-height: 1.6; overflow-wrap: anywhere; }
+.island-assistant-question { padding: 10px; border: 1px solid var(--island-line); border-radius: var(--r-card); }
+.island-assistant-question > div { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.island-assistant-question button, .island-assistant-config button { padding: 5px 10px; background: var(--todo-subtle); border-radius: var(--r-ctl); }
+.island-assistant-compose { flex: none; padding: 12px 14px; border-top: 1px solid var(--island-line); }
+.island-assistant-compose textarea { width: 100%; box-sizing: border-box; height: 64px; min-height: 64px; max-height: 140px; overflow: auto; padding: 10px 12px; border: 1px solid var(--island-line); border-radius: var(--r-card); background: var(--todo-subtle); color: var(--island-text); font: inherit; font-size: var(--type-body); line-height: 1.5; }
+.island-assistant-compose .resize-none { resize: none; }
+.island-assistant-compose textarea::placeholder { color: var(--island-muted); }
+.island-assistant-config { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: var(--type-support); color: var(--island-muted); }
+.island-assistant-config p { flex: 1; }
+.island-assistant-config button { flex: none; color: var(--island-blue); }
+.island-assistant-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+.island-assistant-toolbar .select { max-width: calc(100% - 48px); min-width: 0; }
+.island-assistant-toolbar .select-trigger { min-height: 30px; padding: 5px 10px; color: var(--island-text); }
+.island-assistant-toolbar .select-trigger > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.island-assistant-toolbar > .icon-button { background: var(--island-blue); color: var(--island-bg); width: 34px; height: 32px; }
+.select-menu.island-assistant-model-menu { background: var(--island-surface); border-color: var(--island-line); color: var(--island-text); }
+.island-assistant-messages { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; flex: 1; min-height: 0; }
+.island-assistant-messages .island-agent-message { grid-template-columns: 6px minmax(0, 1fr) auto; }
+.island-assistant-messages .island-message-provider-marker { display: none; }
+.island-assistant-app .todo-proposal-card { margin-top: 10px; padding: 12px; gap: 10px; background: var(--todo-subtle); border-color: var(--island-line); color: var(--island-text); border-radius: var(--r-card); line-height: 1.45; }
+.island-assistant-app .todo-proposal-header h3 { color: var(--island-text); font-size: var(--type-body); }
+.island-assistant-app .todo-proposal-header h3 svg, .island-assistant-app .todo-proposal-intro { display: none; }
+.island-assistant-app .todo-proposal-badge { color: var(--island-orange); border-color: var(--island-line); background: transparent; font-size: var(--type-caption); white-space: nowrap; }
+.island-assistant-app .todo-proposal-badge.pending { background: color-mix(in srgb, var(--island-orange) 12%, transparent); border-color: color-mix(in srgb, var(--island-orange) 35%, transparent); color: var(--island-orange); }
+.island-assistant-app .todo-proposal-badge.applied { background: transparent; border-color: var(--island-line); color: var(--island-blue); }
+.island-assistant-app .todo-proposal-operation { border-color: var(--island-line); gap: 0; }
+.island-assistant-app .todo-proposal-card.is-single .todo-proposal-target { display: none; }
+.island-assistant-app .todo-proposal-field { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 6px; align-items: start; padding: 6px 0; border-bottom: 1px solid var(--island-line); }
+.island-assistant-app .todo-proposal-field > b { margin: 0; font-weight: 400; color: var(--island-muted); font-size: var(--type-support); }
+.island-assistant-app .todo-proposal-diff { display: grid; grid-template-columns: minmax(0, 1fr) 12px minmax(0, 1fr); gap: 6px; }
+.island-assistant-app .todo-proposal-before, .island-assistant-app .todo-proposal-after { padding: 0; border: 0; background: transparent; }
+.island-assistant-app .todo-proposal-before { color: var(--island-muted); }
+.island-assistant-app .todo-proposal-after { color: var(--island-blue); }
+.island-assistant-app .todo-proposal-diff small { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.island-assistant-app .todo-proposal-arrow { transform: none; color: var(--island-muted); }
+.island-assistant-app .todo-proposal-note { color: var(--island-muted); font-size: var(--type-caption); }
+.island-assistant-app .todo-proposal-error, .island-assistant-app .todo-proposal-warning { color: var(--danger); }
+.island-assistant-app .todo-proposal-footer { padding-top: 0; border: 0; color: var(--island-muted); }
+.island-assistant-app .todo-proposal-buttons { margin-left: auto; }
+.island-assistant-app .todo-proposal-buttons button { padding: 5px 12px; min-height: 30px; border-radius: var(--r-ctl); border: 1px solid var(--island-line); background: transparent; }
+.island-assistant-app .todo-proposal-buttons .ai-apply { background: var(--island-blue); color: var(--island-bg); border-color: var(--island-blue); }
+@container (max-width: 220px) { .island-assistant-app .todo-proposal-field { grid-template-columns: minmax(0, 1fr); } }
+@media (max-height: 440px) { .island-assistant-header { padding-top: 8px; } .island-assistant-compose { padding-block: 8px; } .island-assistant-compose textarea { min-height: 54px; height: 54px; } }

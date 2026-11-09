@@ -12,20 +12,20 @@ export function IslandMessageEntry({ state, onClick, buttonRef }: { state: Islan
   const reminders = state.reminders.filter(reminder => reminder.kind !== 'agent').length;
   const pending = messages.some(agentPending), count = unread + reminders;
   if (!state.settings.mascotEnabled && !messages.length && !reminders) return null;
-  return <button ref={buttonRef} type="button" className="island-mascot-entry" aria-label={`消息：${unread} 条 Agent 未读${pending ? '，有待授权' : ''}${reminders ? `，${reminders} 条事项提醒` : ''}`} aria-haspopup="dialog" aria-expanded={state.mode === 'messages'} onClick={onClick} title="点击伙伴查看消息">
+  return <button ref={buttonRef} type="button" className="island-mascot-entry" aria-label={`打开待办助手，消息：${unread} 条 Agent 未读${pending ? '，有待授权' : ''}${reminders ? `，${reminders} 条事项提醒` : ''}`} aria-haspopup="dialog" onClick={onClick} title="点击伙伴对话或查看消息">
     <IslandMascot moving={state.settings.mascotEnabled && state.settings.mascotMotion && !state.quiet} />
     {count > 0 ? <span className="island-message-badge" aria-hidden="true">{count > 99 ? '99+' : count}</span> : pending && <span className="island-message-pending-dot" aria-hidden="true" />}
   </button>;
 }
 
-export function IslandAgentMessages({ state, busy, run, close, showReminders, now }: { state: IslandState; busy: boolean; run: Run; close(): void; showReminders(): void; now: number }) {
+export function IslandAgentMessages({ state, busy, run, close, showReminders, now, embedded = false }: { state: IslandState; busy: boolean; run: Run; close(): void; showReminders(): void; now: number; embedded?: boolean }) {
   const messages = state.agentMessages ?? [], unread = messages.filter(message => message.readAt === null).length;
   const pending = messages.filter(agentPending).length, reminders = state.reminders.filter(reminder => reminder.kind !== 'agent').length;
   const [filter, setFilter] = useState(unread ? 'unread' : 'all'), [copied, setCopied] = useState('');
   const visible = messages.filter(message => filter === 'all' || message.readAt === null);
   const api = window.workbench.island;
   return <>
-    <header className="island-messages-header"><div><h2 id="island-messages-title">Agent 消息</h2><small role="status">{unread} 条未读{pending ? ` · ${pending} 条待授权` : ''}</small></div><IconButton label="关闭消息列表" onClick={close}><X size={16} /></IconButton></header>
+    {!embedded && <header className="island-messages-header"><div><h2 id="island-messages-title">Agent 消息</h2><small role="status">{unread} 条未读{pending ? ` · ${pending} 条待授权` : ''}</small></div><IconButton label="关闭消息列表" onClick={close}><X size={16} /></IconButton></header>}
     <div className="island-messages-filters"><Segmented value={filter} onChange={setFilter} aria-label="消息范围" options={[{ value: 'unread', label: `未读 ${unread}` }, { value: 'all', label: '全部' }]} />{pending > 0 && <button className="island-text-button" onClick={() => setFilter('all')}>待授权 {pending}</button>}{reminders > 0 && <button className="island-text-button" onClick={showReminders}>事项提醒 {reminders}</button>}</div>
     <div className="island-message-list">
       {visible.map(message => <article key={message.id} className="island-agent-message" data-provider={message.provider} data-read={message.readAt !== null}>

@@ -26,7 +26,7 @@ test('命例编辑仅提交输入字段，保存并重载保留 id、创建时�
   dom.window.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
   const inputs: Record<string, unknown>[] = [];
   let noteWrites = 0;
-  Object.defineProperty(dom.window, 'workbench', { value: { bazi: {
+  Object.defineProperty(dom.window, 'workbench', { value: { ai: { config: async () => ({ aiEnabled: true, hasConnection: true }) }, bazi: {
     list: async () => store.all(),
     saveProfile: async (input: Record<string, unknown>) => { inputs.push(input); return store.saveProfile(input); },
     saveNote: async (id: string, text: string) => { noteWrites++; return store.saveNote(id, text); },
@@ -59,7 +59,7 @@ test('命例编辑仅提交输入字段，保存并重载保留 id、创建时�
     await click('.bazi-top .btn-pri');
     assert.equal(requests.at(-1)?.profileId, original.id);
     assert.equal(requests.at(-1)?.system, system);
-    assert.ok(requests.at(-1)?.prompt.includes(label));
+    assert.ok(requests.at(-1)?.prompt.includes(system === 'astro' ? '完整星盘' : label));
     assert.equal(noteWrites, 0, 'AI 解读不再触发笔记写入');
     assert.equal(store.all().notes[original.id], '仅测试使用的笔记');
   }

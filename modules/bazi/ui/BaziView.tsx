@@ -16,11 +16,15 @@ import { AstroDetails, AstroPan, AstroSummary } from './AstroPan';
 import { DEFAULT_ASPECT_FILTER, matchingAspect, type AstroAspectFilter, type AstroSection, type AstroSelection } from './astro-insights';
 import { resolveAstroTime, type AstroTimeChoice } from '../../../shared/astro-time';
 import { AstroTimeFields } from './AstroTimeFields';
+import { AstroReading, DEFAULT_ASTRO_READING_DRAFT, type AstroReadingDraft } from './AstroReading';
+import { ASTRO_READING_TOPICS, type AstroReadingTopic } from '../../../shared/astro-reading';
+import type { AiConfig } from '../../../shared/workbench-api';
 
 const wb = window.workbench;
 const CUR_KEY = 'wb.bazi.curProfileId';
 const BAZI_MIN_YEAR = 1900;
 const BAZI_MAX_YEAR = 2100;
+const astroReadingDrafts = new Map<string, AstroReadingDraft>();
 
 type TabKey = 'bazi' | 'ziwei' | 'astro';
 const TABS: { key: TabKey; label: string }[] = [
@@ -39,13 +43,16 @@ function collectShenSha(chart: BaziChart): { key: string; name: string; pos: str
     .filter((h) => h.pos);
 }
 
-export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfileId, requestedDayLocate, onDayLocated }: {
+export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfileId, requestedDayLocate, onDayLocated, aiBusy = false, onViewAI, onOpenAISettings }: {
   onPending(message: string): void;
-  onAskAI(prompt: string, profileId: string, system: 'bazi' | 'ziwei' | 'astro'): void;
+  onAskAI(prompt: string, profileId: string, system: 'bazi' | 'ziwei' | 'astro', topic?: AstroReadingTopic): void | Promise<void>;
   onCurrentProfile(profile: { id: string; name: string; system: 'bazi' | 'ziwei' | 'astro' } | null): void;
   requestedProfileId?: string | null;
   requestedDayLocate?: { profileId: string; nonce: number } | null;
   onDayLocated(): void;
+  aiBusy?: boolean;
+  onViewAI?(): void;
+  onOpenAISettings?(): void;
 }) {
   const [storeData, setStoreData] = useState<BaziStoreData | null>(null);
   const [loadError, setLoadError] = useState('');
@@ -57,6 +64,12 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
   const [astroFilter, setAstroFilter] = useState<AstroAspectFilter>(DEFAULT_ASPECT_FILTER);
   const [astroShowPoints, setAstroShowPoints] = useState(true);
   const [astroShowMinor, setAstroShowMinor] = useState(true);
+  const [readingInput, setReadingInput] = useState<{ profileId: string; draft: AstroReadingDraft } | null>(null);
+  const [readingConfig, setReadingConfig] = useState<AiConfig | null>(null);
+  const [readingConfigError, setReadingConfigError] = useState('');
+  const [readingConfigReload, setReadingConfigReload] = useState(0);
+  const [readingStarting, setReadingStarting] = useState(false);
+  const readingStartingRef = useRef(false);
   const [openDy, setOpenDy] = useState(-1);
   const [pselOpen, setPselOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -100,6 +113,25 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
   const profile: BaziProfile | null = storeData?.profiles.find((p) => p.id === curId)
     ?? storeData?.profiles[0]
     ?? null;
+  const readingDraft = (readingInput?.profileId === profile?.id ? readingInput?.draft : profile && astroReadingDrafts.get(profile.id)) ?? DEFAULT_ASTRO_READING_DRAFT;
+  const readingConfigured = !!readingConfig?.aiEnabled && readingConfig.hasConnection;
+  const changeReadingDraft = (draft: AstroReadingDraft): void => {
+    if (!profile) return;
+    astroReadingDrafts.set(profile.id, draft);
+    setReadingInput({ profileId: profile.id, draft });
+  };
+  useEffect(() => {
+    if (tab !== 'astro') return;
+    let live = true, updated = false;
+    setReadingConfig(null); setReadingConfigError('');
+    const unsubscribe = wb.ai.onConfigChanged?.(config => {
+      if (live) { updated = true; setReadingConfig(config); setReadingConfigError(''); }
+    });
+    void wb.ai.config().then(config => {
+      if (live && !updated) setReadingConfig(config);
+    }, error => { if (live && !updated) setReadingConfigError(`AI 配置读取失败：${errorText(error)}`); });
+    return () => { live = false; unsubscribe?.(); };
+  }, [tab, readingConfigReload]);
 
   useLayoutEffect(() => {
     onCurrentProfile(profile ? { id: profile.id, name: profile.name, system: tab } : null);
@@ -327,6 +359,18 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
 
   const askAI = (): void => {
     if (!profile || !charts?.bazi || (tab === 'astro' && !charts.astro)) return;
+    if (tab === 'astro') {
+      setAstroSection('reading');
+      if (aiBusy || readingStartingRef.current) { onViewAI?.(); return; }
+      if (!readingConfig || readingConfigError) return;
+      if (!readingConfigured) { onOpenAISettings?.(); return; }
+      readingStartingRef.current = true; setReadingStarting(true);
+      const prompt = readingDraft.question.trim() || `请结合我的完整星盘，围绕“${ASTRO_READING_TOPICS[readingDraft.topic].label}”做整体分析，并说明盘面依据。`;
+      void Promise.resolve(onAskAI(prompt, profile.id, 'astro', readingDraft.topic))
+        .catch(error => onPending(errorText(error)))
+        .finally(() => { readingStartingRef.current = false; setReadingStarting(false); });
+      return;
+    }
     const prompt = `请解读当前命例的${TABS.find(item => item.key === tab)!.label}盘面，先概述最重要的特征，再说明依据与资料限制。`;
     onAskAI(prompt, profile.id, tab);
   };
@@ -390,8 +434,8 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
         <div className="bazi-top-side">
           <div className="gbtns">
             <button className="btn btn-sec" onClick={() => startEdit(null)}><Plus size={15} weight="bold" />新建命例</button>
-            <button className="btn btn-pri" disabled={!profile || !chart || (tab === 'astro' && !astro)} onClick={askAI}>
-              <Sparkle size={15} weight="fill" />AI 解读
+            <button className="btn btn-pri" disabled={!profile || !chart || (tab === 'astro' && (!astro || (!aiBusy && !readingStarting && (!readingConfig || !!readingConfigError))))} onClick={askAI}>
+              <Sparkle size={15} weight="fill" />{tab === 'astro' && (aiBusy || readingStarting) ? '查看解读' : tab === 'astro' && readingConfig && !readingConfigured ? '去配置 AI' : 'AI 解读'}
             </button>
           </div>
           {hasProfiles && (
@@ -556,6 +600,9 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
                   visibleAspects={astroSection === 'aspects' ? astro.aspects.flatMap((aspect, index) => matchingAspect(aspect, astroFilter) ? [index] : []) : undefined} /></div>
                 <AstroDetails chart={astro} section={astroSection} onSectionChange={setAstroSection}
                   selection={astroSelection} onSelect={selectAstro} filter={astroFilter} onFilterChange={filterAstro}
+                  reading={<AstroReading draft={readingDraft} onChange={changeReadingDraft} busy={aiBusy || readingStarting}
+                    checking={!readingConfig && !readingConfigError} configured={readingConfigured} configError={readingConfigError}
+                    onRetryConfig={() => setReadingConfigReload(value => value + 1)} onStart={askAI} />}
                   showPoints={astroShowPoints} showMinor={astroShowMinor} onDisplayChange={changeAstroDisplay} />
               </div>
             </div>

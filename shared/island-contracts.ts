@@ -57,11 +57,14 @@ export interface QuotaWindow { label: string; remaining: number; resetsAt: numbe
 export const ISLAND_QUOTA_PROVIDERS = ['codex', 'zcode', 'cursor', 'grokbot'] as const;
 export const ISLAND_QUOTA_LABELS = { codex: 'Codex', zcode: 'Z Code', cursor: 'Cursor', grokbot: 'Grok Bot' } as const;
 export interface QuotaProvider {
-  id: typeof ISLAND_QUOTA_PROVIDERS[number]; status: 'disconnected' | 'connecting' | 'ready' | 'error' | 'unsupported';
+  id: typeof ISLAND_QUOTA_PROVIDERS[number]; status: 'disconnected' | 'connecting' | 'ready' | 'stale' | 'recovering' | 'error' | 'unsupported';
   account: string; accountKey?: string; plan: string; windows: QuotaWindow[]; updatedAt: number | null; message: string;
+  issue?: 'auth-required' | 'cli-unavailable';
 }
-export type IslandNavigation = { view: 'home' | 'settings-island' | 'settings-general'; taskId?: string; section?: 'quota' | 'water' | 'sedentary' | 'agents' };
+export type IslandNavigation = { view: 'home' | 'settings-island' | 'settings-general' | 'settings-ai'; taskId?: string; section?: 'quota' | 'water' | 'sedentary' | 'agents' };
 export interface IslandBridge {
+  assistant(action: 'show' | 'hide' | 'pin' | 'state'): Promise<{ pinned: boolean; visible: boolean }>;
+  onAssistantOpen(callback: () => void): () => void;
   state(): Promise<IslandState>;
   patch(patch: IslandSettingsPatch): Promise<IslandState>;
   mode(mode: IslandMode, reducedMotion?: boolean): Promise<void>;
@@ -92,7 +95,7 @@ export interface IslandBridge {
   agentRead(id: string): Promise<IslandState>;
   agentOpen(id: string): Promise<IslandState>;
   quotas(): Promise<QuotaProvider[]>;
-  quotaRefresh(): Promise<QuotaProvider[]>;
+  quotaRefresh(force?: boolean): Promise<QuotaProvider[]>;
   quotaConnect(provider: QuotaProvider['id'], key?: string): Promise<QuotaProvider[]>;
   quotaDisconnect(provider: QuotaProvider['id']): Promise<QuotaProvider[]>;
   quotaOfficial(provider: QuotaProvider['id']): Promise<void>;
@@ -138,4 +141,12 @@ export function islandBounds(mode: IslandMode, area: { x: number; y: number; wid
     return { x: dock === 'left' ? area.x + inset : area.x + area.width - panelWidth - inset, y: Math.round(area.y + (area.height - height) / 2), width: panelWidth, height };
   }
   return { x: Math.round(area.x + (area.width - width) / 2), y: area.y + inset, width, height: mode === 'messages' ? Math.min(height, area.height - inset) : height };
+}
+
+export function islandAssistantBounds(anchor: { x: number; y: number; width: number; height: number }, area: { x: number; y: number; width: number; height: number }, dock: IslandDock) {
+  const width = Math.max(1, Math.min(400, area.width - 24)), height = Math.max(1, Math.min(610, area.height - 24));
+  const x = dock === 'right' ? anchor.x - width - 12 : anchor.x + (dock === 'left' ? anchor.width + 12 : 12);
+  const y = dock === 'top' ? anchor.y + anchor.height + 12 : anchor.y - 32;
+  return { x: Math.max(area.x + 12, Math.min(x, area.x + area.width - width - 12)),
+    y: Math.max(area.y + 12, Math.min(y, area.y + area.height - height - 12)), width, height };
 }

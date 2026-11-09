@@ -1,4 +1,4 @@
-import { useId, useLayoutEffect, useRef, useState } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { CaretRight } from '@phosphor-icons/react';
 import type { AstroChart } from '../astro';
 import { Segmented, Select } from '../../../src/ui/controls';
@@ -60,9 +60,10 @@ interface DetailProps {
   showPoints?: boolean;
   showMinor?: boolean;
   onDisplayChange?(kind: 'point' | 'minor', show: boolean): void;
+  reading?: ReactNode;
 }
 
-function SelectionDetails({ chart, selection, onSelect, expanded = false, detached = false }: DetailProps & { expanded?: boolean; detached?: boolean }) {
+function SelectionDetails({ chart, selection, onSelect, detached = false }: DetailProps & { detached?: boolean }) {
   if (!selection) return null;
   if (selection.kind === 'body') {
     const body = chart.bodies.find(item => item.key === selection.key)!;
@@ -77,7 +78,6 @@ function SelectionDetails({ chart, selection, onSelect, expanded = false, detach
         <div><dt>宫位含义 · {body.house ? `第${body.house}宫` : '暂不可用'}</dt><dd>{body.house ? `第${body.house}宫关注${HOUSE_TOPICS[body.house - 1]}这些生活主题。` : chart.houseWarning ?? '补充出生地点后，可以查看落宫。'}</dd></div>
         <div className="bazi-as-combined"><dt>结合解读</dt><dd>以{SIGN_STYLES[sign]}的方式，{BODY_EXPRESSIONS[body.key]}。{body.house ? `这种表达可放在${HOUSE_TOPICS[body.house - 1]}的情境中理解。` : '宫位尚未确定，暂不延伸到具体生活领域。'}</dd></div>
       </dl>
-      {expanded && <p className="bazi-as-reading-note">以上是术语说明，不是对个人经历或未来的判断。</p>}
     </section>;
   }
   if (selection.kind === 'house') {
@@ -112,12 +112,12 @@ export function AstroDetails(props: DetailProps) {
   const selected = (kind: NonNullable<AstroSelection>['kind'], value: string | number) =>
     selection?.kind === kind && (selection.kind === 'body' ? selection.key : selection.kind === 'house' ? selection.number : selection.index) === value;
   const detached = section === 'positions' && selection?.kind === 'body';
-  return <div className="bazi-as-sidebar">
+  return <div className="bazi-as-sidebar" data-section={section}>
     <div className="panel glass bazi-as-details">
     <Segmented value={section} onChange={value => onSectionChange(value as AstroSection)} aria-label="星盘信息" options={[
       { value: 'positions', label: '星体' }, { value: 'houses', label: '宫位' }, { value: 'aspects', label: '相位' }, { value: 'reading', label: '解读' },
     ]} />
-    {props.onDisplayChange && <div className="bazi-as-object-options" role="group" aria-label="扩展星体显示">
+    {section !== 'reading' && props.onDisplayChange && <div className="bazi-as-object-options" role="group" aria-label="扩展星体显示">
       <span>扩展显示</span>
       <label><input type="checkbox" checked={props.showPoints} onChange={event => props.onDisplayChange?.('point', event.target.checked)} />常用点位</label>
       <label><input type="checkbox" checked={props.showMinor} onChange={event => props.onDisplayChange?.('minor', event.target.checked)} />小天体</label>
@@ -167,11 +167,7 @@ export function AstroDetails(props: DetailProps) {
         </table> : <p className="bazi-as-none">{chart.aspects.length ? '没有符合筛选条件的相位。可放宽条件或清除筛选。' : '主要相位区间内无显著相位。'}</p>}
         <p className="bazi-as-reading-note">容许度越小，越接近标准相位角度。涉及小天体或点位时最多 3°，点位之间不计相位；主要星体沿用原规则。筛选同步作用于盘面连线。</p>
       </>}
-      {section === 'reading' && <>
-        {selection ? <SelectionDetails {...props} expanded /> : <div className="bazi-as-reading-guide"><h3>从一颗星体开始</h3><p>点击左侧星体或宫位，这里会解释对应术语。也可以先选一个入口：</p><div className="bazi-as-reading-shortcuts">{chart.bodies.slice(0, 3).map(body => <button className="bazi-as-text-button" key={body.key} onClick={() => onSelect({ kind: 'body', key: body.key })}>{body.glyph} {body.name}</button>)}</div></div>}
-        <dl className="bazi-as-glossary"><dt>星体 · 讨论什么</dt><dd>如月亮常用于讨论情绪反应与内在需求。</dd><dt>星座 · 怎样表达</dt><dd>为星体主题提供一种表达风格。</dd><dt>宫位 · 哪个生活领域</dt><dd>由出生时间、地点和宫制共同确定。</dd><dt>相位 · 星体之间的关系</dt><dd>按星体之间的夹角及容许度识别。</dd><dt>逆行 ℞ · 视运动方向</dt><dd>从地球观察，星体的黄道经度暂时减小，不代表星体真的倒转。</dd></dl>
-        <p className="bazi-as-reading-note">这里提供常见占星术语说明。需要结合当前命例讨论时，可使用页面顶部的「AI 解读」。</p>
-      </>}
+      {section === 'reading' && props.reading}
     </div>
     </div>
     {detached && <SelectionDetails {...props} detached />}

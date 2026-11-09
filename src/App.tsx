@@ -24,6 +24,7 @@ import { PersonalWebsiteView } from './views/PersonalWebsiteView';
 import { GameHost } from './views/GameView';
 import { AiTestHost } from './views/AiTestView';
 import type { BrowserTask } from '../shared/browser-automation-contracts';
+import type { AstroReadingTopic } from '../shared/astro-reading';
 import { CopyView } from '../modules/copywriting/ui/CopyView';
 import { PublishView } from '../modules/copywriting/ui/PublishView';
 import { ReadingView } from './views/ReadingView';
@@ -134,7 +135,7 @@ export function App() {
   const [requestedBaziDay, setRequestedBaziDay] = useState<{ profileId: string; nonce: number } | null>(null);
   const seedNonce = useRef(0);
   const sourceNonce = useRef(0);
-  // 模块「AI 解读/共创」进线:打开面板、新建会话并直接发送(避免与面板自身的 chatOpen 竞态)
+  // 模块「AI 解读/共创」进线:由面板选择会话并直接发送,完成后清除请求。
   const [aiSeed, setAiSeed] = useState<AiSeed | null>(null);
   // 写作助手上下文:文案页当前草稿(id/标题),供 AI 面板绑定会话与显示
   const [copyCtx, setCopyCtx] = useState<{ id: string; title: string } | null>(null);
@@ -161,18 +162,18 @@ export function App() {
     if (aiOpen && aiJob?.status !== 'running' && aiJob?.chatId === activeAiChatId) setAiJobs(previous => previous.filter(item => item.chatId !== activeAiChatId));
   }, [aiJob, activeAiChatId, aiOpen]);
 
-  const askAI = (prompt: string, scope: AiScope = aiContext.scope, baziSystem = aiContext.baziSystem, copySource?: CopySource): void => {
+  const askAI = async (prompt: string, scope: AiScope = aiContext.scope, baziSystem = aiContext.baziSystem, copySource?: CopySource, astroReadingTopic?: AstroReadingTopic): Promise<void> => {
     const requestScope = scope;
     const requestSystem = requestScope.module === 'bazi' ? baziSystem : undefined;
     const requestSource = copySource;
-    void window.workbench.ai.config().then((raw) => {
+    await window.workbench.ai.config().then((raw) => {
       const cfg = raw as { aiEnabled?: boolean };
       if (!cfg.aiEnabled) {
         showToast('请先在 AI 设置中配置并启用 AI');
         return;
       }
       setAiOpen(true);
-      setAiSeed({ text: prompt, nonce: ++seedNonce.current, scope: requestScope, baziSystem: requestSystem, copySource: requestSource });
+      setAiSeed({ text: prompt, nonce: ++seedNonce.current, scope: requestScope, baziSystem: requestSystem, copySource: requestSource, astroReadingTopic });
     }, () => showToast('AI 状态读取失败,请重试'));
   };
 
@@ -658,7 +659,10 @@ export function App() {
               <p>规划中 · 敬请期待</p>
             </section>
           ) : curView === 'bazi' ? (
-            <BaziView onPending={showToast} onAskAI={(prompt, profileId, system) => askAI(prompt, { module: 'bazi', profileId }, system)} onCurrentProfile={setBaziCtx} requestedProfileId={requestedProfileId} requestedDayLocate={requestedBaziDay} onDayLocated={() => setRequestedBaziDay(null)} />
+            <BaziView onPending={showToast} onAskAI={(prompt, profileId, system, topic) => askAI(prompt, { module: 'bazi', profileId }, system, undefined, topic)} onCurrentProfile={setBaziCtx} requestedProfileId={requestedProfileId} requestedDayLocate={requestedBaziDay} onDayLocated={() => setRequestedBaziDay(null)}
+              aiBusy={(aiSeed?.scope.module === 'bazi' && aiSeed.scope.profileId === baziCtx?.id) || aiJobs.some(job => job.status === 'running' && job.scope.module === 'bazi' && job.scope.profileId === baziCtx?.id)}
+              onViewAI={() => { setAiOpen(true); const job = aiJobs.find(item => item.status === 'running' && item.scope.module === 'bazi' && item.scope.profileId === baziCtx?.id); if (job) setRequestedAiChatId(job.chatId); }}
+              onOpenAISettings={() => { setAiOpen(false); switchView('settings-ai'); }} />
           ) : curView === 'copy' ? (
             <CopyView onPending={showToast} onCurrentDraft={setCopyCtx} onSaveState={setCopySaveState} requestedDraftId={requestedCopyId} requestedSource={requestedCopySource} onSourceLocated={() => setRequestedCopySource(null)} onGoPublish={() => switchView('copy-publish')} />
           ) : curView === 'copy-publish' ? (
@@ -691,7 +695,7 @@ export function App() {
       </div>
       {topbarEditorKind ? <TaskEditor key={topbarEditorKind} initialKind={topbarEditorKind} categories={todo.data?.categories ?? []} api={topbarTaskEditorApi}
         changed={(state) => todo.mutate(async () => state)} saved={(state) => todo.mutate(async () => state)} close={() => setTopbarEditorKind(null)} /> : null}
-      <AiPanel open={aiOpen} onClose={() => setAiOpen(false)} seed={aiSeed} requestedChatId={requestedAiChatId} onChatLocated={() => setRequestedAiChatId(null)} onActiveChatChange={setActiveAiChatId} onOpenSettings={() => { setAiOpen(false); switchView('settings-ai'); }} onLocateCopySource={source => { setRequestedCopySource({ ...source, nonce: ++sourceNonce.current }); setRequestedCopyId(source.draftId); switchView('copy'); if (window.innerWidth < 1160) setAiOpen(false); }} onLocateBaziDay={profileId => { setRequestedBaziDay({ profileId, nonce: ++sourceNonce.current }); setRequestedProfileId(profileId); switchView('bazi'); if (window.innerWidth < 1160) setAiOpen(false); }} onQuickAsk={(prompt, scope) => askAI(prompt, scope)} context={aiContext} plannedWorkbench={isPlanningWorkbench} width={aiWidth} onWidthChange={setAiWidth} copySaveState={copySaveState} />
+      <AiPanel open={aiOpen} onClose={() => setAiOpen(false)} seed={aiSeed} onSeedFinished={nonce => setAiSeed(previous => previous?.nonce === nonce ? null : previous)} requestedChatId={requestedAiChatId} onChatLocated={() => setRequestedAiChatId(null)} onActiveChatChange={setActiveAiChatId} onOpenSettings={() => { setAiOpen(false); switchView('settings-ai'); }} onLocateCopySource={source => { setRequestedCopySource({ ...source, nonce: ++sourceNonce.current }); setRequestedCopyId(source.draftId); switchView('copy'); if (window.innerWidth < 1160) setAiOpen(false); }} onLocateBaziDay={profileId => { setRequestedBaziDay({ profileId, nonce: ++sourceNonce.current }); setRequestedProfileId(profileId); switchView('bazi'); if (window.innerWidth < 1160) setAiOpen(false); }} onQuickAsk={(prompt, scope) => askAI(prompt, scope)} context={aiContext} plannedWorkbench={isPlanningWorkbench} width={aiWidth} onWidthChange={setAiWidth} copySaveState={copySaveState} />
       <div className="toast glass" data-show={toast ? '1' : '0'}>{toast}</div>
     </div>
   );

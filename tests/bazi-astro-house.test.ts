@@ -64,7 +64,7 @@ async function createHarness(): Promise<Harness> {
   let current: BaziStoreData = { profiles: [], notes: {} };
   let store: BaziStore | null = null;
   const messages: string[] = [];
-  Object.defineProperty(dom.window, 'workbench', { value: { bazi: {
+  Object.defineProperty(dom.window, 'workbench', { value: { ai: { config: async () => ({ aiEnabled: false, hasConnection: false }) }, bazi: {
     list: async () => current,
     saveProfile: async (input: unknown) => {
       if (!store) throw new Error('测试未接入命例库');
@@ -304,7 +304,7 @@ describe('占星行星落座宫位列', { concurrency: false }, () => {
     } finally { rmSync(directory, { recursive: true, force: true }); }
   });
 
-  test('星体、宫位和表格共享选择;键盘可取消,解读展示对应中文说明', async () => {
+  test('星体、宫位和表格共享选择;键盘可取消,解读页独立提供提问入口', async () => {
     const data = chartData({ ...SHANGHAI, date: '2020-04-09', time: '11:34' });
     await harness.show(data);
     const panel = await harness.openAstro();
@@ -331,8 +331,9 @@ describe('占星行星落座宫位列', { concurrency: false }, () => {
     await act(async () => houseMoon.click());
     const reading = [...panel.querySelectorAll<HTMLButtonElement>('[role="radio"]')].find(button => button.textContent === '解读')!;
     await act(async () => reading.click());
-    assert.match(panel.querySelector('[aria-label="月亮详情"]')!.textContent!, /情绪反应、熟悉感与内在需求/);
-    assert.match(panel.querySelector('[aria-label="月亮详情"]')!.textContent!, /不是对个人经历或未来的判断/);
+    assert.equal(panel.querySelector('[aria-label="月亮详情"]'), null);
+    assert.match(panel.querySelector('.bazi-as-reading')!.textContent!, /想了解星盘的哪一面/);
+    assert.equal(panel.querySelector('.bazi-as-object-options'), null);
     assert.deepEqual(harness.messages, []);
   });
 

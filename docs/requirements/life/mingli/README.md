@@ -7,6 +7,8 @@
 ## 方案与验收文字
 
 - [bazi-history.md](bazi-history.md)
+- [占星主题解读与右侧助手](astro-reading.md)
+- [主题解读验收（2026-11-08）](qa-astro-reading-2026-11-08.md)
 
 ## 原型与依赖
 

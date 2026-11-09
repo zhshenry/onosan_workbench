@@ -70,7 +70,7 @@ export class AiStore {
       .map(row => {
         const { id, title, updatedAt, module, draftId, profileId, viewId, contextScope, pageScope, entries } = JSON.parse(row.payload) as ChatSession;
         const lastReply = [...entries].reverse().find(entry => entry.role === 'assistant');
-        return { id, title, updatedAt, module, draftId, profileId, viewId, contextScope, pageScope, streaming: entries.some(entry => entry.streaming), completed: !!lastReply && !lastReply.streaming && !lastReply.error };
+        return { id, title, updatedAt, module, draftId, profileId, viewId, contextScope, pageScope, baziSystem: [...entries].reverse().find(entry => entry.baziSystem)?.baziSystem, streaming: entries.some(entry => entry.streaming), completed: !!lastReply && !lastReply.streaming && !lastReply.error };
       })
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }

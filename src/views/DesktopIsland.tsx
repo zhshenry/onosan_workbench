@@ -138,15 +138,15 @@ export function DesktopIslandApp() {
     <div className="island-body">
     {!expanded && state.mode !== 'reminder' && <>
       <div className="island-summary-row">
-        <IslandMessageEntry state={state} buttonRef={mascotButton} onClick={() => messagesOpen ? closeMessages() : mode('messages')} />
+        <IslandMessageEntry state={state} buttonRef={mascotButton} onClick={() => void run(() => api.assistant('show'))} />
         <button ref={summaryButton} type="button" className="island-summary" onMouseEnter={() => { if (state.settings.hoverPreview && currentMode.current === 'collapsed') { pointerInside.current = true; api.hold(true); mode('expanded'); } }} onClick={() => page ? mode('expanded') : void run(() => api.navigate({ view: 'settings-island' }))} aria-label={page ? '展开桌面灵动岛' : '打开桌面灵动岛设置'} aria-describedby="island-summary-details">
           <span id="island-summary-details" className="island-summary-details">
             <span className="island-summary-schedule" title={dataError || scheduleSummary}><CalendarBlank size={16} /><span>{scheduleSummary}</span></span>
             <span className="island-quota-summary">{ISLAND_QUOTA_PROVIDERS.map(id => {
               const quota = quotas.find(q => q.id === id), provider = ISLAND_QUOTA_LABELS[id];
-              const stale = Boolean(quota?.windows.length) && (quota?.status === 'error' || Boolean(quota?.updatedAt && now - quota.updatedAt > 600000));
+              const stale = Boolean(quota?.windows.length) && (quota?.status === 'error' || quota?.status === 'stale' || quota?.status === 'recovering' || Boolean(quota?.updatedAt && now - quota.updatedAt > 600000));
               const windows = quotaDisplayWindows(quota?.windows ?? []);
-              const status = windows.length ? stale ? '待更新' : '' : !quota ? '读取中' : quota.status === 'connecting' ? '连接中' : quota.status === 'error' ? '暂不可用' : quota.status === 'unsupported' ? '未提供' : '未连接';
+              const status = windows.length ? stale ? '待更新' : '' : !quota ? '读取中' : quota.status === 'connecting' ? '连接中' : quota.status === 'recovering' ? '恢复中' : quota.status === 'stale' ? '待更新' : quota.status === 'error' ? '暂不可用' : quota.status === 'unsupported' ? '未提供' : '未连接';
               return <span key={id} data-provider={id} className={stale ? 'stale' : ''} title={`${provider} ${windows.map(w => `${w.label} 剩余 ${w.remaining}%`).join('；')} ${status}`}><span className="island-quota-caption"><span className="island-quota-provider">{provider}</span>{status && <span className="island-quota-value">{status}</span>}</span><QuotaRings windows={windows} compact /></span>;
             })}</span>
           </span>
@@ -166,11 +166,15 @@ export function DesktopIslandApp() {
           : <div className="island-page-track" style={{ transform: `translateX(${-pages.indexOf(page) * 100}%)` }}>{pages.map(value => <div key={value} className="island-page" data-island-page={value} inert={value !== page} aria-hidden={value !== page}>
             {value === 'schedule' ? !data ? <div className="island-empty" role="status">{dataError || '正在读取事项…'}{dataError && <button onClick={() => void loadTasks()}>重试</button>}</div> : <>{dataError && <div role="alert" className="island-data-error">{dataError} · 保留上次内容 <button onClick={() => void loadTasks()}>重试</button></div>}<Schedule tasks={tasks} now={now} busy={busy} run={run} open={navigate} day={agendaDay} setDay={setAgendaDay} /></>
               : value === 'files' ? <IslandShelf state={state} busy={busy} run={run} now={now} />
-              : value === 'quota' ? <Quotas providers={quotas} selected={quotaSelection} select={setQuotaSelection} now={now} run={run} busy={busy} refresh={() => api.quotaRefresh().then(setQuotas)} />
+              : value === 'quota' ? <Quotas providers={quotas} selected={quotaSelection} select={setQuotaSelection} now={now} run={run} busy={busy} refresh={() => api.quotaRefresh(true).then(setQuotas)} />
               : <Tools state={state} tasks={open.filter(t => t.kind === 'task')} now={now} run={run} busy={busy} />}
           </div>)}</div>}
       </section>
-      {expanded && <footer className="island-footer"><nav ref={navigation} aria-label="灵动岛页面"><span className="island-tab-indicator" aria-hidden="true" />{pages.map(value => { const PageIcon = icons[value]; return <button key={value} type="button" aria-current={!notices && page === value ? 'page' : undefined} className={!notices && page === value ? 'selected' : ''} onClick={() => changePage(value)} title={ISLAND_LABELS[value]} aria-label={ISLAND_LABELS[value]}><PageIcon size={18} /><span>{ISLAND_LABELS[value]}</span></button>; })}</nav><IslandMessageEntry state={state} onClick={() => mode('messages')} /></footer>}
+      {expanded && <footer className="island-footer">
+        {state.settings.dock === 'top' && <IslandMessageEntry state={state} onClick={() => void run(() => api.assistant('show'))} />}
+        <nav ref={navigation} aria-label="灵动岛页面"><span className="island-tab-indicator" aria-hidden="true" />{pages.map(value => { const PageIcon = icons[value]; return <button key={value} type="button" aria-current={!notices && page === value ? 'page' : undefined} className={!notices && page === value ? 'selected' : ''} onClick={() => changePage(value)} title={ISLAND_LABELS[value]} aria-label={ISLAND_LABELS[value]}><PageIcon size={18} /><span>{ISLAND_LABELS[value]}</span></button>; })}</nav>
+        {state.settings.dock !== 'top' && <IslandMessageEntry state={state} onClick={() => void run(() => api.assistant('show'))} />}
+      </footer>}
     </div></Activity>
     {error && !speech && !messagesOpen && <div className="island-error" role="alert"><span>{error}</span><IconButton label="关闭错误提示" onClick={() => setError('')}><X size={14} /></IconButton></div>}
     {dragging && <div className="island-drop-target"><Folder size={28} /><b>松开以暂存文件</b><span>原文件保持原位</span></div>}
@@ -230,7 +234,7 @@ function Quotas({ providers, selected, select, now, run, busy, refresh }: { prov
   const api = window.workbench.island;
   const id = selected ?? providers.find(p => p.windows.length)?.id ?? 'codex';
   const provider = providers.find(p => p.id === id), windows = quotaDisplayWindows(provider?.windows ?? []);
-  const stale = provider?.status === 'error' || Boolean(provider?.updatedAt && now - provider.updatedAt > 600000);
+  const stale = provider?.status === 'error' || provider?.status === 'stale' || provider?.status === 'recovering' || Boolean(provider?.updatedAt && now - provider.updatedAt > 600000);
   return <div className="island-quotas" data-provider={id}>
     <div className="island-quota-toolbar"><Segmented aria-label="额度来源" value={id} onChange={value => select(value as QuotaProvider['id'])} options={ISLAND_QUOTA_PROVIDERS.map(value => ({ value, label: ISLAND_QUOTA_LABELS[value] }))} /><small title={provider?.account}>{provider?.account || (provider ? '未连接账户' : '正在读取额度…')}</small></div>
     <div className="island-quota-body">

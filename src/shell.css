@@ -1413,6 +1413,11 @@ kbd {
 .ai-action-state.applied { color: var(--acc-deep); }
 .ai-compose { flex: none; display: flex; align-items: flex-end; gap: 7px; padding: 10px 12px 8px; }
 .ai-copy-actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 9px 12px 0; }
+.ai-reading-actions { display: flex; gap: 14px; padding-top: 8px; }
+.ai-reading-actions button { display: inline-flex; align-items: center; gap: 5px; color: var(--ink-3); font-size: var(--type-support); cursor: pointer; }
+.ai-reading-actions button:hover:not(:disabled) { color: var(--acc-deep); }
+.ai-reading-actions button:focus-visible { outline: 2px solid var(--acc-ring); outline-offset: 3px; border-radius: 4px; }
+.ai-reading-actions button:disabled { opacity: .5; cursor: default; }
 .ai-copy-action { padding: 6px 9px; border: 1px solid var(--hairline); border-radius: 999px; background: var(--todo-white); color: var(--ink-2); font-size: var(--type-support); font-weight: 600; white-space: nowrap; }
 .ai-copy-action:hover:not(:disabled) { border-color: var(--acc-ring); background: var(--acc-soft); color: var(--acc-deep); }
 .ai-copy-action:disabled { opacity: .5; cursor: default; }

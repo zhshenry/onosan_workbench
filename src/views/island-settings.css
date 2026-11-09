@@ -67,6 +67,7 @@
 .island-provider-status { display: inline-flex; align-items: center; gap: 6px; flex: none; color: var(--ink-3); font-size: var(--type-caption); white-space: nowrap; }
 .island-provider-status[data-status="ready"] { color: var(--avatar-teal); }
 .island-provider-status[data-status="error"] { color: var(--danger); }
+.island-provider-status[data-status="stale"], .island-provider-status[data-status="recovering"] { color: var(--ink-3); }
 .island-connection-detail { min-width: 0; padding: 26px; }
 .island-connection-detail > header { display: flex; align-items: flex-start; gap: 14px; padding: 5px 0 22px; border-bottom: 1px solid var(--hairline); }
 .island-connection-detail > header > .island-provider-symbol { width: 42px; height: 42px; border-radius: 11px; }
@@ -95,7 +96,7 @@
 .island-key-field .icon-button:hover { background: var(--acc-soft); color: var(--acc-deep); }
 .island-key-field small { margin-top: 2px; color: var(--ink-3); font-size: var(--type-support); }
 .island-provider-message { margin: 0; color: var(--danger); font-size: var(--type-support); line-height: 1.65; overflow-wrap: anywhere; }
-.island-provider-message:is([data-status="connecting"], [data-status="unsupported"]) { color: var(--ink-2); }
+.island-provider-message:is([data-status="connecting"], [data-status="unsupported"], [data-status="stale"], [data-status="recovering"]) { color: var(--ink-2); }
 .island-provider-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; margin-top: 4px; }
 .island-settings .set-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding-inline: 12px; white-space: nowrap; }
 .island-settings .set-btn:hover { transform: none; }

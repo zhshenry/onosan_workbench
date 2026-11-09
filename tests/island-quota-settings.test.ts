@@ -19,12 +19,13 @@ test('额度主从布局保留来源、密钥草稿和失败重试，异步操�
     { id: 'grokbot', status: 'unsupported', account: '', plan: 'Grok Bot Plan', windows: [], updatedAt: null, message: '暂不提供额度' },
   ];
   const connects: [string, string | undefined][] = [], disconnects: string[] = [], officials: string[] = [];
+  const refreshForces: (boolean | undefined)[] = [];
   let finishConnect!: (value: QuotaProvider[]) => void, failConnect!: (error: Error) => void, refreshes = 0;
   Object.defineProperty(dom.window, 'workbench', { value: { island: {
     state: async () => structuredClone(state), displays: async () => [], onChanged: () => () => {}, onError: () => () => {},
     quotas: async () => structuredClone(providers),
     patch: async (patch: Record<string, unknown>) => { state = { ...state, settings: { ...state.settings, ...patch } }; return structuredClone(state); },
-    quotaRefresh: async () => { refreshes++; return structuredClone(providers); },
+    quotaRefresh: async (force?: boolean) => { refreshes++; refreshForces.push(force); return structuredClone(providers); },
     quotaConnect: (id: string, key?: string) => { connects.push([id, key]); return new Promise<QuotaProvider[]>((resolve, reject) => { finishConnect = resolve; failConnect = reject; }); },
     quotaDisconnect: async (id: string) => { disconnects.push(id); providers = providers.map(p => p.id === id ? { ...p, status: 'disconnected', account: '', plan: '' } : p); return structuredClone(providers); },
     quotaOfficial: async (id: string) => { officials.push(id); },
@@ -89,4 +90,22 @@ test('额度主从布局保留来源、密钥草稿和失败重试，异步操�
   await act(async () => threshold.dispatchEvent(new dom.window.FocusEvent('focusout', { bubbles: true })));
   assert.equal(state.settings.lowQuota, 15);
   assert.equal(dom.window.document.body.textContent!.includes('synthetic-draft'), false);
+  await click('查看 Codex 连接');
+  providers[0] = { ...providers[0], status: 'stale', message: '额度更新延迟，将自动重试' };
+  await click('刷新额度');
+  assert.match(detail().textContent!, /已连接 · 更新延迟/);
+  assert.equal(detail().textContent!.includes('需安装 Codex CLI'), false);
+  const connectCount = connects.length, refreshCount = refreshes;
+  await click('重试'); assert.equal(refreshes, refreshCount + 1); assert.equal(connects.length, connectCount);
+  assert.equal(refreshForces.at(-1), true);
+  providers[0] = { ...providers[0], status: 'recovering', message: '额度服务无响应，正在自动恢复' };
+  await click('刷新额度'); assert.match(detail().textContent!, /正在恢复额度服务/);
+  await click('重试'); assert.equal(connects.length, connectCount);
+  providers[0] = { ...providers[0], status: 'error', issue: 'auth-required', message: '登录授权已失效，请重新登录' };
+  await click('刷新额度'); assert.match(detail().textContent!, /需要重新登录/);
+  await click('重新登录'); assert.deepEqual(connects.at(-1), ['codex', undefined]);
+  await act(async () => finishConnect(structuredClone(providers)));
+  providers[0] = { ...providers[0], issue: 'cli-unavailable', message: '未找到 Codex CLI，请安装后重试' };
+  await click('刷新额度'); assert.match(detail().textContent!, /需安装 Codex CLI/);
+  await click('重试'); assert.equal(connects.length, connectCount + 1);
 });
