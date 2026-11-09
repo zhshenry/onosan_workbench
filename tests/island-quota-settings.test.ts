@@ -3,6 +3,7 @@ import test from 'node:test';
 import { act, createElement } from 'react';
 import { JSDOM } from 'jsdom';
 import { initialIslandData, type IslandState, type QuotaProvider } from '../shared/island-contracts';
+import type { AgentConnection } from '../shared/agent-message-contracts';
 
 test('额度主从布局保留来源、密钥草稿和失败重试，异步操作不切回旧来源', async t => {
   const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost', pretendToBeVisual: true });
@@ -20,10 +21,14 @@ test('额度主从布局保留来源、密钥草稿和失败重试，异步操�
   ];
   const connects: [string, string | undefined][] = [], disconnects: string[] = [], officials: string[] = [];
   const refreshForces: (boolean | undefined)[] = [];
+  let agentConnections: AgentConnection[] = [{ provider: 'codex', connected: true }, { provider: 'cursor', connected: false }], failAgent = false;
+  const agentConnects: [string, boolean][] = [];
   let finishConnect!: (value: QuotaProvider[]) => void, failConnect!: (error: Error) => void, refreshes = 0;
   Object.defineProperty(dom.window, 'workbench', { value: { island: {
     state: async () => structuredClone(state), displays: async () => [], onChanged: () => () => {}, onError: () => () => {},
     quotas: async () => structuredClone(providers),
+    agentConnections: async () => structuredClone(agentConnections),
+    agentConnect: async (id: string, enabled: boolean) => { agentConnects.push([id, enabled]); if (failAgent) throw new Error('合成消息配置保存失败'); agentConnections = agentConnections.map(item => item.provider === id ? { ...item, connected: enabled } : item); return structuredClone(agentConnections); },
     patch: async (patch: Record<string, unknown>) => { state = { ...state, settings: { ...state.settings, ...patch } }; return structuredClone(state); },
     quotaRefresh: async (force?: boolean) => { refreshes++; refreshForces.push(force); return structuredClone(providers); },
     quotaConnect: (id: string, key?: string) => { connects.push([id, key]); return new Promise<QuotaProvider[]>((resolve, reject) => { finishConnect = resolve; failConnect = reject; }); },
@@ -51,7 +56,13 @@ test('额度主从布局保留来源、密钥草稿和失败重试，异步操�
     await act(async () => root.unmount()); dom.window.close();
     names.forEach((name, i) => { if (previous[i]) Object.defineProperty(globalThis, name, previous[i]!); else Reflect.deleteProperty(globalThis, name); });
   });
-  await render(); await click('AI 额度');
+  await render(); await click('提醒');
+  assert.equal(dom.window.document.querySelector('[data-group="agents"]'), null, '不再显示独立消息连接卡片');
+  assert.deepEqual(agentConnects, [], '浏览设置不会自动修改监听配置');
+  await click('AI 额度');
+  assert.equal(button('Codex 消息提醒').getAttribute('aria-checked'), 'true', '保留已启用的监听状态');
+  assert.match(detail().textContent!, /监听已配置/);
+  assert.match(detail().textContent!, /Codex 设置 → Hooks 中审核并信任/, '配置存在不能替代 Codex 的信任审核');
   assert.equal(dom.window.document.querySelectorAll('.island-connection-sources button').length, 4);
   assert.equal(detail().dataset.provider, 'codex');
   assert.equal(dom.window.document.querySelectorAll('.island-provider-card').length, 0);
@@ -108,4 +119,25 @@ test('额度主从布局保留来源、密钥草稿和失败重试，异步操�
   providers[0] = { ...providers[0], issue: 'cli-unavailable', message: '未找到 Codex CLI，请安装后重试' };
   await click('刷新额度'); assert.match(detail().textContent!, /需安装 Codex CLI/);
   await click('重试'); assert.equal(connects.length, connectCount + 1);
+  const loginCount = connects.length, logoutCount = disconnects.length;
+  await click('Codex 消息提醒');
+  assert.equal(button('Codex 消息提醒').getAttribute('aria-checked'), 'false');
+  await click('查看 Cursor 连接'); failAgent = true;
+  await click('Cursor 消息提醒');
+  assert.match(dom.window.document.querySelector('[role="alert"]')!.textContent!, /合成消息配置保存失败/);
+  assert.equal(button('Cursor 消息提醒').getAttribute('aria-checked'), 'false', '保存失败不伪造开启状态');
+  failAgent = false; await click('Cursor 消息提醒');
+  assert.equal(button('Cursor 消息提醒').getAttribute('aria-checked'), 'true');
+  assert.equal(state.settings.mascotEnabled, true);
+  assert.equal(connects.length, loginCount, '开启消息不触发额度登录');
+  assert.equal(disconnects.length, logoutCount, '关闭消息不注销额度账号');
+  assert.deepEqual(agentConnects, [['codex', false], ['cursor', true], ['cursor', true]]);
+  await render('消息');
+  assert.equal(dom.window.document.querySelectorAll('.island-connection-sources button').length, 2);
+  assert.equal(detail().dataset.provider, 'cursor');
+  await render(); await click('查看 Z Code 连接');
+  assert.equal(dom.window.document.querySelector('.island-provider-messages'), null);
+  await act(async () => dom.window.dispatchEvent(new dom.window.CustomEvent('island-settings-section', { detail: 'agents' })));
+  assert.equal(detail().dataset.provider, 'codex', '旧消息管理入口定位到支持提醒的账户详情');
+  assert.equal(button('Codex 消息提醒').getAttribute('aria-checked'), 'false');
 });

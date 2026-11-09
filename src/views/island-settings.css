@@ -83,6 +83,8 @@
 .island-provider-menu .game-icon-button:hover { background: var(--acc-soft); color: var(--acc-deep); }
 .island-provider-menu .danger { color: var(--danger); }
 .island-provider-content { display: flex; flex-direction: column; gap: 12px; padding: 22px 4px 8px; }
+.island-provider-messages { margin-top: 14px; border-top: 1px solid var(--hairline); }
+.island-settings .island-provider-messages .set-row { padding: 14px 0 0; }
 .island-provider-content h4 { margin: 0; font-size: var(--type-body); font-weight: 600; }
 .island-provider-description { margin: 0; color: var(--ink-2); font-size: var(--type-control); line-height: 1.65; }
 .island-key-editor { display: flex; flex-direction: column; gap: 20px; }

@@ -21,11 +21,6 @@ function degreeLabel(lon: number): string {
   return `${deg}°${String(min).padStart(2, '0')}′`;
 }
 
-function ascendantLabel(lon: number): string {
-  const norm = ((lon % 360) + 360) % 360;
-  return `上升点 ${SIGNS[Math.floor(norm / 30)]} ${degreeLabel(norm)}`;
-}
-
 function chartData(extra: Partial<BaziProfile> = {}): BaziStoreData {
   return baziStoreDataSchema.parse({
     profiles: [{
@@ -134,33 +129,44 @@ async function createHarness(): Promise<Harness> {
 
 function assertTable(panel: HTMLElement, chart: AstroChart, withHouses: boolean): void {
   assert.equal(panel.querySelector('.bazi-as-detail-meta'), null);
-  const table = panel.querySelector('table.bazi-astab');
-  assert.ok(table, '行星落座表');
-  assert.deepEqual(
-    [...table.querySelectorAll('th')].map(cell => cell.getAttribute('aria-label') || cell.textContent),
-    ['符号', '星体／点位', '星座', '度数', '宫位'],
-  );
-  const rows = [...table.querySelectorAll('tbody tr')];
-  assert.equal(rows.length, chart.bodies.length);
-  rows.forEach((row, index) => {
-    const body = chart.bodies[index];
-    const cells = [...row.querySelectorAll('td')].map(cell => cell.textContent ?? '');
-    assert.equal(cells[0], body.glyph);
-    assert.equal(cells[1], body.name);
-    assert.equal(cells[2], SIGNS[Math.floor(body.lon / 30)]);
-    assert.equal(cells[3], `${degreeLabel(body.lon)}${body.retro ? '℞' : ''}`);
-    assert.equal(cells[4], withHouses ? `${body.house}宫` : '—');
+  const tables = [...panel.querySelectorAll('table.bazi-as-position-table')];
+  assert.deepEqual(tables.map(table => table.querySelector('caption')!.textContent), ['行星信息', '小天体']);
+  const groups = [chart.bodies.filter(body => body.kind === 'planet'),
+    [...chart.bodies.filter(body => body.kind === 'minor'), ...chart.bodies.filter(body => body.kind === 'point')]];
+  tables.forEach((table, index) => {
+    assert.deepEqual([...table.querySelectorAll('th')].map(cell => cell.getAttribute('aria-label') || cell.textContent),
+      ['符号', '星体／点位', '星座', '度数', '宫位']);
+    const rows = [...table.querySelectorAll('tbody tr:not([data-axis])')];
+    assert.equal(rows.length, groups[index].length);
+    rows.forEach((row, bodyIndex) => {
+      const body = groups[index][bodyIndex];
+      const cells = [...row.querySelectorAll('td')].map(cell => cell.textContent ?? '');
+      assert.equal(cells[0], body.glyph);
+      assert.equal(cells[1], body.name);
+      assert.equal(cells[2], SIGNS[Math.floor(body.lon / 30)]);
+      assert.equal(cells[3], `${degreeLabel(body.lon)}${body.retro ? '℞' : ''}`);
+      assert.equal(cells[4], withHouses ? `${body.house}宫` : '—');
+    });
+  });
+  const axes = [...tables[0].querySelectorAll('tr[data-axis]')];
+  assert.deepEqual(axes.map(row => row.children[1].textContent), ['上升点', '下降点', '天底', '天顶']);
+  axes.forEach((row, index) => {
+    const cusp = !withHouses ? undefined : chart.houseSystem === 'placidus' ? chart.houseCusps![[0, 6, 3, 9][index]]
+      : [chart.asc!, (chart.asc! + 180) % 360, (chart.mc! + 180) % 360, chart.mc!][index];
+    const house = cusp !== undefined && chart.houseSystem === 'whole-sign'
+      ? (Math.floor(cusp / 30) - Math.floor(chart.asc! / 30) + 12) % 12 + 1 : [1, 7, 4, 10][index];
+    assert.deepEqual([...row.children].slice(2).map(cell => cell.textContent), cusp === undefined
+      ? ['—', '—', '—'] : [SIGNS[Math.floor(cusp / 30)], degreeLabel(cusp), `${house}宫`]);
   });
   const hints = [...panel.querySelectorAll('.bazi-notehint')].map(element => element.textContent);
   const metas = [...panel.querySelectorAll('.bazi-pan-meta')].map(element => (element.textContent ?? '').replace(/\s+/g, ' ').trim());
+  assert.equal(metas.some(text => /上升点|纬度|经度/.test(text)), false);
   if (withHouses) {
     assert.ok(chart.asc !== undefined);
-    assert.ok(metas.some(text => text.startsWith(ascendantLabel(chart.asc!))));
     assert.equal(hints.includes(HOUSE_HINT), false);
   } else {
     assert.equal(chart.asc, undefined);
     assert.equal(chart.bodies.every(body => body.house === undefined), true);
-    assert.equal(metas.some(text => text.startsWith('上升点')), false);
     assert.ok(hints.includes(HOUSE_HINT));
   }
   const svg = panel.querySelector('.bazi-as-wrap svg');
@@ -182,7 +188,7 @@ describe('占星行星落座宫位列', { concurrency: false }, () => {
     await harness.cleanup();
   });
 
-  test('有出生地经纬度时宫位列与默认 Placidus 一致,并在盘面元信息显示上升点', async () => {
+  test('有出生地时宫位与四轴数据正确,盘面顶部不重复显示上升点及坐标', async () => {
     const data = chartData(SHANGHAI);
     const chart = buildAstro(data.profiles[0]);
     await harness.show(data);
@@ -337,6 +343,52 @@ describe('占星行星落座宫位列', { concurrency: false }, () => {
     assert.deepEqual(harness.messages, []);
   });
 
+  test('宫位详情在表格下方独立展示,手动切页不重复旧详情且保留选择与跳转', async () => {
+    const data = chartData({ ...SHANGHAI, date: '2020-04-09', time: '11:34' }), original = structuredClone(data);
+    await harness.show(data);
+    const panel = await harness.openAstro();
+    const tab = (name: string) => [...panel.querySelectorAll<HTMLButtonElement>('[role="radio"]')].find(button => button.textContent === name)!;
+    const chooseHouse = () => panel.querySelector<HTMLButtonElement>('[aria-label="查看第4宫"]')!;
+    await act(async () => panel.querySelector<HTMLButtonElement>('[aria-label="查看太阳"]')!.click());
+    assert.ok(panel.querySelector('.bazi-as-selection-capsule[aria-label="太阳详情"]'));
+    await act(async () => tab('宫位').click());
+    assert.equal(!!panel.querySelector('[aria-label="太阳详情"]'), false, '宫位页不应继续显示太阳详情');
+    assert.equal(panel.querySelector('[data-body="Sun"]')!.getAttribute('aria-pressed'), 'false');
+    assert.equal(panel.querySelectorAll('[aria-label="十二宫位"] tbody tr').length, 12);
+    await act(async () => chooseHouse().click());
+    const detail = panel.querySelector('[aria-label="第4宫详情"]')!;
+    assert.ok(detail, '选中宫位后显示对应详情');
+    assert.ok(detail.classList.contains('bazi-as-selection-capsule'));
+    assert.ok(detail.previousElementSibling === panel.querySelector('.bazi-as-details'), '详情卡在表格卡片之后');
+    assert.ok(detail.parentElement === panel.querySelector('.bazi-as-sidebar'), '详情卡位于同一个右栏');
+    assert.equal(!!panel.querySelector('.bazi-as-detail-body .bazi-as-selection'), false);
+    assert.equal(detail.querySelector('[aria-label="第4宫详情内容"]')!.getAttribute('tabindex'), '0');
+    assert.match(detail.textContent!, /家庭、根基与私人生活/);
+    assert.match(detail.textContent!, /金星 · 第11宫/);
+    assert.equal(chooseHouse().getAttribute('aria-pressed'), 'true');
+    assert.equal(panel.querySelector('[data-house="4"]')!.getAttribute('aria-pressed'), 'true');
+    await act(async () => tab('宫位').click());
+    assert.ok(panel.querySelector('[aria-label="第4宫详情"]'), '点击当前页签不清除选中');
+    await act(async () => detail.querySelector<HTMLButtonElement>('.bazi-as-selection-title button')!.click());
+    assert.equal(!!panel.querySelector('.bazi-as-selection-capsule'), false);
+    assert.equal(chooseHouse().getAttribute('aria-pressed'), 'false');
+    await act(async () => chooseHouse().click());
+    await act(async () => chooseHouse().click());
+    assert.equal(!!panel.querySelector('.bazi-as-selection-capsule'), false);
+    await act(async () => chooseHouse().click());
+    await act(async () => tab('星体').click());
+    assert.equal(!!panel.querySelector('[aria-label="第4宫详情"]'), false);
+    assert.equal(panel.querySelector('[data-house="4"]')!.getAttribute('aria-pressed'), 'false');
+    await act(async () => panel.querySelector('[data-house="4"]')!.dispatchEvent(new harness.dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+    assert.equal(tab('宫位').getAttribute('aria-checked'), 'true');
+    const moon = [...panel.querySelectorAll<HTMLButtonElement>('[aria-label="第4宫详情"] button')].find(button => button.textContent === '月亮')!;
+    await act(async () => moon.click());
+    assert.equal(tab('星体').getAttribute('aria-checked'), 'true');
+    assert.ok(panel.querySelector('.bazi-as-selection-capsule[aria-label="月亮详情"]'));
+    assert.equal(!!panel.querySelector('[aria-label="第4宫详情"]'), false);
+    assert.deepEqual(data, original);
+  });
+
   test('星体详情提供四项含义,组合随星体和宫位变化,扩展对象也不显示相关相位', async () => {
     const data = chartData({ ...SHANGHAI, date: '2020-04-09', time: '11:34' });
     const original = structuredClone(data), chart = buildAstro(data.profiles[0]);
@@ -431,33 +483,53 @@ describe('占星行星落座宫位列', { concurrency: false }, () => {
     assert.equal(panel.querySelectorAll('.bazi-as-aspect-target').length, buildAstro(data.profiles[1]).aspects.length);
   });
 
-  test('扩展对象可联动选中,隐藏后清除详情与筛选,不影响十星分布或命例', async () => {
+  test('分表完整显示小天体与点位,不再提供开关且保留盘表联动', async () => {
     const data = chartData({ ...SHANGHAI, date: '2020-04-09', time: '11:34' });
     const original = structuredClone(data);
     await harness.show(data);
     const panel = await harness.openAstro();
-    assert.equal(panel.querySelectorAll('.bazi-astab tbody tr').length, 19);
+    assert.equal(panel.querySelectorAll('[aria-label="行星信息"] tbody tr').length, 14);
+    const minor = panel.querySelector('[aria-label="小天体"]')!;
+    assert.deepEqual([...minor.querySelectorAll('tbody tr')].map(row => row.children[1].textContent),
+      ['凯龙星', '谷神星', '智神星', '婚神星', '灶神星', '北交点', '南交点', '莉莉丝', '福点']);
+    assert.equal(panel.querySelector('.bazi-as-object-options'), null);
+    assert.equal(panel.querySelector('input[type="checkbox"]'), null);
     assert.equal(panel.querySelectorAll('[data-body]').length, 19);
     await act(async () => panel.querySelector<HTMLButtonElement>('[aria-label="查看婚神星"]')!.click());
     assert.equal(panel.querySelector('[data-body="Juno"]')!.getAttribute('aria-pressed'), 'true');
     assert.match(panel.querySelector('.bazi-as-selection-capsule')!.textContent!, /婚神星.*逆行.*JPL/s);
     assert.match(panel.querySelector('.bazi-as-selection-capsule')!.textContent!, /结合解读/);
     assert.doesNotMatch(panel.querySelector('.bazi-as-selection-capsule')!.textContent!, /相关相位/);
-    const toggles = panel.querySelectorAll<HTMLInputElement>('.bazi-as-object-options input');
-    await act(async () => toggles[1].click());
-    assert.equal(panel.querySelector('[data-body="Juno"]'), null);
-    assert.equal(panel.querySelector('.bazi-as-selection-capsule'), null);
-    assert.equal(panel.querySelectorAll('.bazi-astab tbody tr').length, 14);
     await act(async () => panel.querySelector<HTMLButtonElement>('[aria-label="查看福点"]')!.click());
     assert.match(panel.querySelector('.bazi-as-selection-capsule')!.textContent!, /昼盘公式/);
     assert.doesNotMatch(panel.querySelector('.bazi-as-selection-facts')!.textContent!, /顺行|逆行/);
-    await act(async () => toggles[0].click());
-    assert.equal(panel.querySelectorAll('[data-body]').length, 10);
-    assert.equal(panel.querySelectorAll('.bazi-as-aspect-target').length, 17);
-    assert.equal(panel.querySelector('.bazi-as-selection-capsule'), null);
-    await act(async () => { toggles[0].click(); toggles[1].click(); });
     assert.equal(panel.querySelectorAll('[data-body]').length, 19);
+    for (const name of ['北交点', '南交点', '莉莉丝']) {
+      await act(async () => minor.querySelector<HTMLButtonElement>(`[aria-label="查看${name}"]`)!.click());
+      assert.ok(panel.querySelector(`[aria-label="${name}详情"]`));
+    }
+    assert.equal(panel.querySelectorAll('.bazi-as-aspect-target').length, buildAstro(data.profiles[0]).aspects.length);
     assert.deepEqual(data, original);
+  });
+
+  test('四轴宫头边界正确,整宫制显示实际落宫,极区分宫不可用时不捏造宫位', async () => {
+    await harness.show(chartData({ ...SHANGHAI, date: '2020-04-09', time: '11:34' }));
+    const placidus = await harness.openAstro();
+    assert.deepEqual([...placidus.querySelectorAll('tr[data-axis]')].map(row => row.lastElementChild!.textContent), ['1宫', '7宫', '4宫', '10宫']);
+    for (const astroHouseSystem of ['whole-sign', 'placidus'] as const) {
+      await harness.show(chartData({ date: '2020-04-09', time: '11:34', lat: 70, lon: 20, astroHouseSystem }));
+      const panel = await harness.openAstro();
+      const expected = [
+        ['ASC', '上升点', '双鱼', '22°24′', '1宫'],
+        ['DSC', '下降点', '处女', '22°24′', '7宫'],
+        ['IC', '天底', '巨蟹', '1°14′', '5宫'],
+        ['MC', '天顶', '摩羯', '1°14′', '11宫'],
+      ];
+      if (astroHouseSystem === 'placidus') expected.forEach(row => { row[4] = '—'; });
+      const axes = [...panel.querySelectorAll('tr[data-axis]')];
+      assert.deepEqual(axes.map(row => [...row.children].map(cell => cell.textContent)), expected);
+      assert.equal(axes.some(row => row.querySelector('button')), false);
+    }
   });
 
   test('极区从整宫制切换到不可用的普拉西德制时清除宫位选择,保留可读星体', async () => {

@@ -19,6 +19,7 @@ export const AgentMessageSchema = z.object({
   createdAt: z.number(), updatedAt: z.number(), readAt: z.number().nullable(), resolvedAt: z.number().nullable(),
 });
 export type AgentMessage = z.infer<typeof AgentMessageSchema>;
+// connected confirms local hook configuration, not the client's trust decision or actual delivery.
 export interface AgentConnection { provider: AgentProvider; connected: boolean; error?: string; }
 export function agentPending(message: AgentMessage): boolean { return message.kind === 'approval' && message.resolvedAt === null; }
 export function agentMessageStatus(message: AgentMessage): string {

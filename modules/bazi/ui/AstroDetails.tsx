@@ -1,6 +1,6 @@
 import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { CaretRight } from '@phosphor-icons/react';
-import type { AstroChart } from '../astro';
+import { houseOfLongitude, type AstroChart } from '../astro';
 import { Segmented, Select } from '../../../src/ui/controls';
 import {
   ASPECT_MEANINGS, BODY_EXPRESSIONS, BODY_MEANINGS, DEFAULT_ASPECT_FILTER, EXTENDED_BODY_NOTES, HOUSE_TOPICS, PLANETS, SIGN_MEANINGS, SIGN_NAMES, SIGN_STYLES,
@@ -26,11 +26,6 @@ export function AstroSummary({ chart }: { chart: AstroChart }) {
     return () => { window.removeEventListener('resize', dismiss); window.removeEventListener('scroll', onScroll, true); };
   }, [open]);
   return <div className="bazi-as-summary" aria-label="星盘概览">
-    {['Sun', 'Moon'].map(key => {
-      const body = chart.bodies.find(item => item.key === key)!;
-      return <span key={key}><i className="bazi-as-glyph" data-tone={PLANETS[key].tone}>{body.glyph}</i>{body.name}<b>{SIGN_NAMES[Math.floor(body.lon / 30)]}</b></span>;
-    })}
-    <span><i className="bazi-as-asc-label">ASC</i>上升<b>{chart.asc === undefined ? '待补地点' : SIGN_NAMES[Math.floor(chart.asc / 30)]}</b></span>
     <button ref={button} className="bazi-as-text-button" popoverTarget={id} aria-expanded={open} aria-haspopup="dialog" aria-controls={id}>
       分布概览<CaretRight size={14} aria-hidden="true" />
     </button>
@@ -57,9 +52,6 @@ interface DetailProps {
   onSelect(selection: AstroSelection): void;
   filter: AstroAspectFilter;
   onFilterChange(filter: AstroAspectFilter): void;
-  showPoints?: boolean;
-  showMinor?: boolean;
-  onDisplayChange?(kind: 'point' | 'minor', show: boolean): void;
   reading?: ReactNode;
 }
 
@@ -69,27 +61,35 @@ function SelectionDetails({ chart, selection, onSelect, detached = false }: Deta
     const body = chart.bodies.find(item => item.key === selection.key)!;
     const sign = Math.floor(body.lon / 30);
     return <section className={`bazi-as-selection${detached ? ' panel glass bazi-as-selection-capsule' : ''}`} aria-label={`${body.name}详情`}>
-      <div className="bazi-as-selection-title"><h3><i className="bazi-as-glyph" data-tone={PLANETS[body.key].tone}>{body.glyph}</i>{body.name}</h3><button className="bazi-as-text-button" onClick={() => onSelect(null)}>已选中 · 取消</button></div>
-      <p className="bazi-as-selection-facts">{SIGN_NAMES[sign]} · {body.house ? `第${body.house}宫` : '宫位待补'}{body.retro !== undefined && ` · ${body.retro ? '逆行' : '顺行'}`}{body.basis && ` · ${body.basis}`}</p>
-      {EXTENDED_BODY_NOTES[body.key] && <p className="bazi-as-object-note">{EXTENDED_BODY_NOTES[body.key]}</p>}
-      <dl className="bazi-as-meanings">
-        <div><dt>{body.kind === 'point' ? '点位' : '星体'}含义 · {body.name}</dt><dd>在占星中，{body.name}常用于讨论{BODY_MEANINGS[body.key]}。</dd></div>
-        <div><dt>星座含义 · {SIGN_NAMES[sign]}座</dt><dd>{SIGN_NAMES[sign]}座描述表达风格，常见关键词是{SIGN_MEANINGS[sign]}。</dd></div>
-        <div><dt>宫位含义 · {body.house ? `第${body.house}宫` : '暂不可用'}</dt><dd>{body.house ? `第${body.house}宫关注${HOUSE_TOPICS[body.house - 1]}这些生活主题。` : chart.houseWarning ?? '补充出生地点后，可以查看落宫。'}</dd></div>
-        <div className="bazi-as-combined"><dt>结合解读</dt><dd>以{SIGN_STYLES[sign]}的方式，{BODY_EXPRESSIONS[body.key]}。{body.house ? `这种表达可放在${HOUSE_TOPICS[body.house - 1]}的情境中理解。` : '宫位尚未确定，暂不延伸到具体生活领域。'}</dd></div>
-      </dl>
+      <div className="bazi-as-selection-content" tabIndex={detached ? 0 : undefined}
+        role={detached ? 'group' : undefined} aria-label={detached ? `${body.name}详情内容` : undefined}>
+        <div className="bazi-as-selection-title"><h3><i className="bazi-as-glyph" data-tone={PLANETS[body.key].tone}>{body.glyph}</i>{body.name}</h3><button className="bazi-as-text-button" onClick={() => onSelect(null)}>已选中 · 取消</button></div>
+        <p className="bazi-as-selection-facts">{SIGN_NAMES[sign]} · {body.house ? `第${body.house}宫` : '宫位待补'}{body.retro !== undefined && ` · ${body.retro ? '逆行' : '顺行'}`}{body.basis && ` · ${body.basis}`}</p>
+        {EXTENDED_BODY_NOTES[body.key] && <p className="bazi-as-object-note">{EXTENDED_BODY_NOTES[body.key]}</p>}
+        <dl className="bazi-as-meanings">
+          <div><dt>{body.kind === 'point' ? '点位' : '星体'}含义 · {body.name}</dt><dd>在占星中，{body.name}常用于讨论{BODY_MEANINGS[body.key]}。</dd></div>
+          <div><dt>星座含义 · {SIGN_NAMES[sign]}座</dt><dd>{SIGN_NAMES[sign]}座描述表达风格，常见关键词是{SIGN_MEANINGS[sign]}。</dd></div>
+          <div><dt>宫位含义 · {body.house ? `第${body.house}宫` : '暂不可用'}</dt><dd>{body.house ? `第${body.house}宫关注${HOUSE_TOPICS[body.house - 1]}这些生活主题。` : chart.houseWarning ?? '补充出生地点后，可以查看落宫。'}</dd></div>
+          <div className="bazi-as-combined"><dt>结合解读</dt><dd>以{SIGN_STYLES[sign]}的方式，{BODY_EXPRESSIONS[body.key]}。{body.house ? `这种表达可放在${HOUSE_TOPICS[body.house - 1]}的情境中理解。` : '宫位尚未确定，暂不延伸到具体生活领域。'}</dd></div>
+        </dl>
+      </div>
     </section>;
   }
   if (selection.kind === 'house') {
     const house = houseRows(chart).find(item => item.number === selection.number);
     if (!house) return null;
-    return <section className="bazi-as-selection" aria-label={`第${house.number}宫详情`}>
-      <div className="bazi-as-selection-title"><h3>第{house.number}宫</h3><button className="bazi-as-text-button" onClick={() => onSelect(null)}>取消选择</button></div>
-      <p className="bazi-as-selection-facts">宫头 {SIGN_NAMES[Math.floor(house.cusp / 30)]} {degreeLabel(house.cusp)}</p>
-      <p>通常用于讨论{HOUSE_TOPICS[house.number - 1]}。</p>
-      <dl className="bazi-as-house-facts"><dt>宫内星体与点位</dt><dd>{house.bodies.length ? house.bodies.map(body => <button key={body.key} className="bazi-as-text-button" onClick={() => onSelect({ kind: 'body', key: body.key })}>{body.name}</button>) : '当前显示范围内无星体或点位'}</dd>
-        <dt>现代守护</dt><dd>{house.ruler && <button className="bazi-as-text-button" onClick={() => onSelect({ kind: 'body', key: house.ruler!.key })}>{house.ruler.name} · 第{house.ruler.house}宫</button>}</dd></dl>
-      <p className="bazi-as-reading-note">列表跟随显示开关；空宫不代表该主题缺失。</p>
+    return <section className={`bazi-as-selection${detached ? ' panel glass bazi-as-selection-capsule' : ''}`} aria-label={`第${house.number}宫详情`}>
+      <div className="bazi-as-selection-content" tabIndex={detached ? 0 : undefined}
+        role={detached ? 'group' : undefined} aria-label={detached ? `第${house.number}宫详情内容` : undefined}>
+        <div className="bazi-as-selection-title"><h3>第{house.number}宫</h3><button className="bazi-as-text-button" onClick={() => onSelect(null)}>已选中 · 取消</button></div>
+        <p className="bazi-as-selection-facts">宫头 {SIGN_NAMES[Math.floor(house.cusp / 30)]} {degreeLabel(house.cusp)}</p>
+        <dl className="bazi-as-meanings">
+          <div><dt>宫位含义 · 第{house.number}宫</dt><dd>通常用于讨论{HOUSE_TOPICS[house.number - 1]}。</dd></div>
+          <div><dt>宫内星体与点位</dt><dd className="bazi-as-house-bodies">{house.bodies.length ? house.bodies.map(body => <button key={body.key} className="bazi-as-text-button" onClick={() => onSelect({ kind: 'body', key: body.key })}>{body.name}</button>) : '当前显示范围内无星体或点位'}</dd></div>
+          <div><dt>现代守护</dt><dd>{house.ruler && <button className="bazi-as-text-button" onClick={() => onSelect({ kind: 'body', key: house.ruler!.key })}>{house.ruler.name} · 第{house.ruler.house}宫</button>}</dd></div>
+        </dl>
+        <p className="bazi-as-reading-note">空宫不代表该主题缺失。</p>
+      </div>
     </section>;
   }
   const aspect = chart.aspects[selection.index];
@@ -111,35 +111,46 @@ export function AstroDetails(props: DetailProps) {
   useLayoutEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = 0; }, [section]);
   const selected = (kind: NonNullable<AstroSelection>['kind'], value: string | number) =>
     selection?.kind === kind && (selection.kind === 'body' ? selection.key : selection.kind === 'house' ? selection.number : selection.index) === value;
-  const detached = section === 'positions' && selection?.kind === 'body';
+  const detached = (section === 'positions' && selection?.kind === 'body') || (section === 'houses' && selection?.kind === 'house');
+  const bodyGroups = [
+    { title: '行星信息', bodies: chart.bodies.filter(body => body.kind === 'planet') },
+    { title: '小天体', bodies: [...chart.bodies.filter(body => body.kind === 'minor'), ...chart.bodies.filter(body => body.kind === 'point')] },
+  ];
+  // 普拉西德四轴就是 1/7/4/10 宫头，避免浮点误差把宫头归到前一宫。
+  const axes = [
+    { key: 'ASC', name: '上升点', lon: chart.asc, placidusHouse: 1 },
+    { key: 'DSC', name: '下降点', lon: chart.asc === undefined ? undefined : (chart.asc + 180) % 360, placidusHouse: 7 },
+    { key: 'IC', name: '天底', lon: chart.mc === undefined ? undefined : (chart.mc + 180) % 360, placidusHouse: 4 },
+    { key: 'MC', name: '天顶', lon: chart.mc, placidusHouse: 10 },
+  ];
   return <div className="bazi-as-sidebar" data-section={section}>
     <div className="panel glass bazi-as-details">
     <Segmented value={section} onChange={value => onSectionChange(value as AstroSection)} aria-label="星盘信息" options={[
       { value: 'positions', label: '星体' }, { value: 'houses', label: '宫位' }, { value: 'aspects', label: '相位' }, { value: 'reading', label: '解读' },
     ]} />
-    {section !== 'reading' && props.onDisplayChange && <div className="bazi-as-object-options" role="group" aria-label="扩展星体显示">
-      <span>扩展显示</span>
-      <label><input type="checkbox" checked={props.showPoints} onChange={event => props.onDisplayChange?.('point', event.target.checked)} />常用点位</label>
-      <label><input type="checkbox" checked={props.showMinor} onChange={event => props.onDisplayChange?.('minor', event.target.checked)} />小天体</label>
-    </div>}
     <div ref={bodyRef} className="bazi-as-detail-body">
       {section === 'positions' && <>
-        <table className="bazi-astab bazi-as-position-table" aria-label="星体与点位落座">
+        {bodyGroups.map(({ title, bodies }, index) => <table key={title} className="bazi-astab bazi-as-position-table" aria-label={title}>
+          <caption>{title}</caption>
           <colgroup><col /><col /><col /><col /><col /></colgroup>
           <thead><tr><th aria-label="符号" /><th>星体／点位</th><th>星座</th><th>度数</th><th>宫位</th></tr></thead>
-          <tbody>{chart.bodies.map(body => <tr key={body.key} data-selected={selected('body', body.key)} onClick={() => onSelect({ kind: 'body', key: body.key })}>
+          <tbody>{bodies.map(body => <tr key={body.key} data-selected={selected('body', body.key)} onClick={() => onSelect({ kind: 'body', key: body.key })}>
             <td className="glyph bazi-as-glyph" data-tone={PLANETS[body.key].tone}>{body.glyph}</td>
             <td><button className="bazi-as-row-button" title={body.basis} aria-label={`查看${body.name}`} aria-pressed={selected('body', body.key)} onClick={event => { event.stopPropagation(); onSelect({ kind: 'body', key: body.key }); }}>{body.name}</button></td>
             <td>{SIGN_NAMES[Math.floor(body.lon / 30)]}</td><td>{degreeLabel(body.lon)}{body.retro && <span className="bazi-rx">℞</span>}</td><td>{body.house !== undefined ? `${body.house}宫` : '—'}</td>
+          </tr>)}
+          {index === 0 && axes.map(axis => <tr key={axis.key} data-axis={axis.key}>
+            <td className="bazi-as-axis-glyph">{axis.key}</td><td>{axis.name}</td>
+            <td>{axis.lon === undefined ? '—' : SIGN_NAMES[Math.floor(axis.lon / 30)]}</td>
+            <td>{axis.lon === undefined ? '—' : degreeLabel(axis.lon)}</td>
+            <td>{axis.lon !== undefined && chart.houseCusps ? `${chart.houseSystem === 'placidus' ? axis.placidusHouse : houseOfLongitude(axis.lon, chart.houseCusps)}宫` : '—'}</td>
           </tr>)}</tbody>
-        </table>
+        </table>)}
         {!chart.houseCusps && <div className="bazi-notehint">{missingHouses}</div>}
-        {props.showPoints && chart.asc === undefined && <p className="bazi-as-reading-note">福点需要出生地点与有效上升点，补充后自动显示。</p>}
-        {!detached && <SelectionDetails {...props} />}
+        {chart.asc === undefined && <p className="bazi-as-reading-note">福点需要出生地点与有效上升点，补充后自动显示。</p>}
         {!selection && <p className="bazi-as-empty-selection">点击星体，查看星体、星座、宫位及组合含义。</p>}
       </>}
       {section === 'houses' && <>
-        <SelectionDetails {...props} />
         {houses.length ? <>
           <table className="bazi-astab bazi-as-house-table" aria-label="十二宫位">
             <thead><tr><th>宫位</th><th>宫头</th><th>现代守护 · 落宫</th></tr></thead>

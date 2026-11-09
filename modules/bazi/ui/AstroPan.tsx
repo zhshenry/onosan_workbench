@@ -11,11 +11,6 @@ const CX = 300;
 const SIGN_GLYPHS = ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓'];
 const ELEMENTS = ['fire', 'earth', 'air', 'water'];
 
-function formatAscendant(lon: number): string {
-  const norm = ((lon % 360) + 360) % 360;
-  return `${SIGN_NAMES[Math.floor(norm / 30)]} ${degreeLabel(norm)}`;
-}
-
 /** 相对黄道经度 → 盘面坐标;有出生地时上升点置于 9 点方向。 */
 function polar(r: number, lon: number): [number, number] {
   const a = ((180 + lon) * Math.PI) / 180;
@@ -218,29 +213,32 @@ export function AstroPan({ profile, chart, onHouseSystemChange, houseSystemSavin
             {astroTimeZoneLabel(chart.birthTime.timeZone)}{chart.birthTime.legacy ? ' · 旧命例沿用' : ''}
             {chart.birthTime.choice ? ` · ${chart.birthTime.choice === 'earlier' ? '第一次' : '第二次'}出现` : ''}
           </div>
-          <div className="bazi-pan-meta">{chart.asc === undefined ? chart.houseWarning ?? '未填出生地,宫位暂缺' : `上升点 ${formatAscendant(chart.asc)} · 纬度 ${profile.lat}° · 经度 ${profile.lon}°`}</div>
+          {chart.asc === undefined && <div className="bazi-pan-meta">{chart.houseWarning ?? '未填出生地,宫位暂缺'}</div>}
         </div>
-        <div className="bazi-as-controls">
-          <span className="bazi-pan-tag">回归制</span>
-          <Select aria-label="占星宫制" value={chart.houseSystem} disabled={houseSystemSaving}
-            onChange={value => onHouseSystemChange(value as AstroHouseSystem)}
-            options={Object.entries(ASTRO_HOUSE_LABELS).map(([value, label]) => ({ value, label }))} />
-          <button ref={helpButton} type="button" className="bazi-as-help-button" aria-label="宫制说明"
-            aria-haspopup="dialog" aria-expanded={helpOpen} aria-controls={helpId} popoverTarget={helpId}>
-            <Question size={18} aria-hidden="true" />
-          </button>
-          <div ref={help} id={helpId} className="bazi-as-help" popover="auto" role="dialog" tabIndex={-1}
-            aria-labelledby={`${helpId}-title`} onToggle={event => setHelpOpen(event.newState === 'open')}>
-            <strong id={`${helpId}-title`}>宫制是什么？</strong>
-            <p>把星盘划分为 12 个宫位的方法。</p>
-            <dl>
-              <dt>普拉西德制（Placidus）<span>默认</span></dt>
-              <dd>根据出生时间和地点划分宫位，各宫大小通常不同。</dd>
-              <dt>整宫制</dt>
-              <dd>上升星座所在的整个星座为第 1 宫，之后一个星座对应一宫，每宫 30°。</dd>
-            </dl>
-            <p className="bazi-as-help-note">切换宫制会改变宫位边界，因此同一颗行星可能落在不同宫位；它的星座和实际位置不会改变。</p>
+        <div className="bazi-as-head-tools">
+          <div className="bazi-as-controls">
+            <span className="bazi-pan-tag">回归制</span>
+            <Select aria-label="占星宫制" value={chart.houseSystem} disabled={houseSystemSaving}
+              onChange={value => onHouseSystemChange(value as AstroHouseSystem)}
+              options={Object.entries(ASTRO_HOUSE_LABELS).map(([value, label]) => ({ value, label }))} />
+            <button ref={helpButton} type="button" className="bazi-as-help-button" aria-label="宫制说明"
+              aria-haspopup="dialog" aria-expanded={helpOpen} aria-controls={helpId} popoverTarget={helpId}>
+              <Question size={18} aria-hidden="true" />
+            </button>
+            <div ref={help} id={helpId} className="bazi-as-help" popover="auto" role="dialog" tabIndex={-1}
+              aria-labelledby={`${helpId}-title`} onToggle={event => setHelpOpen(event.newState === 'open')}>
+              <strong id={`${helpId}-title`}>宫制是什么？</strong>
+              <p>把星盘划分为 12 个宫位的方法。</p>
+              <dl>
+                <dt>普拉西德制（Placidus）<span>默认</span></dt>
+                <dd>根据出生时间和地点划分宫位，各宫大小通常不同。</dd>
+                <dt>整宫制</dt>
+                <dd>上升星座所在的整个星座为第 1 宫，之后一个星座对应一宫，每宫 30°。</dd>
+              </dl>
+              <p className="bazi-as-help-note">切换宫制会改变宫位边界，因此同一颗行星可能落在不同宫位；它的星座和实际位置不会改变。</p>
+            </div>
           </div>
+          <div className="bazi-as-interaction-hint">点击星体或宫位查看详情 · 再次点击取消选择</div>
         </div>
       </div>
       {chart.houseWarning && <div className="bazi-as-warning" role="status">{chart.houseWarning}</div>}
@@ -250,7 +248,6 @@ export function AstroPan({ profile, chart, onHouseSystemChange, houseSystemSavin
         <span><i className="hard" />刑 / 冲</span>
         <span>℞ 逆行</span>
       </div>
-      <div className="bazi-as-interaction-hint">点击星体或宫位查看详情 · 再次点击取消选择</div>
     </div>
   );
 }

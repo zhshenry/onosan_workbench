@@ -62,3 +62,4 @@
   .desktop-island:not([data-dock="top"]).is-messages .island-quota-rings.compact { width: 18px; height: 18px; }
   .desktop-island:not([data-dock="top"]).is-messages .island-summary-schedule svg { width: 14px; height: 14px; }
 }
+.island-message-empty .island-message-setup-help { max-width: 28em; font-size: var(--type-support); line-height: 1.6; }

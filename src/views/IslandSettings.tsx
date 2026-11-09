@@ -62,7 +62,9 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
   useEffect(() => {
     const showGroup = (group: string | null) => {
       if (group !== 'quota' && group !== 'water' && group !== 'sedentary' && group !== 'agents') return;
-      revealGroup.current = group; setActive(group === 'quota' ? 'quota' : group === 'agents' ? 'reminders' : 'tools'); resetSearch(); sessionStorage.removeItem('island-settings-section');
+      revealGroup.current = group; setActive(group === 'quota' || group === 'agents' ? 'quota' : 'tools');
+      if (group === 'agents') setSelectedProvider(current => current === 'codex' || current === 'cursor' ? current : 'codex');
+      resetSearch(); sessionStorage.removeItem('island-settings-section');
     };
     showGroup(sessionStorage.getItem('island-settings-section'));
     const listener = (event: Event) => showGroup((event as CustomEvent).detail);
@@ -77,7 +79,7 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
       target.scrollIntoView({ block: 'nearest' }); revealGroup.current = null;
     }
     return () => { alive = false; };
-  }, [state, active]);
+  }, [state, active, selectedProvider]);
   useEffect(() => setShowKey(false), [active, selectedProvider, query]);
   if (!state) return <p role={error ? 'alert' : 'status'}>{error || '正在读取灵动岛设置…'}</p>;
   const settings = state.settings;
@@ -111,10 +113,6 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
       { key: 'dnd', title: '定时勿扰', desc: '不弹开、不播放声音，提醒留待处理', control: toggle('dnd', '勿扰时段') },
       { key: 'dndTime', title: '勿扰时间', desc: '', className: 'island-period-row', control: period('dndStart', 'dndEnd', '勿扰时间') },
     ] },
-    { id: 'agents', section: 'reminders', title: 'Agent 消息', rows: (['codex', 'cursor'] as const).map(provider => {
-      const connection = agentConnections?.find(value => value.provider === provider), name = provider === 'codex' ? 'Codex' : 'Cursor';
-      return { key: `agent-${provider}`, title: name, desc: connection?.error || (!api.agentConnections ? '请完整重启测试环境以加载消息接口' : `${connection?.connected ? '已启用 · 新会话生效 · ' : ''}${provider === 'codex' ? '回复完成、待授权' : '回复、运行失败'} · 消息仅保存在本机`), control: <button className="set-btn" disabled={busy || agentConnections === null} onClick={() => void run(async () => { const enabled = !connection?.connected; setAgentConnections(await api.agentConnect(provider, enabled)); if (enabled) setState(await api.patch({ mascotEnabled: true })); })}>{connection?.connected ? '断开' : '连接'}</button> };
-    }) },
     { id: 'quota-alerts', section: 'quota', title: '额度提醒', rows: [
       { key: 'threshold', title: '低额度阈值', desc: '每账户、每周期提醒一次；0 为关闭', control: number('lowQuota', '低额度阈值', 0, 50, '%') },
     ] },
@@ -140,9 +138,11 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
   const matches = (value: string) => !term || value.toLowerCase().replace(/\s+/g, '').includes(term);
   const selectedGroups = groups.filter(group => term || group.section === active).map(group => ({ ...group, rows: group.rows.filter(row => matches(`${sections.find(s => s.value === group.section)?.label} ${group.title} ${row.title} ${row.desc}`)) })).filter(group => group.rows.length);
   const visiblePages = (term || active === 'pages') ? ISLAND_PAGES.filter(page => matches(`页面 ${ISLAND_LABELS[page]} ${pageDescriptions[page]}`)) : [];
-  const visibleProviders = (term || active === 'quota') ? ISLAND_QUOTA_PROVIDERS.filter(id => matches(`AI 额度 ${ISLAND_QUOTA_LABELS[id]} 账户 ${id === 'codex' ? 'ChatGPT' : id === 'zcode' ? 'GLM Coding Plan API Key 密钥' : '登录 套餐'}`)) : [];
+  const visibleProviders = (term || active === 'quota') ? ISLAND_QUOTA_PROVIDERS.filter(id => matches(`AI 额度 ${ISLAND_QUOTA_LABELS[id]} 账户 ${id === 'codex' ? 'ChatGPT Agent 消息提醒 回复完成 待授权 本机 新会话' : id === 'cursor' ? '登录 套餐 Agent 消息提醒 回复 运行失败 本机 新会话' : id === 'zcode' ? 'GLM Coding Plan API Key 密钥' : '登录 套餐'}`)) : [];
   const providerId = visibleProviders.includes(selectedProvider) ? selectedProvider : visibleProviders[0];
   const provider = providers.find(item => item.id === providerId);
+  const agentProvider = providerId === 'codex' || providerId === 'cursor' ? providerId : undefined;
+  const agentConnection = agentConnections?.find(item => item.provider === agentProvider);
   const connected = provider?.status === 'ready' || provider?.status === 'unsupported' || provider?.status === 'stale';
   const keyEditor = providerId === 'zcode' && provider && (editingKey || !connected) && provider.status !== 'connecting';
   const providerStatus = (value?: QuotaProvider) => value ? value.issue === 'auth-required' ? '需重新登录' : providerStatuses[value.status] : quotaLoading ? '读取中' : '未读取';
@@ -205,6 +205,15 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
                 <div className="island-provider-actions">{providerId === 'zcode' && connected ? <button ref={editKeyButton} type="button" className="set-btn island-settings-primary" disabled={busy} onClick={() => setEditingKey(true)}>更新密钥</button> : <button type="button" className="set-btn island-settings-primary" disabled={busy || provider.status === 'connecting'} onClick={connect}>{provider.status === 'connecting' ? '授权中…' : busy ? '处理中…' : provider.issue === 'auth-required' ? '重新登录' : providerId === 'codex' && provider.status !== 'disconnected' ? connected && provider.status !== 'stale' ? '刷新额度' : '重试' : provider.status === 'error' ? '重试' : connected ? '重连' : '连接'}</button>}{provider.status === 'connecting' && <button type="button" className="island-settings-link" disabled={busy} onClick={disconnect}>取消授权</button>}</div>
               </>}
             </div>
+            {agentProvider && <div className="island-provider-messages" data-group="agents"><Rows query="" rows={[{
+              key: `agent-${agentProvider}`, title: '消息提醒',
+              desc: agentConnection?.error || (!api.agentConnections ? '请完整重启测试环境以加载消息接口' : agentConnections === null ? '正在读取提醒状态…' : `${agentConnection?.connected ? agentProvider === 'codex' ? '监听已配置 · 请在 Codex 设置 → Hooks 中审核并信任，新会话生效' : '监听已配置 · 新会话生效' : '尚未接入 · 需单独开启消息监听，无需再次登录'} · ${agentProvider === 'codex' ? '回复完成、待授权' : '回复、运行失败'} · 消息仅保存在本机`),
+              control: <button type="button" className="toggle" role="switch" aria-label={`${ISLAND_QUOTA_LABELS[agentProvider]} 消息提醒`} aria-checked={Boolean(agentConnection?.connected)} disabled={busy || agentConnections === null} onClick={() => void run(async () => {
+                const enabled = !agentConnection?.connected;
+                setAgentConnections(await api.agentConnect(agentProvider, enabled));
+                if (enabled) setState(await api.patch({ mascotEnabled: true }));
+              })} />,
+            }]} /></div>}
           </section>
         </div>
       </section>}

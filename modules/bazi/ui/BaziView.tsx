@@ -62,8 +62,6 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
   const [astroSection, setAstroSection] = useState<AstroSection>('positions');
   const [astroSelection, setAstroSelection] = useState<AstroSelection>(null);
   const [astroFilter, setAstroFilter] = useState<AstroAspectFilter>(DEFAULT_ASPECT_FILTER);
-  const [astroShowPoints, setAstroShowPoints] = useState(true);
-  const [astroShowMinor, setAstroShowMinor] = useState(true);
   const [readingInput, setReadingInput] = useState<{ profileId: string; draft: AstroReadingDraft } | null>(null);
   const [readingConfig, setReadingConfig] = useState<AiConfig | null>(null);
   const [readingConfigError, setReadingConfigError] = useState('');
@@ -176,19 +174,6 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id, profile?.date, profile?.time, profile?.gender, profile?.lat, profile?.lon, profile?.astroHouseSystem, profile?.astroTimeZone, profile?.astroTimeChoice]);
 
-  const visibleAstro = useMemo(() => {
-    if (!charts?.astro) return null;
-    const bodies = charts.astro.bodies.filter(body => body.kind === 'planet' || (body.kind === 'point' ? astroShowPoints : astroShowMinor));
-    const names = new Set(bodies.map(body => body.name));
-    return { ...charts.astro, bodies, aspects: charts.astro.aspects.filter(aspect => names.has(aspect.a) && names.has(aspect.b)) };
-  }, [charts?.astro, astroShowPoints, astroShowMinor]);
-
-  const changeAstroDisplay = (kind: 'point' | 'minor', show: boolean): void => {
-    if (kind === 'point') setAstroShowPoints(show); else setAstroShowMinor(show);
-    setAstroSelection(null);
-    setAstroFilter(DEFAULT_ASPECT_FILTER);
-  };
-
   // 切换命例:重置流年展开
   useEffect(() => {
     setOpenDy(-1);
@@ -204,6 +189,11 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
     if (astroSelection?.kind === 'house' && !charts?.astro?.houseCusps) setAstroSelection(null);
   }, [charts?.astro?.houseCusps, astroSelection]);
 
+  const changeAstroSection = (next: AstroSection): void => {
+    if (next !== astroSection) setAstroSelection(null);
+    setAstroSection(next);
+  };
+
   const selectAstro = (next: AstroSelection): void => {
     const same = (next?.kind === 'body' && astroSelection?.kind === 'body' && next.key === astroSelection.key)
       || (next?.kind === 'house' && astroSelection?.kind === 'house' && next.number === astroSelection.number)
@@ -214,7 +204,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
   };
   const filterAstro = (filter: AstroAspectFilter): void => {
     setAstroFilter(filter);
-    if (astroSelection?.kind !== 'aspect' || !visibleAstro || !matchingAspect(visibleAstro.aspects[astroSelection.index], filter)) setAstroSelection(null);
+    if (astroSelection?.kind !== 'aspect' || !charts?.astro || !matchingAspect(charts.astro.aspects[astroSelection.index], filter)) setAstroSelection(null);
   };
 
   // 命例下拉:点外部关闭
@@ -393,7 +383,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
   const profiles = storeData.profiles;
   const chart = charts?.bazi ?? null;
   const ziwei = charts?.ziwei ?? null;
-  const astro = visibleAstro;
+  const astro = charts?.astro ?? null;
   const soulPalace = ziwei?.palaces.find((p) => p.name === '命宫') ?? null;
   const mutagenList = ziwei
     ? ziwei.palaces.flatMap((p) => [...p.majorStars, ...p.minorStars]
@@ -598,12 +588,11 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
                 <div><AstroPan profile={profile} chart={astro} onHouseSystemChange={changeHouseSystem} houseSystemSaving={houseSystemSaving}
                   selection={astroSelection} onSelect={selectAstro}
                   visibleAspects={astroSection === 'aspects' ? astro.aspects.flatMap((aspect, index) => matchingAspect(aspect, astroFilter) ? [index] : []) : undefined} /></div>
-                <AstroDetails chart={astro} section={astroSection} onSectionChange={setAstroSection}
+                <AstroDetails chart={astro} section={astroSection} onSectionChange={changeAstroSection}
                   selection={astroSelection} onSelect={selectAstro} filter={astroFilter} onFilterChange={filterAstro}
                   reading={<AstroReading draft={readingDraft} onChange={changeReadingDraft} busy={aiBusy || readingStarting}
                     checking={!readingConfig && !readingConfigError} configured={readingConfigured} configError={readingConfigError}
-                    onRetryConfig={() => setReadingConfigReload(value => value + 1)} onStart={askAI} />}
-                  showPoints={astroShowPoints} showMinor={astroShowMinor} onDisplayChange={changeAstroDisplay} />
+                    onRetryConfig={() => setReadingConfigReload(value => value + 1)} onStart={askAI} />} />
               </div>
             </div>
           )}

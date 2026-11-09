@@ -13,8 +13,7 @@ export function AstroReading({ draft, onChange, busy, checking, configured, conf
 }) {
   const id = useId(), topic = ASTRO_READING_TOPICS[draft.topic];
   return <section className="bazi-as-reading" aria-labelledby={`${id}-title`}>
-    <header><h3 id={`${id}-title`}><Sparkle size={22} weight="fill" aria-hidden="true" />想了解星盘的哪一面？</h3>
-      <p>选好主题，交给右侧 AI 助手解读。</p></header>
+    <header><h3 id={`${id}-title`}><Sparkle size={22} weight="fill" aria-hidden="true" />想了解星盘的哪一面？</h3></header>
     <div className="bazi-as-reading-field">
       <label htmlFor={`${id}-topic`}>解读主题</label>
       <Select id={`${id}-topic`} aria-label="解读主题" aria-describedby={`${id}-description`} value={draft.topic}
@@ -32,13 +31,13 @@ export function AstroReading({ draft, onChange, busy, checking, configured, conf
       </div>
     </div>
     <div className="bazi-as-reading-field">
-      <div className="bazi-as-reading-label"><label htmlFor={`${id}-question`}>补充你的问题</label><span>可选</span></div>
+      <div className="bazi-as-reading-label"><label htmlFor={`${id}-question`}>你的问题</label></div>
       <textarea id={`${id}-question`} value={draft.question} maxLength={10000} rows={3}
         placeholder="写下你想了解的问题，也可以直接开始解读。" onChange={event => onChange({ ...draft, question: event.target.value })} />
     </div>
     {configError && <p className="bazi-as-reading-error" role="alert">{configError}<button type="button" className="bazi-as-text-button" onClick={onRetryConfig}>重新读取</button></p>}
     {!checking && !configError && !configured && !busy && <p className="bazi-as-reading-help">请先配置并启用一个对话模型，主题和问题会为你保留。</p>}
-    <footer><span>会自动带入当前命例的完整星盘。</span>
+    <footer>
       <button type="button" className="btn btn-pri" disabled={!busy && (checking || !!configError)} onClick={onStart}>
         <Sparkle size={16} weight="fill" aria-hidden="true" />{busy ? '查看解读' : checking ? '读取 AI 配置…' : configured ? '开始解读' : '去配置 AI'}<ArrowUpRight size={15} aria-hidden="true" />
       </button>

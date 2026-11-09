@@ -1,5 +1,33 @@
 # 设计验收索引
 
+## Codex 消息 · 真实接入排查与信任审核 · 2026-11-09
+
+final result: blocked。阻塞项为用户在 Codex 中审核并信任新 Hook，以及审核后的真实回调验证；配置和本机中继自检已完成，不能把它们宣称为真实 Codex 消息已接通。
+
+只读排查确认运行中的安装版为 2.1.3；工作台对应的用户级 `~/.codex/hooks.json`、消息中继、收件目录及消息库均不存在。此前只有额度授权，消息监听未接入。采用现有 `AgentHooks.connect` 合并配置至真实用户目录，保留其他设置，不改额度授权或 Codex 信任记录；运行实际 PowerShell 中继发送一条明确标记「接入自检」的合成消息，运行中的工作台已消费并保存该条消息。未将合成测试冒充真实 Codex 回调。
+
+源码修正「已开启」的误导性状态：本机配置存在显示「监听已配置」，说明 Codex 设置 → Hooks 的审核信任步骤；未配置显示「尚未接入，需单独开启」。消息空态增加同样引导，入口改为「接入与管理消息提醒」。`connected` 的配置含义已写入契约注释；真实端到端接入仍等待用户审核和后续新会话。
+
+11 项相关回归、生产构建与 12 条隔离 Electron 检查通过，运行错误和控制台错误／警告为 0；已查看空消息页的审核说明。严格静态审计仍为原有 14 项；DESIGN lint 无错误，保留 YAML 提示。日志位于同一证据目录：`codex-message-setup-{tests.log,verify.log,result.json,pilot.mjs}`。真实接入的独立证据为 `real-codex-message-connection.json`，明确区分 `receivedByRunningWorkbench: true` 与未确认的 Codex 信任及真实回调。证据目录：`C:/Users/henry/.codex/visualizations/2026/11/08/01a1bb32-d93e-7333-9ccd-ece9f90bfb10/`。界面提示为源码修改，当前安装版二进制未替换。
+
+## 消息提醒 · 并入账户详情 · 2026-11-09
+
+final result: passed。移除提醒分区的独立 Agent 连接卡片，将 Codex／Cursor「消息提醒」开关并入对应账户详情，消息空态改为「管理消息提醒」。保留既有监听状态、搜索及旧导航；开启和关闭消息仅使用原本机监听接口，不触发额度登录或注销，其他来源不显示未支持的开关。仅增加 Rows 的局部分隔与内距样式，三主题沿用共享 token。
+
+45 项相关回归、11 条真实 Windows Electron 检查及 `npm run verify` 通过。扩展账户设置测试验证原状态保留、配置保存失败及重试、额度授权不受影响、搜索与旧入口定位；实际 Electron 使用隔离的真实 Hook 配置执行开关，并阻断及记录额度登录／注销调用（实际均为 0），验证重载恢复、消息页入口、三主题、原生最小窗口及 200% 缩放。实际内容区为 1023×800／100%，1359×900／200%；没有将原生最小宽度 1024 以下的请求误记为已验证视口。运行错误和控制台错误／警告均为 0，已查看主从详情和 200% 截图。额度账户状态为测试桩，未访问真实账户或用户客户端配置。
+
+证据目录 `C:/Users/henry/.codex/visualizations/2026/11/08/01a1bb32-d93e-7333-9ccd-ece9f90bfb10/`：`agent-message-settings-{result.json,pilot.mjs,pilot.log,tests.log,verify.log}`、`agent-message-settings-{cursor,reminders,mist,cool,warm}.png` 和缩放截图。当前为本地改动，未更新安装版。
+
+严格静态审计保留已有 14 项，按规则和文件比较无新增；DESIGN lint 无错误，保留原有 YAML 提示。`git diff --check` 通过。
+
+## 待办助手 · 框内工具栏与回到底部 · 2026-11-09
+
+final result: passed。按后续反馈将输入文字、模型选择和发送／停止按钮放入同一个圆角输入框，复用主助手 `ai-compose-input` 外框与聚焦样式，文字在上、工具栏在框内右下角；移除文本区和模型的独立边框。模型选择为 26px 高／12px 字阶，发送及停止为 28×28px／16px 图标，长名称省略。保留消息区「回到底部」：上翻时显示，保留历史阅读位置，点击回到最新消息并恢复跟随；支持键盘，并随内容或视口尺寸变化同步状态。仅修改 `IslandAssistant.tsx` 和 `island-assistant.css` 的运行时代码。
+
+真实 Windows Electron 9 条交互／布局检查及 `npm run verify` 通过；检查了空态、多行草稿、外框聚焦、工具栏在边框内且不与文字重叠、流式回复、阅读位置保留、按钮键盘返回、长模型名、模型菜单及真实配置切换、400×610／320×420 和 150%／200% 缩放。已查看聚焦输入与 200% 缩放的真实截图。运行错误和控制台错误／警告为 0。Browser 插件不可用，使用已安装的 Playwright 库直接驱动 Electron；数据、账户配置及 SSE 模型均在隔离测试目录。最新证据位于 `C:/Users/henry/.codex/visualizations/2026/11/08/01a1bb32-d93e-7333-9ccd-ece9f90bfb10/`：`assistant-composer-result.json`、`assistant-composer-pilot.mjs`、`assistant-composer-{draft,history,bottom,model-menu}.png`、`assistant-composer-*.log` 及缩放截图。未改真实待办或更新安装版。
+
+严格静态审计仍为已有 14 项，逐项比较规则与文件归属无新增；报告保存在 `assistant-composer-audit.json`。DESIGN lint 为 0 错误，保留原有 YAML 提示；`git diff --check` 通过。
+
 ## 灵动岛 · 随身待办对话窗 · 2026-11-08／09
 
 final result: passed。按用户选定稿完成吉祥物打开独立待办助手、连续对话、现有模型选择、澄清提问、停止、独立置顶、关闭重开保留及 Agent 消息页。复用真实前后对照与确认执行链路，生成建议不写入待办；并发变化阻止旧建议覆盖，重启恢复聊天／已保存草稿并使待确认建议过期。
@@ -601,3 +629,35 @@ final result: passed
 - 证据目录：C:/Users/henry/.codex/visualizations/2026/11/04/01a1a746-c52f-7451-8935-d81fa6f8fde7/island-shelf-split/，包含 side-final.png、side-empty-files.png、left-final.png、top-final.png、narrow-360-text.png、top-150-percent.png、top-150-text.png、report.json 和 qa.mjs。所有测试实例关闭，当前用户实例未强制重启；需完整重启以载入新的主进程和 preload。
 
 final result: passed
+
+## 占星星体分表与四轴（2026-11-09）
+
+- 按用户提供的测测分组参考，将「星体」页改为「行星信息」「小天体」两张表，去掉显示复选框。前表为十颗主要星体和四轴，后表为五颗小天体与四个点位。沿用原表格、配色、字阶和滚动区；四轴只读，星体保留盘表选择和独立详情。
+- 宫头边界检查发现，直接用经度分配普拉西德天底时，浮点误差会把它归入第三宫。已按该宫制的四轴宫头定义使用 1／7／4／10 宫；整宫制继续按实际黄经分配。本次补充上海 2020-04-09 11:34 边界回归，并核对高纬度整宫制天顶在十一宫、天底在五宫。无地点时四轴显示破折号，极区分宫不可用时保留角度但不填造宫位。
+- `npm run verify` 通过字阶、两个 TypeScript 工程及生产构建；`node --import tsx --test tests/bazi-astro-house.test.ts tests/astro-extended.test.ts tests/astro-reading.test.ts tests/astro-calculation.test.ts` 最终 45 项通过、0 失败。测试辅助函数起初误把整宫制宫头当成四轴，已修正预期；计算规则和原始命例未改动。
+- Browser 插件未提供，使用 Playwright Electron 与独立数据目录完成 8 组实机检查：14／9 行、无开关、19 个对象常驻盘面、三主题、1488×1056 与 1024×680、列内文字边界及末行滚动可达、鼠标／键盘选择与取消、相位筛选、缺地点及两种宫制。0 个页面或控制台错误。已查看最终真实截图，未修改截图内容或用合成图替代验收。
+- 证据目录：C:/Users/henry/.codex/visualizations/2026/11/04/01a1a746-c52f-7451-8935-d81fa6f8fde7/astro-tables-2026-11-09/，含 pilot.mjs、report.json、tests.log、verify.log、tables-1488-mist.png 及其他主题／窄窗口截图。验收脚本最初误用了不存在的命例标题类名，已改用真实节点重新通过，没有为脚本定位修改产品。
+- Python premium 静态审计仍因本机无 Python 解释器而未执行，不计为通过。保留既有 Vite 包体提示；本次未运行无关全仓回归，未发布安装包。隔离测试实例已关闭，未重启用户当前实例。
+
+## 星体详情滚动条内缩（2026-11-09）
+
+- 修复前已在独立 Electron 复现：圆角 36px 的详情外框直接滚动，滚动条距外框右边及上下均为 0。将滚动移到卡片内层，外框保留上下 18px、左右 12px 内距和圆角裁切，内层左右各 10px 文字内距；继承全局滚动条样式，滚动区可聚焦并支持键盘操作。
+- 最终实测滚动区距外框右边 13px、上下各 19px（含边框）；1488×900 时卡片高度仍为 345.92px。三主题、1488×900／1280×850／1024×680 及 200% 缩放均检查；有溢出时 End／Home 和鼠标滚轮可到达内容，无溢出时自然展开。四项释义、选择取消与原始数据保持。
+- `npm run verify` 通过字阶、前后端类型及生产构建；`node --import tsx --test tests/bazi-astro-house.test.ts` 为 16 项通过、0 失败。6 组原生验收通过，无页面错误；已查看修复前后及最终缩放截图。Python premium 审计受此前确认的本机无解释器限制，未执行，不计为通过。
+- 证据：C:/Users/henry/.codex/visualizations/2026/11/04/01a1a746-c52f-7451-8935-d81fa6f8fde7/astro-detail-scroll-2026-11-09/，含 before.png、before.json、after-mist.png、after-cool.png、after-warm.png、after-1488-2.png、report.json、tests.log、verify.log 和 pilot.mjs。初版放大截图因自动化裁切坐标失准被拒用，最终改用 DOM 滚动定位与 Electron capturePage 原生截图，未为脚本修改产品布局。测试实例已关闭；未发布或重启用户实例。
+
+## 宫位详情与星体卡片统一（2026-11-09）
+
+- 修复前用回归场景复现：选中太阳再手动切到宫位，旧太阳详情仍出现在宫位表之前。最终手动切页清除旧选择；点击当前页签保持选择，宫内星体及现代守护链接仍自动进入对应星体页，盘面选取也按对象进入对应页签。
+- 宫位详情从表格内移到表格下方，复用星体详情的独立玻璃卡片及内容滚动层；标题、事实行、分项说明与「已选中 · 取消」统一。保留真实宫头、宫位主题、宫内对象、现代守护及空宫说明；无新排盘算法或对象数据。清除不再使用的宫位双列事实样式。
+- 原生实测两种卡片宽度相同（426.13px）、间隔均 12px、圆角 36px、外层内距 18px 12px、标题 18px、取消入口 12px，滚动内容距右边框 13px、上下边框 19px。核对三主题、1488×900／1280×850／1024×680 和 200% 缩放，无横向溢出，宫内多对象可完整显示并点击。
+- `npm run verify` 通过字阶、两个 TypeScript 工程及生产构建；`node --import tsx --test tests/bazi-astro-house.test.ts tests/astro-reading.test.ts` 为 23 项通过、0 失败。新增回归覆盖跨页重复、独立卡片位置、同页签保留、同行二次点击、取消、盘面联动及宫内对象跳转。9 组隔离 Electron 验收通过，包括空宫、6 个对象的宫位、真实键盘操作和缺少地点，无页面或控制台错误。
+- 证据：C:/Users/henry/.codex/visualizations/2026/11/04/01a1a746-c52f-7451-8935-d81fa6f8fde7/astro-house-card-2026-11-09/，含 before-tests.log、tests.log、verify.log、pilot.mjs、report.json、house-layout.png、house-mist.png、house-cool.png、house-warm.png、house-1024.png、house-zoom-200.png。已查看最终实际截图；缩放截图等待布局后采用 DOM 定位和 Electron capturePage，拒用先前未定位到卡片的截图。
+- Python premium 静态审计仍受此前确认的本机无解释器限制，未执行；本次未运行无关全仓回归或发布安装包。隔离测试实例已关闭，用户当前实例未强制重启。
+
+## v2.1.4 本地发布预检（2026-11-09）
+
+- 本次候选包含已完成的占星分表、四轴、文案精简、星体／宫位独立详情与滚动边界，以及灵动岛助手输入区、回到底部和账户消息设置调整。版本文件同步到 2.1.4，发布说明记录真实改动，Codex 真实 Hook 回调仍取决于客户端审核，不把本机自检或配置存在写成真实消息已验收。
+- 版本同步后 `npm run verify` 通过。完整本机测试在允许回环服务的环境运行，995 项中 993 通过；2 项真实文件符号链接夹具因本机 EPERM 未完成，未跳过或修改测试，发布须由全新云端 Windows 环境覆盖全量回归及装机验收。受限沙箱中的首次完整测试因回环服务／文件权限不满足而终止，不计作通过。
+- 已定位到 Codex 随附的 Python 运行时并补跑 premium 严格静态检查，报告 14 项启发式结果（6 项归属识别、8 项字面模式提示），没有计作全仓静态通过。共享 React Select 在旧版即存在；其余按钮／textarea 命中位于本次未修改的文件，未为发版扩大无关改动。此前「未找到 Python」记录指当次默认入口不可用、未定位到随附运行时，并非确认整台机器没有解释器。
+- 证据：C:/Users/henry/.codex/visualizations/2026/11/04/01a1a746-c52f-7451-8935-d81fa6f8fde7/release-v2.1.4/，含 tests-unrestricted.log、verify.log、premium-audit.json。正式验收沿用仓库已有流程：同一次构建的五项资产经草稿完整下载校验、下载包装机验收后发布，再独立校验公开文件及 v2.1.3→v2.1.4 的真实更新。
