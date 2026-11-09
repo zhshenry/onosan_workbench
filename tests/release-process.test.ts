@@ -16,6 +16,8 @@ const digest = (value: string | Buffer, algorithm = 'sha256', encoding: 'hex' | 
 
 function fixture(t: TestContext) {
   const directory = mkdtempSync(path.join(tmpdir(), 'ono-release-test-'));
+  const env = { ...process.env };
+  delete env.WORKBENCH_RELEASE_TAG; delete env.WORKBENCH_RELEASE_DOWNLOAD_DIR;
   t.after(() => {
     assert.equal(path.dirname(directory), path.resolve(tmpdir()));
     assert.ok(path.basename(directory).startsWith('ono-release-test-'));
@@ -37,8 +39,8 @@ function fixture(t: TestContext) {
   write('docs/PORTABLE-README.txt', 'portable usage fixture');
   mkdirSync(path.join(directory, 'tooling'));
   for (const script of ['publish.mjs', 'release-assets.mjs', 'package-release.ps1']) copyFileSync(path.join(projectRoot, 'tooling', script), path.join(directory, 'tooling', script));
-  const publish = (...args: string[]) => spawnSync(process.execPath, ['tooling/publish.mjs', '--dry-run', ...args], { cwd: directory, encoding: 'utf8' });
-  return { directory, write, publish };
+  const publish = (...args: string[]) => spawnSync(process.execPath, ['tooling/publish.mjs', '--dry-run', ...args], { cwd: directory, encoding: 'utf8', env });
+  return { directory, write, publish, env };
 }
 
 test('本地发布检查读取五项资产与本版 CHANGELOG，不上传或生成说明文件', t => {
@@ -134,10 +136,27 @@ cp.spawnSync = (command, args) => {
 };
 require('node:module').syncBuiltinESMExports();
 `);
-  const run = (...args: (string | undefined)[]) => spawnSync(process.execPath, ['--require', './stub.cjs', 'tooling/publish.mjs', ...args.filter((arg): arg is string => arg !== undefined)], { cwd: f.directory, encoding: 'utf8' });
+  const run = (...args: (string | undefined)[]) => spawnSync(process.execPath, ['--require', './stub.cjs', 'tooling/publish.mjs', ...args.filter((arg): arg is string => arg !== undefined)], { cwd: f.directory, encoding: 'utf8', env: f.env });
   const calls = () => readFileSync(path.join(f.directory, 'calls.jsonl'), 'utf8').trim().split('\n').map(line => JSON.parse(line));
   return { run, calls };
 }
+
+test('发布测试夹具不继承父进程的真实版本标签或下载目录', t => {
+  const saved = { WORKBENCH_RELEASE_TAG: process.env.WORKBENCH_RELEASE_TAG, WORKBENCH_RELEASE_DOWNLOAD_DIR: process.env.WORKBENCH_RELEASE_DOWNLOAD_DIR };
+  try {
+    process.env.WORKBENCH_RELEASE_TAG = 'v9.9.9';
+    process.env.WORKBENCH_RELEASE_DOWNLOAD_DIR = path.join(tmpdir(), 'synthetic-parent-release-downloads');
+    const f = fixture(t), { run } = stubCommands(f);
+    const dryRun = f.publish(); assert.equal(dryRun.status, 0, dryRun.stderr);
+    assert.match(dryRun.stdout, /release create v2\.3\.4/);
+    const verified = run('--verify'); assert.equal(verified.status, 0, verified.stderr);
+    const report = JSON.parse(readFileSync(path.join(f.directory, 'release/downloads/v2.3.4-published/verification.json'), 'utf8'));
+    assert.equal(report.tag, 'v2.3.4'); assert.equal(report.status, 'passed');
+    assert.ok(report.assets.every((asset: { file: string }) => asset.file.startsWith(f.directory + path.sep)));
+  } finally {
+    for (const [key, value] of Object.entries(saved)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+  }
+});
 
 test('创建草稿后按 ID 核验完整下载，通过后才发布并再下载公开文件', t => {
   const f = fixture(t);
