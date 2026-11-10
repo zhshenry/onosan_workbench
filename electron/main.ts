@@ -27,6 +27,7 @@ import { AiTestService, registerAiTestIpc } from './ai-test-ipc';
 import { guardAiTestPreview, registerAiTestScheme } from './ai-test-browser';
 import { SpeechService } from './speech';
 import { registerSpeechIpc } from './speech-ipc';
+import { registerCheckinIpc } from './checkin-ipc';
 import { DesktopIsland } from './desktop-island';
 
 type FloatFactory = () => DesktopIsland;
@@ -378,6 +379,7 @@ if (!app.requestSingleInstanceLock()) {
     settingsStore = new AppSettingsStore(app.getPath('userData'));
     speechService = new SpeechService(app.isPackaged ? join(process.resourcesPath, 'speech') : join(app.getAppPath(), 'vendor', 'speech'));
     registerSpeechIpc(speechService, () => mainWindow?.webContents, DEV_URL || pathToFileURL(join(__dirname, '../dist/index.html')).href);
+    registerCheckinIpc(() => mainWindow?.webContents, DEV_URL || pathToFileURL(join(__dirname, '../dist/index.html')).href);
     applyLoginItem(settingsStore.read().launchAtLogin);
     browserGuests = new BrowserGuests(() => (DEV_URL || undefined));
     browserAutomation = new BrowserAutomation(browserGuests, new BrowserStore(join(app.getPath('userData'), 'browser-state.json')));

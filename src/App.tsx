@@ -29,6 +29,7 @@ import type { AstroReadingTopic } from '../shared/astro-reading';
 import { CopyView } from '../modules/copywriting/ui/CopyView';
 import { PublishView } from '../modules/copywriting/ui/PublishView';
 import { ReadingView } from './views/ReadingView';
+import { CheckinView } from './views/CheckinView';
 import {
   IconCalendar, IconCheckSquare, IconChevronDown,
   IconGamepad, IconHome, IconMoon, IconVideo, IconWeb, LogoMark,
@@ -675,10 +676,12 @@ export function App() {
             <PublishView onPending={showToast} onGoEdit={() => switchView('copy')} onOpenCreator={() => switchView('media-browser')} />
           ) : curView === 'reading' ? (
             <ReadingView onPending={showToast} onAskAI={(prompt, bookId) => askAI(prompt, { module: 'reading', profileId: bookId })} onCurrentBook={setReadingCtx} />
+          ) : curView === 'checkin' ? (
+            <CheckinView />
           ) : curView.startsWith('settings') ? (
             <SettingsView view={curView} uiTheme={uiTheme} onUiThemeChange={applyUiTheme} onAvatarColorChange={setProfileAvatarColor} />
           ) : todo.data ? (
-            <HomeView data={todo.data} clock={todo.clock} mutate={todo.mutate} userName={profileName} onPending={showToast} onOpenMedia={() => switchView('copy')} onOpenBazi={() => switchView('bazi')} onOpenGame={() => switchView('game')} onOpenWeb={() => switchView('browser')} editor={homeEditor} setEditor={setHomeEditor} onAskAi={askAI} />
+            <HomeView data={todo.data} clock={todo.clock} mutate={todo.mutate} userName={profileName} onPending={showToast} onOpenMedia={() => switchView('copy')} onOpenBazi={() => switchView('bazi')} onOpenGame={() => switchView('game')} onOpenWeb={() => switchView('browser')} onOpenCheckin={() => switchView('checkin')} editor={homeEditor} setEditor={setHomeEditor} onAskAi={askAI} />
           ) : (
             <div className="todo-loading" role="status">正在读取本地待办…</div>
           )}

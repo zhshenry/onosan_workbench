@@ -719,6 +719,21 @@ final result: passed
 - Premium 严格静态审计仍报告 14 项既有提示，均位于本次相位改动之外（6 项归属识别、8 项字面模式），未计作全仓静态通过；没有扩大到其他任务的灵动岛、AI 或语音页面。未运行全仓发布验收，未发布或重启用户实例；隔离验收实例已关闭。
 - 证据：C:/Users/henry/.codex/visualizations/2026/11/04/01a1a746-c52f-7451-8935-d81fa6f8fde7/astro-aspects-2026-11-10/，含 tests.log、verify.log、pilot.mjs、pilot.log、report.json、premium-audit.json、aspects-main.png、aspects-rules.png、aspects-extended.png、aspects-filtered.png、三主题截图及窄窗／200% 原生截图。
 
+## 待办助手打开防闪动（2026-11-10）
+
+- 用户确认每次点击打开都会闪。检查发现复用窗口仍执行相同的原生边界重设及重复显示，切回对话页发生在显示之后；回归先复现了加载时第二次点击提前暴露窗口的问题。改为组件提交初始化／对话页就绪后，在透明准备阶段恢复绘制并等待完整画面，再一次显露和聚焦；已显示窗口只聚焦。
+- 66 项相关回归通过，覆盖加载中的合并打开、关闭取消、晚到帧不能显露后续请求、绘制失败后恢复节流并可重试、独立置顶与 IPC 窗口边界。`npm run verify` 通过字阶、类型及 Vite／Electron 构建。
+- Browser plugin not available；使用已有 Playwright 驱动隔离的 Windows Electron。5 组原生检查通过：冷启动连续三次请求只显露一次；从消息页关闭后重开三次均先准备对话页；可见窗口重复点击只聚焦并保留手动调整的尺寸；调整大小后在左／右停靠重开正常；6 次实际显露均在非空画面和对话页就绪之后，没有冗余边界重设或渲染异常。首次及再次打开的实际准备帧均已查看，确认不是加载页或旧消息页。
+- 初始化的布局提交与已绘制画面分别等待；透明预热使重新分配尺寸后的窗口也能绘制，准备后恢复后台节流。测试使用独立数据目录，未接触真实账户、模型调用或待办；实例已关闭。尚未打包发布，原顶端位置对齐改动保留。
+- 证据位于 `C:/Users/henry/.codex/visualizations/2026/11/08/01a1bb32-d93e-7333-9ccd-ece9f90bfb10/`：`assistant-open-result.json`、`assistant-open-pilot.mjs`、`assistant-prepared-frame-{0,1}.png`、`assistant-flash-{repro-test,tests,verify}.log`。静态 premium 审计保留 14 项既有发现，新增 0。
+
+## 顶端吉祥物收起／展开位置对齐（2026-11-10）
+
+- 仅调整顶部停靠的伙伴样式。原生 Electron 基线显示常规展开后横移 -3px、纵移 -2px，200% 页面缩放时纵向偏差为 16px；窗口定位不变，差异来自两态内距、行高及入口缩放。统一顶部左内距并独立对齐 40px 收起栏／36px 顶栏的中心，保留原顶栏行高和单面板内容布局。
+- 实际构建后的独立 Electron 检查通过：580／520／480／440px 四种宽度 × 100%／125%／150%／200% 共 16 组，两态头像中心最大差异不足 0.01 DIP；四个页面与 52 帧展开／收起动画保持同一位置，顶栏按钮无重叠，收起及展开入口均可直接打开助手。左右停靠的原生坐标和几何数据与修改前完全相同，无渲染异常。
+- `npm run verify` 通过字阶、类型和生产构建。Premium 静态审计保留 14 项既有发现，新增 0；未扩大改动到其他界面。测试数据和账户全部隔离，额度截图如实显示未连接状态；测试实例已关闭。尚未打包或发布。
+- 证据位于 `C:/Users/henry/.codex/visualizations/2026/11/08/01a1bb32-d93e-7333-9ccd-ece9f90bfb10/`：`island-top-anchor-pilot.mjs`、`top-anchor-{before,after}-result.json`、`top-anchor-after-{collapsed,expanded}.png`、`top-anchor-verify.log` 与 `top-anchor-audit.json`。Browser plugin not available，使用已有 Playwright 驱动隔离的实际 Electron 应用；实际两态截图已一起复核，位置及原有内容布局保持预期。
+
 ## 灵动岛吉祥物统一左上角（2026-11-10）
 
 - 用户最终要求为左侧、右侧及顶端下拉统一左上角，视觉参考为 `docs/requirements/shared/desktop-island/design/mascot-top-left-approved-2026-11-10.png`。实际复用原顶栏、伙伴、字号和单面板；不保留额外竖栏，底栏仅保留四项导航。与参考图中的 18% 样例不同，隔离实例未连接账户，截图如实显示灰色环和未连接状态。
@@ -726,3 +741,7 @@ final result: passed
 - Browser plugin not available；使用已安装的 Playwright 驱动隔离原生 Electron。13 组检查通过：三种停靠各四页的顶栏头像与底栏无重复、留白／头像悬停不展开、收起态单击直达独立助手、摘要快速经过取消预览／停留展开／移出收起、关闭悬停后点击仍可展开、150%／200% 缩放、两侧 280px 窄窗、伙伴开关和键盘 Enter。未发现按钮重叠或裁切、渲染异常或相关控制台错误。
 - 静态 premium 审计仍为 14 项既有发现，新增 0；未将全仓旧问题记作本次通过。正常展开尺寸保留顶部 580×270、侧边 320×560；未改动真实额度、消息、模型或任务数据。测试实例已关闭，未打包、发布或替换正式安装版。
 - 证据位于 `C:/Users/henry/.codex/visualizations/2026/11/08/01a1bb32-d93e-7333-9ccd-ece9f90bfb10/`：`island-mascot-top-left-result.json`、`island-mascot-top-left-{left,right,top}.png`、`island-mascot-top-left-{left,right}-280.png`、对应 pilot、verify、tests 和 audit 文件。
+
+## 每日签到（2026-11-10）
+
+已完成实现、隔离桌面检查、20 项签到专项和 31 项相关回归；真实登录与领奖按用户选择稍后验证。完整记录见 [每日签到验收](docs/requirements/shared/checkin/qa-2026-11-10.md)。

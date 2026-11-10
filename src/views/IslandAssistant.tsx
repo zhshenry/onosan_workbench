@@ -19,6 +19,8 @@ type Question = { id: string; sessionId: string; question: string; options: { la
 export function IslandAssistant() {
   const island = useIslandState();
   const [tab, setTab] = useState('chat'), [pinned, setPinned] = useState(true);
+  const [opening, setOpening] = useState(0);
+  const preparedOpening = useRef(-1);
   const [config, setConfig] = useState<AiConfig | null>(null), [chat, setChat] = useState<ChatSession | null>(null);
   const [input, setInput] = useState(''), [loading, setLoading] = useState(true), [sending, setSending] = useState(false);
   const [error, setError] = useState(''), [busyAction, setBusyAction] = useState(false), [switching, setSwitching] = useState(false);
@@ -81,7 +83,13 @@ export function IslandAssistant() {
     if (!value.entries.some(entry => entry.streaming)) setQuestion(null);
   }), []);
   useEffect(() => wb.ai.onAsk(value => { if (value.sessionId === chatRef.current?.id) setQuestion(value); }), []);
-  useEffect(() => wb.island.onAssistantOpen(() => { setTab('chat'); requestAnimationFrame(() => editor.current?.focus()); }), []);
+  useEffect(() => wb.island.onAssistantOpen(() => { setTab('chat'); setOpening(value => value + 1); }), []);
+  useLayoutEffect(() => {
+    if (loading || (!config && !configError) || preparedOpening.current === opening) return;
+    preparedOpening.current = opening;
+    editor.current?.focus();
+    void wb.island.assistant('ready').catch(cause => setError(errorText(cause)));
+  }, [opening, loading, config, configError]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape' && !event.defaultPrevented && !document.querySelector(':modal')) close(); };
     window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey);

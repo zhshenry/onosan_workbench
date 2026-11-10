@@ -67,6 +67,7 @@ export const NAV: WorkbenchDef[] = [
     subs: [
       { label: '命理', view: 'bazi' },
       { label: '阅读清单', view: 'reading' },
+      { label: '每日签到', view: 'checkin' },
     ],
   },
   {

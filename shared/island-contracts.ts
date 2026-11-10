@@ -63,7 +63,7 @@ export interface QuotaProvider {
 }
 export type IslandNavigation = { view: 'home' | 'settings-island' | 'settings-general' | 'settings-ai'; taskId?: string; section?: 'quota' | 'water' | 'sedentary' | 'agents' };
 export interface IslandBridge {
-  assistant(action: 'show' | 'hide' | 'pin' | 'state'): Promise<{ pinned: boolean; visible: boolean }>;
+  assistant(action: 'show' | 'hide' | 'pin' | 'state' | 'ready'): Promise<{ pinned: boolean; visible: boolean }>;
   onAssistantOpen(callback: () => void): () => void;
   state(): Promise<IslandState>;
   patch(patch: IslandSettingsPatch): Promise<IslandState>;

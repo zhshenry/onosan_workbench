@@ -379,6 +379,24 @@ const hushHour: WorkbenchApi['hushHour'] = {
 };
 
 const api: WorkbenchApi = {
+  checkin: {
+    state: () => ipcRenderer.invoke('checkin:state'),
+    run: providers => ipcRenderer.invoke('checkin:run', providers),
+    refresh: provider => ipcRenderer.invoke('checkin:refresh', provider),
+    sendSms: phone => ipcRenderer.invoke('checkin:sms', phone),
+    loginWorkbuddy: input => ipcRenderer.invoke('checkin:workbuddy-login', input),
+    authorize: provider => ipcRenderer.invoke('checkin:authorize', provider),
+    reopenAuth: id => ipcRenderer.invoke('checkin:reopen-auth', id),
+    cancelAuth: id => ipcRenderer.invoke('checkin:cancel-auth', id),
+    disconnect: provider => ipcRenderer.invoke('checkin:disconnect', provider),
+    saveSettings: settings => ipcRenderer.invoke('checkin:settings', settings),
+    openGuide: provider => ipcRenderer.invoke('checkin:guide', provider),
+    onChanged: callback => {
+      const listener = (_event: unknown, state: import('../shared/checkin-contracts').CheckinState): void => callback(state);
+      ipcRenderer.on('checkin:changed', listener);
+      return () => ipcRenderer.off('checkin:changed', listener);
+    },
+  },
   minimize: (): void => {
     ipcRenderer.send('win:minimize');
   },

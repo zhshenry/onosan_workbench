@@ -42,6 +42,11 @@
 .island-header time { display: flex; justify-content: center; flex: 1; gap: 10px; font-size: var(--type-control); white-space: nowrap; }
 .island-header time b { color: var(--island-text); font-variant-numeric: tabular-nums; }
 .island-header-actions { display: flex; gap: 1px; }
+/* Align the 40px summary and 36px header mascot centers at every zoom. */
+.desktop-island[data-dock="top"] .island-mascot-entry { zoom: var(--island-scale, 1); }
+.desktop-island[data-dock="top"] .island-header:has(.island-mascot-entry) { padding-left: 28px; }
+.desktop-island[data-dock="top"] .island-section-label:has(.island-mascot-entry) { padding-inline: 0; }
+.desktop-island[data-dock="top"] .island-header .island-mascot-entry { top: calc(20px - 18px / var(--island-scale, 1)); }
 .desktop-island .island-dock-select .select-trigger { width: 32px; min-height: 32px; padding: 0; justify-content: center; background: transparent; border-color: transparent; border-radius: 999px; }
 .desktop-island .island-dock-select .select-trigger:hover, .desktop-island .island-dock-select .select-trigger[aria-expanded="true"] { background: var(--island-surface); color: var(--island-blue); }
 .island-dock-select .select-trigger > span { display: flex; }
@@ -331,6 +336,7 @@
 @media (max-width: 390px) { .island-footer nav button span { display: none; } .island-header time { display: none; } .island-header-actions { margin-left: auto; } .island-tools { grid-template-columns: 1fr; } .island-companions { border: 0; padding: 0; } }
 @container island-body (max-width: 480px) {
   .island-summary-row { padding-inline: 18px; }
+  .desktop-island[data-dock="top"] .island-header:has(.island-mascot-entry) { padding-left: 18px; }
   .island-summary-details { gap: 6px; }
   .island-summary .island-mascot { width: 18px; height: 18px; }
   .island-summary-schedule { gap: 4px; }

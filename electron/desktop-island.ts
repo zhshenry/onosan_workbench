@@ -16,6 +16,9 @@ export class DesktopIsland {
   private win: BrowserWindow | null = null;
   private assistantWindow: BrowserWindow | null = null;
   private assistantPinned = true;
+  private assistantReady = false;
+  private assistantOpening = false;
+  private assistantRequest = 0;
   readonly store: IslandStore;
   private quotas: IslandQuotas;
   private mode: IslandMode = 'collapsed';
@@ -108,34 +111,67 @@ export class DesktopIsland {
     if (this.devUrl) void this.win.loadURL(`${this.devUrl}?window=float`);
     else void this.win.loadFile(join(this.preload, '../../dist/index.html'), { query: { window: 'float' } });
   }
-  private assistant(action: 'show' | 'hide' | 'pin' | 'state') {
+  private assistant(action: 'show' | 'hide' | 'pin' | 'state' | 'ready') {
+    const status = () => ({ pinned: this.assistantPinned, visible: !!this.assistantWindow?.isVisible() && this.assistantWindow.getOpacity() > 0 });
     if (action === 'show') {
+      if (this.assistantOpening) return status();
+      this.assistantOpening = true;
+      this.assistantRequest++;
       if (!this.pinned) { this.held = false; this.setMode('collapsed', true); }
       const settings = this.store.read().settings;
       const area = (screen.getAllDisplays().find(display => display.id === settings.displayId) ?? screen.getPrimaryDisplay()).workArea;
       const bounds = islandAssistantBounds(this.bounds(), area, settings.dock);
       if (!this.assistantWindow) {
+        this.assistantReady = false;
         const win = new BrowserWindow({ ...bounds, minWidth: Math.min(280, bounds.width), minHeight: Math.min(320, bounds.height),
           frame: false, transparent: true, resizable: true, maximizable: false, fullscreenable: false, skipTaskbar: true,
           show: false, title: '待办助手', webPreferences: { preload: this.preload, contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false } });
         this.assistantWindow = win;
         win.setAlwaysOnTop(this.assistantPinned, 'floating');
-        win.once('ready-to-show', () => { win.show(); win.focus(); });
-        win.on('close', event => { event.preventDefault(); win.hide(); });
+        win.on('close', event => { event.preventDefault(); this.assistantOpening = false; this.assistantRequest++; win.hide(); });
         win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
         win.webContents.on('will-navigate', event => event.preventDefault());
         if (this.devUrl) void win.loadURL(`${this.devUrl}?window=island-assistant`);
         else void win.loadFile(join(this.preload, '../../dist/index.html'), { query: { window: 'island-assistant' } });
       } else {
-        this.assistantWindow.setBounds(bounds); this.assistantWindow.show(); this.assistantWindow.focus();
+        const win = this.assistantWindow, current = win.getBounds();
+        if (!win.isVisible() && (['x', 'y', 'width', 'height'] as const).some(key => current[key] !== bounds[key])) win.setBounds(bounds);
       }
-      this.assistantWindow.webContents.send('island:assistant-open');
-    } else if (action === 'hide') this.assistantWindow?.hide();
-    else if (action === 'pin') {
+      if (this.assistantReady) this.assistantWindow.webContents.send('island:assistant-open');
+    } else if (action === 'hide') { this.assistantOpening = false; this.assistantRequest++; this.assistantWindow?.hide(); }
+    else if (action === 'ready') {
+      this.assistantReady = true;
+      const win = this.assistantWindow;
+      if (win && this.assistantOpening) {
+        const request = this.assistantRequest;
+        const show = () => {
+          if (this.assistantOpening && request === this.assistantRequest && this.assistantWindow === win && !win.isDestroyed()) {
+            this.assistantOpening = false;
+            if (win.getOpacity() < 1) win.setOpacity(1);
+            win.focus();
+          }
+          return status();
+        };
+        if (win.isVisible() && win.getOpacity() > 0) return show();
+        // Warm the compositor without exposing its old surface, including after resize.
+        win.setOpacity(0);
+        win.showInactive();
+        win.webContents.setBackgroundThrottling(false);
+        win.webContents.invalidate();
+        return win.webContents.executeJavaScript('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))')
+          .then(() => win.webContents.capturePage(undefined, { stayHidden: true })).then(show).finally(() => {
+            if (!win.isDestroyed() && (request === this.assistantRequest || !this.assistantOpening)) {
+              if (this.assistantOpening) { this.assistantOpening = false; win.hide(); }
+              if (win.getOpacity() < 1) win.setOpacity(1);
+              win.webContents.setBackgroundThrottling(true);
+            }
+          });
+      }
+    } else if (action === 'pin') {
       this.assistantPinned = !this.assistantPinned;
       this.assistantWindow?.setAlwaysOnTop(this.assistantPinned, 'floating');
     }
-    return { pinned: this.assistantPinned, visible: this.assistantWindow?.isVisible() ?? false };
+    return status();
   }
   private bounds(mode: IslandMode = this.mode) {
     const s = this.store.read().settings;
@@ -268,7 +304,7 @@ export class DesktopIsland {
       if (![this.main()?.webContents, this.win?.webContents, ...(assistant ? [this.assistantWindow?.webContents] : [])].includes(event.sender) || event.senderFrame !== event.sender.mainFrame) throw new Error('仅工作台窗口可使用桌面灵动岛');
     };
     const handle = (name: string, action: (...args: any[]) => unknown, assistant = false) => ipcMain.handle(name, (event, ...args) => { guard(event, assistant); return action(...args); });
-    handle('island:assistant', action => this.assistant(z.enum(['show', 'hide', 'pin', 'state']).parse(action)), true);
+    handle('island:assistant', action => this.assistant(z.enum(['show', 'hide', 'pin', 'state', 'ready']).parse(action)), true);
     handle('float:toggle', () => { this.showOrHide(); return this.isVisible(); });
     handle('float:show', () => this.show());
     ipcMain.on('float:subscribe', event => { if ([this.main()?.webContents, this.win?.webContents].includes(event.sender)) event.sender.send('float:visibility-changed', this.isVisible()); });

@@ -6,6 +6,7 @@ import { errorText, Modal } from '../ui/controls';
 import { TaskEditor, type TaskEditorApi, type TodoState } from '../../modules/todo/ui/TaskEditor';
 import { TodayBoard, type Mutate } from '../../modules/todo/ui/TodayBoard';
 import { TaskLibrary } from '../../modules/todo/ui/TaskLibrary';
+import { CheckinHomeCard } from './CheckinView';
 import {
   IconBagua, IconDocs, IconGamepad, IconVideo, IconWeb,
 } from '../icons';
@@ -26,13 +27,14 @@ const editorApi: TaskEditorApi = {
 
 const WEEKDAY_NAMES = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
-export function HomeView({ data, clock, mutate, userName, onPending, onOpenMedia, onOpenBazi, onOpenGame, onOpenWeb, editor, setEditor, onAskAi }: {
+export function HomeView({ data, clock, mutate, userName, onPending, onOpenMedia, onOpenBazi, onOpenGame, onOpenWeb, onOpenCheckin, editor, setEditor, onAskAi }: {
   data: TodoState; clock: Date; mutate: Mutate; userName: string;
   onPending: (name: string) => void;
   onOpenMedia: () => void;
   onOpenBazi: () => void;
   onOpenGame: () => void;
   onOpenWeb: () => void;
+  onOpenCheckin: () => void;
   editor: Task | 'new' | null;
   setEditor: (t: Task | 'new' | null) => void;
   onAskAi: (prompt: string) => void;
@@ -170,6 +172,8 @@ export function HomeView({ data, clock, mutate, userName, onPending, onOpenMedia
               {overdue > 0 && <span className="bad">逾期 {overdue}</span>}
             </div>
           </div>
+
+          <CheckinHomeCard open={onOpenCheckin} />
 
           <div className="panel glass" style={{ marginTop: 16 }}>
             <div className="phead">

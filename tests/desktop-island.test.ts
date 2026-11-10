@@ -23,15 +23,16 @@ function fixture(t: any) {
   let cursor = { x: 0, y: 0 };
   Object.assign(screens, { getAllDisplays: () => displays, getPrimaryDisplay: () => displays[0], getCursorScreenPoint: () => cursor });
   class Window extends EventEmitter {
-    visible = false; destroyed = false; bounds: any; focused = false; shape: any[] = []; topmost = false;
+    visible = false; destroyed = false; bounds: any; focused = false; shape: any[] = []; topmost = false; opacity = 1;
     webContents: any = new EventEmitter();
-    constructor(options: any) { super(); this.bounds = options; windows.push(this); Object.assign(this.webContents, { mainFrame: {}, send: (channel: string, value: unknown) => messages.push({ owner: this, channel, value }), startDrag: (value: unknown) => drags.push(value), setWindowOpenHandler() {} }); }
+    constructor(options: any) { super(); this.bounds = options; windows.push(this); Object.assign(this.webContents, { mainFrame: {}, send: (channel: string, value: unknown) => messages.push({ owner: this, channel, value }), startDrag: (value: unknown) => drags.push(value), setWindowOpenHandler() {}, capturePage: async () => nativeIcon, executeJavaScript: async () => undefined, invalidate() {}, backgroundThrottling: true, setBackgroundThrottling(value: boolean) { this.backgroundThrottling = value; } }); }
     static getAllWindows() { return windows; }
     setAlwaysOnTop(value: boolean) { this.topmost = value; } loadURL() {} loadFile() {} setBounds(bounds: any) { this.bounds = bounds; }
     setShape(rects: any[]) { this.shape = rects; }
     getBounds() { return this.bounds; } isDestroyed() { return this.destroyed; }
     showInactive() { this.visible = true; } show() { this.visible = true; } hide() { this.visible = false; }
     isVisible() { return this.visible; } focus() { this.focused = true; } isMinimized() { return false; }
+    setOpacity(value: number) { this.opacity = value; } getOpacity() { return this.opacity; }
     destroy() { this.destroyed = true; }
   }
   class Notice extends EventEmitter { constructor(public options: any) { super(); notifications.push(this); } static isSupported() { return true; } show() {} }
@@ -49,7 +50,7 @@ function fixture(t: any) {
 }
 const task = (kind: 'task' | 'meeting' = 'task') => ({ ...newTask('合成验收提醒'), kind, id: 'task-1', remindAt: new Date().toISOString(), updatedAt: new Date().toISOString(), deletedAt: null });
 
-test('island assistant: opens once, hides without losing its renderer, pins independently and rejects unrelated frames', t => {
+test('island assistant: opens once, hides without losing its renderer, pins independently and rejects unrelated frames', async t => {
   const f = fixture(t);
   f.owner.show();
   const before = f.windows.length;
@@ -57,13 +58,16 @@ test('island assistant: opens once, hides without losing its renderer, pins inde
   assert.equal(f.windows.length, before + 1);
   const assistant = f.windows.at(-1)!;
   assistant.emit('ready-to-show');
+  assert.equal(assistant.visible, false, 'native readiness must not show an unprepared UI');
+  await f.invoke('island:assistant', 'ready');
   assert.equal(assistant.visible, true); assert.equal(assistant.focused, true); assert.equal(assistant.topmost, true);
   assert.equal(assistant.bounds.webPreferences.sandbox, true);
   assistant.emit('blur'); assert.equal(assistant.visible, true);
   let prevented = false;
   assistant.emit('close', { preventDefault: () => { prevented = true; } });
   assert.equal(prevented, true); assert.equal(assistant.visible, false); assert.equal(assistant.destroyed, false);
-  f.invoke('island:assistant', 'show'); assert.equal(f.windows.length, before + 1); assert.equal(assistant.visible, true);
+  f.invoke('island:assistant', 'show'); assert.equal(f.windows.length, before + 1); assert.equal(assistant.visible, false);
+  await f.invoke('island:assistant', 'ready'); assert.equal(assistant.visible, true);
   const own = { sender: assistant.webContents, senderFrame: assistant.webContents.mainFrame };
   assert.equal(f.handlers.get('island:assistant')!(own, 'pin').pinned, false); assert.equal(assistant.topmost, false);
   assert.equal(f.owner.state().pinned, false, 'assistant pin does not change island pin');
@@ -72,6 +76,57 @@ test('island assistant: opens once, hides without losing its renderer, pins inde
   assert.throws(() => f.handlers.get('island:assistant')!({ ...own, senderFrame: {} }, 'show'), /仅工作台/);
   assert.throws(() => f.handlers.get('island:assistant')!({ sender: f.other.webContents, senderFrame: f.other.webContents.mainFrame }, 'show'), /仅工作台/);
   f.owner.destroy(); assert.equal(assistant.destroyed, true);
+});
+
+test('island assistant: repeated opening during load stays hidden and closing cancels late native readiness', t => {
+  const f = fixture(t); f.owner.show();
+  f.invoke('island:assistant', 'show'); const assistant = f.windows.at(-1)!;
+  f.invoke('island:assistant', 'show');
+  assert.equal(assistant.visible, false, 'a second click must not expose a loading window');
+  f.invoke('island:assistant', 'hide'); assistant.emit('ready-to-show');
+  assert.equal(assistant.visible, false, 'late readiness must not reopen a closed assistant');
+});
+
+test('island assistant: prepare hidden frames before showing, cancel pending paint and avoid repeated native show or positioning', async t => {
+  const f = fixture(t); f.owner.show(); f.invoke('island:assistant', 'show');
+  const assistant = f.windows.at(-1)!;
+  let paint!: () => void;
+  assistant.webContents.capturePage = (_rect: unknown, options: unknown) => {
+    assert.equal(assistant.webContents.backgroundThrottling, false);
+    assert.deepEqual(options, { stayHidden: true }); return new Promise<void>(resolve => { paint = resolve; });
+  };
+  const preparing = f.invoke('island:assistant', 'ready');
+  await Promise.resolve();
+  assert.equal(f.invoke('island:assistant', 'state').visible, false); assert.equal(assistant.opacity, 0);
+  f.invoke('island:assistant', 'hide'); paint(); await preparing;
+  assert.equal(assistant.visible, false);
+  assert.equal(assistant.webContents.backgroundThrottling, true);
+  assistant.webContents.capturePage = async () => f.nativeIcon;
+  let shows = 0, positions = 0;
+  const show = assistant.showInactive.bind(assistant), setBounds = assistant.setBounds.bind(assistant);
+  assistant.showInactive = () => { shows++; show(); };
+  assistant.setBounds = (bounds: unknown) => { positions++; setBounds(bounds); };
+  f.invoke('island:assistant', 'show'); assert.equal(assistant.visible, false);
+  await f.invoke('island:assistant', 'ready'); assert.equal(shows, 1); assert.equal(positions, 0);
+  assistant.bounds = { ...assistant.bounds, x: 140, width: 500 };
+  f.invoke('island:assistant', 'show'); await f.invoke('island:assistant', 'ready');
+  assert.equal(shows, 1); assert.equal(positions, 0); assert.equal(assistant.bounds.width, 500);
+  assert.equal(f.messages.at(-1)?.channel, 'island:assistant-open');
+  const paints: (() => void)[] = [];
+  assistant.webContents.capturePage = () => new Promise<void>(resolve => paints.push(resolve));
+  f.invoke('island:assistant', 'hide'); f.invoke('island:assistant', 'show');
+  const oldPaint = f.invoke('island:assistant', 'ready');
+  f.invoke('island:assistant', 'hide'); f.invoke('island:assistant', 'show');
+  const newPaint = f.invoke('island:assistant', 'ready');
+  await Promise.resolve();
+  paints[0](); await oldPaint; assert.equal(f.invoke('island:assistant', 'state').visible, false);
+  paints[1](); await newPaint; assert.equal(f.invoke('island:assistant', 'state').visible, true);
+  f.invoke('island:assistant', 'hide');
+  assistant.webContents.capturePage = async () => { throw new Error('paint unavailable'); };
+  f.invoke('island:assistant', 'show'); await assert.rejects(f.invoke('island:assistant', 'ready'), /paint unavailable/);
+  assert.equal(assistant.visible, false); assert.equal(assistant.opacity, 1); assert.equal(assistant.webContents.backgroundThrottling, true);
+  assistant.webContents.capturePage = async () => f.nativeIcon;
+  f.invoke('island:assistant', 'show'); await f.invoke('island:assistant', 'ready'); assert.equal(assistant.visible, true);
 });
 
 test('island assistant: all dock directions stay inside the selected work area, including negative coordinates and small screens', () => {
