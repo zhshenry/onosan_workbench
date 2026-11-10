@@ -28,6 +28,7 @@ export async function hoverExpandInstalledIsland(island) {
   });
   if (point) await island.mouse.move(point.x, point.y);
   await island.locator('.desktop-island.is-expanded').waitFor();
+  await island.waitForFunction(() => document.querySelector('.desktop-island.is-expanded')?.getAnimations().every(animation => animation.playState !== 'running'));
 }
 
 async function expand(island) {
