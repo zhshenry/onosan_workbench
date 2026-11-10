@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Flask, GearSix, Sparkle } from '@phosphor-icons/react';
 import { NAV, defaultViewOfWorkbench, ownerOfWorkbench, resolveView, workbenchById, type WorkbenchDef, type WorkbenchId } from './nav';
 import type { AvatarColor, UiTheme, ViewId } from '../shared/contracts';
@@ -15,6 +15,7 @@ import { errorText } from './ui/controls';
 import { IslandMascot } from './ui/IslandMascot';
 import { TopbarUpdate } from './views/TopbarUpdate';
 import { AiSetupHint } from './views/AiSetupHint';
+import { AiTopbarHint } from './ui/AiTopbarHint';
 import { BaziView } from '../modules/bazi/ui/BaziView';
 import { TaskEditor, type TaskEditorApi } from '../modules/todo/ui/TaskEditor';
 import { MediaBrowserHost } from './views/MediaBrowserHost';
@@ -127,6 +128,9 @@ export function App() {
   const [browserTasks, setBrowserTasks] = useState<BrowserTask[]>([]);
   const [activeAiChatId, setActiveAiChatId] = useState<string | null>(null);
   const aiJob = aiJobs.find(job => job.status === 'running' && job.chatId !== activeAiChatId) ?? aiJobs.find(job => job.status === 'running') ?? aiJobs[0] ?? null;
+  const completedAiJob = aiJob?.status === 'done' && (!aiOpen || aiJob.chatId !== activeAiChatId) ? aiJob : null;
+  const completedAiChatId = completedAiJob?.chatId;
+  const dismissAiCompletion = useCallback(() => setAiJobs(previous => previous.filter(job => job.chatId !== completedAiChatId)), [completedAiChatId]);
   const browserTask = browserTasks.find(task => ['running', 'paused', 'site-approval'].includes(task.status)) ?? browserTasks[0] ?? null;
   const [requestedAiChatId, setRequestedAiChatId] = useState<string | null>(null);
   const [requestedCopyId, setRequestedCopyId] = useState<string | null>(null);
@@ -576,12 +580,14 @@ export function App() {
         </div>
 
       <div className="tb-right">
-        {aiJob && (!aiOpen || aiJob.chatId !== activeAiChatId) && <button className="ai-job-btn" title="返回生成的对话" onClick={returnToAiJob}>{aiJob.scope.module === 'copy' ? '博客' : aiJob.scope.module === 'bazi' ? '命理' : '助手'}{aiJob.status === 'running' ? '生成中' : aiJob.status === 'error' ? '请求失败' : '已完成'}</button>}
+        {aiJob && aiJob.status !== 'done' && (!aiOpen || aiJob.chatId !== activeAiChatId) && <button className="ai-job-btn" title="返回生成的对话" onClick={returnToAiJob}>{aiJob.scope.module === 'copy' ? '博客' : aiJob.scope.module === 'bazi' ? '命理' : '助手'}{aiJob.status === 'running' ? '生成中' : '请求失败'}</button>}
         {browserTask && ['running', 'paused', 'site-approval'].includes(browserTask.status) && curView !== (browserTask.workspace === 'xhs-creator' ? 'media-browser' : 'browser') && <button className="ai-job-btn" title="返回浏览器任务" onClick={() => switchView(browserTask.workspace === 'xhs-creator' ? 'media-browser' : 'browser')}>{browserTask.status === 'site-approval' ? '浏览器等待站点授权' : browserTask.status === 'paused' ? '浏览器已暂停' : '浏览器后台操作中'}</button>}
         <TopbarUpdate onOpen={() => setIslandPop(null)} />
         <button className="ibtn float-topbar-btn" title={floatVisible ? '隐藏桌面灵动岛' : '打开桌面灵动岛'} aria-label={floatVisible ? '隐藏桌面灵动岛' : '打开桌面灵动岛'} aria-pressed={floatVisible} onClick={() => { setIslandPop(null); void window.workbench.float.toggle().catch(e => showToast(errorText(e))); }}><span className="topbar-mascot-icon" aria-hidden="true"><IslandMascot /></span></button>
         <button ref={aiTrigger} className="ibtn ai-topbar-btn" title={aiToggleLabel} aria-label={aiToggleLabel} aria-expanded={aiOpen} aria-controls="workbench-ai-panel" data-background-running={backgroundAiRunning || undefined} onClick={() => setAiOpen(v => !v)}><Sparkle size={18} weight={aiOpen || backgroundAiRunning ? 'fill' : 'regular'} /></button>
-        <AiSetupHint trigger={aiTrigger} active={curView !== 'settings-ai'} onConfigure={() => { setAiOpen(false); switchView('settings-ai'); }} />
+        <AiSetupHint trigger={aiTrigger} active={curView !== 'settings-ai' && !completedAiJob} onConfigure={() => { setAiOpen(false); switchView('settings-ai'); }} />
+        <AiTopbarHint trigger={aiTrigger} active={!!completedAiJob} kind="completion" title={`${completedAiJob?.scope.module === 'copy' ? '博客' : completedAiJob?.scope.module === 'bazi' ? '命理' : '助手'}已完成`}
+          message={`“${completedAiJob?.title || '当前对话'}”已生成新回复。`} closeLabel="关闭完成提示" actionLabel="查看对话" onDismiss={dismissAiCompletion} onAction={returnToAiJob} />
         <span className="vdiv" />
         <button type="button" className="avatar" data-avatar-color={profileAvatarColor} title={profileName} aria-label={`打开个人资料：${profileName}`} onClick={() => switchView('settings-profile')}>
           {profileName.trim().charAt(0).toUpperCase() || 'O'}

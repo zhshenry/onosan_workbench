@@ -27,6 +27,7 @@ export function DesktopIslandApp() {
   const [busy, setBusy] = useState(false), [notices, setNotices] = useState(false), [dragging, setDragging] = useState(false);
   const [agendaDay, setAgendaDay] = useState(() => localDay());
   const busyRef = useRef(false), pointerInside = useRef(false), currentMode = useRef(state?.mode);
+  const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useLayoutEffect(() => { currentMode.current = state?.mode; }, [state?.mode]);
   const beforeDrag = useRef<{ page: IslandPage | null; mode: IslandMode } | null>(null);
   const root = useRef<HTMLElement>(null), summaryButton = useRef<HTMLButtonElement>(null), mascotButton = useRef<HTMLButtonElement>(null), navigation = useRef<HTMLElement>(null);
@@ -54,17 +55,23 @@ export function DesktopIslandApp() {
   };
   const loadTasks = () => window.workbench.todo.state().then(next => { setData(next); setDataError(''); }, () => setDataError('暂时无法读取 To-Do-List'));
   const mode = (next: IslandMode) => { currentMode.current = next; void api.mode(next, window.matchMedia('(prefers-reduced-motion: reduce)').matches).catch(e => setError(errorText(e))); };
-  const closeMessages = () => { mode(state?.pinned ? 'expanded' : 'collapsed'); setTimeout(() => (state?.pinned ? root.current?.querySelector<HTMLButtonElement>('.island-footer .island-mascot-entry') : mascotButton.current)?.focus(), 250); };
+  const closeMessages = () => { mode(state?.pinned ? 'expanded' : 'collapsed'); setTimeout(() => mascotButton.current?.focus(), 250); };
+  const cancelPreview = () => { if (previewTimer.current) clearTimeout(previewTimer.current); previewTimer.current = null; };
+  const preview = () => {
+    cancelPreview();
+    if (!state?.settings.hoverPreview || currentMode.current !== 'collapsed') return;
+    previewTimer.current = setTimeout(() => { previewTimer.current = null; if (pointerInside.current && currentMode.current === 'collapsed') mode('expanded'); }, 200);
+  };
   useLayoutEffect(() => { if (state?.mode === 'messages') root.current?.querySelector<HTMLButtonElement>('.island-messages .segmented button[aria-checked="true"]')?.focus(); }, [state?.mode]);
   useLayoutEffect(() => {
     const node = document.documentElement;
     if (!state) return;
-    const enter = (event?: MouseEvent) => { pointerInside.current = true; api.hold(true); const target = event && document.elementFromPoint?.(event.clientX, event.clientY); if (target?.closest('.island-mascot-entry') || root.current?.querySelector('.island-mascot-entry:hover')) return; if (currentMode.current === 'collapsed' && state.settings.hoverPreview) mode('expanded'); };
-    const exit = () => { pointerInside.current = false; syncHold(); if (!state.pinned && currentMode.current !== 'collapsed' && currentMode.current !== 'speech') mode('collapsed'); };
+    const enter = () => { pointerInside.current = true; api.hold(true); };
+    const exit = () => { cancelPreview(); pointerInside.current = false; syncHold(); if (!state.pinned && currentMode.current !== 'collapsed' && currentMode.current !== 'speech') mode('collapsed'); };
     // The native document boundary includes portal menus and survives summary replacement.
     node.addEventListener('mouseenter', enter); node.addEventListener('mouseleave', exit);
     if (node.matches(':hover')) enter(); else exit();
-    return () => { node.removeEventListener('mouseenter', enter); node.removeEventListener('mouseleave', exit); };
+    return () => { cancelPreview(); node.removeEventListener('mouseenter', enter); node.removeEventListener('mouseleave', exit); };
   }, [state?.pinned, state?.settings.hoverPreview]);
   useLayoutEffect(() => { document.documentElement.classList.add('island-document'); document.title = '桌面灵动岛'; return () => document.documentElement.classList.remove('island-document'); }, []);
   useLayoutEffect(() => {
@@ -139,7 +146,7 @@ export function DesktopIslandApp() {
     {!expanded && state.mode !== 'reminder' && <>
       <div className="island-summary-row">
         <IslandMessageEntry state={state} buttonRef={mascotButton} onClick={() => void run(() => api.assistant('show'))} />
-        <button ref={summaryButton} type="button" className="island-summary" onMouseEnter={() => { if (state.settings.hoverPreview && currentMode.current === 'collapsed') { pointerInside.current = true; api.hold(true); mode('expanded'); } }} onClick={() => page ? mode('expanded') : void run(() => api.navigate({ view: 'settings-island' }))} aria-label={page ? '展开桌面灵动岛' : '打开桌面灵动岛设置'} aria-describedby="island-summary-details">
+        <button ref={summaryButton} type="button" className="island-summary" onMouseEnter={preview} onMouseLeave={cancelPreview} onClick={() => page ? mode('expanded') : void run(() => api.navigate({ view: 'settings-island' }))} aria-label={page ? '展开桌面灵动岛' : '打开桌面灵动岛设置'} aria-describedby="island-summary-details">
           <span id="island-summary-details" className="island-summary-details">
             <span className="island-summary-schedule" title={dataError || scheduleSummary}><CalendarBlank size={16} /><span>{scheduleSummary}</span></span>
             <span className="island-quota-summary">{ISLAND_QUOTA_PROVIDERS.map(id => {
@@ -156,7 +163,7 @@ export function DesktopIslandApp() {
     {speech && <section className="island-speech" role="status" aria-live="polite" aria-label="圆环伙伴提醒"><SpeechTail className="island-speech-tail" size={20} weight="fill" aria-hidden="true" />{error && <p className="island-speech-error" role="alert">{error}</p>}<ReminderList state={state} tasks={tasks} busy={busy} run={run} navigate={navigate} viewQuota={viewQuota} speech /></section>}
     {messagesOpen && <section className="island-messages" role="dialog" aria-labelledby="island-messages-title"><SpeechTail className="island-speech-tail" size={20} weight="fill" aria-hidden="true" />{error && <p className="island-speech-error" role="alert">{error}</p>}<IslandAgentMessages state={state} busy={busy} run={run} close={closeMessages} showReminders={() => { setNotices(true); mode('expanded'); }} now={now} /></section>}
     <Activity mode={state.mode === 'collapsed' || speech || messagesOpen ? 'hidden' : 'visible'}><div className="island-panel">
-      <header className="island-header"><span className="island-section-label"><Icon size={16} />{state.mode === 'reminder' ? '提醒' : page ? ISLAND_LABELS[page] : '桌面灵动岛'}</span><time>{new Date(now).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' })}<b>{clockText(now)}</b></time><div className="island-header-actions">
+      <header className="island-header"><span className="island-section-label">{expanded && <IslandMessageEntry state={state} buttonRef={mascotButton} onClick={() => void run(() => api.assistant('show'))} />}<Icon size={16} />{state.mode === 'reminder' ? '提醒' : page ? ISLAND_LABELS[page] : '桌面灵动岛'}</span><time>{new Date(now).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' })}<b>{clockText(now)}</b></time><div className="island-header-actions">
         {expanded && <><Select className="island-dock-select" menuClassName="island-dock-menu" aria-label="停靠位置" title={`停靠位置：${ISLAND_DOCK_LABELS[state.settings.dock]}`} value={state.settings.dock} disabled={busy} options={dockOptions} onChange={value => void run(async () => { const next = await api.patch({ dock: value as IslandDock }); if (next.mode === 'collapsed') pointerInside.current = false; setState(next); })} renderOption={option => { const DockIcon = dockIcons[option.value as IslandDock]; return <><DockIcon size={17} /><span className="island-dock-label">{option.label}</span></>; }} /><IconButton label={state.pinned ? '解除固定' : '固定展开'} aria-pressed={state.pinned} onClick={() => void run(() => api.pin())}><PushPin size={17} weight={state.pinned ? 'fill' : 'regular'} /></IconButton><IconButton label="桌面灵动岛设置" onClick={() => void run(() => api.navigate({ view: 'settings-island' }))}><GearSix size={17} /></IconButton></>}
         <IconButton label={state.mode === 'reminder' ? '收起提醒' : '隐藏桌面灵动岛'} onClick={() => state.mode === 'reminder' ? mode('collapsed') : void run(() => api.patch({ enabled: false }))}>{state.mode === 'reminder' ? <Minus size={17} /> : <X size={17} />}</IconButton>
       </div></header>
@@ -171,9 +178,7 @@ export function DesktopIslandApp() {
           </div>)}</div>}
       </section>
       {expanded && <footer className="island-footer">
-        {state.settings.dock === 'top' && <IslandMessageEntry state={state} onClick={() => void run(() => api.assistant('show'))} />}
         <nav ref={navigation} aria-label="灵动岛页面"><span className="island-tab-indicator" aria-hidden="true" />{pages.map(value => { const PageIcon = icons[value]; return <button key={value} type="button" aria-current={!notices && page === value ? 'page' : undefined} className={!notices && page === value ? 'selected' : ''} onClick={() => changePage(value)} title={ISLAND_LABELS[value]} aria-label={ISLAND_LABELS[value]}><PageIcon size={18} /><span>{ISLAND_LABELS[value]}</span></button>; })}</nav>
-        {state.settings.dock !== 'top' && <IslandMessageEntry state={state} onClick={() => void run(() => api.assistant('show'))} />}
       </footer>}
     </div></Activity>
     {error && !speech && !messagesOpen && <div className="island-error" role="alert"><span>{error}</span><IconButton label="关闭错误提示" onClick={() => setError('')}><X size={14} /></IconButton></div>}

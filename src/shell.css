@@ -570,6 +570,7 @@ input { font: inherit; color: inherit; }
 .ai-setup-hint .icon-button { display: grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 6px; color: var(--ink-3); }
 .ai-setup-hint .icon-button:hover { background: var(--acc-soft); color: var(--ink); }
 .ai-setup-hint > p { margin: 8px 0 14px; color: var(--ink-3); }
+.ai-setup-hint[data-ai-hint='completion'] > p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 .ai-setup-hint > footer { display: flex; justify-content: flex-end; }
 .ai-setup-configure { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 32px; padding: 0 12px; border-radius: var(--r-ctl); background: var(--action); color: var(--nav-on-fg); font-weight: 600; }
 .ai-setup-configure:hover { background: var(--action-deep); }

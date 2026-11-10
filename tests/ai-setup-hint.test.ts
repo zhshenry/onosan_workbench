@@ -91,6 +91,14 @@ test('AI 首次配置气泡：状态可靠、延迟避让、一次性关闭与�
     assert.equal(timers.size, 1); await tick(); assert.equal(open.has(panel()), true); dialog.remove();
   });
 
+  await t.test('阻挡的模态窗口直接卸载后继续显示气泡，不依赖已移除节点的 toggle 事件', async () => {
+    await reset();
+    const dialog = dom.window.document.createElement('dialog'); dialog.open = true; dom.window.document.body.append(dialog);
+    await tick(); assert.equal(open.has(panel()), false);
+    await act(async () => dialog.remove());
+    assert.equal(timers.size, 1); await tick(); assert.equal(open.has(panel()), true);
+  });
+
   await t.test('已有模型但关闭助手不提示；首次完成配置立即消失，删除模型也不重启引导', async () => {
     read = () => Promise.resolve(configured);
     await reset(); await tick(); assert.equal(open.has(panel()), false);

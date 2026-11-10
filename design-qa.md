@@ -1,5 +1,17 @@
 # 设计验收索引
 
+## 顶栏助手完成气泡（2026-11-10）
+
+final result: passed。按用户给定的「配置模型，开启 AI 助手」气泡复用白色圆角卡片、阴影、指向星光图标的箭头、右上角关闭与右下角深色操作。原完成胶囊移除，完成气泡展示来源对话标题和「查看对话」；生成中、请求失败与浏览器任务入口保留。配置引导和完成提示共用 `AiTopbarHint`，配置读取与一次性关闭状态仍归 `AiSetupHint`；气泡不占顶栏布局宽度。
+
+`npm run verify`、30 项相关回归和 11 项隔离 Electron 检查通过。覆盖后台完成自动出现、当前正在查看会话不弹、返回准确来源对话、重复终态去重、关闭及 Escape 焦点、外部点击、模态卸载后恢复、任务切换与排队保留，以及三主题、长标题、1024px 窗口和 200% 缩放下的气泡边界与箭头。原生测试发现模态卸载时关闭事件可能不再抵达 document，已在共用弹层中补充等待节点移除的恢复观察，并增加单测回归。
+
+Browser plugin not available，使用已有 Playwright 驱动真实 Electron，URL、标题及有效内容均核对，无框架错误覆盖层，渲染与控制台错误／警告为 0。使用两个独立持久化合成会话及正常 preload 事件，不发真实模型请求、不改真实用户数据；对话内容、身份及草稿保持，排除既有自动草稿保存产生的更新时间差异。截图为原生捕获：常规尺寸保留顶栏与气泡，200% 使用完整原生窗口，避免 CSS 坐标裁切失真。
+
+严格静态审计仍有 14 项既有发现，按规则及文件对比无新增；DESIGN lint 0 错误、保留原有 YAML 提示，`git diff --check` 通过。1024px／200% 下同时观察到顶栏日程／待办区域拥挤重叠，气泡的边界、箭头和操作正常；本轮不扩改其他顶栏控件排版。未打包、更新安装版、提交或发布。
+
+证据：`C:/Users/henry/.codex/visualizations/2026/11/08/01a1bb32-d93e-7333-9ccd-ece9f90bfb10/ai-completion-hint-{tests.log,verify.log,pilot.mjs,pilot.log,result.json,audit.json,design-lint.log}`，主效果图 `ai-completion-hint-main.png`，其余三主题与缩放图使用同前缀。较早脚本的重复按钮定位、表单「返回」文案及时间戳比较问题已修正，未为脚本修改产品行为或放宽数据内容断言。
+
 ## v2.1.5 发布候选（2026-11-10）
 
 用户确认本版同时包含待办助手／消息改动及占星扩展相位。版本、锁文件和 CHANGELOG 已同步至 2.1.5。`npm run verify` 通过；全仓 1006 项测试在本机 1004 项通过，另外两项因 Windows 创建符号链接权限 EPERM 未能执行，保留原测试并由云端 Windows 流程完整验收。发布检查补齐旧占星测试的上限断言：按每组对象的 maxOrb 校验实际偏差，并限制六分不超过 6°、其余不超过 10°，不改变生产计算。
@@ -706,3 +718,11 @@ final result: passed
 - Browser plugin not available，采用独立合成数据的 Playwright Electron 实测：页面身份、23/16 分组、四列数据、原生 disclosure 键盘、共享 combobox Escape 与焦点恢复、组合筛选／盘面连线、空结果恢复、扩展行索引、全部位置及详情、三主题、1488×900／1024×680／200% 缩放均通过，9 组检查且无渲染或控制台错误。已查看主表、展开规则、窄窗口和原生缩放截图。QA 脚本早期的英文标题／button 角色定位已按真实中文标题和 combobox 语义修正，未为脚本修改产品。
 - Premium 严格静态审计仍报告 14 项既有提示，均位于本次相位改动之外（6 项归属识别、8 项字面模式），未计作全仓静态通过；没有扩大到其他任务的灵动岛、AI 或语音页面。未运行全仓发布验收，未发布或重启用户实例；隔离验收实例已关闭。
 - 证据：C:/Users/henry/.codex/visualizations/2026/11/04/01a1a746-c52f-7451-8935-d81fa6f8fde7/astro-aspects-2026-11-10/，含 tests.log、verify.log、pilot.mjs、pilot.log、report.json、premium-audit.json、aspects-main.png、aspects-rules.png、aspects-extended.png、aspects-filtered.png、三主题截图及窄窗／200% 原生截图。
+
+## 灵动岛吉祥物统一左上角（2026-11-10）
+
+- 用户最终要求为左侧、右侧及顶端下拉统一左上角，视觉参考为 `docs/requirements/shared/desktop-island/design/mascot-top-left-approved-2026-11-10.png`。实际复用原顶栏、伙伴、字号和单面板；不保留额外竖栏，底栏仅保留四项导航。与参考图中的 18% 样例不同，隔离实例未连接账户，截图如实显示灰色环和未连接状态。
+- 64 项相关回归通过：`desktop-island`、`island-state`、`island-store`。`npm run verify` 通过字阶检查、两份 TypeScript 工程及 Vite／Electron 构建。首次沙箱运行受临时文件原子重命名 EPERM 影响，使用正常本机临时目录的隔离测试重跑后全部通过。
+- Browser plugin not available；使用已安装的 Playwright 驱动隔离原生 Electron。13 组检查通过：三种停靠各四页的顶栏头像与底栏无重复、留白／头像悬停不展开、收起态单击直达独立助手、摘要快速经过取消预览／停留展开／移出收起、关闭悬停后点击仍可展开、150%／200% 缩放、两侧 280px 窄窗、伙伴开关和键盘 Enter。未发现按钮重叠或裁切、渲染异常或相关控制台错误。
+- 静态 premium 审计仍为 14 项既有发现，新增 0；未将全仓旧问题记作本次通过。正常展开尺寸保留顶部 580×270、侧边 320×560；未改动真实额度、消息、模型或任务数据。测试实例已关闭，未打包、发布或替换正式安装版。
+- 证据位于 `C:/Users/henry/.codex/visualizations/2026/11/08/01a1bb32-d93e-7333-9ccd-ece9f90bfb10/`：`island-mascot-top-left-result.json`、`island-mascot-top-left-{left,right,top}.png`、`island-mascot-top-left-{left,right}-280.png`、对应 pilot、verify、tests 和 audit 文件。
