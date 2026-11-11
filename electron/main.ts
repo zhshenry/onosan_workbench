@@ -532,8 +532,8 @@ if (!app.requestSingleInstanceLock()) {
     tray = new Tray(icon);
     tray.setToolTip('个人工作台 · 待办提醒运行中');
     const showApp = (): void => {
-      const win = BrowserWindow.getAllWindows()[0];
-      if (!win) return;
+      const win = mainWindow;
+      if (!win || win.isDestroyed()) return;
       if (win.isMinimized()) win.restore();
       win.show();
       win.focus();

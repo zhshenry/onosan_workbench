@@ -12,7 +12,7 @@ export function IslandMessageEntry({ state, onClick, buttonRef }: { state: Islan
   const reminders = state.reminders.filter(reminder => reminder.kind !== 'agent').length;
   const pending = messages.some(agentPending), count = unread + reminders;
   if (!state.settings.mascotEnabled && !messages.length && !reminders) return null;
-  return <button ref={buttonRef} type="button" className="island-mascot-entry" aria-label={`打开待办助手，消息：${unread} 条 Agent 未读${pending ? '，有待授权' : ''}${reminders ? `，${reminders} 条事项提醒` : ''}`} aria-haspopup="dialog" onClick={onClick} title="点击伙伴对话或查看消息">
+  return <button ref={buttonRef} type="button" className="island-mascot-entry" aria-label={`打开待办助手，消息：${unread} 条 Agent 未读${pending ? '，有待授权' : ''}${reminders ? `，${reminders} 条事项提醒` : ''}`} aria-haspopup="dialog" onClick={onClick} title="点击打开助手">
     <IslandMascot moving={state.settings.mascotEnabled && state.settings.mascotMotion && !state.quiet} />
     {count > 0 ? <span className="island-message-badge" aria-hidden="true">{count > 99 ? '99+' : count}</span> : pending && <span className="island-message-pending-dot" aria-hidden="true" />}
   </button>;

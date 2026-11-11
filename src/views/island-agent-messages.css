@@ -1,9 +1,16 @@
 .desktop-island .island-mascot-entry { position: relative; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 28px; width: 28px; height: 28px; min-height: 28px; padding: 0; border: 0; background: transparent; }
+.desktop-island .island-mascot-entry:is(:hover, :focus-visible) { background: var(--island-line); }
 .island-mascot-entry .island-mascot { width: 24px; height: 24px; border-width: 2px; gap: 3px; }
 .island-mascot-entry .island-mascot i { width: 2px; height: 5px; }
 .island-message-badge, .island-message-pending-dot { position: absolute; top: -2px; right: -4px; min-width: 13px; height: 13px; padding: 0 2px; box-sizing: border-box; border-radius: 99px; background: var(--island-blue); color: var(--island-bg); font-size: var(--type-micro); line-height: 13px; text-align: center; font-variant-numeric: tabular-nums; }
 .island-message-pending-dot { top: 0; right: -1px; min-width: 7px; width: 7px; height: 7px; padding: 0; background: var(--island-orange); }
 .desktop-island .island-summary-row { gap: 10px; }
+.island-summary-row:has(> .island-mascot-entry) > .island-summary::before { content: ''; position: absolute; left: -6px; top: 50%; width: 1px; height: 16px; transform: translateY(-50%); background: var(--island-line); pointer-events: none; }
+.desktop-island:not([data-dock="top"]):is(.is-collapsed, .is-speech, .is-messages) .island-summary-row:has(> .island-mascot-entry) { padding-top: 16px; }
+.desktop-island:not([data-dock="top"]) .island-summary-row > .island-mascot-entry { flex-basis: 44px; width: 44px; height: 44px; min-height: 44px; }
+.desktop-island:not([data-dock="top"]) .island-summary-row > .island-mascot-entry .island-message-badge { top: 6px; right: 4px; }
+.desktop-island:not([data-dock="top"]) .island-summary-row > .island-mascot-entry .island-message-pending-dot { top: 8px; right: 7px; }
+.desktop-island:not([data-dock="top"]) .island-summary-row:has(> .island-mascot-entry) > .island-summary::before { left: 50%; top: -6px; width: 36px; height: 1px; transform: translateX(-50%); }
 .desktop-island.is-messages::before { background: transparent; }
 .desktop-island[data-dock="top"].is-messages::before { height: calc(40px * var(--island-scale, 1)); background: var(--island-bg); }
 .desktop-island[data-dock="top"].is-messages .island-summary-row { height: calc(40px * var(--island-scale, 1)); flex: 0 0 calc(40px * var(--island-scale, 1)); }
@@ -47,7 +54,7 @@
 .desktop-island:not([data-dock="top"]).is-messages .island-summary-details { flex-direction: column; justify-content: flex-start; gap: 8px; height: 100%; }
 .desktop-island:not([data-dock="top"]).is-messages .island-summary-schedule { flex: none; }
 .desktop-island:not([data-dock="top"]).is-messages .island-summary-schedule > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-.desktop-island:not([data-dock="top"]).is-messages .island-quota-summary { flex: 1; min-height: 0; flex-direction: column; justify-content: center; gap: 8px; max-width: 100%; padding: 8px 0; border: 0; border-top: 1px solid var(--island-line); }
+.desktop-island:not([data-dock="top"]).is-messages .island-quota-summary { flex: 1; min-height: 0; flex-direction: column; justify-content: center; gap: 8px; max-width: 100%; padding: 8px 0; border: 0; border-top: 1px solid transparent; }
 .desktop-island:not([data-dock="top"]).is-messages .island-quota-summary > span { flex-direction: column; gap: 2px; max-width: 100%; }
 .desktop-island:not([data-dock="top"]).is-messages .island-quota-caption { align-items: center; max-width: 100%; }
 .desktop-island:not([data-dock="top"]).is-messages .island-quota-provider, .desktop-island:not([data-dock="top"]).is-messages .island-quota-value { max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: var(--type-micro); line-height: 12px; }
@@ -57,6 +64,11 @@
 .desktop-island[data-dock="right"].is-messages .island-speech-tail { left: auto; right: -13px; }
 @container island-body (max-width: 280px) { .island-messages .island-agent-message { grid-template-columns: 6px 24px minmax(0, 1fr); } .island-messages .island-message-actions { grid-column: 3; flex-direction: row; justify-content: space-between; } }
 @container island-body (max-height: 280px) {
+  .desktop-island:not([data-dock="top"]):is(.is-collapsed, .is-speech, .is-messages) .island-summary-row:has(> .island-mascot-entry) { padding-top: 6px; }
+  .desktop-island:not([data-dock="top"]) .island-summary-row > .island-mascot-entry { flex-basis: 28px; width: 28px; height: 28px; min-height: 28px; }
+  .desktop-island:not([data-dock="top"]) .island-summary-row > .island-mascot-entry .island-message-badge { top: -2px; right: -4px; }
+  .desktop-island:not([data-dock="top"]) .island-summary-row > .island-mascot-entry .island-message-pending-dot { top: 0; right: -1px; }
+  .desktop-island:not([data-dock="top"]) .island-summary-row:has(> .island-mascot-entry) > .island-summary::before { top: -1px; width: 24px; }
   .desktop-island:not([data-dock="top"]).is-messages .island-summary-row { padding: 6px 0; gap: 2px; }
   .desktop-island:not([data-dock="top"]).is-messages .island-summary-details { gap: 4px; }
   .desktop-island:not([data-dock="top"]).is-messages .island-quota-summary { gap: 2px; padding: 2px 0; }
