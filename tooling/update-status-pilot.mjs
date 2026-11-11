@@ -181,8 +181,8 @@ async function openAbout(page) {
   await updaterRow(page).waitFor({ state: 'visible' });
 }
 async function remountAbout(page) {
-  await page.locator('.tree').getByRole('button', { name: '通用&外观', exact: true }).click();
-  await page.getByRole('heading', { name: '通用&外观', exact: true }).waitFor({ state: 'visible' });
+  await page.locator('.tree').getByRole('button', { name: '通用与外观', exact: true }).click();
+  await page.getByRole('heading', { name: '通用与外观', exact: true }).waitFor({ state: 'visible' });
   await page.locator('.tree').getByRole('button', { name: '关于', exact: true }).click();
   await updaterRow(page).waitFor({ state: 'visible' });
 }
@@ -281,7 +281,7 @@ export async function runUpdateStatusPilot({ application, page, check, screensho
     for (const entry of UPDATE_STATUS_MATRIX) {
       await check(`Update status: ${entry.theme} ${entry.width}x${entry.height}, all phases inline with unchanged right-side actions`, async () => {
         await page.emulateMedia({ reducedMotion: entry.reducedMotion });
-        await page.locator('.tree').getByRole('button', { name: '通用&外观', exact: true }).click();
+        await page.locator('.tree').getByRole('button', { name: '通用与外观', exact: true }).click();
         await page.getByRole('radio', { name: entry.label, exact: true }).click();
         await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, entry.theme);
         assert.equal((await page.evaluate(() => window.workbench.settings.get())).uiTheme, entry.theme);
@@ -361,13 +361,13 @@ export async function runUpdateStatusPilot({ application, page, check, screensho
       assert.equal(await updaterRow(page).locator('.set-update-details-toggle').getAttribute('aria-expanded'), 'false');
     });
     await check('Update status: initial read loading/rejection and check/install rejections stay inside the row', async () => {
-      await page.locator('.tree').getByRole('button', { name: '通用&外观', exact: true }).click();
+      await page.locator('.tree').getByRole('button', { name: '通用与外观', exact: true }).click();
       await inject('idle', { holdRead: true, announce: false }); await openAbout(page);
       await page.waitForFunction(() => document.querySelector('.set-update-status')?.innerText.trim() === '读取中…');
       assert.equal(await updaterAction(page).isDisabled(), true);
       assert.ok((await inspectUpdaterFixture(application)).pendingReads > 0);
       await inject('latest'); await inspectGeometry(page, byKey('latest'));
-      await page.locator('.tree').getByRole('button', { name: '通用&外观', exact: true }).click();
+      await page.locator('.tree').getByRole('button', { name: '通用与外观', exact: true }).click();
       await inject('idle', { rejectRead: 'SYNTHETIC_READ_REJECTION', announce: false }); await openAbout(page);
       await page.waitForFunction(() => document.querySelector('.set-update-status')?.innerText.trim() === '读取失败');
       assert.equal(await updaterAction(page).isDisabled(), true);
@@ -391,7 +391,7 @@ export async function runUpdateStatusPilot({ application, page, check, screensho
     assert.deepEqual(await inspectUpdaterFixture(application), { installed: false });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.getByRole('textbox', { name: '搜索当前页设置', exact: true }).fill('');
-    await page.locator('.tree').getByRole('button', { name: '通用&外观', exact: true }).click();
+    await page.locator('.tree').getByRole('button', { name: '通用与外观', exact: true }).click();
     await page.getByRole('radio', { name: UPDATE_STATUS_MATRIX.find(entry => entry.theme === originalTheme).label, exact: true }).click();
     await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, originalTheme);
     await resize(application, page, originalSize[0], originalSize[1]);

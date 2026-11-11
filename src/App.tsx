@@ -681,7 +681,7 @@ export function App() {
           ) : curView.startsWith('settings') ? (
             <SettingsView view={curView} uiTheme={uiTheme} onUiThemeChange={applyUiTheme} onAvatarColorChange={setProfileAvatarColor} />
           ) : todo.data ? (
-            <HomeView data={todo.data} clock={todo.clock} mutate={todo.mutate} userName={profileName} onPending={showToast} onOpenMedia={() => switchView('copy')} onOpenBazi={() => switchView('bazi')} onOpenGame={() => switchView('game')} onOpenWeb={() => switchView('browser')} onOpenCheckin={() => switchView('checkin')} editor={homeEditor} setEditor={setHomeEditor} onAskAi={askAI} />
+            <HomeView data={todo.data} clock={todo.clock} mutate={todo.mutate} userName={profileName} onPending={showToast} onOpenCheckin={() => switchView('checkin')} editor={homeEditor} setEditor={setHomeEditor} onAskAi={askAI} />
           ) : (
             <div className="todo-loading" role="status">正在读取本地待办…</div>
           )}

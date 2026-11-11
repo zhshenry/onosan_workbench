@@ -42,7 +42,7 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
   const { state, setState, error, setError } = useIslandState();
   const [active, setActive] = useState<Section>('display');
   const [busy, setBusy] = useState(false), busyRef = useRef(false);
-  const [displays, setDisplays] = useState<{ id: number; label: string }[]>([]);
+  const [displays, setDisplays] = useState<{ id: number; label: string }[] | null>(null);
   const [providers, setProviders] = useState<QuotaProvider[]>([]), [key, setKey] = useState(''), [showKey, setShowKey] = useState(false), [clear, setClear] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<QuotaProvider['id']>('codex'), [editingKey, setEditingKey] = useState(false), [quotaLoading, setQuotaLoading] = useState(true);
   const [agentConnections, setAgentConnections] = useState<AgentConnection[] | null>(null);
@@ -56,7 +56,16 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
   };
   const patch = (value: IslandSettingsPatch) => { void run(async () => { setState(await api.patch(value)); }); };
   useEffect(() => {
-    void api.displays().then(setDisplays).catch(e => setError(errorText(e)));
+    let alive = true, version = 0;
+    const load = () => {
+      const request = ++version;
+      void api.displays().then(value => { if (alive && request === version) setDisplays(value); }).catch(e => { if (alive && request === version) { setDisplays([]); setError(errorText(e)); } });
+    };
+    load(); const off = api.onChanged(load);
+    window.addEventListener('focus', load);
+    return () => { alive = false; off(); window.removeEventListener('focus', load); };
+  }, []);
+  useEffect(() => {
     if (api.agentConnections) void api.agentConnections().then(setAgentConnections).catch(e => setError(errorText(e)));
   }, []);
   useEffect(() => {
@@ -83,20 +92,22 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
   useEffect(() => setShowKey(false), [active, selectedProvider, query]);
   if (!state) return <p role={error ? 'alert' : 'status'}>{error || '正在读取灵动岛设置…'}</p>;
   const settings = state.settings;
+  const selectedDisplay = displays?.find(display => display.id === settings.displayId);
+  const missingDisplay = settings.displayId !== null && Boolean(displays?.length) && !selectedDisplay;
   const toggle = (field: keyof IslandSettingsPatch, label: string) => <button type="button" className="toggle" role="switch" aria-checked={Boolean(settings[field as keyof typeof settings])} aria-label={label} disabled={busy} onClick={() => patch({ [field]: !settings[field as keyof typeof settings] })} />;
   const number = (field: 'topOffset' | 'focusMinutes' | 'waterMinutes' | 'sedentaryMinutes' | 'lowQuota', label: string, min: number, max: number, unit: string) => <NumberSetting label={label} value={settings[field]} min={min} max={max} unit={unit} disabled={busy} save={value => patch({ [field]: value })} />;
-  const period = (start: 'dndStart' | 'waterStart', end: 'dndEnd' | 'waterEnd', label: string) => <fieldset className="island-setting-period" aria-label={label} disabled={busy}>
+  const period = (start: 'dndStart' | 'waterStart' | 'sedentaryStart', end: 'dndEnd' | 'waterEnd' | 'sedentaryEnd', label: string) => <fieldset className="island-setting-period" aria-label={label} disabled={busy}>
     <div><label htmlFor={`${fieldId}-${start}`}>开始</label><TimePicker id={`${fieldId}-${start}`} value={settings[start]} onChange={value => patch({ [start]: value })} /></div><span>—</span>
     <div><label htmlFor={`${fieldId}-${end}`}>结束</label><TimePicker id={`${fieldId}-${end}`} value={settings[end]} onChange={value => patch({ [end]: value })} /></div>
   </fieldset>;
   const groups: { id: string; section: Section; title: string; rows: RowSpec[] }[] = [
     { id: 'position', section: 'display', title: '窗口位置', rows: [
-      { key: 'display', title: '显示器', desc: '在所选工作区边缘居中', control: <Select value={String(settings.displayId ?? '')} onChange={value => patch({ displayId: value ? Number(value) : null })} aria-label="灵动岛显示器" disabled={busy} options={[{ value: '', label: '主显示器' }, ...displays.map(d => ({ value: String(d.id), label: d.label }))]} /> },
+      { key: 'display', title: '显示器', desc: missingDisplay ? '已选显示器已断开，暂用主屏' : '在所选工作区边缘居中', control: displays === null ? <span className="island-display-value" role="status">正在读取显示器…</span> : displays.length <= 1 ? <span className="island-display-value" title={displays[0]?.label}>{displays[0]?.label || '未读取到显示器'}</span> : <Select value={selectedDisplay ? String(selectedDisplay.id) : ''} onChange={value => patch({ displayId: value ? Number(value) : null })} aria-label="灵动岛显示器" disabled={busy} options={[{ value: '', label: '自动跟随主屏' }, ...displays.map(d => ({ value: String(d.id), label: d.label }))]} /> },
       { key: 'dock', title: '停靠位置', desc: '顶部向下展开，侧边向屏幕内展开', control: <Select value={settings.dock} onChange={value => patch({ dock: value as IslandDock })} aria-label="停靠位置" disabled={busy} options={ISLAND_DOCKS.map(value => ({ value, label: ISLAND_DOCK_LABELS[value] }))} /> },
       { key: 'offset', title: settings.dock === 'top' ? '顶部间距' : '边缘间距', desc: `相对工作区${ISLAND_DOCK_LABELS[settings.dock]}`, control: number('topOffset', settings.dock === 'top' ? '顶部偏移' : '停靠边缘偏移', 0, 300, 'px') },
     ] },
     { id: 'interaction', section: 'display', title: '展开与外观', rows: [
-      { key: 'hover', title: '悬停展开', desc: '停留片刻，直接打开完整面板', control: toggle('hoverPreview', '悬停展开') },
+      { key: 'hover', title: '悬停展开', desc: '鼠标停留片刻，直接打开完整面板', control: toggle('hoverPreview', '悬停展开') },
       { key: 'fullscreen', title: '全屏时隐藏', desc: state.fullscreenDetection ? '退出全屏后恢复' : '系统检测暂不可用，可手动隐藏', control: toggle('hideFullscreen', '全屏时隐藏') },
       { key: 'motion', title: '减少动态效果', desc: '即时切换尺寸，伙伴保持静止', control: toggle('reducedMotion', '减少动态效果') },
     ] },
@@ -105,8 +116,8 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
       { key: 'clear', title: `${state.files.length} 条暂存记录`, desc: clear ? '确认清空所有引用？原文件不受影响。' : '默认保留，直到手动移除', control: clear ? <div className="island-setting-actions"><button className="set-btn" disabled={busy} onClick={() => void run(async () => { setState(await api.filesRemove()); setClear(false); })}>确认清空记录</button><button className="set-btn" onClick={() => setClear(false)}>取消</button></div> : <button className="set-btn" disabled={!state.files.length || busy} onClick={() => setClear(true)}>清空记录</button> },
     ] },
     { id: 'reminders', section: 'reminders', title: '事项提醒', rows: [
-      { key: 'schedule', title: '日程提醒', desc: '按事项已设置的时间提醒', control: toggle('scheduleReminders', '日程提醒') },
-      { key: 'todo', title: '待办提醒', desc: '岛隐藏时，使用系统通知', control: toggle('todoReminders', '灵动岛待办提醒') },
+      { key: 'schedule', title: '日程提醒', desc: '按日程已设置的时间提醒', control: toggle('scheduleReminders', '日程提醒') },
+      { key: 'todo', title: '待办提醒', desc: '按待办已设置的时间提醒', control: toggle('todoReminders', '灵动岛待办提醒') },
       { key: 'sound', title: '提醒声音', desc: '勿扰期间保持安静', control: toggle('sound', '提醒声音') },
     ] },
     { id: 'quiet', section: 'reminders', title: '勿扰时段', rows: [
@@ -126,12 +137,13 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
     ] },
     { id: 'water', section: 'tools', title: '喝水提醒', rows: [
       { key: 'water', title: '启用喝水提醒', desc: '只统计主动确认的次数', control: toggle('waterEnabled', '喝水提醒') },
-      { key: 'interval', title: '提醒间隔', desc: '休眠后不连续补弹', control: number('waterMinutes', '喝水间隔', 10, 240, '分钟') },
+      { key: 'interval', title: '提醒间隔', desc: '锁屏、睡眠和勿扰时暂停，恢复后重新计时', control: number('waterMinutes', '喝水间隔', 10, 240, '分钟') },
       { key: 'waterTime', title: '提醒时间', desc: '', className: 'island-period-row', control: period('waterStart', 'waterEnd', '喝水时间段') },
     ] },
     { id: 'sedentary', section: 'tools', title: '久坐提醒', rows: [
       { key: 'enabled', title: '启用久坐提醒', desc: '按使用时长提醒，不识别坐姿或离座', control: toggle('sedentaryEnabled', '久坐提醒') },
       { key: 'interval', title: '提醒间隔', desc: '锁屏、睡眠和勿扰时暂停，恢复后重新计时', control: number('sedentaryMinutes', '久坐间隔', 10, 240, '分钟') },
+      { key: 'sedentaryTime', title: '提醒时间', desc: '', className: 'island-period-row', control: period('sedentaryStart', 'sedentaryEnd', '久坐时间段') },
     ] },
   ];
   const term = query.trim().toLowerCase().replace(/\s+/g, '');
@@ -181,8 +193,12 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
         <div className="island-connection-layout">
           <nav className="island-connection-sources" aria-label="额度来源">{visibleProviders.map(id => {
             const item = providers.find(value => value.id === id);
-            return <button type="button" key={id} data-provider={id} aria-label={`查看 ${ISLAND_QUOTA_LABELS[id]} 连接`} aria-pressed={id === providerId} onClick={() => setSelectedProvider(id)}>
-              <span className="island-provider-symbol"><img src={providerLogos[id]} alt="" draggable={false} /></span><span className="island-source-copy"><strong>{ISLAND_QUOTA_LABELS[id]}</strong><small title={item?.plan}>{item?.plan || (item?.status === 'disconnected' ? '尚未连接账户' : '账户连接')}</small></span><span className="island-provider-status" data-status={item?.status}>{providerStatus(item)}</span>
+            const messageConnection = agentConnections?.find(value => value.provider === id);
+            return <button type="button" key={id} data-provider={id} aria-label={`查看 ${ISLAND_QUOTA_LABELS[id]} 连接`} aria-describedby={`${fieldId}-${id}-status`} aria-pressed={id === providerId} onClick={() => setSelectedProvider(id)}>
+              <span className="island-provider-symbol"><img src={providerLogos[id]} alt="" draggable={false} /></span><span className="island-source-copy"><strong>{ISLAND_QUOTA_LABELS[id]}</strong><small title={item?.plan}>{item?.plan || (item?.status === 'disconnected' ? '尚未连接账户' : '账户连接')}</small></span><span className="island-source-status" id={`${fieldId}-${id}-status`}>
+                <span className="island-provider-status" data-status={item?.status}>{providerStatus(item)}</span>
+                {(id === 'codex' || id === 'cursor') && <span className="island-source-reminder" data-enabled={messageConnection?.connected} data-error={Boolean(messageConnection?.error)} title={messageConnection?.error}>{agentConnections === null ? '提醒状态未读取' : messageConnection?.error ? '消息提醒异常' : `消息提醒${messageConnection?.connected ? '已开启' : '未开启'}`}</span>}
+              </span>
             </button>;
           })}</nav>
           <section className="island-connection-detail" data-provider={providerId} aria-label={`${ISLAND_QUOTA_LABELS[providerId]} 账户详情`}>

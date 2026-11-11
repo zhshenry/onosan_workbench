@@ -56,7 +56,7 @@ test('real checkin UI validates login, cancels abandoned authorization, and only
     assert.ok(calls.some(c => c.method === 'refresh' && c.value === 'workbuddy'));
     assert.ok(!calls.some(c => c.method === 'run'));
     await click(dom.window.document.querySelector<HTMLButtonElement>('[data-provider="trae"] button')!);
-    await click(button('前往 TRAE 授权'));
+    await click(button('前往 TRAE CN 授权'));
     await act(async () => { root.unmount(); });
     assert.ok(calls.some(c => c.method === 'cancel' && c.value === 'trae'));
     assert.equal(listeners.size, 0);

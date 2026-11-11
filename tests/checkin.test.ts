@@ -57,6 +57,44 @@ test('Qoder only accepts an unambiguous daily Credits campaign', () => {
   assert.equal(parseQoderStatus({ campaigns: [{ ...daily, claimStatus: 'CLAIMED', actionType: 'VIEW_DETAILS' }] }).status, 'claimed');
   for (const campaigns of [[], [{ ...daily, campaignKey: 'newcomer' }], [{ ...daily, benefit: { kind: 'REDEMPTION_CODE' } }], [daily, { ...daily, campaignId: 'another' }]]) assert.equal(parseQoderStatus({ campaigns }).status, 'unavailable');
 });
+
+test('Qoder recognizes the current opaque-key campaign with 每天 and both localized titles', () => {
+  const daily = { campaignId: 'daily-current', campaignKey: 'act-20261109-549', claimStatus: 'CLAIMABLE', actionType: 'CLAIM_BENEFIT', benefit: { kind: 'CREDITS', amount: 100 }, placements: [{ type: 'USAGE', content: { zh: { title: '每天领 100 Credits' }, en: { title: 'Claim 100 Credits Daily' } } }] };
+  const subscription = { campaignId: 'subscription', campaignKey: 'act-20261020-008', claimStatus: 'CLAIMED', actionType: 'VIEW_DETAILS', placements: [{ content: { zh: { title: '首次订阅福利' }, en: { title: 'First Subscription Offer' } } }] };
+  assert.deepEqual(parseQoderStatus({ campaigns: [daily, subscription] }), { status: 'ready', message: '本轮每日积分可以领取', reward: 100, campaignId: daily.campaignId });
+  assert.equal(parseQoderStatus({ data: { campaigns: [{ ...daily, placements: [{ content: { zh: { title: '积分奖励' }, en: { title: 'Claim 100 Credits Daily' } } }] }] } }).status, 'ready');
+  assert.equal(parseQoderStatus({ campaigns: [{ ...daily, placements: [{ content: { zh: { title: '每天领 100 Credits' } } }] }] }).status, 'ready');
+  assert.equal(parseQoderStatus({ campaigns: [subscription] }).status, 'unavailable');
+  assert.equal(parseQoderStatus({ campaigns: [{ ...daily, benefit: { kind: 'REDEMPTION_CODE', amount: 100 } }] }).status, 'unavailable');
+  assert.equal(parseQoderStatus({ campaigns: [daily, { ...daily, campaignId: 'another-daily' }] }).status, 'unavailable');
+  for (const [claimStatus, expected] of [['CLAIMED', 'claimed'], ['GRANTED', 'claimed'], ['PROCESSING', 'pending'], ['NOT_ELIGIBLE', 'unavailable']]) {
+    assert.equal(parseQoderStatus({ campaigns: [{ ...daily, claimStatus }] }).status, expected);
+  }
+});
+
+test('Qoder current campaign is checked, claimed once and confirmed without claiming subscription benefits', async t => {
+  let claimed = false, posts = 0;
+  const providers = new CheckinProviders(async (url, options) => {
+    if (url.endsWith('/me/campaigns')) return { status: 200, body: { campaigns: [
+      { campaignId: 'daily-current', campaignKey: 'act-20261109-549', claimStatus: claimed ? 'CLAIMED' : 'CLAIMABLE', actionType: claimed ? 'VIEW_DETAILS' : 'CLAIM_BENEFIT', benefit: { kind: 'CREDITS', amount: 100 }, placements: [{ content: { zh: { title: '每天领 100 Credits' }, en: { title: 'Claim 100 Credits Daily' } } }] },
+      { campaignId: 'subscription', campaignKey: 'act-20261020-008', claimStatus: 'CLAIMABLE', actionType: 'CLAIM_BENEFIT', benefit: { kind: 'CREDITS', amount: 1800 }, placements: [{ content: { zh: { title: '首次订阅福利' }, en: { title: 'First Subscription Offer' } } }] },
+    ] } };
+    assert.equal(url, 'https://openapi.qoder.com.cn/sash/api/v1/me/campaigns/daily-current/claim');
+    assert.equal(options.method, 'POST');
+    posts++; claimed = true;
+    return { status: 200, body: { benefit: { kind: 'CREDITS', amount: 100 } } };
+  });
+  const h = harness(t, ['qoder'], { providers });
+  await h.service.refresh('qoder');
+  assert.equal(h.service.state().rows.find(row => row.provider === 'qoder')!.status, 'ready');
+  assert.equal(h.service.state().rows.find(row => row.provider === 'qoder')!.reward, 100);
+  assert.equal(posts, 0);
+  await h.service.run(['qoder']);
+  assert.equal(h.service.state().rows.find(row => row.provider === 'qoder')!.status, 'claimed');
+  assert.equal(h.service.state().rows.find(row => row.provider === 'qoder')!.reward, 100);
+  await h.service.run(['qoder']);
+  assert.equal(posts, 1);
+});
 test('authorization expiry, risk denial and unknown business errors are actionable and redact payloads', () => {
   assert.throws(() => assertResponse({ status: 401, body: { token: 'secret' } }), /重新连接/);
   assert.throws(() => assertResponse({ status: 200, body: { code: 9095, message: 'secret' } }), /设备校验/);
@@ -81,18 +119,51 @@ test('one-click checks then claims and confirms; an already claimed account is n
   assert.ok(!raw.includes('private-access-token') && !raw.includes('private-refresh-token'));
   assert.ok(!JSON.stringify(h.service.state()).includes('private-access-token'));
 });
+
+test('checkin history exposes legacy successes and only stores newly confirmed successes', async t => {
+  const h = harness(t), saved = JSON.parse(readFileSync(h.file, 'utf8'));
+  saved.records = [
+    { id: 'old-unavailable', provider: 'workbuddy', at: at - 1000, source: 'manual', status: 'unavailable', message: '暂无活动', reward: null },
+    { id: 'old-pending', provider: 'workbuddy', at: at - 2000, source: 'auto', status: 'pending', message: '待确认', reward: null },
+    { id: 'old-success', provider: 'workbuddy', at: at - 86400000, source: 'manual', status: 'claimed', message: '平台确认领取', reward: 100 },
+  ];
+  writeFileSync(h.file, JSON.stringify(saved));
+  const service = h.restart();
+  assert.deepEqual(service.state().records.map(record => record.id), ['old-success']);
+  h.providers.states.set('workbuddy', { status: 'unavailable', message: '暂无活动', reward: null });
+  await service.run(['workbuddy']);
+  assert.equal(service.state().rows[0].status, 'unavailable');
+  assert.deepEqual(service.state().records.map(record => record.id), ['old-success']);
+  assert.equal(JSON.parse(readFileSync(h.file, 'utf8')).records.length, 3, 'no new failed entry is written');
+  h.providers.onStatus = async () => { throw new CheckinError('网络不可用', 'network'); };
+  await service.run(['workbuddy']);
+  assert.equal(service.state().rows[0].status, 'error');
+  assert.deepEqual(service.state().records.map(record => record.id), ['old-success']);
+  h.providers.onStatus = undefined;
+  h.providers.states.delete('workbuddy');
+  await service.run(['workbuddy']);
+  assert.equal(service.state().records.length, 2);
+  assert.ok(JSON.parse(readFileSync(h.file, 'utf8')).records.every((record: { status: string }) => record.status === 'claimed'));
+});
 test('a timed out claim remains pending across clicks, restart and reauthorization of the same account', async t => {
   const h = harness(t);
   h.providers.onClaim = async () => { throw new CheckinError('网络不可用', 'network'); };
   await h.service.run(['workbuddy']);
   assert.equal(h.service.state().rows[0].status, 'pending');
+  assert.deepEqual(h.service.state().records, []);
   await h.service.run(['workbuddy']);
   const next = h.restart(); await next.run(['workbuddy']);
   next.disconnect('workbuddy'); await next.loginWorkbuddy({ phone: '13800000000', code: '123456' }); await next.run(['workbuddy']);
   assert.equal(h.providers.claims.length, 1);
   assert.equal(next.state().rows[0].status, 'pending');
+  assert.deepEqual(next.state().records, []);
   h.providers.states.set('workbuddy', { status: 'claimed', message: '已确认', reward: null });
   await next.refresh('workbuddy'); assert.equal(next.state().rows[0].status, 'claimed');
+  assert.equal(next.state().records.length, 1);
+  assert.equal(next.state().records[0].status, 'claimed');
+  await next.refresh('workbuddy');
+  assert.equal(next.state().records.length, 1, 'rechecking a confirmed result adds no history entry');
+  assert.equal(h.providers.claims.length, 1);
 });
 test('delayed settlement does not turn a successful POST into a false success', async t => {
   const h = harness(t);
@@ -115,7 +186,8 @@ test('network failure for one app does not stop other connected apps', async t =
   await h.service.run([...CHECKIN_PROVIDERS]);
   assert.deepEqual(h.providers.claims, ['qoder', 'trae']);
   assert.equal(h.service.state().rows[0].status, 'error');
-  assert.equal(h.service.state().records.length, 3);
+  assert.equal(h.service.state().records.length, 2);
+  assert.ok(h.service.state().records.every(record => record.status === 'claimed'));
 });
 test('concurrent actions cannot submit the same provider twice', async t => {
   const h = harness(t); let complete!: () => void;
@@ -160,7 +232,18 @@ test('automatic mode is opt-in, persistent, deduplicated after resume and report
   h.providers.onStatus = async () => { throw new CheckinError('登录已失效', 'auth'); };
   await h.service.tick('startup'); await h.service.tick('resume'); await h.restart().tick('startup');
   assert.equal(h.notices.length, 1);
+  assert.deepEqual(h.service.state().records, []);
+  assert.equal(h.service.state().rows[0].status, 'expired');
+});
+
+test('successful automatic checkins still record their source and reward', async t => {
+  const h = harness(t);
+  h.service.saveSettings({ ...DEFAULT_CHECKIN_SETTINGS, enabled: true, providers: ['workbuddy'] });
+  await h.service.tick('startup');
+  assert.equal(h.service.state().records.length, 1);
   assert.equal(h.service.state().records[0].source, 'auto');
+  assert.equal(h.service.state().records[0].status, 'claimed');
+  assert.equal(h.service.state().records[0].reward, 100);
 });
 test('catchup disabled skips startup and a long sleep, then runs on the next scheduled day', async t => {
   const h = harness(t); h.service.saveSettings({ ...DEFAULT_CHECKIN_SETTINGS, enabled: true, catchup: false, providers: ['workbuddy'] });
@@ -197,11 +280,13 @@ test('Qoder browser device flow uses PKCE and verifies the returned identity', a
   const c = await authorizeCheckin('qoder', 'fixed-device', new CheckinProviders(request), new AbortController().signal, async url => { opened = url; }, () => {});
   assert.equal(c.userId, 'verified-id'); assert.equal(calls, 2); assert.equal(new URL(opened).hostname, 'qoder.com.cn');
 });
-test('platform adapters send TRAE status as POST and only the selected Qoder daily campaign can be claimed', async () => {
-  const calls: { url: string; method?: string }[] = [];
-  const p = new CheckinProviders(async (url, options) => { calls.push({ url, method: options.method }); return { status: 200, body: { code: 0, checked_in: false, enable: true, credits: 150 } }; });
+test('platform adapters use TRAE CN endpoints and region; only the selected Qoder daily campaign can be claimed', async () => {
+  const calls: { url: string; method?: string; headers?: Record<string, string> }[] = [];
+  const p = new CheckinProviders(async (url, options) => { calls.push({ url, method: options.method, headers: options.headers }); return { status: 200, body: { code: 0, checked_in: false, enable: true, credits: 150 } }; });
   await p.status('trae', credential(), new AbortController().signal);
   assert.equal(calls[0].method, 'POST');
+  assert.equal(calls[0].url, 'https://api.trae.cn/trae/api/v2/ug/checkin_credits/status');
+  assert.equal(calls[0].headers?.['X-User-Region'], 'CN');
   await p.claim('qoder', credential(), { status: 'ready', message: '', reward: 100, campaignId: 'daily-123' }, new AbortController().signal);
   assert.ok(calls[1].url.endsWith('/campaigns/daily-123/claim'));
 });

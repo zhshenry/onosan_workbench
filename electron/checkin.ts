@@ -64,7 +64,7 @@ export class CheckinService {
     const now = this.now();
     return {
       rows: this.saved.rows.map(row => row.cycle && row.cycle !== checkinCycle(row.provider, now) && ['claimed', 'pending', 'unavailable'].includes(row.status) ? { ...row, status: row.connected ? 'ready' : 'disconnected', reward: null, message: '新一轮领取周期，签到前将检查平台状态' } : { ...row }),
-      settings: structuredClone(this.saved.settings), records: structuredClone(this.saved.records), warning: this.warning,
+      settings: structuredClone(this.saved.settings), records: structuredClone(this.saved.records.filter(record => record.status === 'claimed')), warning: this.warning,
       auth: this.auth ? { id: this.auth.id, provider: this.auth.provider, stage: this.auth.stage, message: this.auth.message, expiresAt: this.auth.expiresAt } : null,
     };
   }
@@ -84,7 +84,7 @@ export class CheckinService {
     this.commit({ ...extra, rows: this.saved.rows.map(r => r.provider === provider ? { ...r, ...patch } : r) });
   }
   private record(provider: CheckinProvider, source: 'manual' | 'auto', row: CheckinRow): CheckinRecord[] {
-    return [{ id: randomUUID(), provider, at: this.now(), source, status: row.status, message: row.message, reward: row.reward }, ...this.saved.records].slice(0, 100);
+    return [{ id: randomUUID(), provider, at: this.now(), source, status: row.status, message: row.message, reward: row.reward }, ...this.saved.records.filter(record => record.status === 'claimed')].slice(0, 100);
   }
   private device(provider: CheckinProvider): string { return this.options.deviceId?.(provider, this.saved.deviceId) || this.saved.deviceId; }
   private assertFree(provider: CheckinProvider): void {
@@ -162,6 +162,7 @@ export class CheckinService {
     this.assertFree(provider);
     const initialCredential = this.credentials[provider];
     if (!initialCredential) throw new CheckinError('请先连接账号。');
+    const initialRow = this.row(provider);
     let credential: CheckinCredential = initialCredential;
     const controller = new AbortController(), signal = controller.signal;
     this.operations.set(provider, controller);
@@ -215,12 +216,13 @@ export class CheckinService {
       }
       if (!active()) return;
       const row: CheckinRow = { ...this.row(provider), status: status.status, message: status.message, cycle, checkedAt: this.now(), reward: status.status === 'claimed' ? reward ?? (this.row(provider).cycle === cycle ? this.row(provider).reward : null) : status.status === 'ready' ? status.reward : null };
-      this.update(provider, row, claim ? { records: this.record(provider, source, row) } : {});
+      const confirmed = row.status === 'claimed' && (claim || initialRow.status === 'pending' && initialRow.cycle === cycle);
+      this.update(provider, row, confirmed ? { records: this.record(provider, source, row) } : {});
     } catch (error) {
       if (!active()) return;
       const pending = this.saved.attempts[provider]?.cycle === cycle;
       const row: CheckinRow = { ...this.row(provider), status: error instanceof CheckinError && error.kind === 'auth' ? 'expired' : error instanceof CheckinError && error.kind === 'blocked' ? 'unavailable' : pending ? 'pending' : 'error', message: checkinError(error), checkedAt: this.now(), cycle, reward: null };
-      try { this.update(provider, row, claim ? { records: this.record(provider, source, row) } : {}); }
+      try { this.update(provider, row); }
       catch { this.warning = '签到数据无法保存，已停止本次操作，请检查磁盘后重试。'; this.emit(); }
     } finally { if (this.operations.get(provider) === controller) this.operations.delete(provider); }
   }
@@ -250,7 +252,7 @@ export class CheckinService {
     await this.run(targets, 'auto');
     if (settings.notify && !this.disposed) {
       const failed = targets.filter(p => ['expired', 'error', 'unavailable', 'pending'].includes(this.row(p).status));
-      if (failed.length) this.options.notify(`${failed.map(p => p === 'workbuddy' ? 'WorkBuddy' : p === 'qoder' ? 'Qoder' : 'TRAE').join('、')} 的签到需要处理，请打开「每日签到」查看。`);
+      if (failed.length) this.options.notify(`${failed.map(p => p === 'workbuddy' ? 'WorkBuddy' : p === 'qoder' ? 'Qoder' : 'TRAE CN').join('、')} 的签到需要处理，请打开「每日签到」查看。`);
     }
   }
   dispose(): void { this.disposed = true; if (this.timer) clearInterval(this.timer); this.auth?.controller.abort(); for (const c of this.operations.values()) c.abort(); this.operations.clear(); }

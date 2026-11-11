@@ -1,5 +1,73 @@
 # 设计验收索引
 
+## 日程气泡完成与二次确认（2026-11-11）
+
+日程伙伴气泡第三列补齐「完成 → 确认完成」，复用待办现有按版本写入已完成状态、保存成功后移除提醒的流程。保留「日程提醒／待办提醒」小标题、按钮坐标及 8px 底边间距；非气泡提醒列表的日程操作保持原样，没有修改存储协议或自动完成规则。
+
+`npm run verify` 通过。Browser plugin 不可用，使用 Playwright／Edge 渲染真实 DesktopIslandApp 和项目 CSS，验证日程／待办第一次点击不提交、第二次提交正确事项 ID、已完成状态及更新时间版本。模拟日程保存失败时不关闭提醒，原地确认重试成功后才移除；两次请求的版本均正确。三个停靠下正常／长标题及确认状态的三列按钮完全对齐，小标题、长标题无滚动、15 种提醒停靠组合的底边距离及原有查看／稍后／忽略／健康操作检查均通过，pageerror 为 0，截图已目视复核。
+
+数据为隔离示例，未修改真实日程或待办。证据目录：`C:/Users/henry/.codex/visualizations/2026/11/10/01a1c510-4514-7b22-91cf-c582289e0c7b/`，包含 `meeting-complete-bubble-qa.mjs`、`meeting-complete-bubble-render-qa.json`、`meeting-complete-bubble-verify.log`、`bubble-meeting-complete.png` 和 `bubble-meeting-confirm-complete.png`。未更新安装版或发布。
+
+## 日程与待办气泡类型小标题（2026-11-11）
+
+日程和待办顶部统一使用灰色 11px／400 字重小标题「日程提醒／待办提醒」，正文分别沿用日程 500、待办 700 字重。日程保留查看／稍后，待办另有完成及二次确认。共用 112px 提醒内容区，在既有窗口尺寸内保留日程两行、待办三行正文及操作行 8px 底边距离；两类共享按钮的尺寸和坐标一致。
+
+`npm run verify` 通过。Browser plugin 不可用，使用 Playwright／Edge 渲染真实 DesktopIslandApp 与项目 CSS；三个停靠位置均验证正确类型标签、常规字重灰色层级、完整悬停标题及正文容量。短／长／超长标题和确认状态的按钮几何保持，待办三行示例完整可见，气泡无溢出且不超出原生形状高度。五类提醒在三停靠的 15 组合仍为 8px 底边距离、24px 按钮；查看、稍后、忽略、完成确认、健康操作和错误重试检查通过，pageerror 为 0，截图已目视复核。
+
+状态为隔离示例，未修改真实待办或消息。证据目录：`C:/Users/henry/.codex/visualizations/2026/11/10/01a1c510-4514-7b22-91cf-c582289e0c7b/`，包含 `typed-bubble-headings-qa.{mjs,json}`、`bubble-{meeting,task,task-confirm}-typed.png` 及 `bubble-task-long-title-typed-{top,left,right}.png`。未更新安装版或发布。
+
+排队后切换事项类型的补充验证通过，标签与查看按钮同步，只有待办显示完成操作。严格静态审计保留 14 项既有发现，按文件及规则对比无新增；DESIGN lint 为 0 错误、1 项既有 YAML 提示。
+
+## 每日签到连接状态字体颜色（2026-11-11）
+
+账号列表的「已连接」复用青绿色、未连接保留中性灰色，登录失效使用琥珀色；详情连接标记同步采用相同状态优先级，修正失效文案仍显示绿色的情况。字号、字重、选中高亮和控件布局保持。
+
+`npm run verify` 与现有签到 UI 回归通过。Browser plugin 不可用，使用 Playwright／Edge 渲染真实 CheckinView 和项目 CSS；三主题下逐项核对已连接、未连接、失效的计算颜色与语义 token 一致，选中／未选中及状态事件更新后颜色正确，列表与详情一致，状态变化不改变列表行尺寸。480／360px 下状态颜色正确且应用列表无溢出，pageerror 为 0，截图已目视复核。状态切换为隔离样本，未修改真实账号或提交签到。
+
+证据目录：`C:/Users/henry/.codex/visualizations/2026/11/10/01a1c510-4514-7b22-91cf-c582289e0c7b/`，包含 `checkin-connection-colors-qa.{mjs,json}`、`checkin-account-status-colors.png`、`checkin-account-status-expired.png` 与 `checkin-connection-colors-{mist,cool,warm}.png`。未更新安装版或发布。
+
+## 伙伴气泡操作区底部留白（2026-11-11）
+
+气泡保留上方与左右 12px 内距，底部改为 8px；提醒区弹性填满最小高度，操作行靠底部排列，修正短标题下方额外的空白。按钮尺寸、横向列对齐、三行待办标题及全部动作沿用现有行为。
+
+`npm run verify` 通过。Browser plugin 不可用，使用 Playwright／Edge 渲染真实 DesktopIslandApp 与项目 CSS，逐项测量喝水、久坐、AI、日程、待办在顶部／左侧／右侧共 15 种组合的底边距离，均为 8px；按钮保持 24px 高、同一行且不溢出，气泡在既有原生形状限制内。长标题、日程／待办坐标对齐、二次确认、查看、稍后、忽略、健康确认及错误重试检查通过，pageerror 为 0。截图已目视复核，数据为隔离示例，没有修改真实事项或消息。
+
+证据目录：`C:/Users/henry/.codex/visualizations/2026/11/10/01a1c510-4514-7b22-91cf-c582289e0c7b/`，包含 `closer-bubble-actions-qa.{mjs,json}`、`bubble-sedentary-closer-top.png` 与 `bubble-task-long-title-closer-{top,left,right}.png`。未更新安装版或发布。
+
+## 签到记录仅保留成功结果（2026-11-11）
+
+按用户选择，记录页及条数只接收平台已确认成功的记录，旧失败项不再展示；空状态明确为「还没有成功签到记录」。失败、暂无活动及待确认不新增历史，当前状态仍在概览可见。待确认回读成功后补记成功结果，领取防重复标记保留；已确认但积分未知时仍不虚报到账。
+
+新增服务回归先复现三项失败，修复后签到专项 24／24 及 `npm run verify` 通过。覆盖旧混合历史过滤、新失败不追加、成功写入时仅保留成功历史、待确认跨重启与重连防重复、核对成功补记、再次核对不追加、自动成功的来源和积分及自动失败的处理通知。Browser plugin 不可用，使用 Playwright／Edge 渲染真实 CheckinView 与项目 CSS，按服务公开状态验证条数、成功奖励、只有失败时的零成功空状态及键盘切页；1240／480／360px 下无横向溢出，pageerror 为 0，截图已目视复核。
+
+截图使用已保留的脱敏历史按新服务规则呈现，列表为 1 条 WorkBuddy 成功记录；混合七条数据与失败空态为隔离样本。未修改真实账号、历史文件或安装版，也未提交真实领取。证据目录：`C:/Users/henry/.codex/visualizations/2026/11/10/01a1c510-4514-7b22-91cf-c582289e0c7b/`，包含 `checkin-success-records-{before,tests}.log`、`checkin-success-records-qa.{mjs,json}` 及 `checkin-success-records-{page,empty,narrow}.png`。
+
+## 伙伴气泡长标题免滚动（2026-11-11）
+
+待办标题从两行内部滚动改为最多三行自然换行，利用原有 94px 提醒内容区，按钮行坐标与气泡尺寸保持。其他标题保留两行限制，日程仍为灰色标记和两行正文；标题不单独显示滚动条，超长内容省略并保留原生完整标题提示及查看入口。
+
+`npm run verify` 通过。Browser plugin 不可用，使用 Playwright／Edge 渲染真实 DesktopIslandApp 与项目 CSS。顶部、左侧、右侧下的 35 字示例均完整显示三行，标题不滚动且不与按钮重叠；超长标题稳定省略、完整悬停文本保留。逐项比对短标题／三行标题／超长标题／二次确认的按钮坐标及尺寸一致，气泡高度保持在原生形状限制内。原有查看、稍后、忽略、二次确认、日程对齐和错误重试检查通过，pageerror 为 0，截图已目视复核。
+
+使用隔离示例状态，没有修改真实待办或消息。证据目录：`C:/Users/henry/.codex/visualizations/2026/11/10/01a1c510-4514-7b22-91cf-c582289e0c7b/`，包括 `expanded-bubble-title-qa.{mjs,json}` 与 `bubble-task-long-title-{top,left,right}.png`。未更新安装版或发布。
+
+## 每日签到的独立记录标签（2026-11-11）
+
+「账号连接」右侧新增「签到记录」，复用共享 Segmented 的点击、方向键与选中滑块。概览移除原最近记录卡片；记录页独占与标题对齐的玻璃面板，显示全部保留历史与条数，沿用原有结果语义色、应用和触发方式、时间、积分及空状态。三项分段等宽，采用既有语义字号与 Phosphor 历史图标。
+
+`npm run verify` 与 22 项签到回归通过。Browser plugin 不可用，使用 Playwright／Edge 渲染真实 CheckinView 及项目 CSS，核对第三标签顺序、独立页面、切回概览／账号连接、方向键切换、七条记录完整展示、事件更新、空状态及切页不触发签到请求。1240／480／360px 下记录面板与标题的左边界和宽度完全一致，标签和记录行无横向溢出；截图已目视复核，pageerror 为 0。
+
+主截图使用已有脱敏账户和历史信息，Qoder 使用前次只读查询确认的可领取状态；七条与空记录为隔离验证数据。未提交真实领取或修改账号、历史、安装版。证据目录为 `C:/Users/henry/.codex/visualizations/2026/11/10/01a1c510-4514-7b22-91cf-c582289e0c7b/`，包含 `checkin-records-tab-qa.{mjs,json}`、`checkin-records-page.png`、`checkin-overview-three-tabs.png`、`checkin-records-narrow.png`、`checkin-records-empty.png` 和 `checkin-records-regression.log`。
+
+严格静态审计仍有 14 项既有发现，按文件及规则对比无新增；DESIGN lint 为 0 错误、1 项既有 YAML 提示，`git diff --check` 通过。
+
+## 伙伴气泡的日程层级与事项按钮对齐（2026-11-11）
+
+日程气泡改为灰色常规字重的「日程提醒」与 500 字重标题，标题最多两行并保留完整悬停文本。日程与待办共用紧凑三列及 94px 提醒内容区，底部操作行保持；两种气泡的查看／稍后按钮宽高和位置一致，日程的第三列留空。完成按钮切到二次确认时位置与尺寸保持。AI「稍后」沿用只收起当前提示、保留未读的语义。
+
+`npm run verify` 通过。Browser plugin 不可用，使用现有 Playwright／Edge 渲染真实 DesktopIslandApp 及项目 CSS，隔离示例状态，不启动外部客户端、不写真实待办或消息。三类气泡的查看、稍后、关闭和待办二次确认转发检查通过；顶部 580×184、左右 320×360 下逐项比对日程与待办前两个按钮的 x／y／width／height，短标题、长标题均完全一致。待办三个按钮均同一行、文字完整、无横向溢出，确认前后位置与尺寸相同。长日程标题的字重、颜色、两行限制及关闭按钮边界检查通过；模拟导航失败后错误可读、气泡无溢出且重试可用，pageerror 为 0，截图已目视复核。
+
+严格静态审计保留原有 14 项发现，按文件及规则对比无新增；DESIGN lint 为 0 错误、1 项既有 YAML 提示。证据目录：`C:/Users/henry/.codex/visualizations/2026/11/10/01a1c510-4514-7b22-91cf-c582289e0c7b/`，包括 `aligned-bubble-render-qa.mjs`、`aligned-bubble-render-qa.json`、`aligned-bubble-audit.json` 和 `bubble-{agent,meeting,task,task-confirm}-aligned.png`。本次为本地实现，未发布或更新安装版。
+
 ## 顶栏助手完成气泡（2026-11-10）
 
 final result: passed。按用户给定的「配置模型，开启 AI 助手」气泡复用白色圆角卡片、阴影、指向星光图标的箭头、右上角关闭与右下角深色操作。原完成胶囊移除，完成气泡展示来源对话标题和「查看对话」；生成中、请求失败与浏览器任务入口保留。配置引导和完成提示共用 `AiTopbarHint`，配置读取与一次性关闭状态仍归 `AiSetupHint`；气泡不占顶栏布局宽度。
@@ -745,3 +813,39 @@ final result: passed
 ## 每日签到（2026-11-10）
 
 已完成实现、隔离桌面检查、20 项签到专项和 31 项相关回归；真实登录与领奖按用户选择稍后验证。完整记录见 [每日签到验收](docs/requirements/shared/checkin/qa-2026-11-10.md)。
+
+## 首页每日签到「并排速览」（2026-11-11）
+
+final result: passed
+
+- 视觉依据：用户选定的「并排速览」高保真，原图 1774 × 887；稳定副本为 `C:/Users/henry/.codex/visualizations/2026/11/10/01a1c510-4514-7b22-91cf-c582289e0c7b/checkin-columns-reference.png`。
+- 实现：实际 Electron 开发版首页，窗口截图 1281 × 821（约 1280 × 820 CSS px，系统缩放 1 倍），使用独立 `checkin-columns-acceptance-data`，三家均未连接；原有待办、日程、每周统计和首页移除「更多工作台」的改动保留。
+- 完整视图：`checkin-columns-wide.png`、`checkin-columns-narrow.png`。分别在 AI 助手收起／展开时检查约 770px／376px 卡片，按钮、名称、状态与底部操作完整可见。窄图有其他置顶窗口覆盖页面上方，未覆盖本次卡片；不据此声明其他窗口通过验收。
+- 对照方式：从原图取约 `(92, 279, 1588, 366)` 的卡片区域，从实机取约 `(91, 390, 770, 184)` 的对应区域；以只读 HTML 显示原始图片，将两者等比例归一到 720px 卡片宽度。最终对照共同放大 2 倍，源图和实机同时出现在 `checkin-columns-comparison-final.png` 中，未使用生成图片替换实际截图。
+
+### 对照与修正
+
+1. 首轮：同宽对照发现宽卡片标题及应用名称偏小（P2），证据 `checkin-columns-comparison-before.png`；当时视觉结果仍需修正。
+2. 修正：宽卡片标题采用 lead 18px、应用名采用 section 16px，说明／底部采用 control 13px；微调分组上下间距。窄卡片沿用 16px 标题、12px 应用名、11px 状态和 28px 图标容器，避免挤压。
+3. 复查：重新捕获宽／窄卡片及最终同宽对照，标题、主操作、三个横向品牌分组、细分隔线和底部管理入口均符合选定布局；没有剩余可执行的 P0/P1/P2 问题。
+
+### 五项视觉核对
+
+- 字体：沿用项目 Bahnschrift／Segoe UI／微软雅黑后备及语义字号，标题、应用名与状态层级明确，三家名称在窄卡片中完整显示。
+- 间距：标题与主按钮同一行，图标与名称／状态相邻；三列在同一表面用细分隔线区分，底部连接数和管理入口分别对齐左右边缘。
+- 色彩：复用原玻璃面板、深色主按钮、蓝色管理链接；中性未连接状态使用灰色，真实完成／进行／异常状态继续使用已有语义色。
+- 资产：复用原官方图形和项目 Gift／ArrowRight／Circle 图标；TRAE 图形与国内官网 CDN 下载文件的 SHA256 完全一致（488 字节）。对照图的实机区域放大后较软属于截图取样，不是替换资产；原生尺寸截图已复核。
+- 文案：保留「每日签到」「三个应用，一处领取」「连接账号」「管理账号」与实际连接计数；按用户确认明确标注「TRAE CN」，不将画布标题「并排速览」带入产品。
+
+### 行为和国内版核对
+
+- 首页「连接账号」与「管理账号」均进入现有每日签到页面；账号连接页能选择 TRAE CN，连接说明明确显示 `www.trae.cn` 和「TRAE CN 国内版账号」，Escape 可关闭。未发起本人账号登录或真实领取。
+- 代码保持国内授权地址 `www.trae.cn/authorization`、账号接口 `api.trae.com.cn`、签到接口 `api.trae.cn`、请求区域 `CN` 及国内应用设备元数据目录。仅补齐显示名，没有迁移既有 provider ID 或账号数据。
+- 官方核对依据：[TRAE CN 套餐与计费](https://docs.trae.cn/ide_plans-and-billing)、[国内官网](https://www.trae.cn/)。20 / 20 签到专项回归通过，增加的断言验证实际适配器请求的国内状态接口和 `X-User-Region: CN`；最终 `npm run verify` 和 `git diff --check` 通过。
+- 开发日志无相关渲染错误。证据目录为上述 visualization 目录，另含 `checkin-columns-trae-cn.png`。真实账号兼容性与奖励发放仍需用户连接后验证；未提交、发布或替换安装版。
+
+## 待办提醒归入待办与数据（2026-11-11）
+
+- 「待办提醒」从通用与外观移到待办与数据首行；页说明和当前页搜索同步归属，旧 `settings-notifications` 入口转到待办与数据。沿用原 `remindersEnabled` 配置键和提醒执行逻辑，不迁移或重置设置。
+- 5 项相关回归通过：通用页不再出现／匹配提醒行；数据页读取与保存已有开关值、离开重进保留值、写入失败回退；共享库读取失败不影响提醒控件；旧入口与 AI 页面名称正确。`npm run verify` 和 `git diff --check` 通过。
+- 原生开发版可访问性状态确认通用页只保留启动、窗口、语言与主题。截图捕获与目标窗口前景不一致，因此不将该截图或待办与数据页记为原生视觉验收；迁移后的页面行为以实际 SettingsView 的 DOM 回归为依据。

@@ -141,7 +141,7 @@ test('Agent hooks: malformed client config is never overwritten', t => {
 });
 
 test('Agent hooks: durable inbox recovers while workbench was closed; malformed files cannot block valid events', t => {
-  const f = fixture(t); mkdirSync(f.hooks.inbox, { recursive: true });
+  const f = fixture(t); f.hooks.connect('codex', true); mkdirSync(f.hooks.inbox, { recursive: true });
   writeFileSync(join(f.hooks.inbox, '1000-aa.json'), '{bad');
   writeFileSync(join(f.hooks.inbox, '1001-bb.json'), JSON.stringify(event()));
   const result = f.hooks.poll(); assert.equal(result.alerts.length, 1); assert.equal(result.changed, true); assert.ok(result.error);
@@ -149,6 +149,46 @@ test('Agent hooks: durable inbox recovers while workbench was closed; malformed 
   assert.equal(existsSync(join(f.hooks.inbox, '1001-bb.json')), false);
   assert.equal(new AgentMessageStore(f.dir).read()[0].readAt, null);
   assert.equal(f.hooks.poll().alerts.length, 0);
+});
+
+test('Agent hooks: disabling survives restart and blocks cached client events without changing other providers or history', t => {
+  const f = fixture(t); f.hooks.connect('codex', true); f.hooks.connect('cursor', true);
+  const old = f.hooks.messages.ingest(event())!;
+  writeFileSync(join(f.hooks.inbox, '1000-aa.json'), JSON.stringify(event({ turnId: 'queued-before-off' })));
+  assert.equal(f.hooks.connect('codex', false)[0].connected, false);
+  assert.equal(existsSync(join(f.hooks.inbox, '1000-aa.json')), false);
+  writeFileSync(join(f.hooks.inbox, '1001-bb.json'), JSON.stringify(event({ turnId: 'cached-session-after-off' })));
+  writeFileSync(join(f.hooks.inbox, '1002-cc.json'), JSON.stringify(event({ provider: 'cursor', turnId: 'cursor-still-on' })));
+  const restarted = new AgentHooks(f.dir, join(f.dir, 'clients'), join(f.dir, 'clients', '.codex'));
+  assert.equal(restarted.status()[0].connected, false);
+  assert.deepEqual(restarted.poll().alerts.map(message => message.provider), ['cursor']);
+  assert.equal(restarted.messages.read().filter(message => message.provider === 'codex').length, 1);
+  assert.equal(restarted.messages.get(old.id).readAt, null);
+  writeFileSync(join(f.hooks.inbox, '1003-dd.json'), JSON.stringify(event({ turnId: 'late-disabled-event' })));
+  restarted.connect('codex', true);
+  assert.equal(restarted.poll().alerts.length, 0, '重新启用不补弹关闭期间的事件');
+  writeFileSync(join(f.hooks.inbox, '1004-ee.json'), JSON.stringify(event({ turnId: 'new-enabled-event' })));
+  assert.equal(restarted.poll().alerts[0].turnId, 'new-enabled-event');
+});
+
+test('Agent hooks: partial hook configuration does not receive messages while the switch reports off', t => {
+  const f = fixture(t); f.hooks.connect('codex', true);
+  const file = join(f.dir, 'clients', '.codex', 'hooks.json');
+  const config = JSON.parse(readFileSync(file, 'utf8')); delete config.hooks.Interrupt;
+  writeFileSync(file, JSON.stringify(config));
+  assert.equal(f.hooks.status()[0].connected, false);
+  writeFileSync(join(f.hooks.inbox, '1000-aa.json'), JSON.stringify(event()));
+  assert.equal(f.hooks.poll().alerts.length, 0); assert.deepEqual(f.hooks.messages.read(), []);
+});
+
+test('Agent hooks: disable remains effective if client hook cleanup is unavailable', t => {
+  const f = fixture(t); f.hooks.connect('codex', true);
+  const file = join(f.dir, 'clients', '.codex', 'hooks.json'); writeFileSync(file, '{malformed');
+  const result = f.hooks.connect('codex', false);
+  assert.equal(result[0].connected, false); assert.ok(result[0].error);
+  assert.equal(readFileSync(file, 'utf8'), '{malformed');
+  writeFileSync(join(f.hooks.inbox, '1000-aa.json'), JSON.stringify(event()));
+  assert.equal(f.hooks.poll().alerts.length, 0); assert.deepEqual(f.hooks.messages.read(), []);
 });
 
 test('Agent hooks: real Windows relay forwards only allowed fields and never returns approval decisions', { skip: process.platform !== 'win32' }, t => {
@@ -167,6 +207,11 @@ test('Agent hooks: real Windows relay forwards only allowed fields and never ret
   assert.equal(relay('cursor', { hook_event_name: 'afterAgentResponse', conversation_id: 'cursor-1', generation_id: 'generation-1', workspace_roots: ['C:\\网站项目'], text: '首页已完成', private_token: 'NEVER-SAVE' }).trim(), '{}');
   f.hooks.poll();
   const saved = readFileSync(join(f.dir, 'agent-messages.json'), 'utf8');
+  f.hooks.connect('codex', false);
+  assert.equal(relay('codex', { ...base, turn_id: 'after-disable', hook_event_name: 'Stop', last_assistant_message: '不得接收的旧会话回调' }).trim(), '{}');
+  assert.equal(readdirSync(f.hooks.inbox).filter(name => name.endsWith('.json')).length, 0);
+  assert.equal(f.hooks.poll().alerts.length, 0);
+  assert.equal(readFileSync(join(f.dir, 'agent-messages.json'), 'utf8'), saved);
   assert.match(saved, /验证完成/); assert.match(saved, /首页已完成/);
   assert.doesNotMatch(saved, /secret-command|NEVER-SAVE|private-transcript|后续正文/);
 });

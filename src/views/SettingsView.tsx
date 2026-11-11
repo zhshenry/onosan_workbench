@@ -11,10 +11,10 @@ const wb = window.workbench;
 // ---------- 分区元信息(页头标题) ----------
 const SECTION_META: Partial<Record<ViewId, { title: string; sub: string }>> = {
   'settings-profile': { title: '个人资料', sub: '称呼与头像,只用于界面展示,存在本机' },
-  'settings-general': { title: '通用&外观', sub: '启动、窗口行为、待办提醒与界面主题' },
+  'settings-general': { title: '通用与外观', sub: '启动、窗口行为、界面语言与主题' },
   'settings-island': { title: '桌面灵动岛', sub: '设置桌面窗口、页面与提醒' },
   'settings-ai': { title: 'AI 助手', sub: '管理对话模型与决策模型配置' },
-  'settings-data': { title: '待办与数据', sub: '应用数据目录与待办共享库状态' },
+  'settings-data': { title: '待办与数据', sub: '待办提醒、应用数据目录与共享库状态' },
   'settings-about': { title: '关于', sub: '版本与应用更新' },
 };
 
@@ -107,7 +107,7 @@ function GeneralAppearanceSection({ query, uiTheme, onUiThemeChange }: {
     {
       key: 'closeAction',
       title: '关闭主窗口时',
-      desc: '点击窗口 ✕ 不退出应用,待办提醒与后台任务继续运行',
+      desc: '点击窗口 ✕ 不退出应用,后台任务继续运行',
       control: (
         <div className="seg" role="radiogroup" aria-label="关闭主窗口时">
           <button className={settings.closeAction === 'minimize' ? 'on' : ''} aria-pressed={settings.closeAction === 'minimize'}
@@ -115,15 +115,6 @@ function GeneralAppearanceSection({ query, uiTheme, onUiThemeChange }: {
           <button className={settings.closeAction === 'exit' ? 'on' : ''} aria-pressed={settings.closeAction === 'exit'}
             onClick={() => apply({ closeAction: 'exit' })}>退出应用</button>
         </div>
-      ),
-    },
-    {
-      key: 'remindersEnabled',
-      title: '待办提醒',
-      desc: '到提醒时间弹系统通知,点击通知打开工作台处理',
-      control: (
-        <button type="button" className="toggle" role="switch" aria-checked={settings.remindersEnabled} aria-label="待办提醒"
-          onClick={() => apply({ remindersEnabled: !settings.remindersEnabled })} />
       ),
     },
     {
@@ -241,8 +232,9 @@ function ProfileSection({ query, onAvatarColorChange }: {
   );
 }
 
-// ---------- 待办与数据(目录入口与共享库只读状态) ----------
+// ---------- 待办与数据(提醒、目录入口与共享库只读状态) ----------
 function DataSection({ query }: { query: string }) {
+  const { settings, error: settingsError, apply } = useAppSettings();
   const [info, setInfo] = useState<TodoDbInfo | null>(null);
   const [error, setError] = useState('');
 
@@ -264,6 +256,15 @@ function DataSection({ query }: { query: string }) {
       control: <button className="set-btn" aria-label="打开待办共享库目录" onClick={() => void wb.appInfo.openTodoDir().catch(e => setError(`待办共享库：${errorText(e)}`))}>打开目录</button>,
     },
   ];
+  if (settings) rows.unshift({
+    key: 'remindersEnabled',
+    title: '待办提醒',
+    desc: '到提醒时间弹系统通知,点击通知打开工作台处理',
+    control: (
+      <button type="button" className="toggle" role="switch" aria-checked={settings.remindersEnabled} aria-label="待办提醒"
+        onClick={() => apply({ remindersEnabled: !settings.remindersEnabled })} />
+    ),
+  });
   if (info) rows.push(
     {
       key: 'syncState',
@@ -290,6 +291,8 @@ function DataSection({ query }: { query: string }) {
     <>
       <Rows rows={rows} query={query} />
       {error && <p className="error" role="alert">{error}</p>}
+      {settingsError && <p className="error" role="alert">{settingsError}</p>}
+      {!settings && !settingsError && <p className="help" role="status">正在读取设置…</p>}
       {!info && !error && <p className="help" role="status">正在读取共享库状态…</p>}
     </>
   );

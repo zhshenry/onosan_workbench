@@ -87,7 +87,7 @@ try {
     await dialog.waitFor({ state: 'hidden' });
     taskId = (await page.evaluate(() => window.workbench.todo.state())).tasks.find(task => task.title === title).id;
     await page.locator('.rail [data-workbench="settings"]').click();
-    if (!await page.getByRole('button', { name: '退出应用', exact: true }).isVisible()) await page.locator('.tree').getByRole('button', { name: '通用&外观', exact: true }).click();
+    if (!await page.getByRole('button', { name: '退出应用', exact: true }).isVisible()) await page.locator('.tree').getByRole('button', { name: /^(?:通用与外观|通用&外观)$/ }).click();
     await page.getByRole('button', { name: '退出应用', exact: true }).click();
     await page.waitForFunction(() => window.workbench.settings.get().then(value => value.closeAction === 'exit'));
   });

@@ -396,7 +396,7 @@ export async function runTopbarDatesPilot({ application, page, check, screenshot
   try {
     // Settings keeps unsupported legacy data out of unrelated home-view widgets.
     await page.locator('.rail [data-workbench="settings"]').click();
-    await page.locator('.tree').getByRole('button', { name: '通用&外观', exact: true }).click();
+    await page.locator('.tree').getByRole('button', { name: '通用与外观', exact: true }).click();
     await check('Topbar dates: synthetic AI status event shows crowded toolbar without provider or chat writes', async () => {
       await injectTopbarAiJob(application, page);
       await inspectTopbarControls(page, true);

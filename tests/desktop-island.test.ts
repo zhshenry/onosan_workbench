@@ -14,7 +14,7 @@ import * as contracts from '../shared/island-contracts';
 import { newTask } from '../shared/todo-contracts';
 
 const require = createRequire(import.meta.url);
-function fixture(t: any) {
+function fixture(t: any, agentsEnabled = false) {
   const dir = mkdtempSync(join(tmpdir(), 'ono-island-native-')), windows: any[] = [], handlers = new Map<string, Function>(), messages: any[] = [], notifications: any[] = [], unclaimed: any[] = [], iconRequests: any[] = [], drags: any[] = [];
   const nativeIcon = { toDataURL: () => 'data:image/png;base64,native-icon' };
   const power = new EventEmitter(), screens: any = new EventEmitter();
@@ -42,6 +42,7 @@ function fixture(t: any) {
   const code = transformSync(readFileSync('electron/desktop-island.ts', 'utf8'), { loader: 'ts', format: 'cjs' }).code;
   new Function('require', 'module', 'exports', code)((name: string) => name === 'electron' ? electron : name === './island-store' ? { IslandStore } : name === './agent-hooks' ? { AgentHooks: class extends AgentHooks { constructor(directory: string) { super(directory, join(directory, 'clients'), join(directory, 'clients', '.codex')); } } } : name === './agent-message-store' ? { agentMessageUrl } : name === '../shared/agent-message-contracts' ? agentContracts : name === './island-quotas' ? { IslandQuotas: class { read() { return []; } refresh() { return Promise.resolve([]); } stop() {} } } : name === './island-fullscreen' ? { watchFullscreen: (fn: typeof full) => { full = fn; return () => undefined; } } : name === './island-file-icons' ? { readIslandFileIcons: async (files: any[]) => { iconRequests.push(files.map(file => file.path)); return Object.fromEntries(files.map(file => [file.id, nativeIcon.toDataURL()])); } } : name === '../shared/island-contracts' ? contracts : require(name), module, module.exports);
   const owner = new module.exports.DesktopIsland('http://localhost', '/unused/preload.cjs', dir, () => main, { all: () => [], unclaim: (task: unknown) => unclaimed.push(task) });
+  if (agentsEnabled) { owner.agents.connect('codex', true); owner.agents.connect('cursor', true); }
   owner.register();
   const invoke = (name: string, ...args: unknown[]) => handlers.get(name)!({ sender: main.webContents, senderFrame: main.webContents.mainFrame }, ...args);
   const visibleBounds = () => { const frame = owner.window.getBounds(), region = owner.window.shape[0]; return { ...region, x: frame.x + region.x, y: frame.y + region.y }; };
@@ -153,8 +154,8 @@ test('island Agent: message canvas preserves the bar anchor at configured offset
 
 test('island Agent: eight seconds closes only the bubble; opening and closing the list keeps unread messages', t => {
   t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: new Date('2026-11-08T10:00:00').getTime() });
-  const f = fixture(t); f.owner.show();
-  const inbox = join(f.dir, 'agent-inbox'); mkdirSync(inbox);
+  const f = fixture(t, true); f.owner.show();
+  const inbox = join(f.dir, 'agent-inbox'); mkdirSync(inbox, { recursive: true });
   writeFileSync(join(inbox, '1000-aa.json'), JSON.stringify({ provider: 'codex', sessionId: 'session-1', turnId: 'turn-1', kind: 'reply', occurredAt: Date.now(), title: '验证完成' }));
   f.owner.tick(); assert.equal(f.owner.state().mode, 'speech');
   assert.equal(f.owner.state().agentMessages.length, 1); assert.equal(f.owner.state().agentMessages[0].readAt, null);
@@ -168,8 +169,27 @@ test('island Agent: eight seconds closes only the bubble; opening and closing th
   f.invoke('island:dismiss', f.owner.state().reminders[0].id); assert.equal(f.owner.state().agentMessages[0].readAt, null);
 });
 
+test('island Agent: switching off immediately clears Codex bubbles and rejects late callbacks while Cursor stays active', t => {
+  t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-11-11T10:00:00').getTime() });
+  const f = fixture(t, true); f.owner.show();
+  const old = f.owner.agents.messages.ingest({ provider: 'codex', sessionId: 'disable', turnId: 'existing', kind: 'reply', occurredAt: Date.now(), title: '现有消息' });
+  f.owner.notify([{ id: `agent:${old.id}`, kind: 'agent', title: '现有消息', createdAt: Date.now() }]);
+  assert.equal(f.owner.state().mode, 'speech');
+  assert.equal(f.invoke('island:agentConnect', 'codex', false)[0].connected, false);
+  assert.equal(f.owner.state().mode, 'collapsed'); assert.deepEqual(f.owner.state().reminders, []);
+  assert.equal(f.owner.agents.messages.get(old.id).readAt, null, '关闭不擅自标记旧消息已读');
+  const inbox = join(f.dir, 'agent-inbox');
+  for (const [provider, name] of [['codex', '1000-aa.json'], ['cursor', '1001-bb.json']]) writeFileSync(join(inbox, name), JSON.stringify({ provider, sessionId: 'late', turnId: 'after-off', kind: 'reply', occurredAt: Date.now(), title: '迟到消息' }));
+  f.owner.tick();
+  assert.equal(f.owner.state().agentMessages.filter((message: any) => message.provider === 'codex').length, 1);
+  assert.equal(f.owner.state().agentMessages.filter((message: any) => message.provider === 'cursor').length, 1);
+  assert.equal(f.owner.state().mode, 'speech');
+  assert.ok(f.owner.state().reminders.every((reminder: any) => reminder.id !== `agent:${old.id}`));
+  assert.equal(f.invoke('island:agentConnections')[1].connected, true);
+});
+
 test('island Agent: read and launch are guarded; legacy checks stay off the message feed and retain stored state', async t => {
-  const f = fixture(t), message = f.owner.agents.messages.ingest({ provider: 'codex', sessionId: 'session-1', turnId: 'turn-1', kind: 'approval', requestKey: 'request-1', occurredAt: Date.now(), title: '执行验证' });
+  const f = fixture(t, true), message = f.owner.agents.messages.ingest({ provider: 'codex', sessionId: 'session-1', turnId: 'turn-1', kind: 'approval', requestKey: 'request-1', occurredAt: Date.now(), title: '执行验证' });
   f.owner.show();
   for (const channel of ['island:agentRead', 'island:agentOpen', 'island:agentConnect', 'island:agentConnections']) {
     assert.throws(() => f.handlers.get(channel)!({ sender: f.other.webContents, senderFrame: f.other.webContents.mainFrame }, message.id), /仅工作台/);
@@ -185,14 +205,14 @@ test('island Agent: read and launch are guarded; legacy checks stay off the mess
 });
 
 test('island Agent: old and new Codex permission checks never trigger badges or bubbles; final replies still do', t => {
-  const f = fixture(t), now = Date.now(); f.owner.show();
+  const f = fixture(t, true), now = Date.now(); f.owner.show();
   const pending = f.owner.agents.messages.ingest({ provider: 'codex', sessionId: 'checks', turnId: 'legacy', kind: 'approval', requestKey: 'pending', occurredAt: now });
   const resolved = f.owner.agents.messages.ingest({ provider: 'codex', sessionId: 'checks', turnId: 'legacy', kind: 'approval', requestKey: 'resolved', occurredAt: now });
   f.owner.agents.messages.ingest({ provider: 'codex', sessionId: 'checks', turnId: 'legacy', kind: 'resolved', requestKey: 'resolved', occurredAt: now + 1 });
   f.owner.store.enqueue([pending, resolved].map(message => ({ id: `agent:${message.id}`, kind: 'agent', title: '权限检查', createdAt: now })));
   assert.deepEqual(f.owner.state().agentMessages, []); assert.deepEqual(f.owner.state().reminders, []);
   f.owner.tick(); assert.deepEqual(f.owner.store.read().reminders, []); assert.equal(f.owner.state().mode, 'collapsed');
-  const inbox = join(f.dir, 'agent-inbox'); mkdirSync(inbox);
+  const inbox = join(f.dir, 'agent-inbox'); mkdirSync(inbox, { recursive: true });
   const base = { provider: 'codex', sessionId: 'checks', turnId: 'current', requestKey: 'auto-review', occurredAt: now + 2 };
   writeFileSync(join(inbox, '1000-aa.json'), JSON.stringify({ ...base, kind: 'approval', title: '继续隔离 Electron 界面验收' }));
   f.owner.tick(); assert.deepEqual(f.owner.state().agentMessages, []); assert.deepEqual(f.owner.state().reminders, []);
@@ -206,7 +226,7 @@ test('island Agent: old and new Codex permission checks never trigger badges or 
 });
 
 test('island Agent: silent when hidden or quiet, and pinned page survives a visit to messages', t => {
-  const f = fixture(t);
+  const f = fixture(t, true);
   f.owner.notify([{ id: 'agent:one', kind: 'agent', title: 'Codex 有新回复', createdAt: Date.now() }]);
   assert.equal(f.notifications.length, 0); assert.equal(f.owner.window, null);
   f.owner.show(); f.invoke('island:patch', { dnd: true, dndStart: '00:00', dndEnd: '00:00' });
@@ -218,7 +238,7 @@ test('island Agent: silent when hidden or quiet, and pinned page survives a visi
 });
 
 test('island Agent: assistant bulk read is frame-guarded and clears only the selected Agent reminders', t => {
-  const f = fixture(t);
+  const f = fixture(t, true);
   const reply = f.owner.agents.messages.ingest({ provider: 'codex', sessionId: 'bulk', turnId: 'reply', kind: 'reply', occurredAt: 1000 });
   const approval = f.owner.agents.messages.ingest({ provider: 'codex', sessionId: 'bulk', turnId: 'approval', kind: 'approval', requestKey: 'pending', occurredAt: 1000 });
   const targets = [reply, approval].map(({ id, updatedAt }: any) => ({ id, updatedAt }));
@@ -259,23 +279,41 @@ test('island sedentary: authorized actions share the reminder queue and never in
   assert.equal(f.owner.state().reminders.length, 0); assert.equal(f.owner.state().mode, 'collapsed');
 });
 
-test('island sedentary: suspend, unlock and quiet-hours end start a fresh interval', t => {
+test('island health reminders: suspend, unlock and quiet-hours end start fresh intervals for both kinds', t => {
   t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-11-07T10:00:00').getTime() });
-  const f = fixture(t); f.owner.show(); f.invoke('island:patch', { sedentaryEnabled: true });
+  const f = fixture(t); f.owner.show(); f.invoke('island:patch', { sedentaryEnabled: true, waterEnabled: true });
   for (const [start, end] of [['suspend', 'resume'], ['lock-screen', 'unlock-screen']]) {
     f.owner.notify([{ id: start, kind: 'sedentary', title: '起来走走', createdAt: Date.now() }]);
     assert.equal(f.owner.state().mode, 'speech');
-    f.power.emit(start); assert.equal(f.owner.state().sedentary.nextAt, null); assert.equal(f.owner.window.isVisible(), false);
+    f.power.emit(start); assert.equal(f.owner.state().sedentary.nextAt, null); assert.equal(f.owner.state().water.nextAt, null); assert.equal(f.owner.window.isVisible(), false);
     assert.equal(f.owner.state().mode, 'collapsed', 'clearing the pending activity must close its bubble');
     t.mock.timers.tick(7200000); f.owner.tick(); assert.equal(f.owner.state().reminders.length, 0);
-    f.power.emit(end); assert.equal(f.owner.state().sedentary.nextAt, Date.now() + 3600000); assert.equal(f.owner.window.isVisible(), true);
+    f.power.emit(end); assert.equal(f.owner.state().sedentary.nextAt, Date.now() + 3600000); assert.equal(f.owner.state().water.nextAt, Date.now() + 3600000); assert.equal(f.owner.window.isVisible(), true);
   }
   f.owner.notify([{ id: 'quiet-pending', kind: 'sedentary', title: '起来走走', createdAt: Date.now() }]);
   f.invoke('island:patch', { dnd: true, dndStart: '00:00', dndEnd: '00:00' }); f.owner.tick();
   assert.equal(f.owner.state().sedentary.nextAt, null);
+  assert.equal(f.owner.state().water.nextAt, null);
   assert.equal(f.owner.state().mode, 'collapsed');
   t.mock.timers.tick(7200000); f.invoke('island:patch', { dnd: false }); f.owner.tick();
-  assert.equal(f.owner.state().sedentary.nextAt, Date.now() + 3600000); assert.equal(f.owner.state().reminders.length, 0);
+  assert.equal(f.owner.state().sedentary.nextAt, Date.now() + 3600000); assert.equal(f.owner.state().water.nextAt, Date.now() + 3600000); assert.equal(f.owner.state().reminders.length, 0);
+});
+
+test('island health reminders: IPC persists independent hours and resumes without recording an acknowledgement', t => {
+  t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-11-07T10:00:00').getTime() });
+  const f = fixture(t);
+  f.invoke('island:patch', { waterEnabled: true, sedentaryEnabled: true, sedentaryStart: '11:00', sedentaryEnd: '19:00' });
+  assert.equal(f.owner.state().sedentary.nextAt, null); assert.equal(f.owner.state().water.nextAt, Date.now() + 3600000);
+  for (const kind of ['water', 'sedentary']) {
+    f.invoke(`island:${kind}`, 'pause'); assert.equal(f.owner.state()[kind].nextAt, null);
+    assert.throws(() => f.invoke(`island:${kind}`, 'snooze'), /暂停/);
+    f.invoke(`island:${kind}`, 'resume'); assert.equal(f.owner.state()[kind].pausedDay, null);
+    assert.equal(f.owner.state().water.count, 0);
+    assert.throws(() => f.handlers.get(`island:${kind}`)!({ sender: f.other.webContents, senderFrame: f.other.webContents.mainFrame }, 'resume'), /仅工作台/);
+  }
+  const before = f.owner.state().settings;
+  assert.throws(() => f.invoke('island:patch', { sedentaryStart: '24:00' }));
+  assert.deepEqual(f.owner.state().settings, before);
 });
 
 test('island sedentary: hidden island keeps the activity reminder silent', t => {
@@ -458,14 +496,64 @@ test('island native: mixed hidden alerts exclude water from system notification 
   assert.deepEqual(target.mock.calls[0].arguments, [{ view: 'home', taskId: 'task-1' }]);
 });
 
-test('island native: visible water opens a speech bubble and retracts after eight idle seconds', t => {
-  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+test('island native: water and sedentary bubbles remain until handled, including after pointer leave', t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'], now: new Date('2026-11-11T10:00:00').getTime() });
   const f = fixture(t), beep = t.mock.method(f.electron.shell, 'beep');
-  f.owner.show(); f.owner.store.patch({ waterEnabled: true, sound: true });
-  f.owner.notify([{ id: 'water-visible', kind: 'water', title: '喝口水，稍作休息', createdAt: Date.now() }]);
-  assert.equal(f.owner.state().mode, 'speech'); assert.equal(f.notifications.length, 0);
-  assert.equal(beep.mock.callCount(), 1); assert.equal(f.main.focused, false);
-  t.mock.timers.tick(8000); assert.equal(f.owner.state().mode, 'collapsed');
+  f.owner.show(); f.owner.store.patch({ waterEnabled: true, sedentaryEnabled: true, sound: true });
+  for (const kind of ['water', 'sedentary']) {
+    f.owner.notify([{ id: `${kind}-visible`, kind, title: '健康提醒', createdAt: Date.now() }]);
+    assert.equal(f.owner.state().mode, 'speech'); assert.equal(f.notifications.length, 0);
+    const sender = f.owner.window.webContents;
+    f.handlers.get('island:hold')!({ sender, senderFrame: sender.mainFrame }, true);
+    t.mock.timers.tick(9000);
+    f.handlers.get('island:hold')!({ sender, senderFrame: sender.mainFrame }, false);
+    t.mock.timers.tick(300000); assert.equal(f.owner.state().mode, 'speech');
+    f.invoke(`island:${kind}`, kind === 'water' ? 'drink' : 'reset');
+    assert.equal(f.owner.state().mode, 'collapsed');
+  }
+  assert.equal(beep.mock.callCount(), 2); assert.equal(f.main.focused, false);
+});
+
+test('island native: task and AI bubbles each expire after eight seconds then return to pending health reminders', t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'], now: new Date('2026-11-11T10:00:00').getTime() });
+  const f = fixture(t, true); f.owner.show(); f.invoke('island:patch', { waterEnabled: true });
+  f.owner.notify([{ id: 'water-persistent', kind: 'water', title: '喝水', createdAt: Date.now() }]);
+  const message = f.owner.agents.messages.ingest({ provider: 'codex', sessionId: 'sticky-bubble', turnId: 'reply-1', kind: 'reply', occurredAt: Date.now(), title: '新回复' });
+  f.owner.notify([{ id: `agent:${message.id}`, kind: 'agent', title: '新回复', createdAt: Date.now() }]);
+  assert.equal(f.owner.state().bubbleReminderId, `agent:${message.id}`);
+  t.mock.timers.tick(7999); assert.equal(f.owner.state().bubbleReminderId, `agent:${message.id}`);
+  t.mock.timers.tick(1); assert.equal(f.owner.state().mode, 'speech'); assert.equal(f.owner.state().bubbleReminderId, 'water-persistent');
+  assert.equal(f.owner.state().agentMessages[0].readAt, null, '自动收起不会标记 AI 已读');
+  f.owner.remindTasks([task('meeting')]);
+  assert.equal(f.owner.state().reminders.find((item: any) => item.id === f.owner.state().bubbleReminderId).kind, 'meeting');
+  t.mock.timers.tick(8000); assert.equal(f.owner.state().bubbleReminderId, 'water-persistent');
+  t.mock.timers.tick(300000); assert.equal(f.owner.state().mode, 'speech');
+  f.invoke('island:water', 'snooze'); assert.equal(f.owner.state().mode, 'collapsed');
+  assert.equal(f.owner.state().agentMessages[0].readAt, null);
+});
+
+test('island native: schedule and todo bubbles last eight idle seconds without completing their records', t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'], now: new Date('2026-11-11T10:00:00').getTime() });
+  const f = fixture(t); f.owner.show();
+  for (const kind of ['meeting', 'task'] as const) {
+    f.owner.remindTasks([task(kind)]);
+    assert.equal(f.owner.state().mode, 'speech');
+    t.mock.timers.tick(7999); assert.equal(f.owner.state().mode, 'speech');
+    t.mock.timers.tick(1); assert.equal(f.owner.state().mode, 'collapsed');
+    assert.ok(f.owner.state().reminders.some((reminder: any) => reminder.kind === kind));
+  }
+});
+
+test('island native: changing the displayed reminder cancels the previous duration and preserves health ordering', t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'], now: new Date('2026-11-11T10:00:00').getTime() });
+  const f = fixture(t); f.owner.show(); f.invoke('island:patch', { waterEnabled: true, sedentaryEnabled: true });
+  f.owner.notify([{ id: 'water-first', kind: 'water', title: '喝水', createdAt: Date.now() }, { id: 'activity-next', kind: 'sedentary', title: '活动', createdAt: Date.now() }]);
+  f.owner.remindTasks([task()]); const transient = f.owner.state().bubbleReminderId;
+  t.mock.timers.tick(1000); f.invoke('island:dismiss', transient);
+  t.mock.timers.tick(8000); assert.equal(f.owner.state().mode, 'speech'); assert.equal(f.owner.state().bubbleReminderId, 'water-first');
+  f.invoke('island:water', 'drink'); assert.equal(f.owner.state().bubbleReminderId, 'activity-next');
+  t.mock.timers.tick(300000); assert.equal(f.owner.state().mode, 'speech');
+  f.invoke('island:sedentary', 'pause'); assert.equal(f.owner.state().mode, 'collapsed');
 });
 test('island native: schedule and low-quota reminders share the mascot speech delivery', t => {
   const f = fixture(t); f.owner.show();
@@ -559,6 +647,23 @@ test('island native: removed display reanchors and embedded pages cannot invoke 
   assert.throws(() => f.handlers.get('island:filesAdd')!({ sender: f.other.webContents, senderFrame: f.other.webContents.mainFrame }, []), /仅工作台/);
   assert.throws(() => f.handlers.get('island:quotaConnect')!({ sender: f.main.webContents, senderFrame: {} }, 'codex'), /仅工作台/);
   assert.equal(f.messages.some(m => m.owner === f.other), false);
+});
+
+test('island native: display topology and metrics changes publish fresh state without overwriting fixed selection', t => {
+  const f = fixture(t); f.owner.show();
+  const primary = Object.assign(f.screens.getPrimaryDisplay(), { size: { width: 1280, height: 1040 } });
+  assert.equal(f.invoke('island:displays').length, 1);
+  const external = { id: 2, label: '外接屏', size: { width: 1920, height: 1080 }, workArea: { x: 1280, y: 0, width: 1920, height: 1040 } };
+  f.displays([primary, external]);
+  const before = f.messages.length; f.screens.emit('display-added', {}, external);
+  assert.ok(f.messages.length > before); assert.equal(f.invoke('island:displays').length, 2);
+  f.invoke('island:patch', { displayId: 2 }); f.displays([primary]);
+  assert.equal(f.owner.state().settings.displayId, 2); assert.equal(f.invoke('island:displays').length, 1);
+  const metricsBefore = f.messages.length; primary.size = { width: 1440, height: 900 };
+  f.screens.emit('display-metrics-changed', {}, primary, ['bounds']);
+  assert.ok(f.messages.length > metricsBefore); assert.match(f.invoke('island:displays')[0].label, /1440×900/);
+  f.owner.destroy();
+  for (const event of ['display-added', 'display-removed', 'display-metrics-changed']) assert.equal(f.screens.listenerCount(event), 0);
 });
 
 test('island shelf: note CRUD rejects other windows and embedded frames', t => {

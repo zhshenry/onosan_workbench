@@ -281,16 +281,26 @@
 .island-reminder > b { overflow-wrap: anywhere; }
 .desktop-island[data-dock="top"].is-speech::before { height: calc(40px * var(--island-scale, 1)); }
 .desktop-island[data-dock="top"].is-speech .island-summary-row { height: calc(40px * var(--island-scale, 1)); flex: 0 0 calc(40px * var(--island-scale, 1)); }
-.island-speech { position: absolute; top: 52px; left: 12px; width: min(224px, calc(100vw / var(--island-scale, 1) - 24px)); min-height: 84px; max-height: 132px; padding: 12px; box-sizing: border-box; border-radius: 14px; background: var(--island-surface); display: flex; flex-direction: column; gap: 10px; zoom: var(--island-scale, 1); animation: island-reveal 160ms ease-out; }
+.island-speech { position: absolute; top: 52px; left: 12px; width: min(224px, calc(100vw / var(--island-scale, 1) - 24px)); min-height: 84px; max-height: 132px; padding: 12px 12px 8px; box-sizing: border-box; border-radius: 14px; background: var(--island-surface); display: flex; flex-direction: column; gap: 10px; zoom: var(--island-scale, 1); animation: island-reveal 160ms ease-out; }
 .island-speech-tail { position: absolute; left: 18px; top: -13px; color: var(--island-surface); pointer-events: none; }
-.island-speech .island-reminder { gap: 10px; }
-.island-speech .island-reminder > b { display: block; max-height: 3em; overflow: auto; padding-right: 16px; font-size: var(--type-control); line-height: 1.5; }
+.island-speech > .island-reminders { flex: 1; }
+.island-speech .island-reminder { flex: 1; gap: 10px; }
+.island-speech .island-task-reminder { min-height: 112px; }
+.island-speech .island-reminder > b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; padding-right: 16px; font-size: var(--type-control); line-height: 1.5; }
+.island-speech .island-reminder > .island-item-title { display: block; overflow: visible; }
+.island-item-title > small { display: block; margin-bottom: 3px; font-weight: 400; }
+.island-item-title > span { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.island-item-title.is-meeting { font-weight: 500; }
+.island-item-title.is-meeting > span { -webkit-line-clamp: 2; }
 .island-speech-error { margin: 0; padding-right: 16px; max-height: 3em; overflow: auto; color: #ffceca; font-size: var(--type-caption); overflow-wrap: anywhere; }
 .island-speech:has(.island-speech-error) .island-reminder > b { display: none; }
+.island-speech:has(.island-speech-error) .island-task-reminder { min-height: 0; }
 .desktop-island .island-speech-close { position: absolute; top: 6px; right: 6px; width: 24px; min-height: 24px; background: transparent; color: var(--island-muted); }
-.island-speech .island-inline { flex-wrap: wrap; gap: 6px; }
+.island-speech .island-inline { flex-wrap: wrap; gap: 6px; margin-top: auto; }
 .desktop-island .island-speech .island-inline button { min-height: 24px; padding: 3px 10px; font-size: var(--type-caption); line-height: 1.25; white-space: nowrap; background: var(--island-line); }
 .desktop-island .island-speech .island-inline button.primary { background: var(--island-blue); color: var(--island-bg); }
+.island-speech .island-task-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 4px; }
+.desktop-island .island-speech .island-task-actions button { min-width: 0; padding-inline: 6px; }
 .desktop-island .island-speech button:hover:not(:disabled) { filter: brightness(1.12); }
 .desktop-island .island-speech button:active:not(:disabled) { filter: brightness(.9); }
 .is-speech .island-mascot.can-blink { animation: island-speaking 1.6s ease-in-out infinite; }

@@ -7,9 +7,7 @@ import { TaskEditor, type TaskEditorApi, type TodoState } from '../../modules/to
 import { TodayBoard, type Mutate } from '../../modules/todo/ui/TodayBoard';
 import { TaskLibrary } from '../../modules/todo/ui/TaskLibrary';
 import { CheckinHomeCard } from './CheckinView';
-import {
-  IconBagua, IconDocs, IconGamepad, IconVideo, IconWeb,
-} from '../icons';
+import { IconDocs } from '../icons';
 
 const wb = window.workbench;
 
@@ -27,13 +25,9 @@ const editorApi: TaskEditorApi = {
 
 const WEEKDAY_NAMES = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
-export function HomeView({ data, clock, mutate, userName, onPending, onOpenMedia, onOpenBazi, onOpenGame, onOpenWeb, onOpenCheckin, editor, setEditor, onAskAi }: {
+export function HomeView({ data, clock, mutate, userName, onPending, onOpenCheckin, editor, setEditor, onAskAi }: {
   data: TodoState; clock: Date; mutate: Mutate; userName: string;
   onPending: (name: string) => void;
-  onOpenMedia: () => void;
-  onOpenBazi: () => void;
-  onOpenGame: () => void;
-  onOpenWeb: () => void;
   onOpenCheckin: () => void;
   editor: Task | 'new' | null;
   setEditor: (t: Task | 'new' | null) => void;
@@ -174,47 +168,6 @@ export function HomeView({ data, clock, mutate, userName, onPending, onOpenMedia
           </div>
 
           <CheckinHomeCard open={onOpenCheckin} />
-
-          <div className="panel glass" style={{ marginTop: 16 }}>
-            <div className="phead">
-              <span className="ptitle">更多工作台</span>
-              <span className="pcount">可从左侧图标栏切换工作台</span>
-            </div>
-            <div className="mgrid">
-              <button type="button" className="mitem" onClick={onOpenMedia}>
-                <span className="mtile"><IconVideo /></span>
-                <span className="mtext">
-                  <span className="mname">自媒体工作台</span>
-                  <span className="mdesc">博客编辑、图文发布与我的小红书</span>
-                </span>
-                <span className="ntag">已上线</span>
-              </button>
-              <button type="button" className="mitem" onClick={onOpenWeb}>
-                <span className="mtile"><IconWeb /></span>
-                <span className="mtext">
-                  <span className="mname">网页工作台</span>
-                  <span className="mdesc">内置浏览器 · 多标签与网页浏览</span>
-                </span>
-                <span className="ntag">已上线</span>
-              </button>
-              <button type="button" className="mitem" onClick={onOpenGame}>
-                <span className="mtile"><IconGamepad /></span>
-                <span className="mtext">
-                  <span className="mname">游戏工作台</span>
-                  <span className="mdesc">轨迹侦探 · 双环境试玩与自动测试</span>
-                </span>
-                <span className="ntag">已上线</span>
-              </button>
-              <button type="button" className="mitem" onClick={onOpenBazi}>
-                <span className="mtile"><IconBagua /></span>
-                <span className="mtext">
-                  <span className="mname">命理</span>
-                  <span className="mdesc">八字 · 紫微斗数 · 占星</span>
-                </span>
-                <span className="ntag">已上线</span>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 

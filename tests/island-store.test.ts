@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, writeFileSync, existsSync, rmSync, mkdirSync
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { IslandStore } from '../electron/island-store';
-import { initialIslandData, inTimeRange, islandBounds, islandPage, islandPages, nextWater, focusRemaining } from '../shared/island-contracts';
+import { initialIslandData, inTimeRange, islandBounds, islandPage, islandPages, nextHealthReminder, focusRemaining } from '../shared/island-contracts';
 import { codexQuotaWindows, zcodeQuotaWindows, quotaSummary, quotaDisplayWindows } from '../shared/island-quota';
 
 function fixture(t: Parameters<Parameters<typeof test>[1]>[0]) {
@@ -25,11 +25,12 @@ test('island: opt-in defaults and partial page settings survive restart', t => {
 
 test('island sedentary: legacy data stays intact and new reminder is opt-in', t => {
   const { dir, store, now } = fixture(t), path = join(dir, 'desktop-island.json');
-  const { sedentary, settings: { sedentaryEnabled, sedentaryMinutes, ...settings }, ...legacy } = store.read();
+  const { sedentary, settings: { sedentaryEnabled, sedentaryMinutes, sedentaryStart, sedentaryEnd, ...settings }, ...legacy } = store.read();
   const original = JSON.stringify({ ...legacy, settings }); writeFileSync(path, original);
   const loaded = new IslandStore(dir, now);
   assert.equal(loaded.loadError, ''); assert.equal(loaded.read().settings.sedentaryEnabled, false);
   assert.equal(loaded.read().settings.sedentaryMinutes, 60); assert.equal(loaded.read().sedentary.nextAt, null);
+  assert.equal(loaded.read().settings.sedentaryStart, '09:00'); assert.equal(loaded.read().settings.sedentaryEnd, '18:00');
   assert.deepEqual(loaded.read().water, legacy.water); assert.deepEqual(loaded.read().notes, legacy.notes);
   assert.equal(readFileSync(path, 'utf8'), original);
   assert.throws(() => loaded.sedentary('reset'), /启用/);
@@ -51,11 +52,26 @@ test('island sedentary: one pending reminder, explicit reset and snooze keep wat
   assert.equal(store.read().reminders.length, 0); assert.equal(store.read().water.nextAt, null);
 });
 
+test('island health reminders: adding time windows preserves existing settings, counts and today pause', t => {
+  const { dir, store, now } = fixture(t);
+  store.patch({ waterEnabled: true, waterMinutes: 45, waterStart: '10:00', waterEnd: '20:00', sedentaryEnabled: true, sedentaryMinutes: 30 });
+  store.water('drink'); store.water('pause'); store.sedentary('pause');
+  const { sedentaryStart, sedentaryEnd, ...settings } = store.read().settings;
+  const saved = { ...store.read(), settings };
+  writeFileSync(join(dir, 'desktop-island.json'), JSON.stringify(saved));
+  const loaded = new IslandStore(dir, now); loaded.restartHealthReminders();
+  assert.equal(loaded.loadError, '');
+  assert.equal(loaded.read().settings.sedentaryStart, '09:00'); assert.equal(loaded.read().settings.sedentaryEnd, '18:00');
+  assert.equal(loaded.read().settings.waterMinutes, 45); assert.equal(loaded.read().settings.sedentaryMinutes, 30);
+  assert.equal(loaded.read().settings.waterStart, '10:00'); assert.equal(loaded.read().settings.waterEnd, '20:00');
+  assert.deepEqual(loaded.read().water, saved.water); assert.deepEqual(loaded.read().sedentary, saved.sedentary);
+});
+
 test('island sedentary: today pause survives restart, resets next day and can be resumed explicitly', t => {
   const { dir, store, advance, now } = fixture(t);
   store.patch({ sedentaryEnabled: true, focusEnabled: false, waterEnabled: false, mascotEnabled: false, lastPage: 'tools' });
   assert.equal(islandPage(store.read().settings), 'tools');
-  store.sedentary('pause'); const loaded = new IslandStore(dir, now); loaded.restartSedentary();
+  store.sedentary('pause'); const loaded = new IslandStore(dir, now); loaded.restartHealthReminders();
   assert.equal(loaded.read().sedentary.nextAt, null); assert.throws(() => loaded.sedentary('snooze'), /暂停/);
   advance(3600000); assert.equal(loaded.tick().length, 0);
   loaded.sedentary('reset'); assert.equal(loaded.read().sedentary.pausedDay, null);
@@ -67,12 +83,12 @@ test('island sedentary: today pause survives restart, resets next day and can be
 
 test('island sedentary: lock, sleep and quiet periods discard elapsed time without catching up', t => {
   const { dir, store, advance, now } = fixture(t);
-  store.patch({ sedentaryEnabled: true }); advance(3600000); store.tick();
+  store.patch({ sedentaryEnabled: true, sedentaryStart: '00:00', sedentaryEnd: '00:00' }); advance(3600000); store.tick();
   assert.equal(store.read().reminders.length, 1);
   store.tick(true); assert.equal(store.read().sedentary.nextAt, null); assert.equal(store.read().reminders.length, 0);
   advance(8 * 3600000); assert.equal(store.tick(true).length, 0);
   assert.equal(store.tick(false).length, 0); assert.equal(store.read().sedentary.nextAt, now() + 3600000);
-  advance(7200000); const restarted = new IslandStore(dir, now); restarted.restartSedentary();
+  advance(7200000); const restarted = new IslandStore(dir, now); restarted.restartHealthReminders();
   assert.equal(restarted.tick().length, 0); assert.equal(restarted.read().sedentary.nextAt, now() + 3600000);
 });
 
@@ -234,13 +250,71 @@ test('island: water uses active hours, merges sleep, counts only explicit drink,
   store.water('pause'); advance(600000); assert.equal(store.tick().length, 0);
   store.patch({ waterEnabled: false }); advance(3600000); assert.equal(store.tick().length, 0); assert.equal(store.read().water.nextAt, null);
 });
-test('island: quiet hours include overnight and water scheduling skips inactive hours', () => {
+test('island: quiet hours include overnight and health timers only schedule complete intervals inside active hours', () => {
   assert.equal(inTimeRange(new Date('2026-11-04T23:00:00'), '22:00', '08:00'), true);
   assert.equal(inTimeRange(new Date('2026-11-04T12:00:00'), '22:00', '08:00'), false);
   const s = initialIslandData().settings;
-  assert.equal(new Date(nextWater(s, new Date('2026-11-04T17:45:00').getTime())).getHours(), 9);
-  assert.equal(new Date(nextWater(s, new Date('2026-11-04T17:45:00').getTime())).getDate(), 5);
+  for (const kind of ['water', 'sedentary'] as const) {
+    assert.equal(nextHealthReminder(s, kind, new Date('2026-11-04T17:45:00').getTime()), null);
+    assert.equal(nextHealthReminder(s, kind, new Date('2026-11-04T08:30:00').getTime()), null);
+    assert.equal(nextHealthReminder({ ...s, [`${kind}Start`]: '09:00', [`${kind}End`]: '08:00' }, kind, new Date('2026-11-04T07:30:00').getTime(), 120), null, '不能跨过休息时段累计间隔');
+  }
 });
+
+for (const kind of ['water', 'sedentary'] as const) {
+  test(`island ${kind}: independent time window, pending deduplication and fresh interval after each window`, t => {
+    const { store, advance, now } = fixture(t);
+    store.patch({ [`${kind}Enabled`]: true, [`${kind}Start`]: '11:00', [`${kind}End`]: '14:00' });
+    assert.equal(store.read()[kind].nextAt, null);
+    advance(3600000); assert.equal(store.tick().length, 0);
+    assert.equal(store.read()[kind].nextAt, now() + 3600000);
+    advance(3600000); assert.deepEqual(store.tick().map(item => item.kind), [kind]);
+    const pendingId = store.read().reminders[0].id;
+    store.enqueue([{ id: 'duplicate-health-reminder', kind, title: '重复提醒', createdAt: now() }]);
+    assert.deepEqual(store.read().reminders.map(item => item.id), [pendingId]);
+    advance(3600000); assert.equal(store.tick().length, 0);
+    assert.deepEqual(store.read().reminders.map(item => item.id), [pendingId]);
+    advance(3600000); assert.equal(store.tick().length, 0);
+    assert.equal(store.read()[kind].nextAt, null); assert.equal(store.read().reminders.length, 0);
+    advance(21 * 3600000); assert.equal(store.tick().length, 0);
+    assert.equal(store.read()[kind].nextAt, now() + 3600000);
+    assert.equal(store.read().water.count, 0);
+  });
+
+  test(`island ${kind}: quiet periods, explicit resume and persisted today pause use the same rules`, t => {
+    const { dir, store, advance, now } = fixture(t);
+    store.patch({ [`${kind}Enabled`]: true, [`${kind}Start`]: '00:00', [`${kind}End`]: '00:00' });
+    const action = (value: 'pause' | 'snooze' | 'resume') => kind === 'water' ? store.water(value) : store.sedentary(value);
+    advance(3600000); assert.equal(store.tick().length, 1);
+    store.tick(true); assert.equal(store.read()[kind].nextAt, null); assert.equal(store.read().reminders.length, 0);
+    advance(2 * 3600000); assert.equal(store.tick(true).length, 0);
+    assert.equal(store.tick().length, 0); assert.equal(store.read()[kind].nextAt, now() + 3600000);
+    action('snooze'); assert.equal(store.read()[kind].nextAt, now() + 600000);
+    advance(600000); assert.equal(store.tick().length, 1);
+    action('pause'); assert.equal(store.read()[kind].nextAt, null); assert.throws(() => action('snooze'), /暂停/);
+    const restarted = new IslandStore(dir, now); restarted.restartHealthReminders();
+    assert.equal(restarted.read()[kind].nextAt, null);
+    store.patch({ [`${kind}Minutes`]: 30 }); assert.equal(store.read()[kind].nextAt, null, '改间隔不取消今天暂停');
+    action('resume'); assert.equal(store.read()[kind].nextAt, now() + 1800000);
+    assert.equal(store.read().water.count, 0, '恢复不记作喝水');
+    action('pause'); advance(24 * 3600000); assert.equal(store.tick().length, 0);
+    assert.equal(store.read()[kind].nextAt, now() + 1800000);
+    assert.equal(store.read()[kind].pausedDay, null);
+  });
+
+  test(`island ${kind}: overnight hours and invalid time settings preserve data`, t => {
+    const { store, advance, now } = fixture(t);
+    store.patch({ [`${kind}Enabled`]: true, [`${kind}Start`]: '22:00', [`${kind}End`]: '08:00' });
+    assert.equal(store.read()[kind].nextAt, null);
+    advance(12 * 3600000); assert.equal(store.tick().length, 0);
+    assert.equal(store.read()[kind].nextAt, now() + 3600000);
+    advance(3600000); assert.equal(store.tick().length, 1);
+    advance(9 * 3600000); assert.equal(store.tick().length, 0);
+    assert.equal(store.read()[kind].nextAt, null); assert.equal(store.read().reminders.length, 0);
+    const before = store.read();
+    assert.throws(() => store.patch({ [`${kind}Start`]: '25:00' })); assert.deepEqual(store.read(), before);
+  });
+}
 test('island: file shelf deduplicates references, detects missing files and clears without deletion', t => {
   const { dir, store } = fixture(t), path = join(dir, 'sample.txt'), folder = join(dir, 'folder');
   writeFileSync(path, 'original'); mkdirSync(folder);

@@ -76,7 +76,7 @@ export const NAV: WorkbenchDef[] = [
     title: '设置',
     subs: [
       { label: '个人资料', view: 'settings-profile' },
-      { label: '通用&外观', view: 'settings-general' },
+      { label: '通用与外观', view: 'settings-general' },
       { label: '桌面灵动岛', view: 'settings-island' },
       { label: 'AI 助手', view: 'settings-ai' },
       { label: '待办与数据', view: 'settings-data' },
@@ -86,7 +86,7 @@ export const NAV: WorkbenchDef[] = [
 ];
 
 export const resolveView = (view: ViewId): ViewId =>
-  view === 'settings-appearance' || view === 'settings-notifications' ? 'settings-general' : view;
+  view === 'settings-appearance' ? 'settings-general' : view === 'settings-notifications' ? 'settings-data' : view;
 
 export const workbenchById = (id: WorkbenchId): WorkbenchDef => {
   const wb = NAV.find((w) => w.id === id);

@@ -32,7 +32,7 @@ try {
       }
     }
   }
-  if ($kind -and $session -and $turn) {
+  if ($kind -and $session -and $turn -and -not [IO.File]::Exists([IO.Path]::Combine($PSScriptRoot, $Provider + '.disabled'))) {
     $title = ($title -split '[\r\n]')[0]; if ($title.Length -gt 200) { $title = $title.Substring(0,200) }
     if ($detail.Length -gt 500) { $detail = $detail.Substring(0,500) }
     $record = @{ provider=$Provider; sessionId=$session; turnId=$turn; kind=$kind; requestKey=$requestKey; workspace=$workspace; title=$title; detail=$detail; occurredAt=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() }

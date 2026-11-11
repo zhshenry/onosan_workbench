@@ -35,17 +35,15 @@ test('通用与外观在同一页保存、搜索，旧分区入口展示合并�
     names.forEach((name, index) => { if (previous[index]) Object.defineProperty(globalThis, name, previous[index]!); else Reflect.deleteProperty(globalThis, name); });
   });
   await render();
-  const allKeys = ['launchAtLogin', 'closeAction', 'remindersEnabled', 'language', 'uiTheme'];
+  const allKeys = ['launchAtLogin', 'closeAction', 'language', 'uiTheme'];
   assert.deepEqual(keys(), allKeys);
-  assert.equal(dom.window.document.querySelector('h1')!.textContent, '通用&外观');
+  assert.equal(dom.window.document.querySelector('h1')!.textContent, '通用与外观');
   assert.equal(row('launchAtLogin').querySelector('button')!.getAttribute('aria-checked'), 'true');
-  assert.equal(row('remindersEnabled').querySelector('button')!.getAttribute('aria-checked'), 'false');
-  await act(async () => row('remindersEnabled').querySelector<HTMLButtonElement>('button')!.click());
+  assert.equal(row('remindersEnabled'), null);
   await act(async () => row('uiTheme').querySelector<HTMLButtonElement>('[aria-label="冷灰 · 凝霜"]')!.click());
   await render();
-  assert.equal(settings.remindersEnabled, true);
+  assert.equal(settings.remindersEnabled, false);
   assert.equal(settings.uiTheme, 'cool');
-  assert.equal(row('remindersEnabled').querySelector('button')!.getAttribute('aria-checked'), 'true');
   assert.equal(row('uiTheme').querySelector('[aria-label="冷灰 · 凝霜"]')!.getAttribute('aria-checked'), 'true');
   failWrite = true;
   await act(async () => row('launchAtLogin').querySelector<HTMLButtonElement>('button')!.click());
@@ -57,13 +55,13 @@ test('通用与外观在同一页保存、搜索，旧分区入口展示合并�
   assert.equal(dom.window.document.querySelector('.set-empty'), null);
   await search('开机');
   assert.deepEqual(keys(), ['launchAtLogin']);
+  await search('待办提醒');
+  assert.deepEqual(keys(), []);
   await search('不存在的设置项');
   assert.equal(dom.window.document.querySelectorAll('.set-empty').length, 1);
   await act(async () => dom.window.document.querySelector<HTMLButtonElement>('[aria-label="清空设置搜索"]')!.click());
   assert.deepEqual(keys(), allKeys);
-  for (const view of ['settings-appearance', 'settings-notifications'] as const) {
-    await render(view);
-    assert.deepEqual(keys(), allKeys);
-    assert.equal(dom.window.document.querySelector('h1')!.textContent, '通用&外观');
-  }
+  await render('settings-appearance');
+  assert.deepEqual(keys(), allKeys);
+  assert.equal(dom.window.document.querySelector('h1')!.textContent, '通用与外观');
 });

@@ -32,6 +32,8 @@ export class DesktopIsland {
   private shape: Rectangle | null = null;
   private speechHeight = 132;
   private reminderTimer: NodeJS.Timeout | null = null;
+  // Expiry only skips bubble presentation; reminders and AI unread state are retained.
+  private expiredBubbleIds = new Set<string>();
   private timer: NodeJS.Timeout;
   private stopFullscreen: () => void;
   private lastQuotaRead = 0;
@@ -41,13 +43,13 @@ export class DesktopIsland {
   constructor(private devUrl: string | undefined, private preload: string, dir: string, private main: () => BrowserWindow | null, private todo: Store) {
     this.store = new IslandStore(dir);
     this.agents = new AgentHooks(dir);
-    try { this.store.restartSedentary(); } catch { this.error = '久坐提醒恢复失败，请检查数据目录权限'; }
+    try { this.store.restartHealthReminders(); } catch { this.error = '喝水与久坐提醒恢复失败，请检查数据目录权限'; }
     this.quotas = new IslandQuotas(dir, () => {
       try { if (!this.store.loadError) this.checkLowQuota(); }
       catch { this.error = '低额度提醒保存失败，请检查数据目录权限'; }
       this.publish();
     });
-    screen.on('display-removed', this.reposition); screen.on('display-metrics-changed', this.reposition);
+    screen.on('display-added', this.displaysChanged); screen.on('display-removed', this.displaysChanged); screen.on('display-metrics-changed', this.displaysChanged);
     powerMonitor.on('lock-screen', this.lock); powerMonitor.on('unlock-screen', this.unlock);
     powerMonitor.on('suspend', this.suspend); powerMonitor.on('resume', this.resume);
     this.stopFullscreen = watchFullscreen(value => {
@@ -59,11 +61,14 @@ export class DesktopIsland {
   }
   get window(): BrowserWindow | null { return this.win; }
   isVisible(): boolean { return this.store.read().settings.enabled; }
+  private bubbleReminder(reminders: IslandReminder[]): IslandReminder | undefined { return reminders.find(reminder => !this.expiredBubbleIds.has(reminder.id)); }
   private quiet(): boolean { const s = this.store.read().settings; return this.locked || this.suspended || inTimeRange(new Date(), s.dndStart, s.dndEnd) && s.dnd; }
   state(): IslandState {
     const data = this.store.read(), messages = this.agents.messages.read();
-    const ignored = new Set(messages.filter(message => !agentMessageVisible(message)).map(message => `agent:${message.id}`));
-    return { ...data, reminders: data.reminders.filter(reminder => !ignored.has(reminder.id)), files: this.store.files(), agentMessages: messages.filter(agentMessageVisible), mode: this.mode, pinned: this.pinned, quiet: this.quiet(), fullscreenDetection: this.fullscreenDetection, error: this.store.loadError || this.agents.messages.loadError || this.error || undefined };
+    const enabled = new Set(this.agents.status().filter(connection => connection.connected).map(connection => connection.provider));
+    const active = new Set(messages.filter(message => agentMessageVisible(message) && enabled.has(message.provider)).map(message => `agent:${message.id}`));
+    const reminders = data.reminders.filter(reminder => reminder.kind !== 'agent' || active.has(reminder.id));
+    return { ...data, reminders, bubbleReminderId: this.bubbleReminder(reminders)?.id, files: this.store.files(), agentMessages: messages.filter(agentMessageVisible), mode: this.mode, pinned: this.pinned, quiet: this.quiet(), fullscreenDetection: this.fullscreenDetection, error: this.store.loadError || this.agents.messages.loadError || this.error || undefined };
   }
   private async fileIcon(id: string): Promise<string> {
     this.store.file(id);
@@ -201,10 +206,12 @@ export class DesktopIsland {
     if (this.motion) clearTimeout(this.motion); this.motion = null;
     this.win?.setBounds(this.frameBounds()); this.applyShape(this.shapeBounds());
   };
+  private displaysChanged = (): void => { this.reposition(); this.publish(); };
   setMode(mode: IslandMode, reduce = false): void {
     if (this.pinned && mode !== 'expanded' && mode !== 'messages') return;
     const frame = this.frameBounds();
     this.mode = mode;
+    if (mode !== 'speech' && mode !== 'reminder' && this.reminderTimer) { clearTimeout(this.reminderTimer); this.reminderTimer = null; }
     const win = this.win;
     if (this.motion) clearTimeout(this.motion);
     this.motion = null;
@@ -230,16 +237,17 @@ export class DesktopIsland {
       const incoming = this.agents.poll();
       if (incoming.error && this.error !== incoming.error) { this.error = incoming.error; this.publish(); }
       const messages = this.agents.messages.read();
+      const enabled = new Set(this.agents.status().filter(connection => connection.connected).map(connection => connection.provider));
       const stale = this.store.read().reminders.filter(reminder => {
         if (reminder.kind !== 'agent') return false;
         const message = messages.find(value => reminder.id === `agent:${value.id}`);
-        return !message || !agentMessageVisible(message) || message.readAt !== null || message.kind === 'approval' && !agentPending(message);
+        return !message || !enabled.has(message.provider) || !agentMessageVisible(message) || message.readAt !== null || message.kind === 'approval' && !agentPending(message);
       });
       if (stale.length) this.store.dismiss(stale.map(reminder => reminder.id));
       if (incoming.changed || stale.length) {
         const alerts = incoming.alerts.filter(message => agentMessageVisible(message) && (message.kind !== 'approval' || agentPending(this.agents.messages.get(message.id))));
         if (alerts.length) this.notify(alerts.map(message => ({ id: `agent:${message.id}`, kind: 'agent', title: message.title, createdAt: Date.now() })));
-        else if (!this.store.read().reminders.length && (this.mode === 'speech' || this.mode === 'reminder')) this.setMode('collapsed');
+        else this.armReminderTimer();
         this.publish();
       }
     } catch { this.error = 'Agent 消息保存失败，待收取的事件已保留，请检查数据目录权限'; this.publish(); }
@@ -247,8 +255,7 @@ export class DesktopIsland {
       const before = this.store.read(), alerts = this.store.tick(this.quiet());
       if (alerts.length) this.notify(alerts);
       else if (JSON.stringify(before) !== JSON.stringify(this.store.read())) {
-        if (before.reminders.length && !this.store.read().reminders.length && (this.mode === 'reminder' || this.mode === 'speech')) this.setMode('collapsed');
-        else this.publish();
+        this.armReminderTimer(); this.publish();
       }
       const interval = this.mode === 'expanded' && before.settings.lastPage === 'quota' && this.win?.isVisible() ? 60000 : 300000;
       if (Date.now() - this.lastQuotaRead >= interval) { this.lastQuotaRead = Date.now(); void this.quotas.refresh(); }
@@ -272,7 +279,7 @@ export class DesktopIsland {
     if (this.win?.isVisible()) {
       if (this.store.read().settings.sound) shell.beep();
       if (this.mode === 'collapsed' && !this.held) { this.setMode(this.store.read().settings.mascotEnabled ? 'speech' : 'reminder'); this.armReminderTimer(); }
-      else if (this.mode === 'speech') this.armReminderTimer();
+      else if (this.mode === 'speech' || this.mode === 'reminder') this.armReminderTimer();
       return;
     }
     const systemAlerts = alerts.filter(alert => alert.kind !== 'water' && alert.kind !== 'sedentary' && alert.kind !== 'agent');
@@ -284,7 +291,19 @@ export class DesktopIsland {
   }
   private armReminderTimer(): void {
     if (this.reminderTimer) clearTimeout(this.reminderTimer);
-    this.reminderTimer = setTimeout(() => { if (this.held) this.armReminderTimer(); else if (this.mode === 'reminder' || this.mode === 'speech') this.setMode('collapsed'); }, 8000);
+    this.reminderTimer = null;
+    if (this.mode !== 'reminder' && this.mode !== 'speech') return;
+    const reminders = this.state().reminders;
+    for (const id of this.expiredBubbleIds) if (!reminders.some(reminder => reminder.id === id)) this.expiredBubbleIds.delete(id);
+    const reminder = this.bubbleReminder(reminders);
+    if (!reminder) { this.setMode('collapsed'); return; }
+    if (reminder.kind === 'water' || reminder.kind === 'sedentary') return;
+    this.reminderTimer = setTimeout(() => {
+      this.reminderTimer = null;
+      if (this.mode !== 'reminder' && this.mode !== 'speech') return;
+      if (!this.held) this.expiredBubbleIds.add(reminder.id);
+      this.armReminderTimer(); this.publish();
+    }, 8000);
   }
   remindTasks(tasks: Task[]): boolean {
     if (this.store.loadError) return false;
@@ -323,7 +342,7 @@ export class DesktopIsland {
         this.held = x >= bounds.x && x < bounds.x + bounds.width && y >= bounds.y && y < bounds.y + bounds.height;
         if (!this.pinned && !this.held && this.mode === 'expanded') this.setMode('collapsed');
       }
-      this.visibility(); return this.state();
+      this.armReminderTimer(); this.visibility(); return this.state();
     });
     handle('island:mode', (mode, reduce) => { this.setMode(z.enum(['collapsed', 'expanded', 'reminder', 'speech', 'messages']).parse(mode), reduce === true); });
     handle('island:pin', () => { this.pinned = !this.pinned; if (this.pinned) this.setMode('expanded'); else this.publish(); return this.state(); });
@@ -341,7 +360,7 @@ export class DesktopIsland {
     handle('island:navigate', target => this.navigate(z.object({ view: z.enum(['home', 'settings-island', 'settings-general', 'settings-ai']), taskId: z.string().optional(), section: z.enum(['quota', 'water', 'sedentary', 'agents']).optional() }).parse(target)), true);
     handle('island:displays', () => screen.getAllDisplays().map((d, i) => ({ id: d.id, label: `${d.label || `显示器 ${i + 1}`} · ${d.size.width}×${d.size.height}${d.id === screen.getPrimaryDisplay().id ? ' · 主屏' : ''}` })));
     const changed = () => {
-      if (!this.store.read().reminders.length && (this.mode === 'reminder' || this.mode === 'speech')) this.setMode('collapsed');
+      this.armReminderTimer();
       this.publish(); return this.state();
     };
     handle('island:filesAdd', async (paths, directory) => {
@@ -370,11 +389,14 @@ export class DesktopIsland {
       if (taskId && !this.todo.all().some(t => t.id === taskId && !t.deletedAt)) throw new Error('关联事项已不存在');
       this.store.focus(z.enum(['start', 'pause', 'resume', 'stop']).parse(action), minutes, taskId); return changed();
     });
-    handle('island:water', action => { this.store.water(z.enum(['drink', 'snooze', 'pause']).parse(action)); return changed(); });
-    handle('island:sedentary', action => { this.store.sedentary(z.enum(['reset', 'snooze', 'pause']).parse(action)); return changed(); });
+    handle('island:water', action => { this.store.water(z.enum(['drink', 'snooze', 'pause', 'resume']).parse(action)); return changed(); });
+    handle('island:sedentary', action => { this.store.sedentary(z.enum(['reset', 'snooze', 'pause', 'resume']).parse(action)); return changed(); });
     handle('island:dismiss', id => { this.store.dismiss(z.string().parse(id)); return changed(); });
     handle('island:agentConnections', () => this.agents.status());
-    handle('island:agentConnect', (provider, enabled) => this.agents.connect(z.enum(AGENT_PROVIDERS).parse(provider), z.boolean().parse(enabled)));
+    handle('island:agentConnect', (provider, enabled) => {
+      const connections = this.agents.connect(z.enum(AGENT_PROVIDERS).parse(provider), z.boolean().parse(enabled));
+      this.tick(); this.armReminderTimer(); this.publish(); return connections;
+    });
     const agentRead = (id: string) => { this.agents.messages.markRead(id); this.store.dismiss(`agent:${id}`); return changed(); };
     handle('island:agentRead', id => agentRead(z.string().parse(id)), true);
     handle('island:agentReadAll', input => {
@@ -400,7 +422,7 @@ export class DesktopIsland {
   destroy(): void {
     clearInterval(this.timer); if (this.motion) clearTimeout(this.motion); if (this.reminderTimer) clearTimeout(this.reminderTimer);
     this.stopFullscreen(); this.quotas.stop();
-    screen.off('display-removed', this.reposition); screen.off('display-metrics-changed', this.reposition);
+    screen.off('display-added', this.displaysChanged); screen.off('display-removed', this.displaysChanged); screen.off('display-metrics-changed', this.displaysChanged);
     powerMonitor.off('lock-screen', this.lock); powerMonitor.off('unlock-screen', this.unlock);
     powerMonitor.off('suspend', this.suspend); powerMonitor.off('resume', this.resume);
     if (this.store.read().settings.clearFilesOnExit) { try { this.store.removeFiles(); } catch { /* Preserve references if saving fails. */ } }

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { act, createElement } from 'react';
 import { JSDOM } from 'jsdom';
-import type { TodoDbInfo, ViewId } from '../shared/contracts';
+import { DEFAULT_APP_SETTINGS, type AppSettingsPatch, type TodoDbInfo, type ViewId } from '../shared/contracts';
 
 test('目录入口归入待办与数据，共享库入口不重复，读取和打开失败各有反馈', async t => {
   const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost', pretendToBeVisual: true });
@@ -13,7 +13,16 @@ test('目录入口归入待办与数据，共享库入口不重复，读取和�
   let resolveInfo!: (value: TodoDbInfo) => void;
   let readInfo = () => new Promise<TodoDbInfo>(resolve => { resolveInfo = resolve; });
   let userDataCalls = 0, todoCalls = 0, failOpen = false;
+  let settings = { ...structuredClone(DEFAULT_APP_SETTINGS), remindersEnabled: false }, failSettings = false;
   Object.defineProperty(dom.window, 'workbench', { value: {
+    settings: {
+      get: async () => structuredClone(settings),
+      patch: async (patch: AppSettingsPatch) => {
+        if (failSettings) throw new Error('合成设置保存失败');
+        settings = { ...settings, ...patch, profile: { ...settings.profile, ...patch.profile } };
+        return structuredClone(settings);
+      },
+    },
     todo: { info: () => readInfo() },
     appInfo: {
       about: async () => ({ name: '个人工作台', version: '2.0.0', electron: '44', chrome: '152', userDataPath: 'C:/synthetic/app', todoDbPath: info.path }),
@@ -38,6 +47,10 @@ test('目录入口归入待办与数据，共享库入口不重复，读取和�
     names.forEach((name, index) => { if (previous[index]) Object.defineProperty(globalThis, name, previous[index]!); else Reflect.deleteProperty(globalThis, name); });
   });
   await render('settings-data');
+  assert.equal(row('remindersEnabled').querySelector('button')!.getAttribute('aria-checked'), 'false');
+  await open('remindersEnabled');
+  assert.equal(settings.remindersEnabled, true);
+  assert.equal(row('remindersEnabled').querySelector('button')!.getAttribute('aria-checked'), 'true');
   assert.ok(row('userData'), '应用目录不依赖共享库状态读取');
   assert.equal(row('dbPath').querySelector('b')!.textContent, '待办共享库');
   await open('userData'); await open('dbPath');
@@ -63,4 +76,16 @@ test('目录入口归入待办与数据，共享库入口不重复，读取和�
   assert.match(dom.window.document.querySelector('[role="alert"]')!.textContent!, /合成共享库读取失败/);
   await open('userData'); await open('dbPath');
   assert.deepEqual([userDataCalls, todoCalls], [3, 3]);
+  assert.equal(row('remindersEnabled').querySelector('button')!.getAttribute('aria-checked'), 'true', '重新进入仍保留已保存的提醒值，共享库读取失败不影响提醒开关');
+  failSettings = true;
+  await open('remindersEnabled');
+  assert.equal(settings.remindersEnabled, true);
+  assert.equal(row('remindersEnabled').querySelector('button')!.getAttribute('aria-checked'), 'true');
+  assert.ok([...dom.window.document.querySelectorAll('[role="alert"]')].some(node => /合成设置保存失败/.test(node.textContent!)));
+  await render('settings-notifications');
+  assert.equal(dom.window.document.querySelector('h1')!.textContent, '待办与数据');
+  await search('待办提醒');
+  assert.ok(row('remindersEnabled'));
+  assert.equal(row('userData'), null);
+  assert.equal(row('dbPath'), null);
 });

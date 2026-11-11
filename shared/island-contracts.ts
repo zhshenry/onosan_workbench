@@ -30,6 +30,7 @@ export const IslandSettingsSchema = z.object({
   waterEnabled: z.boolean().default(false), waterMinutes: z.number().int().min(10).max(240).default(60),
   waterStart: time.default('09:00'), waterEnd: time.default('18:00'),
   sedentaryEnabled: z.boolean().default(false), sedentaryMinutes: z.number().int().min(10).max(240).default(60),
+  sedentaryStart: time.default('09:00'), sedentaryEnd: time.default('18:00'),
   mascotEnabled: z.boolean().default(true), mascotMotion: z.boolean().default(true),
   lowQuota: z.number().int().min(0).max(50).default(10),
 });
@@ -52,7 +53,7 @@ export interface IslandData {
   notes: IslandNote[];
   noteDraft: IslandNoteDraft;
 }
-export interface IslandState extends IslandData { mode: IslandMode; pinned: boolean; quiet: boolean; fullscreenDetection: boolean; agentMessages?: AgentMessage[]; error?: string; }
+export interface IslandState extends IslandData { mode: IslandMode; pinned: boolean; quiet: boolean; fullscreenDetection: boolean; bubbleReminderId?: string; agentMessages?: AgentMessage[]; error?: string; }
 export interface QuotaWindow { label: string; remaining: number; resetsAt: number | null; }
 export const ISLAND_QUOTA_PROVIDERS = ['codex', 'zcode', 'cursor', 'grokbot'] as const;
 export const ISLAND_QUOTA_LABELS = { codex: 'Codex', zcode: 'Z Code', cursor: 'Cursor', grokbot: 'Grok Bot' } as const;
@@ -87,8 +88,8 @@ export interface IslandBridge {
   noteSave(text: string, id?: string): Promise<IslandState>;
   noteRemove(id: string): Promise<IslandState>;
   focus(action: 'start' | 'pause' | 'resume' | 'stop', minutes?: number, taskId?: string): Promise<IslandState>;
-  water(action: 'drink' | 'snooze' | 'pause'): Promise<IslandState>;
-  sedentary(action: 'reset' | 'snooze' | 'pause'): Promise<IslandState>;
+  water(action: 'drink' | 'snooze' | 'pause' | 'resume'): Promise<IslandState>;
+  sedentary(action: 'reset' | 'snooze' | 'pause' | 'resume'): Promise<IslandState>;
   dismiss(id: string): Promise<IslandState>;
   agentConnections(): Promise<AgentConnection[]>;
   agentConnect(provider: AgentProvider, enabled: boolean): Promise<AgentConnection[]>;
@@ -115,13 +116,15 @@ export function inTimeRange(now: Date, start: string, end: string): boolean {
   const a = minutes(start), b = minutes(end);
   return a === b || (a < b ? value >= a && value < b : value >= a || value < b);
 }
-export function nextWater(settings: IslandSettings, now: number, delay = settings.waterMinutes): number {
-  const candidate = new Date(now + delay * 60000);
-  if (inTimeRange(candidate, settings.waterStart, settings.waterEnd)) return candidate.getTime();
-  const next = new Date(now);
-  next.setHours(Number(settings.waterStart.slice(0, 2)), Number(settings.waterStart.slice(3)), 0, 0);
-  if (next.getTime() <= now) next.setDate(next.getDate() + 1);
-  return next.getTime();
+export function nextHealthReminder(settings: IslandSettings, kind: 'water' | 'sedentary', now: number, delay = settings[`${kind}Minutes`]): number | null {
+  const start = settings[`${kind}Start`], end = settings[`${kind}End`], current = new Date(now);
+  if (!inTimeRange(current, start, end)) return null;
+  const candidate = now + delay * 60000;
+  if (start === end) return candidate;
+  const closing = new Date(now);
+  closing.setHours(Number(end.slice(0, 2)), Number(end.slice(3)), 0, 0);
+  if (closing.getTime() <= now) closing.setDate(closing.getDate() + 1);
+  return candidate < closing.getTime() ? candidate : null;
 }
 export function focusRemaining(focus: IslandFocus | null, now: number): number {
   return focus ? Math.max(0, focus.endsAt === null ? focus.remainingMs : focus.endsAt - now) : 0;

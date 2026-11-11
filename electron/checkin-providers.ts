@@ -66,7 +66,7 @@ export function parseTraeStatus(body: Json): ProviderStatus {
   if (flags.some(yes)) return { status: 'claimed', message: '平台已确认本轮签到', reward: null };
   if (d.enable === false || d.eligible === false) return { status: 'unavailable', message: '当前账号暂无可领取的签到活动', reward: null };
   if (flags.some(no) && d.enable === true) return { status: 'ready', message: '当前账号可以签到', reward: amount(d.credits, d.credit) };
-  throw new CheckinError('平台未返回明确的签到状态，请到 TRAE 查看。');
+  throw new CheckinError('平台未返回明确的签到状态，请到 TRAE CN 查看。');
 }
 /** Only daily credit campaigns qualify. Never claim unrelated newcomer/referral benefits. */
 export function parseQoderStatus(body: Json): ProviderStatus {
@@ -74,8 +74,8 @@ export function parseQoderStatus(body: Json): ProviderStatus {
   const campaigns = Array.isArray(d.campaigns) ? d.campaigns.map(obj) : [];
   const daily = campaigns.filter(c => {
     const placements = Array.isArray(c.placements) ? c.placements.map(obj) : [];
-    const titles = placements.map(p => str(obj(obj(p.content).zh).title, obj(obj(p.content).en).title)).join(' ');
-    return /(?:daily|check.?in|每日|签到)/i.test(`${str(c.campaignKey, c.campaign_key)} ${titles}`) && str(obj(c.benefit).kind).toUpperCase() === 'CREDITS';
+    const titles = placements.flatMap(p => [str(obj(obj(p.content).zh).title), str(obj(obj(p.content).en).title)]).join(' ');
+    return /(?:daily|check.?in|每日|每天|签到)/i.test(`${str(c.campaignKey, c.campaign_key)} ${titles}`) && str(obj(c.benefit).kind).toUpperCase() === 'CREDITS';
   });
   if (daily.length !== 1) return { status: 'unavailable', message: daily.length ? '平台活动规则已变化，请到 Qoder 确认' : '暂无每日积分活动，请到 Qoder CN 检查设备与资格', reward: null };
   const c = daily[0], id = str(c.campaignId, c.campaign_id), state = str(c.claimStatus, c.claim_status).toUpperCase();
@@ -106,8 +106,8 @@ export class CheckinProviders {
     const r = assertResponse(await this.request(`${TRAE_EXCHANGE}/cloudide/api/v3/trae/GetUserInfo`, { method: 'POST', headers: { 'x-cloudide-token': c.accessToken }, body: { ReqSource: 'IDE', IDEVersion: TRAE_VERSION }, signal }));
     const u = obj(r.Result ?? r.data ?? r);
     const id = str(u.UserID);
-    if (!id) throw new CheckinError('TRAE 未确认账号身份，请重新授权。', 'auth');
-    return { ...c, userId: id, name: str(u.ScreenName) || `TRAE · ${id.slice(-6)}` };
+    if (!id) throw new CheckinError('TRAE CN 未确认账号身份，请重新授权。', 'auth');
+    return { ...c, userId: id, name: str(u.ScreenName) || `TRAE CN · ${id.slice(-6)}` };
   }
   async refresh(provider: CheckinProvider, c: CheckinCredential, signal: AbortSignal): Promise<CheckinCredential> {
     if (!c.refreshToken) throw new CheckinError('登录已失效，请重新连接账号。', 'auth');

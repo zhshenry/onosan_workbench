@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { writeJsonAtomic } from '../modules/storage/json-file';
 import { localDay } from '../shared/todo-contracts';
-import { focusRemaining, initialIslandData, inTimeRange, IslandNoteDraftSchema, IslandSettingsSchema, ISLAND_NOTE_LIMIT, ISLAND_NOTE_MAX_LENGTH, nextWater, type IslandData, type IslandReminder, type IslandSettingsPatch } from '../shared/island-contracts';
+import { focusRemaining, initialIslandData, inTimeRange, IslandNoteDraftSchema, IslandSettingsSchema, ISLAND_NOTE_LIMIT, ISLAND_NOTE_MAX_LENGTH, nextHealthReminder, type IslandData, type IslandReminder, type IslandSettingsPatch } from '../shared/island-contracts';
 
 const SavedSchema = z.object({
   settings: IslandSettingsSchema,
@@ -50,18 +50,14 @@ export class IslandStore {
   patch(input: IslandSettingsPatch): IslandData {
     const data = this.read();
     data.settings = IslandSettingsSchema.strict().parse({ ...data.settings, ...input, pages: { ...data.settings.pages, ...input.pages } });
-    if (!data.settings.waterEnabled) {
-      data.water.nextAt = null;
-      data.reminders = data.reminders.filter(r => r.kind !== 'water');
-    } else if (!data.water.nextAt || 'waterMinutes' in input || 'waterStart' in input || 'waterEnd' in input) {
-      data.water.nextAt = nextWater(data.settings, this.now());
-    }
-    if (!data.settings.sedentaryEnabled) {
-      data.sedentary.nextAt = null;
-      data.reminders = data.reminders.filter(r => r.kind !== 'sedentary');
-    } else if (input.sedentaryEnabled === true || 'sedentaryMinutes' in input) {
-      data.sedentary = { nextAt: this.now() + data.settings.sedentaryMinutes * 60000, pausedDay: null };
-      data.reminders = data.reminders.filter(r => r.kind !== 'sedentary');
+    const now = this.now(), day = localDay(new Date(now));
+    for (const kind of ['water', 'sedentary'] as const) {
+      const timer = data[kind], enabled = data.settings[`${kind}Enabled`];
+      if (input[`${kind}Enabled`] === true) timer.pausedDay = null;
+      if (!enabled || input[`${kind}Enabled`] === true || [`${kind}Minutes`, `${kind}Start`, `${kind}End`].some(key => key in input)) {
+        timer.nextAt = !enabled || timer.pausedDay === day ? null : nextHealthReminder(data.settings, kind, now);
+        data.reminders = data.reminders.filter(r => r.kind !== kind);
+      }
     }
     if (!data.settings.focusEnabled && data.focus?.endsAt) {
       data.focus.remainingMs = focusRemaining(data.focus, this.now());
@@ -141,36 +137,39 @@ export class IslandStore {
     } else if (data.focus && action === 'resume' && data.focus.endsAt === null) data.focus.endsAt = now + data.focus.remainingMs;
     return this.commit(data);
   }
-  water(action: 'drink' | 'snooze' | 'pause'): IslandData {
+  water(action: 'drink' | 'snooze' | 'pause' | 'resume'): IslandData {
+    return this.healthAction('water', action === 'drink' ? 'confirm' : action);
+  }
+  sedentary(action: 'reset' | 'snooze' | 'pause' | 'resume'): IslandData {
+    return this.healthAction('sedentary', action === 'reset' ? 'confirm' : action);
+  }
+  private healthAction(kind: 'water' | 'sedentary', action: 'confirm' | 'snooze' | 'pause' | 'resume'): IslandData {
     const data = this.read(), now = this.now(), day = localDay(new Date(now));
-    if (!data.settings.waterEnabled) throw new Error('请先启用喝水提醒');
-    if (day !== data.water.day) { data.water.day = day; data.water.count = 0; }
-    if (action === 'drink') data.water.count++;
-    if (action === 'pause') data.water.pausedDay = day;
-    data.water.nextAt = nextWater(data.settings, now, action === 'snooze' ? 10 : data.settings.waterMinutes);
-    data.reminders = data.reminders.filter(r => r.kind !== 'water');
+    const timer = data[kind], label = kind === 'water' ? '喝水提醒' : '久坐提醒';
+    if (!data.settings[`${kind}Enabled`]) throw new Error(`请先启用${label}`);
+    if (action === 'snooze' && timer.pausedDay === day) throw new Error(`${label}今天已暂停，请先恢复`);
+    if (kind === 'water') {
+      if (data.water.day !== day) { data.water.day = day; data.water.count = 0; }
+      if (action === 'confirm') data.water.count++;
+    }
+    timer.pausedDay = action === 'pause' ? day : null;
+    timer.nextAt = action === 'pause' ? null : nextHealthReminder(data.settings, kind, now, action === 'snooze' ? 10 : data.settings[`${kind}Minutes`]);
+    data.reminders = data.reminders.filter(r => r.kind !== kind);
     return this.commit(data);
   }
-  sedentary(action: 'reset' | 'snooze' | 'pause'): IslandData {
-    const data = this.read(), now = this.now(), day = localDay(new Date(now));
-    if (!data.settings.sedentaryEnabled) throw new Error('请先启用久坐提醒');
-    if (action === 'snooze' && data.sedentary.pausedDay === day) throw new Error('久坐提醒今天已暂停，请先恢复');
-    data.sedentary.pausedDay = action === 'pause' ? day : null;
-    data.sedentary.nextAt = action === 'pause' ? null : now + (action === 'snooze' ? 10 : data.settings.sedentaryMinutes) * 60000;
-    data.reminders = data.reminders.filter(r => r.kind !== 'sedentary');
-    return this.commit(data);
-  }
-  restartSedentary(): void {
-    if (this.loadError || !this.data.settings.sedentaryEnabled) return;
+  restartHealthReminders(): void {
+    if (this.loadError || !this.data.settings.waterEnabled && !this.data.settings.sedentaryEnabled) return;
     const data = this.read(), now = this.now();
-    data.sedentary.nextAt = data.sedentary.pausedDay === localDay(new Date(now)) ? null : now + data.settings.sedentaryMinutes * 60000;
-    data.reminders = data.reminders.filter(r => r.kind !== 'sedentary');
+    for (const kind of ['water', 'sedentary'] as const) {
+      data[kind].nextAt = !data.settings[`${kind}Enabled`] || data[kind].pausedDay === localDay(new Date(now)) ? null : nextHealthReminder(data.settings, kind, now);
+    }
+    data.reminders = data.reminders.filter(r => r.kind !== 'water' && r.kind !== 'sedentary');
     this.commit(data);
   }
   private mergeReminders(data: IslandData, reminders: IslandReminder[]): void {
     const day = localDay(new Date(this.now()));
     data.reminders = data.reminders.filter(r => localDay(new Date(r.createdAt)) === day);
-    for (const reminder of reminders) if (!data.reminders.some(r => r.id === reminder.id)) data.reminders.push(reminder);
+    for (const reminder of reminders) if (!data.reminders.some(r => r.id === reminder.id || (reminder.kind === 'water' || reminder.kind === 'sedentary') && r.kind === reminder.kind)) data.reminders.push(reminder);
     const priority = { task: 0, meeting: 0, focus: 1, water: 2, sedentary: 2, quota: 3, agent: 0 };
     data.reminders.sort((a, b) => priority[a.kind] - priority[b.kind] || a.createdAt - b.createdAt);
     data.reminders = data.reminders.slice(0, 100);
@@ -181,7 +180,7 @@ export class IslandStore {
     const data = this.read(); data.quotaAlerts = [...data.quotaAlerts, key].slice(-200); this.commit(data); return true;
   }
   dismiss(id: string | string[]): IslandData { const data = this.read(), ids = new Set(Array.isArray(id) ? id : [id]); data.reminders = data.reminders.filter(r => !ids.has(r.id)); return this.commit(data); }
-  tick(sedentaryPaused = false): IslandReminder[] {
+  tick(healthPaused = false): IslandReminder[] {
     if (this.loadError) return [];
     const data = this.read(), now = this.now(), day = localDay(new Date(now));
     const alerts: IslandReminder[] = [];
@@ -192,23 +191,21 @@ export class IslandStore {
       alerts.push({ id: randomUUID(), kind: 'focus', title: '专注完成，休息一下吧', createdAt: now });
       data.focus = null; changed = true;
     }
-    if (data.settings.waterEnabled && data.water.nextAt !== null && data.water.nextAt <= now) {
-      if (data.water.pausedDay !== day && inWaterHours(data, now)) alerts.push({ id: randomUUID(), kind: 'water', title: '喝口水，稍作休息', createdAt: now });
-      data.water.nextAt = nextWater(data.settings, now); changed = true;
-    }
-    if (data.settings.sedentaryEnabled && !sedentaryPaused && data.sedentary.pausedDay !== day) {
-      if (data.sedentary.nextAt === null) {
-        data.sedentary = { nextAt: now + data.settings.sedentaryMinutes * 60000, pausedDay: null }; changed = true;
-      } else if (data.sedentary.nextAt <= now) {
-        if (!data.reminders.some(r => r.kind === 'sedentary')) alerts.push({ id: randomUUID(), kind: 'sedentary', title: '到活动时间了，起来走走吧。', createdAt: now });
-        data.sedentary.nextAt = now + data.settings.sedentaryMinutes * 60000; changed = true;
+    for (const kind of ['water', 'sedentary'] as const) {
+      const timer = data[kind];
+      const active = data.settings[`${kind}Enabled`] && !healthPaused && timer.pausedDay !== day && inTimeRange(new Date(now), data.settings[`${kind}Start`], data.settings[`${kind}End`]);
+      if (active) {
+        if (timer.pausedDay !== null) { timer.pausedDay = null; changed = true; }
+        if (timer.nextAt === null || timer.nextAt <= now) {
+          if (timer.nextAt !== null && !data.reminders.some(r => r.kind === kind)) alerts.push({ id: randomUUID(), kind, title: kind === 'water' ? '喝口水，稍作休息' : '到活动时间了，起来走走吧。', createdAt: now });
+          const nextAt = nextHealthReminder(data.settings, kind, now);
+          if (timer.nextAt !== nextAt) { timer.nextAt = nextAt; changed = true; }
+        }
+      } else if (timer.nextAt !== null || data.reminders.some(r => r.kind === kind)) {
+        timer.nextAt = null; data.reminders = data.reminders.filter(r => r.kind !== kind); changed = true;
       }
-    } else if (data.sedentary.nextAt !== null || data.reminders.some(r => r.kind === 'sedentary')) {
-      data.sedentary.nextAt = null; data.reminders = data.reminders.filter(r => r.kind !== 'sedentary'); changed = true;
     }
     if (changed) { this.mergeReminders(data, alerts); this.commit(data); }
     return alerts;
   }
 }
-
-function inWaterHours(data: IslandData, now: number): boolean { return inTimeRange(new Date(now), data.settings.waterStart, data.settings.waterEnd); }
