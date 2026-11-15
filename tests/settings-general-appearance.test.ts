@@ -48,6 +48,13 @@ test('通用与外观在同一页保存且无页头搜索，旧分区入口展�
   assert.equal(settings.uiTheme, 'celadon');
   assert.equal(choice('uiTheme', '青瓷').checked, true);
   await act(async () => choice('navigationStyle', '悬浮').click());
+  await act(async () => choice('glassIntensity', '纯色').click());
+  await render();
+  assert.equal(settings.glassIntensity, 'solid');
+  assert.equal(choice('glassIntensity', '纯色').checked, true);
+  assert.equal(dom.window.document.documentElement.dataset.glass, 'solid');
+  assert.equal(settings.uiTheme, 'celadon');
+  assert.equal(settings.navigationStyle, 'floating');
   await act(async () => choice('glassIntensity', '强玻璃').click());
   assert.equal(settings.navigationStyle, 'floating');
   assert.equal(settings.glassIntensity, 'strong');

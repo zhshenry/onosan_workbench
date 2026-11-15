@@ -41,7 +41,7 @@ export type ViewId = z.infer<typeof ViewIdSchema>;
 export const UiThemeSchema = z.enum(['mist', 'warm', 'celadon', 'wisteria', 'rose', 'oat', 'windowlight', 'spatial']);
 export type UiTheme = z.infer<typeof UiThemeSchema>;
 export const NavigationStyleSchema = z.enum(['classic', 'floating']);
-export const GlassIntensitySchema = z.enum(['normal', 'strong']);
+export const GlassIntensitySchema = z.enum(['solid', 'normal', 'strong']);
 export const WindowLightSchema = z.enum(['morning', 'afternoon', 'dusk']);
 export type WindowLight = z.infer<typeof WindowLightSchema>;
 

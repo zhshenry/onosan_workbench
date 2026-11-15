@@ -64,13 +64,13 @@ test('外观即时预览、连续保存、失败回退、重试和关闭设置�
   assert.equal(draft?.value, '未保存的工作区草稿');
   assert.equal(saved.profile.name, 'Ono');
   for (const write of writes) assert.deepEqual(Object.keys(write.patch).sort(), ['glassIntensity', 'navigationStyle', 'uiTheme']);
-  await act(async () => { controller.change({ uiTheme: 'oat' }); controller.change({ glassIntensity: 'normal' }); });
+  await act(async () => { controller.change({ uiTheme: 'oat' }); controller.change({ glassIntensity: 'solid' }); });
   await act(async () => writes[4].reject(new Error('stale failure')));
   assert.equal(controller.value.uiTheme, 'oat');
   assert.equal(controller.error, '');
   await finish(5);
   assert.equal(saved.uiTheme, 'oat');
-  assert.equal(saved.glassIntensity, 'normal');
+  assert.equal(saved.glassIntensity, 'solid');
 });
 
 test('窗影按本地时间自动切换，恢复窗口重新取时且不写配置或重挂工作区', async t => {

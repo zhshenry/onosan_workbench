@@ -62,7 +62,12 @@
 }
 .win::before { background-position: var(--field-position); transform: var(--field-transform); pointer-events: none; }
 
-/* Both materials cover the same surfaces. Strong changes paint, never geometry. */
+/* All materials cover the same surfaces and change paint, never geometry. */
+:root[data-glass='solid'], .material-preview[data-material='solid'] {
+  --glass-hi: #fff; --glass-lo: #fff; --glass-line: var(--hairline);
+  --glass-surface: #fff; --glass-filter: none;
+  --panel-bg: #fff; --panel-shadow: 0 4px 14px #2925210a;
+}
 :root[data-glass='normal'], .material-preview[data-material='normal'] {
   --glass-hi: #ffffffc2; --glass-lo: #ffffff6b; --glass-line: #ffffffd9;
   --glass-surface: #ffffff8f; --glass-filter: blur(18px) saturate(1.15);
@@ -94,7 +99,7 @@
 }
 :root[data-glass] .win .ai-compose { background: transparent; border: 0; box-shadow: none; }
 @media (max-width: 1159px) {
-  :root[data-glass] .win .ai-panel { background: linear-gradient(#fffffff5, #ffffffed); }
+  :root[data-glass]:not([data-glass='solid']) .win .ai-panel { background: linear-gradient(#fffffff5, #ffffffed); }
 }
 /* Overlays must occlude the text behind them. Keep sticky table headers and website canvases opaque. */
 .win :is(.rail-flyout-card, .ipop, .ai-history-menu), dialog.modal { background: var(--overlay-bg); }
@@ -148,6 +153,7 @@
 .appearance-settings legend { font-size: var(--type-section); font-weight: 700; }
 .appearance-settings fieldset > p { margin: 5px 0 12px; color: var(--ink-3); font-size: var(--type-control); }
 .appearance-pair, .appearance-themes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.appearance-materials { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .appearance-themes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .appearance-choice { position: relative; display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--hairline); border-radius: var(--r-card); background: #ffffffb3; cursor: pointer; min-width: 0; }
 .appearance-choice:hover { border-color: var(--acc); }
@@ -171,6 +177,7 @@
 .material-preview { isolation: isolate; background: linear-gradient(135deg, #e8edf5, #ebe8e2); }
 .material-preview::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 74% 70%, #d4a06e 0 19%, transparent 20%), radial-gradient(circle at 27% 30%, var(--acc-deep) 0 26%, transparent 27%); }
 .material-preview i { position: absolute; inset: 8px 10px; border-radius: 7px; transform: rotate(-10deg); background: var(--panel-bg); border: 1px solid var(--glass-line); backdrop-filter: blur(2px) saturate(1.15); box-shadow: inset 0 1px 0 #ffffff80, 0 1px 1px #ffffff80, 0 3px 6px #28324220; }
+.material-preview[data-material='solid'] i { backdrop-filter: none; box-shadow: 0 3px 6px #28324214; }
 .material-preview[data-material='strong'] i { backdrop-filter: blur(4px) saturate(1.4); box-shadow: inset 0 1px 0 white, inset 0 -1px 0 #ffffff80, 1px 2px 0 #ffffff66, 0 5px 9px #28324230; }
 .material-preview[data-material='strong'] i::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(125deg, #ffffff00 20%, #ffffff2e 34%, #ffffff00 48%); }
 .theme-choice { display: block; padding: 8px; }
@@ -190,11 +197,11 @@
 }
 @container settings-content (max-width: 320px) { .appearance-pair { grid-template-columns: 1fr; } }
 @media (prefers-reduced-transparency: reduce) {
-  :root[data-glass], .material-preview[data-material] { --glass-hi: #f9fafb; --glass-lo: #f3f5f7; --glass-surface: #f9fafb; --glass-filter: none; --panel-bg: linear-gradient(#fff, #f9fafb); }
+  :root[data-glass]:not([data-glass='solid']), .material-preview[data-material]:not([data-material='solid']) { --glass-hi: #f9fafb; --glass-lo: #f3f5f7; --glass-surface: #f9fafb; --glass-filter: none; --panel-bg: linear-gradient(#fff, #f9fafb); }
   .material-preview[data-material] i { backdrop-filter: none; }
 }
 @supports not (backdrop-filter: blur(1px)) {
-  :root[data-glass], .material-preview[data-material] { --glass-hi: #f9fafb; --glass-lo: #f3f5f7; --glass-surface: #f9fafb; --panel-bg: linear-gradient(#fff, #f9fafb); }
+  :root[data-glass]:not([data-glass='solid']), .material-preview[data-material]:not([data-material='solid']) { --glass-hi: #f9fafb; --glass-lo: #f3f5f7; --glass-surface: #f9fafb; --panel-bg: linear-gradient(#fff, #f9fafb); }
 }
 @media (forced-colors: active) {
   .win::before { display: none; }

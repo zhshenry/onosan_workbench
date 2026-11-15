@@ -54,13 +54,13 @@ async function shot(name) {
 async function surfaces(selector) {
   return page.locator(selector).evaluateAll(elements => elements.map(el => {
     const style = getComputedStyle(el);
-    return { background: style.backgroundImage, filter: style.backdropFilter, border: style.borderTopColor,
+    return { background: style.backgroundImage, color: style.backgroundColor, filter: style.backdropFilter, border: style.borderTopColor,
       shadow: style.boxShadow, radius: style.borderTopLeftRadius, width: style.borderTopWidth };
   }));
 }
 function assertSurface(actual, expected) {
-  assert.deepEqual([actual.background, actual.filter, actual.border, actual.shadow],
-    [expected.background, expected.filter, expected.border, expected.shadow]);
+  assert.deepEqual([actual.background, actual.color, actual.filter, actual.border, actual.shadow],
+    [expected.background, expected.color, expected.filter, expected.border, expected.shadow]);
   assert.ok(parseFloat(actual.radius) > 0 && parseFloat(actual.width) > 0, JSON.stringify(actual));
 }
 async function geometry() {
@@ -247,11 +247,11 @@ try {
       if (await page.locator('.nav-toggle').getAttribute('aria-expanded') === 'true') await page.locator('.nav-toggle').click();
       await navigateInstalled(page, 'home');
     });
-    await check('40 appearance states cover saved preferences and automatic light periods', async () => {
+    await check('60 appearance states cover saved preferences and automatic light periods', async () => {
       await settings();
       for (const nav of ['经典', '悬浮']) {
         await choose('navigationStyle', nav);
-        for (const glass of ['普通玻璃', '强玻璃']) {
+        for (const glass of ['纯色', '普通玻璃', '强玻璃']) {
           await choose('glassIntensity', glass);
           for (const theme of ['雾珀', '暖砂', '青瓷', '藤紫', '蔷薇', '燕麦', '窗影', '空间窗景']) {
             await choose('uiTheme', theme);
@@ -265,8 +265,12 @@ try {
             assert.equal(state.saved.navigationStyle, state.rendered.navigation);
             assert.equal(state.saved.glassIntensity, state.rendered.glass);
             const [heading, ...cards] = await surfaces('.dashboard-heading, .dashboard-grid > .dashboard-widget');
-            assert.ok(heading.background.includes('rgba('), 'Both materials are translucent, including normal');
-            assert.ok(heading.filter.includes(glass === '普通玻璃' ? '18px' : '30px'));
+            if (glass === '纯色') {
+              assert.deepEqual([heading.background, heading.color, heading.filter], ['none', 'rgb(255, 255, 255)', 'none']);
+            } else {
+              assert.ok(heading.background.includes('rgba('), 'Both glass materials are translucent, including normal');
+              assert.ok(heading.filter.includes(glass === '普通玻璃' ? '18px' : '30px'));
+            }
             for (const card of cards) assertSurface(card, heading);
           }
         }
@@ -309,20 +313,21 @@ try {
       await shot('home-floating-strong-spatial');
       await settings(); await choose('uiTheme', '窗影'); await closeSettings();
     });
-    await check('glass switch preserves mounted workspace and dimensions', async () => {
+    await check('material switch preserves mounted workspace and dimensions', async () => {
       await page.locator('.dashboard-widget').first().evaluate(el => { window.appearanceWidget = el; window.appearanceRect = el.getBoundingClientRect().toJSON(); });
-      await settings(); await choose('glassIntensity', '普通玻璃'); await closeSettings();
-      assert.equal(await page.locator('.dashboard-widget').first().evaluate(el => el === window.appearanceWidget), true);
-      await settings(); await choose('glassIntensity', '强玻璃'); await closeSettings();
-      const same = await page.locator('.dashboard-widget').first().evaluate(el => {
-        const r = el.getBoundingClientRect(); return Math.abs(r.width - window.appearanceRect.width) < 1 && Math.abs(r.height - window.appearanceRect.height) < 1;
-      });
-      assert.ok(same);
+      for (const material of ['纯色', '普通玻璃', '强玻璃']) {
+        await settings(); await choose('glassIntensity', material); await closeSettings();
+        assert.equal(await page.locator('.dashboard-widget').first().evaluate(el => el === window.appearanceWidget), true);
+        const same = await page.locator('.dashboard-widget').first().evaluate(el => {
+          const r = el.getBoundingClientRect(); return ['x', 'y', 'width', 'height'].every(key => Math.abs(r[key] - window.appearanceRect[key]) < 1);
+        });
+        assert.ok(same);
+      }
     });
-    await check('normal and strong materials match across page headers, cards and workspaces', async () => {
+    await check('solid, normal and strong materials match across page headers, cards and workspaces', async () => {
       await settings(); await choose('uiTheme', '青瓷'); await closeSettings();
       let normal;
-      for (const [label, material] of [['普通玻璃', 'normal'], ['强玻璃', 'strong']]) {
+      for (const [label, material] of [['普通玻璃', 'normal'], ['强玻璃', 'strong'], ['纯色', 'solid']]) {
         await navigateInstalled(page, 'home');
         await settings(); await choose('glassIntensity', label); await closeSettings();
         const [reference] = await surfaces('.dashboard-heading');
@@ -382,6 +387,10 @@ try {
       await page.locator('.rail-flyout button').first().press('Escape');
       assert.equal(await trigger.evaluate(el => el === document.activeElement), true);
       await shot('todo-1024-collapsed');
+      await settings(); await choose('glassIntensity', '纯色'); await closeSettings();
+      const [overlay] = await surfaces('.ai-panel');
+      assert.deepEqual([overlay.background, overlay.color, overlay.filter], ['none', 'rgb(255, 255, 255)', 'none'], 'Narrow AI overlay stays opaque in solid mode');
+      await shot('todo-1024-solid');
       await page.locator('.ai-panel').getByRole('button', { name: '收起 AI 助手' }).click();
       await shot('todo-1024-ai-closed');
     });
@@ -391,13 +400,22 @@ try {
         await navigateInstalled(page, 'life', '日程和待办', 'todo');
       }
     });
-    await check('reduced motion and keyboard theme selection', async () => {
+    await check('reduced motion and keyboard theme/material selection', async () => {
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await settings();
       const radio = page.locator('[data-setting-key="uiTheme"] input:checked');
       await radio.focus(); await radio.press('ArrowLeft');
       await page.locator('.appearance-save').filter({ hasText: '已保存' }).waitFor();
       assert.equal(await page.evaluate(() => document.activeElement?.tagName), 'INPUT');
+      const material = page.locator('[data-setting-key="glassIntensity"]');
+      await material.getByRole('radio', { name: /^纯色/ }).focus();
+      await page.keyboard.press('ArrowRight');
+      await page.waitForFunction(() => document.documentElement.dataset.glass === 'normal');
+      await page.keyboard.press('ArrowLeft');
+      await page.waitForFunction(() => document.documentElement.dataset.glass === 'solid');
+      await page.locator('.appearance-save').filter({ hasText: '已保存' }).waitFor();
+      await material.screenshot({ path: path.join(output, 'settings-solid-material.png') });
+      report.screenshots.push('settings-solid-material.png');
       await choose('uiTheme', '窗影'); await setWindowTime(20);
       await closeSettings();
     });
@@ -410,6 +428,9 @@ try {
       assert.deepEqual(after, before);
       await page.waitForFunction(() => document.documentElement.dataset.windowLight === 'morning');
       assert.equal(await page.locator('html').getAttribute('data-navigation'), 'floating');
+      assert.equal(await page.locator('html').getAttribute('data-glass'), 'solid');
+      const [heading] = await surfaces('.dashboard-heading');
+      assert.deepEqual([heading.background, heading.color, heading.filter], ['none', 'rgb(255, 255, 255)', 'none']);
       const afterTasks = await page.evaluate(() => window.workbench.todo.state());
       assert.deepEqual(afterTasks.tasks, taskState.tasks);
     });

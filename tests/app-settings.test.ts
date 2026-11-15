@@ -144,6 +144,24 @@ test('设置:八主题与导航/玻璃独立持久化，兼容旧时段字段且
   }
 });
 
+test('设置:纯色材质可保存和重启恢复，切换不改主题与导航', () => {
+  const dir = tempDir();
+  try {
+    const store = new AppSettingsStore(dir);
+    assert.equal(store.read().glassIntensity, 'normal');
+    store.patch({ uiTheme: 'celadon', navigationStyle: 'floating' });
+    for (const glassIntensity of ['solid', 'normal', 'strong', 'solid'] as const) {
+      store.patch({ glassIntensity });
+      const saved = new AppSettingsStore(dir).read();
+      assert.equal(saved.glassIntensity, glassIntensity);
+      assert.equal(saved.uiTheme, 'celadon');
+      assert.equal(saved.navigationStyle, 'floating');
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('设置:profile 旧文件缺省落 Ono,非法昵称整字段回落', () => {
   const dir = tempDir();
   try {
