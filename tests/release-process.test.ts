@@ -111,14 +111,17 @@ cp.spawnSync = (command, args) => {
     else throw new Error('Unexpected git command');
   } else if (command === 'gh' || command === 'gh.exe') {
     if (args[0] === '--version') stdout = '';
-    else if (args[1] === 'create') { state.exists = true; state.release.draft = true; state.release.assets = []; }
+    else if (args[1] === 'create') { state.exists = true; state.release.draft = true; state.release.assets = []; state.hiddenReads = state.visibilityDelayReads || 0; }
     else if (args[1] === 'upload') {
       const name = require('node:path').basename(args[5]);
       state.release.assets = state.release.assets.filter(asset => asset.name !== name);
       state.release.assets.push(expectedAssets.find(asset => asset.name === name));
     }
     else if (args[0] === 'api' && args.includes('PATCH')) state.release.draft = false;
-    else if (args[0] === 'api' && args.includes('--paginate')) stdout = state.exists ? '123' : '';
+    else if (args[0] === 'api' && args.includes('--paginate')) {
+      if (state.hiddenReads > 0) state.hiddenReads--;
+      else stdout = state.exists ? '123' : '';
+    }
     else if (args[0] === 'api' && args[1] === 'repos/fixture/workbench/releases/123') stdout = JSON.stringify(state.release);
     else if (args[1] === 'download') {
       const name = args[args.indexOf('--pattern') + 1];
@@ -177,6 +180,25 @@ test('创建草稿后按 ID 核验完整下载，通过后才发布并再下载�
   assert.ok(entries.slice(0, patch).some(call => call.args?.includes('repos/fixture/workbench/releases/123')));
   assert.ok(!entries.some(call => call.args?.some((arg: string) => arg.includes('releases/tags/'))));
   assert.match(result.stdout, /完整下载.*SHA256\/SHA512/);
+});
+
+test('新建草稿的列表查询短暂延迟时重读同一草稿，不重复创建或提前发布', t => {
+  const f = fixture(t), { run, calls } = stubCommands(f, { exists: false, visibilityDelayReads: 2 });
+  const result = run('--upload');
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(calls().filter(call => call.args?.[1] === 'create').length, 1);
+  assert.equal(calls().filter(call => call.args?.[1] === 'upload').length, 5);
+  assert.equal(calls().some(call => call.args?.includes('PATCH')), false);
+});
+
+test('新建草稿持续不可读时有界停止，保留草稿等待重试且不上传或发布', t => {
+  const f = fixture(t), { run, calls } = stubCommands(f, { exists: false, visibilityDelayReads: 9 });
+  const result = run('--upload');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Created release draft is not visible yet; retry --upload/);
+  assert.equal(calls().filter(call => call.args?.[1] === 'create').length, 1);
+  assert.equal(calls().filter(call => call.args?.includes('--paginate')).length, 6);
+  assert.equal(calls().some(call => call.args?.[1] === 'upload' || call.args?.includes('PATCH')), false);
 });
 
 test('部分上传失败后的草稿只补传缺失或不同的文件，保持草稿并允许后续独立验收', t => {

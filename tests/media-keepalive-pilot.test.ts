@@ -139,25 +139,27 @@ test('hidden native focus checks actual frame ownership while retaining root-vie
 test('hidden-input fixture closes actual new and existing TaskEditor controls without submitting or guessing return labels', async () => {
   const existing:Task={...newTask('Synthetic existing task'),id:'fixture-task',createdAt:'2026-10-13T00:00:00Z',updatedAt:'2026-10-13T00:00:00Z',completedAt:null,notifiedFor:null,deletedAt:null};
   const write=async()=>assert.fail('The dismissal fixture must never create, save or delete a task');
-  for(const task of [undefined,existing]) {
-    const markup=renderToStaticMarkup(createElement(TaskEditor,{task,categories:[],api:{create:write,update:write,remove:write,createCategory:write},close(){},saved(){},changed(){}}));
+  const anchorDom=new JSDOM('<button>Add</button>');
+  for(const [task,anchor] of [[undefined,undefined],[undefined,anchorDom.window.document.querySelector('button')!],[existing,undefined]] as const) {
+    const markup=renderToStaticMarkup(createElement(TaskEditor,{task,anchor,categories:[],api:{create:write,update:write,remove:write,createCategory:write},close(){},saved(){},changed(){}}));
     const dom=new JSDOM(markup);const dialog=dom.window.document.querySelector<HTMLDialogElement>('.task-modal')!;dialog.setAttribute('open','');
     let clicks=0;let waited=false;
     const locator={
       getAttribute:async(name:string)=>dialog.getAttribute(name),
-      getByRole:(role:string,options:{name:string;exact:boolean})=>{
-        assert.equal(role,'button');assert.equal(options.exact,true);
-        const matches=[...dialog.querySelectorAll<HTMLButtonElement>('button')].filter(button=>(button.getAttribute('aria-label')??button.textContent?.trim())===options.name);
+      getByRole:(role:string,options:{name:RegExp})=>{
+        assert.equal(role,'button');
+        const matches=[...dialog.querySelectorAll<HTMLButtonElement>('button')].filter(button=>options.name.test(button.getAttribute('aria-label')??button.textContent?.trim()??''));
         assert.equal(matches.length,1,`Actual ${dialog.getAttribute('aria-label')} DOM must expose ${options.name}`);
         assert.equal(matches[0].type,'button','Dismissal must never select a form submit control');
-        assert.equal(options.name,task?'关闭':'返回');
+        assert.equal(matches[0].getAttribute('aria-label')??matches[0].textContent?.trim(),task||anchor?'关闭':'返回');
         return {click:async()=>{clicks++;dialog.removeAttribute('open');}};
       },
       waitFor:async(options:{state:string})=>{assert.equal(options.state,'hidden');assert.equal(dialog.open,false);waited=true;},
     };
-    await closeUnchangedMediaTaskEditor({locator:(selector:string)=>{assert.equal(selector,'.task-modal[open]');return locator;}});
+    await closeUnchangedMediaTaskEditor({locator:(selector:string)=>{assert.equal(selector,'.task-modal:visible');return locator;}});
     assert.equal(clicks,1);assert.equal(waited,true);dom.window.close();
   }
+  anchorDom.window.close();
   await assert.rejects(closeUnchangedMediaTaskEditor({locator:()=>({getAttribute:async()=> 'Unexpected dialog'})}),/Unexpected current-page task editor/);
 });
 

@@ -2,6 +2,7 @@
 // local synthetic content; production partitions, URL checks and permissions stay intact.
 import assert from 'node:assert/strict';
 import { bounded } from './pilot-cleanup.mjs';
+import { navigateInstalled } from './installed-navigation.mjs';
 
 export const MEDIA_KEEPALIVE_SCREENSHOTS = Object.freeze([
   'media-keepalive-before.png', 'media-keepalive-hidden.png',
@@ -47,9 +48,10 @@ export function assertMediaStatePreserved(before, after) {
 }
 export function assertMediaHomeLayoutUnchanged(before, after) {
   for(const value of [before,after]) {
-    assert.deepEqual(value.nativeSize,[1024,680],'Home comparison must use the same native content size');
+    assert.ok(value.nativeSize.length===2&&value.nativeSize.every((size,index)=>Math.abs(size-[1024,680][index])<=1),'Home comparison must use the same native content size');
+    assert.deepEqual(value.nativeSize,before.nativeSize,'Home comparison must use the same native content size');
     assert.equal(value.zoom,1,'Home comparison must use normal native zoom');
-    assert.deepEqual(value.viewport,{width:1024,height:680},'Home comparison must use the actual CSS viewport');
+    assert.deepEqual(value.viewport,{width:value.nativeSize[0],height:value.nativeSize[1]},'Home comparison must use the actual CSS viewport');
     assert.equal(value.homeMode,'today-board','Home comparison must use the ordinary task board, not the library');
     assert.deepEqual(value.navigation,{todoActive:true,aiOpen:false,snavCount:0},'Home comparison must wait for the real secondary sidebar to be fully unmounted');
     assert.equal(value.fontStatus,'loaded');assert.equal(value.fadeTransform,'none');
@@ -72,6 +74,8 @@ async function settledMediaHomeGeometry(native,page) {
   // even while the home fade and two consecutive content reads are stable.
   await page.locator('.snav').waitFor({state:'detached'});
   await page.evaluate(async()=>{await document.fonts.ready;});
+  await page.waitForFunction(()=>!document.getAnimations().some(animation=>animation.effect?.getComputedTiming().iterations!==Infinity
+    &&animation.effect?.target instanceof Element&&animation.effect.target.closest('.win')&&(animation.pending||animation.playState==='running')));
   let previous;let stable=0;
   return until(page,async()=>({
     ...await native.evaluate(win=>({nativeSize:win.getContentSize(),zoom:win.webContents.getZoomFactor()})),
@@ -81,7 +85,7 @@ async function settledMediaHomeGeometry(native,page) {
       const content=select('.content'),home=select('#view-todo'),board=select('#view-todo .today-board');
       const panel=select('#view-todo .todo-panel'),schedule=select('#view-todo .plan-schedule'),todos=select('#view-todo .plan-today');
       const contentStyle=getComputedStyle(content),boardStyle=getComputedStyle(board);
-      const bounds={content:rect(content),home:rect(home),board:rect(board),panel:rect(panel),schedule:rect(schedule),todos:rect(todos),date:rect(select('#view-todo .week-schedule-date')),scheduleTitle:rect(schedule.querySelector('h2')),todoTitle:rect(todos.querySelector('h2'))};
+      const bounds={content:rect(content),home:rect(home),board:rect(board),panel:rect(panel),schedule:rect(schedule),todos:rect(todos),date:rect(select('#view-todo .week-schedule-toolbar .date-picker')),scheduleTitle:rect(schedule.querySelector('h2')),todoTitle:rect(todos.querySelector('h2'))};
       return {viewport:{width:innerWidth,height:innerHeight},fontStatus:document.fonts.status,fadeTransform:getComputedStyle(home.parentElement).transform,
         navigation:{todoActive:Boolean(document.querySelector('.rail [data-workbench="life"]')?.classList.contains('on')),
           aiOpen:document.querySelector('.ai-topbar-btn')?.getAttribute('aria-expanded')==='true',snavCount:document.querySelectorAll('.snav').length},
@@ -95,7 +99,7 @@ async function settledMediaHomeGeometry(native,page) {
         hosts:[...document.querySelectorAll('.media-browser-host')].map(host=>({hidden:host.hidden,inert:host.inert,display:getComputedStyle(host).display,width:rect(host).width,height:rect(host).height}))};
     }),
   }),value=>{
-    const ready=value.nativeSize[0]===1024&&value.nativeSize[1]===680&&value.zoom===1&&value.viewport.width===1024&&value.viewport.height===680
+    const ready=value.nativeSize.every((size,index)=>Math.abs(size-[1024,680][index])<=1)&&value.zoom===1&&value.viewport.width===value.nativeSize[0]&&value.viewport.height===value.nativeSize[1]
       &&value.homeMode==='today-board'&&value.fontStatus==='loaded'&&value.fadeTransform==='none'
       &&value.navigation.todoActive&&!value.navigation.aiOpen&&value.navigation.snavCount===0;
     const current=JSON.stringify(value);stable=ready&&current===previous?stable+1:ready?1:0;previous=current;return stable>=2;
@@ -172,26 +176,16 @@ async function aiVisible(page, visible) {
   await page.waitForFunction(visible => document.querySelector('.win')?.classList.contains('ai-dock') === visible, visible);
 }
 async function subview(page, workbench, label) {
-  const rail = page.locator(`.rail [data-workbench="${workbench}"]`);
-  await rail.click();
-  if (await page.locator('.ai-topbar-btn').getAttribute('aria-expanded') === 'true') {
-    // A rail click closes its menu while leaving the pointer/focus there.
-    // Leave it first so hover produces the real mouse-enter that opens the flyout.
-    await page.locator('.topbar .avatar').hover();
-    await rail.hover();
-    await page.locator(`#rail-menu-${workbench}`).getByRole('button', { name: label, exact: true }).click();
-  } else {
-    await page.locator('.tree').getByRole('button', { name: label, exact: true }).click();
-  }
+  await navigateInstalled(page, workbench, label);
 }
 
 export async function closeUnchangedMediaTaskEditor(page) {
-  const dialog = page.locator('.task-modal[open]');
+  const dialog = page.locator('.task-modal:visible');
   const title = await dialog.getAttribute('aria-label');
   assert.ok(title === '新增事项' || title === '编辑事项', `Unexpected current-page task editor: ${title}`);
-  // TaskEditor exposes a text return control only when creating. Existing-item
-  // editing uses Modal's accessible close icon; do not submit either form.
-  await dialog.getByRole('button', { name:title === '新增事项' ? '返回' : '关闭', exact:true }).click();
+  // Anchored creation and existing-item editing expose the accessible close
+  // icon; unanchored creation retains its return control. Never submit a form.
+  await dialog.getByRole('button', { name:/^(?:返回|关闭)$/ }).click();
   await dialog.waitFor({ state:'hidden' });
 }
 
@@ -234,7 +228,7 @@ export async function prepareMediaKeepaliveQuit({application,page,report}) {
     await page.keyboard.type('Quit-only unsent fixture');
     const retained=await until(page,()=>nativeState(application,id),value=>value?.draft==='Quit-only unsent fixture','Quit fixture input must be real');
     const {point:oldPoint}=await focusMediaFixtureControl({application,page,native,id,selector:'#click-target',observation:{}});
-    await page.locator('.rail [data-workbench="life"]').click();await page.getByRole('button',{name:'日程待办',exact:true}).click();await assertHidden(application,page,id,report);
+    await navigateInstalled(page,'life','日程和待办','todo');await assertHidden(application,page,id,report);
     await assertMediaHiddenInput({application,page,id,oldPoint,report,label:'normal quit'});
     assertMediaStatePreserved(retained,await nativeState(application,id));
     report.mediaKeepaliveQuit={guestId:id,restoredUrl,nonce:retained.nonce,draft:retained.draft,retainedBeforeQuit:true,statePreservationAcrossRestart:false};
@@ -265,7 +259,7 @@ export async function verifyMediaKeepaliveRelaunch({application,page,check,repor
   });
 }
 async function creator(page, assertDefault = false) {
-  await page.locator('.rail [data-workbench="media"]').click();
+  await navigateInstalled(page, 'media');
   if (assertDefault) await page.locator('.content .copy-wrap').waitFor({ state: 'visible' });
   await subview(page, 'media', '我的小红书');
   await page.locator('.media-browser-host[data-active="true"]').waitFor({ state: 'visible' });
@@ -343,7 +337,7 @@ export async function focusMediaFixtureControl({application,page,native,id,selec
     return observation.readiness = { window, metrics };
   },value=>{
     try { assertMediaGeometry(value.metrics); } catch { previousGeometry=undefined;return false; }
-    if(value.window.contentSize[0]!==expectedContentSize[0]||value.window.contentSize[1]!==expectedContentSize[1]||value.metrics.viewport.width!==expectedContentSize[0]||value.metrics.viewport.height!==expectedContentSize[1]) {
+    if(value.window.contentSize.some((size,index)=>Math.abs(size-expectedContentSize[index])>1)||Math.abs(value.metrics.viewport.width-value.window.contentSize[0])>1||Math.abs(value.metrics.viewport.height-value.window.contentSize[1])>1) {
       previousGeometry=undefined;return false;
     }
     const signature=JSON.stringify([value.metrics.stage,value.metrics.webview,value.metrics.guestViewport]);
@@ -414,7 +408,7 @@ export async function assertMediaHiddenInput({application,page,id,oldPoint,repor
   const hit=await page.evaluate(({x,y})=>{const target=document.elementFromPoint(x,y);return Boolean(target&&!target.closest('.media-browser-host'));},oldPoint);
   assert.equal(hit,true,'Former guest coordinates must hit only the current workspace');
   await page.mouse.click(oldPoint.x,oldPoint.y);
-  if(await page.locator('.task-modal[open]').count())await closeUnchangedMediaTaskEditor(page);
+  if(await page.locator('.task-modal:visible').count())await closeUnchangedMediaTaskEditor(page);
   await page.locator('#view-todo').getByRole('button',{name:'新增',exact:true}).click();
   title=page.getByRole('textbox',{name:'待办名称',exact:true});await title.click();
   await application.evaluate(async({webContents},id)=>webContents.fromId(id).executeJavaScript('window.tryFixtureFocus()',false),id);
@@ -431,7 +425,7 @@ export async function assertMediaHiddenInput({application,page,id,oldPoint,repor
     failure=error;probe.failure=String(error);probe.after=await nativeState(application,id).catch(()=>null);throw error;
   } finally {
     try {
-      if(title&&await page.locator('.task-modal[open]').count()) {await title.fill('');await closeUnchangedMediaTaskEditor(page);}
+      if(title&&await page.locator('.task-modal:visible').count()) {await title.fill('');await closeUnchangedMediaTaskEditor(page);}
     } catch(cleanupError) {report.errors.push(`Hidden media input probe cleanup: ${String(cleanupError)}`);if(!failure)throw cleanupError;}
   }
 }
@@ -501,7 +495,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
         owner.on('did-attach-webview', attach); fixture.ownerListeners.push({ name:'did-attach-webview', listener:attach });
       }, { html, origin:MEDIA_FIXTURE_ORIGIN, paths:MEDIA_FIXTURE_PATHS, token });
       await aiVisible(page, false);
-      await page.locator('.rail [data-workbench="life"]').click();await page.getByRole('button',{name:'日程待办',exact:true}).click();
+      await navigateInstalled(page,'life','日程和待办','todo');
       if(await page.locator('#view-todo .task-library').count()) await page.locator('#view-todo .dash-actions').getByRole('button',{name:'全部事项',exact:true}).click();
       await native.evaluate(win=>{win.webContents.setZoomFactor(1);win.setContentSize(1024,680);});
       homeTasks=await page.evaluate(()=>window.workbench.todo.state());
@@ -517,7 +511,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
     await check('Loading workspace switch preserves one real guest and completes exactly one initial home load', async () => {
       await creator(page, true); id = await guestId(page);
       await until(page, () => probe(application), value => value.pendingHome, 'Initial fixture response was not gated');
-      await page.locator('.rail [data-workbench="life"]').click();await page.getByRole('button',{name:'日程待办',exact:true}).click();
+      await navigateInstalled(page,'life','日程和待办','todo');
       await page.locator('.media-browser-host[hidden]').waitFor({ state:'attached' });
       assert.equal(await guestId(page), id); await assertHidden(application, page, id, report);
       await creator(page, true); assert.equal(await guestId(page), id);
@@ -546,7 +540,8 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
     });
     await check('Repeated real workbench navigation keeps DOM/native identity, state, history and listener counts', async () => {
       for (let turn = 0; turn < 2; turn++) for (const workbench of ['home', 'settings', 'life', 'game', 'web']) {
-        await page.locator(`.rail [data-workbench="${workbench}"]`).click(); await assertHidden(application, page, id, report);
+        if(workbench==='settings')await navigateInstalled(page,'home');
+        await navigateInstalled(page, workbench); await assertHidden(application, page, id, report);
         await creator(page, true); assert.equal(await guestId(page), id);
         assert.equal(await page.evaluate(() => window.__onoRetainedWebview === document.querySelector('#view-media-browser webview') && window.__onoRetainedMediaHost === document.querySelector('.media-browser-host')), true);
         const next = await nativeState(application, id); assertMediaStatePreserved(preserved, next); assert.deepEqual(next.listeners, preserved.listeners);
@@ -554,7 +549,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       }
     });
     await check('Hidden creator rejects native keyboard/pointer/focus and is excluded from host accessibility', async () => {
-      await page.locator('.rail [data-workbench="life"]').click();await page.getByRole('button',{name:'日程待办',exact:true}).click(); await assertHidden(application, page, id, report);
+      await navigateInstalled(page,'life','日程和待办','todo'); await assertHidden(application, page, id, report);
       const currentTasks = await page.evaluate(() => window.workbench.todo.state());
       const hit = await page.evaluate(({ x,y }) => { const e = document.elementFromPoint(x,y); return Boolean(e && !e.closest('.media-browser-host')); }, retainedPoint);
       assert.equal(hit, true, 'Former guest surface must hit current workspace');
@@ -598,7 +593,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
         await page.getByRole('radio', { name:label, exact:true }).click();
         await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, theme);
         for (const [width,height] of [[1280,820],[1024,680]]) for (const motion of ['no-preference','reduce']) for (const aiOpen of [false,true]) {
-          await page.locator('.rail [data-workbench="life"]').click();await page.getByRole('button',{name:'日程待办',exact:true}).click();
+          await navigateInstalled(page,'life','日程和待办','todo');
           await native.evaluate((win,size) => win.setContentSize(size.width,size.height), { width,height });
           await page.emulateMedia({ reducedMotion:motion }); await aiVisible(page, aiOpen);
           await creator(page, true); assert.equal(await guestId(page), id);
@@ -665,9 +660,9 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
     });
     await check('Actual renderer host teardown destroys the retained guest and reload is lazy again', async () => {
       const departing=id;const {point:oldPoint}=await focusMediaFixtureControl({application,page,native,id,selector:'#click-target',observation:{}});
-      await page.locator('.rail [data-workbench="life"]').click();await page.getByRole('button',{name:'日程待办',exact:true}).click(); await assertHidden(application,page,id,report);
+      await navigateInstalled(page,'life','日程和待办','todo'); await assertHidden(application,page,id,report);
       await assertMediaHiddenInput({application,page,id,oldPoint,report,label:'renderer host teardown'});
-      await page.reload(); await page.locator('#view-todo').waitFor({state:'visible'});
+      await page.reload(); await page.locator('#view-home').waitFor({state:'visible'});
       await until(page,()=>probe(application),value=>value.destroyed.includes(departing),'Actual owner reload must destroy retained guest');
       assert.equal(await page.locator('.media-browser-host').count(),0);
       assert.equal(await application.evaluate(({webContents})=>webContents.getAllWebContents().filter(value=>value.getType()==='webview').length),0);
@@ -719,7 +714,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
     await aiVisible(page,false); await subview(page,'settings','通用与外观');
     const labels={mist:'雾灰 · 轻雾',cool:'冷灰 · 凝霜',warm:'暖砂 · 柔雾'};
     await page.getByRole('radio',{name:labels[initial.theme]??labels.mist,exact:true}).click();
-    await page.locator('.rail [data-workbench="life"]').click();await page.getByRole('button',{name:'日程待办',exact:true}).click(); await aiVisible(page,initial.aiOpen);
+    await navigateInstalled(page,'life','日程和待办','todo'); await aiVisible(page,initial.aiOpen);
     } catch (cleanupError) {
       report.errors.push(`Media keepalive fixture cleanup: ${String(cleanupError).slice(0,2000)}`);
       if(!failure) throw cleanupError;

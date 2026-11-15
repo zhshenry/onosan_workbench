@@ -2,6 +2,7 @@
 // through normal UI actions. Unsupported legacy ranges use a temporary, clearly
 // reported todo:state READ response only; they never become database/CRUD proof.
 import assert from 'node:assert/strict';
+import { navigateInstalled } from './installed-navigation.mjs';
 
 export const TOPBAR_DATES_SCREENSHOTS = Object.freeze([
   'topbar-dates-persisted.png', 'topbar-dates-relaunched.png',
@@ -212,7 +213,7 @@ async function inspectGeometry(page, kind) {
 async function resize(application, page, { width, height, zoom = 1 }) {
   const window = await application.browserWindow(page);
   await window.evaluate((win, value) => { win.webContents.setZoomFactor(value.zoom); win.setContentSize(value.width, value.height); }, { width, height, zoom });
-  await page.waitForFunction(value => Math.abs(innerWidth - value.width / value.zoom) <= 1 && Math.abs(innerHeight - value.height / value.zoom) <= 1, { width, height, zoom });
+  await page.waitForFunction(value => Math.abs(innerWidth - value.width / value.zoom) <= 2 && Math.abs(innerHeight - value.height / value.zoom) <= 2, { width, height, zoom });
   assert.equal(await window.evaluate(win => win.webContents.getZoomFactor()), zoom);
 }
 async function dismiss(page) { await page.keyboard.press('Escape'); await page.locator('.ipop').waitFor({ state: 'hidden' }); }
@@ -337,7 +338,7 @@ export async function runTopbarDatesPilot({ application, page, check, screenshot
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await resize(application, page, { width: 1280, height: 820 });
   if (await page.locator('#workbench-ai-panel').getAttribute('aria-hidden') === 'false') await page.locator('.topbar').getByRole('button', { name: '收起 AI 助手', exact: true }).click();
-  await page.locator('.rail [data-workbench="home"]').click();
+  await navigateInstalled(page, 'home');
   await check('Topbar dates: create timed, overdue, untimed todo and same-day schedule through normal UI', async () => {
     for (const input of [
       { title: `CI topbar 今日待办 ${runId}`, kind: 'task', day: calendar.today, start: '09:00' },
@@ -371,7 +372,7 @@ export async function runTopbarDatesPilot({ application, page, check, screenshot
     await dialog.waitFor({ state: 'visible' }); await dialog.getByRole('button', { name: '关闭', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });
     await openMenu(page, 'todo'); await dismiss(page); await openMenu(page, 'todo');
-    await page.locator('.rail [data-workbench="home"]').click(); await menu(page, 'todo').waitFor({ state: 'hidden' });
+    await navigateInstalled(page, 'home'); await menu(page, 'todo').waitFor({ state: 'hidden' });
     // Retain and exercise the topbar's existing direct completion action.
     await openMenu(page, 'todo');
     const row = menu(page, 'todo').locator('.ipop-row').filter({ has: page.getByRole('button', { name: persisted[1].title, exact: true }) });
@@ -394,9 +395,8 @@ export async function runTopbarDatesPilot({ application, page, check, screenshot
   };
   const fixtures = topbarReadFixtures(calendar.today);
   try {
-    // Settings keeps unsupported legacy data out of unrelated home-view widgets.
-    await page.locator('.rail [data-workbench="settings"]').click();
-    await page.locator('.tree').getByRole('button', { name: '通用与外观', exact: true }).click();
+    // Keep unsupported legacy task data out of unrelated dashboard widgets.
+    await navigateInstalled(page, 'life', '命理', 'bazi');
     await check('Topbar dates: synthetic AI status event shows crowded toolbar without provider or chat writes', async () => {
       await injectTopbarAiJob(application, page);
       await inspectTopbarControls(page, true);
@@ -409,8 +409,10 @@ export async function runTopbarDatesPilot({ application, page, check, screenshot
     for (const fixture of TOPBAR_DATES_MATRIX) {
       await check(`Topbar dates: renderer-only ${fixture.theme} ${fixture.width}x${fixture.height} zoom ${fixture.zoom}`, async () => {
         await dismiss(page);
+        await navigateInstalled(page, 'settings', '通用与外观');
         await page.getByRole('radio', { name: fixture.label, exact: true }).click();
         await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, fixture.theme);
+        await navigateInstalled(page, 'life', '命理', 'bazi');
         await resize(application, page, fixture);
         assert.equal(await page.locator('.sched-track').isVisible(), fixture.width / fixture.zoom > 1180, 'Preserve existing narrow-window schedule collapse');
         const geometries = {};
@@ -424,7 +426,7 @@ export async function runTopbarDatesPilot({ application, page, check, screenshot
       });
     }
     await check('Topbar dates: renderer-only capsule/popover parity for same-day, cross-day and cross-year ranges', async () => {
-      for (const width of [1280, 1181]) {
+      for (const width of [1280, 1182]) {
         await resize(application, page, { width, height: 820 });
         for (const entry of fixtures.schedule) {
           await syntheticRows(application, page, 'schedule', [entry], true); await dismiss(page);

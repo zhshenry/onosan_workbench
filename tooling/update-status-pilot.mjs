@@ -189,7 +189,7 @@ async function remountAbout(page) {
 async function resize(application, page, width, height) {
   const native = await application.browserWindow(page);
   await native.evaluate((win, value) => { win.webContents.setZoomFactor(1); win.setContentSize(value.width, value.height); }, { width, height });
-  await page.waitForFunction(value => innerWidth === value.width && innerHeight === value.height, { width, height });
+  await page.waitForFunction(value => Math.abs(innerWidth - value.width) <= 1 && Math.abs(innerHeight - value.height) <= 1, { width, height });
 }
 async function inspectGeometry(page, expected) {
   await page.waitForFunction(expected => {
@@ -209,7 +209,7 @@ async function inspectGeometry(page, expected) {
       const textRects = [...range.getClientRects()].filter(text => text.width > 0 && text.height > 0);
       const target = document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
       return { bounds: rect(node), text: node.innerText.trim(), fontSize: Number.parseFloat(getComputedStyle(node).fontSize),
-        tokenSize: Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue(token)),
+        tokenSize: Number.parseFloat(getComputedStyle(node).getPropertyValue(token)),
         complete: textRects.length > 0 && textRects.every(text => text.left >= bounds.left - 1 && text.right <= bounds.right + 1 && text.top >= bounds.top - 1 && text.bottom <= bounds.bottom + 1),
         hit: target === node || node.contains(target) };
     };

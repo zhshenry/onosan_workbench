@@ -3,6 +3,7 @@
 // model calls, vault imports, browser pages, credentials or proposal application.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
+import { navigateInstalled } from './installed-navigation.mjs';
 
 export const CONTEXT_PICKER_SCREENSHOTS = Object.freeze([
   'context-picker-mist-1024x680.png', 'context-picker-cool-1024x680.png',
@@ -47,14 +48,12 @@ async function closePanel(page) {
 }
 async function navigate(page, workspace, label, view) {
   await closePanel(page);
-  await page.locator(`.rail [data-workbench="${workspace}"]`).click();
-  if (label) await page.locator('.tree').getByRole('button', { name: label, exact: true }).click();
-  if (view) await page.locator(`#view-${view}`).waitFor({ state: 'visible' });
+  await navigateInstalled(page, workspace, label, view);
 }
 async function resize(application, page, width, height) {
   const window = await application.browserWindow(page);
   await window.evaluate((win, size) => win.setContentSize(size.width, size.height), { width, height });
-  await page.waitForFunction(size => innerWidth === size.width && innerHeight === size.height, { width, height });
+  await page.waitForFunction(size => Math.abs(innerWidth - size.width) <= 1 && Math.abs(innerHeight - size.height) <= 1, { width, height });
 }
 async function dismiss(page) {
   await page.keyboard.press('Escape');
@@ -256,6 +255,7 @@ export async function runContextPickerPilot({ application, page, check, screensh
       await connection.getByRole('button', { name: '保存配置', exact: true }).click();
       await page.waitForFunction(endpoint => window.workbench.ai.config().then(config => config.providers.some(provider => provider.name === '本机合成验收' && provider.endpoint === endpoint)), `http://127.0.0.1:${server.address().port}/v1`);
       // Explicitly select this fixture through the same real model picker.
+      await navigate(page, 'life', '日程和待办', 'todo');
       await openPanel(page); await model(page).click();
       await page.getByRole('option').filter({ hasText: /^synthetic-card-acceptance$/ }).click();
       const config = await eventually(() => page.evaluate(() => window.workbench.ai.config()),
@@ -264,7 +264,7 @@ export async function runContextPickerPilot({ application, page, check, screensh
       await closePanel(page);
     });
     await check('Context picker: real UI creates long todo fixture and keyboard/change/remove/cancel stay read-only', async () => {
-      await navigate(page, 'life', '日程待办', 'todo');
+      await navigate(page, 'life', '日程和待办', 'todo');
       await page.locator('#view-todo').getByRole('button', { name: '新增', exact: true }).click();
       const editor = page.getByRole('dialog', { name: '新增事项', exact: true });
       await editor.getByRole('textbox', { name: '待办名称', exact: true }).fill(longTitle);
@@ -375,7 +375,7 @@ export async function runContextPickerPilot({ application, page, check, screensh
       assert.deepEqual((await page.evaluate(() => window.workbench.copy.list())).drafts.find(draft => draft.id === primary.id), primary);
       await navigate(page, 'media', '图文发布'); await openPanel(page); assert.equal(await chips(page).count(), 0);
       await selectReference(page, copy.title, true);
-      await navigate(page, 'life', '日程待办', 'todo'); await openPanel(page); assert.equal(await chips(page).count(), 0);
+      await navigate(page, 'life', '日程和待办', 'todo'); await openPanel(page); assert.equal(await chips(page).count(), 0);
       await openChat(page, turns[0].title); assert.equal(await chips(page).count(), 0, 'Reopening a chat does not silently attach past references');
       await selectReference(page, longTitle); await newChat(page); assert.equal(await chips(page).count(), 0, 'New chat cannot inherit references');
     });
@@ -419,18 +419,21 @@ export async function runContextPickerPilot({ application, page, check, screensh
       await add(page).click(); await picker(page).locator('.ai-reference-search input').fill(birthdayFixture.name);
       assert.equal(await picker(page).locator('.ai-reference-option').count(), 0); await dismiss(page);
     });
-    await check('Context picker: settings and enabled game/browser show explanations without stale chips', async () => {
-      for (const workspace of ['settings', 'game', 'web']) {
-        await navigate(page, workspace, workspace === 'settings' ? '通用与外观' : null);
+    await check('Context picker: settings dialog preserves context; enabled game/browser explain unavailable references', async () => {
+      const beforeSettings = await chips(page).count();
+      await navigate(page, 'settings', '通用与外观');
+      assert.equal(await page.getByRole('dialog', { name: '设置', exact: true }).isVisible(), true);
+      await navigate(page, 'life', '阅读清单', 'reading'); await openPanel(page);
+      assert.equal(await chips(page).count(), beforeSettings, 'Closing settings preserves the underlying reference selection');
+      for (const workspace of ['game', 'web']) {
+        await navigate(page, workspace);
         await openPanel(page); assert.equal(await chips(page).count(), 0);
         await add(page).click(); await picker(page).waitFor({ state: 'visible' });
         assert.equal(await picker(page).locator('.ai-reference-option').count(), 0);
-        if (workspace === 'web' || workspace === 'game') {
-          if (workspace === 'web') assert.equal(await page.locator('#view-browser').getByRole('combobox', { name: '地址', exact: true }).count(), 1);
-          else assert.equal(await page.getByRole('region', { name: '轨迹侦探运行与测试', exact: true }).count(), 1);
-          assert.match(await picker(page).innerText(), /当前没有可关联内容/);
-          assert.doesNotMatch(await picker(page).innerText(), /规划中|尚未开放/);
-        } else assert.match(await picker(page).innerText(), /设置|无需|不支持|当前没有可关联内容/);
+        if (workspace === 'web') assert.equal(await page.locator('#view-browser').getByRole('combobox', { name: '地址', exact: true }).count(), 1);
+        else assert.equal(await page.getByRole('region', { name: '轨迹侦探运行与测试', exact: true }).count(), 1);
+        assert.match(await picker(page).innerText(), /当前没有可关联内容/);
+        assert.doesNotMatch(await picker(page).innerText(), /规划中|尚未开放/);
         await dismiss(page);
       }
     });
@@ -441,7 +444,7 @@ export async function runContextPickerPilot({ application, page, check, screensh
         await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, fixture.theme);
         await page.emulateMedia({ colorScheme: fixture.colorScheme, reducedMotion: 'reduce' });
         await resize(application, page, fixture.width, fixture.height);
-        await navigate(page, 'life', '日程待办', 'todo'); await openPanel(page);
+        await navigate(page, 'life', '日程和待办', 'todo'); await openPanel(page);
         // The narrow-window overlay intentionally hides its resize handle.
         // Every theme first sets 340px with the visible wide-window control.
         if (fixture.width >= 1160) {
@@ -449,6 +452,7 @@ export async function runContextPickerPilot({ application, page, check, screensh
           await separator.focus(); for (let i = 0; i < 10; i++) await page.keyboard.press('ArrowRight');
         }
         assert.equal(await panel(page).locator('.ai-resizer').getAttribute('aria-valuenow'), '340');
+        if (await chips(page).count()) await chips(page).getByRole('button').click();
         await selectReference(page, longTitle);
         const baseline = await controlBounds(page);
         await add(page).click();
@@ -479,7 +483,7 @@ export async function verifyContextPickerRelaunch({ application, page, check, sc
     assert.ok((await page.evaluate(() => window.workbench.copy.list())).drafts.some(draft => draft.id === fixture.copyId));
     assert.ok((await page.evaluate(() => window.workbench.reading.list())).books.some(book => book.id === fixture.readingId));
     assert.ok((await page.evaluate(() => window.workbench.bazi.list())).profiles.some(profile => profile.id === fixture.primaryProfileId));
-    await navigate(page, 'life', '日程待办', 'todo'); await openPanel(page); await openChat(page, fixture.turns[0].title);
+    await navigate(page, 'life', '日程和待办', 'todo'); await openPanel(page); await openChat(page, fixture.turns[0].title);
     await referencePromptBubble(page, fixture.turns[0].prompt).waitFor({ state: 'visible' });
     await screenshot('context-picker-relaunched.png'); await closePanel(page);
   });

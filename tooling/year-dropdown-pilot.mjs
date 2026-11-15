@@ -1,6 +1,7 @@
 // Issue #13 acceptance for the actual installed Electron app, never a prototype.
 // Every profile/settings write is a UI action. Bridge evaluations are read-only.
 import assert from 'node:assert/strict';
+import { navigateInstalled } from './installed-navigation.mjs';
 
 export const YEAR_DROPDOWN_SCREENSHOTS = Object.freeze([
   'year-dropdown-mist-1024x680.png',
@@ -83,8 +84,7 @@ async function viewMonth(page, month) {
   assert.fail(`Could not navigate to month ${month}`);
 }
 async function openBazi(page) {
-  await page.locator('.rail [data-workbench="life"]').click();
-  await page.locator('.tree').getByRole('button', { name: '命理', exact: true }).click();
+  await navigateInstalled(page, 'life', '命理');
   await page.locator('#view-bazi .greet').waitFor({ state: 'visible' });
 }
 async function createEditor(page) {
@@ -107,7 +107,7 @@ async function cancelEditor(dialog) {
 async function resize(application, page, width, height) {
   const window = await application.browserWindow(page);
   await window.evaluate((win, size) => win.setContentSize(size.width, size.height), { width, height });
-  await page.waitForFunction(size => innerWidth === size.width && innerHeight === size.height, { width, height });
+  await page.waitForFunction(size => Math.abs(innerWidth - size.width) <= 1 && Math.abs(innerHeight - size.height) <= 1, { width, height });
 }
 async function profileDate(page, name, expected) {
   // Await the bridge read itself; a Promise is not evidence of a matching value.
@@ -301,8 +301,7 @@ export async function runYearDropdownPilot({ application, page, check, screensho
   for (const fixture of YEAR_DROPDOWN_MATRIX) {
     await check(`Year picker: ${fixture.theme} ${fixture.width}x${fixture.height} actual app, scroll visibility and overlay boundaries`, async () => {
       await page.emulateMedia({ reducedMotion: fixture.reducedMotion });
-      await page.locator('.rail [data-workbench="settings"]').click();
-      await page.locator('.tree').getByRole('button', { name: '通用与外观', exact: true }).click();
+      await navigateInstalled(page, 'settings', '通用与外观');
       await page.getByRole('radio', { name: fixture.label, exact: true }).click();
       await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, fixture.theme);
       assert.equal((await page.evaluate(() => window.workbench.settings.get())).uiTheme, fixture.theme);

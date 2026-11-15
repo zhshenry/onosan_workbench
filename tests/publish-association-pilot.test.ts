@@ -412,7 +412,7 @@ test('Installed association pilot uses twelve checks, real UI storage writes, bo
   assert.match(source, /\.settings-sections/); assert.match(source, /document\.getAnimations\(\)/);
   assert.match(source, /animation\.pending \|\| animation\.playState === 'running'/);
   assert.match(source, /\.content > \.view-fade > \.copy-wrap \.copy-editor/);
-  assert.match(source, /innerWidth === width && innerHeight === height/);
+  assert.match(source, /Math\.abs\(innerWidth - width\) <= 1 && Math\.abs\(innerHeight - height\) <= 1/);
   assert.match(source, /assert\.deepEqual\(await state\(page\), fixture\.finalState/);
   assert.match(source, /assertPublishAssociationInventory\(result\.disk, existingState, ownedIds\)/);
   assert.match(source, /assertPublishAssociationInventory\(await state\(page\), fixture\.existingState, fixture\.ownedIds, fixture\.finalState\)/);

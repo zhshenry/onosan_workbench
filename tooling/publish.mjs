@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 import { downloadRelease, findRelease, inspectReleaseFiles, releaseFiles, requireCheck } from './release-assets.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -66,7 +67,11 @@ async function main() {
     requireCheck(!['--verify', '--verify-draft', '--publish'].includes(mode), 'Release does not exist; upload the draft first.');
     writeFileSync(path.join(root, 'release/metadata/release-notes.md'), notes, 'utf8');
     run(gh, createArgs, true);
-    release = findRelease(run, gh, repo, tag);
+    for (let attempt = 0; attempt < 5 && !release; attempt++) {
+      if (attempt) await delay(1000);
+      release = findRelease(run, gh, repo, tag);
+    }
+    requireCheck(release, 'Created release draft is not visible yet; retry --upload.');
   }
   requireCheck(release?.prerelease === prerelease, 'GitHub Release 必须是对应版本的正式/Pre-release 通道。');
   requireCheck(release.name === releaseTitle, `GitHub Release 标题必须是 ${releaseTitle}。`);

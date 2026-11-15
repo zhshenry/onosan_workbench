@@ -127,8 +127,8 @@ async function captureAssociationFrame({ application, page, screenshot, report, 
   // enough room together. Resize/scroll the real UI; never crop or alter a PNG.
   const native = await application.browserWindow(page);
   await native.evaluate(win => { win.webContents.setZoomFactor(1); win.setContentSize(1280, 820); });
-  assert.deepEqual(await native.evaluate(win => win.getContentSize()), [1280, 820]);
-  await page.waitForFunction(() => innerWidth === 1280 && innerHeight === 820);
+  assert.ok((await native.evaluate(win => win.getContentSize())).every((value, index) => Math.abs(value - [1280, 820][index]) <= 1), 'Native content size must match the request within Windows display rounding');
+  await page.waitForFunction(() => Math.abs(innerWidth - 1280) <= 1 && Math.abs(innerHeight - 820) <= 1);
   await waitStatus(page, expectedState);
   await section(page).evaluate(element => element.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'instant' }));
   // Pinned Playwright polls predicate() synchronously: a Promise is truthy even
@@ -497,6 +497,7 @@ export async function runPublishAssociationPilot({ application, page, check, scr
     assert.equal(await application.evaluate(({ clipboard }) => clipboard.readText()), expected.url);
     const savedState = await state(page); await readAssociationDisk();
     await page.locator('.rail [data-workbench="home"]').click(); await openCopy(page, '图文发布');
+    await selectBlog(page, originalA.title);
     await waitStatus(page, '已关联 · 手动确认'); assert.deepEqual(await state(page), savedState);
     await page.reload(); await openCopy(page, '图文发布'); await selectBlog(page, originalA.title);
     await waitStatus(page, '已关联 · 手动确认'); assert.deepEqual(await state(page), savedState); await readAssociationDisk();
@@ -601,8 +602,8 @@ export async function runPublishAssociationPilot({ application, page, check, scr
       await page.getByRole('radio', { name: themeLabel, exact: true }).click();
       await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, entry.theme);
       const win = await application.browserWindow(page); await win.evaluate((win, size) => { win.webContents.setZoomFactor(1); win.setContentSize(size.width, size.height); }, entry);
-      assert.deepEqual(await win.evaluate(win => win.getContentSize()), [entry.width, entry.height]);
-      await page.waitForFunction(({ width, height }) => innerWidth === width && innerHeight === height, entry);
+      assert.ok((await win.evaluate(win => win.getContentSize())).every((value, index) => Math.abs(value - [entry.width, entry.height][index]) <= 1), 'Native content size must match the request within Windows display rounding');
+      await page.waitForFunction(({ width, height }) => Math.abs(innerWidth - width) <= 1 && Math.abs(innerHeight - height) <= 1, entry);
       await page.emulateMedia({ reducedMotion: entry.reducedMotion });
       await openCopy(page, '图文发布'); await selectBlog(page, originalB.title, true); await waitStatus(page, '尚未关联作品');
       const states = { unlinked: await inspectGeometry(page) };

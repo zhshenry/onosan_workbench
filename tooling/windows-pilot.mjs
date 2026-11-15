@@ -15,6 +15,7 @@ import { runTopbarDatesPilot, verifyTopbarDatesRelaunch } from './topbar-dates-p
 import { runYearDropdownPilot, verifyUnboundedDatePicker, verifyYearDropdownRelaunch } from './year-dropdown-pilot.mjs';
 import { runUpdateStatusPilot } from './update-status-pilot.mjs';
 import { runPublishAssociationPilot, verifyPublishAssociationRelaunch } from './publish-association-pilot.mjs';
+import { navigateInstalled } from './installed-navigation.mjs';
 
 assert.equal(process.platform, 'win32', 'Run the acceptance pilot on standard Windows hosted CI');
 const executablePath = process.env.WORKBENCH_PILOT_EXE;
@@ -65,11 +66,12 @@ async function screenshot(name, capturePage = page) {
       const image = await win.webContents.capturePage();
       return { png: image.toPNG().toString('base64'), imageSize: image.getSize(), contentSize: win.getContentSize(), zoom: win.webContents.getZoomFactor() };
     });
-    assert.deepEqual([frame.imageSize.width, frame.imageSize.height], frame.contentSize, 'Native screenshot must cover the complete content surface');
+    const displayScale = await application.evaluate(({ BrowserWindow, screen }, id) => screen.getDisplayMatching(BrowserWindow.fromId(id).getBounds()).scaleFactor, await window.evaluate(win => win.id));
+    assert.deepEqual([frame.imageSize.width, frame.imageSize.height], frame.contentSize.map(value => Math.round(value * displayScale)), 'Native screenshot must cover the complete content surface');
     const png = Buffer.from(frame.png, 'base64');
     await writeFile(path.join(reportDirectory, name), png);
     (report.screenshotCapture ??= []).push({ name, method: 'Electron webContents.capturePage (unmodified PNG)', imageSize: frame.imageSize,
-      contentSize: frame.contentSize, zoom: frame.zoom, pngPixels: { width: png.readUInt32BE(16), height: png.readUInt32BE(20) } });
+      contentSize: frame.contentSize, displayScale, zoom: frame.zoom, pngPixels: { width: png.readUInt32BE(16), height: png.readUInt32BE(20) } });
   } else {
     await capturePage.screenshot({ path: path.join(reportDirectory, name), animations: 'disabled' });
   }
@@ -136,7 +138,8 @@ async function showLifecycleIsland() {
   return openInstalledIsland({ application, page, report });
 }
 async function doneLibrary() {
-  const home = page.locator('#view-home');
+  await navigateInstalled(page, 'life', '日程和待办', 'todo');
+  const home = page.locator('#view-todo');
   await home.getByRole('button', { name: '全部事项', exact: true }).click();
   const library = home.getByRole('region', { name: '全部事项', exact: true });
   await library.getByRole('button', { name: /^已完成/ }).click();
@@ -169,25 +172,26 @@ try {
     await page.locator('#workbench-ai-panel').waitFor({ state: 'hidden' });
   });
   await check('Cancel empty new-task editor without creating a task', async () => {
-    await page.locator('#view-home').getByRole('button', { name: '新增', exact: true }).click();
+    await navigateInstalled(page, 'life', '日程和待办', 'todo');
+    await page.locator('#view-todo').getByRole('button', { name: '新增', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: '新增事项', exact: true });
-    await dialog.getByRole('button', { name: '返回', exact: true }).click();
+    await dialog.getByRole('button', { name: '关闭', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });
     assert.equal((await state()).tasks.length, 0);
   });
   await check('Create one synthetic task through the UI', async () => {
-    await page.locator('#view-home').getByRole('button', { name: '新增', exact: true }).click();
+    await page.locator('#view-todo').getByRole('button', { name: '新增', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: '新增事项', exact: true });
     await dialog.getByRole('textbox', { name: '待办名称', exact: true }).fill(title);
     await dialog.getByRole('button', { name: '创建', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });
     taskId = (await waitTask(title, 'todo')).id;
     assert.equal((await state()).tasks.length, 1, 'Creation must not duplicate the task');
-    await page.locator('#view-home').getByRole('button', { name: `编辑 ${title}`, exact: true }).waitFor({ state: 'visible' });
+    await page.locator('#view-todo').getByRole('button', { name: `编辑 ${title}`, exact: true }).waitFor({ state: 'visible' });
   });
   await screenshot('created.png');
   await check('Edit synthetic task title and note through the UI', async () => {
-    await page.locator('#view-home').getByRole('button', { name: `编辑 ${title}`, exact: true }).click();
+    await page.locator('#view-todo').getByRole('button', { name: `编辑 ${title}`, exact: true }).click();
     const dialog = page.getByRole('dialog', { name: '编辑事项', exact: true });
     await dialog.getByRole('textbox', { name: '待办名称', exact: true }).fill(editedTitle);
     await dialog.getByRole('textbox', { name: '备注 / 进展', exact: true }).fill(note);
@@ -199,7 +203,7 @@ try {
   });
   await screenshot('edited.png');
   await check('Cancel completion once, then confirm completion through the UI', async () => {
-    const home = page.locator('#view-home');
+    const home = page.locator('#view-todo');
     await home.getByRole('button', { name: `完成 ${editedTitle}`, exact: true }).click();
     await home.getByRole('button', { name: '取消', exact: true }).click();
     assert.equal((await state()).tasks[0].status, 'todo');
@@ -218,8 +222,7 @@ try {
   await runUpdateStatusPilot({ application, page, check, screenshot, report });
   await runMediaKeepalivePilot({ application, page, check, screenshot, report });
   await check('Choose exit-on-close in settings and quit through the window close button', async () => {
-    await page.locator('.rail [data-workbench="settings"]').click();
-    await page.locator('.tree').getByRole('button', { name: '通用与外观', exact: true }).click();
+    await navigateInstalled(page, 'settings', '通用与外观');
     await page.getByRole('button', { name: '退出应用', exact: true }).click();
     await page.waitForFunction(() => window.workbench.settings.get().then(value => value.closeAction === 'exit'));
     await prepareMediaKeepaliveQuit({ application, page, report });
@@ -286,7 +289,7 @@ try {
   report.status = 'passed';
 } catch (error) {
   report.status = 'failed'; report.failure = String(error).slice(0, 6000);
-  console.error(report.failure);
+  console.error(error.stack ?? report.failure);
   // Save even if screenshot capture or Electron shutdown subsequently fails.
   await saveReport().catch(saveError => {
     report.errors.push(`Initial failure report write: ${String(saveError)}`);

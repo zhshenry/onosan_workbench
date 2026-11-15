@@ -84,7 +84,7 @@ function geometry() {
     heading: { x: 430, y: 215, width: 360, height: 22 },
     title: { bounds: { x: 430, y: 215, width: 56, height: 22 }, text: '应用更新', fontSize: 14, tokenSize: 14, complete: true },
     status: { bounds: { x: 502, y: 215, width: 72, height: 22 }, text: '下载 42%', fontSize: 14, tokenSize: 14, complete: true },
-    action: { bounds: { x: 830, y: 215, width: 120, height: 32 }, text: '下载中…', fontSize: 13, tokenSize: 13, complete: true, disabled: true, busy: true, hit: true },
+    action: { bounds: { x: 830, y: 215, width: 120, height: 32 }, text: '下载中…', fontSize: 14, tokenSize: 14, complete: true, disabled: true, busy: true, hit: true },
     progress: { bounds: { x: 430, y: 257, width: 360, height: 6 }, value: 42, max: 100 },
     rowClientWidth: 560, rowScrollWidth: 560, detailsVisible: false };
 }

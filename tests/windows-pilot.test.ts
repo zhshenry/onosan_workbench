@@ -197,7 +197,8 @@ test('Zoomed topbar evidence captures the native full surface without resampling
   assert.match(source, /name\.startsWith\('topbar-dates-'\) && name\.endsWith\('-zoom125\.png'\)/);
   assert.match(source, /await win\.webContents\.capturePage\(\)/);
   assert.match(source, /image\.toPNG\(\)\.toString\('base64'\)/);
-  assert.match(source, /assert\.deepEqual\(\[frame\.imageSize\.width, frame\.imageSize\.height\], frame\.contentSize/);
+  assert.match(source, /assert\.deepEqual\(\[frame\.imageSize\.width, frame\.imageSize\.height\], frame\.contentSize\.map\(value => Math\.round\(value \* displayScale\)\)/);
+  assert.match(source, /screen\.getDisplayMatching\(BrowserWindow\.fromId\(id\)\.getBounds\(\)\)\.scaleFactor/);
   assert.match(source, /pngPixels: \{ width: png\.readUInt32BE\(16\), height: png\.readUInt32BE\(20\) \}/);
   assert.doesNotMatch(source, /image\.resize\(|toJPEG\(/);
   assert.equal(MAX_ARTIFACT_BYTES, 19_000_000);

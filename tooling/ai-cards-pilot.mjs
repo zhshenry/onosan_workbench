@@ -3,12 +3,13 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
+import { navigateInstalled } from './installed-navigation.mjs';
 
 export const AI_CARDS_SCREENSHOTS = Object.freeze(['ai-cards-pending.png', 'ai-cards-applied.png', 'ai-cards-partial.png', 'ai-cards-failed.png', 'ai-cards-narrow.png', 'ai-cards-relaunched.png']);
 const state = page => page.evaluate(() => window.workbench.todo.state());
 const panel = page => page.locator('#workbench-ai-panel');
 const lastCard = page => panel(page).locator('.todo-proposal-card').last();
-async function home(page) { await page.locator('.rail [data-workbench="life"]').click(); await page.getByRole('button', { name: '日程待办', exact: true }).click(); await page.locator('#view-todo').waitFor({ state: 'visible' }); }
+async function home(page) { await navigateInstalled(page, 'life', '日程和待办', 'todo'); }
 async function openPanel(page) {
   if (await panel(page).getAttribute('aria-hidden') !== 'false') await page.locator('.topbar').getByRole('button', { name: '展开 AI 助手', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('#workbench-ai-panel')?.getAttribute('aria-hidden') === 'false');
@@ -52,8 +53,7 @@ export async function runAiCardsPilot({ application, page, check, screenshot, ru
   try {
     await check('AI cards: configure loopback synthetic provider through normal UI without credentials', async () => {
       await closePanel(page);
-      await page.locator('.rail [data-workbench="settings"]').click();
-      await page.locator('.tree').getByRole('button', { name: 'AI 助手', exact: true }).click();
+      await navigateInstalled(page, 'settings', 'AI 助手');
       await page.getByRole('button', { name: '添加供应商', exact: true }).first().click();
       const dialog = page.getByRole('dialog', { name: '添加供应商', exact: true });
       await dialog.getByRole('combobox', { name: '供应商类型', exact: true }).click();
@@ -62,7 +62,7 @@ export async function runAiCardsPilot({ application, page, check, screenshot, ru
       await dialog.getByRole('textbox', { name: '服务地址', exact: true }).fill(`http://127.0.0.1:${server.address().port}/v1`);
       await dialog.getByRole('button', { name: '保存供应商', exact: true }).click(); await dialog.waitFor({ state: 'hidden' });
       await page.getByRole('button', { name: '添加模型', exact: true }).click();
-      const model = page.getByRole('dialog').filter({ has: page.locator('#ai-model-name') });
+      const model = page.getByRole('dialog', { name: '添加模型', exact: true });
       await model.getByRole('textbox', { name: '模型名称 / ID', exact: true }).fill('synthetic-card-acceptance');
       await model.getByRole('button', { name: '添加模型', exact: true }).click(); await model.waitFor({ state: 'hidden' });
       const enabled = page.getByRole('switch', { name: '启用 AI', exact: true });
@@ -133,8 +133,8 @@ export async function runAiCardsPilot({ application, page, check, screenshot, ru
       const separator = panel(page).getByRole('separator', { name: '调整助手宽度', exact: true });
       await separator.focus(); for (let i = 0; i < 10; i++) await page.keyboard.press('ArrowRight');
       for (const [theme, label] of [['mist', '雾灰 · 轻雾'], ['cool', '冷灰 · 凝霜'], ['warm', '暖砂 · 柔雾']]) {
-        await closePanel(page); await page.locator('.rail [data-workbench="settings"]').click();
-        await page.locator('.tree').getByRole('button', { name: '通用与外观', exact: true }).click(); await page.getByRole('radio', { name: label, exact: true }).click();
+        await closePanel(page); await navigateInstalled(page, 'settings', '通用与外观');
+        await page.getByRole('radio', { name: label, exact: true }).click();
         await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, theme);
         const win = await application.browserWindow(page); await win.evaluate(win => win.setContentSize(1024, 680));
         await home(page); await openPanel(page);
