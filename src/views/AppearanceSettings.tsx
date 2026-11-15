@@ -10,7 +10,7 @@ const THEMES: { value: UiTheme; label: string; description: string }[] = [
   { value: 'wisteria', label: '藤紫', description: '低饱和紫雾' },
   { value: 'rose', label: '蔷薇', description: '温柔灰粉' },
   { value: 'oat', label: '燕麦', description: '自然中性色' },
-  { value: 'windowlight', label: '窗影', description: '光影跟随系统时间' },
+  { value: 'windowlight', label: '窗影', description: '光影跟随系统时间变化' },
   { value: 'spatial', label: '空间窗景', description: '安静的室内景深' },
 ];
 
