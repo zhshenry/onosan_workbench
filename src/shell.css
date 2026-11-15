@@ -929,7 +929,7 @@ kbd {
 .content:has(> .view-fade > .todo-workspace) { display: flex; flex-direction: column; min-height: 0; }
 .view-fade:has(> .todo-workspace) { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .todo-workspace.view.on { --type-body: 16px; display: flex; flex-direction: column; height: 100%; min-height: 0; gap: 16px; container-type: inline-size; }
-.todo-workspace > .greet { flex: none; align-items: center; margin-bottom: 0; }
+.todo-workspace > .greet { flex: none; align-items: center; flex-wrap: wrap; margin-bottom: 0; padding: 20px 24px; background: var(--workbench-card-bg); border: 1px solid var(--hairline); border-radius: var(--r-panel); }
 .todo-workspace .todo-panel { flex: 1; min-height: 0; padding: 0; gap: 16px; }
 .todo-workspace .today-board { display: grid; grid-template-columns: minmax(0, .48fr) minmax(0, .52fr); grid-template-rows: minmax(0, 1fr); gap: 16px; overflow: visible; }
 .todo-workspace .today-board > section { min-width: 0; margin-bottom: 0; padding: 24px; background: var(--workbench-card-bg); border: 1px solid var(--hairline); border-radius: var(--r-panel); box-shadow: var(--shadow-sm); overflow: hidden; }

@@ -34,10 +34,10 @@ export function AppearanceSettings({ controller }: { controller: AppearanceContr
       </div>
     </fieldset>
     <fieldset disabled={disabled} data-setting-key="glassIntensity">
-      <legend>玻璃质感</legend><p>只调整透明度、模糊与边缘光，不改变布局。</p>
+      <legend>玻璃质感</legend><p>统一应用到页面标题、卡片和工作区，不改变布局。</p>
       <div className="appearance-pair">
-        {([{ value: 'normal', label: '普通玻璃', description: '熟悉的清晰与轻盈' },
-          { value: 'strong', label: '强玻璃', description: '更透的层次，柔和的磨砂' }] as const).map(option =>
+        {([{ value: 'normal', label: '普通玻璃', description: '轻磨砂，少量背景透色' },
+          { value: 'strong', label: '强玻璃', description: '更多背景透色，更强磨砂与高光' }] as const).map(option =>
           <label className="appearance-choice" key={option.value}>
             <input type="radio" name={`${id}-glass`} checked={value.glassIntensity === option.value}
               onChange={() => change({ glassIntensity: option.value })} />

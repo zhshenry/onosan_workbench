@@ -62,53 +62,44 @@
 }
 .win::before { background-position: var(--field-position); transform: var(--field-transform); pointer-events: none; }
 
-/* Normal is the released material baseline. Strong changes paint, never geometry. */
+/* Both materials cover the same surfaces. Strong changes paint, never geometry. */
 :root[data-glass='normal'] {
   --glass-hi: #ffffffc2; --glass-lo: #ffffff6b; --glass-line: #ffffffd9;
-  --glass-surface: #ffffff8f; --glass-filter: blur(18px) saturate(1.5);
+  --glass-surface: #ffffff8f; --glass-filter: blur(18px) saturate(1.15);
+  --panel-bg: linear-gradient(145deg, #ffffffc2, #ffffffa3);
+  --panel-shadow: inset 0 1px 0 var(--glass-line), 0 4px 14px #2925210a;
 }
 :root[data-glass='strong'] {
   --glass-hi: #ffffffa8; --glass-lo: #ffffff4d; --glass-line: #ffffffe0;
   --glass-surface: #ffffff70; --glass-filter: blur(30px) saturate(1.4);
-  --panel-bg: linear-gradient(145deg, #ffffff99, #ffffff70);
-  --reading-wash: #ffffff80;
+  --panel-bg: linear-gradient(145deg, #ffffffa8, #ffffff80);
   --panel-shadow: inset 0 1px 0 #ffffffe6, inset 0 -1px 0 #1c20270a, 0 2px 5px #29252108, 0 12px 28px #29252110;
 }
-:root[data-glass='strong'] .win :is(.dashboard-widget, .dashboard-heading, .todo-workspace .greet,
-  .todo-workspace .today-board > section, .rd-heading, .rd-workspace, .ci-page-header, .ci-main > .ci-panel,
-  .bazi-card, .bazi-pan, .bazi-as-sidebar > .panel, .copy-wrap, .copy-publish-footer,
-  .at-config-card, .at-result-workspace, .at-library-heading, .at-library-content, .media-browser-view, .ai-panel) {
+/* Headers, functional cards and continuous workspaces share one material layer. */
+:root[data-glass] .win :is(.dashboard-widget, .dashboard-heading, :where(.todo-workspace) .greet,
+  :where(.todo-workspace .today-board) > section, .rd-heading, .rd-workspace, .ci-page-header, :where(.ci-main) > .ci-panel,
+  .bazi-card, .bazi-pan, :where(.bazi-as-sidebar) > .panel, .copy-wrap, .copy-publish-footer,
+  .at-config-card, .at-result-workspace, .at-library-heading, .at-library-content, .media-browser-view, .ai-panel,
+  :where(.game-host .game-workspace:not([data-expanded='true'])) :is(.game-project, .game-preview, .game-tests)) {
   background: var(--panel-bg);
   border-color: var(--glass-line);
   -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
   box-shadow: var(--panel-shadow);
 }
-/* One reading wash per continuous workspace; its rows remain flat. */
-:root[data-glass='strong'] .win :is(.todo-workspace .today-board > section, .rd-workspace,
-  .ci-main > .ci-panel, .copy-wrap, .at-config-card, .at-result-workspace, .at-library-content) {
-  background: linear-gradient(var(--reading-wash), var(--reading-wash)), var(--panel-bg);
-}
-:root[data-glass='strong'] .win :is(.copy-list, .copy-editor, .ai-compose-wrap) { background: transparent; }
-:root[data-glass='strong'] .win .bazi-main-card > #bazi-pan-bazi { -webkit-backdrop-filter: none; backdrop-filter: none; }
-:root[data-glass='strong'] .win :is(.ai-compose-input, .ai-ctxcard:not(.pinned)) {
+/* Internal regions stay flat; controls provide their own readable backing. */
+:root[data-glass] .win :is(.copy-list, .copy-editor, .ai-compose-wrap) { background: transparent; }
+:root[data-glass] .win .bazi-main-card > #bazi-pan-bazi { -webkit-backdrop-filter: none; backdrop-filter: none; }
+:root[data-glass] .win :is(.ai-compose-input, .ai-ctxcard:not(.pinned)) {
   background: var(--control-bg); box-shadow: none; backdrop-filter: none;
 }
-:root[data-glass='strong'] .win .ai-compose { background: transparent; border: 0; box-shadow: none; }
+:root[data-glass] .win .ai-compose { background: transparent; border: 0; box-shadow: none; }
 @media (max-width: 1159px) {
-  :root[data-glass='strong'] .win .ai-panel { background: linear-gradient(#fffffff5, #ffffffed); }
+  :root[data-glass] .win .ai-panel { background: linear-gradient(#fffffff5, #ffffffed); }
 }
 /* Overlays must occlude the text behind them. Keep sticky table headers and website canvases opaque. */
 .win :is(.rail-flyout-card, .ipop, .ai-history-menu), dialog.modal { background: var(--overlay-bg); }
 :root[data-glass='strong'] .modal.settings-dialog { background: #fffffff0; backdrop-filter: blur(30px) saturate(1.4); box-shadow: var(--panel-shadow), 0 24px 64px #161d2933; }
 :root[data-glass='strong'] .settings-content { background: color-mix(in srgb, var(--scene-base) 20%, #ffffffde); }
-/* Documented title-card compatibility exception for classic navigation. */
-:root[data-navigation='floating'][data-glass] .win :is(.dashboard-heading, .todo-workspace .greet, .reading-view .rd-heading, .at-library-heading) {
-  background: transparent; border-color: transparent; box-shadow: none; backdrop-filter: none;
-}
-:root[data-navigation='floating'] .win :is(.dashboard-heading, .todo-workspace .greet, .reading-view .rd-heading, .at-library-heading) :is(h1, .gsub, p) {
-  color: var(--ink); text-shadow: 0 1px 16px #fff9, 0 1px 3px #fff8;
-}
-
 /* Four independently floating topbar groups. Classic keeps its exact released geometry. */
 .tb-brand, .tb-tools, .rail-nav-shell { display: contents; }
 :root[data-navigation='floating'] .win { --rail-width: 60px; --rail-row: 44px; }

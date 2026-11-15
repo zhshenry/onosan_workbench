@@ -42,6 +42,18 @@ async function shot(name) {
   await page.screenshot({ path: path.join(output, `${name}.png`), animations: 'disabled' });
   report.screenshots.push(`${name}.png`);
 }
+async function surfaces(selector) {
+  return page.locator(selector).evaluateAll(elements => elements.map(el => {
+    const style = getComputedStyle(el);
+    return { background: style.backgroundImage, filter: style.backdropFilter, border: style.borderTopColor,
+      shadow: style.boxShadow, radius: style.borderTopLeftRadius, width: style.borderTopWidth };
+  }));
+}
+function assertSurface(actual, expected) {
+  assert.deepEqual([actual.background, actual.filter, actual.border, actual.shadow],
+    [expected.background, expected.filter, expected.border, expected.shadow]);
+  assert.ok(parseFloat(actual.radius) > 0 && parseFloat(actual.width) > 0, JSON.stringify(actual));
+}
 async function geometry() {
   return page.evaluate(() => {
     const rect = selector => { const r = document.querySelector(selector).getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height }; };
@@ -72,7 +84,7 @@ try {
     assert.ok(g.brand.width < 120);
     assert.equal(await page.locator('.tb-brand').innerText(), '');
     assert.notEqual(await page.locator('.rail-nav-shell').evaluate(el => getComputedStyle(el, '::before').backgroundImage), 'none');
-    assert.equal(await page.locator('.dashboard-heading').evaluate(el => getComputedStyle(el).backgroundImage), 'none');
+    assert.notEqual(await page.locator('.dashboard-heading').evaluate(el => getComputedStyle(el).backgroundImage), 'none');
   });
   if (process.argv.includes('--preview')) {
     await navigateInstalled(page, 'life', '日程和待办', 'todo');
@@ -91,6 +103,10 @@ try {
             assert.equal(state.saved.uiTheme, state.rendered.theme);
             assert.equal(state.saved.navigationStyle, state.rendered.navigation);
             assert.equal(state.saved.glassIntensity, state.rendered.glass);
+            const [heading, ...cards] = await surfaces('.dashboard-heading, .dashboard-grid > .dashboard-widget');
+            assert.ok(heading.background.includes('rgba('), 'Both materials are translucent, including normal');
+            assert.ok(heading.filter.includes(glass === '普通玻璃' ? '18px' : '30px'));
+            for (const card of cards) assertSurface(card, heading);
           }
         }
       }
@@ -102,7 +118,7 @@ try {
       await shot('home-classic-normal-mist');
       assert.equal(await page.locator('.tb-brand').evaluate(el => getComputedStyle(el).display), 'contents');
       assert.equal(await page.locator('.rail-nav-shell').evaluate(el => getComputedStyle(el).display), 'contents');
-      assert.notEqual(await page.locator('.dashboard-heading').evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(0, 0, 0, 0)');
+      assert.notEqual(await page.locator('.dashboard-heading').evaluate(el => getComputedStyle(el).backgroundImage), 'none');
       await page.locator('.todopill').click();
       await page.locator('.ipop').waitFor({ state: 'visible' });
       await shot('classic-todo-popover');
@@ -120,6 +136,33 @@ try {
         const r = el.getBoundingClientRect(); return Math.abs(r.width - window.appearanceRect.width) < 1 && Math.abs(r.height - window.appearanceRect.height) < 1;
       });
       assert.ok(same);
+    });
+    await check('normal and strong materials match across page headers, cards and workspaces', async () => {
+      await settings(); await choose('uiTheme', '青瓷'); await closeSettings();
+      let normal;
+      for (const [label, material] of [['普通玻璃', 'normal'], ['强玻璃', 'strong']]) {
+        await navigateInstalled(page, 'home');
+        await settings(); await choose('glassIntensity', label); await closeSettings();
+        const [reference] = await surfaces('.dashboard-heading');
+        if (material === 'normal') normal = reference;
+        else { assert.notEqual(reference.background, normal.background); assert.notEqual(reference.shadow, normal.shadow); }
+        await shot(`home-floating-${material}-celadon`);
+        for (const [workbench, name, selector, view] of [
+          ['game', undefined, '.game-host .game-project, .game-host .game-preview', 'game'],
+          ['life', '日程和待办', '.todo-workspace > .greet, .todo-workspace .today-board > section', 'todo'],
+          ['life', '阅读清单', '.rd-heading, .rd-workspace', 'reading'],
+          ['life', '每日签到', '.ci-page-header, .ci-main > .ci-panel', 'checkin'],
+          ['ai-test', '测试任务', '.at-library-heading, .at-library-content', 'ai-test-tasks'],
+        ]) {
+          await navigateInstalled(page, workbench, name);
+          await page.locator(selector).first().waitFor({ state: 'visible' });
+          const panels = await surfaces(selector);
+          assert.ok(panels.length >= 2, `${view} has a header and content surface`);
+          for (const panel of panels) assertSurface(panel, reference);
+          await shot(`${view}-floating-${material}-celadon`);
+        }
+      }
+      await settings(); await choose('uiTheme', '窗影'); await closeSettings();
     });
     for (const [workbench, label, view] of [['life', '日程和待办', 'todo'], ['life', '每日签到', 'checkin'], ['life', '阅读清单', 'reading'], ['life', '命理', 'bazi'], ['media', '博客编辑', 'copy'], ['ai-test', '对比测试', 'ai-test'], ['ai-test', '测试任务', 'ai-test-tasks']]) {
       await navigateInstalled(page, workbench, label);
