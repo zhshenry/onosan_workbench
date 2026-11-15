@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from 'react';
-import { Desktop, GearSix, Info, ListChecks, Sparkle, UserCircle } from '@phosphor-icons/react';
+import { Desktop, GearSix, Info, ListChecks, Palette, Sparkle, UserCircle } from '@phosphor-icons/react';
 import type { AvatarColor, ViewId } from '../../shared/contracts';
 import type { AppearanceController } from '../appearance';
 import { workbenchById } from '../nav';
@@ -9,6 +9,7 @@ import { SettingsView } from './SettingsView';
 const SECTION_ICONS: Partial<Record<ViewId, typeof GearSix>> = {
   'settings-profile': UserCircle,
   'settings-general': GearSix,
+  'settings-appearance': Palette,
   'settings-island': Desktop,
   'settings-ai': Sparkle,
   'settings-data': ListChecks,

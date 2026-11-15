@@ -18,7 +18,7 @@ export function AppearanceSettings({ controller }: { controller: AppearanceContr
   const id = useId();
   const { value, windowLight, status, error, change, retry } = controller;
   const disabled = !controller.ready;
-  return <section className="appearance-settings" aria-label="外观设置">
+  return <section className="appearance-settings" aria-label="个性化设置">
     <fieldset disabled={disabled} data-setting-key="navigationStyle">
       <legend>导航样式</legend>
       <p>切换顶栏与侧栏的呈现方式，保留展开状态。</p>

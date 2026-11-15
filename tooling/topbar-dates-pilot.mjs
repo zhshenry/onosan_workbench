@@ -409,7 +409,7 @@ export async function runTopbarDatesPilot({ application, page, check, screenshot
     for (const fixture of TOPBAR_DATES_MATRIX) {
       await check(`Topbar dates: renderer-only ${fixture.theme} ${fixture.width}x${fixture.height} zoom ${fixture.zoom}`, async () => {
         await dismiss(page);
-        await navigateInstalled(page, 'settings', '通用与外观');
+        await navigateInstalled(page, 'settings', '个性化');
         await page.getByRole('radio', { name: fixture.label, exact: true }).click();
         await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, fixture.theme);
         await navigateInstalled(page, 'life', '命理', 'bazi');

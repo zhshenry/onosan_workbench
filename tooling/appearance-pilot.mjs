@@ -35,7 +35,7 @@ async function launch() {
   assert.ok(data.startsWith(output), 'Real user data is never used');
 }
 async function check(name, action) { await action(); report.checks.push(name); console.log(`PASS ${name}`); }
-async function settings() { await navigateInstalled(page, 'settings', '通用与外观'); }
+async function settings() { await navigateInstalled(page, 'settings', '个性化'); }
 async function closeSettings() { await page.getByRole('dialog', { name: '设置', exact: true }).getByRole('button', { name: '关闭', exact: true }).click(); }
 async function setWindowTime(hour, minute = 0, second = 0) {
   clockTime = localTime(hour, minute, second);
@@ -89,6 +89,37 @@ function assertLayout(actual, expected, context) {
 }
 try {
   await launch();
+  await check('general and personalization have separate settings and preserve choices across navigation', async () => {
+    const win = await app.browserWindow(page);
+    for (const [width, height] of [[1440, 940], [1024, 680]]) {
+      await win.evaluate((win, size) => win.setContentSize(...size), [width, height]);
+      await navigateInstalled(page, 'settings', '通用');
+      const dialog = page.getByRole('dialog', { name: '设置', exact: true });
+      const before = await page.evaluate(() => window.workbench.settings.get());
+      const keys = () => dialog.locator('[data-setting-key]').evaluateAll(elements => elements.map(el => el.dataset.settingKey));
+      await dialog.locator('[data-setting-key="launchAtLogin"]').waitFor();
+      assert.deepEqual(await keys(), ['launchAtLogin', 'closeAction', 'language']);
+      await shot(`settings-general-${width}`);
+      const tab = dialog.locator('.settings-sections').getByRole('button', { name: '个性化', exact: true });
+      await tab.focus(); await tab.press('Enter');
+      await dialog.getByRole('heading', { name: '个性化', exact: true }).waitFor();
+      assert.equal(await tab.getAttribute('aria-current'), 'page');
+      assert.deepEqual((await keys()).filter(key => key !== 'windowLight'), ['navigationStyle', 'glassIntensity', 'uiTheme']);
+      await choose('glassIntensity', '纯色');
+      await shot(`settings-personalization-${width}`);
+      await navigateInstalled(page, 'settings', '通用');
+      await dialog.locator('[data-setting-key="launchAtLogin"]').waitFor();
+      assert.deepEqual(await keys(), ['launchAtLogin', 'closeAction', 'language']);
+      const after = await page.evaluate(() => window.workbench.settings.get());
+      for (const key of ['launchAtLogin', 'closeAction', 'language']) assert.equal(after[key], before[key]);
+      await closeSettings();
+      await settings();
+      assert.equal(await dialog.getByRole('radio', { name: /^纯色/ }).isChecked(), true);
+      assert.equal(await dialog.locator('.settings-content').evaluate(el => el.scrollWidth <= el.clientWidth), true);
+      await closeSettings();
+    }
+    await win.evaluate(win => win.setContentSize(1440, 940));
+  });
   const taskState = await page.evaluate(async () => {
     const existing = await window.workbench.todo.state();
     if (existing.tasks.some(task => task.title === '核对新版界面')) return existing;
@@ -409,6 +440,7 @@ try {
       await win.evaluate(win => win.setContentSize(1024, 680));
       if (await page.locator('.nav-toggle').getAttribute('aria-expanded') === 'false') await page.locator('.nav-toggle').click();
       await page.locator('.rail [data-workbench="settings"]').click();
+      await page.locator('.settings-sections').getByRole('button', { name: '个性化', exact: true }).click();
       await page.locator('.appearance-settings').waitFor();
       await shot('settings-1024'); await closeSettings();
       await shot('todo-1024-expanded');

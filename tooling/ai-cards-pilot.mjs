@@ -133,7 +133,7 @@ export async function runAiCardsPilot({ application, page, check, screenshot, ru
       const separator = panel(page).getByRole('separator', { name: '调整助手宽度', exact: true });
       await separator.focus(); for (let i = 0; i < 10; i++) await page.keyboard.press('ArrowRight');
       for (const [theme, label] of [['mist', '雾灰 · 轻雾'], ['cool', '冷灰 · 凝霜'], ['warm', '暖砂 · 柔雾']]) {
-        await closePanel(page); await navigateInstalled(page, 'settings', '通用与外观');
+        await closePanel(page); await navigateInstalled(page, 'settings', '个性化');
         await page.getByRole('radio', { name: label, exact: true }).click();
         await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, theme);
         const win = await application.browserWindow(page); await win.evaluate(win => win.setContentSize(1024, 680));

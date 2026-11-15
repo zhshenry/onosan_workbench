@@ -148,7 +148,7 @@
 }
 
 /* Settings choices: native radio semantics, authored visual previews, visible keyboard focus. */
-.appearance-settings { margin-top: 28px; }
+.appearance-settings { margin-top: 0; }
 .appearance-settings fieldset { min-width: 0; border: 0; margin: 0 0 26px; padding: 0; }
 .appearance-settings legend { font-size: var(--type-section); font-weight: 700; }
 .appearance-settings fieldset > p { margin: 5px 0 12px; color: var(--ink-3); font-size: var(--type-control); }

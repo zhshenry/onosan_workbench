@@ -589,7 +589,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
     });
     await check('Three themes, two native sizes, AI/navigation changes and reduced motion retain accurate guest bounds', async () => {
       for (const [theme, label] of [['mist','雾灰 · 轻雾'],['cool','冷灰 · 凝霜'],['warm','暖砂 · 柔雾']]) {
-        await aiVisible(page, false); await subview(page, 'settings', '通用与外观');
+        await aiVisible(page, false); await subview(page, 'settings', '个性化');
         await page.getByRole('radio', { name:label, exact:true }).click();
         await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, theme);
         for (const [width,height] of [[1280,820],[1024,680]]) for (const motion of ['no-preference','reduce']) for (const aiOpen of [false,true]) {
@@ -711,7 +711,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
     }
     await page.emulateMedia({reducedMotion:'no-preference'});
     await native.evaluate((win,size)=>win.setContentSize(size[0],size[1]),originalSize);
-    await aiVisible(page,false); await subview(page,'settings','通用与外观');
+    await aiVisible(page,false); await subview(page,'settings','个性化');
     const labels={mist:'雾灰 · 轻雾',cool:'冷灰 · 凝霜',warm:'暖砂 · 柔雾'};
     await page.getByRole('radio',{name:labels[initial.theme]??labels.mist,exact:true}).click();
     await navigateInstalled(page,'life','日程和待办','todo'); await aiVisible(page,initial.aiOpen);

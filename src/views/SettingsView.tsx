@@ -12,7 +12,8 @@ const wb = window.workbench;
 // ---------- 分区元信息(页头标题) ----------
 const SECTION_META: Partial<Record<ViewId, { title: string }>> = {
   'settings-profile': { title: '个人资料' },
-  'settings-general': { title: '通用与外观' },
+  'settings-general': { title: '通用' },
+  'settings-appearance': { title: '个性化' },
   'settings-island': { title: '桌面灵动岛' },
   'settings-ai': { title: 'AI 助手' },
   'settings-data': { title: '待办与数据' },
@@ -81,11 +82,8 @@ function useAppSettings() {
   return { settings, error, apply };
 }
 
-// ---------- 通用与外观 ----------
-function GeneralAppearanceSection({ query, appearance }: {
-  query: string;
-  appearance: AppearanceController;
-}) {
+// ---------- 通用 ----------
+function GeneralSection({ query }: { query: string }) {
   const { settings, error, apply } = useAppSettings();
 
   const rows: RowSpec[] = settings ? [
@@ -124,7 +122,6 @@ function GeneralAppearanceSection({ query, appearance }: {
       <Rows rows={rows} query={query} />
       {error && <p className="error" role="alert">{error}</p>}
       {!settings && !error && <p className="help" role="status">正在读取设置…</p>}
-      <AppearanceSettings controller={appearance} />
     </>
   );
 }
@@ -391,7 +388,8 @@ export function SettingsView({ view, appearance, onAvatarColorChange, onProfileN
         </div>
       </div>
       {view === 'settings-profile' && <ProfileSection query="" onAvatarColorChange={onAvatarColorChange} onProfileNameChange={onProfileNameChange} />}
-      {view === 'settings-general' && <GeneralAppearanceSection query="" appearance={appearance} />}
+      {view === 'settings-general' && <GeneralSection query="" />}
+      {view === 'settings-appearance' && <AppearanceSettings controller={appearance} />}
       {view === 'settings-island' && <IslandSettingsSection query="" />}
       {view === 'settings-ai' && <AiSettings query="" />}
       {view === 'settings-data' && <DataSection query="" />}

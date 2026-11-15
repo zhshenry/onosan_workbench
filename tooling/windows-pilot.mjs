@@ -222,7 +222,7 @@ try {
   await runUpdateStatusPilot({ application, page, check, screenshot, report });
   await runMediaKeepalivePilot({ application, page, check, screenshot, report });
   await check('Choose exit-on-close in settings and quit through the window close button', async () => {
-    await navigateInstalled(page, 'settings', '通用与外观');
+    await navigateInstalled(page, 'settings', '通用');
     await page.getByRole('button', { name: '退出应用', exact: true }).click();
     await page.waitForFunction(() => window.workbench.settings.get().then(value => value.closeAction === 'exit'));
     await prepareMediaKeepaliveQuit({ application, page, report });
