@@ -69,6 +69,24 @@ async function geometry() {
     return { bar: rect('.topbar'), brand: rect('.tb-brand'), middle: rect('.tb-middle'), right: rect('.tb-right'), nav: rect('.rail-nav'), settings: rect('.rbot') };
   });
 }
+async function layoutSnapshot() {
+  return page.evaluate(async () => {
+    await Promise.all(document.getAnimations().filter(animation => animation.effect?.getTiming().iterations !== Infinity).map(animation => animation.finished.catch(() => {})));
+    const selectors = ['.rail', '.main', '.main > .body', '.content', '.topbar', '.tb-brand', '.topbar .logo', '.nav-toggle',
+      '.tb-middle', '.sched', '.todopill', '.tb-right', '.tb-tools', '.tb-right button', '.wbtns', '.ai-panel',
+      '.dashboard-heading', '.dashboard-grid > .dashboard-widget', '.todo-workspace > .greet', '.today-board > section', '.settings-dialog'];
+    return Object.fromEntries(selectors.flatMap(selector => [...document.querySelectorAll(selector)].filter(el => el.getClientRects().length).map((el, index) => {
+      const r = el.getBoundingClientRect();
+      return [`${selector}:${index}`, { x: r.x, y: r.y, width: r.width, height: r.height, scrollTop: el.scrollTop, scrollLeft: el.scrollLeft }];
+    })));
+  });
+}
+function assertLayout(actual, expected, context) {
+  assert.deepEqual(Object.keys(actual), Object.keys(expected), context);
+  for (const [selector, rect] of Object.entries(expected)) for (const key of Object.keys(rect)) {
+    assert.ok(Math.abs(actual[selector][key] - rect[key]) <= .5, `${context}: ${selector}.${key}: ${rect[key]} → ${actual[selector][key]}`);
+  }
+}
 try {
   await launch();
   const taskState = await page.evaluate(async () => {
@@ -98,6 +116,38 @@ try {
     await navigateInstalled(page, 'life', '日程和待办', 'todo');
     await shot('todo-floating-strong-windowlight');
   } else {
+    await check('navigation styles preserve layout across 16 viewport, expansion, AI and page states', async () => {
+      const win = await app.browserWindow(page);
+      for (const [width, height] of [[1440, 940], [1024, 680]]) {
+        await win.evaluate((win, size) => win.setContentSize(...size), [width, height]);
+        for (const expanded of [false, true]) {
+          if ((await page.locator('.nav-toggle').getAttribute('aria-expanded') === 'true') !== expanded) await page.locator('.nav-toggle').click();
+          for (const aiOpen of [false, true]) {
+            if ((await page.locator('.ai-topbar-btn').getAttribute('aria-expanded') === 'true') !== aiOpen) await page.locator('.ai-topbar-btn').click();
+            for (const view of ['home', 'todo']) {
+              if (view === 'home') await navigateInstalled(page, 'home');
+              else await navigateInstalled(page, 'life', '日程和待办', 'todo');
+              await settings(); await choose('navigationStyle', '经典');
+              const before = await layoutSnapshot();
+              await choose('navigationStyle', '悬浮');
+              const context = `${width}x${height}, expanded=${expanded}, ai=${aiOpen}, ${view}`;
+              assertLayout(await layoutSnapshot(), before, context);
+              await choose('navigationStyle', '经典');
+              assertLayout(await layoutSnapshot(), before, `${context}, return to classic`);
+              await closeSettings();
+              if (view === 'home' && aiOpen && !expanded) {
+                await shot(`navigation-${width}-classic`);
+                await settings(); await choose('navigationStyle', '悬浮'); await closeSettings();
+                await shot(`navigation-${width}-floating`);
+              }
+            }
+          }
+        }
+      }
+      await win.evaluate(win => win.setContentSize(1440, 940));
+      if (await page.locator('.nav-toggle').getAttribute('aria-expanded') === 'true') await page.locator('.nav-toggle').click();
+      await navigateInstalled(page, 'home');
+    });
     await check('40 appearance states cover saved preferences and automatic light periods', async () => {
       await settings();
       for (const nav of ['经典', '悬浮']) {
@@ -149,7 +199,7 @@ try {
     await check('classic baseline and opaque popover keep their geometry', async () => {
       await settings(); await choose('navigationStyle', '经典'); await choose('glassIntensity', '普通玻璃'); await choose('uiTheme', '雾珀'); await closeSettings();
       await shot('home-classic-normal-mist');
-      assert.equal(await page.locator('.tb-brand').evaluate(el => getComputedStyle(el).display), 'contents');
+      assert.notEqual(await page.locator('.topbar').evaluate(el => getComputedStyle(el).backgroundImage), 'none');
       assert.equal(await page.locator('.rail-nav-shell').evaluate(el => getComputedStyle(el).display), 'contents');
       assert.notEqual(await page.locator('.dashboard-heading').evaluate(el => getComputedStyle(el).backgroundImage), 'none');
       await page.locator('.todopill').click();

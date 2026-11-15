@@ -308,7 +308,7 @@ input { font: inherit; color: inherit; }
   display: flex;
   align-items: center;
   margin: 10px 12px 0 calc(-1 * var(--rail-width));
-  padding: 0 10px 0 114px;
+  padding: 0 0 0 114px;
   background: linear-gradient(180deg, var(--glass-hi), var(--glass-lo));
   -webkit-backdrop-filter: var(--glass-filter);
   backdrop-filter: var(--glass-filter);
@@ -320,8 +320,12 @@ input { font: inherit; color: inherit; }
 }
 .topbar button,
 .topbar .avatar { -webkit-app-region: no-drag; }
-.topbar .logo { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); margin: 0; -webkit-app-region: no-drag; }
-.topbar .nav-toggle { position: absolute; left: 64px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: var(--r-ctl); }
+/* Both navigation styles share topbar geometry; appearance.css owns their surfaces. */
+.tb-brand { display: flex; align-items: center; gap: 12px; position: absolute; left: 0; top: 0; height: 100%; padding: 0 12px; }
+.topbar .logo { width: 30px; height: 30px; margin: 0; -webkit-app-region: no-drag; }
+.topbar .nav-toggle { width: 32px; height: 32px; border-radius: var(--r-ctl); }
+.tb-tools { display: flex; align-items: center; gap: 8px; height: 52px; padding: 0 10px; }
+.window-divider { display: none; }
 /* 日程 + 待办作为一组，相对顶栏（padding box）水平居中。
    两侧按 .tb-right 的真实宽度对称留白，避免盖住窗控；单条日期放不下时由 topbar-layout 加宽并左移。 */
 .tb-middle {
@@ -333,14 +337,15 @@ input { font: inherit; color: inherit; }
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
-  gap: 12px;
+  gap: 4px;
+  padding: 0 10px;
   width: max-content;
   min-width: 0;
   max-width: calc(100% - 2 * (anchor-size(--tb-right width) + 12px));
   z-index: 1;
 }
 .tb-left { position: relative; display: flex; align-items: center; flex: 0 1 auto; min-width: 0; }
-.tb-center { position: relative; display: flex; flex: none; min-width: 0; }
+.tb-center { position: relative; display: flex; flex: none; min-width: 0; border-left: 1px solid var(--hairline); padding-left: 4px; }
 .sched, .todopill { width: 100%; }
 .tb-right {
   anchor-name: --tb-right;
@@ -545,7 +550,7 @@ input { font: inherit; color: inherit; }
   box-shadow: var(--shadow-sm);
   cursor: pointer;
 }
-.wbtns { display: flex; gap: 2px; }
+.wbtns { display: flex; gap: 2px; height: 52px; align-items: center; padding: 0 7px; }
 .wbtn {
   width: 40px;
   height: 40px;
