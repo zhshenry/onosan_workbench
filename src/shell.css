@@ -933,7 +933,7 @@ kbd {
 .dash-actions .btn { min-height: 36px; }
 .btn-sm { height: 32px; padding: 0 11px; font-size: var(--type-control); border-radius: 10px; }
 .todo-panel .today-board { flex: 1; min-height: 0; }
-.content:has(> .view-fade > .todo-workspace) { display: flex; flex-direction: column; min-height: 0; }
+.content:has(> .view-fade > .todo-workspace) { display: flex; flex-direction: column; min-height: 0; scrollbar-gutter: stable; }
 .view-fade:has(> .todo-workspace) { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .todo-workspace.view.on { --type-body: 16px; display: flex; flex-direction: column; height: 100%; min-height: 0; gap: 16px; container-type: inline-size; }
 .todo-workspace > .greet { flex: none; align-items: center; flex-wrap: wrap; margin-bottom: 0; padding: 20px 24px; background: var(--workbench-card-bg); border: 1px solid var(--hairline); border-radius: var(--r-panel); }

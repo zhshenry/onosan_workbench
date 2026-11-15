@@ -44,6 +44,8 @@
 
 经典/悬浮切换使用 240ms 过渡，沿用 `--rail-motion` 与 `--ease`。`src/appearance.ts` 读取当前可见位置后同步切换样式，再以 Web Animations 平移侧栏入口和分支；玻璃伪元素交叉淡化，胶囊底面单独变形，图标和文字不缩放。顶栏底面由 `src/shell.css` 的 `.topbar::before` 持有，分组/胶囊底面由 `src/appearance.css` 持有；动画全程不移动主内容、顶栏控件、AI 或弹窗。侧栏容器不做 transform，固定菜单保持视口定位。首次读取设置不播放，快速反向从当前画面接续；减少动态效果、窗口缩放和卸载立即结束剩余动画并清理临时标记。
 
+日程待办保留 240ms 淡入上移的入场效果，外层 `.content` 使用 `scrollbar-gutter: stable` 固定滚动条占位，避免临时纵向溢出结束时横向扩宽。窄容器上下堆叠后仍由外层滚动，不通过隐藏溢出来截断面板。
+
 验收入口：`tests/appearance-settings.test.ts`（并发、错误、草稿/挂载保留）、`tests/app-settings.test.ts`（迁移/落盘）、`tooling/appearance-pilot.mjs`（隔离 Electron 实机）。完整记录见 `docs/design/appearance-system-implementation-2026-11-15.md`。
 
 ## 阅读清单与每日签到方案一（2026-11-15）

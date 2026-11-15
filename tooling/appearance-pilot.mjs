@@ -162,6 +162,59 @@ try {
         await closeSettings();
       }
     });
+    await check('todo entry keeps horizontal geometry stable on every animation frame', async () => {
+      const win = await app.browserWindow(page);
+      report.todoEntries = [];
+      for (const width of [1440, 1280]) {
+        await win.evaluate((win, width) => win.setContentSize(width, 820), width);
+        if ((await page.locator('.nav-toggle').getAttribute('aria-expanded') === 'true') !== (width === 1280)) await page.locator('.nav-toggle').click();
+        for (const nav of ['经典', '悬浮']) {
+          await settings(); await choose('navigationStyle', nav); await closeSettings();
+          for (const source of ['home', 'reading']) {
+            if (source === 'home') await navigateInstalled(page, 'home');
+            else await navigateInstalled(page, 'life', '阅读清单', 'reading');
+            await layoutSnapshot();
+            await page.evaluate(() => {
+              window.todoEntryFrames = new Promise(resolve => {
+                const frames = [], deadline = performance.now() + 5000;
+                let first;
+                const sample = now => {
+                  const todo = document.querySelector('#view-todo');
+                  if (todo) {
+                    first ??= now;
+                    const elements = [todo, todo.querySelector('.greet'), ...todo.querySelectorAll('.today-board > section')];
+                    frames.push({ time: now - first, transform: getComputedStyle(todo.parentElement).transform,
+                      rects: elements.map(el => { const r = el.getBoundingClientRect(); return { x: r.x, width: r.width, right: r.right }; }) });
+                  }
+                  if ((first !== undefined && now - first > 400) || now > deadline) resolve(frames);
+                  else requestAnimationFrame(sample);
+                };
+                requestAnimationFrame(sample);
+              });
+            });
+            await navigateInstalled(page, 'life', '日程和待办', 'todo');
+            const frames = await page.evaluate(() => window.todoEntryFrames);
+            const context = `${width}, ${nav}, from ${source}`;
+            assert.ok(frames.length > 3 && frames.some(frame => frame.transform !== 'none') && frames.at(-1).transform === 'none', `${context}: capture the entry animation through completion`);
+            report.todoEntries.push({ context, frames });
+            for (const frame of frames) assertLayout(frame.rects, frames.at(-1).rects, context);
+          }
+          if (width === 1280) {
+            const scroll = await page.locator('.content').evaluate(el => {
+              el.scrollTop = el.scrollHeight;
+              const last = el.querySelector('.today-board > section:last-child').getBoundingClientRect();
+              return { top: el.scrollTop, bottom: last.bottom, viewportBottom: el.getBoundingClientRect().bottom };
+            });
+            assert.ok(scroll.top > 0 && scroll.bottom <= scroll.viewportBottom + 1, `${nav}: stacked panels remain reachable by scrolling`);
+            await page.locator('.content').evaluate(el => { el.scrollTop = 0; });
+          }
+        }
+        await shot(`todo-entry-${width}`);
+      }
+      await win.evaluate(win => win.setContentSize(1440, 940));
+      if (await page.locator('.nav-toggle').getAttribute('aria-expanded') === 'true') await page.locator('.nav-toggle').click();
+      await navigateInstalled(page, 'home');
+    });
     await check('navigation styles preserve layout across 16 viewport, expansion, AI and page states', async () => {
       const win = await app.browserWindow(page);
       for (const [width, height] of [[1440, 940], [1024, 680]]) {
