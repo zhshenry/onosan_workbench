@@ -101,30 +101,32 @@
 :root[data-glass='strong'] .modal.settings-dialog { background: #fffffff0; backdrop-filter: blur(30px) saturate(1.4); box-shadow: var(--panel-shadow), 0 24px 64px #161d2933; }
 :root[data-glass='strong'] .settings-content { background: color-mix(in srgb, var(--scene-base) 20%, #ffffffde); }
 /* Floating surfaces keep the shared shell's sidebar reservation and topbar geometry. */
-.rail-nav-shell { display: contents; }
+.rail-nav-shell { position: relative; display: flex; flex: 1; width: 100%; min-height: 0; border-radius: var(--r-panel); }
 :root[data-navigation='floating'] .win { --rail-row: 44px; }
-:root[data-navigation='floating'] .topbar {
-  background: transparent; border-color: transparent;
-  backdrop-filter: none; box-shadow: none;
-}
-:root[data-navigation='floating'] :is(.tb-brand, .tb-tools, .wbtns, .tb-middle, .rbot),
-:root[data-navigation='floating'] .rail-nav-shell::before {
+.tb-tools, .wbtns, .rbot { position: relative; }
+.tb-brand, .tb-tools, .wbtns, .rbot { isolation: isolate; }
+:is(.tb-brand, .tb-tools, .wbtns, .tb-middle, .rbot, .rail-nav-shell)::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0;
   background: linear-gradient(145deg, var(--glass-hi), var(--glass-lo));
   backdrop-filter: var(--glass-filter); -webkit-backdrop-filter: var(--glass-filter);
   box-shadow: inset 0 0 0 1px var(--glass-line), inset 0 -1px 0 #2925210c, var(--shadow-sm);
   border-radius: 999px;
 }
+.rbot::before { inset: auto; top: 50%; left: 0; width: 66px; height: 66px; transform: translateY(-50%); }
+.rail-nav-shell::before { border-radius: inherit; transform-origin: 0 0; }
+:root[data-navigation='floating'] :is(.tb-brand, .tb-tools, .wbtns, .tb-middle, .rbot, .rail-nav-shell)::before { opacity: 1; }
+:root[data-navigation='floating'] :is(.topbar, .rail)::before { opacity: 0; }
 :root[data-navigation='floating'] .tb-middle :is(.sched, .todopill) { background: transparent; border-color: transparent; box-shadow: none; }
 :root[data-navigation='floating'] .rail { padding: 64px 0 0; gap: 16px; }
-:root[data-navigation='floating'] .rail::before, :root[data-navigation='floating'] .rail-selection { display: none; }
+:root[data-navigation='floating'] .rail-selection { display: none; }
+.rail[data-style-moving] .rail-selection { visibility: hidden; }
+.rail[data-style-moving] .ritem.on::after { opacity: 0; }
+:root[data-navigation='classic'] .rail[data-style-moving] .ritem.on { background: var(--nav-on-bg); box-shadow: var(--shadow-sm); }
 /* Auto margins center only within the free corridor. Overflow stays inside navigation. */
 :root[data-navigation='floating'] .rail-nav-shell {
   position: relative; display: flex; flex: 0 1 auto; width: 100%; min-height: 0; margin-block: auto; border-radius: 30px;
 }
-/* Blur only the pseudo surface: a filtered ancestor would trap fixed navigation flyouts. */
-:root[data-navigation='floating'] .rail-nav-shell::before {
-  content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
-}
+/* Blur and animate only the pseudo surface, keeping fixed navigation flyouts viewport-relative. */
 :root[data-navigation='floating'] .rail-nav {
   min-height: 0; padding: 8px 11px; border-radius: 30px; scrollbar-width: none; scrollbar-color: inherit;
 }

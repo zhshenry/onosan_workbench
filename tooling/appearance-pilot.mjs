@@ -69,9 +69,9 @@ async function geometry() {
     return { bar: rect('.topbar'), brand: rect('.tb-brand'), middle: rect('.tb-middle'), right: rect('.tb-right'), nav: rect('.rail-nav'), settings: rect('.rbot') };
   });
 }
-async function layoutSnapshot() {
-  return page.evaluate(async () => {
-    await Promise.all(document.getAnimations().filter(animation => animation.effect?.getTiming().iterations !== Infinity).map(animation => animation.finished.catch(() => {})));
+async function layoutSnapshot(settle = true) {
+  return page.evaluate(async settle => {
+    if (settle) await Promise.all(document.getAnimations().filter(animation => animation.effect?.getTiming().iterations !== Infinity).map(animation => animation.finished.catch(() => {})));
     const selectors = ['.rail', '.main', '.main > .body', '.content', '.topbar', '.tb-brand', '.topbar .logo', '.nav-toggle',
       '.tb-middle', '.sched', '.todopill', '.tb-right', '.tb-tools', '.tb-right button', '.wbtns', '.ai-panel',
       '.dashboard-heading', '.dashboard-grid > .dashboard-widget', '.todo-workspace > .greet', '.today-board > section', '.settings-dialog'];
@@ -79,7 +79,7 @@ async function layoutSnapshot() {
       const r = el.getBoundingClientRect();
       return [`${selector}:${index}`, { x: r.x, y: r.y, width: r.width, height: r.height, scrollTop: el.scrollTop, scrollLeft: el.scrollLeft }];
     })));
-  });
+  }, settle);
 }
 function assertLayout(actual, expected, context) {
   assert.deepEqual(Object.keys(actual), Object.keys(expected), context);
@@ -116,6 +116,52 @@ try {
     await navigateInstalled(page, 'life', '日程和待办', 'todo');
     await shot('todo-floating-strong-windowlight');
   } else {
+    await check('navigation transition moves only navigation, reverses smoothly and respects reduced motion', async () => {
+      await page.emulateMedia({ reducedMotion: 'no-preference' });
+      await settings(); await choose('navigationStyle', '经典');
+      const before = await layoutSnapshot();
+      const firstItem = page.locator('.rail-nav .ritem').first();
+      const start = await firstItem.boundingBox();
+      await page.evaluate(() => {
+        window.navigationMotion = [];
+        window.originalAnimate = Element.prototype.animate;
+        Element.prototype.animate = function (keyframes, options) {
+          const animation = window.originalAnimate.call(this, keyframes, options);
+          if (animation.id === 'navigation-style') { animation.pause(); window.navigationMotion.push(animation); }
+          return animation;
+        };
+      });
+      try {
+        await choose('navigationStyle', '悬浮');
+        assert.ok(await page.evaluate(() => window.navigationMotion.length > 0), 'Style switch starts an animation');
+        assert.ok(Math.abs((await firstItem.boundingBox()).y - start.y) < 1, 'First frame preserves the previous visual position');
+        await page.evaluate(() => window.navigationMotion.forEach(animation => { animation.currentTime = 120; }));
+        const middle = await firstItem.boundingBox();
+        assert.ok(middle.y > start.y + 10, 'Navigation moves toward its centered position');
+        assertLayout(await layoutSnapshot(false), before, 'During the transition');
+        assert.equal(await firstItem.evaluate(el => getComputedStyle(el, '::after').opacity), '0', 'No duplicate selection marker during motion');
+        assert.ok(await page.locator('.topbar').evaluate(el => { const opacity = Number(getComputedStyle(el, '::before').opacity); return opacity > 0 && opacity < 1; }), 'Glass cross-fades');
+        await page.screenshot({ path: path.join(output, 'navigation-motion-midpoint.png'), animations: 'allow' });
+        report.screenshots.push('navigation-motion-midpoint.png');
+        await choose('navigationStyle', '经典');
+        assert.ok(Math.abs((await firstItem.boundingBox()).y - middle.y) < 1, 'A rapid reversal continues from the current visual position');
+        await page.evaluate(() => window.navigationMotion.filter(animation => animation.playState !== 'idle').forEach(animation => animation.finish()));
+        await page.waitForFunction(() => !document.querySelector('.rail').hasAttribute('data-style-moving'));
+        assertLayout(await layoutSnapshot(), before, 'After the reverse transition');
+        await choose('navigationStyle', '悬浮');
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        await page.waitForFunction(() => !document.querySelector('.rail').hasAttribute('data-style-moving'));
+        assert.ok(await page.evaluate(() => window.navigationMotion.every(animation => animation.playState === 'idle' || animation.playState === 'finished')), 'Enabling reduced motion cancels an active transition');
+        const count = await page.evaluate(() => window.navigationMotion.length);
+        await choose('navigationStyle', '经典');
+        assert.equal(await page.evaluate(() => window.navigationMotion.length), count, 'Reduced motion switches directly');
+        assertLayout(await layoutSnapshot(), before, 'Reduced motion');
+      } finally {
+        await page.evaluate(() => { window.navigationMotion.forEach(animation => animation.cancel()); Element.prototype.animate = window.originalAnimate; });
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+        await closeSettings();
+      }
+    });
     await check('navigation styles preserve layout across 16 viewport, expansion, AI and page states', async () => {
       const win = await app.browserWindow(page);
       for (const [width, height] of [[1440, 940], [1024, 680]]) {
@@ -199,8 +245,8 @@ try {
     await check('classic baseline and opaque popover keep their geometry', async () => {
       await settings(); await choose('navigationStyle', '经典'); await choose('glassIntensity', '普通玻璃'); await choose('uiTheme', '雾珀'); await closeSettings();
       await shot('home-classic-normal-mist');
-      assert.notEqual(await page.locator('.topbar').evaluate(el => getComputedStyle(el).backgroundImage), 'none');
-      assert.equal(await page.locator('.rail-nav-shell').evaluate(el => getComputedStyle(el).display), 'contents');
+      assert.notEqual(await page.locator('.topbar').evaluate(el => getComputedStyle(el, '::before').backgroundImage), 'none');
+      assert.equal(await page.locator('.rail-nav-shell').evaluate(el => getComputedStyle(el, '::before').opacity), '0');
       assert.notEqual(await page.locator('.dashboard-heading').evaluate(el => getComputedStyle(el).backgroundImage), 'none');
       await page.locator('.todopill').click();
       await page.locator('.ipop').waitFor({ state: 'visible' });

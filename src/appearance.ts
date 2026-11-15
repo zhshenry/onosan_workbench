@@ -34,6 +34,20 @@ export function useAppearanceSettings(): AppearanceController {
   const failed = useRef(DEFAULT_APPEARANCE);
   const revision = useRef(0);
   const queue = useRef(Promise.resolve());
+  const navigationReady = useRef(false);
+  const navigationAnimations = useRef<Animation[]>([]);
+
+  useEffect(() => {
+    const stop = (): void => {
+      navigationAnimations.current.forEach(animation => animation.cancel());
+      navigationAnimations.current = [];
+      document.querySelector('.rail')?.removeAttribute('data-style-moving');
+    };
+    const motion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    motion?.addEventListener('change', stop);
+    window.addEventListener('resize', stop);
+    return () => { stop(); motion?.removeEventListener('change', stop); window.removeEventListener('resize', stop); };
+  }, []);
 
   useEffect(() => {
     let timer: number | undefined;
@@ -73,10 +87,49 @@ export function useAppearanceSettings(): AppearanceController {
 
   useLayoutEffect(() => {
     const root = document.documentElement;
+    const rail = document.querySelector<HTMLElement>('.rail');
+    const changed = root.dataset.navigation !== value.navigationStyle;
+    const animate = changed && navigationReady.current && rail?.animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    navigationReady.current = loaded.current;
+    // Read the current visual positions before cancelling an interrupted transition.
+    const items = animate ? [...rail.querySelectorAll<HTMLElement>('.ritem, .rail-branch')].map(el => ({ el, rect: el.getBoundingClientRect() })) : [];
+    const surfaces = animate ? [...document.querySelectorAll<HTMLElement>('.topbar, .tb-brand, .tb-middle, .tb-tools, .wbtns, .rail, .rbot, .rail-nav-shell')].map(el => {
+      const style = getComputedStyle(el, '::before');
+      return { el, opacity: style.opacity, rect: el.getBoundingClientRect(), matrix: new DOMMatrixReadOnly(style.transform) };
+    }) : [];
+    if (changed) {
+      navigationAnimations.current.forEach(animation => animation.cancel());
+      navigationAnimations.current = [];
+      rail?.removeAttribute('data-style-moving');
+    }
     root.dataset.theme = value.uiTheme;
     root.dataset.navigation = value.navigationStyle;
     root.dataset.glass = value.glassIntensity;
     root.dataset.windowLight = windowLight;
+    if (!animate) return;
+    rail.dataset.styleMoving = 'true';
+    const style = getComputedStyle(rail), duration = style.getPropertyValue('--rail-motion').trim();
+    const timing = { id: 'navigation-style', duration: parseFloat(duration) * (duration.endsWith('ms') ? 1 : 1000), easing: style.getPropertyValue('--ease').trim() };
+    const animations = items.map(({ el, rect }) => {
+      const next = el.getBoundingClientRect();
+      return el.animate([{ translate: `${rect.x - next.x}px ${rect.y - next.y}px` }, { translate: '0px 0px' }], timing);
+    });
+    for (const { el, opacity, rect, matrix } of surfaces) {
+      const next = el.getBoundingClientRect();
+      const from: Keyframe = { opacity }, to: Keyframe = { opacity: getComputedStyle(el, '::before').opacity };
+      // Only the decorative capsule scales; icons, text and fixed flyouts never do.
+      if (el.classList.contains('rail-nav-shell') && next.height > 0) {
+        from.transform = `translate(${rect.x + matrix.e - next.x}px, ${rect.y + matrix.f - next.y}px) scale(${rect.width * matrix.a / next.width}, ${rect.height * matrix.d / next.height})`;
+        to.transform = 'none';
+      }
+      animations.push(el.animate([from, to], { ...timing, pseudoElement: '::before' }));
+    }
+    navigationAnimations.current = animations;
+    void Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
+      if (navigationAnimations.current !== animations) return;
+      navigationAnimations.current = [];
+      rail.removeAttribute('data-style-moving');
+    });
   }, [value, windowLight]);
 
   const change = (patch: Partial<AppearanceSettings>): void => {

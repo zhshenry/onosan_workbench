@@ -309,14 +309,16 @@ input { font: inherit; color: inherit; }
   align-items: center;
   margin: 10px 12px 0 calc(-1 * var(--rail-width));
   padding: 0 0 0 114px;
-  background: linear-gradient(180deg, var(--glass-hi), var(--glass-lo));
-  -webkit-backdrop-filter: var(--glass-filter);
-  backdrop-filter: var(--glass-filter);
-  border: 1px solid var(--glass-line);
+  border: 1px solid transparent;
   border-radius: 999px;
-  box-shadow: var(--shadow-sm), inset 0 1px 0 var(--glass-line);
   -webkit-app-region: drag;
   transition: margin-left var(--rail-motion) var(--ease);
+}
+.topbar::before {
+  content: ''; position: absolute; inset: -1px; z-index: -1; pointer-events: none; border-radius: inherit;
+  background: linear-gradient(180deg, var(--glass-hi), var(--glass-lo));
+  -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+  border: 1px solid var(--glass-line); box-shadow: var(--shadow-sm), inset 0 1px 0 var(--glass-line);
 }
 .topbar button,
 .topbar .avatar { -webkit-app-region: no-drag; }
