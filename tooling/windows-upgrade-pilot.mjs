@@ -102,6 +102,11 @@ try {
     await page.waitForFunction(() => window.workbench.settings.get().then(value => value.closeAction === 'exit'));
   });
   await check('Use the real update UI and download the public target version', async () => {
+    const settings = page.getByRole('dialog', { name: '设置', exact: true });
+    if (await settings.isVisible()) {
+      await settings.getByRole('button', { name: '关闭', exact: true }).click();
+      await settings.waitFor({ state: 'hidden' });
+    }
     await page.locator('.topbar-update').click();
     const panel = page.getByRole('dialog', { name: '应用更新', exact: true });
     const initial = await page.evaluate(() => window.workbench.updater.status());
