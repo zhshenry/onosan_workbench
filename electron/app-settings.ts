@@ -45,8 +45,8 @@ export class AppSettingsStore {
       if (typeof parsed !== 'object' || parsed === null) return { ...DEFAULT_APP_SETTINGS };
       const stored = parsed as Record<string, unknown>;
       const raw = { ...DEFAULT_APP_SETTINGS, ...stored };
-      // 旧晴蓝主题由新版冷灰凝霜取代,保留已有用户的主题选择。
-      if (stored.uiTheme === 'sunny') raw.uiTheme = 'cool';
+      // 已下线的冷灰 / 晴蓝迁移到中性雾珀；其余偏好逐字段保留。
+      if (stored.uiTheme === 'sunny' || stored.uiTheme === 'cool') raw.uiTheme = 'mist';
       // 逐字段恢复:单个字段损坏只丢弃该字段,其余保留(兼容旧文件/局部损坏)
       const next: Record<string, unknown> = { ...DEFAULT_APP_SETTINGS };
       for (const key of Object.keys(DEFAULT_APP_SETTINGS) as (keyof AppSettings)[]) {

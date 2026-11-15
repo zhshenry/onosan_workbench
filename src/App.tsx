@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Flask, GearSix, SidebarSimple, Sparkle } from '@phosphor-icons/react';
 import { NAV, defaultViewOfWorkbench, ownerOfWorkbench, resolveView, workbenchById, type WorkbenchDef, type WorkbenchId } from './nav';
-import type { AvatarColor, UiTheme, ViewId } from '../shared/contracts';
+import type { AvatarColor, ViewId } from '../shared/contracts';
+import { useAppearanceSettings } from './appearance';
 import { localDay, openToday, taskTime, type CopySource, type Task, type TaskInput } from '../shared/todo-contracts';
 import { isOverdue, meetingEndAt } from '../shared/todo-format';
 import { topbarScheduleDate, topbarTodoDate } from './topbar-dates';
@@ -67,6 +68,7 @@ export function App() {
   const railSelectionGlow = useRef<Animation | null>(null);
   const lastRailWorkbench = useRef<WorkbenchId | null>(null);
   const railMenuRef = useRef<HTMLElement>(null);
+  const railMenuCloseTimer = useRef<number | undefined>(undefined);
   const contentRef = useRef<HTMLElement>(null);
   const [curView, setCurView] = useState<ViewId>('home');
   const [settingsView, setSettingsView] = useState<ViewId | null>(null);
@@ -80,12 +82,8 @@ export function App() {
   const [topbarEditorKind, setTopbarEditorKind] = useState<TaskInput['kind'] | null>(null);
   const [islandPop, setIslandPop] = useState<null | 'sched' | 'todo'>(null);
   const [floatVisible, setFloatVisible] = useState(false);
-  // 界面主题(mist 默认,cool / warm 可选),写入 <html data-theme> 驱动 shell.css
-  const [uiTheme, setUiTheme] = useState<UiTheme>('mist');
-  const applyUiTheme = (theme: UiTheme): void => {
-    document.documentElement.dataset.theme = theme;
-    setUiTheme(theme);
-  };
+  const appearance = useAppearanceSettings();
+  useEffect(() => () => window.clearTimeout(railMenuCloseTimer.current), []);
   // 个人资料昵称(设置 → 个人资料):头像首字与首页问候共用
   const [profileName, setProfileName] = useState('Ono');
   const [profileAvatarColor, setProfileAvatarColor] = useState<AvatarColor>('blue');
@@ -94,7 +92,6 @@ export function App() {
     void window.workbench.settings.get().then(
       (s) => {
         if (s) {
-          applyUiTheme(s.uiTheme);
           setProfileName(s.profile.name);
           setProfileAvatarColor(s.profile.avatarColor);
         }
@@ -377,9 +374,20 @@ export function App() {
       <div
         key={workbench.id}
         className="rail-entry"
-        onMouseEnter={() => { dismissedRailMenu.current = null; setRailMenu(menuAvailable ? workbench.id : null); }}
-        onMouseLeave={(event) => { if (!event.currentTarget.querySelector(':focus-visible')) setRailMenu(null); }}
-        onFocusCapture={() => { if (menuAvailable && dismissedRailMenu.current !== workbench.id) setRailMenu(workbench.id); }}
+        onMouseEnter={() => { window.clearTimeout(railMenuCloseTimer.current); dismissedRailMenu.current = null; setRailMenu(menuAvailable ? workbench.id : null); }}
+        onMouseLeave={(event) => {
+          const entry = event.currentTarget;
+          if (entry.querySelector(':focus-visible')) return;
+          if (appearance.value.navigationStyle === 'classic') { setRailMenu(null); return; }
+          // Give the pointer time to cross the floating capsule/menu gap, including its entry animation.
+          window.clearTimeout(railMenuCloseTimer.current);
+          railMenuCloseTimer.current = window.setTimeout(() => {
+            if (!entry.matches(':hover') && !entry.querySelector(':focus-visible')) {
+              setRailMenu(current => current === workbench.id ? null : current);
+            }
+          }, 180);
+        }}
+        onFocusCapture={() => { window.clearTimeout(railMenuCloseTimer.current); if (menuAvailable && dismissedRailMenu.current !== workbench.id) setRailMenu(workbench.id); }}
         onBlurCapture={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
             dismissedRailMenu.current = null;
@@ -484,7 +492,7 @@ export function App() {
     aiOpen ? 'ai' : '',
     activeAiChatId ?? '',
     browserTask ? `${browserTask.status}:${browserTask.workspace}` : '',
-    curView,
+    curView, appearance.value.navigationStyle,
   ].join('|');
   useLayoutEffect(() => {
     const bar = topbarRef.current;
@@ -502,15 +510,18 @@ export function App() {
     <div className={'win' + (aiOpen ? ' ai-dock' : '')} data-workbench={curWb} data-game={curView === 'game'} data-nav-expanded={navExpanded} style={{ '--ai-width': aiWidth + 'px' } as CSSProperties}>
       <aside id="workbench-navigation" className="rail" ref={railRef} aria-label="工作台导航">
         <span className="rail-selection" ref={railSelectionRef} aria-hidden="true" />
+        <div className="rail-nav-shell">
         <nav className="rail-nav" aria-label="工作台" onScroll={() => setRailMenu(null)}>
           {NAV.filter((w) => w.id !== 'settings').map(renderRailWorkbench)}
         </nav>
+        </div>
         <div className="rbot">
           {renderRailWorkbench(workbenchById('settings'))}
         </div>
       </aside>
       <div className="main">
       <header className="topbar" ref={topbarRef}>
+        <div className="tb-brand">
         <div className="logo" title="个人工作台">
           <LogoMark />
         </div>
@@ -518,6 +529,7 @@ export function App() {
           aria-expanded={navExpanded} aria-controls="workbench-navigation" onClick={() => { setRailMenu(null); setNavExpanded(value => !value); }}>
           <SidebarSimple size={20} />
         </button>
+        </div>
         <div className="tb-middle">
         <div className="tb-left">
         <div className="sched" data-open={islandPop === 'sched' || undefined} onClick={() => toggleIslandPop('sched')}>
@@ -604,6 +616,7 @@ export function App() {
         </div>
 
       <div className="tb-right">
+        <div className="tb-tools">
         {aiJob && aiJob.status !== 'done' && (!aiOpen || aiJob.chatId !== activeAiChatId) && <button className="ai-job-btn" title="返回生成的对话" onClick={returnToAiJob}>{aiJob.scope.module === 'copy' ? '博客' : aiJob.scope.module === 'bazi' ? '命理' : '助手'}{aiJob.status === 'running' ? '生成中' : '请求失败'}</button>}
         {browserTask && ['running', 'paused', 'site-approval'].includes(browserTask.status) && curView !== (browserTask.workspace === 'xhs-creator' ? 'media-browser' : 'browser') && <button className="ai-job-btn" title="返回浏览器任务" onClick={() => switchView(browserTask.workspace === 'xhs-creator' ? 'media-browser' : 'browser')}>{browserTask.status === 'site-approval' ? '浏览器等待站点授权' : browserTask.status === 'paused' ? '浏览器已暂停' : '浏览器后台操作中'}</button>}
         <TopbarUpdate onOpen={() => setIslandPop(null)} />
@@ -617,7 +630,8 @@ export function App() {
           {profileName.trim().charAt(0).toUpperCase() || 'O'}
         </button>
 
-        <span className="vdiv" />
+        </div>
+        <span className="vdiv window-divider" />
         <div className="wbtns">
           <button className="wbtn" title="最小化" onClick={() => window.workbench.minimize()}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14" /></svg>
@@ -691,7 +705,7 @@ export function App() {
       {topbarEditorKind ? <TaskEditor key={topbarEditorKind} initialKind={topbarEditorKind} categories={todo.data?.categories ?? []} api={topbarTaskEditorApi}
         changed={(state) => todo.mutate(async () => state)} saved={(state) => todo.mutate(async () => state)} close={() => setTopbarEditorKind(null)} /> : null}
       <AiPanel open={aiOpen} onClose={() => setAiOpen(false)} seed={aiSeed} onSeedFinished={nonce => setAiSeed(previous => previous?.nonce === nonce ? null : previous)} requestedChatId={requestedAiChatId} onChatLocated={() => setRequestedAiChatId(null)} onActiveChatChange={setActiveAiChatId} onOpenSettings={() => switchView('settings-ai')} onLocateCopySource={source => { setRequestedCopySource({ ...source, nonce: ++sourceNonce.current }); setRequestedCopyId(source.draftId); switchView('copy'); if (window.innerWidth < 1160) setAiOpen(false); }} onLocateBaziDay={profileId => { setRequestedBaziDay({ profileId, nonce: ++sourceNonce.current }); setRequestedProfileId(profileId); switchView('bazi'); if (window.innerWidth < 1160) setAiOpen(false); }} onQuickAsk={(prompt, scope) => askAI(prompt, scope)} context={aiContext} plannedWorkbench={isPlanningWorkbench} width={aiWidth} onWidthChange={setAiWidth} copySaveState={copySaveState} />
-      {settingsView && <SettingsDialog view={settingsView} onNavigate={switchView} close={() => setSettingsView(null)} uiTheme={uiTheme} onUiThemeChange={applyUiTheme} onAvatarColorChange={setProfileAvatarColor} onProfileNameChange={setProfileName} />}
+      {settingsView && <SettingsDialog view={settingsView} onNavigate={switchView} close={() => setSettingsView(null)} appearance={appearance} onAvatarColorChange={setProfileAvatarColor} onProfileNameChange={setProfileName} />}
       <div className="toast glass" data-show={toast ? '1' : '0'}>{toast}</div>
     </div>
   );

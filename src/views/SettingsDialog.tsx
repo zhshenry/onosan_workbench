@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import { Desktop, GearSix, Info, ListChecks, Sparkle, UserCircle } from '@phosphor-icons/react';
-import type { AvatarColor, UiTheme, ViewId } from '../../shared/contracts';
+import type { AvatarColor, ViewId } from '../../shared/contracts';
+import type { AppearanceController } from '../appearance';
 import { workbenchById } from '../nav';
 import { Modal } from '../ui/controls';
 import { SettingsView } from './SettingsView';
@@ -18,8 +19,7 @@ export function SettingsDialog({ view, onNavigate, close, ...settings }: {
   view: ViewId;
   onNavigate(view: ViewId): void;
   close(): void;
-  uiTheme: UiTheme;
-  onUiThemeChange(theme: UiTheme): void;
+  appearance: AppearanceController;
   onAvatarColorChange(color: AvatarColor): void;
   onProfileNameChange(name: string): void;
 }) {

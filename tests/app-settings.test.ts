@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AppSettingsStore } from '../electron/app-settings';
-import { DEFAULT_APP_SETTINGS } from '../shared/contracts';
+import { DEFAULT_APP_SETTINGS, UiThemeSchema } from '../shared/contracts';
 
 function tempDir(): string {
   return mkdtempSync(join(tmpdir(), 'workbench-settings-'));
@@ -106,7 +106,7 @@ test('设置:旧文件缺新字段自动落默认(remindersEnabled 缺省开启)
   }
 });
 
-test('设置:uiTheme 默认轻雾,三款可切换并落盘,旧晴蓝映射冷灰', () => {
+test('设置:八主题与导航/玻璃/时段独立持久化，旧主题迁移且不改其他设置', () => {
   const dir = tempDir();
   try {
     const store = new AppSettingsStore(dir);
@@ -114,15 +114,31 @@ test('设置:uiTheme 默认轻雾,三款可切换并落盘,旧晴蓝映射冷灰
     writeFileSync(join(dir, 'app-settings.json'), JSON.stringify({ launchAtLogin: true }), 'utf8');
     assert.equal(store.read().uiTheme, 'mist');
     // 合法切换持久化,新实例可读回
-    store.patch({ uiTheme: 'cool' });
-    assert.equal(new AppSettingsStore(dir).read().uiTheme, 'cool');
+    store.patch({ navigationStyle: 'floating', glassIntensity: 'strong', windowLight: 'dusk' });
+    for (const uiTheme of UiThemeSchema.options) {
+      store.patch({ uiTheme });
+      const saved = new AppSettingsStore(dir).read();
+      assert.equal(saved.uiTheme, uiTheme);
+      assert.equal(saved.navigationStyle, 'floating');
+      assert.equal(saved.glassIntensity, 'strong');
+      assert.equal(saved.windowLight, 'dusk');
+      assert.equal(saved.launchAtLogin, true);
+    }
     store.patch({ uiTheme: 'warm' });
     assert.equal(new AppSettingsStore(dir).read().uiTheme, 'warm');
     // 非法值被丢弃
     const next = store.patch({ uiTheme: 'dark' } as Record<string, unknown>);
     assert.equal(next.uiTheme, 'warm');
-    writeFileSync(join(dir, 'app-settings.json'), JSON.stringify({ uiTheme: 'sunny' }), 'utf8');
-    assert.equal(new AppSettingsStore(dir).read().uiTheme, 'cool');
+    for (const uiTheme of ['cool', 'sunny']) {
+      writeFileSync(join(dir, 'app-settings.json'), JSON.stringify({ uiTheme, profile: { name: '小野', avatarColor: 'teal' }, remindersEnabled: false }), 'utf8');
+      assert.deepEqual(new AppSettingsStore(dir).read(), { ...DEFAULT_APP_SETTINGS, profile: { name: '小野', avatarColor: 'teal' }, remindersEnabled: false });
+    }
+    writeFileSync(join(dir, 'app-settings.json'), JSON.stringify({ navigationStyle: 'bad', glassIntensity: 'strong', windowLight: 'bad', uiTheme: 'rose' }), 'utf8');
+    const recovered = new AppSettingsStore(dir).read();
+    assert.equal(recovered.uiTheme, 'rose');
+    assert.equal(recovered.glassIntensity, 'strong');
+    assert.equal(recovered.navigationStyle, 'classic');
+    assert.equal(recovered.windowLight, 'afternoon');
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

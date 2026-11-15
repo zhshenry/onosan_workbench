@@ -1,3 +1,4 @@
+import { DEFAULT_APP_SETTINGS } from '../shared/contracts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
@@ -31,7 +32,7 @@ test('应用更新 v2 真实 React 行内展示、错误详情及现有动作隔
   const { createRoot } = await import('react-dom/client');
   const { SettingsView } = await import('../src/views/SettingsView');
   let root = createRoot(dom.window.document.getElementById('root')!);
-  const render = async () => act(async () => root.render(createElement(SettingsView, { view: 'settings-about', uiTheme: 'mist', onUiThemeChange: () => {}, onAvatarColorChange: () => {} })));
+  const render = async () => act(async () => root.render(createElement(SettingsView, { view: 'settings-about', appearance: { value: DEFAULT_APP_SETTINGS, ready: true, status: 'saved', error: '', change: () => {}, retry: () => {} }, onAvatarColorChange: () => {} })));
   const reset = async () => { await act(async () => root.unmount()); root = createRoot(dom.window.document.getElementById('root')!); await render(); };
   const row = () => dom.window.document.querySelector<HTMLElement>('.set-update-row')!;
   const action = () => row().querySelector<HTMLButtonElement>('.set-update-action')!;

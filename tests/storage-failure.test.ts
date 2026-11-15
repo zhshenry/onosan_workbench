@@ -11,7 +11,7 @@ import { BaziStore } from '../modules/bazi/store';
 const cases = [
   { name: '应用设置', file: 'app-settings.json', setup(dir: string) {
     const store = new AppSettingsStore(dir);
-    store.patch({ uiTheme: 'cool' });
+    store.patch({ uiTheme: 'celadon' });
     return { read: () => store.read(), changes: [() => store.patch({ uiTheme: 'warm' })] };
   } },
   { name: '博客草稿', file: 'copy-drafts.json', setup(dir: string) {

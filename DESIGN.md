@@ -1,4 +1,44 @@
-# DESIGN — Ono Workbench 视觉系统(磨砂玻璃 · 三主题)
+# DESIGN — Ono Workbench 视觉系统
+
+## 外观系统重构（2026-11-15，v2.2.0 发布后）
+
+本节是新的外观规范；下文历史记录中的「三主题」「纯白页头」按本节的主题与兼容规则解释。实现基于 v2.2.0，保留新版首页布局、组件样式、签到与额度状态、阅读详情及工作区交互。
+
+### 外观维度与唯一所有者
+
+- `shared/contracts.ts` 定义 `uiTheme × navigationStyle × glassIntensity × windowLight`，`electron/app-settings.ts` 逐字段读取、验证与原子保存。旧文件默认经典导航、普通玻璃、午后窗影；旧 `cool/sunny` 迁移到 `mist`。不覆盖头像、昵称、提醒、启动或关闭行为。
+- `src/appearance.ts` 由 App 持有生命周期，投射到 `<html data-theme data-navigation data-glass data-window-light>`。实时预览、完整外观快照串行保存；迟到结果不能覆盖新选择，失败恢复最近成功值并保留重试。设置弹窗卸载不终止已提交保存，不以外观值作为工作区 React key。
+- `src/appearance.css` 是主题环境、材质变体和悬浮导航的运行时唯一来源，`src/shell.css` 继续拥有基础字阶、布局和控件。设置缩略图消费同一主题变量，原生 radio 提供键盘组内导航。所有文案为简体中文。
+
+| 维度 | 可选值 | 默认 / 约束 |
+| --- | --- | --- |
+| 导航 | 经典 `classic`、悬浮 `floating` | 经典；与已存的侧栏展开状态独立 |
+| 玻璃 | 普通 `normal`、强 `strong` | 普通；只改变底色、透明度、模糊、边缘光和阴影，不改变尺寸、间距、圆角、字阶 |
+| 主题 | 雾珀 `mist`、暖砂 `warm`、青瓷 `celadon`、藤紫 `wisteria`、蔷薇 `rose`、燕麦 `oat`、窗影 `windowlight`、空间窗景 `spatial` | 雾珀；A+/C+ 归属强玻璃，不单独列主题 |
+| 窗影时段 | 上午 `morning`、午后 `afternoon`、傍晚 `dusk` | 手动切换；其他主题隐藏控件但保存选择；仅背景层变换，文字和控件不跟着调色 |
+
+### 表面层级与卡片边界
+
+| 内容职责 | 表面 | 当前绑定 |
+| --- | --- | --- |
+| 页面标题、日期、问候、说明 | 悬浮导航下无独立卡片，用字号、对齐与间距区分；按钮保持自身底面 | 首页 `.dashboard-heading`、待办 `.greet`、阅读 `.rd-heading`、AI 测试库 `.at-library-heading` |
+| 独立完整功能 | 一张功能卡片；标题、数据、状态和操作同属它 | `.dashboard-widget`、命理独立 `.bazi-card/.bazi-pan` |
+| 连续阅读与操作 | 一整块毛玻璃面板，内部使用共同的阅读底层 | 待办双面板、`.rd-workspace`、签到主面板、`.copy-wrap`、AI 测试配置与结果工作区 |
+| 已处于面板内的行与分组 | 间距、细分隔线、浅色选中底；不重复 blur 或漂浮阴影 | 单条待办、签到账号行、阅读条目、图例与小标题 |
+| 具有分区切换/筛选职责的页头 | 功能工具栏表面保留 | 签到概览/账号/记录切换、命理系统切换与命例选择、AI 测试配置 |
+| 输入与菜单、对话框 | 输入有自己的清晰底面；浮层更不透明，遮住背后文字 | `--control-bg`、`--overlay-bg`、共享 Modal/Select/Popover；表格 sticky 标题保持不透明 |
+
+经典导航暂时保留原页面标题卡片，作为迁移兼容例外。用户已有的签到、额度等「列表/卡片/圆环」组件样式和显式卡片视图保持；卡片边界规则不删除这些选择。主内容区不加一层笼罩全部内容的大玻璃窗。
+
+### 材质 token 与导航几何
+
+环境 token `--scene-base/a/b/c/d` 与 `--theme-ink/ink-2/ink-3/accent` 映射至既有 `--field`、`--ink*`、`--acc*`。业务状态色、品牌图标、命理五行、终端和星盘语义不随主题重染。照片存放在 `src/assets/appearance/`，构建本地打包，无运行时远程图片依赖。
+
+普通玻璃沿用 18px 模糊、1.5 饱和度和原业务卡片基线。强玻璃使用 30px 模糊、1.4 饱和度、白色 .60→.44 的面板渐变、较亮上边缘及轻微底边/接触阴影。连续工作区叠加同一张 .50 白色阅读底层（合成约 .72–.80），保留窗影色调并避免文字透叠；控件约 .85，浮层约不透明。透明度仅用于 paint，不设在整个内容容器上。系统减少透明度或不支持 backdrop-filter 时回退实色；不添加持续移动的背景。
+
+悬浮导航顶栏分为 Logo/展开按钮、日程待办、工具头像、窗控四组。左上没有产品名且收紧到内容。`topbar-layout.ts` 按品牌与右侧控件真实边界避让。侧栏收起宽 60px，展开宽 200px；44px 主项与原分支高度固定。导航通过剩余空间自动边距居中于顶栏下方和独立设置按钮上方；短窗口在导航内部滚动。玻璃放在 `.rail-nav-shell::before`，不在固定二级菜单的祖先上设置 filter/transform，避免改写其定位参考系。设置按钮始终独立放在左下。
+
+验收入口：`tests/appearance-settings.test.ts`（并发、错误、草稿/挂载保留）、`tests/app-settings.test.ts`（迁移/落盘）、`tooling/appearance-pilot.mjs`（隔离 Electron 实机）。完整记录见 `docs/design/appearance-system-implementation-2026-11-15.md`。
 
 ## 阅读清单与每日签到方案一（2026-11-15）
 

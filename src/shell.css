@@ -1,6 +1,5 @@
-/* ========== Ono Workbench · 设计系统(磨砂玻璃 + 三主题) ==========
-   mist 雾灰轻雾(默认)、cool 冷灰凝霜、warm 暖砂柔雾;
-   三者共用布局与组件规则,只按主题映射材质与色彩 token。 */
+/* ========== Ono Workbench · 基础布局与控件 ==========
+   环境主题、导航变体与玻璃强度统一由 appearance.css 管理。 */
 :root {
   --ink: #1b1d22;
   --ink-2: #464b54;
@@ -42,7 +41,7 @@
   --shadow: 0 8px 24px rgba(35, 38, 48, 0.09), 0 2px 6px rgba(35, 38, 48, 0.04);
   --shadow-sm: 0 8px 24px rgba(35, 38, 48, 0.075), 0 1px 3px rgba(35, 38, 48, 0.025);
   --field-base: #e9eaee;
-  --field: url('./assets/mist-field.png');
+  --field: linear-gradient(135deg, #e8e9ec, #e1e5ec);
   --field-filter: saturate(0.7) brightness(0.975);
   --bdg-ring: #e9eaee;
   --currow: #edf1f8;
@@ -67,53 +66,6 @@
   --ai-accent: #c26b32;
   --ai-accent-deep: #a5561f;
 }
-:root[data-theme='cool'] {
-  --ai-accent: #c6702f;
-  --ai-accent-deep: #a5561f;
-  --module-surface: rgba(255, 255, 255, 0.55);
-  --glass-surface: rgba(255, 255, 255, 0.48);
-  --glass-filter: blur(2px) saturate(1);
-  --field-filter: saturate(0.85) brightness(0.985);
-  --glass-hi: rgba(248, 251, 255, 0.68);
-  --glass-lo: rgba(232, 241, 255, 0.36);
-  --glass-line: rgba(255, 255, 255, 0.55);
-  --surface-card: linear-gradient(180deg, #ffffff, #edf4ff);
-  --settings-content-bg: linear-gradient(160deg, #e8f0fb, #dbe7f7);
-  --hairline: rgba(34, 58, 91, 0.11);
-  --shadow: 0 10px 28px rgba(36, 59, 91, 0.13), 0 2px 6px rgba(36, 59, 91, 0.05);
-  --shadow-sm: 0 7px 20px rgba(36, 59, 91, 0.09), 0 1px 4px rgba(36, 59, 91, 0.025);
-  --field-base: #b5c9e6;
-  --field: url('./assets/cool-field.png');
-  --bdg-ring: #d8e4f4;
-  --currow: #e8f0fc;
-  --currow-line: #bed0ed;
-  --currow-tile: #f1f6ff;
-}
-:root[data-theme='warm'] {
-  --ai-accent: #b0602a;
-  --ai-accent-deep: #94501d;
-  --module-surface: rgba(255, 252, 247, 0.20);
-  --glass-surface: rgba(255, 252, 247, 0.50);
-  --glass-filter: blur(2px) saturate(1);
-  --field-filter: saturate(0.7);
-  --ink-2: #4c4744;
-  --ink-3: #68615d;
-  --glass-hi: rgba(255, 253, 250, 0.74);
-  --glass-lo: rgba(252, 246, 240, 0.42);
-  --glass-line: rgba(255, 255, 255, 0.60);
-  --surface-card: linear-gradient(180deg, #fffdf9, #f6eee8);
-  --settings-content-bg: linear-gradient(160deg, #f3ede5, #e9dfd4);
-  --hairline: rgba(65, 53, 45, 0.1);
-  --shadow: 0 9px 26px rgba(76, 61, 50, 0.1), 0 2px 6px rgba(76, 61, 50, 0.04);
-  --shadow-sm: 0 5px 18px rgba(76, 61, 50, 0.075), 0 1px 3px rgba(76, 61, 50, 0.02);
-  --field-base: #eee8e3;
-  --field: url('./assets/warm-field.png');
-  --bdg-ring: #eee8e3;
-  --currow: #f1f0f1;
-  --currow-line: #ddd9dc;
-  --currow-tile: #f7f4f3;
-}
-
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #root { height: 100%; }
 body {
@@ -1547,7 +1499,6 @@ kbd {
 @container settings-content (max-width: 560px) {
   .settings-content .set-row { flex-wrap: wrap; gap: 12px; }
   .settings-content .set-row .ctl { min-width: 0; max-width: 100%; }
-  .settings-content .theme-pick { width: 100%; }
   .settings-content .name-input { min-width: 0; max-width: 100%; }
   .settings-content .avatar-settings-control { flex-wrap: wrap; max-width: 100%; }
   .settings-content .island-settings-tabs .segmented { flex-wrap: wrap; gap: 8px 18px; width: 100%; }
@@ -1757,24 +1708,6 @@ kbd {
   .ai-config-suppliers { padding: 0 0 10px; border-right: 0; border-bottom: 1px solid var(--hairline); }
   .ai-config-provider-list { flex-direction: row; overflow: auto; }
   .ai-config-provider-choice { flex: 0 0 180px; }
-}
-
-/* ---------- 外观:三款磨砂玻璃主题(mist 默认) ---------- */
-.theme-pick { display: flex; gap: 10px; flex-wrap: wrap; }
-.theme-card {
-  width: 168px; padding: 10px 10px 12px; border-radius: var(--r-card); text-align: left;
-  border: 1.5px solid var(--hairline); background: rgba(255, 255, 255, 0.6);
-  transition: border-color 0.15s var(--ease), background 0.15s var(--ease), transform 0.16s var(--ease);
-}
-.theme-card:hover { transform: translateY(-1px); background: #fff; }
-.theme-card.on { border-color: var(--acc-deep); background: #fff; box-shadow: var(--shadow-sm); }
-.theme-card .sw { display: flex; gap: 4px; margin-bottom: 9px; }
-.theme-card .sw i { height: 36px; flex: 1; border-radius: 7px; border: 1px solid rgba(28, 30, 36, 0.06); }
-.theme-card b { display: block; font-size: var(--type-control); font-weight: 700; color: var(--ink); }
-.theme-card span { display: block; font-size: var(--type-support); color: var(--ink-3); margin-top: 2px; }
-@media (max-width: 1180px) {
-  .set-row:has(.theme-pick) { align-items: flex-start; flex-direction: column; gap: 12px; }
-  .set-row:has(.theme-pick) .ctl { max-width: 100%; }
 }
 
 /* ---------- 设置:个人资料分区控件 ---------- */

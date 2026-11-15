@@ -34,7 +34,7 @@ test('目录入口归入待办与数据，共享库入口不重复，读取和�
   const { createRoot } = await import('react-dom/client');
   const { SettingsView } = await import('../src/views/SettingsView');
   const root = createRoot(dom.window.document.getElementById('root')!);
-  const render = async (view: ViewId) => act(async () => root.render(createElement(SettingsView, { view, uiTheme: 'mist', onUiThemeChange: () => {}, onAvatarColorChange: () => {} })));
+  const render = async (view: ViewId) => act(async () => root.render(createElement(SettingsView, { view, appearance: { value: DEFAULT_APP_SETTINGS, ready: true, status: 'saved', error: '', change: () => {}, retry: () => {} }, onAvatarColorChange: () => {} })));
   const row = (key: string) => dom.window.document.querySelector<HTMLElement>(`[data-setting-key="${key}"]`)!;
   const open = async (key: string) => act(async () => row(key).querySelector<HTMLButtonElement>('button')!.click());
   t.after(async () => {

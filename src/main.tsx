@@ -11,6 +11,7 @@ import '../modules/bazi/ui/bazi.css';
 import '../modules/copywriting/ui/copy.css';
 import '../modules/browser/ui/pane.css';
 import '../modules/reading/ui/reading.css';
+import './appearance.css';
 
 const root = createRoot(document.getElementById('root')!);
 

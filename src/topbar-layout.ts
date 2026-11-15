@@ -72,7 +72,9 @@ export function applyTopbarCapsulePlacement(bar: HTMLElement): void {
     readable = Math.max(0, natural - excess);
   }
 
-  const padLeft = Number.parseFloat(getComputedStyle(bar).paddingLeft) || 0;
+  const brand = bar.querySelector<HTMLElement>('.tb-brand')?.getBoundingClientRect();
+  const padLeft = Math.max(Number.parseFloat(getComputedStyle(bar).paddingLeft) || 0,
+    brand && brand.width > 0 ? brand.right - barRect.left + TOPBAR_CLUSTER_GAP : 0);
   const placement = topbarCapsulePlacement({
     barWidth: barRect.width,
     padLeft,

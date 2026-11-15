@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import type { AppSettings, AppSettingsPatch, AvatarColor, TodoDbInfo, UiTheme, UpdateStatus, ViewId } from '../../shared/contracts';
+import type { AppSettings, AppSettingsPatch, AvatarColor, TodoDbInfo, UpdateStatus, ViewId } from '../../shared/contracts';
+import type { AppearanceController } from '../appearance';
+import { AppearanceSettings } from './AppearanceSettings';
 import { resolveView } from '../nav';
 import { errorText, Select as TodoSelect } from '../ui/controls';
 import { AiSettings } from './AiSettings';
@@ -80,16 +82,9 @@ function useAppSettings() {
 }
 
 // ---------- 通用与外观 ----------
-const THEME_OPTIONS: { value: UiTheme; label: string; desc: string; swatches: string[] }[] = [
-  { value: 'mist', label: '雾灰 · 轻雾', desc: '默认 · 中性珍珠灰', swatches: ['#e9eaee', '#f7f8fa', '#dce2e9', '#232529'] },
-  { value: 'cool', label: '冷灰 · 凝霜', desc: '冷灰蓝 · 清透分层', swatches: ['#b5c9e6', '#e5eefb', '#8ea9d1', '#232529'] },
-  { value: 'warm', label: '暖砂 · 柔雾', desc: '暖砂灰 · 乳白玻璃', swatches: ['#eee8e3', '#fffaf5', '#e8cfc4', '#232529'] },
-];
-
-function GeneralAppearanceSection({ query, uiTheme, onUiThemeChange }: {
+function GeneralAppearanceSection({ query, appearance }: {
   query: string;
-  uiTheme: UiTheme;
-  onUiThemeChange(theme: UiTheme): void;
+  appearance: AppearanceController;
 }) {
   const { settings, error, apply } = useAppSettings();
 
@@ -122,24 +117,6 @@ function GeneralAppearanceSection({ query, uiTheme, onUiThemeChange }: {
       desc: '界面显示语言,更多语言包规划中',
       control: <span className="set-value">简体中文</span>,
     },
-    {
-      key: 'uiTheme',
-      title: '界面主题',
-      desc: '全局色场与玻璃质感,即时生效;布局与按钮位置不受影响',
-      control: (
-        <div className="theme-pick" role="radiogroup" aria-label="界面主题">
-          {THEME_OPTIONS.map((t) => (
-            <button key={t.value} type="button" className={uiTheme === t.value ? 'theme-card on' : 'theme-card'}
-              role="radio" aria-checked={uiTheme === t.value} aria-label={t.label}
-              onClick={() => { if (uiTheme !== t.value) apply({ uiTheme: t.value }, () => onUiThemeChange(t.value)); }}>
-              <span className="sw">{t.swatches.map((c, i) => <i key={i} style={{ background: c }} />)}</span>
-              <b>{t.label}</b>
-              <span>{t.desc}</span>
-            </button>
-          ))}
-        </div>
-      ),
-    },
   ] : [];
 
   return (
@@ -147,6 +124,7 @@ function GeneralAppearanceSection({ query, uiTheme, onUiThemeChange }: {
       <Rows rows={rows} query={query} />
       {error && <p className="error" role="alert">{error}</p>}
       {!settings && !error && <p className="help" role="status">正在读取设置…</p>}
+      <AppearanceSettings controller={appearance} />
     </>
   );
 }
@@ -396,10 +374,9 @@ function AboutSection({ query }: { query: string }) {
 }
 
 // ---------- 入口 ----------
-export function SettingsView({ view, uiTheme, onUiThemeChange, onAvatarColorChange, onProfileNameChange }: {
+export function SettingsView({ view, appearance, onAvatarColorChange, onProfileNameChange }: {
   view: ViewId;
-  uiTheme: UiTheme;
-  onUiThemeChange(theme: UiTheme): void;
+  appearance: AppearanceController;
   onAvatarColorChange(color: AvatarColor): void;
   onProfileNameChange(name: string): void;
 }) {
@@ -414,7 +391,7 @@ export function SettingsView({ view, uiTheme, onUiThemeChange, onAvatarColorChan
         </div>
       </div>
       {view === 'settings-profile' && <ProfileSection query="" onAvatarColorChange={onAvatarColorChange} onProfileNameChange={onProfileNameChange} />}
-      {view === 'settings-general' && <GeneralAppearanceSection query="" uiTheme={uiTheme} onUiThemeChange={onUiThemeChange} />}
+      {view === 'settings-general' && <GeneralAppearanceSection query="" appearance={appearance} />}
       {view === 'settings-island' && <IslandSettingsSection query="" />}
       {view === 'settings-ai' && <AiSettings query="" />}
       {view === 'settings-data' && <DataSection query="" />}
