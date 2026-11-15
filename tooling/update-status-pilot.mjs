@@ -229,6 +229,8 @@ async function inspectGeometry(page, expected) {
 async function assertFullDetail(page, message) {
   const toggle = updaterRow(page).locator('.set-update-details-toggle');
   await toggle.waitFor({ state: 'visible' });
+  // Different errors share the same status label; wait for this event's body.
+  await page.waitForFunction(expected => document.querySelector('.set-update-row[data-setting-key="update"] .set-update-details')?.textContent === expected, message);
   assert.equal(await toggle.getAttribute('aria-expanded'), 'false');
   await toggle.focus(); await page.keyboard.press('Enter');
   const detail = updaterRow(page).locator('.set-update-details');
