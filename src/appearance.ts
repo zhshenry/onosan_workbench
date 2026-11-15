@@ -1,13 +1,19 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { DEFAULT_APPEARANCE, type AppearanceSettings } from '../shared/contracts';
+import { DEFAULT_APPEARANCE, type AppearanceSettings, type WindowLight } from '../shared/contracts';
 
 export function pickAppearance(settings: AppearanceSettings): AppearanceSettings {
   return { uiTheme: settings.uiTheme, navigationStyle: settings.navigationStyle,
-    glassIntensity: settings.glassIntensity, windowLight: settings.windowLight };
+    glassIntensity: settings.glassIntensity };
+}
+
+function windowLightAt(now: Date): WindowLight {
+  const hour = now.getHours();
+  return hour >= 6 && hour < 12 ? 'morning' : hour >= 12 && hour < 18 ? 'afternoon' : 'dusk';
 }
 
 export interface AppearanceController {
   value: AppearanceSettings;
+  windowLight: WindowLight;
   ready: boolean;
   status: 'loading' | 'saving' | 'saved' | 'error';
   error: string;
@@ -18,6 +24,7 @@ export interface AppearanceController {
 /** Owned by App: opening/closing settings never cancels a save or remounts a workspace. */
 export function useAppearanceSettings(): AppearanceController {
   const [value, setValue] = useState(DEFAULT_APPEARANCE);
+  const [windowLight, setWindowLight] = useState(() => windowLightAt(new Date()));
   const [status, setStatus] = useState<AppearanceController['status']>('loading');
   const [error, setError] = useState('');
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -27,6 +34,24 @@ export function useAppearanceSettings(): AppearanceController {
   const failed = useRef(DEFAULT_APPEARANCE);
   const revision = useRef(0);
   const queue = useRef(Promise.resolve());
+
+  useEffect(() => {
+    let timer: number | undefined;
+    const syncClock = (): void => {
+      window.clearTimeout(timer);
+      setWindowLight(windowLightAt(new Date()));
+      // Align to minute boundaries; always read wall time again after wake or clock changes.
+      timer = window.setTimeout(syncClock, 60_000 - Date.now() % 60_000);
+    };
+    syncClock();
+    window.addEventListener('focus', syncClock);
+    document.addEventListener('visibilitychange', syncClock);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('focus', syncClock);
+      document.removeEventListener('visibilitychange', syncClock);
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -51,8 +76,8 @@ export function useAppearanceSettings(): AppearanceController {
     root.dataset.theme = value.uiTheme;
     root.dataset.navigation = value.navigationStyle;
     root.dataset.glass = value.glassIntensity;
-    root.dataset.windowLight = value.windowLight;
-  }, [value]);
+    root.dataset.windowLight = windowLight;
+  }, [value, windowLight]);
 
   const change = (patch: Partial<AppearanceSettings>): void => {
     if (!loaded.current) return;
@@ -83,7 +108,7 @@ export function useAppearanceSettings(): AppearanceController {
       }
     });
   };
-  return { value, ready: loaded.current, status, error, change, retry: () => {
+  return { value, windowLight, ready: loaded.current, status, error, change, retry: () => {
     if (loaded.current) change(failed.current);
     else { setStatus('loading'); setError(''); setLoadAttempt(attempt => attempt + 1); }
   } };

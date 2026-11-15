@@ -106,7 +106,7 @@ test('设置:旧文件缺新字段自动落默认(remindersEnabled 缺省开启)
   }
 });
 
-test('设置:八主题与导航/玻璃/时段独立持久化，旧主题迁移且不改其他设置', () => {
+test('设置:八主题与导航/玻璃独立持久化，兼容旧时段字段且不改其他设置', () => {
   const dir = tempDir();
   try {
     const store = new AppSettingsStore(dir);

@@ -6,7 +6,7 @@
 
 ### 外观维度与唯一所有者
 
-- `shared/contracts.ts` 定义 `uiTheme × navigationStyle × glassIntensity × windowLight`，`electron/app-settings.ts` 逐字段读取、验证与原子保存。旧文件默认经典导航、普通玻璃、午后窗影；旧 `cool/sunny` 迁移到 `mist`。不覆盖头像、昵称、提醒、启动或关闭行为。
+- `shared/contracts.ts` 定义三项外观偏好 `uiTheme × navigationStyle × glassIntensity`，`electron/app-settings.ts` 逐字段读取、验证与原子保存。旧文件默认经典导航、普通玻璃；旧 `cool/sunny` 迁移到 `mist`。旧 `windowLight` 字段保持文件兼容，但不驱动显示。不覆盖头像、昵称、提醒、启动或关闭行为。
 - `src/appearance.ts` 由 App 持有生命周期，投射到 `<html data-theme data-navigation data-glass data-window-light>`。实时预览、完整外观快照串行保存；迟到结果不能覆盖新选择，失败恢复最近成功值并保留重试。设置弹窗卸载不终止已提交保存，不以外观值作为工作区 React key。
 - `src/appearance.css` 是主题环境、材质变体和悬浮导航的运行时唯一来源，`src/shell.css` 继续拥有基础字阶、布局和控件。设置缩略图消费同一主题变量，原生 radio 提供键盘组内导航。所有文案为简体中文。
 
@@ -15,7 +15,9 @@
 | 导航 | 经典 `classic`、悬浮 `floating` | 经典；与已存的侧栏展开状态独立 |
 | 玻璃 | 普通 `normal`、强 `strong` | 普通；只改变底色、透明度、模糊、边缘光和阴影，不改变尺寸、间距、圆角、字阶 |
 | 主题 | 雾珀 `mist`、暖砂 `warm`、青瓷 `celadon`、藤紫 `wisteria`、蔷薇 `rose`、燕麦 `oat`、窗影 `windowlight`、空间窗景 `spatial` | 雾珀；A+/C+ 归属强玻璃，不单独列主题 |
-| 窗影时段 | 上午 `morning`、午后 `afternoon`、傍晚 `dusk` | 手动切换；其他主题隐藏控件但保存选择；仅背景层变换，文字和控件不跟着调色 |
+| 窗影时段（自动） | 上午 `morning`、午后 `afternoon`、傍晚 `dusk` | 按电脑本地时间：06:00 ≤ 时间 < 12:00 上午，12:00 ≤ 时间 < 18:00 午后，其余时间傍晚；仅背景层变换，文字和控件不跟着调色 |
+
+2026-11-15 用户将窗影从手动选择改为跟随系统时间。`src/appearance.ts` 在启动、每分钟边界及窗口重新获得焦点/可见性变化时重新取时；不累加时长，也不因时钟变化写配置。设置只显示「窗影时段 · 自动」、当前时段与时间规则，缩略图和背景同步；切回窗影或重启均使用当前时段。
 
 ### 表面层级与卡片边界
 

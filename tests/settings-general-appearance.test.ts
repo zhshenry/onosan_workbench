@@ -51,6 +51,12 @@ test('通用与外观在同一页保存且无页头搜索，旧分区入口展�
   await act(async () => choice('glassIntensity', '强玻璃').click());
   assert.equal(settings.navigationStyle, 'floating');
   assert.equal(settings.glassIntensity, 'strong');
+  await act(async () => choice('uiTheme', '窗影').click());
+  assert.match(row('windowLight').textContent!, /自动/);
+  assert.match(row('windowLight').textContent!, /06:00–12:00/);
+  assert.equal(row('windowLight').querySelector('input, button'), null, 'time period is a read-only system status');
+  assert.equal(row('uiTheme').querySelector('[data-theme="windowlight"]')!.getAttribute('data-window-light'), dom.window.document.documentElement.dataset.windowLight);
+  await act(async () => choice('uiTheme', '青瓷').click());
   failWrite = true;
   await act(async () => row('launchAtLogin').querySelector<HTMLButtonElement>('button')!.click());
   assert.equal(row('launchAtLogin').querySelector('button')!.getAttribute('aria-checked'), 'true');

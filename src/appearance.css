@@ -154,9 +154,8 @@
 .appearance-settings fieldset { min-width: 0; border: 0; margin: 0 0 26px; padding: 0; }
 .appearance-settings legend { font-size: var(--type-section); font-weight: 700; }
 .appearance-settings fieldset > p { margin: 5px 0 12px; color: var(--ink-3); font-size: var(--type-control); }
-.appearance-pair, .appearance-themes, .appearance-light { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.appearance-pair, .appearance-themes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .appearance-themes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.appearance-light { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .appearance-choice { position: relative; display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--hairline); border-radius: var(--r-card); background: #ffffffb3; cursor: pointer; min-width: 0; }
 .appearance-choice:hover { border-color: var(--acc); }
 .appearance-choice:has(input:checked) { border-color: var(--acc-deep); box-shadow: inset 0 0 0 1px var(--acc-deep); background: #fffffff2; }

@@ -11,6 +11,8 @@ const output = path.resolve('test-results/appearance');
 await mkdir(output, { recursive: true });
 const report = { checks: [], screenshots: [], errors: [], limitations: ['Development Electron build, not a new installer; isolated synthetic task data, no live sign-in/AI requests.'] };
 let app, page;
+const localTime = (hour, minute = 0, second = 0) => new Date(2026, 10, 15, hour, minute, second).getTime();
+let clockTime = localTime(12);
 const env = { ...process.env, WORKBENCH_TEST_DATA_DIR: path.join(output, 'data'), WORKBENCH_ISOLATED: '1' };
 for (const key of ['ELECTRON_RUN_AS_NODE', 'WORKBENCH_SMOKE', 'WORKBENCH_DEV_URL']) delete env[key];
 async function launch() {
@@ -23,6 +25,8 @@ async function launch() {
   assert.ok(page, 'Main window available');
   page.setDefaultTimeout(15000);
   page.on('pageerror', e => report.errors.push(e.message));
+  await page.clock.install({ time: clockTime });
+  await page.reload();
   await page.locator('#view-home').waitFor();
   if (!await page.locator('.ai-panel').isVisible()) await page.locator('.ai-topbar-btn').click();
   const win = await app.browserWindow(page);
@@ -33,6 +37,11 @@ async function launch() {
 async function check(name, action) { await action(); report.checks.push(name); console.log(`PASS ${name}`); }
 async function settings() { await navigateInstalled(page, 'settings', '通用与外观'); }
 async function closeSettings() { await page.getByRole('dialog', { name: '设置', exact: true }).getByRole('button', { name: '关闭', exact: true }).click(); }
+async function setWindowTime(hour, minute = 0, second = 0) {
+  clockTime = localTime(hour, minute, second);
+  await page.clock.setSystemTime(clockTime);
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+}
 async function choose(key, label) {
   await page.locator(`[data-setting-key="${key}"]`).getByRole('radio', { name: new RegExp(`^${label}`) }).locator('..').click();
   await page.locator('.appearance-save').filter({ hasText: '已保存' }).waitFor();
@@ -71,7 +80,6 @@ try {
   });
   await settings();
   await choose('uiTheme', '窗影'); await choose('glassIntensity', '强玻璃'); await choose('navigationStyle', '悬浮');
-  await choose('windowLight', '午后');
   await shot('settings-appearance');
   await closeSettings();
   await shot('home-floating-strong-windowlight');
@@ -90,7 +98,7 @@ try {
     await navigateInstalled(page, 'life', '日程和待办', 'todo');
     await shot('todo-floating-strong-windowlight');
   } else {
-    await check('40 appearance combinations save through the actual UI', async () => {
+    await check('40 appearance states cover saved preferences and automatic light periods', async () => {
       await settings();
       for (const nav of ['经典', '悬浮']) {
         await choose('navigationStyle', nav);
@@ -98,7 +106,11 @@ try {
           await choose('glassIntensity', glass);
           for (const theme of ['雾珀', '暖砂', '青瓷', '藤紫', '蔷薇', '燕麦', '窗影', '空间窗景']) {
             await choose('uiTheme', theme);
-            if (theme === '窗影') for (const light of ['上午', '午后', '傍晚']) await choose('windowLight', light);
+            if (theme === '窗影') for (const [hour, light] of [[7, 'morning'], [14, 'afternoon'], [20, 'dusk']]) {
+              await setWindowTime(hour);
+              await page.waitForFunction(light => document.documentElement.dataset.windowLight === light, light);
+              assert.equal(await page.locator('.theme-preview[data-theme="windowlight"]').getAttribute('data-window-light'), light);
+            }
             const state = await page.evaluate(async () => ({ saved: await window.workbench.settings.get(), rendered: { ...document.documentElement.dataset } }));
             assert.equal(state.saved.uiTheme, state.rendered.theme);
             assert.equal(state.saved.navigationStyle, state.rendered.navigation);
@@ -111,7 +123,28 @@ try {
         }
       }
     });
-    await choose('uiTheme', '窗影'); await choose('windowLight', '午后');
+    await choose('uiTheme', '窗影');
+    await check('window light follows clock boundaries without saving preferences', async () => {
+      const before = await page.evaluate(() => window.workbench.settings.get());
+      const status = page.locator('[data-setting-key="windowLight"]');
+      assert.match(await status.innerText(), /自动/);
+      assert.equal(await status.locator('input, button').count(), 0);
+      for (const [hour, beforeLight, afterLight, label] of [
+        [11, 'morning', 'afternoon', '午后'],
+        [17, 'afternoon', 'dusk', '傍晚'],
+        [5, 'dusk', 'morning', '上午'],
+      ]) {
+        await setWindowTime(hour, 59, 59);
+        await page.waitForFunction(light => document.documentElement.dataset.windowLight === light, beforeLight);
+        await page.clock.runFor(1100);
+        await page.waitForFunction(light => document.documentElement.dataset.windowLight === light, afterLight);
+        assert.equal(await status.getByRole('status').innerText(), `当前：${label}`);
+      }
+      assert.deepEqual(await page.evaluate(() => window.workbench.settings.get()), before);
+      await status.scrollIntoViewIfNeeded();
+      await shot('settings-windowlight-auto');
+    });
+    await setWindowTime(14);
     await closeSettings();
     await check('classic baseline and opaque popover keep their geometry', async () => {
       await settings(); await choose('navigationStyle', '经典'); await choose('glassIntensity', '普通玻璃'); await choose('uiTheme', '雾珀'); await closeSettings();
@@ -216,21 +249,22 @@ try {
       await radio.focus(); await radio.press('ArrowLeft');
       await page.locator('.appearance-save').filter({ hasText: '已保存' }).waitFor();
       assert.equal(await page.evaluate(() => document.activeElement?.tagName), 'INPUT');
-      await choose('uiTheme', '窗影'); await choose('windowLight', '傍晚');
+      await choose('uiTheme', '窗影'); await setWindowTime(20);
       await closeSettings();
     });
     const before = await page.evaluate(() => window.workbench.settings.get());
     await app.close(); app = null;
+    clockTime = localTime(7);
     await launch();
-    await check('settings persist across full Electron restart', async () => {
+    await check('settings persist and window light recomputes after full Electron restart', async () => {
       const after = await page.evaluate(() => window.workbench.settings.get());
       assert.deepEqual(after, before);
-      await page.waitForFunction(() => document.documentElement.dataset.windowLight === 'dusk');
+      await page.waitForFunction(() => document.documentElement.dataset.windowLight === 'morning');
       assert.equal(await page.locator('html').getAttribute('data-navigation'), 'floating');
       const afterTasks = await page.evaluate(() => window.workbench.todo.state());
       assert.deepEqual(afterTasks.tasks, taskState.tasks);
     });
-    await shot('relaunch-windowlight-dusk');
+    await shot('relaunch-windowlight-morning');
   }
   assert.deepEqual(report.errors, []);
   report.status = 'passed';

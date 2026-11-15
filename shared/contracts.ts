@@ -43,6 +43,7 @@ export type UiTheme = z.infer<typeof UiThemeSchema>;
 export const NavigationStyleSchema = z.enum(['classic', 'floating']);
 export const GlassIntensitySchema = z.enum(['normal', 'strong']);
 export const WindowLightSchema = z.enum(['morning', 'afternoon', 'dusk']);
+export type WindowLight = z.infer<typeof WindowLightSchema>;
 
 export const AvatarColorSchema = z.enum(['blue', 'teal', 'violet', 'rose', 'amber']);
 export type AvatarColor = z.infer<typeof AvatarColorSchema>;
@@ -63,15 +64,15 @@ export const AppSettingsSchema = z.object({
   uiTheme: UiThemeSchema,
   navigationStyle: NavigationStyleSchema,
   glassIntensity: GlassIntensitySchema,
-  windowLight: WindowLightSchema,
+  windowLight: WindowLightSchema, // 兼容旧文件；当前显示时段由渲染层按系统时间计算。
 });
 export type AppSettings = z.infer<typeof AppSettingsSchema>;
 export type AppSettingsPatch = Partial<Omit<AppSettings, 'profile'>> & {
   profile?: Partial<AppSettings['profile']>;
 };
-export type AppearanceSettings = Pick<AppSettings, 'uiTheme' | 'navigationStyle' | 'glassIntensity' | 'windowLight'>;
+export type AppearanceSettings = Pick<AppSettings, 'uiTheme' | 'navigationStyle' | 'glassIntensity'>;
 export const DEFAULT_APPEARANCE: AppearanceSettings = {
-  uiTheme: 'mist', navigationStyle: 'classic', glassIntensity: 'normal', windowLight: 'afternoon',
+  uiTheme: 'mist', navigationStyle: 'classic', glassIntensity: 'normal',
 };
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
@@ -80,6 +81,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   closeAction: 'minimize',
   language: 'zh-CN',
   remindersEnabled: true,
+  windowLight: 'afternoon',
   ...DEFAULT_APPEARANCE,
 };
 

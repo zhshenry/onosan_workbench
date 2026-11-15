@@ -10,13 +10,13 @@ const THEMES: { value: UiTheme; label: string; description: string }[] = [
   { value: 'wisteria', label: '藤紫', description: '低饱和紫雾' },
   { value: 'rose', label: '蔷薇', description: '温柔灰粉' },
   { value: 'oat', label: '燕麦', description: '自然中性色' },
-  { value: 'windowlight', label: '窗影', description: '光影随时段切换' },
+  { value: 'windowlight', label: '窗影', description: '光影跟随系统时间' },
   { value: 'spatial', label: '空间窗景', description: '安静的室内景深' },
 ];
 
 export function AppearanceSettings({ controller }: { controller: AppearanceController }) {
   const id = useId();
-  const { value, status, error, change, retry } = controller;
+  const { value, windowLight, status, error, change, retry } = controller;
   const disabled = !controller.ready;
   return <section className="appearance-settings" aria-label="外观设置">
     <fieldset disabled={disabled} data-setting-key="navigationStyle">
@@ -52,20 +52,15 @@ export function AppearanceSettings({ controller }: { controller: AppearanceContr
         {THEMES.map(theme => <label className="appearance-choice theme-choice" key={theme.value}>
           <input type="radio" name={`${id}-theme`} checked={value.uiTheme === theme.value}
             onChange={() => change({ uiTheme: theme.value })} />
-          <span className="theme-preview" data-theme={theme.value} data-window-light={value.windowLight} aria-hidden="true"><i /><i /><i /></span>
+          <span className="theme-preview" data-theme={theme.value} data-window-light={windowLight} aria-hidden="true"><i /><i /><i /></span>
           <span><b>{theme.label}</b><small>{theme.description}</small></span><Check className="appearance-check" aria-hidden="true" />
         </label>)}
       </div>
     </fieldset>
-    {value.uiTheme === 'windowlight' && <fieldset disabled={disabled} data-setting-key="windowLight">
-      <legend>窗影时段</legend><p>手动选择光线，切换其他主题后仍会保留。</p>
-      <div className="appearance-light">
-        {([{ value: 'morning', label: '上午' }, { value: 'afternoon', label: '午后' }, { value: 'dusk', label: '傍晚' }] as const).map(light =>
-          <label className="appearance-choice" key={light.value}>
-            <input type="radio" name={`${id}-light`} checked={value.windowLight === light.value} onChange={() => change({ windowLight: light.value })} />
-            <span>{light.label}</span><Check className="appearance-check" aria-hidden="true" />
-          </label>)}
-      </div>
+    {value.uiTheme === 'windowlight' && <fieldset data-setting-key="windowLight">
+      <legend>窗影时段 · 自动</legend>
+      <p role="status">当前：<strong>{{ morning: '上午', afternoon: '午后', dusk: '傍晚' }[windowLight]}</strong></p>
+      <p>跟随电脑本地时间切换：06:00–12:00 上午，12:00–18:00 午后，其余时间使用傍晚光线。</p>
     </fieldset>}
     <div className="appearance-save" role={error ? 'alert' : 'status'}>
       {error || (status === 'loading' ? '正在读取外观设置…' : status === 'saving' ? '正在保存…' : '已保存，重启后继续使用')}
