@@ -63,9 +63,7 @@ test('通用与个性化分区独立，切换保留外观选择与原设置保�
   assert.equal(settings.navigationStyle, 'floating');
   assert.equal(settings.glassIntensity, 'strong');
   await act(async () => choice('uiTheme', '窗影').click());
-  assert.match(row('windowLight').textContent!, /自动/);
-  assert.match(row('windowLight').textContent!, /06:00–12:00/);
-  assert.equal(row('windowLight').querySelector('input, button'), null, 'time period is a read-only system status');
+  assert.equal(row('windowLight'), null);
   assert.equal(row('uiTheme').querySelector('[data-theme="windowlight"]')!.getAttribute('data-window-light'), dom.window.document.documentElement.dataset.windowLight);
   await act(async () => choice('uiTheme', '青瓷').click());
   await render('settings-general');

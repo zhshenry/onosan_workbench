@@ -104,7 +104,7 @@ try {
       await tab.focus(); await tab.press('Enter');
       await dialog.getByRole('heading', { name: '个性化', exact: true }).waitFor();
       assert.equal(await tab.getAttribute('aria-current'), 'page');
-      assert.deepEqual((await keys()).filter(key => key !== 'windowLight'), ['navigationStyle', 'glassIntensity', 'uiTheme']);
+      assert.deepEqual(await keys(), ['navigationStyle', 'glassIntensity', 'uiTheme']);
       await choose('glassIntensity', '纯色');
       await shot(`settings-personalization-${width}`);
       await navigateInstalled(page, 'settings', '通用');
@@ -345,22 +345,21 @@ try {
     await choose('uiTheme', '窗影');
     await check('window light follows clock boundaries without saving preferences', async () => {
       const before = await page.evaluate(() => window.workbench.settings.get());
-      const status = page.locator('[data-setting-key="windowLight"]');
-      assert.match(await status.innerText(), /自动/);
-      assert.equal(await status.locator('input, button').count(), 0);
-      for (const [hour, beforeLight, afterLight, label] of [
-        [11, 'morning', 'afternoon', '午后'],
-        [17, 'afternoon', 'dusk', '傍晚'],
-        [5, 'dusk', 'morning', '上午'],
+      const preview = page.locator('.theme-preview[data-theme="windowlight"]');
+      assert.equal(await page.locator('[data-setting-key="windowLight"]').count(), 0);
+      for (const [hour, beforeLight, afterLight] of [
+        [11, 'morning', 'afternoon'],
+        [17, 'afternoon', 'dusk'],
+        [5, 'dusk', 'morning'],
       ]) {
         await setWindowTime(hour, 59, 59);
         await page.waitForFunction(light => document.documentElement.dataset.windowLight === light, beforeLight);
         await page.clock.runFor(1100);
         await page.waitForFunction(light => document.documentElement.dataset.windowLight === light, afterLight);
-        assert.equal(await status.getByRole('status').innerText(), `当前：${label}`);
+        assert.equal(await preview.getAttribute('data-window-light'), afterLight);
       }
       assert.deepEqual(await page.evaluate(() => window.workbench.settings.get()), before);
-      await status.scrollIntoViewIfNeeded();
+      await preview.scrollIntoViewIfNeeded();
       await shot('settings-windowlight-auto');
     });
     await setWindowTime(14);

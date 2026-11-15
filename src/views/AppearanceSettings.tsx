@@ -58,9 +58,6 @@ export function AppearanceSettings({ controller }: { controller: AppearanceContr
         </label>)}
       </div>
     </fieldset>
-    {value.uiTheme === 'windowlight' && <p className="appearance-window-light" data-setting-key="windowLight">
-      <strong>窗影时段：自动</strong> · <span role="status">当前：{{ morning: '上午', afternoon: '午后', dusk: '傍晚' }[windowLight]}</span> · 06:00–12:00 上午 / 12:00–18:00 午后 / 其余时间傍晚
-    </p>}
     {status !== 'saved' && <div className="appearance-save" role={error ? 'alert' : 'status'}>
       {error || (status === 'loading' ? '正在读取外观设置…' : '正在保存…')}
       {error && <button type="button" className="btn secondary" onClick={retry}>重试</button>}
