@@ -46,10 +46,10 @@ test('preservation assertion requires real identity, document/input state, scrol
 
 test('same-size home comparison distinguishes hidden-host layout regression from visual acceptance', async () => {
   const before={nativeSize:[1024,680],zoom:1,viewport:{width:1024,height:680},homeMode:'today-board',fontStatus:'loaded',fadeTransform:'none',
-    navigation:{homeActive:true,aiOpen:false,snavCount:0},
-    bounds:{content:{x:66,y:64,width:958,height:616},overview:{x:90,y:156,width:540,height:480},todo:{x:646,y:156,width:340,height:480}},
-    styles:{contentDisplay:'block',contentPadding:'22px 24px 26px',columns:'540px 340px'},overflow:{contentX:0,overviewX:0,todoX:0},
-    layoutFlags:{overviewCollapsed:false,overviewContentOverflows:false,panelsOverlap:false},hosts:[] as unknown[]};
+    navigation:{todoActive:true,aiOpen:false,snavCount:0},
+    bounds:{content:{x:66,y:64,width:958,height:616},schedule:{x:90,y:156,width:540,height:480},todos:{x:646,y:156,width:340,height:480}},
+    styles:{contentDisplay:'block',contentPadding:'22px 24px 26px',columns:'540px 340px'},overflow:{contentX:0,scheduleX:0,todoX:0},
+    layoutFlags:{scheduleCollapsed:false,scheduleContentOverflows:false,panelsOverlap:false},hosts:[] as unknown[]};
   const hidden={hidden:true,inert:true,display:'none',width:0,height:0};
   const after=()=>({...structuredClone(before),hosts:[hidden]});
   assert.deepEqual(assertMediaHomeLayoutUnchanged(before,after()),{unchanged:true,visualAcceptance:true});
@@ -61,19 +61,19 @@ test('same-size home comparison distinguishes hidden-host layout regression from
   assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),zoom:1.25}),/normal native zoom/);
   assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),viewport:{width:819,height:544}}),/actual CSS viewport/);
   assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),homeMode:'library'}),/ordinary task board/);
-  for(const changed of [{homeActive:false},{aiOpen:true},{snavCount:1}]) {
+  for(const changed of [{todoActive:false},{aiOpen:true},{snavCount:1}]) {
     assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),navigation:{...before.navigation,...changed}}),/secondary sidebar/);
   }
   assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),styles:{...before.styles,contentDisplay:'flex'}}),/home CSS layout/);
   assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),hosts:[{...hidden,display:'flex'}]}));
   assert.throws(()=>assertMediaHomeLayoutUnchanged({...before,hosts:[hidden]},after()),/precede any retained creator DOM/);
-  assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),overflow:{...before.overflow,overviewX:10}}),/home overflow/);
-  assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),layoutFlags:{...before.layoutFlags,overviewCollapsed:true}}),/collapse\/overlap/);
-  const badBefore={...structuredClone(before),layoutFlags:{...before.layoutFlags,overviewCollapsed:true,overviewContentOverflows:true}};
+  assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),overflow:{...before.overflow,scheduleX:10}}),/home overflow/);
+  assert.throws(()=>assertMediaHomeLayoutUnchanged(before,{...after(),layoutFlags:{...before.layoutFlags,scheduleCollapsed:true}}),/collapse\/overlap/);
+  const badBefore={...structuredClone(before),layoutFlags:{...before.layoutFlags,scheduleCollapsed:true,scheduleContentOverflows:true}};
   const badAfter={...structuredClone(badBefore),hosts:[hidden]};
   assert.deepEqual(assertMediaHomeLayoutUnchanged(badBefore,badAfter),{unchanged:true,visualAcceptance:false},'Equal existing collapse must never be called visually acceptable');
   const source=await readFile(new URL('../tooling/media-keepalive-pilot.mjs',import.meta.url),'utf8');
-  assert.match(source,/if\(await page\.locator\('#view-home \.task-library'\)\.count\(\)\).*name:'事项库'/);
+  assert.match(source,/if\(await page\.locator\('#view-todo \.task-library'\)\.count\(\)\).*name:'全部事项'/);
   assert.match(source,/win\.webContents\.setZoomFactor\(1\);win\.setContentSize\(1024,680\)/);
   assert.match(source,/await document\.fonts\.ready/);assert.match(source,/same task data/);
   assert.match(source,/page\.locator\('\.snav'\)\.waitFor\(\{state:'detached'\}\)/);

@@ -19,6 +19,7 @@ function fixture(t: any, agentsEnabled = false) {
   const nativeIcon = { toDataURL: () => 'data:image/png;base64,native-icon' };
   const power = new EventEmitter(), screens: any = new EventEmitter();
   let full: (value: boolean) => void = () => undefined;
+  let fullscreenFailed: () => void = () => undefined;
   let displays = [{ id: 1, label: 'primary', workArea: { x: 0, y: 40, width: 1280, height: 1000 } }];
   let cursor = { x: 0, y: 0 };
   Object.assign(screens, { getAllDisplays: () => displays, getPrimaryDisplay: () => displays[0], getCursorScreenPoint: () => cursor });
@@ -27,7 +28,7 @@ function fixture(t: any, agentsEnabled = false) {
     webContents: any = new EventEmitter();
     constructor(options: any) { super(); this.bounds = options; windows.push(this); Object.assign(this.webContents, { mainFrame: {}, send: (channel: string, value: unknown) => messages.push({ owner: this, channel, value }), startDrag: (value: unknown) => drags.push(value), setWindowOpenHandler() {}, capturePage: async () => nativeIcon, executeJavaScript: async () => undefined, invalidate() {}, backgroundThrottling: true, setBackgroundThrottling(value: boolean) { this.backgroundThrottling = value; } }); }
     static getAllWindows() { return windows; }
-    setAlwaysOnTop(value: boolean) { this.topmost = value; } loadURL() {} loadFile() {} setBounds(bounds: any) { this.bounds = bounds; }
+    setAlwaysOnTop(value: boolean) { this.topmost = value; } isAlwaysOnTop() { return this.topmost; } loadURL() {} loadFile() {} setBounds(bounds: any) { this.bounds = bounds; }
     setShape(rects: any[]) { this.shape = rects; }
     getBounds() { return this.bounds; } isDestroyed() { return this.destroyed; }
     showInactive() { this.visible = true; } show() { this.visible = true; } hide() { this.visible = false; }
@@ -40,16 +41,29 @@ function fixture(t: any, agentsEnabled = false) {
   const electron = { app: { getFileIcon: async () => nativeIcon }, nativeImage: { createFromDataURL: () => nativeIcon }, BrowserWindow: Window, screen: screens, powerMonitor: power, Notification: Notice, ipcMain: { handle: (key: string, fn: Function) => handlers.set(key, fn), on: (key: string, fn: Function) => handlers.set(key, fn) }, shell: { beep() {}, openExternal() {} }, dialog: {} };
   const module = { exports: {} as any };
   const code = transformSync(readFileSync('electron/desktop-island.ts', 'utf8'), { loader: 'ts', format: 'cjs' }).code;
-  new Function('require', 'module', 'exports', code)((name: string) => name === 'electron' ? electron : name === './island-store' ? { IslandStore } : name === './agent-hooks' ? { AgentHooks: class extends AgentHooks { constructor(directory: string) { super(directory, join(directory, 'clients'), join(directory, 'clients', '.codex')); } } } : name === './agent-message-store' ? { agentMessageUrl } : name === '../shared/agent-message-contracts' ? agentContracts : name === './island-quotas' ? { IslandQuotas: class { read() { return []; } refresh() { return Promise.resolve([]); } stop() {} } } : name === './island-fullscreen' ? { watchFullscreen: (fn: typeof full) => { full = fn; return () => undefined; } } : name === './island-file-icons' ? { readIslandFileIcons: async (files: any[]) => { iconRequests.push(files.map(file => file.path)); return Object.fromEntries(files.map(file => [file.id, nativeIcon.toDataURL()])); } } : name === '../shared/island-contracts' ? contracts : require(name), module, module.exports);
+  new Function('require', 'module', 'exports', code)((name: string) => name === 'electron' ? electron : name === './island-store' ? { IslandStore } : name === './agent-hooks' ? { AgentHooks: class extends AgentHooks { constructor(directory: string) { super(directory, join(directory, 'clients'), join(directory, 'clients', '.codex')); } } } : name === './agent-message-store' ? { agentMessageUrl } : name === '../shared/agent-message-contracts' ? agentContracts : name === './island-quotas' ? { IslandQuotas: class { read() { return []; } refresh() { return Promise.resolve([]); } stop() {} } } : name === './island-fullscreen' ? { watchFullscreen: (fn: typeof full, failed: () => void) => { full = fn; fullscreenFailed = failed; return () => undefined; } } : name === './island-file-icons' ? { readIslandFileIcons: async (files: any[]) => { iconRequests.push(files.map(file => file.path)); return Object.fromEntries(files.map(file => [file.id, nativeIcon.toDataURL()])); } } : name === '../shared/island-contracts' ? contracts : require(name), module, module.exports);
   const owner = new module.exports.DesktopIsland('http://localhost', '/unused/preload.cjs', dir, () => main, { all: () => [], unclaim: (task: unknown) => unclaimed.push(task) });
   if (agentsEnabled) { owner.agents.connect('codex', true); owner.agents.connect('cursor', true); }
   owner.register();
   const invoke = (name: string, ...args: unknown[]) => handlers.get(name)!({ sender: main.webContents, senderFrame: main.webContents.mainFrame }, ...args);
   const visibleBounds = () => { const frame = owner.window.getBounds(), region = owner.window.shape[0]; return { ...region, x: frame.x + region.x, y: frame.y + region.y }; };
   t.after(() => { owner.destroy(); rmSync(dir, { recursive: true, force: true }); });
-  return { dir, owner, main, other, handlers, invoke, visibleBounds, windows, messages, notifications, unclaimed, iconRequests, nativeIcon, drags, power, screens, electron, cursor: (point: typeof cursor) => { cursor = point; }, full: (value: boolean) => full(value), displays: (value: typeof displays) => { displays = value; screens.emit('display-removed'); } };
+  return { dir, owner, main, other, handlers, invoke, visibleBounds, windows, messages, notifications, unclaimed, iconRequests, nativeIcon, drags, power, screens, electron, cursor: (point: typeof cursor) => { cursor = point; }, full: (value: boolean) => full(value), failFullscreen: () => fullscreenFailed(), displays: (value: typeof displays) => { displays = value; screens.emit('display-removed'); } };
 }
 const task = (kind: 'task' | 'meeting' = 'task') => ({ ...newTask('合成验收提醒'), kind, id: 'task-1', remindAt: new Date().toISOString(), updatedAt: new Date().toISOString(), deletedAt: null });
+
+test('island calendar: wake and unlock publish a return signal even during quiet hours', t => {
+  t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-11-13T12:00:00').getTime() });
+  const f = fixture(t); f.owner.show();
+  f.invoke('island:patch', { dnd: true, dndStart: '00:00', dndEnd: '23:59' });
+  const before = f.owner.state().resumeSequence;
+  f.power.emit('suspend'); f.power.emit('resume');
+  assert.equal(f.owner.state().resumeSequence, before + 1);
+  f.power.emit('lock-screen'); f.power.emit('unlock-screen');
+  assert.equal(f.owner.state().resumeSequence, before + 2);
+  assert.equal(f.owner.state().quiet, true);
+  assert.ok(f.messages.some(message => message.channel === 'island:changed' && message.value.resumeSequence === before + 2));
+});
 
 test('island assistant: opens once, hides without losing its renderer, pins independently and rejects unrelated frames', async t => {
   const f = fixture(t);
@@ -366,6 +380,23 @@ test('island native: showing an existing window restores lost topmost status wit
   assert.equal(window.topmost, true);
   assert.equal(window.focused, false);
 });
+test('island native: periodic checks recover unexpected native hiding and lost topmost without focus or overriding explicit hiding', t => {
+  const f = fixture(t); f.owner.show();
+  const window = f.owner.window;
+  window.hide(); f.owner.tick();
+  assert.equal(window.isVisible(), true);
+  window.setAlwaysOnTop(false); f.owner.tick();
+  assert.equal(window.topmost, true);
+  assert.equal(window.focused, false);
+  f.full(true); f.owner.tick(); assert.equal(window.isVisible(), false);
+  f.invoke('island:patch', { hideFullscreen: false });
+  window.hide(); f.owner.tick(); assert.equal(window.isVisible(), true);
+  f.power.emit('lock-screen'); f.owner.tick(); assert.equal(window.isVisible(), false);
+  f.power.emit('unlock-screen'); f.power.emit('suspend'); f.owner.tick(); assert.equal(window.isVisible(), false);
+  f.power.emit('resume'); f.invoke('island:patch', { enabled: false });
+  f.owner.tick(); assert.equal(window.isVisible(), false);
+});
+
 test('island native: motion keeps the native surface stable and clips unused hit areas after collapse', t => {
   t.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
   const f = fixture(t); f.owner.show();
@@ -493,7 +524,7 @@ test('island native: mixed hidden alerts exclude water from system notification 
   ]);
   assert.equal(f.notifications.length, 1); assert.equal(f.notifications[0].options.title, '其他事项提醒');
   f.notifications[0].emit('click');
-  assert.deepEqual(target.mock.calls[0].arguments, [{ view: 'home', taskId: 'task-1' }]);
+  assert.deepEqual(target.mock.calls[0].arguments, [{ view: 'todo', taskId: 'task-1' }]);
 });
 
 test('island native: water and sedentary bubbles remain until handled, including after pointer leave', t => {
@@ -638,6 +669,21 @@ test('island native: quiet hours and lock suppress notifications, fullscreen res
   f.full(true); assert.equal(f.owner.window.isVisible(), false); f.full(false); assert.equal(f.owner.window.isVisible(), true);
   f.owner.showOrHide(); f.full(true); f.full(false); assert.equal(f.owner.window.isVisible(), false);
 });
+test('island native: fullscreen detector failure clears stale hiding but respects lock and disabled state', t => {
+  const f = fixture(t); f.owner.show();
+  f.full(true); assert.equal(f.owner.window.isVisible(), false);
+  f.failFullscreen();
+  assert.equal(f.owner.state().fullscreenDetection, false);
+  assert.equal(f.owner.window.isVisible(), true);
+  assert.equal(f.owner.window.focused, false);
+  f.full(true); f.power.emit('lock-screen'); f.failFullscreen();
+  assert.equal(f.owner.window.isVisible(), false);
+  f.power.emit('unlock-screen'); assert.equal(f.owner.window.isVisible(), true);
+  f.owner.showOrHide(); f.full(true); f.failFullscreen();
+  assert.equal(f.owner.window.isVisible(), false);
+  assert.equal(f.owner.state().settings.enabled, false);
+});
+
 test('island native: removed display reanchors and embedded pages cannot invoke file or connection APIs', t => {
   const f = fixture(t); f.owner.show();
   f.invoke('island:patch', { displayId: 2, topOffset: 20 });

@@ -191,7 +191,7 @@ if (!app.requestSingleInstanceLock()) {
 
     // 关于页:应用元信息与数据位置(只读)
     ipcMain.handle('app:about', () => ({
-      name: '个人工作台',
+      name: 'OnO Workbench',
       version: app.getVersion(),
       electron: process.versions.electron ?? '',
       chrome: process.versions.chrome ?? '',

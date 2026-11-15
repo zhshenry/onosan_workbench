@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { PaperPlaneTilt } from '@phosphor-icons/react';
+import { CaretDown, PaperPlaneTilt } from '@phosphor-icons/react';
 import {
   copyStoreDataSchema, extractXhsTags, XHS_BODY_LIMIT, XHS_PUBLISH_URL, XHS_TITLE_LIMIT,
   type CopyStoreData,
@@ -157,7 +157,7 @@ export function PublishView({ onPending, onGoEdit, onOpenCreator }: {
       {loadError && <div className="todo-load-error" role="alert">{loadError}</div>}
 
       {/* 左:草稿选择(带就绪度摘要) */}
-      <section className="panel glass copy-list" aria-label="待发布草稿">
+      <section className="copy-list" aria-label="待发布草稿">
         <div className="phead">
           <span className="ptitle">我的博客</span>
           <span className="copy-count">{drafts.length}</span>
@@ -188,7 +188,7 @@ export function PublishView({ onPending, onGoEdit, onOpenCreator }: {
       </section>
 
       {/* 右:发布流程 */}
-      <section className="panel glass copy-editor" aria-label="图文发布">
+      <section className="copy-editor" aria-label="图文发布">
         {cur && state ? (
           <>
             <div className="copy-editor-head">
@@ -200,60 +200,67 @@ export function PublishView({ onPending, onGoEdit, onOpenCreator }: {
               <button className="btn btn-sec btn-sm" onClick={goEdit} title="回「博客编辑」修改这篇">去编辑修改</button>
             </div>
 
-            <div className="pub-field">
-              <div className="copy-field-head">
-                <label>标题</label>
-                <span className={state.titleCount > XHS_TITLE_LIMIT ? 'copy-count-num over' : 'copy-count-num'}>{state.titleCount}/{XHS_TITLE_LIMIT}</span>
+            <div className="copy-publish-scroll">
+              <div className="pub-field">
+                <div className="copy-field-head">
+                  <label>标题</label>
+                  <span className={state.titleCount > XHS_TITLE_LIMIT ? 'copy-count-num over' : 'copy-count-num'}>{state.titleCount}/{XHS_TITLE_LIMIT}</span>
+                </div>
+                <div className="pub-title-preview">{cur.title || '(未命名,去编辑填写)'}</div>
               </div>
-              <div className="pub-title-preview">{cur.title || '(未命名,去编辑填写)'}</div>
+
+              <div className="pub-field">
+                <div className="copy-field-head">
+                  <label>正文</label>
+                  <span className={state.bodyCount > XHS_BODY_LIMIT ? 'copy-count-num over' : 'copy-count-num'}>{state.bodyCount}/{XHS_BODY_LIMIT}</span>
+                </div>
+                <pre className="pub-body-preview">{cur.body || '(空白,去编辑写正文)'}</pre>
+              </div>
+
+              <ul className="copy-pub-check">
+                <li className={state.titleOk ? 'ok' : 'bad'}>标题{state.titleOk ? '' : ' · 还没写或超限'}</li>
+                <li className={state.bodyOk ? 'ok' : 'bad'}>正文{state.bodyOk ? '' : ' · 还没写或超限'}</li>
+                <li className={tags.length > 0 ? 'ok' : ''}>标签{tags.length > 0 ? ` · 已有 ${tags.length} 个` : ' · 加 1~3 个更容易被搜到'}</li>
+                <li>图片 · 发布页需上传至少 1 张</li>
+              </ul>
+
+              {tags.length > 0 && (
+                <div className="copy-pub-tags">
+                  {tags.slice(0, 10).map((t) => <span key={t} className="copy-pub-tag">#{t}</span>)}
+                  {tags.length > 10 && <span className="copy-pub-tag more">+{tags.length - 10}</span>}
+                </div>
+              )}
+              <input
+                className="copy-pub-add"
+                value={tagInput}
+                placeholder="加个话题标签,回车写入正文末尾"
+                maxLength={30}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') addTag(); }}
+              />
+
+              <details key={cur.id} className="pub-association-disclosure">
+                <summary><span>发布后关联</span><span className="pub-association-summary-state">{cur.xhsPublished ? '已关联 · 手动确认' : '尚未关联作品'}</span><CaretDown size={14} aria-hidden="true" /></summary>
+                <PublishAssociation key={cur.id} draft={cur} writePending={associationBusy} onCommit={writeAssociation} onPending={onPending} onOpenCreator={onOpenCreator} />
+              </details>
             </div>
 
-            <div className="pub-field">
-              <div className="copy-field-head">
-                <label>正文</label>
-                <span className={state.bodyCount > XHS_BODY_LIMIT ? 'copy-count-num over' : 'copy-count-num'}>{state.bodyCount}/{XHS_BODY_LIMIT}</span>
+            <footer className="copy-publish-footer">
+              <div className="copy-pub-actions">
+                <button type="button" className="btn btn-sec btn-sm" disabled={!cur.title.trim()} onClick={() => void copyTitle()}>复制标题</button>
+                <button type="button" className="btn btn-sec btn-sm" disabled={!cur.body.trim()} onClick={() => void copyBody()}>复制正文</button>
+                <button
+                  type="button"
+                  className="btn btn-pri btn-sm copy-pub-go"
+                  disabled={state.blocked}
+                  title="复制正文并用默认浏览器打开小红书创作者中心发布页"
+                  onClick={() => void goPublish()}
+                >
+                  <PaperPlaneTilt weight="bold" /> 去发布
+                </button>
               </div>
-              <pre className="pub-body-preview">{cur.body || '(空白,去编辑写正文)'}</pre>
-            </div>
-
-            <ul className="copy-pub-check">
-              <li className={state.titleOk ? 'ok' : 'bad'}>标题{state.titleOk ? '' : ' · 还没写或超限'}</li>
-              <li className={state.bodyOk ? 'ok' : 'bad'}>正文{state.bodyOk ? '' : ' · 还没写或超限'}</li>
-              <li className={tags.length > 0 ? 'ok' : ''}>标签{tags.length > 0 ? ` · 已有 ${tags.length} 个` : ' · 加 1~3 个更容易被搜到'}</li>
-              <li>图片 · 发布页需上传至少 1 张</li>
-            </ul>
-
-            {tags.length > 0 && (
-              <div className="copy-pub-tags">
-                {tags.slice(0, 10).map((t) => <span key={t} className="copy-pub-tag">#{t}</span>)}
-                {tags.length > 10 && <span className="copy-pub-tag more">+{tags.length - 10}</span>}
-              </div>
-            )}
-            <input
-              className="copy-pub-add"
-              value={tagInput}
-              placeholder="加个话题标签,回车写入正文末尾"
-              maxLength={30}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') addTag(); }}
-            />
-
-            <div className="copy-pub-actions">
-              <button type="button" className="btn btn-sec btn-sm" disabled={!cur.title.trim()} onClick={() => void copyTitle()}>复制标题</button>
-              <button type="button" className="btn btn-sec btn-sm" disabled={!cur.body.trim()} onClick={() => void copyBody()}>复制正文</button>
-              <button
-                type="button"
-                className="btn btn-pri btn-sm copy-pub-go"
-                disabled={state.blocked}
-                title="复制正文并用默认浏览器打开小红书创作者中心发布页"
-                onClick={() => void goPublish()}
-              >
-                <PaperPlaneTilt weight="bold" /> 去发布
-              </button>
-            </div>
-            <p className="pub-tip">发布页操作(选话题/传图/点发布)由你本人完成,工作台只准备内容。</p>
-
-            <PublishAssociation key={cur.id} draft={cur} writePending={associationBusy} onCommit={writeAssociation} onPending={onPending} onOpenCreator={onOpenCreator} />
+              <p className="pub-tip">发布页操作(选话题/传图/点发布)由你本人完成,工作台只准备内容。</p>
+            </footer>
           </>
         ) : (
           <div className="copy-empty">

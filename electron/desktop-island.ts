@@ -26,6 +26,7 @@ export class DesktopIsland {
   private held = false;
   private locked = false;
   private suspended = false;
+  private resumeSequence = 0;
   private fullscreen = false;
   private fullscreenDetection = false;
   private motion: NodeJS.Timeout | null = null;
@@ -56,7 +57,7 @@ export class DesktopIsland {
       const changed = !this.fullscreenDetection || this.fullscreen !== value;
       this.fullscreenDetection = true; this.fullscreen = value;
       if (changed) this.visibility();
-    }, () => { this.fullscreenDetection = false; this.publish(); });
+    }, () => { this.fullscreenDetection = false; this.fullscreen = false; this.visibility(); });
     this.timer = setInterval(this.tick, 1000); this.timer.unref();
   }
   get window(): BrowserWindow | null { return this.win; }
@@ -68,7 +69,7 @@ export class DesktopIsland {
     const enabled = new Set(this.agents.status().filter(connection => connection.connected).map(connection => connection.provider));
     const active = new Set(messages.filter(message => agentMessageVisible(message) && enabled.has(message.provider)).map(message => `agent:${message.id}`));
     const reminders = data.reminders.filter(reminder => reminder.kind !== 'agent' || active.has(reminder.id));
-    return { ...data, reminders, bubbleReminderId: this.bubbleReminder(reminders)?.id, files: this.store.files(), agentMessages: messages.filter(agentMessageVisible), mode: this.mode, pinned: this.pinned, quiet: this.quiet(), fullscreenDetection: this.fullscreenDetection, error: this.store.loadError || this.agents.messages.loadError || this.error || undefined };
+    return { ...data, reminders, bubbleReminderId: this.bubbleReminder(reminders)?.id, files: this.store.files(), agentMessages: messages.filter(agentMessageVisible), mode: this.mode, pinned: this.pinned, quiet: this.quiet(), fullscreenDetection: this.fullscreenDetection, resumeSequence: this.resumeSequence, error: this.store.loadError || this.agents.messages.loadError || this.error || undefined };
   }
   private async fileIcon(id: string): Promise<string> {
     this.store.file(id);
@@ -84,12 +85,15 @@ export class DesktopIsland {
     }
   };
   private lock = (): void => { this.locked = true; this.tick(); this.visibility(); };
-  private unlock = (): void => { this.locked = false; this.mode = this.pinned ? 'expanded' : 'collapsed'; this.reposition(); this.visibility(); this.tick(); };
+  private unlock = (): void => { this.locked = false; this.resumeSequence++; this.mode = this.pinned ? 'expanded' : 'collapsed'; this.reposition(); this.visibility(); this.tick(); };
   private suspend = (): void => { this.suspended = true; this.tick(); this.visibility(); };
-  private resume = (): void => { this.suspended = false; this.tick(); this.visibility(); };
-  private visibility(): void {
+  private resume = (): void => { this.suspended = false; this.resumeSequence++; this.tick(); this.visibility(); };
+  private shouldShow(): boolean {
     const s = this.store.read().settings;
-    if (s.enabled && !this.locked && !this.suspended && !(s.hideFullscreen && this.fullscreen)) {
+    return s.enabled && !this.locked && !this.suspended && !(s.hideFullscreen && this.fullscreen);
+  }
+  private visibility(): void {
+    if (this.shouldShow()) {
       this.win?.showInactive();
       this.win?.setAlwaysOnTop(true, 'floating');
     }
@@ -233,6 +237,7 @@ export class DesktopIsland {
     this.publish();
   }
   private tick = (): void => {
+    if (this.shouldShow() && this.win && (!this.win.isVisible() || !this.win.isAlwaysOnTop())) this.visibility();
     try {
       const incoming = this.agents.poll();
       if (incoming.error && this.error !== incoming.error) { this.error = incoming.error; this.publish(); }
@@ -286,7 +291,7 @@ export class DesktopIsland {
     if (systemAlerts.length && Notification.isSupported()) {
       const notification = new Notification({ title: systemAlerts.length > 1 ? `${systemAlerts.length} 条提醒` : systemAlerts[0].title, body: '点击在工作台中查看', silent: !this.store.read().settings.sound });
       if (failed) notification.once('failed', failed);
-      notification.on('click', () => this.navigate({ view: 'home', taskId: systemAlerts[0].taskId })); notification.show();
+      notification.on('click', () => this.navigate({ view: systemAlerts[0].taskId ? 'todo' : 'home', taskId: systemAlerts[0].taskId })); notification.show();
     }
   }
   private armReminderTimer(): void {
@@ -357,7 +362,7 @@ export class DesktopIsland {
       if (this.speechHeight === value) return;
       this.speechHeight = value; this.applyShape(this.shapeBounds());
     });
-    handle('island:navigate', target => this.navigate(z.object({ view: z.enum(['home', 'settings-island', 'settings-general', 'settings-ai']), taskId: z.string().optional(), section: z.enum(['quota', 'water', 'sedentary', 'agents']).optional() }).parse(target)), true);
+    handle('island:navigate', target => this.navigate(z.object({ view: z.enum(['home', 'todo', 'settings-island', 'settings-general', 'settings-ai']), taskId: z.string().optional(), section: z.enum(['quota', 'water', 'sedentary', 'agents']).optional() }).parse(target)), true);
     handle('island:displays', () => screen.getAllDisplays().map((d, i) => ({ id: d.id, label: `${d.label || `显示器 ${i + 1}`} · ${d.size.width}×${d.size.height}${d.id === screen.getPrimaryDisplay().id ? ' · 主屏' : ''}` })));
     const changed = () => {
       this.armReminderTimer();

@@ -32,7 +32,7 @@ export function aiReferenceKey(reference: AiReference): string {
 export function aiReferenceMode(pageScope: AiScope): AiReferenceMode | null {
   if (pageScope.module !== 'workbench') return pageScope.module;
   switch (pageScope.viewId) {
-    case 'home': return 'todo';
+    case 'todo': return 'todo';
     case 'copy': case 'copy-publish': case 'media-browser': case 'workspace:media': return 'copy';
     case 'bazi': return 'bazi';
     case 'reading': return 'reading';

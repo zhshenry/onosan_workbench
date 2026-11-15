@@ -27,7 +27,9 @@ test('real checkin UI validates login, cancels abandoned authorization, and only
     authorize: async provider => { calls.push({ method: 'authorize', value: provider }); state.auth = { id: 'fixture-auth', provider, stage: 'waiting', message: '', expiresAt: Date.now() + 300000 }; send(); },
     reopenAuth: async () => {},
     cancelAuth: async value => { calls.push({ method: 'cancel', value }); state.auth = null; send(); },
-    disconnect: async () => {}, saveSettings: async () => {}, openGuide: async () => {},
+    disconnect: async () => {},
+    saveSettings: async value => { calls.push({ method: 'settings', value }); state.settings = structuredClone(value); send(); },
+    openGuide: async () => {},
   };
   Object.defineProperty(dom.window, 'workbench', { value: { checkin: bridge } });
   const hooks = registerHooks({ load(url, context, next) { return /\.(css|svg|png)$/.test(url) ? { format: 'module', source: 'export default "test-asset";', shortCircuit: true } : next(url, context); } });
@@ -54,6 +56,24 @@ test('real checkin UI validates login, cancels abandoned authorization, and only
     await act(async () => { send(); });
     await click(button('核对结果'));
     assert.ok(calls.some(c => c.method === 'refresh' && c.value === 'workbuddy'));
+    assert.ok(!calls.some(c => c.method === 'run'));
+    const refreshCount = calls.filter(c => c.method === 'refresh').length;
+    await click(button('刷新状态'));
+    assert.deepEqual(calls.filter(c => c.method === 'refresh').slice(refreshCount).map(c => c.value), [...CHECKIN_PROVIDERS]);
+    assert.ok(!calls.some(c => c.method === 'run'));
+    const autoSwitch = () => dom.window.document.querySelector<HTMLButtonElement>('[role="switch"][aria-label="自动签到"]')!;
+    await click(autoSwitch());
+    assert.equal(dom.window.document.querySelector('[role="switch"][aria-label="启用自动签到"]')!.getAttribute('aria-checked'), 'true');
+    assert.ok(!calls.some(c => c.method === 'settings'));
+    await click(button('取消'));
+    assert.equal(autoSwitch().getAttribute('aria-checked'), 'false');
+    assert.ok(!calls.some(c => c.method === 'settings'));
+    await click(autoSwitch());
+    await click(button('保存设置'));
+    assert.equal(autoSwitch().getAttribute('aria-checked'), 'true');
+    assert.deepEqual(state.settings.providers, ['workbuddy']);
+    await click(autoSwitch());
+    assert.equal(state.settings.enabled, false);
     assert.ok(!calls.some(c => c.method === 'run'));
     await click(dom.window.document.querySelector<HTMLButtonElement>('[data-provider="trae"] button')!);
     await click(button('前往 TRAE CN 授权'));

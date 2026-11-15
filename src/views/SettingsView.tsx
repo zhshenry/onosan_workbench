@@ -1,21 +1,20 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import { X } from '@phosphor-icons/react';
 import type { AppSettings, AppSettingsPatch, AvatarColor, TodoDbInfo, UiTheme, UpdateStatus, ViewId } from '../../shared/contracts';
 import { resolveView } from '../nav';
-import { errorText, IconButton, Select as TodoSelect } from '../ui/controls';
+import { errorText, Select as TodoSelect } from '../ui/controls';
 import { AiSettings } from './AiSettings';
 import { IslandSettingsSection } from './IslandSettings';
 
 const wb = window.workbench;
 
 // ---------- 分区元信息(页头标题) ----------
-const SECTION_META: Partial<Record<ViewId, { title: string; sub: string }>> = {
-  'settings-profile': { title: '个人资料', sub: '称呼与头像,只用于界面展示,存在本机' },
-  'settings-general': { title: '通用与外观', sub: '启动、窗口行为、界面语言与主题' },
-  'settings-island': { title: '桌面灵动岛', sub: '设置桌面窗口、页面与提醒' },
-  'settings-ai': { title: 'AI 助手', sub: '管理对话模型与决策模型配置' },
-  'settings-data': { title: '待办与数据', sub: '待办提醒、应用数据目录与共享库状态' },
-  'settings-about': { title: '关于', sub: '版本与应用更新' },
+const SECTION_META: Partial<Record<ViewId, { title: string }>> = {
+  'settings-profile': { title: '个人资料' },
+  'settings-general': { title: '通用与外观' },
+  'settings-island': { title: '桌面灵动岛' },
+  'settings-ai': { title: 'AI 助手' },
+  'settings-data': { title: '待办与数据' },
+  'settings-about': { title: '关于' },
 };
 
 export interface RowSpec {
@@ -166,9 +165,10 @@ const greetWord = (d: Date): string => {
   return h < 5 ? '夜深了' : h < 11 ? '早上好' : h < 14 ? '中午好' : h < 18 ? '下午好' : '晚上好';
 };
 
-function ProfileSection({ query, onAvatarColorChange }: {
+function ProfileSection({ query, onAvatarColorChange, onProfileNameChange }: {
   query: string;
   onAvatarColorChange(color: AvatarColor): void;
+  onProfileNameChange(name: string): void;
 }) {
   const { settings, error, apply } = useAppSettings();
   // null = 未在编辑;编辑中草稿存这里,失焦/回车保存,空值拒存
@@ -181,14 +181,14 @@ function ProfileSection({ query, onAvatarColorChange }: {
     const next = nameDraft.trim().slice(0, 20);
     setNameDraft(null);
     if (!next || next === name) return;
-    apply({ profile: { ...settings.profile, name: next } });
+    apply({ profile: { ...settings.profile, name: next } }, (saved) => onProfileNameChange(saved.profile.name));
   };
 
   const rows: RowSpec[] = settings ? [
     {
       key: 'name',
       title: '昵称',
-      desc: '首页问候与头像取首字显示',
+      desc: '用于看板标题、首页问候与头像',
       control: (
         <input className="name-input" value={nameDraft ?? name} maxLength={20} aria-label="昵称" placeholder="怎么称呼你"
           onChange={(e) => setNameDraft(e.target.value)}
@@ -396,39 +396,29 @@ function AboutSection({ query }: { query: string }) {
 }
 
 // ---------- 入口 ----------
-export function SettingsView({ view, uiTheme, onUiThemeChange, onAvatarColorChange }: {
+export function SettingsView({ view, uiTheme, onUiThemeChange, onAvatarColorChange, onProfileNameChange }: {
   view: ViewId;
   uiTheme: UiTheme;
   onUiThemeChange(theme: UiTheme): void;
   onAvatarColorChange(color: AvatarColor): void;
+  onProfileNameChange(name: string): void;
 }) {
   view = resolveView(view);
-  const [query, setQuery] = useState('');
-  const searchInput = useRef<HTMLInputElement>(null);
-  // 切换分区时清空搜索,避免"看起来没内容"的错觉
-  useEffect(() => setQuery(''), [view]);
-  const meta = SECTION_META[view] ?? { title: '设置', sub: '' };
+  const meta = SECTION_META[view] ?? { title: '设置' };
 
   return (
     <div className={view === 'settings-ai' ? 'settings-page settings-ai-page' : view === 'settings-about' ? 'settings-page settings-about-page' : view === 'settings-island' ? 'settings-page settings-island-page' : 'settings-page'}>
       <div className="page-head">
         <div>
           <h1>{meta.title}</h1>
-          <div className="sub">{meta.sub}</div>
-        </div>
-        <span className="spacer" />
-        <div className="set-search">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-3.8-3.8" /></svg>
-          <input ref={searchInput} value={query} aria-label="搜索当前页设置" placeholder={view === 'settings-ai' ? '搜索供应商或模型' : '搜索当前页设置'} onChange={(e) => setQuery(e.target.value)} />
-          {query && <IconButton label="清空设置搜索" onClick={() => { setQuery(''); searchInput.current?.focus(); }}><X size={14} /></IconButton>}
         </div>
       </div>
-      {view === 'settings-profile' && <ProfileSection query={query} onAvatarColorChange={onAvatarColorChange} />}
-      {view === 'settings-general' && <GeneralAppearanceSection query={query} uiTheme={uiTheme} onUiThemeChange={onUiThemeChange} />}
-      {view === 'settings-island' && <IslandSettingsSection query={query} resetSearch={() => setQuery('')} />}
-      {view === 'settings-ai' && <AiSettings query={query} />}
-      {view === 'settings-data' && <DataSection query={query} />}
-      {view === 'settings-about' && <AboutSection query={query} />}
+      {view === 'settings-profile' && <ProfileSection query="" onAvatarColorChange={onAvatarColorChange} onProfileNameChange={onProfileNameChange} />}
+      {view === 'settings-general' && <GeneralAppearanceSection query="" uiTheme={uiTheme} onUiThemeChange={onUiThemeChange} />}
+      {view === 'settings-island' && <IslandSettingsSection query="" />}
+      {view === 'settings-ai' && <AiSettings query="" />}
+      {view === 'settings-data' && <DataSection query="" />}
+      {view === 'settings-about' && <AboutSection query="" />}
     </div>
   );
 }

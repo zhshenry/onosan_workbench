@@ -59,7 +59,7 @@ test('参考标识独立于会话范围，严格校验字段和 ID，并保留�
 
 test('页面和主对象独立校验：阅读与命理不能混用，通用自媒体允许博客，规划与设置不提供参考', () => {
   const expected: Record<string, ReturnType<typeof aiReferenceMode>> = {
-    home: 'todo', copy: 'copy', 'copy-publish': 'copy', 'media-browser': 'copy', 'workspace:media': 'copy',
+    home: null, todo: 'todo', copy: 'copy', 'copy-publish': 'copy', 'media-browser': 'copy', 'workspace:media': 'copy',
     bazi: 'bazi', reading: 'reading', 'workspace:life': null, 'workspace:settings': null,
     'settings-ai': null, 'settings-data': null, game: null, web: null, unknown: null,
   };
@@ -86,9 +86,9 @@ test('事项和书目单选，博客和命例最多八个，不接受重复或�
     const make = (id: string): AiReference => mode === 'todo' ? { module: mode, taskId: id } : mode === 'copy' ? { module: mode, draftId: id } : { module: mode, profileId: id };
     const primary: AiScope = mode === 'todo' ? { module: 'todo' } : mode === 'copy' ? { module: mode, draftId: 'main' } : { module: mode, profileId: 'main' };
     const refs = Array.from({ length: aiReferenceLimit(mode) }, (_, i) => make(`selected-${i}`));
-    assert.deepEqual(validateAiReferences(refs, generic(mode === 'todo' ? 'home' : mode), primary), refs);
-    assert.throws(() => validateAiReferences([...refs, make('extra')], generic(mode === 'todo' ? 'home' : mode), primary), /1个|8个/);
-    assert.throws(() => validateAiReferences([make('duplicate'), make('duplicate')], generic(mode === 'todo' ? 'home' : mode), primary), /重复|1个/);
+    assert.deepEqual(validateAiReferences(refs, generic(mode === 'todo' ? 'todo' : mode), primary), refs);
+    assert.throws(() => validateAiReferences([...refs, make('extra')], generic(mode === 'todo' ? 'todo' : mode), primary), /1个|8个/);
+    assert.throws(() => validateAiReferences([make('duplicate'), make('duplicate')], generic(mode === 'todo' ? 'todo' : mode), primary), /重复|1个/);
     if (mode !== 'todo') assert.throws(() => validateAiReferences([make('main')], generic(mode), primary), /无需重复/);
   }
   assert.throws(() => validateAiReferences([{ module: 'reading', profileId: 'same' }, { module: 'bazi', profileId: 'same' }], generic('reading'), generic('workspace:life')), /页面/);
@@ -105,7 +105,7 @@ test('参考从正确来源分派，缺失与软删除拒绝，未选来源不�
   f.books.splice(0);
   assert.throws(() => resolveAiReferences([{ module: 'reading', profileId: f.profiles[0].id }], generic('reading'), generic('workspace:life'), f.sources), /参考书目不存在/);
   const missing: AiReference[] = [{ module: 'todo', taskId: 'missing' }, { module: 'copy', draftId: 'missing' }, { module: 'bazi', profileId: 'missing' }];
-  for (const reference of missing) assert.throws(() => resolveAiReferences([reference], generic(reference.module === 'todo' ? 'home' : reference.module), generic(reference.module === 'todo' ? 'home' : reference.module), f.sources), /不存在或已删除/);
+  for (const reference of missing) assert.throws(() => resolveAiReferences([reference], generic(reference.module === 'todo' ? 'todo' : reference.module), generic(reference.module === 'todo' ? 'todo' : reference.module), f.sources), /不存在或已删除/);
   f.tasks[0].deletedAt = now.toISOString();
   assert.throws(() => resolveAiReferences([{ module: 'todo', taskId: f.tasks[0].id }], { module: 'todo' }, { module: 'todo' }, f.sources), /参考事项不存在/);
 });

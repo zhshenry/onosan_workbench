@@ -38,7 +38,7 @@ function NumberSetting({ label, value, min, max, unit, disabled, save }: {
   </label>;
 }
 
-export function IslandSettingsSection({ query, resetSearch }: { query: string; resetSearch(): void }) {
+export function IslandSettingsSection({ query }: { query: string }) {
   const { state, setState, error, setError } = useIslandState();
   const [active, setActive] = useState<Section>('display');
   const [busy, setBusy] = useState(false), busyRef = useRef(false);
@@ -73,13 +73,13 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
       if (group !== 'quota' && group !== 'water' && group !== 'sedentary' && group !== 'agents') return;
       revealGroup.current = group; setActive(group === 'quota' || group === 'agents' ? 'quota' : 'tools');
       if (group === 'agents') setSelectedProvider(current => current === 'codex' || current === 'cursor' ? current : 'codex');
-      resetSearch(); sessionStorage.removeItem('island-settings-section');
+      sessionStorage.removeItem('island-settings-section');
     };
     showGroup(sessionStorage.getItem('island-settings-section'));
     const listener = (event: Event) => showGroup((event as CustomEvent).detail);
     window.addEventListener('island-settings-section', listener);
     return () => window.removeEventListener('island-settings-section', listener);
-  }, [resetSearch]);
+  }, []);
   useEffect(() => {
     let alive = true;
     void api.quotas().then(value => { if (alive) setProviders(value); }).catch(e => { if (alive) setError(errorText(e)); }).finally(() => { if (alive) setQuotaLoading(false); });
@@ -178,12 +178,12 @@ export function IslandSettingsSection({ query, resetSearch }: { query: string; r
   return <div className="island-settings">
     <div className="island-settings-overview">
       <span className="island-settings-symbol"><Monitor size={18} /></span>
-      <div className="island-settings-overview-copy"><div><b>桌面显示</b><span className="island-enabled-status" data-enabled={settings.enabled}>{settings.enabled ? '已启用' : '未启用'}</span></div><p title={settings.enabled ? `${ISLAND_DOCK_LABELS[settings.dock]}居中 · 偏移 ${settings.topOffset} px` : '开启后，在桌面边缘查看日程与快捷工具'}>{settings.enabled ? `${ISLAND_DOCK_LABELS[settings.dock]}居中 · 偏移 ${settings.topOffset} px` : '开启后，在桌面边缘查看日程与快捷工具'}</p></div>
+      <div className="island-settings-overview-copy"><div><b>显示灵动岛</b><span className="island-enabled-status" data-enabled={settings.enabled}>{settings.enabled ? '已启用' : '未启用'}</span></div></div>
       {toggle('enabled', '显示灵动岛')}
     </div>
     {error && <p className="island-settings-error" role="alert">{error}</p>}
     {term ? <p className="island-settings-search-result" role="status">{count ? `找到 ${count} 项相关设置 · 已搜索所有分区` : '没有匹配的设置'}</p> : <div className="island-settings-tabs"><Segmented value={active} onChange={value => setActive(value as Section)} options={[...sections]} aria-label="灵动岛设置分区" /></div>}
-    <div ref={quotaGroup} className={`island-settings-layout${!term && active === 'tools' ? ' island-settings-tools' : ''}`} aria-label={term ? '设置搜索结果' : sections.find(section => section.value === active)?.label}>
+    <div ref={quotaGroup} className={`island-settings-layout${!term && active === 'tools' ? ' island-settings-tools' : ''}`} data-section={!term ? active : undefined} aria-label={term ? '设置搜索结果' : sections.find(section => section.value === active)?.label}>
       {visiblePages.length > 0 && <section className="island-setting-card island-card-wide" aria-labelledby={`${fieldId}-pages`}><header><h2 id={`${fieldId}-pages`}>显示的页面</h2><p>隐藏页面会保留数据，底栏按固定顺序排列。</p></header><div className="island-page-options">{visiblePages.map(page => {
         const PageIcon = pageIcons[page];
         return <div className="island-page-option" key={page} data-enabled={settings.pages[page]}><div><PageIcon size={21} /><button type="button" className="toggle" role="switch" aria-label={`显示${ISLAND_LABELS[page]}页`} aria-checked={settings.pages[page]} disabled={busy} onClick={() => patch({ pages: { [page]: !settings.pages[page] } })} /></div><b>{ISLAND_LABELS[page]}</b><small>{page === 'tools' && !toolsEnabled ? '启用任一工具后显示' : pageDescriptions[page]}</small></div>;

@@ -17,7 +17,7 @@ web(Electron 桌面壳,Windows 为主;渲染层为 Web 技术)
 
 ## Product Purpose
 
-个人工作台:把现有 To-Do-List(悬浮待办 + AI 日程助手)的完整能力内嵌为首页模块,并作为可长期生长的外壳,逐步纳入文档中心(Word/PPT/Excel 预览编辑)、内置浏览器、CLI 工具挂载与未来的创作模块。成功标准:日常只打开这一个应用即可覆盖主要个人事务;待办模块与 To-Do-List 行为零漂移并同步更新。
+个人工作台:首页以可自定义卡片看板聚合待办摘要、日程待办统计、每日签到和 AI 额度,保留已有专注计时卡片兼容;摘要按计划日期展示近七天完成与待办,新统计卡分别展示今天起七天未完成日程和待办数量。卡片使用固定宽高档位,添加、删除和排序不拉伸其他卡片;常用入口和阅读清单不进入首页卡片目录,原功能保留。现有 To-Do-List(悬浮待办 + AI 日程助手)的完整能力位于小工具的日程待办页面,并作为可长期生长的外壳,逐步纳入文档中心(Word/PPT/Excel 预览编辑)、内置浏览器、CLI 工具挂载与未来的创作模块。成功标准:日常只打开这一个应用即可覆盖主要个人事务;待办模块与 To-Do-List 行为零漂移并同步更新。
 
 ## Positioning
 
@@ -43,6 +43,8 @@ web(Electron 桌面壳,Windows 为主;渲染层为 Web 技术)
 - **待办同步策略(2026-09-23 已定,当日修订)**:以 To-Do-List 为上游,清单化移植(固定文件清单:contracts/store/任务 UI/编辑器/事项库/提醒/AI 任务工具)+ 移植其测试作为一致性安全网 + 上游 drift 检查脚本 + 「To-Do-List 每次发版触发一次同步」流程;工作台侧不为待办做上游没有的功能,有新功能想法先进上游再同步回来,防分叉。**修订:待办数据与 To-Do-List 跨应用共享同一个库文件**(`%APPDATA%/To-Do-List/tasks.db`,WAL 多进程并发),两边增删改互通;工作台不写该库的 settings/chats 表;上游 schema(user_version)变更的同步因此成为硬性要求(详见 modules/todo/SYNC.md)。长期方案见 docs/requirements/home/todo-shared-kit/proposal.md(共享包 ono-todo-kit)。
 - **设置模块(2026-09-24 已定)**:三形态高保真比选后用户选定 **方案 C——设置作为第六个大工作台**,复用「图标栏 + 二级目录」两级导航(设计稿 `docs/requirements/settings/preferences/prototype/settings-form-c-workbench.html`)。**M1 已上线**:通用(开机自启/关闭行为/语言/二级导航默认收起)+ AI 助手(自 AiPanel 弹窗整体迁入,面板齿轮变跳转,单一来源)+ 关于(版本/数据目录/应用更新,2026-10-01 接入);**M2 已上线(同日)**:待办与数据(共享库路径/连接状态/结构版本/数据规模,只读,IPC `todo:info`)+ 通知(待办提醒总开关,主进程轮询读取 `remindersEnabled`);**外观已上线(M3,同日更新)**:界面主题三选——mist 雾灰轻雾(默认)/ cool 冷灰凝霜 / warm 暖砂柔雾,渲染层写 `<html data-theme>` 驱动 shell.css 三主题;**个人资料已上线(M3 收官,同日)**:个人资料 = 两形态比选后用户选定方案 A 设置分区(设计稿 `docs/requirements/settings/profile/prototype/profile-form-a-section.html`,popover 方案 B 落选备查),`profile.name` 驱动头像首字与首页问候,头像点击跳该分区。应用设置存 `userData/app-settings.json`(与 ai-config.json 平级,与 To-Do-List 无关),契约见 `shared/contracts.ts` 的 AppSettingsSchema,存储与测试见 `electron/app-settings.ts`、`tests/app-settings.test.ts`。
 
+2026-11-12 设置入口修订：按用户最新弹窗参考，侧栏设置按钮改为打开居中模态面板，六个原设置分类纵向排列在左侧；原设置工作台形态作为历史记录。头像、AI 配置及灵动岛设置入口定位到同一弹窗，背景工作台和 AI 会话保持，关闭后回到原工作台。设置内容及存储契约沿用现有实现，当前视觉与行为分别以 `DESIGN.md`、`UX-CONTRACT.md` 为准。
+
 开放决策(不臆造):
 - 产品正式命名(暂以「个人工作台」占位)。
 - Office 编辑深度:预览 + 调用系统应用编辑(轻)vs 内嵌编辑引擎(重),待技术验证后定。
@@ -63,7 +65,7 @@ web(Electron 桌面壳,Windows 为主;渲染层为 Web 技术)
 
 ## Product Principles
 
-1. 一站直达:打开即见今日待办与日程,核心信息一次注视可达。
+1. 一站直达:首页自由组合常用模块摘要,完整日程待办在小工具中管理,核心信息与操作便捷可达。
 2. 模块可生长:新增工作台模块不改外壳,导航/路由/主题均为插件式预留。
 3. 与 To-Do-List 零漂移:内嵌待办的功能、交互、数据结构与原应用一比一。
 4. 本地优先:数据本地 SQLite;浏览器/更新等联网能力不绑架核心功能。

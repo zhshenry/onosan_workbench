@@ -51,7 +51,7 @@ export function assertMediaHomeLayoutUnchanged(before, after) {
     assert.equal(value.zoom,1,'Home comparison must use normal native zoom');
     assert.deepEqual(value.viewport,{width:1024,height:680},'Home comparison must use the actual CSS viewport');
     assert.equal(value.homeMode,'today-board','Home comparison must use the ordinary task board, not the library');
-    assert.deepEqual(value.navigation,{homeActive:true,aiOpen:false,snavCount:0},'Home comparison must wait for the real secondary sidebar to be fully unmounted');
+    assert.deepEqual(value.navigation,{todoActive:true,aiOpen:false,snavCount:0},'Home comparison must wait for the real secondary sidebar to be fully unmounted');
     assert.equal(value.fontStatus,'loaded');assert.equal(value.fadeTransform,'none');
     for(const rect of Object.values(value.bounds)) for(const key of ['x','y','width','height']) assert.ok(Number.isFinite(rect[key]),'Home geometry must be finite');
   }
@@ -78,27 +78,26 @@ async function settledMediaHomeGeometry(native,page) {
     ...await page.evaluate(()=>{
       const select=selector=>{const value=document.querySelector(selector);if(!value)throw new Error(`Missing real home element ${selector}`);return value;};
       const rect=element=>{const r=element.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};};
-      const content=select('.content'),home=select('#view-home'),cols=select('#view-home > .cols');
-      const todo=select('#view-home .todo-panel'),overview=select('#view-home > .cols > div:last-child'),overviewPanel=overview.querySelector('.panel');
-      const contentStyle=getComputedStyle(content),colsStyle=getComputedStyle(cols),todoStyle=getComputedStyle(todo),overviewStyle=getComputedStyle(overview);
-      const bounds={content:rect(content),home:rect(home),cols:rect(cols),todo:rect(todo),overview:rect(overview),overviewPanel:rect(overviewPanel),date:rect(select('#view-home .dash-heading h1')),weekTitle:rect(overview.querySelector('.ptitle'))};
+      const content=select('.content'),home=select('#view-todo'),board=select('#view-todo .today-board');
+      const panel=select('#view-todo .todo-panel'),schedule=select('#view-todo .plan-schedule'),todos=select('#view-todo .plan-today');
+      const contentStyle=getComputedStyle(content),boardStyle=getComputedStyle(board);
+      const bounds={content:rect(content),home:rect(home),board:rect(board),panel:rect(panel),schedule:rect(schedule),todos:rect(todos),date:rect(select('#view-todo .week-schedule-date')),scheduleTitle:rect(schedule.querySelector('h2')),todoTitle:rect(todos.querySelector('h2'))};
       return {viewport:{width:innerWidth,height:innerHeight},fontStatus:document.fonts.status,fadeTransform:getComputedStyle(home.parentElement).transform,
-        navigation:{homeActive:Boolean(document.querySelector('.rail [data-workbench="home"]')?.classList.contains('on')),
+        navigation:{todoActive:Boolean(document.querySelector('.rail [data-workbench="life"]')?.classList.contains('on')),
           aiOpen:document.querySelector('.ai-topbar-btn')?.getAttribute('aria-expanded')==='true',snavCount:document.querySelectorAll('.snav').length},
         homeMode:home.querySelector('.task-library')?'library':home.querySelector('.today-board')?'today-board':'unknown',
         styles:{contentClass:content.className,contentDisplay:contentStyle.display,contentPadding:contentStyle.padding,homeDisplay:getComputedStyle(home).display,
-          colsDisplay:colsStyle.display,columns:colsStyle.gridTemplateColumns,columnGap:colsStyle.columnGap,todoColumn:todoStyle.gridColumn,todoRow:todoStyle.gridRow,
-          overviewColumn:overviewStyle.gridColumn,overviewRow:overviewStyle.gridRow,overviewContainer:overviewStyle.containerType},bounds,
-        overflow:{contentX:content.scrollWidth-content.clientWidth,overviewX:overviewPanel.scrollWidth-overviewPanel.clientWidth,todoX:todo.scrollWidth-todo.clientWidth},
-        layoutFlags:{overviewCollapsed:bounds.overview.width<100,overviewContentOverflows:overviewPanel.scrollWidth>overviewPanel.clientWidth+2,
-          panelsOverlap:Math.min(bounds.todo.x+bounds.todo.width,bounds.overviewPanel.x+bounds.overviewPanel.width)-Math.max(bounds.todo.x,bounds.overviewPanel.x)>2
-            &&Math.min(bounds.todo.y+bounds.todo.height,bounds.overviewPanel.y+bounds.overviewPanel.height)-Math.max(bounds.todo.y,bounds.overviewPanel.y)>2},
+          boardDisplay:boardStyle.display,columns:boardStyle.gridTemplateColumns,columnGap:boardStyle.columnGap},bounds,
+        overflow:{contentX:content.scrollWidth-content.clientWidth,scheduleX:schedule.scrollWidth-schedule.clientWidth,todoX:todos.scrollWidth-todos.clientWidth},
+        layoutFlags:{scheduleCollapsed:bounds.schedule.width<100,todosCollapsed:bounds.todos.width<100,scheduleContentOverflows:schedule.scrollWidth>schedule.clientWidth+2,
+          panelsOverlap:Math.min(bounds.todos.x+bounds.todos.width,bounds.schedule.x+bounds.schedule.width)-Math.max(bounds.todos.x,bounds.schedule.x)>2
+            &&Math.min(bounds.todos.y+bounds.todos.height,bounds.schedule.y+bounds.schedule.height)-Math.max(bounds.todos.y,bounds.schedule.y)>2},
         hosts:[...document.querySelectorAll('.media-browser-host')].map(host=>({hidden:host.hidden,inert:host.inert,display:getComputedStyle(host).display,width:rect(host).width,height:rect(host).height}))};
     }),
   }),value=>{
     const ready=value.nativeSize[0]===1024&&value.nativeSize[1]===680&&value.zoom===1&&value.viewport.width===1024&&value.viewport.height===680
       &&value.homeMode==='today-board'&&value.fontStatus==='loaded'&&value.fadeTransform==='none'
-      &&value.navigation.homeActive&&!value.navigation.aiOpen&&value.navigation.snavCount===0;
+      &&value.navigation.todoActive&&!value.navigation.aiOpen&&value.navigation.snavCount===0;
     const current=JSON.stringify(value);stable=ready&&current===previous?stable+1:ready?1:0;previous=current;return stable>=2;
   },'Actual home geometry did not settle at native 1024x680 zoom 1');
 }
@@ -235,7 +234,7 @@ export async function prepareMediaKeepaliveQuit({application,page,report}) {
     await page.keyboard.type('Quit-only unsent fixture');
     const retained=await until(page,()=>nativeState(application,id),value=>value?.draft==='Quit-only unsent fixture','Quit fixture input must be real');
     const {point:oldPoint}=await focusMediaFixtureControl({application,page,native,id,selector:'#click-target',observation:{}});
-    await page.locator('.rail [data-workbench="home"]').click();await assertHidden(application,page,id,report);
+    await page.locator('.rail [data-workbench="life"]').click();await page.getByRole('button',{name:'日程待办',exact:true}).click();await assertHidden(application,page,id,report);
     await assertMediaHiddenInput({application,page,id,oldPoint,report,label:'normal quit'});
     assertMediaStatePreserved(retained,await nativeState(application,id));
     report.mediaKeepaliveQuit={guestId:id,restoredUrl,nonce:retained.nonce,draft:retained.draft,retainedBeforeQuit:true,statePreservationAcrossRestart:false};
@@ -416,7 +415,7 @@ export async function assertMediaHiddenInput({application,page,id,oldPoint,repor
   assert.equal(hit,true,'Former guest coordinates must hit only the current workspace');
   await page.mouse.click(oldPoint.x,oldPoint.y);
   if(await page.locator('.task-modal[open]').count())await closeUnchangedMediaTaskEditor(page);
-  await page.locator('#view-home').getByRole('button',{name:'新增',exact:true}).click();
+  await page.locator('#view-todo').getByRole('button',{name:'新增',exact:true}).click();
   title=page.getByRole('textbox',{name:'待办名称',exact:true});await title.click();
   await application.evaluate(async({webContents},id)=>webContents.fromId(id).executeJavaScript('window.tryFixtureFocus()',false),id);
   await assertHidden(application,page,id,report);
@@ -502,8 +501,8 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
         owner.on('did-attach-webview', attach); fixture.ownerListeners.push({ name:'did-attach-webview', listener:attach });
       }, { html, origin:MEDIA_FIXTURE_ORIGIN, paths:MEDIA_FIXTURE_PATHS, token });
       await aiVisible(page, false);
-      await page.locator('.rail [data-workbench="home"]').click();
-      if(await page.locator('#view-home .task-library').count()) await page.locator('#view-home .dash-actions').getByRole('button',{name:'事项库',exact:true}).click();
+      await page.locator('.rail [data-workbench="life"]').click();await page.getByRole('button',{name:'日程待办',exact:true}).click();
+      if(await page.locator('#view-todo .task-library').count()) await page.locator('#view-todo .dash-actions').getByRole('button',{name:'全部事项',exact:true}).click();
       await native.evaluate(win=>{win.webContents.setZoomFactor(1);win.setContentSize(1024,680);});
       homeTasks=await page.evaluate(()=>window.workbench.todo.state());
       homeBefore=await settledMediaHomeGeometry(native,page);assert.equal(homeBefore.hosts.length,0);
@@ -518,7 +517,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
     await check('Loading workspace switch preserves one real guest and completes exactly one initial home load', async () => {
       await creator(page, true); id = await guestId(page);
       await until(page, () => probe(application), value => value.pendingHome, 'Initial fixture response was not gated');
-      await page.locator('.rail [data-workbench="home"]').click();
+      await page.locator('.rail [data-workbench="life"]').click();await page.getByRole('button',{name:'日程待办',exact:true}).click();
       await page.locator('.media-browser-host[hidden]').waitFor({ state:'attached' });
       assert.equal(await guestId(page), id); await assertHidden(application, page, id, report);
       await creator(page, true); assert.equal(await guestId(page), id);
@@ -555,7 +554,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       }
     });
     await check('Hidden creator rejects native keyboard/pointer/focus and is excluded from host accessibility', async () => {
-      await page.locator('.rail [data-workbench="home"]').click(); await assertHidden(application, page, id, report);
+      await page.locator('.rail [data-workbench="life"]').click();await page.getByRole('button',{name:'日程待办',exact:true}).click(); await assertHidden(application, page, id, report);
       const currentTasks = await page.evaluate(() => window.workbench.todo.state());
       const hit = await page.evaluate(({ x,y }) => { const e = document.elementFromPoint(x,y); return Boolean(e && !e.closest('.media-browser-host')); }, retainedPoint);
       assert.equal(hit, true, 'Former guest surface must hit current workspace');
@@ -564,7 +563,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
         await closeUnchangedMediaTaskEditor(page);
       }
       // Use the real current-page task editor, then discard without creating anything.
-      await page.locator('#view-home').getByRole('button', { name:'新增', exact:true }).click();
+      await page.locator('#view-todo').getByRole('button', { name:'新增', exact:true }).click();
       const title = page.getByRole('textbox', { name:'待办名称', exact:true }); await title.click();
       await application.evaluate(async ({ webContents }, id) => webContents.fromId(id).executeJavaScript('window.tryFixtureFocus()', false), id);
       await page.waitForTimeout(150); await assertHidden(application, page, id, report);
@@ -599,7 +598,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
         await page.getByRole('radio', { name:label, exact:true }).click();
         await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, theme);
         for (const [width,height] of [[1280,820],[1024,680]]) for (const motion of ['no-preference','reduce']) for (const aiOpen of [false,true]) {
-          await page.locator('.rail [data-workbench="home"]').click();
+          await page.locator('.rail [data-workbench="life"]').click();await page.getByRole('button',{name:'日程待办',exact:true}).click();
           await native.evaluate((win,size) => win.setContentSize(size.width,size.height), { width,height });
           await page.emulateMedia({ reducedMotion:motion }); await aiVisible(page, aiOpen);
           await creator(page, true); assert.equal(await guestId(page), id);
@@ -666,9 +665,9 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
     });
     await check('Actual renderer host teardown destroys the retained guest and reload is lazy again', async () => {
       const departing=id;const {point:oldPoint}=await focusMediaFixtureControl({application,page,native,id,selector:'#click-target',observation:{}});
-      await page.locator('.rail [data-workbench="home"]').click(); await assertHidden(application,page,id,report);
+      await page.locator('.rail [data-workbench="life"]').click();await page.getByRole('button',{name:'日程待办',exact:true}).click(); await assertHidden(application,page,id,report);
       await assertMediaHiddenInput({application,page,id,oldPoint,report,label:'renderer host teardown'});
-      await page.reload(); await page.locator('#view-home').waitFor({state:'visible'});
+      await page.reload(); await page.locator('#view-todo').waitFor({state:'visible'});
       await until(page,()=>probe(application),value=>value.destroyed.includes(departing),'Actual owner reload must destroy retained guest');
       assert.equal(await page.locator('.media-browser-host').count(),0);
       assert.equal(await application.evaluate(({webContents})=>webContents.getAllWebContents().filter(value=>value.getType()==='webview').length),0);
@@ -720,7 +719,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
     await aiVisible(page,false); await subview(page,'settings','通用与外观');
     const labels={mist:'雾灰 · 轻雾',cool:'冷灰 · 凝霜',warm:'暖砂 · 柔雾'};
     await page.getByRole('radio',{name:labels[initial.theme]??labels.mist,exact:true}).click();
-    await page.locator('.rail [data-workbench="home"]').click(); await aiVisible(page,initial.aiOpen);
+    await page.locator('.rail [data-workbench="life"]').click();await page.getByRole('button',{name:'日程待办',exact:true}).click(); await aiVisible(page,initial.aiOpen);
     } catch (cleanupError) {
       report.errors.push(`Media keepalive fixture cleanup: ${String(cleanupError).slice(0,2000)}`);
       if(!failure) throw cleanupError;

@@ -9,7 +9,7 @@ import { authorizeCheckin } from './checkin-auth';
 
 const CredentialsSchema = z.partialRecord(CheckinProviderSchema, CheckinCredentialSchema);
 type Credentials = z.infer<typeof CredentialsSchema>;
-const AttemptSchema = z.object({ account: z.string(), cycle: z.string(), reward: z.number().nullable() });
+const AttemptSchema = z.object({ account: z.string(), cycle: z.string(), reward: z.number().nullable(), recorded: z.boolean().optional() });
 const SavedSchema = z.object({
   version: z.literal(1), deviceId: z.string().uuid(), settings: CheckinSettingsSchema,
   credentials: z.string(), rows: z.array(CheckinRowSchema).max(3), records: z.array(CheckinRecordSchema).max(100),
@@ -50,6 +50,11 @@ export class CheckinService {
           const row = this.saved.rows.find(r => r.provider === p) || emptyCheckinRow(p);
           return this.credentials[p] ? { ...row, connected: true, ...(['checking', 'claiming'].includes(row.status) ? { status: this.saved.attempts[p] ? 'pending' as const : 'ready' as const } : {}) } : emptyCheckinRow(p);
         });
+        // Preserve existing successes when loading older data without the recorded marker.
+        for (const row of this.saved.rows) {
+          const attempt = this.saved.attempts[row.provider];
+          if (attempt && row.status === 'claimed' && row.cycle === attempt.cycle && this.credentials[row.provider]?.userId === attempt.account && this.saved.records.some(record => record.provider === row.provider && record.status === 'claimed' && checkinCycle(record.provider, record.at) === attempt.cycle)) attempt.recorded = true;
+        }
       } catch {
         this.credentials = {};
         this.saved.rows = CHECKIN_PROVIDERS.map(emptyCheckinRow);
@@ -162,7 +167,6 @@ export class CheckinService {
     this.assertFree(provider);
     const initialCredential = this.credentials[provider];
     if (!initialCredential) throw new CheckinError('请先连接账号。');
-    const initialRow = this.row(provider);
     let credential: CheckinCredential = initialCredential;
     const controller = new AbortController(), signal = controller.signal;
     this.operations.set(provider, controller);
@@ -216,12 +220,16 @@ export class CheckinService {
       }
       if (!active()) return;
       const row: CheckinRow = { ...this.row(provider), status: status.status, message: status.message, cycle, checkedAt: this.now(), reward: status.status === 'claimed' ? reward ?? (this.row(provider).cycle === cycle ? this.row(provider).reward : null) : status.status === 'ready' ? status.reward : null };
-      const confirmed = row.status === 'claimed' && (claim || initialRow.status === 'pending' && initialRow.cycle === cycle);
-      this.update(provider, row, confirmed ? { records: this.record(provider, source, row) } : {});
+      const currentAttempt = this.saved.attempts[provider];
+      const confirmed = row.status === 'claimed' && currentAttempt?.cycle === cycle && currentAttempt.account === credential.userId && !currentAttempt.recorded;
+      this.update(provider, row, confirmed ? {
+        records: this.record(provider, source, row),
+        attempts: { ...this.saved.attempts, [provider]: { ...currentAttempt, recorded: true } },
+      } : {});
     } catch (error) {
       if (!active()) return;
       const pending = this.saved.attempts[provider]?.cycle === cycle;
-      const row: CheckinRow = { ...this.row(provider), status: error instanceof CheckinError && error.kind === 'auth' ? 'expired' : error instanceof CheckinError && error.kind === 'blocked' ? 'unavailable' : pending ? 'pending' : 'error', message: checkinError(error), checkedAt: this.now(), cycle, reward: null };
+      const row: CheckinRow = { ...this.row(provider), status: error instanceof CheckinError && error.kind === 'auth' ? 'expired' : pending ? 'pending' : 'error', message: checkinError(error), checkedAt: this.now(), cycle, reward: null };
       try { this.update(provider, row); }
       catch { this.warning = '签到数据无法保存，已停止本次操作，请检查磁盘后重试。'; this.emit(); }
     } finally { if (this.operations.get(provider) === controller) this.operations.delete(provider); }

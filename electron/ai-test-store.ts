@@ -37,6 +37,9 @@ export class AiTestStore {
       .map(row => JSON.parse(row.payload) as TestRun).map(run => ({
         id: run.id, createdAt: run.createdAt, title: run.task.title, mode: run.task.mode,
         running: run.lanes.some(lane => lane.status === 'running' || lane.status === 'queued'), modelCount: run.lanes.length,
+        models: run.lanes.map(lane => ({ id: lane.model.id, name: lane.model.name, providerName: lane.model.providerName })),
+        failedCount: run.lanes.filter(lane => lane.status === 'error').length,
+        cancelledCount: run.lanes.filter(lane => lane.status === 'cancelled').length,
       })).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
   run(id: string): TestRun {

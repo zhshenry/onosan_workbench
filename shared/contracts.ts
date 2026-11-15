@@ -12,6 +12,7 @@ export type WorkbenchId = z.infer<typeof WorkbenchIdSchema>;
 /** 工作台内页面标识(设置工作台分区对应 settings-* view) */
 export const ViewIdSchema = z.enum([
   'home',
+  'todo',
   'bazi',
   'copy',
   'copy-publish',

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  READING_STATUS_LABEL, SCAN_SKIP_HINT, booksPendingImport,
+  READING_STATUS_LABEL, READING_CURRENT_BOOK_KEY, SCAN_SKIP_HINT, booksPendingImport,
   type BookEntry, type ReadingStatus, type ReadingStoreData, type BookAggregate, type BookCandidate,
 } from '../../shared/reading-contracts';
 import { Modal, Segmented, Select, errorText } from '../ui/controls';
-import { Check, Info, X } from '@phosphor-icons/react';
+import { ArrowClockwise, ArrowSquareOut, BookOpen, Check, ChatCircle, DotsThree, FileText, Info, Link, Plus, X } from '@phosphor-icons/react';
 
 type ImportCandidate = Pick<BookCandidate, 'folder' | 'name' | 'noteCount'>;
 
@@ -87,7 +87,7 @@ function RemoveBookButton({ onRemove }: { onRemove(): void }) {
         aria-haspopup="dialog"
         onClick={() => setOpen((value) => !value)}
       >
-        删除书目
+        <DotsThree size={18} aria-hidden="true" /><span className="rd-sr-only">删除书目</span>
       </button>
       {open && (
         <div className="rd-remove-pop" role="dialog" aria-modal="false" aria-label="确认删除书目">
@@ -103,7 +103,7 @@ function RemoveBookButton({ onRemove }: { onRemove(): void }) {
 }
 
 const wb = window.workbench;
-const CUR_KEY = 'wb.reading.curBookId';
+const CUR_KEY = READING_CURRENT_BOOK_KEY;
 
 const STATUS_ORDER: ReadingStatus[] = ['reading', 'wish', 'done', 'paused'];
 /** 选择器只提供三态。历史「搁置」仍可读、可改选，但不能再选回去。 */
@@ -115,13 +115,6 @@ function listProgressPct(book: BookEntry): number | undefined {
   if (book.status === 'reading') return 0;
   return undefined;
 }
-const COVER_TONES = [
-  'linear-gradient(140deg,#4a67a3,#31517e)', 'linear-gradient(140deg,#6f5f9e,#57497f)',
-  'linear-gradient(140deg,#3e7d44,#2f6234)', 'linear-gradient(140deg,#bd6a2e,#9a5522)',
-  'linear-gradient(140deg,#5f7f9e,#47637e)',
-];
-const coverTone = (title: string): string => COVER_TONES[[...title].reduce((sum, c) => sum + c.charCodeAt(0), 0) % COVER_TONES.length];
-
 export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
   onPending(message: string): void;
   onAskAI(prompt: string, bookId: string): void;
@@ -130,6 +123,7 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
   const [storeData, setStoreData] = useState<ReadingStoreData | null>(null);
   const [curId, setCurId] = useState<string | null>(null);
   const [agg, setAgg] = useState<BookAggregate | null>(null);
+  const [statusFilter, setStatusFilter] = useState<ReadingStatus | 'all'>('all');
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [mTitle, setMTitle] = useState('');
@@ -198,8 +192,9 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
     () => [...new Set((storeData?.books ?? []).flatMap((b) => b.tags))].sort(),
     [storeData?.books],
   );
-  const visibleBooks = (list: BookEntry[]): BookEntry[] =>
-    tagFilter ? list.filter((b) => b.tags.includes(tagFilter)) : list;
+  const visibleBooks = (storeData?.books ?? []).filter((b) =>
+    (statusFilter === 'all' || b.status === statusFilter) && (!tagFilter || b.tags.includes(tagFilter)),
+  ).sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status));
 
   const vaultName = storeData?.vaultPath ? storeData.vaultPath.replace(/[\\/]+$/, '').split(/[\\/]/).pop() ?? '' : '';
 
@@ -329,8 +324,9 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
 
   if (!storeData) {
     return (
-      <section className="view on" id="view-reading">
-        <div className="todo-loading" role="status">正在读取书单…</div>
+      <section className="view on reading-view" id="view-reading">
+        <div className="greet rd-heading"><h1>阅读清单</h1></div>
+        <div className="rd-workspace rd-empty" role="status">正在读取书单…</div>
       </section>
     );
   }
@@ -340,46 +336,35 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
 
   return (
     <section className="view on reading-view" id="view-reading">
-      <div className="greet">
-        <div>
+      <div className="greet rd-heading">
+        <div className="rd-heading-copy">
           <h1>阅读清单</h1>
           <div className="gsub">
-            {(storeData.books.length || 0)} 本书 · 在读 <b>{storeData.books.filter((b) => b.status === 'reading').length}</b>
-            {storeData.vaultPath
-              ? <> · 关联库「{vaultName}」共 <b>{agg?.noteCount ?? '…'}</b> 篇笔记 · <b>只读</b>不改动你的库</>
-              : <> · 尚未关联读书笔记库</>}
+            {storeData.books.length} 本书 · 在读 <b>{storeData.books.filter((b) => b.status === 'reading').length}</b>
+            {' · 想读 '}{storeData.books.filter((b) => b.status === 'wish').length}
+            {' · 已读 '}{storeData.books.filter((b) => b.status === 'done').length}
           </div>
         </div>
         <div className="gbtns">
           <button className="btn btn-sec" onClick={openImport} disabled={scanning || importBusy} aria-haspopup="dialog">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 3.8v3.4h-3.4"/></svg>
+            <ArrowClockwise size={16} aria-hidden="true" />
             从库导入
           </button>
           <button className="btn btn-pri" onClick={openNew}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            <Plus size={16} aria-hidden="true" />
             添加书目
           </button>
         </div>
       </div>
 
+      <div className="rd-workspace">
       {!storeData.vaultPath && (
-        <div className="panel glass rd-vault">
+        <div className="rd-vault">
           <div className="rd-vault-text">
             <b>关联你的读书笔记库</b>
             <span>填写 Obsidian 读书库的本地路径(需含 .obsidian 文件夹),例如 C:/Myself/Obsidian/读书笔记。工作台只读取其中的书目活动,不改动任何笔记。</span>
           </div>
           <button className="btn btn-pri btn-sm" onClick={openImport} aria-haspopup="dialog">选择读书笔记库</button>
-        </div>
-      )}
-
-      {allTags.length > 0 && (
-        <div className="rd-tagfilter" role="group" aria-label="按标签筛选">
-          <button className={tagFilter === null ? 'rd-tf on' : 'rd-tf'} onClick={() => setTagFilter(null)}>全部</button>
-          {allTags.map((tag) => (
-            <button key={tag} className={tagFilter === tag ? 'rd-tf on' : 'rd-tf'} onClick={() => setTagFilter(tagFilter === tag ? null : tag)}>
-              {tag}
-            </button>
-          ))}
         </div>
       )}
 
@@ -396,26 +381,27 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
 
       {storeData.books.length === 0 ? (
         importCandidates ? null : (
-          <div className="bazi-empty glass rd-empty">
+          <div className="rd-empty">
+            <BookOpen size={36} aria-hidden="true" />
             <b>书单还是空的</b>
             <p>点「从库导入」填写读书笔记库路径并选择书目,或「添加书目」手动录入。</p>
           </div>
         )
       ) : (
         <div className="rd-cols">
-          <div>
-            {STATUS_ORDER.map((status) => {
-              const list = visibleBooks(storeData.books.filter((b) => b.status === status));
-              if (status === 'paused' && list.length === 0) return null;
-              return (
-                <div className="shelf" key={status}>
-                  <div className="shelf-head">
-                    <span className={`shelf-badge ${status}`}>{READING_STATUS_LABEL[status]}</span>
-                    <span className="shelf-count">{list.length} 本</span>
-                  </div>
-                  {list.length === 0 ? (
-                    <div className="empty-note">{tagFilter ? '该标签下没有这个状态的书。' : '还没有书目。'}</div>
-                  ) : list.map((b) => {
+          <div className="rd-library">
+            <div className="rd-library-tools">
+              <Segmented aria-label="书单状态" value={statusFilter} onChange={value => setStatusFilter(value as ReadingStatus | 'all')} options={[
+                { value: 'all', label: '全部' },
+                ...['reading', 'wish', 'done', ...(storeData.books.some(b => b.status === 'paused') ? ['paused'] : [])].map(status => ({ value: status, label: READING_STATUS_LABEL[status as ReadingStatus] })),
+              ]} />
+              {allTags.length > 0 && <div className="rd-tagfilter" role="group" aria-label="按标签筛选">
+                <button className={tagFilter === null ? 'rd-tf on' : 'rd-tf'} aria-pressed={tagFilter === null} onClick={() => setTagFilter(null)}>全部</button>
+                {allTags.map(tag => <button key={tag} className={tagFilter === tag ? 'rd-tf on' : 'rd-tf'} aria-pressed={tagFilter === tag} onClick={() => setTagFilter(tagFilter === tag ? null : tag)}>{tag}</button>)}
+              </div>}
+            </div>
+            <div className="rd-library-list" aria-label="书单">
+                  {visibleBooks.length === 0 ? <div className="empty-note">没有符合筛选条件的书目。</div> : visibleBooks.map((b) => {
                     const pct = listProgressPct(b);
                     return (
                       <div
@@ -423,78 +409,66 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
                         className={b.id === book?.id ? 'bookcard on' : 'bookcard'}
                         role="button"
                         tabIndex={0}
+                        aria-pressed={b.id === book?.id}
                         onClick={() => { setCurId(b.id); localStorage.setItem(CUR_KEY, b.id); }}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCurId(b.id); localStorage.setItem(CUR_KEY, b.id); } }}
                       >
-                        <span className="cover" style={{ background: coverTone(b.title) }}>{[...b.title][0]}</span>
+                        <span className="cover" aria-hidden="true"><BookOpen size={27} weight="light" /></span>
                         <div className="b-main">
-                          <div className="b-title">{b.title}</div>
+                          <div className="b-title-row"><div className="b-title" title={b.title}>{b.title}</div><span className={`shelf-badge ${b.status}`}>{READING_STATUS_LABEL[b.status]}</span></div>
                           {b.author && <div className="b-meta"><span>{b.author}</span></div>}
-                          <div className="b-tags">
-                            {b.link && <span className="b-link">库 · {agg && b.id === book?.id ? agg.noteCount : '已关联'}</span>}
-                            {b.tags.map((tag) => <span key={tag} className="b-tag">{tag}</span>)}
-                          </div>
-                        </div>
-                        <div className="b-side">
+                          <div className="b-side">
                           {b.status === 'done' && b.rating
                             ? <span className="stars">{'★'.repeat(b.rating)}<span className="off">{'★'.repeat(5 - b.rating)}</span></span>
                             : pct !== undefined
                               ? <><span className="b-progress">{b.status === 'reading' ? `${pct}%` : (b.chapterCurrent !== undefined && b.chapterTotal ? `第 ${b.chapterCurrent} 章 / ${b.chapterTotal}` : `${pct}%`)}</span>
-                                  <span className="b-progbar"><i style={{ width: `${pct}%` }} /></span></>
+                                  <progress className="b-progbar" aria-label={`${b.title}阅读进度`} max={100} value={pct} /></>
                               : <span className="b-recent">{b.status === 'wish' ? '待开始' : ''}</span>}
+                          </div>
                         </div>
                       </div>
                     );
                   })}
-                </div>
-              );
-            })}
+            </div>
           </div>
 
           {book && (
             <div className="detail">
-              <div className="panel glass">
-                <div className="phead">
-                  <span className="ptitle">书籍详情</span>
-                  {book.link && <span className="pcount">关联文件夹:{book.link.folder}</span>}
+              <div className="rd-detail-body">
+                <div className="rd-detail-actions">
+                  <RemoveBookButton key={book.id} onRemove={confirmRemove} />
                   <button type="button" className="rd-close" aria-label="关闭面板" onClick={closeDetail}>
                     <span className="rd-close-x" aria-hidden="true"><X size={13} weight="bold" /></span>
                   </button>
                 </div>
                 <div className="d-head">
-                  <span className="d-cover" style={{ background: coverTone(book.title) }}>{[...book.title][0]}</span>
+                  <span className="d-cover" aria-hidden="true"><BookOpen size={44} weight="light" /></span>
                   <div className="d-t">
                     <div className="d-title">{book.title}</div>
                     {book.author && <div className="d-author">{book.author}</div>}
+                    {book.link && <span className="b-link" title={book.link.folder}><Link size={13} aria-hidden="true" />关联 Obsidian 笔记</span>}
                     <div className="d-state">
                       {book.status === 'paused' && <p className="rd-paused-now">当前为搁置</p>}
                       <div className="pseg" role="radiogroup" aria-label="阅读状态">
                         {STATUS_PICKER.map((s) => (
-                          <button key={s} type="button" className={book.status === s ? 'on' : ''} onClick={() => save({ status: s })}>
+                          <button key={s} type="button" role="radio" aria-checked={book.status === s} className={book.status === s ? 'on' : ''} onClick={() => save({ status: s })}>
                             {READING_STATUS_LABEL[s]}
                           </button>
                         ))}
                       </div>
                     </div>
-                    <RemoveBookButton key={book.id} onRemove={confirmRemove} />
                   </div>
                 </div>
 
                 <div className="d-sec">
-                  <div className="d-label">
-                    进度
-                    <span className="val">
-                      {book.chapterCurrent !== undefined && book.chapterTotal ? `第 ${book.chapterCurrent} 章 / 共 ${book.chapterTotal} 章 · ` : ''}
-                      {chapterPct !== undefined ? `${chapterPct}%` : '未设置'}
-                    </span>
-                  </div>
                   <div className="progress-row">
+                    <span className="d-label">阅读进度</span>
                     <input
                       type="range" min={0} max={100} value={chapterPct ?? 0}
                       aria-label="阅读进度百分比"
                       onChange={(e) => save({ progressPct: Number(e.target.value) })}
                     />
-                    <span className="pct">{chapterPct ?? 0}%</span>
+                    <span className="pct">{chapterPct !== undefined ? `${chapterPct}%` : '未设置'}</span>
                   </div>
                   <div className="rd-chaprow">
                     <span className="d-label" style={{ margin: 0 }}>读到第</span>
@@ -513,7 +487,7 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
                   </div>
                 </div>
 
-                <div className="d-sec">
+                <div className="d-sec rd-tags">
                   <div className="d-label">标签</div>
                   <div className="tagrow">
                     {book.tags.map((tag) => (
@@ -521,7 +495,7 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
                         title="移除标签"
                         onClick={() => save({ tags: book.tags.filter((t) => t !== tag) })}
                         onKeyDown={(e) => { if (e.key === 'Enter') save({ tags: book.tags.filter((t) => t !== tag) }); }}
-                      >{tag} ✕</span>
+                      >{tag}<X size={11} aria-hidden="true" /></span>
                     ))}
                     <input
                       className="rd-tagadd" aria-label="添加标签" placeholder="+ 添加"
@@ -538,10 +512,11 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
 
                 {book.link && (
                   <div className="d-sec rd-divide">
+                    <h2 className="rd-notes-title">关联笔记</h2>
                     <div className="linkbox">
                       <div className="linkrow">
                         <span className="k">Obsidian库</span><span className="v">{vaultName}</span>
-                        <button className="open" onClick={() => openInObsidian()}>在 Obsidian 打开</button>
+                        <button className="open" onClick={() => openInObsidian()}><ArrowSquareOut size={14} aria-hidden="true" />在 Obsidian 打开</button>
                       </div>
                       {agg ? (
                         <>
@@ -570,17 +545,19 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
                 <div className="d-sec ai-card rd-divide">
                   <div className="d-label">AI读书</div>
                   <div className="ai-row">
-                    <button className="ai-chip" disabled={!book.link} onClick={() => onAskAI(`请基于《${book.title}》的笔记，把主要概念串联成一份结构化总结：先列核心概念与关系，再指出笔记间的引用脉络；资料不足时明确说明。`, book.id)}>串联概念总结</button>
-                    <button className="ai-chip" disabled={!book.link} onClick={() => onAskAI(`请基于《${book.title}》的笔记出 10 道自测题（混合概念辨析与应用场景），先只给题目；等我回答后逐题给出参考答案与笔记出处。`, book.id)}>出 10 道自测题</button>
-                    <button className="ai-chip" onClick={() => onAskAI(book.comment ? `我给《${book.title}》的短评是「${book.comment}」。请结合我的短评与笔记，和我聊聊这本书的价值与值得再读的部分。` : `请结合笔记与我聊聊《${book.title}》这本书的价值与阅读建议。`, book.id)}>结合短评聊这本书</button>
+                    <button className="ai-chip" disabled={!book.link} onClick={() => onAskAI(`请基于《${book.title}》的笔记，把主要概念串联成一份结构化总结：先列核心概念与关系，再指出笔记间的引用脉络；资料不足时明确说明。`, book.id)}><Link size={14} aria-hidden="true" />串联概念总结</button>
+                    <button className="ai-chip" disabled={!book.link} onClick={() => onAskAI(`请基于《${book.title}》的笔记出 10 道自测题（混合概念辨析与应用场景），先只给题目；等我回答后逐题给出参考答案与笔记出处。`, book.id)}><FileText size={14} aria-hidden="true" />出 10 道自测题</button>
+                    <button className="ai-chip" onClick={() => onAskAI(book.comment ? `我给《${book.title}》的短评是「${book.comment}」。请结合我的短评与笔记，和我聊聊这本书的价值与值得再读的部分。` : `请结合笔记与我聊聊《${book.title}》这本书的价值与阅读建议。`, book.id)}><ChatCircle size={14} aria-hidden="true" />结合短评聊这本书</button>
                   </div>
                   <div className="ai-hint">AI 只读取<b>规范页摘要与最近笔记</b>,正文需要时按篇取用(只读);解读在右侧 AI 面板进行。</div>
                 </div>
               </div>
             </div>
           )}
+          {!book && <div className="rd-detail-empty"><BookOpen size={32} aria-hidden="true" /><b>选择一本书</b><p>查看阅读进度与关联笔记。</p></div>}
         </div>
       )}
+      </div>
 
       {vaultDialogOpen && <Modal title="从库导入" className="rd-vault-dialog" close={() => { if (!scanning) setVaultDialogOpen(false); }}>
         <form className="form-body" noValidate aria-busy={scanning} onSubmit={event => { event.preventDefault(); scanAndImport(); }}>

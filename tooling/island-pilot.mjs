@@ -157,11 +157,11 @@ try {
   await island.getByRole('button', { name: '桌面灵动岛设置', exact: true }).click();
   await main.getByRole('heading', { name: '桌面灵动岛', exact: true }).waitFor();
   await main.screenshot({ path: join(output, 'settings.png') });
-  await main.getByRole('textbox', { name: '搜索当前页设置' }).fill('AI 额度');
+  await main.getByRole('radio', { name: 'AI 额度', exact: true }).click();
   await main.getByRole('button', { name: '查看 Z Code 连接', exact: true }).click();
   await main.locator('#island-zcode-key').waitFor();
   assert.equal(await main.locator('#island-zcode-key').getAttribute('type'), 'password');
-  await main.screenshot({ path: join(output, 'settings-quota.png') }); mark('settings navigation, search and masked credentials');
+  await main.screenshot({ path: join(output, 'settings-quota.png') }); mark('settings navigation, section tabs and masked credentials');
   const quota = await main.evaluate(() => window.workbench.island.quotas()); assert.ok(quota.every(p => p.status === 'disconnected' && !p.windows.length)); mark('unconnected quota never shows synthetic values');
   await main.evaluate(() => window.workbench.island.patch({ focusEnabled: false, waterEnabled: false, mascotEnabled: false }));
   await island.getByRole('navigation').getByRole('button', { name: '小工具', exact: true }).waitFor({ state: 'hidden' }); mark('all tools disabled hides page');

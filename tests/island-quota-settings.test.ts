@@ -39,7 +39,7 @@ test('额度主从布局保留来源、密钥草稿和失败重试，异步操�
   const { createRoot } = await import('react-dom/client');
   const { IslandSettingsSection } = await import('../src/views/IslandSettings');
   const root = createRoot(dom.window.document.getElementById('root')!);
-  const render = async (query = '') => act(async () => root.render(createElement(IslandSettingsSection, { query, resetSearch: () => {} })));
+  const render = async (query = '') => act(async () => root.render(createElement(IslandSettingsSection, { query })));
   const button = (label: string) => [...dom.window.document.querySelectorAll<HTMLButtonElement>('button')].find(b => b.getAttribute('aria-label') === label || b.textContent === label)!;
   const click = async (label: string) => act(async () => button(label).click());
   const input = () => dom.window.document.querySelector<HTMLInputElement>('#island-zcode-key')!;

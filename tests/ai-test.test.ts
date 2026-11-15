@@ -96,6 +96,39 @@ test('saved tasks and reruns retain original inputs and model results across res
     assert.equal(store.run(original.id).lanes[1].files[0].content, '<h1>two</h1>');
   } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
 });
+test('history summaries retain frozen model names and independent execution outcomes', () => {
+  const root = mkdtempSync(join(tmpdir(), 'ono-ai-summaries-'));
+  const store = new AiTestStore(root);
+  try {
+    const completed = fixtureRun();
+    completed.createdAt = '2026-11-13T03:00:00.000Z';
+    store.saveRun(completed);
+    const failed = fixtureRun();
+    failed.createdAt = '2026-11-13T04:00:00.000Z';
+    failed.lanes[1].status = 'error';
+    store.saveRun(failed);
+    const stopped = fixtureRun();
+    stopped.createdAt = '2026-11-13T05:00:00.000Z';
+    for (const lane of stopped.lanes) lane.status = 'cancelled';
+    store.saveRun(stopped);
+    const active = fixtureRun();
+    active.createdAt = '2026-11-13T06:00:00.000Z';
+    active.lanes[0].status = 'queued'; active.lanes[1].status = 'running';
+    store.saveRun(active);
+    const summaries = store.runs();
+    assert.deepEqual(summaries.map(summary => summary.id), [active.id, stopped.id, failed.id, completed.id]);
+    assert.deepEqual(summaries[3].models, completed.lanes.map(lane => ({ id: lane.model.id, name: lane.model.name, providerName: lane.model.providerName })));
+    assert.equal(summaries[0].running, true);
+    assert.equal(summaries[1].cancelledCount, 2);
+    assert.equal(summaries[2].failedCount, 1);
+    assert.equal(summaries[2].running, false);
+    assert.equal(summaries[3].failedCount, 0);
+    assert.equal(summaries[3].cancelledCount, 0);
+    assert.equal('lanes' in summaries[3], false);
+    assert.equal(store.run(stopped.id).lanes[0].files[0].content, '<h1>one</h1>');
+  } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
+});
+
 test('interrupted generation and validation recover explicitly, preserving completed peers', () => {
   const root = mkdtempSync(join(tmpdir(), 'ono-ai-recovery-'));
   let store = new AiTestStore(root);
@@ -112,5 +145,6 @@ test('interrupted generation and validation recover explicitly, preserving compl
     assert.equal(recovered.lanes[1].status, 'complete');
     assert.deepEqual(recovered.lanes[1].files, run.lanes[1].files);
     assert.equal(store.runs()[0].running, false);
+    assert.equal(store.runs()[0].failedCount, 1);
   } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
 });

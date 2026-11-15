@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
-import { Flask, GearSix, Sparkle } from '@phosphor-icons/react';
+import { Flask, GearSix, SidebarSimple, Sparkle } from '@phosphor-icons/react';
 import { NAV, defaultViewOfWorkbench, ownerOfWorkbench, resolveView, workbenchById, type WorkbenchDef, type WorkbenchId } from './nav';
 import type { AvatarColor, UiTheme, ViewId } from '../shared/contracts';
 import { localDay, openToday, taskTime, type CopySource, type Task, type TaskInput } from '../shared/todo-contracts';
 import { isOverdue, meetingEndAt } from '../shared/todo-format';
 import { topbarScheduleDate, topbarTodoDate } from './topbar-dates';
 import { applyTopbarCapsulePlacement } from './topbar-layout';
-import { HomeView, useTodoData } from './views/HomeView';
+import { HomeView } from './views/HomeView';
+import { TodoView, useTodoData } from './views/TodoView';
 import { AiPanel, type AiPanelContext, type AiSeed } from './views/AiPanel';
 import { chatContextScope, type AiScope } from '../shared/ai-scope';
 import { pageAiContext } from './ai-page-context';
-import { SettingsView } from './views/SettingsView';
+import { SettingsDialog } from './views/SettingsDialog';
 import { errorText } from './ui/controls';
 import { IslandMascot } from './ui/IslandMascot';
 import { TopbarUpdate } from './views/TopbarUpdate';
@@ -59,11 +60,16 @@ const WB_ICONS = {
 
 export function App() {
   const [curWb, setCurWb] = useState<WorkbenchId>('home');
-  const [selectionTop, setSelectionTop] = useState(0);
-  const [selectionReady, setSelectionReady] = useState(false);
+  const [railBranch, setRailBranch] = useState<WorkbenchId>('home');
+  const [navExpanded, setNavExpanded] = useState(() => localStorage.getItem('wb.nav.expanded') === '1');
   const railRef = useRef<HTMLElement>(null);
+  const railSelectionRef = useRef<HTMLSpanElement>(null);
+  const railSelectionGlow = useRef<Animation | null>(null);
+  const lastRailWorkbench = useRef<WorkbenchId | null>(null);
+  const railMenuRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLElement>(null);
   const [curView, setCurView] = useState<ViewId>('home');
+  const [settingsView, setSettingsView] = useState<ViewId | null>(null);
   const [maximized, setMaximized] = useState(false);
   const [toast, setToast] = useState('');
   const toastTimer = useRef<number | undefined>(undefined);
@@ -74,16 +80,6 @@ export function App() {
   const [topbarEditorKind, setTopbarEditorKind] = useState<TaskInput['kind'] | null>(null);
   const [islandPop, setIslandPop] = useState<null | 'sched' | 'todo'>(null);
   const [floatVisible, setFloatVisible] = useState(false);
-  const snavTimer = useRef<number | undefined>(undefined);
-  const [snavPhase, setSnavPhase] = useState<'open' | 'closing' | 'closed'>('closed');
-  const [snavWorkbench, setSnavWorkbench] = useState<WorkbenchId>('home');
-  const [snavView, setSnavView] = useState<ViewId>('home');
-  const [snavSwapPhase, setSnavSwapPhase] = useState<'idle' | 'exit' | 'enter'>('idle');
-  const [treeSelectionTop, setTreeSelectionTop] = useState(0);
-  const [treeSelectionHeight, setTreeSelectionHeight] = useState(0);
-  const [treeSelectionVisible, setTreeSelectionVisible] = useState(false);
-  const treeRef = useRef<HTMLElement>(null);
-  const snavSwapTimer = useRef<number | undefined>(undefined);
   // 界面主题(mist 默认,cool / warm 可选),写入 <html data-theme> 驱动 shell.css
   const [uiTheme, setUiTheme] = useState<UiTheme>('mist');
   const applyUiTheme = (theme: UiTheme): void => {
@@ -106,20 +102,6 @@ export function App() {
       () => undefined,
     );
   }, []);
-
-  // 二级目录显示/退出动效阶段(首页时播放退出动画后卸载)
-  useEffect(() => {
-    if (curWb === 'home') {
-      setSnavPhase((p) => {
-        if (p !== 'open') return p;
-        snavTimer.current = window.setTimeout(() => setSnavPhase('closed'), 190);
-        return 'closing';
-      });
-    } else {
-      window.clearTimeout(snavTimer.current);
-      setSnavPhase('open');
-    }
-  }, [curWb]);
 
   const [aiOpen, setAiOpen] = useState(() => localStorage.getItem('wb.ai.open') !== '0');
   const [aiWidth, setAiWidth] = useState(() => Math.max(340, Math.min(480, Number(localStorage.getItem('wb.ai.width')) || 380)));
@@ -152,6 +134,7 @@ export function App() {
 
   useEffect(() => { localStorage.setItem('wb.ai.open', aiOpen ? '1' : '0'); }, [aiOpen]);
   useEffect(() => { localStorage.setItem('wb.ai.width', String(aiWidth)); }, [aiWidth]);
+  useEffect(() => { localStorage.setItem('wb.nav.expanded', navExpanded ? '1' : '0'); }, [navExpanded]);
   useEffect(() => window.workbench.browserAutomation?.onTask(task => setBrowserTasks(previous => [task, ...previous.filter(item => item.id !== task.id)].slice(0, 40))), []);
   useEffect(() => { if (copyCtx?.id === requestedCopyId) setRequestedCopyId(null); }, [copyCtx?.id, requestedCopyId]);
   useEffect(() => { if (baziCtx?.id === requestedProfileId) setRequestedProfileId(null); }, [baziCtx?.id, requestedProfileId]);
@@ -200,7 +183,7 @@ export function App() {
   };
   const openTaskEditor = (t: Task): void => {
     setHomeEditor(t);
-    switchView('home');
+    switchView('todo');
     setIslandPop(null);
   };
   // 弹出面板:点击外部 / Esc 关闭
@@ -226,56 +209,29 @@ export function App() {
     };
   }, [islandPop]);
 
-  const changeWorkbench = (id: WorkbenchId, nextView = defaultViewOfWorkbench(id)): void => {
-    if (id === curWb) return;
-    window.clearTimeout(snavSwapTimer.current);
-    const hasVisibleMenu = !aiOpen && curWb !== 'home' && snavPhase === 'open';
-    const canSwapContents = hasVisibleMenu && id !== 'home';
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (canSwapContents && reduceMotion) {
-      setSnavWorkbench(id);
-      setSnavView(nextView);
-      setSnavSwapPhase('idle');
-    } else if (canSwapContents) {
-      setSnavSwapPhase('exit');
-      snavSwapTimer.current = window.setTimeout(() => {
-        setSnavWorkbench(id);
-        setSnavView(nextView);
-        setSnavSwapPhase('enter');
-        snavSwapTimer.current = window.setTimeout(() => setSnavSwapPhase('idle'), 240);
-      }, 160);
-    } else if (hasVisibleMenu && id === 'home') {
-      setSnavSwapPhase('idle');
-      snavSwapTimer.current = window.setTimeout(() => {
-        setSnavWorkbench(id);
-        setSnavView(nextView);
-      }, 200);
-    } else {
-      setSnavWorkbench(id);
-      setSnavView(nextView);
-      setSnavSwapPhase('idle');
-    }
-    setCurWb(id);
-  };
-
-  useEffect(() => () => window.clearTimeout(snavSwapTimer.current), []);
-
   const activate = (id: WorkbenchId): void => {
-    setRailMenu(null);
+    dismissedRailMenu.current = null;
+    setRailMenu(!navExpanded && id !== 'home' && id !== 'settings' && workbenchById(id).subs.length > 0 ? id : null);
+    setSettingsView(null);
     if (id !== curWb) {
       // 内容区渲染跟随 curView:切工作台必须同步落位,否则停留在上一个工作台的页面
       setCurView(defaultViewOfWorkbench(id));
+      setCurWb(id);
     }
-    changeWorkbench(id, defaultViewOfWorkbench(id));
   };
 
   const switchView = (view: ViewId): void => {
     view = resolveView(view);
     setRailMenu(null);
+    if (view.startsWith('settings')) {
+      setIslandPop(null);
+      setSettingsView(view);
+      return;
+    }
+    setSettingsView(null);
     setCurView(view);
     const owner = ownerOfWorkbench(view);
-    if (owner === curWb) setSnavView(view);
-    else if (owner) changeWorkbench(owner, view);
+    if (owner) setCurWb(owner);
   };
 
   const returnToAiJob = (): void => {
@@ -286,7 +242,7 @@ export function App() {
   };
 
   useEffect(() => window.workbench.island?.onNavigate(target => {
-    switchView(target.view);
+    switchView(target.taskId ? 'todo' : target.view);
     if (target.taskId) void window.workbench.todo.state().then(data => {
       const task = data.tasks.find(t => t.id === target.taskId && !t.deletedAt);
       if (task) setHomeEditor(task);
@@ -302,38 +258,146 @@ export function App() {
   const isPlanningWorkbench = activeWorkbench.pending === true || (
     activeWorkbench.subs.length > 0 && activeWorkbench.subs.every((sub) => sub.pending === true)
   );
-  const wb = workbenchById(snavWorkbench);
   const backgroundAiRunning = aiJob?.status === 'running' && (!aiOpen || aiJob.chatId !== activeAiChatId);
   const aiToggleLabel = `${aiOpen ? '收起' : '展开'} AI 助手${backgroundAiRunning ? '，有对话正在后台生成' : ''}`;
 
   useEffect(() => {
-    if (!aiOpen) setRailMenu(null);
+    setRailMenu(null);
   }, [aiOpen]);
+
+  useLayoutEffect(() => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const closing = Array.from(rail.querySelectorAll<HTMLElement>('.rail-branch')).filter(branch =>
+      branch.closest('.rail-entry')?.querySelector<HTMLElement>('[data-workbench]')?.dataset.workbench !== curWb && branch.getBoundingClientRect().height > 0);
+    if (!navExpanded || motion.matches || closing.length === 0) {
+      setRailBranch(curWb);
+      return;
+    }
+    const open = (): void => setRailBranch(curWb);
+    const settled = (event: TransitionEvent): void => {
+      if (event.propertyName === 'height' && closing.every(branch => branch.getBoundingClientRect().height < 1)) open();
+    };
+    const reduceMotion = (): void => { if (motion.matches) open(); };
+    const duration = getComputedStyle(rail).getPropertyValue('--rail-motion').trim();
+    const timer = window.setTimeout(open, parseFloat(duration) * (duration.endsWith('ms') ? 1 : 1000) + 32);
+    rail.addEventListener('transitionend', settled);
+    motion.addEventListener('change', reduceMotion);
+    return () => {
+      window.clearTimeout(timer);
+      rail.removeEventListener('transitionend', settled);
+      motion.removeEventListener('change', reduceMotion);
+    };
+  }, [curWb, navExpanded]);
+
+  useLayoutEffect(() => {
+    const rail = railRef.current, selection = railSelectionRef.current;
+    const active = rail?.querySelector<HTMLButtonElement>('[data-workbench].on');
+    const list = rail?.querySelector<HTMLElement>('.rail-nav');
+    if (!rail || !selection || !active || !list) return;
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const changed = lastRailWorkbench.current !== null && lastRailWorkbench.current !== curWb;
+    lastRailWorkbench.current = curWb;
+    const place = (): void => {
+      const rect = active.getBoundingClientRect(), railRect = rail.getBoundingClientRect(), listRect = list.getBoundingClientRect();
+      const inList = list.contains(active);
+      const index = Array.from(list.querySelectorAll('[data-workbench]')).indexOf(active);
+      const top = inList
+        ? listRect.top - railRect.top - list.scrollTop + index * (rect.height + parseFloat(getComputedStyle(list).rowGap))
+        : rect.top - railRect.top;
+      selection.style.transform = `translateY(${top}px)`;
+      const visible = !inList || rect.top >= listRect.top - 1 && rect.bottom <= listRect.bottom + 1;
+      rail.dataset.selectionVisible = String(visible);
+      selection.style.opacity = visible ? '1' : '0';
+    };
+    const snap = (): void => {
+      rail.dataset.selectionMotion = 'off';
+      place();
+      selection.getBoundingClientRect();
+      delete rail.dataset.selectionMotion;
+    };
+    railSelectionGlow.current?.cancel();
+    if (rail.dataset.selectionReady !== 'true' || motion.matches) snap();
+    else place();
+    rail.dataset.selectionReady = 'true';
+    if (changed && !motion.matches) {
+      const style = getComputedStyle(rail), shadow = getComputedStyle(selection).boxShadow;
+      const duration = style.getPropertyValue('--rail-motion').trim();
+      const light = `${shadow}, 0 0 0 1px ${style.getPropertyValue('--acc-ring')}, 0 0 18px ${style.getPropertyValue('--acc-soft')}`;
+      railSelectionGlow.current = selection.animate([{ boxShadow: shadow }, { boxShadow: light, offset: 0.35 }, { boxShadow: shadow }], {
+        duration: parseFloat(duration) * (duration.endsWith('ms') ? 1 : 1000) * 1.5, easing: 'ease-out',
+      });
+    }
+    const observer = new ResizeObserver(place);
+    observer.observe(rail);
+    observer.observe(active);
+    const settled = (event: TransitionEvent): void => {
+      if (event.propertyName === 'height' || event.propertyName === 'margin-top') place();
+    };
+    const reduceMotion = (): void => { railSelectionGlow.current?.cancel(); snap(); };
+    list.addEventListener('scroll', snap);
+    rail.addEventListener('transitionend', settled);
+    window.addEventListener('resize', snap);
+    motion.addEventListener('change', reduceMotion);
+    return () => {
+      observer.disconnect();
+      railSelectionGlow.current?.cancel();
+      list.removeEventListener('scroll', snap);
+      rail.removeEventListener('transitionend', settled);
+      window.removeEventListener('resize', snap);
+      motion.removeEventListener('change', reduceMotion);
+    };
+  }, [curWb, navExpanded]);
 
   const renderRailWorkbench = (workbench: WorkbenchDef) => {
     const Icon = WB_ICONS[workbench.id];
-    const menuAvailable = aiOpen || workbench.id !== curWb;
+    const hasBranch = workbench.id !== 'home' && workbench.id !== 'settings' && workbench.subs.length > 0;
+    const branchVisible = hasBranch && workbench.id === curWb && railBranch === curWb;
+    const menuAvailable = hasBranch && !navExpanded;
     const menuOpen = menuAvailable && railMenu === workbench.id;
+    const selectedChild = workbench.subs.findIndex(sub => sub.view === curView);
+    const children = hasBranch ? workbench.subs.map((sub) => (
+      <button
+        type="button"
+        key={sub.label}
+        className={sub.view === curView ? 'nsub on' : 'nsub'}
+        aria-current={sub.view === curView ? 'page' : undefined}
+        onClick={() => {
+          setRailMenu(null);
+          if (sub.view) switchView(sub.view);
+          else showToast(`「${sub.label}」规划中,敬请期待`);
+        }}
+      >
+        {sub.label}
+        {sub.pending && <span className="ntag">规划中</span>}
+      </button>
+    )) : null;
     return (
       <div
         key={workbench.id}
         className="rail-entry"
         onMouseEnter={() => { dismissedRailMenu.current = null; setRailMenu(menuAvailable ? workbench.id : null); }}
-        onMouseLeave={(event) => { if (!event.currentTarget.contains(document.activeElement)) setRailMenu(null); }}
+        onMouseLeave={(event) => { if (!event.currentTarget.querySelector(':focus-visible')) setRailMenu(null); }}
         onFocusCapture={() => { if (menuAvailable && dismissedRailMenu.current !== workbench.id) setRailMenu(workbench.id); }}
         onBlurCapture={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
             dismissedRailMenu.current = null;
-            setRailMenu(null);
+            if (!event.currentTarget.matches(':hover')) setRailMenu(null);
           }
         }}
         onKeyDown={(event) => {
-          if (event.key === 'Escape' && menuOpen) {
+          if ((event.key === 'Escape' || event.key === 'ArrowLeft') && menuOpen) {
             event.preventDefault();
             event.stopPropagation();
             dismissedRailMenu.current = workbench.id;
             setRailMenu(null);
             event.currentTarget.querySelector<HTMLButtonElement>('[data-workbench]')?.focus();
+          } else if (event.key === 'ArrowRight' && menuAvailable) {
+            event.preventDefault();
+            dismissedRailMenu.current = null;
+            setRailMenu(workbench.id);
+            requestAnimationFrame(() => railMenuRef.current?.querySelector<HTMLButtonElement>('button')?.focus());
           }
         }}
       >
@@ -343,34 +407,31 @@ export function App() {
           className={curWb === workbench.id ? 'ritem on' : workbench.pending ? 'ritem dim' : 'ritem'}
           title={workbench.pending ? `${workbench.title}(即将上线)` : workbench.title}
           aria-label={workbench.title}
-          aria-expanded={menuAvailable ? menuOpen : undefined}
-          aria-controls={menuOpen ? `rail-menu-${workbench.id}` : undefined}
+          aria-haspopup={workbench.id === 'settings' ? 'dialog' : undefined}
+          aria-current={curWb === workbench.id ? 'true' : undefined}
+          aria-expanded={hasBranch ? (navExpanded ? branchVisible : menuOpen) : undefined}
+          aria-controls={navExpanded && branchVisible ? `rail-branch-${workbench.id}` : menuOpen ? `rail-menu-${workbench.id}` : undefined}
           onClick={() => workbench.id === 'settings' ? switchView('settings-general') : activate(workbench.id)}
         >
-          <Icon />
+          <span className="rail-icon" aria-hidden="true"><Icon /></span>
+          <span className="rail-label">{workbench.title}</span>
         </button>
+        {hasBranch && (
+          <div className="rail-branch" data-open={branchVisible} style={{ '--branch-rows': workbench.subs.length, '--branch-selected': selectedChild } as CSSProperties}
+            inert={!navExpanded || !branchVisible} aria-hidden={!navExpanded || !branchVisible || undefined}>
+            <nav id={`rail-branch-${workbench.id}`} aria-label={`${workbench.title}二级目录`}>
+              <span className="rail-child-selection" aria-hidden="true" hidden={selectedChild < 0} />
+              {children}
+            </nav>
+          </div>
+        )}
         {menuOpen && (
-          <nav id={`rail-menu-${workbench.id}`} className="rail-flyout" aria-label={`${workbench.title}二级目录`}>
+          <nav ref={railMenuRef} id={`rail-menu-${workbench.id}`} className="rail-flyout" aria-label={`${workbench.title}二级目录`}>
             <div className="rail-flyout-card">
               <div className="rail-flyout-title">{workbench.title}</div>
-              <div className="rail-flyout-list">
-                {workbench.subs.map((sub) => (
-                  <button
-                    type="button"
-                    key={sub.label}
-                    className={sub.view === curView ? 'nsub on' : 'nsub'}
-                    aria-current={sub.view === curView ? 'page' : undefined}
-                    onClick={() => {
-                      setRailMenu(null);
-                      if (sub.view) switchView(sub.view);
-                      else showToast(`「${sub.label}」规划中,敬请期待`);
-                    }}
-                  >
-                    <span className="ndot" />
-                    {sub.label}
-                    {sub.pending && <span className="ntag">规划中</span>}
-                  </button>
-                ))}
+              <div className="rail-flyout-list" style={{ '--branch-selected': selectedChild } as CSSProperties}>
+                <span className="rail-child-selection" aria-hidden="true" hidden={selectedChild < 0} />
+                {children}
               </div>
             </div>
           </nav>
@@ -380,43 +441,21 @@ export function App() {
   };
 
   useLayoutEffect(() => {
-    const rail = railRef.current;
-    if (!rail) return;
-    const active = rail.querySelector<HTMLButtonElement>(`[data-workbench="${curWb}"]`);
-    if (!active) return;
-    const updatePosition = (): void => {
-      setSelectionTop(active.getBoundingClientRect().top - rail.getBoundingClientRect().top);
+    const menu = railMenuRef.current;
+    const trigger = railRef.current?.querySelector<HTMLButtonElement>(`[data-workbench="${railMenu}"]`);
+    if (!menu || !trigger) return;
+    const place = (): void => {
+      const rect = trigger.getBoundingClientRect();
+      menu.style.left = `${rect.right}px`;
+      menu.style.top = `${Math.max(74, Math.min(rect.top + (rect.height - menu.offsetHeight) / 2, innerHeight - menu.offsetHeight - 12))}px`;
     };
-    updatePosition();
-    const observer = new ResizeObserver(updatePosition);
-    observer.observe(rail);
-    const middle = rail.querySelector('.rmid');
-    if (middle) observer.observe(middle);
-    if (!selectionReady) requestAnimationFrame(() => setSelectionReady(true));
-    return () => observer.disconnect();
-  }, [curWb, selectionReady]);
-
-  useLayoutEffect(() => {
-    const tree = treeRef.current;
-    if (!tree) return;
-    const active = tree.querySelector<HTMLButtonElement>('[aria-current="page"]');
-    setTreeSelectionVisible(Boolean(active));
-    if (!active) return;
-    const updatePosition = (): void => {
-      const treeRect = tree.getBoundingClientRect();
-      setTreeSelectionTop(active.getBoundingClientRect().top - treeRect.top + tree.scrollTop);
-      setTreeSelectionHeight(active.getBoundingClientRect().height);
-    };
-    updatePosition();
-    const observer = new ResizeObserver(updatePosition);
-    observer.observe(tree);
-    observer.observe(active);
-    tree.addEventListener('scroll', updatePosition);
-    return () => {
-      observer.disconnect();
-      tree.removeEventListener('scroll', updatePosition);
-    };
-  }, [snavWorkbench, snavView, snavPhase, snavSwapPhase, aiOpen]);
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(trigger);
+    railRef.current?.querySelectorAll('.rail-entry').forEach(entry => observer.observe(entry));
+    window.addEventListener('resize', place);
+    return () => { observer.disconnect(); window.removeEventListener('resize', place); };
+  }, [railMenu]);
 
   // 顶栏胶囊:今日待办统计与今日日程(真数据,与 To-Do-List 同库)
   const today = localDay(todo.clock);
@@ -460,41 +499,25 @@ export function App() {
   }, [topbarCapsuleKey]);
 
   return (
-    <div className={'win' + (aiOpen ? ' ai-dock' : '')} data-game={curView === 'game'} style={{ '--ai-width': aiWidth + 'px' } as CSSProperties}>
-      {/* 图标栏 = 一级:大工作台切换 */}
-      <aside className="rail" ref={railRef} data-selection-ready={selectionReady}>
-        <div className="logo" title="个人工作台">
-          <LogoMark />
-        </div>
-        <span className="rail-selection" style={{ transform: `translateY(${selectionTop}px)` }} aria-hidden="true" />
-        <nav className="rnav">
-          {NAV.filter((w) => w.id === 'home').map((w) => {
-            const Icon = WB_ICONS[w.id];
-            return (
-              <span key={w.id} className="rnav-item">
-                <button
-                  data-workbench={w.id}
-                  className={curWb === w.id ? 'ritem on' : w.pending ? 'ritem dim' : 'ritem'}
-                  title={w.pending ? `${w.title}(即将上线)` : w.title}
-                  onClick={() => activate(w.id)}
-                >
-                  <Icon />
-                </button>
-              </span>
-            );
-          })}
+    <div className={'win' + (aiOpen ? ' ai-dock' : '')} data-workbench={curWb} data-game={curView === 'game'} data-nav-expanded={navExpanded} style={{ '--ai-width': aiWidth + 'px' } as CSSProperties}>
+      <aside id="workbench-navigation" className="rail" ref={railRef} aria-label="工作台导航">
+        <span className="rail-selection" ref={railSelectionRef} aria-hidden="true" />
+        <nav className="rail-nav" aria-label="工作台" onScroll={() => setRailMenu(null)}>
+          {NAV.filter((w) => w.id !== 'settings').map(renderRailWorkbench)}
         </nav>
-        {/* 工作台图标:在剩余空间垂直居中(设置不在此渲染,唯一入口在底部) */}
-        <div className="rmid">
-          {NAV.filter((w) => w.id !== 'home' && w.id !== 'settings').map(renderRailWorkbench)}
-        </div>
         <div className="rbot">
-          {/* 设置唯一入口:当前在设置页时点亮 */}
           {renderRailWorkbench(workbenchById('settings'))}
         </div>
       </aside>
       <div className="main">
       <header className="topbar" ref={topbarRef}>
+        <div className="logo" title="个人工作台">
+          <LogoMark />
+        </div>
+        <button type="button" className="ibtn nav-toggle" title={navExpanded ? '收起导航' : '展开导航'} aria-label={navExpanded ? '收起导航' : '展开导航'}
+          aria-expanded={navExpanded} aria-controls="workbench-navigation" onClick={() => { setRailMenu(null); setNavExpanded(value => !value); }}>
+          <SidebarSimple size={20} />
+        </button>
         <div className="tb-middle">
         <div className="tb-left">
         <div className="sched" data-open={islandPop === 'sched' || undefined} onClick={() => toggleIslandPop('sched')}>
@@ -586,8 +609,8 @@ export function App() {
         <TopbarUpdate onOpen={() => setIslandPop(null)} />
         <button className="ibtn float-topbar-btn" title={floatVisible ? '隐藏桌面灵动岛' : '打开桌面灵动岛'} aria-label={floatVisible ? '隐藏桌面灵动岛' : '打开桌面灵动岛'} aria-pressed={floatVisible} onClick={() => { setIslandPop(null); void window.workbench.float.toggle().catch(e => showToast(errorText(e))); }}><span className="topbar-mascot-icon" aria-hidden="true"><IslandMascot /></span></button>
         <button ref={aiTrigger} className="ibtn ai-topbar-btn" title={aiToggleLabel} aria-label={aiToggleLabel} aria-expanded={aiOpen} aria-controls="workbench-ai-panel" data-background-running={backgroundAiRunning || undefined} onClick={() => setAiOpen(v => !v)}><Sparkle size={18} weight={aiOpen || backgroundAiRunning ? 'fill' : 'regular'} /></button>
-        <AiSetupHint trigger={aiTrigger} active={curView !== 'settings-ai' && !completedAiJob} onConfigure={() => { setAiOpen(false); switchView('settings-ai'); }} />
-        <AiTopbarHint trigger={aiTrigger} active={!!completedAiJob} kind="completion" title={`${completedAiJob?.scope.module === 'copy' ? '博客' : completedAiJob?.scope.module === 'bazi' ? '命理' : '助手'}已完成`}
+        <AiSetupHint trigger={aiTrigger} active={!settingsView && !completedAiJob} onConfigure={() => switchView('settings-ai')} />
+        <AiTopbarHint trigger={aiTrigger} active={!settingsView && !!completedAiJob} kind="completion" title={`${completedAiJob?.scope.module === 'copy' ? '博客' : completedAiJob?.scope.module === 'bazi' ? '命理' : '助手'}已完成`}
           message={`“${completedAiJob?.title || '当前对话'}”已生成新回复。`} closeLabel="关闭完成提示" actionLabel="查看对话" onDismiss={dismissAiCompletion} onAction={returnToAiJob} />
         <span className="vdiv" />
         <button type="button" className="avatar" data-avatar-color={profileAvatarColor} title={profileName} aria-label={`打开个人资料：${profileName}`} onClick={() => switchView('settings-profile')}>
@@ -619,45 +642,10 @@ export function App() {
       <div className="body">
 
 
-      {/* 二级导航 = 当前工作台的二级目录(首页内容自明,不显示二级目录) */}
-      {snavPhase !== 'closed' && (
-      <aside className={snavPhase === 'closing' ? 'snav closing' : 'snav'}>
-      <div className="snav-content" data-swap={snavSwapPhase}>
-        <div className="shead">
-          <span className="stitle">{wb.title}</span>
-        </div>
-        <nav className="tree" ref={treeRef} data-switching={snavSwapPhase !== 'idle'}>
-          <span
-            className="tree-selection"
-            aria-hidden="true"
-            hidden={!treeSelectionVisible}
-            style={{ height: `${treeSelectionHeight}px`, transform: `translateY(${treeSelectionTop}px)` }}
-          />
-          {wb.subs.map((sub) => (
-            <button
-              type="button"
-              key={sub.label}
-              className={sub.view && sub.view === snavView ? 'nsub on' : 'nsub'}
-              aria-current={sub.view === snavView ? 'page' : undefined}
-              onClick={() => {
-                if (sub.view) switchView(sub.view);
-                else showToast(`「${sub.label}」规划中,敬请期待`);
-              }}
-            >
-              <span className="ndot" />
-              {sub.label}
-              {sub.pending && <span className="ntag">规划中</span>}
-            </button>
-          ))}
-        </nav>
-      </div>
-      </aside>
-      )}
-
       {/* 主区 */}
       <main className="content" ref={contentRef} tabIndex={-1}>
           {todo.error && <div className="todo-load-error" role="alert">{todo.error}</div>}
-          {/* 视图切换动效:按 curView 换 key 重挂载,统一淡入上移(见 shell.css .view-fade) */}
+          {/* 内容切换沿用 .view-fade，设置弹窗独立保留当前工作台。 */}
           {(isPlanningWorkbench || !curView.startsWith('ai-test') && curView !== 'media-browser' && curView !== 'browser' && curView !== 'hush-hour' && curView !== 'personal-website' && curView !== 'game') && <div className="view-fade" key={curView}>
           {isPlanningWorkbench ? (
             <section className="pending-workbench" role="status">
@@ -669,7 +657,7 @@ export function App() {
             <BaziView onPending={showToast} onAskAI={(prompt, profileId, system, topic) => askAI(prompt, { module: 'bazi', profileId }, system, undefined, topic)} onCurrentProfile={setBaziCtx} requestedProfileId={requestedProfileId} requestedDayLocate={requestedBaziDay} onDayLocated={() => setRequestedBaziDay(null)}
               aiBusy={(aiSeed?.scope.module === 'bazi' && aiSeed.scope.profileId === baziCtx?.id) || aiJobs.some(job => job.status === 'running' && job.scope.module === 'bazi' && job.scope.profileId === baziCtx?.id)}
               onViewAI={() => { setAiOpen(true); const job = aiJobs.find(item => item.status === 'running' && item.scope.module === 'bazi' && item.scope.profileId === baziCtx?.id); if (job) setRequestedAiChatId(job.chatId); }}
-              onOpenAISettings={() => { setAiOpen(false); switchView('settings-ai'); }} />
+              onOpenAISettings={() => switchView('settings-ai')} />
           ) : curView === 'copy' ? (
             <CopyView onPending={showToast} onCurrentDraft={setCopyCtx} onSaveState={setCopySaveState} requestedDraftId={requestedCopyId} requestedSource={requestedCopySource} onSourceLocated={() => setRequestedCopySource(null)} onGoPublish={() => switchView('copy-publish')} />
           ) : curView === 'copy-publish' ? (
@@ -678,12 +666,10 @@ export function App() {
             <ReadingView onPending={showToast} onAskAI={(prompt, bookId) => askAI(prompt, { module: 'reading', profileId: bookId })} onCurrentBook={setReadingCtx} />
           ) : curView === 'checkin' ? (
             <CheckinView />
-          ) : curView.startsWith('settings') ? (
-            <SettingsView view={curView} uiTheme={uiTheme} onUiThemeChange={applyUiTheme} onAvatarColorChange={setProfileAvatarColor} />
-          ) : todo.data ? (
-            <HomeView data={todo.data} clock={todo.clock} mutate={todo.mutate} userName={profileName} onPending={showToast} onOpenCheckin={() => switchView('checkin')} editor={homeEditor} setEditor={setHomeEditor} onAskAi={askAI} />
+          ) : curView === 'todo' ? (
+            todo.data ? <TodoView data={todo.data} clock={todo.clock} mutate={todo.mutate} editor={homeEditor} setEditor={setHomeEditor} /> : <div className="todo-loading" role="status">正在读取本地待办…</div>
           ) : (
-            <div className="todo-loading" role="status">正在读取本地待办…</div>
+            <HomeView data={todo.data} clock={todo.clock} userName={profileName} onNavigate={switchView} onOpenTask={openTaskEditor} onPending={showToast} />
           )}
           </div>}
           <MediaBrowserHost active={!isPlanningWorkbench && curView === 'media-browser'} focusTarget={contentRef}
@@ -704,7 +690,8 @@ export function App() {
       </div>
       {topbarEditorKind ? <TaskEditor key={topbarEditorKind} initialKind={topbarEditorKind} categories={todo.data?.categories ?? []} api={topbarTaskEditorApi}
         changed={(state) => todo.mutate(async () => state)} saved={(state) => todo.mutate(async () => state)} close={() => setTopbarEditorKind(null)} /> : null}
-      <AiPanel open={aiOpen} onClose={() => setAiOpen(false)} seed={aiSeed} onSeedFinished={nonce => setAiSeed(previous => previous?.nonce === nonce ? null : previous)} requestedChatId={requestedAiChatId} onChatLocated={() => setRequestedAiChatId(null)} onActiveChatChange={setActiveAiChatId} onOpenSettings={() => { setAiOpen(false); switchView('settings-ai'); }} onLocateCopySource={source => { setRequestedCopySource({ ...source, nonce: ++sourceNonce.current }); setRequestedCopyId(source.draftId); switchView('copy'); if (window.innerWidth < 1160) setAiOpen(false); }} onLocateBaziDay={profileId => { setRequestedBaziDay({ profileId, nonce: ++sourceNonce.current }); setRequestedProfileId(profileId); switchView('bazi'); if (window.innerWidth < 1160) setAiOpen(false); }} onQuickAsk={(prompt, scope) => askAI(prompt, scope)} context={aiContext} plannedWorkbench={isPlanningWorkbench} width={aiWidth} onWidthChange={setAiWidth} copySaveState={copySaveState} />
+      <AiPanel open={aiOpen} onClose={() => setAiOpen(false)} seed={aiSeed} onSeedFinished={nonce => setAiSeed(previous => previous?.nonce === nonce ? null : previous)} requestedChatId={requestedAiChatId} onChatLocated={() => setRequestedAiChatId(null)} onActiveChatChange={setActiveAiChatId} onOpenSettings={() => switchView('settings-ai')} onLocateCopySource={source => { setRequestedCopySource({ ...source, nonce: ++sourceNonce.current }); setRequestedCopyId(source.draftId); switchView('copy'); if (window.innerWidth < 1160) setAiOpen(false); }} onLocateBaziDay={profileId => { setRequestedBaziDay({ profileId, nonce: ++sourceNonce.current }); setRequestedProfileId(profileId); switchView('bazi'); if (window.innerWidth < 1160) setAiOpen(false); }} onQuickAsk={(prompt, scope) => askAI(prompt, scope)} context={aiContext} plannedWorkbench={isPlanningWorkbench} width={aiWidth} onWidthChange={setAiWidth} copySaveState={copySaveState} />
+      {settingsView && <SettingsDialog view={settingsView} onNavigate={switchView} close={() => setSettingsView(null)} uiTheme={uiTheme} onUiThemeChange={applyUiTheme} onAvatarColorChange={setProfileAvatarColor} onProfileNameChange={setProfileName} />}
       <div className="toast glass" data-show={toast ? '1' : '0'}>{toast}</div>
     </div>
   );

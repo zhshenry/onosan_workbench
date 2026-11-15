@@ -239,11 +239,10 @@ test('Pinned Playwright synchronously polls association readiness until toast op
   class Element { closest() { return true; } }
   const toast = { getAttribute: () => step === 0 ? '1' : '0' };
   const tree = { querySelector: () => ({ textContent: '图文发布' }) };
-  const menu = { querySelector: (selector: string) => selector === '.tree[data-switching="false"]' ? tree : { textContent: '自媒体工作台' } };
   const document = {
     fonts: { ready: Promise.resolve() },
     querySelector: (selector: string) => selector === '.toast' ? toast : step < 2 ? null
-      : selector.includes('.rail') ? { getAttribute: () => 'media' } : menu,
+      : selector.includes('.rail') ? { getAttribute: () => 'media' } : tree,
     getAnimations: () => [{ effect: { getComputedTiming: () => ({ iterations: 1 }), target: new Element() }, pending: step === 2, playState: step < 3 ? 'running' : 'finished' }],
   };
   const style = () => ({ opacity: opacityOverride ?? (step === 0 ? '1' : step === 1 ? '0.2' : '0') });
@@ -409,8 +408,8 @@ test('Installed association pilot uses twelve checks, real UI storage writes, bo
   assert.match(source, /event\.sender\.id !== session\.id \|\| event\.senderFrame !== event\.sender\.mainFrame/);
   assert.match(source, /finally \{ await restorePublishWriteFixture\(application\); \}/);
   assert.match(source, /win\.setContentSize/); assert.match(source, /document\.elementFromPoint/); assert.match(source, /await field\.scrollIntoViewIfNeeded\(\)/);
-  assert.match(source, /await document\.fonts\.ready/); assert.match(source, /snav-content\[data-swap="idle"\]/);
-  assert.match(source, /tree\[data-switching="false"\]/); assert.match(source, /document\.getAnimations\(\)/);
+  assert.match(source, /await document\.fonts\.ready/); assert.match(source, /#rail-branch-/);
+  assert.match(source, /\.settings-sections/); assert.match(source, /document\.getAnimations\(\)/);
   assert.match(source, /animation\.pending \|\| animation\.playState === 'running'/);
   assert.match(source, /\.content > \.view-fade > \.copy-wrap \.copy-editor/);
   assert.match(source, /innerWidth === width && innerHeight === height/);

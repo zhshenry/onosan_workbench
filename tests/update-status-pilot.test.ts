@@ -305,7 +305,8 @@ test('Native pilot uses normal installed UI/preload transport, bounded fixture a
   assert.match(source, /Opening details retains keyboard focus/);
   assert.match(source, /Closing details retains keyboard focus/);
   assert.match(source, /Escape closes updater details without losing focus/);
-  assert.match(source, /Unmatched rows cannot leak expanded updater detail/);
+  assert.match(source, /row, progress and errors remain visible without settings search/);
+  assert.match(source, /await remountAbout\(page\); await inspectGeometry\(page, byKey\('error'\)\)/);
   assert.match(source, /read loading\/rejection and check\/install rejections/);
   assert.match(source, /Transport probe requires safe synthetic handlers/);
   assert.match(source, /action\.getAttribute\('aria-busy'\) === 'true'\) === expected\.busy/);

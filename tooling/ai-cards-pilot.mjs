@@ -8,7 +8,7 @@ export const AI_CARDS_SCREENSHOTS = Object.freeze(['ai-cards-pending.png', 'ai-c
 const state = page => page.evaluate(() => window.workbench.todo.state());
 const panel = page => page.locator('#workbench-ai-panel');
 const lastCard = page => panel(page).locator('.todo-proposal-card').last();
-async function home(page) { await page.locator('.rail [data-workbench="home"]').click(); await page.locator('#view-home').waitFor({ state: 'visible' }); }
+async function home(page) { await page.locator('.rail [data-workbench="life"]').click(); await page.getByRole('button', { name: '日程待办', exact: true }).click(); await page.locator('#view-todo').waitFor({ state: 'visible' }); }
 async function openPanel(page) {
   if (await panel(page).getAttribute('aria-hidden') !== 'false') await page.locator('.topbar').getByRole('button', { name: '展开 AI 助手', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('#workbench-ai-panel')?.getAttribute('aria-hidden') === 'false');
@@ -68,7 +68,7 @@ export async function runAiCardsPilot({ application, page, check, screenshot, ru
       const enabled = page.getByRole('switch', { name: '启用 AI', exact: true });
       if (await enabled.getAttribute('aria-checked') !== 'true') await enabled.click();
       await home(page);
-      await page.locator('#view-home').getByRole('button', { name: '新增', exact: true }).click();
+      await page.locator('#view-todo').getByRole('button', { name: '新增', exact: true }).click();
       const editor = page.getByRole('dialog', { name: '新增事项', exact: true });
       await editor.getByRole('textbox', { name: '待办名称', exact: true }).fill(title);
       await editor.getByRole('button', { name: '更多设置：未设置', exact: true }).click();

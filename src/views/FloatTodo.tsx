@@ -296,7 +296,7 @@ export function FloatTodoApp() {
         <div className="dash-actions">
           <button className="btn btn-sec btn-sm" onClick={() => setLibraryOpen(v => !v)}>
             <IconDocs size={17} />
-            事项库
+            全部事项
           </button>
           <button className="btn btn-pri btn-sm" onClick={() => setEditor('new')}>
             <Plus size={17} />

@@ -1,15 +1,15 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { setTimeout as delay } from 'node:timers/promises';
-import { CheckinError, CheckinProviders, QD, TRAE_CLIENT_ID, TRAE_VERSION, assertResponse, jwtClaims, obj, str, type CheckinCredential } from './checkin-providers';
+import { CheckinError, CheckinProviders, QD, TRAE_CLIENT_ID, TRAE_VERSION, assertResponse, obj, str, type CheckinCredential } from './checkin-providers';
 
 function parseParam(raw: string | null): Record<string, unknown> {
   if (!raw) return {};
   try { return obj(JSON.parse(raw)); } catch { try { return obj(JSON.parse(decodeURIComponent(raw))); } catch { return {}; } }
 }
-/** A random callback path binds the loopback response to this authorization attempt. */
-export async function traeCallback(signal: AbortSignal): Promise<{ url: string; result: Promise<URLSearchParams>; close(): void }> {
-  const path = `/${randomBytes(32).toString('hex')}/authorize`;
+/** TRAE requires /authorize; the callback trace and PKCE bind this authorization attempt. */
+export async function traeCallback(signal: AbortSignal): Promise<{ url: string; loginTraceId: string; result: Promise<URLSearchParams>; close(): void }> {
+  const path = '/authorize', loginTraceId = randomBytes(16).toString('hex');
   let resolve!: (value: URLSearchParams) => void, reject!: (error: Error) => void, consumed = false;
   const result = new Promise<URLSearchParams>((yes, no) => { resolve = yes; reject = no; });
   // Cancellation may happen while the browser is still opening.
@@ -20,8 +20,16 @@ export async function traeCallback(signal: AbortSignal): Promise<{ url: string; 
     let url: URL;
     try { url = new URL(req.url || '/', `http://${host}`); }
     catch { res.writeHead(400).end(); return; }
-    if (req.method !== 'GET' || req.headers.host !== host || url.pathname !== path || consumed || signal.aborted || (req.url?.length || 0) > 60000) { res.writeHead(404).end(); return; }
-    if (!url.searchParams.has('refreshToken') && !url.searchParams.has('refresh_token') && !url.searchParams.has('userJwt')) { res.writeHead(400).end('Missing authorization result'); return; }
+    if (!['GET', 'OPTIONS'].includes(req.method || '') || req.headers.host !== host || url.pathname !== path || consumed || signal.aborted || (req.url?.length || 0) > 60000) { res.writeHead(404).end(); return; }
+    if (req.headers.origin && req.headers.origin !== 'https://www.trae.cn') { res.writeHead(403).end(); return; }
+    if (req.headers.origin) {
+      res.setHeader('Access-Control-Allow-Origin', 'https://www.trae.cn');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'x-jwt-token');
+      if (req.headers['access-control-request-private-network'] === 'true') res.setHeader('Access-Control-Allow-Private-Network', 'true');
+    }
+    if (req.method === 'OPTIONS') { res.writeHead(204).end(); return; }
+    if (url.searchParams.get('loginTraceID') !== loginTraceId || !str(parseParam(url.searchParams.get('authCodeInfo')).AuthCode)) { res.writeHead(400).end('Invalid authorization result'); return; }
     consumed = true;
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer', 'Content-Security-Policy': "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'" });
     res.end('<!doctype html><meta charset="utf-8"><title>连接 Workbench</title><style>body{font:16px system-ui;margin:60px;color:#25272b}p{color:#626770}</style><h1>正在检查连接</h1><p>请返回 Workbench 查看连接结果。你可以关闭此页面。</p><script>history.replaceState(null,"",location.pathname)</script>');
@@ -36,7 +44,7 @@ export async function traeCallback(signal: AbortSignal): Promise<{ url: string; 
     signal.throwIfAborted();
     const address = server.address();
     if (!address || typeof address === 'string') throw new CheckinError('无法启动本机授权回调。');
-    return { url: `http://127.0.0.1:${address.port}${path}`, result, close() { signal.removeEventListener('abort', abort); server.close(); server.closeAllConnections(); } };
+    return { url: `http://127.0.0.1:${address.port}${path}`, loginTraceId, result, close() { signal.removeEventListener('abort', abort); server.close(); server.closeAllConnections(); } };
   } catch { signal.removeEventListener('abort', abort); server.close(); throw new CheckinError('无法接收官方授权，请稍后重试。'); }
 }
 
@@ -61,14 +69,11 @@ export async function authorizeCheckin(provider: 'qoder' | 'trae', deviceId: str
   }
   const callback = await traeCallback(signal);
   try {
-    const query = new URLSearchParams({ login_version: '1', auth_from: 'solo', login_channel: 'native_ide', plugin_version: '2.3.62834', auth_type: 'local', client_id: TRAE_CLIENT_ID, redirect: '0', login_trace_id: randomUUID().replaceAll('-', ''), auth_callback_url: callback.url, machine_id: deviceId, device_id: deviceId, x_device_id: deviceId, x_machine_id: deviceId, x_device_brand: 'PC', x_device_type: process.platform === 'win32' ? 'PC' : process.platform, x_os_version: process.platform === 'win32' ? 'Windows' : process.platform, x_app_version: TRAE_VERSION, x_app_type: 'stable' });
+    const verifier = randomBytes(48).toString('base64url');
+    const query = new URLSearchParams({ login_version: '1', auth_from: 'trae', login_channel: 'native_ide', plugin_version: '2.3.102035', auth_type: 'local', client_id: TRAE_CLIENT_ID, redirect: '0', login_trace_id: callback.loginTraceId, auth_callback_url: callback.url, machine_id: deviceId, device_id: deviceId, x_device_id: deviceId, x_machine_id: deviceId, x_device_brand: 'PC', x_device_type: process.platform === 'win32' ? 'PC' : process.platform, x_os_version: process.platform === 'win32' ? 'Windows' : process.platform, x_app_version: TRAE_VERSION, x_app_type: 'stable', code_challenge: createHash('sha256').update(verifier).digest('base64url'), code_challenge_method: 'S256' });
     await open(`https://www.trae.cn/authorization?${query}`);
-    const params = await callback.result, user = parseParam(params.get('userInfo')), jwt = parseParam(params.get('userJwt'));
+    const params = await callback.result;
     verifying();
-    const token = str(jwt.Token), refreshToken = str(params.get('refreshToken'), params.get('refresh_token'), jwt.RefreshToken);
-    let credential: CheckinCredential = { userId: str(user.UserID, jwtClaims(token).sub) || 'pending', name: '', accessToken: token || 'pending', refreshToken, expiresAt: 0, deviceId };
-    if (refreshToken) credential = await providers.refresh('trae', credential, signal);
-    else if (!token) throw new CheckinError('官方授权结果不完整，请重新连接。', 'auth');
-    return await providers.traeUser(credential, signal);
+    return await providers.traeLogin(str(parseParam(params.get('authCodeInfo')).AuthCode), verifier, deviceId, signal);
   } finally { callback.close(); }
 }

@@ -53,7 +53,7 @@ export interface IslandData {
   notes: IslandNote[];
   noteDraft: IslandNoteDraft;
 }
-export interface IslandState extends IslandData { mode: IslandMode; pinned: boolean; quiet: boolean; fullscreenDetection: boolean; bubbleReminderId?: string; agentMessages?: AgentMessage[]; error?: string; }
+export interface IslandState extends IslandData { mode: IslandMode; pinned: boolean; quiet: boolean; fullscreenDetection: boolean; resumeSequence?: number; bubbleReminderId?: string; agentMessages?: AgentMessage[]; error?: string; }
 export interface QuotaWindow { label: string; remaining: number; resetsAt: number | null; }
 export const ISLAND_QUOTA_PROVIDERS = ['codex', 'zcode', 'cursor', 'grokbot'] as const;
 export const ISLAND_QUOTA_LABELS = { codex: 'Codex', zcode: 'Z Code', cursor: 'Cursor', grokbot: 'Grok Bot' } as const;
@@ -62,7 +62,7 @@ export interface QuotaProvider {
   account: string; accountKey?: string; plan: string; windows: QuotaWindow[]; updatedAt: number | null; message: string;
   issue?: 'auth-required' | 'cli-unavailable';
 }
-export type IslandNavigation = { view: 'home' | 'settings-island' | 'settings-general' | 'settings-ai'; taskId?: string; section?: 'quota' | 'water' | 'sedentary' | 'agents' };
+export type IslandNavigation = { view: 'home' | 'todo' | 'settings-island' | 'settings-general' | 'settings-ai'; taskId?: string; section?: 'quota' | 'water' | 'sedentary' | 'agents' };
 export interface IslandBridge {
   assistant(action: 'show' | 'hide' | 'pin' | 'state' | 'ready'): Promise<{ pinned: boolean; visible: boolean }>;
   onAssistantOpen(callback: () => void): () => void;

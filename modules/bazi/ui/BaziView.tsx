@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { CaretDown, Pencil, Plus, Sparkle, TrashSimple } from '@phosphor-icons/react';
+import { CaretDown, Pencil, Plus, TrashSimple } from '@phosphor-icons/react';
 import { buildChart } from '../compute';
 import { buildZiwei, type ZiweiChart } from '../ziwei';
 import { buildAstro, type AstroChart } from '../astro';
@@ -10,7 +10,7 @@ import {
 import { DatePicker, Modal, Segmented, Select, TimePicker, errorText } from '../../../src/ui/controls';
 import { WX_VAR, WUXING_ORDER } from './tokens';
 import { CHINA_REGIONS, findRegionByCoords, regionLabel, type ChinaRegionNode } from '../../../shared/china-region-geo';
-import { BaziPan } from './BaziPan';
+import { BaziCycles, BaziPan } from './BaziPan';
 import { ZiweiPan } from './ZiweiPan';
 import { AstroDetails, AstroPan, AstroSummary } from './AstroPan';
 import { DEFAULT_ASPECT_FILTER, matchingAspect, type AstroAspectFilter, type AstroSection, type AstroSelection } from './astro-insights';
@@ -174,10 +174,11 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id, profile?.date, profile?.time, profile?.gender, profile?.lat, profile?.lon, profile?.astroHouseSystem, profile?.astroTimeZone, profile?.astroTimeChoice]);
 
-  // 切换命例:重置流年展开
+  // 命盘变化时默认展示当前大运的流年。
   useEffect(() => {
-    setOpenDy(-1);
-  }, [profile?.id]);
+    const year = new Date().getFullYear();
+    setOpenDy(charts?.bazi?.yun?.list.findIndex(d => year >= d.startYear && year <= d.endYear) ?? -1);
+  }, [charts?.bazi]);
 
   useEffect(() => {
     setAstroSelection(null);
@@ -367,15 +368,15 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
 
   if (loadError) {
     return (
-      <section className="view on panel glass bazi-workspace" id="view-bazi">
-        <div className="bazi-load-error todo-load-error" role="alert">{loadError}</div>
+      <section className="view on bazi-workspace" id="view-bazi">
+        <div className="bazi-load-error todo-load-error bazi-card" role="alert">{loadError}</div>
       </section>
     );
   }
   if (!storeData) {
     return (
-      <section className="view on panel glass bazi-workspace" id="view-bazi">
-        <div className="todo-loading" role="status">正在读取命例库…</div>
+      <section className="view on bazi-workspace" id="view-bazi">
+        <div className="todo-loading bazi-card" role="status">正在读取命例库…</div>
       </section>
     );
   }
@@ -393,13 +394,12 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
   const hasProfiles = profiles.length > 0;
 
   return (
-    <section className="view on panel glass bazi-workspace" id="view-bazi">
-      <div className="bazi-top">
+    <section className="view on bazi-workspace" id="view-bazi">
+      <div className="bazi-top bazi-card">
         <div className="bazi-top-lead">
           <div className="greet">
             <div>
               <h1>命理</h1>
-              <div className="gsub">从出生那一刻聊起：填好出生信息，八字、紫微斗数和占星三种命盘就到齐了。还能请 AI 一起琢磨。</div>
             </div>
           </div>
           {hasProfiles && (
@@ -422,12 +422,6 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
           )}
         </div>
         <div className="bazi-top-side">
-          <div className="gbtns">
-            <button className="btn btn-sec" onClick={() => startEdit(null)}><Plus size={15} weight="bold" />新建命例</button>
-            <button className="btn btn-pri" disabled={!profile || !chart || (tab === 'astro' && (!astro || (!aiBusy && !readingStarting && (!readingConfig || !!readingConfigError))))} onClick={askAI}>
-              <Sparkle size={15} weight="fill" />{tab === 'astro' && (aiBusy || readingStarting) ? '查看解读' : tab === 'astro' && readingConfig && !readingConfigured ? '去配置 AI' : 'AI 解读'}
-            </button>
-          </div>
           {hasProfiles && (
             <div className="bazi-pbar">
               <div className={`bazi-psel${pselOpen ? ' open' : ''}`} ref={pselRef}>
@@ -492,92 +486,95 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
               </div>
             </div>
           )}
+          <div className="gbtns">
+            <button className="btn btn-sec" onClick={() => startEdit(null)}><Plus size={15} weight="bold" />新建命例</button>
+          </div>
         </div>
       </div>
 
       {profiles.length === 0 ? (
-        <div className="bazi-empty glass">
+        <div className="bazi-empty bazi-card">
           <b>还没有命例</b>
           <p>新建一个命例(姓名 + 公历生日 + 出生时间 + 性别),即可排出八字、紫微与占星三张盘,并可交给 AI 助手解读。</p>
           <button className="btn btn-pri" onClick={() => startEdit(null)}><Plus size={15} weight="bold" />新建命例</button>
         </div>
       ) : (
         <>
-          {charts?.error && <div className="bazi-chart-error" role="alert">{charts.error}</div>}
-          {tab === 'astro' && charts?.astroError && <div className="bazi-chart-error" role="alert">
+          {charts?.error && <div className="bazi-chart-error bazi-card" role="alert">{charts.error}</div>}
+          {tab === 'astro' && charts?.astroError && <div className="bazi-chart-error bazi-card" role="alert">
             <p>{charts.astroError}</p><button className="btn btn-sec" onClick={() => startEdit(profile)}>修改出生时间与时区</button>
           </div>}
 
           {profile && chart && (
-            <div className="bazi-tabview" role="tabpanel" hidden={tab !== 'bazi'}>
-              <div className="bazi-cols">
-                <div><BaziPan profile={profile} chart={chart} openDy={openDy} onOpenDy={setOpenDy} /></div>
-                <div>
-                  <div className="panel glass">
-                    <div className="phead"><span className="ptitle">五行</span><span className="pcount">八字 8 字统计</span></div>
-                    <div>
-                      {WUXING_ORDER.map((wx) => {
-                        const n = chart.count[wx] ?? 0;
-                        const max = Math.max(...WUXING_ORDER.map((w) => chart.count[w] ?? 0));
-                        return (
-                          <div key={wx} className="bazi-wxrow">
-                            <span className="bazi-wxdot" style={{ background: WX_VAR[wx] }} />
-                            <span className="bazi-wxname">{wx}</span>
-                            <span className="bazi-wxnum">{n}</span>
-                            <span className="bazi-wxbar"><i style={{ width: max ? `${(n / max) * 100}%` : '0%', background: WX_VAR[wx] }} /></span>
-                            <span className={max > 0 && n === max ? 'bazi-wxflag strong' : 'bazi-wxflag'}>
-                              {max > 0 && n === max ? '最多' : n === 0 ? '未见' : ''}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className="bazi-wxsum">
-                      {(() => {
-                        const max = Math.max(...WUXING_ORDER.map((w) => chart.count[w] ?? 0));
-                        const most = WUXING_ORDER.filter((w) => (chart.count[w] ?? 0) === max);
-                        const missing = WUXING_ORDER.filter((w) => (chart.count[w] ?? 0) === 0);
-                        return <><b>{most.join('、')}</b>数量最多 · {missing.length ? <>八字中未见 <b>{missing.join('、')}</b></> : '五行均出现'} · 日主属{chart.dayWuXing}</>;
-                      })()}
-                    </div>
-                  </div>
-                  <div className="panel glass">
-                    <div className="phead"><span className="ptitle">神煞</span><span className="pcount">{`${collectShenSha(chart).length} 项`}</span></div>
-                    <div className="bazi-ssrow">
-                      {collectShenSha(chart).length ? collectShenSha(chart).map((h) => (
-                        <span key={h.key} className="bazi-sschip">{h.name}<span className="bazi-sspos">{h.pos}</span></span>
-                      )) : <div className="bazi-ssempty">本命盘未检出常用神煞。</div>}
-                    </div>
-                  </div>
-                </div>
+            <div className="bazi-tabview bazi-bazi-view" role="tabpanel" hidden={tab !== 'bazi'}>
+              <div className="bazi-main-card bazi-card">
+                <BaziPan profile={profile} chart={chart} />
+                <BaziCycles chart={chart} openDy={openDy} onOpenDy={setOpenDy} />
               </div>
+              <aside className="bazi-insights" aria-label="命盘分析">
+                <section className="bazi-wuxing-card bazi-card" aria-label="五行统计">
+                  <div className="phead"><h2 className="bazi-card-title">五行</h2><span className="pcount">八字 8 字统计</span></div>
+                  <div>
+                    {WUXING_ORDER.map((wx) => {
+                      const n = chart.count[wx] ?? 0;
+                      const max = Math.max(...WUXING_ORDER.map((w) => chart.count[w] ?? 0));
+                      return (
+                        <div key={wx} className="bazi-wxrow">
+                          <span className="bazi-wxdot" style={{ background: WX_VAR[wx] }} />
+                          <span className="bazi-wxname">{wx}</span>
+                          <span className="bazi-wxnum">{n}</span>
+                          <span className="bazi-wxbar"><i style={{ width: max ? `${(n / max) * 100}%` : '0%', background: WX_VAR[wx] }} /></span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="bazi-wxsum">
+                    {(() => {
+                      const max = Math.max(...WUXING_ORDER.map((w) => chart.count[w] ?? 0));
+                      const most = WUXING_ORDER.filter((w) => (chart.count[w] ?? 0) === max);
+                      const missing = WUXING_ORDER.filter((w) => (chart.count[w] ?? 0) === 0);
+                      return <><b>{most.join('、')}</b>数量最多 · {missing.length ? <>八字中未见 <b>{missing.join('、')}</b></> : '五行均出现'} · 日主属{chart.dayWuXing}</>;
+                    })()}
+                  </div>
+                </section>
+                <section className="bazi-shensha-card bazi-card" aria-label="神煞">
+                  <div className="phead"><h2 className="bazi-card-title">神煞</h2><span className="pcount">{`${collectShenSha(chart).length} 项`}</span></div>
+                  <div className="bazi-ssrow">
+                    {collectShenSha(chart).length ? collectShenSha(chart).map((h) => (
+                      <span key={h.key} className="bazi-sschip">{h.name}<span className="bazi-sspos">{h.pos}</span></span>
+                    )) : <div className="bazi-ssempty">本命盘未检出常用神煞。</div>}
+                  </div>
+                </section>
+              </aside>
             </div>
           )}
 
           {profile && ziwei && soulPalace && (
             <div className="bazi-tabview" role="tabpanel" hidden={tab !== 'ziwei'}>
-              <div className="bazi-cols">
+              <div className="bazi-ziwei-stack">
                 <div><ZiweiPan profile={profile} chart={ziwei} /></div>
-                <div>
-                  <div className="panel glass">
-                    <div className="phead"><span className="ptitle">命宫</span><span className="pcount">{soulPalace.ganZhi}</span></div>
-                    <div className="bazi-hintp">
-                      <b>{soulPalace.majorStars.map((s) => `${s.name}${s.brightness ? `(${s.brightness})` : ''}`).join('、') || '空宫'}</b>
-                      坐命{soulPalace.isBodyPalace ? ',身宫同宫' : ''};命主 <b>{ziwei.soul}</b> · 身主 <b>{ziwei.body}</b> · {ziwei.fiveElementsClass}。
+                <section className="bazi-analysis bazi-card" aria-label="命宫与四化">
+                  <div className="bazi-analysis-columns">
+                    <div className="bazi-analysis-section">
+                      <div className="phead"><span className="ptitle">命宫</span><span className="pcount">{soulPalace.ganZhi}</span></div>
+                      <div className="bazi-hintp">
+                        <b>{soulPalace.majorStars.map((s) => `${s.name}${s.brightness ? `(${s.brightness})` : ''}`).join('、') || '空宫'}</b>
+                        坐命{soulPalace.isBodyPalace ? ',身宫同宫' : ''};命主 <b>{ziwei.soul}</b> · 身主 <b>{ziwei.body}</b> · {ziwei.fiveElementsClass}。
+                      </div>
+                    </div>
+                    <div className="bazi-analysis-section">
+                      <div className="phead"><span className="ptitle">四化</span><span className="pcount">{`${mutagenList.length} 颗`}</span></div>
+                      <div className="bazi-ssrow">
+                        {mutagenList.map(({ star, palace }) => (
+                          <span key={`${palace}-${star.name}`} className="bazi-sschip">
+                            {star.name} 化{star.mutagen}
+                            <span className="bazi-sspos">{palace}</span>
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                  <div className="panel glass">
-                    <div className="phead"><span className="ptitle">四化</span><span className="pcount">{`${mutagenList.length} 颗`}</span></div>
-                    <div className="bazi-ssrow">
-                      {mutagenList.map(({ star, palace }) => (
-                        <span key={`${palace}-${star.name}`} className="bazi-sschip">
-                          {star.name} 化{star.mutagen}
-                          <span className="bazi-sspos">{palace}</span>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                </section>
               </div>
             </div>
           )}

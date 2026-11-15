@@ -1,4 +1,4 @@
-import { Activity, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { Activity, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type Dispatch, type SetStateAction } from 'react';
 import { AlignLeft, AlignRight, AlignTop, ArrowSquareOut, CalendarBlank, CaretLeft, CaretRight, CaretUp, Check, Drop, Folder, GearSix, Minus, PersonSimpleWalk, PushPin, Sparkle, SquaresFour, X } from '@phosphor-icons/react';
 import { focusRemaining, inTimeRange, islandPage, islandPages, islandSize, ISLAND_DOCKS, ISLAND_DOCK_LABELS, ISLAND_LABELS, ISLAND_MOTION_MS, ISLAND_QUOTA_LABELS, ISLAND_QUOTA_PROVIDERS, type IslandDock, type IslandMode, type IslandPage, type IslandReminder, type IslandState, type QuotaProvider, type QuotaWindow } from '../../shared/island-contracts';
 import { quotaDisplayWindows } from '../../shared/island-quota';
@@ -18,6 +18,7 @@ const dockOptions = ISLAND_DOCKS.map(value => ({ value, label: ISLAND_DOCK_LABEL
 const clockText = (value: number | Date) => new Date(value).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
 const countdown = (ms: number) => `${String(Math.floor(Math.ceil(ms / 1000) / 60)).padStart(2, '0')}:${String(Math.ceil(ms / 1000) % 60).padStart(2, '0')}`;
 type Run = (action: () => Promise<unknown>) => Promise<boolean>;
+type ScheduleSelection = { day: string; month: string; selectedOn: string; armed: string | null };
 
 export function DesktopIslandApp() {
   const { state, setState, error, setError } = useIslandState();
@@ -25,7 +26,9 @@ export function DesktopIslandApp() {
   const [quotas, setQuotas] = useState<QuotaProvider[]>([]), [now, setNow] = useState(Date.now());
   const [quotaSelection, setQuotaSelection] = useState<QuotaProvider['id'] | null>(null);
   const [busy, setBusy] = useState(false), [notices, setNotices] = useState(false), [dragging, setDragging] = useState(false);
-  const [agendaDay, setAgendaDay] = useState(() => localDay());
+  const [agenda, setAgenda] = useState<ScheduleSelection>(() => { const day = localDay(); return { day, month: day.slice(0, 7), selectedOn: day, armed: null }; });
+  const [agendaReturn, setAgendaReturn] = useState(0);
+  const agendaClock = useRef({ today: agenda.selectedOn, active: false, returned: 0, resumed: 0, pending: false });
   const busyRef = useRef(false), pointerInside = useRef(false), currentMode = useRef(state?.mode);
   const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useLayoutEffect(() => { currentMode.current = state?.mode; }, [state?.mode]);
@@ -34,6 +37,20 @@ export function DesktopIslandApp() {
   const api = window.workbench.island;
   const page = state ? islandPage(state.settings) : null;
   const pages = state ? islandPages(state.settings) : [], pageOrder = pages.join(',');
+  const today = localDay(new Date(now)), agendaActive = state?.mode === 'expanded' && page === 'schedule' && !notices, resumed = state?.resumeSequence ?? 0;
+  useLayoutEffect(() => {
+    const clock = agendaClock.current;
+    const returning = agendaActive && (!clock.active || clock.returned !== agendaReturn || clock.resumed !== resumed);
+    const currentDay = returning ? localDay() : today;
+    const followingToday = currentDay !== clock.today && agenda.day === clock.today && agenda.month === clock.today.slice(0, 7);
+    Object.assign(clock, { today: currentDay, active: agendaActive, returned: agendaReturn, resumed });
+    if (returning) setNow(Date.now());
+    if (agenda.selectedOn === currentDay) { clock.pending = false; return; }
+    if (agendaActive && (returning || followingToday)) clock.pending = true;
+    if (!agendaActive || !clock.pending || agenda.armed || busy) return;
+    clock.pending = false;
+    setAgenda({ day: currentDay, month: currentDay.slice(0, 7), selectedOn: currentDay, armed: null });
+  }, [today, agendaActive, agendaReturn, agenda, busy, resumed]);
   useLayoutEffect(() => {
     const node = navigation.current, selected = node?.querySelector<HTMLButtonElement>('[aria-current="page"]');
     if (!node || !selected) return;
@@ -101,10 +118,11 @@ export function DesktopIslandApp() {
   useEffect(() => {
     let alive = true;
     const load = () => { if (alive) void loadTasks(); };
+    const returned = () => { if (alive && !document.hidden) { setNow(Date.now()); setAgendaReturn(value => value + 1); load(); } };
     load(); const off = window.workbench.todo.onChanged(load);
     const tick = setInterval(() => setNow(Date.now()), 1000), poll = setInterval(load, 5000);
-    window.addEventListener('focus', load);
-    return () => { alive = false; off(); clearInterval(tick); clearInterval(poll); window.removeEventListener('focus', load); };
+    window.addEventListener('focus', returned); document.addEventListener('visibilitychange', returned);
+    return () => { alive = false; off(); clearInterval(tick); clearInterval(poll); window.removeEventListener('focus', returned); document.removeEventListener('visibilitychange', returned); };
   }, []);
   useEffect(() => { let alive = true; void api.quotas().then(q => { if (alive) setQuotas(q); }); return () => { alive = false; }; }, [state]);
   useEffect(() => { if (page === 'quota' && state?.mode === 'expanded') void api.quotaRefresh().then(setQuotas).catch(e => setError(errorText(e))); }, [page, state?.mode]);
@@ -121,7 +139,7 @@ export function DesktopIslandApp() {
   }, [state?.pinned, state?.mode, notices]);
   if (!state) return <main className="desktop-island island-loading" role="status">{error || '正在打开灵动岛…'}</main>;
   const tasks = data?.tasks.filter(t => !t.deletedAt) ?? [], open = tasks.filter(t => t.status !== 'done');
-  const today = localDay(new Date(now)), schedules = open.filter(t => t.kind === 'meeting' && t.plannedDate === today).sort((a, b) => (a.dueAt ?? 'z').localeCompare(b.dueAt ?? 'z'));
+  const schedules = open.filter(t => t.kind === 'meeting' && t.plannedDate === today).sort((a, b) => (a.dueAt ?? 'z').localeCompare(b.dueAt ?? 'z'));
   const next = schedules.find(t => !t.endAt || Date.parse(t.endAt) > now);
   const Icon = page ? icons[page] : GearSix;
   const expanded = state.mode === 'expanded';
@@ -129,7 +147,7 @@ export function DesktopIslandApp() {
   const messagesOpen = state.mode === 'messages';
   const SpeechTail = state.settings.dock === 'top' ? CaretUp : state.settings.dock === 'left' ? CaretLeft : CaretRight;
   const changePage = (nextPage: IslandPage) => { setNotices(false); void run(async () => { setState(await api.patch({ lastPage: nextPage })); }); };
-  const navigate = (task?: Task) => run(() => api.navigate({ view: 'home', ...(task ? { taskId: task.id } : {}) }));
+  const navigate = (task?: Task) => run(() => api.navigate({ view: 'todo', ...(task ? { taskId: task.id } : {}) }));
   const viewQuota = (reminder: IslandReminder) => run(async () => {
     const provider = ISLAND_QUOTA_PROVIDERS.find(id => reminder.id.startsWith(`quota:${id}:`));
     if (provider) setQuotaSelection(provider);
@@ -171,7 +189,7 @@ export function DesktopIslandApp() {
         {(notices || state.mode === 'reminder') ? <ReminderList state={state} tasks={tasks} busy={busy} run={run} navigate={navigate} viewQuota={viewQuota} />
           : !page ? <div className="island-empty"><GearSix size={30} /><p>选择要显示的页面</p><button onClick={() => void run(() => api.navigate({ view: 'settings-island' }))}>打开设置</button></div>
           : <div className="island-page-track" style={{ transform: `translateX(${-pages.indexOf(page) * 100}%)` }}>{pages.map(value => <div key={value} className="island-page" data-island-page={value} inert={value !== page} aria-hidden={value !== page}>
-            {value === 'schedule' ? !data ? <div className="island-empty" role="status">{dataError || '正在读取事项…'}{dataError && <button onClick={() => void loadTasks()}>重试</button>}</div> : <>{dataError && <div role="alert" className="island-data-error">{dataError} · 保留上次内容 <button onClick={() => void loadTasks()}>重试</button></div>}<Schedule tasks={tasks} now={now} busy={busy} run={run} open={navigate} day={agendaDay} setDay={setAgendaDay} /></>
+            {value === 'schedule' ? !data ? <div className="island-empty" role="status">{dataError || '正在读取事项…'}{dataError && <button onClick={() => void loadTasks()}>重试</button>}</div> : <>{dataError && <div role="alert" className="island-data-error">{dataError} · 保留上次内容 <button onClick={() => void loadTasks()}>重试</button></div>}<Schedule tasks={tasks} now={now} busy={busy} run={run} open={navigate} selection={agenda} setSelection={setAgenda} /></>
               : value === 'files' ? <IslandShelf state={state} busy={busy} run={run} now={now} />
               : value === 'quota' ? <Quotas providers={quotas} selected={quotaSelection} select={setQuotaSelection} now={now} run={run} busy={busy} refresh={() => api.quotaRefresh(true).then(setQuotas)} />
               : <Tools state={state} tasks={open.filter(t => t.kind === 'task')} now={now} run={run} busy={busy} />}
@@ -187,15 +205,14 @@ export function DesktopIslandApp() {
   </main></div>;
 }
 
-function Schedule({ tasks, now, busy, run, open, day, setDay }: { tasks: Task[]; now: number; busy: boolean; run: Run; open(task?: Task): Promise<boolean>; day: string; setDay(day: string): void }) {
-  const today = localDay(new Date(now)), [month, setMonth] = useState(() => day.slice(0, 7));
-  const [filter, setFilter] = useState('day'), [armed, setArmed] = useState<string | null>(null);
+function Schedule({ tasks, now, busy, run, open, selection, setSelection }: { tasks: Task[]; now: number; busy: boolean; run: Run; open(task?: Task): Promise<boolean>; selection: ScheduleSelection; setSelection: Dispatch<SetStateAction<ScheduleSelection>> }) {
+  const today = localDay(new Date(now)), { day, month, armed } = selection;
   const start = new Date(`${month}-01T12:00:00`), first = (start.getDay() + 6) % 7;
   const days = Array.from({ length: 42 }, (_, i) => { const value = new Date(start); value.setDate(i - first + 1); return localDay(value); });
   const meetings = tasks.filter(t => t.kind === 'meeting' && t.status !== 'done' && t.plannedDate === day).sort((a, b) => (a.dueAt ?? 'z').localeCompare(b.dueAt ?? 'z'));
-  const items = tasks.filter(t => t.kind === 'task' && t.status !== 'done' && (filter === 'all' || (day === today ? t.plannedDate <= today : t.plannedDate === day))).sort((a, b) => Number(b.status === 'doing') - Number(a.status === 'doing') || (a.dueAt ?? 'z').localeCompare(b.dueAt ?? 'z'));
-  const shift = (amount: number) => { const next = new Date(start); next.setMonth(next.getMonth() + amount); setMonth(localDay(next).slice(0, 7)); };
-  const selectDay = (value: string) => { setDay(value); setMonth(value.slice(0, 7)); setFilter('day'); setArmed(null); };
+  const items = tasks.filter(t => t.kind === 'task' && t.status !== 'done' && t.plannedDate === day).sort((a, b) => Number(b.status === 'doing') - Number(a.status === 'doing') || (a.dueAt ?? 'z').localeCompare(b.dueAt ?? 'z'));
+  const shift = (amount: number) => { const next = new Date(start); next.setMonth(next.getMonth() + amount); setSelection({ ...selection, month: localDay(next).slice(0, 7), selectedOn: today }); };
+  const selectDay = (value: string) => setSelection({ day: value, month: value.slice(0, 7), selectedOn: today, armed: null });
   return <div className="island-schedule">
     <div className="island-calendar">
       <div className="island-calendar-head"><IconButton label="上个月" onClick={() => shift(-1)}><CaretLeft size={14} /></IconButton><b>{start.getFullYear()}年{start.getMonth() + 1}月</b><IconButton label="下个月" onClick={() => shift(1)}><CaretRight size={14} /></IconButton><button className="island-text-button" aria-label="回到今天" title="回到今天" onClick={() => selectDay(today)}>今天</button></div>
@@ -207,15 +224,15 @@ function Schedule({ tasks, now, busy, run, open, day, setDay }: { tasks: Task[];
       }}>{Number(value.slice(-2))}{tasks.some(t => t.status !== 'done' && t.plannedDate === value) && <i />}</button>)}</div>
     </div>
     <div className="island-agenda">
-      <div className="island-panel-title"><b>{day === today ? '今天 · ' : ''}{Number(day.slice(5, 7))}月{Number(day.slice(-2))}日</b><div className="island-agenda-actions"><Segmented value={filter} onChange={value => { setFilter(value); setArmed(null); }} options={[{ value: 'day', label: day === today ? '今天' : '当天' }, { value: 'all', label: '全部' }]} aria-label="待办范围" /><IconButton label="在工作台中打开" onClick={() => void open()}><ArrowSquareOut size={15} /></IconButton></div></div>
+      <div className="island-panel-title"><b>{day === today ? '今天 · ' : ''}{Number(day.slice(5, 7))}月{Number(day.slice(-2))}日</b><div className="island-agenda-actions"><IconButton label="在工作台中打开" onClick={() => void open()}><ArrowSquareOut size={15} /></IconButton></div></div>
       <div className="island-list">
         <div className="island-panel-title island-list-heading"><span>日程</span><small>{meetings.length} 项</small></div>
         {meetings.length ? meetings.map(task => <button key={task.id} className="island-agenda-item" onClick={() => void open(task)}><span>{task.dueAt ? clockText(Date.parse(task.dueAt)) : '当日安排'}{task.endAt && <>–{clockText(Date.parse(task.endAt))}</>}</span><strong>{task.title}</strong></button>) : <p className="island-muted">这一天没有日程</p>}
         <div className="island-panel-title island-list-heading"><span>待办 <small>{items.length} 项</small></span></div>
         {items.length ? items.map(task => <div className="island-task" key={task.id}>
-          <IconButton label={armed === task.id ? `确认完成 ${task.title}` : `完成 ${task.title}`} className={armed === task.id ? 'armed' : ''} disabled={busy} onClick={() => { if (armed !== task.id) setArmed(task.id); else void run(() => window.workbench.todo.update(task.id, { status: 'done' }, task.updatedAt)).then(ok => { if (ok) setArmed(null); }); }}><Check size={16} /></IconButton>
+          <IconButton label={armed === task.id ? `确认完成 ${task.title}` : `完成 ${task.title}`} className={armed === task.id ? 'armed' : ''} disabled={busy} onClick={() => { if (armed !== task.id) setSelection({ ...selection, armed: task.id }); else void run(() => window.workbench.todo.update(task.id, { status: 'done' }, task.updatedAt)).then(ok => { if (ok) setSelection(value => ({ ...value, armed: null })); }); }}><Check size={16} /></IconButton>
           <button className="island-task-title" title={task.title} onClick={() => void open(task)}><b>{task.title}</b><small>{task.status === 'doing' ? '进行中 · ' : ''}{task.dueAt ? `${Date.parse(task.dueAt) < now ? '已超期 · ' : ''}${new Date(task.dueAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : task.plannedDate}{task.priority === 'high' ? ' · 高优先级' : ''}</small></button>
-          {armed === task.id && <button className="island-text-button" onClick={() => setArmed(null)}>取消</button>}
+          {armed === task.id && <button className="island-text-button" onClick={() => setSelection({ ...selection, armed: null })}>取消</button>}
         </div>) : <p className="island-muted">没有未完成的待办</p>}
       </div>
     </div>

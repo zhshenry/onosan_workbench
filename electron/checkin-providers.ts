@@ -1,4 +1,5 @@
-import { randomUUID } from 'node:crypto';
+import { generateKeyPairSync, randomBytes, randomUUID, sign } from 'node:crypto';
+import { hostname, release, type } from 'node:os';
 import { z } from 'zod';
 import type { CheckinProvider } from '../shared/checkin-contracts';
 
@@ -6,6 +7,7 @@ export const CheckinCredentialSchema = z.object({
   userId: z.string().min(1), name: z.string(), accessToken: z.string().min(1).max(32768),
   refreshToken: z.string().max(32768), expiresAt: z.number(), deviceId: z.string().min(1),
   native: z.object({ machineToken: z.string(), machineType: z.string(), machineCode: z.string(), version: z.string() }).optional(),
+  trae: z.object({ privateKey: z.string().min(1).max(4096), publicKey: z.string().min(1).max(4096) }).optional(),
 });
 export type CheckinCredential = z.infer<typeof CheckinCredentialSchema>;
 export type Json = Record<string, unknown>;
@@ -27,16 +29,16 @@ function expiry(value: unknown): number { return typeof value === 'number' && Nu
 export const WB = 'https://www.workbuddy.cn';
 export const QD = 'https://openapi.qoder.com.cn';
 export const TRAE = 'https://api.trae.cn';
-export const TRAE_EXCHANGE = 'https://api.trae.com.cn';
-export const TRAE_CLIENT_ID = 'en1oxy7wnw8j9n';
-export const TRAE_VERSION = '0.1.43';
-export const CHECKIN_HOSTS = new Set(['www.workbuddy.cn', 'copilot.tencent.com', 'openapi.qoder.com.cn', 'api.trae.cn', 'api.trae.com.cn']);
+export const TRAE_CLIENT_ID = 'ono9krqynydwx5';
+export const TRAE_VERSION = '3.4.17';
+export const CHECKIN_HOSTS = new Set(['www.workbuddy.cn', 'copilot.tencent.com', 'openapi.qoder.com.cn', 'api.trae.cn']);
 
 export function assertResponse(response: JsonResponse): Json {
   const { status, body } = response;
   const code = body.code ?? body.Code;
   if (status === 401 || [1001, '1001', 12153, '12153', 'TOKEN_EXPIRE'].includes(code as string | number)) throw new CheckinError('登录已失效，请重新连接账号。', 'auth');
-  if ([9074, 9095, '9074', '9095', 11140, '11140'].includes(code as string | number)) throw new CheckinError('平台未通过账号或设备校验，请到官方应用处理。', 'blocked');
+  if (code === 9074 || code === '9074') throw new CheckinError('平台当前参与用户较多，暂未接受签到，请稍后重试（错误码 9074）。', 'blocked');
+  if ([9095, '9095', 11140, '11140'].includes(code as string | number)) throw new CheckinError(`平台未通过账号或设备校验（错误码 ${code}），请到官方应用处理。`, 'blocked');
   if (status === 403) throw new CheckinError('平台拒绝访问，请在官方应用检查账号与领取资格。', 'blocked');
   if ([404, 405, 410].includes(status)) throw new CheckinError('平台入口暂不可用，请到官方应用查看当前活动。');
   if (status < 200 || status >= 300) throw new CheckinError(status >= 500 ? '平台暂时不可用，请稍后检查。' : '平台未接受请求，请到官方应用检查。', status >= 500 ? 'network' : 'protocol');
@@ -49,6 +51,10 @@ function headers(provider: CheckinProvider, c: CheckinCredential): Record<string
   const h: Record<string, string> = { Authorization: `Bearer ${c.accessToken}`, 'User-Agent': 'Qoder', 'cosy-clienttype': '10', 'cosy-version': c.native?.version || '0.4.8' };
   if (c.native) Object.assign(h, { 'cosy-machineid': c.deviceId, 'cosy-machinetoken': c.native.machineToken, 'cosy-machinetype': c.native.machineType, 'cosy-machinecode': c.native.machineCode, 'cosy-machineos': process.platform === 'win32' ? 'windows' : process.platform });
   return h;
+}
+function traeDeviceInfo(c: CheckinCredential) {
+  if (!c.trae) throw new CheckinError('TRAE CN 授权方式已更新，请重新连接账号。', 'auth');
+  return { DeviceID: c.deviceId, MachineID: c.deviceId, PlatformCode: 'IDE_PC', DeviceType: 'PC', DeviceName: hostname(), ClientVersion: TRAE_VERSION, DevicePublicKey: c.trae.publicKey, OSInfo: process.platform === 'win32' ? 'Windows' : type(), OSVersion: release() };
 }
 export interface ProviderStatus {
   status: 'ready' | 'claimed' | 'pending' | 'unavailable'; message: string; reward: number | null; campaignId?: string;
@@ -87,7 +93,12 @@ export function parseQoderStatus(body: Json): ProviderStatus {
 }
 
 export class CheckinProviders {
-  constructor(readonly request: CheckinRequest) {}
+  constructor(readonly request: CheckinRequest, private readonly traeCheckinDeviceId?: () => string) {}
+  private checkinHeaders(provider: CheckinProvider, c: CheckinCredential): Record<string, string> {
+    const h = headers(provider, c);
+    if (provider === 'trae' && this.traeCheckinDeviceId) h['x-device-id'] = this.traeCheckinDeviceId();
+    return h;
+  }
   async sms(phone: string, signal: AbortSignal): Promise<void> { assertResponse(await this.request(`${WB}/v2/plugin/login/send-sms`, { method: 'POST', body: { phone }, signal })); }
   async workbuddyLogin(phone: string, code: string, deviceId: string, signal: AbortSignal): Promise<CheckinCredential> {
     const d = obj(assertResponse(await this.request(`${WB}/v2/plugin/login/token`, { method: 'POST', body: { login_method: 'phone', phone, sms_code: code }, signal })).data);
@@ -103,11 +114,19 @@ export class CheckinProviders {
     return { ...c, userId: id, name: str(u.name, u.email) || `Qoder · ${id.slice(-6)}` };
   }
   async traeUser(c: CheckinCredential, signal: AbortSignal): Promise<CheckinCredential> {
-    const r = assertResponse(await this.request(`${TRAE_EXCHANGE}/cloudide/api/v3/trae/GetUserInfo`, { method: 'POST', headers: { 'x-cloudide-token': c.accessToken }, body: { ReqSource: 'IDE', IDEVersion: TRAE_VERSION }, signal }));
+    const r = assertResponse(await this.request(`${TRAE}/cloudide/api/v3/trae/GetUserInfo`, { method: 'POST', headers: { 'x-cloudide-token': c.accessToken }, body: { ReqSource: 'IDE', IDEVersion: TRAE_VERSION }, signal }));
     const u = obj(r.Result ?? r.data ?? r);
     const id = str(u.UserID);
     if (!id) throw new CheckinError('TRAE CN 未确认账号身份，请重新授权。', 'auth');
     return { ...c, userId: id, name: str(u.ScreenName) || `TRAE CN · ${id.slice(-6)}` };
+  }
+  async traeLogin(authCode: string, verifier: string, deviceId: string, signal: AbortSignal): Promise<CheckinCredential> {
+    const { privateKey, publicKey } = generateKeyPairSync('ec', { namedCurve: 'P-256', privateKeyEncoding: { type: 'pkcs8', format: 'pem' }, publicKeyEncoding: { type: 'spki', format: 'pem' } });
+    const c: CheckinCredential = { userId: 'pending', name: '', accessToken: 'pending', refreshToken: '', expiresAt: 0, deviceId, trae: { privateKey, publicKey } };
+    const r = assertResponse(await this.request(`${TRAE}/trae/api/v3/oauth/ExchangeToken`, { method: 'POST', body: { ClientID: TRAE_CLIENT_ID, AuthCode: authCode, CodeVerifier: verifier, DeviceInfo: traeDeviceInfo(c), IDEVersion: TRAE_VERSION }, signal }));
+    const d = obj(r.Result), token = str(d.Token);
+    if (!token) throw new CheckinError('官方授权结果不完整，请重新连接。', 'auth');
+    return this.traeUser({ ...c, accessToken: token, refreshToken: str(d.RefreshToken), expiresAt: expiry(d.TokenExpireAt) }, signal);
   }
   async refresh(provider: CheckinProvider, c: CheckinCredential, signal: AbortSignal): Promise<CheckinCredential> {
     if (!c.refreshToken) throw new CheckinError('登录已失效，请重新连接账号。', 'auth');
@@ -117,7 +136,10 @@ export class CheckinProviders {
     } else if (provider === 'qoder') {
       d = assertResponse(await this.request(`${QD}/api/v1/deviceToken/refresh`, { method: 'POST', body: { refresh_token: c.refreshToken }, signal }));
     } else {
-      const r = assertResponse(await this.request(`${TRAE_EXCHANGE}/cloudide/api/v3/trae/oauth/ExchangeToken`, { method: 'POST', body: { ClientID: TRAE_CLIENT_ID, RefreshToken: c.refreshToken, ClientSecret: '-', UserID: c.userId }, signal }));
+      const device = traeDeviceInfo(c), path = '/trae/api/v3/oauth/ExchangeToken';
+      const timestamp = Math.floor(Date.now() / 1000), nonce = randomBytes(16).toString('hex');
+      const signature = sign('sha256', Buffer.from(['POST', path, TRAE_CLIENT_ID, c.refreshToken, String(timestamp), nonce].join('\n')), c.trae!.privateKey).toString('base64');
+      const r = assertResponse(await this.request(`${TRAE}${path}`, { method: 'POST', body: { ClientID: TRAE_CLIENT_ID, RefreshToken: c.refreshToken, ClientSecret: '', DeviceInfo: device, DeviceProof: { Signature: signature, Timestamp: timestamp, Nonce: nonce }, IDEVersion: TRAE_VERSION }, signal }));
       d = obj(r.Result ?? r.data ?? r);
     }
     const token = str(d.accessToken, d.access_token, d.token, d.device_token, d.Token, d.AccessToken);
@@ -126,12 +148,12 @@ export class CheckinProviders {
   }
   async status(provider: CheckinProvider, c: CheckinCredential, signal: AbortSignal): Promise<ProviderStatus> {
     const url = provider === 'workbuddy' ? `${WB}/v2/billing/meter/checkin-activity-status` : provider === 'qoder' ? `${QD}/sash/api/v1/me/campaigns` : `${TRAE}/trae/api/v2/ug/checkin_credits/status`;
-    const body = assertResponse(await this.request(url, { method: provider === 'qoder' ? 'GET' : 'POST', headers: headers(provider, c), ...(provider !== 'qoder' ? { body: {} } : {}), signal }));
+    const body = assertResponse(await this.request(url, { method: provider === 'qoder' ? 'GET' : 'POST', headers: this.checkinHeaders(provider, c), ...(provider !== 'qoder' ? { body: provider === 'trae' ? { req_source: 1 } : {} } : {}), signal }));
     return provider === 'workbuddy' ? parseWorkbuddyStatus(body) : provider === 'qoder' ? parseQoderStatus(body) : parseTraeStatus(body);
   }
   async claim(provider: CheckinProvider, c: CheckinCredential, status: ProviderStatus, signal: AbortSignal): Promise<{ reward: number | null; delayed: boolean }> {
     const url = provider === 'workbuddy' ? `${WB}/v2/billing/meter/daily-checkin` : provider === 'qoder' ? `${QD}/sash/api/v1/me/campaigns/${encodeURIComponent(status.campaignId!)}/claim` : `${TRAE}/trae/api/v2/ug/checkin_credits/claim`;
-    const r = await this.request(url, { method: 'POST', headers: headers(provider, c), body: {}, signal });
+    const r = await this.request(url, { method: 'POST', headers: this.checkinHeaders(provider, c), body: provider === 'trae' ? { req_source: 1 } : {}, signal });
     // Even an already-claimed response must be checked through the status endpoint.
     if (r.status === 409 || r.body.code === 10001) return { reward: null, delayed: true };
     const b = assertResponse(r), d = obj(b.data ?? b);

@@ -14,7 +14,10 @@ export function BrowserHost({ active, focusTarget, onPending, children }: {
   if (!active && !entered) return null;
   return <div ref={host} className="view-fade browser-host" hidden={!active} inert={!active} aria-hidden={!active} onFocusCapture={event => { if (!active) { (event.target as HTMLElement).blur(); focusTarget.current?.focus({ preventScroll: true }); } }}>
     {children ?? <section className="view on media-browser-view" id="view-browser" aria-label="浏览器">
-      <BrowserWorkspacePane workspace={DEFAULT_BROWSER_WORKSPACE} tabs slogan="输入网址开始浏览，或者让AI助手帮你操作浏览器" onPending={onPending} />
+      <BrowserWorkspacePane workspace={DEFAULT_BROWSER_WORKSPACE} tabs slogan={<>
+        <h1 className="browser-start-heading">开始浏览</h1>
+        <p>输入网址开始浏览，或者让AI助手帮你操作浏览器</p>
+      </>} onPending={onPending} />
     </section>}
   </div>;
 }

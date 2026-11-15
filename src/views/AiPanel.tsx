@@ -25,7 +25,7 @@ const SCOPE_TIPS: Record<string, string> = {
   todo: 'AI 可以查看和整理你的待办与日程;任何修改都会先征求你同意。',
 };
 const SCOPE_TIP_DEFAULT = 'AI 在这里只回答一般问题,不会读取你的文件内容。';
-const workspaceKey = (scope: AiScope): string => workbenchForScope(scope) ?? aiScopeKey(scope);
+const workspaceKey = (scope: AiScope): string => scope.module === 'todo' ? 'todo' : workbenchForScope(scope) ?? aiScopeKey(scope);
 
 export interface AiPanelContext {
   scope: AiScope; label: string; object: string;
@@ -242,9 +242,10 @@ export function AiPanel({ open, onClose, seed, onSeedFinished, requestedChatId, 
   }, []);
   const pageContextRef = useRef(context);
   const pageWorkbench = workbenchForScope(context.scope);
+  const pageWorkspaceKey = workspaceKey(context.scope);
   const browserWorkspace = context.scope.module === 'workbench' && pageWorkbench === workbenchForScope(activeContext.scope)
     ? context.scope.viewId === 'browser' ? 'default' : context.scope.viewId === 'media-browser' ? 'xhs-creator' : null : null;
-  const previousPageWorkbench = useRef(pageWorkbench);
+  const previousPageWorkbench = useRef(pageWorkspaceKey);
   const pageScopeKey = aiScopeKey(context.scope);
   const activeScopeKey = aiScopeKey(activeContext.scope);
   const contextKey = current?.id ?? workspaceKey(activeContext.scope);
@@ -353,8 +354,8 @@ export function AiPanel({ open, onClose, seed, onSeedFinished, requestedChatId, 
     return () => flushDraft();
   }, []);
   useLayoutEffect(() => {
-    if (!pageWorkbench || previousPageWorkbench.current === pageWorkbench) return;
-    previousPageWorkbench.current = pageWorkbench;
+    if (!pageWorkbench || previousPageWorkbench.current === pageWorkspaceKey) return;
+    previousPageWorkbench.current = pageWorkspaceKey;
     const sequence = ++loadSequence.current;
     flushDraft();
     setCurrent(null);
@@ -364,7 +365,7 @@ export function AiPanel({ open, onClose, seed, onSeedFinished, requestedChatId, 
     setManaging(null);
     setReferenceDialogOpen(false);
     restoreWorkbenchChat(context.scope, sequence);
-  }, [pageWorkbench]);
+  }, [pageWorkspaceKey]);
   useEffect(() => { onActiveChatChange(current?.id ?? null); }, [current?.id, onActiveChatChange]);
   useEffect(() => {
     if (!managing) return;
@@ -557,12 +558,12 @@ export function AiPanel({ open, onClose, seed, onSeedFinished, requestedChatId, 
   const copyWriteBlocked = (scope: AiScope | undefined): boolean => scope?.module === 'copy' && copySaveState?.id === scope.draftId && copySaveState.status !== 'saved';
   const activeCopyWriteBlocked = copyWriteBlocked(activeContext.scope);
   const copySaveHint = copySaveState?.status === 'error' ? '请回到博客编辑重试保存' : '请先等待当前博客保存完成';
-  const linkedPageScope = pageWorkbench === workbenchForScope(activeContext.scope) ? context.scope : activeContext.scope;
+  const linkedPageScope = sameAiWorkbench(activeContext.scope, context.scope) ? context.scope : activeContext.scope;
   const model = config?.models.find(item => item.id === config.activeModelId) ?? config?.models[0];
   const modelOptions = config?.providers.flatMap(provider => config.models.filter(item => item.providerId === provider.id)
     .map(item => ({ value: item.id, label: item.name, group: provider.name }))) ?? [];
   const activeWorkbench = workbenchForScope(activeContext.scope);
-  const activeWorkbenchName = activeWorkbench === 'home' ? TODO_AI_WORKBENCH_NAME : NAV.find(item => item.id === activeWorkbench)?.title ?? '其他工作台';
+  const activeWorkbenchName = NAV.find(item => item.id === activeWorkbench)?.title ?? '其他工作台';
   const activeObjectName = activeContext.scope.module === 'todo' ? TODO_AI_WORKBENCH_NAME : activeContext.object;
   const contextForScope = (scope: AiScope): AiPanelContext => {
     const key = aiScopeKey(scope);
@@ -579,14 +580,14 @@ export function AiPanel({ open, onClose, seed, onSeedFinished, requestedChatId, 
   const orderedWorkbenches = [...NAV.filter(workbench => workbench.id === activeWorkbench), ...NAV.filter(workbench => workbench.id !== activeWorkbench)];
   const contextGroups: ChatGroup[] = orderedWorkbenches.filter(workbench =>
     defaultAiScopeForWorkbench(workbench.id) || chats.some(chat => workbenchForScope(chatScope(chat)) === workbench.id))
-    .map(workbench => ({ id: workbench.id, label: workbench.id === 'home' ? TODO_AI_WORKBENCH_NAME : workbench.title, emptyScope: defaultAiScopeForWorkbench(workbench.id) }));
+    .map(workbench => ({ id: workbench.id, label: workbench.title, emptyScope: defaultAiScopeForWorkbench(workbench.id) }));
   const contextOptions: ChatChoice[] = orderedWorkbenches.flatMap(workbench =>
     chats.filter(chat => workbenchForScope(chatScope(chat)) === workbench.id).map(chat => {
       const status = chat.streaming ? 'running' : chat.completed ? 'done' : undefined;
       const businessScope = chatContextScope(chat);
       const pageScope = chat.pageScope ?? businessScope;
       const detail = contextForScope(businessScope).object + (aiScopeKey(pageScope) === aiScopeKey(businessScope) ? '' : ` · ${contextForScope(pageScope).object}`);
-      return { id: chat.id, title: chat.title, group: workbench.id === 'home' ? TODO_AI_WORKBENCH_NAME : workbench.title, detail, updatedAt: chat.updatedAt, status, streaming: chat.streaming };
+      return { id: chat.id, title: chat.title, group: workbench.title, detail, updatedAt: chat.updatedAt, status, streaming: chat.streaming };
     }));
   const toggleFixedContext = (): void => setFixedContexts(previous => {
     const next = { ...previous };
@@ -710,7 +711,7 @@ export function AiPanel({ open, onClose, seed, onSeedFinished, requestedChatId, 
         <span className="ai-panel-title"><Sparkle size={16} weight="fill" />AI 助手</span>
 
 
-        <button className="ai-icon-btn" aria-label="收起 AI 助手" title="收起 AI 助手" onClick={closePanel}><SidebarSimple size={17} /></button>
+        <button className="ai-icon-btn" aria-label="收起 AI 助手" title="收起 AI 助手" onClick={closePanel}><SidebarSimple size={20} mirrored /></button>
       </header>
       {/* 协助对象卡:对象为主行(模块图标+名称+固定/跟随+范围说明),工作区并入对话选择器前缀 */}
       <div className={fixedContext ? 'ai-ctxcard pinned' : 'ai-ctxcard'}>

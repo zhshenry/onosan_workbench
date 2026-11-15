@@ -1,19 +1,32 @@
-.hush-hour-workspace .hush-hour-project-icon { width: 38px; height: 38px; flex: none; color: var(--acc-deep); }
+.hush-hour-workspace { gap: 0; }
+.hush-hour-workspace > .game-project, .hush-hour-workspace .game-preview { border: 0; border-radius: 0; background: transparent; backdrop-filter: none; box-shadow: none; }
+.hush-hour-workspace > .game-project { flex: none; min-height: 76px; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--hairline); }
+.hush-hour-workspace .hush-hour-project-icon { width: 32px; height: 32px; flex: none; color: var(--acc-deep); }
+.hush-hour-workspace .game-project-name { min-width: 0; }
+.hush-hour-workspace .game-project-actions { max-width: 100%; flex-wrap: wrap; gap: 6px; }
+.hush-hour-workspace .game-project-actions button { min-height: 32px; padding: 5px 10px; background: var(--workbench-card-bg); }
+.hush-hour-workspace .game-project-actions .game-primary { background: var(--action); }
+.hush-hour-workspace .game-project-actions > .game-options-trigger { padding-inline: 6px; }
+.hush-hour-workspace .game-project-panels { gap: 6px; margin: 0; padding: 0; border: 0; }
+.hush-hour-workspace .game-panels { gap: 0; }
 .hush-hour-project-status { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; }
 .hush-hour-status[data-phase='pending'] { color: var(--avatar-amber); }
 .hush-hour-status[data-phase='building'] { color: var(--acc-deep); }
 .hush-hour-status[data-phase='synced'] { color: var(--avatar-teal); }
 .hush-hour-status[data-phase='failed'] { color: var(--danger); }
 .hush-hour-workspace button.hush-hour-status-details { padding: 0; border: 0; background: transparent; border-radius: 4px; color: var(--acc-deep); text-decoration: underline; text-underline-offset: 3px; }
-.hush-hour-workspace .game-service-actions > .game-primary { min-width: 176px; }
+.hush-hour-workspace .game-service-actions > .game-primary { min-width: 124px; }
 .hush-hour-workspace .game-primary .game-refresh-badge { color: var(--avatar-amber); background: color-mix(in srgb, var(--avatar-amber) 12%, var(--glass-hi)); }
 .hush-hour-build-spinner { animation: hush-hour-build-spin 1s linear infinite; }
 @keyframes hush-hour-build-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .hush-hour-build-spinner { animation: none; } }
 @media (forced-colors: active) { .hush-hour-status[data-phase] { color: CanvasText; } }
-.hush-hour-workspace .game-preview { flex: 1; }
-.hush-hour-workspace .game-preview-footer { justify-content: space-between; }
+.hush-hour-workspace .game-preview { flex: 1; padding: 0; }
+.hush-hour-workspace .game-preview-heading { min-height: 44px; padding: 12px 16px 0; }
+.hush-hour-workspace .game-preview-toolbar { padding: 8px 16px 12px; }
+.hush-hour-workspace .game-address { background: var(--workbench-card-bg); }
+.hush-hour-workspace .game-preview-empty > svg { width: 36px; height: 36px; color: var(--ink-2); }
+.hush-hour-workspace .game-preview-footer { min-height: 40px; justify-content: space-between; padding: 8px 16px; border-top: 1px solid var(--hairline); }
 .hush-hour-workspace .game-preview-footer button { font-size: var(--type-caption); padding: 4px 8px; }
-.body:has(> .content > .browser-host:not([hidden]) > .hush-hour-workspace[data-expanded='true']) > .snav { display: none; }
 .body:has(> .content > .browser-host:not([hidden]) > .hush-hour-workspace[data-expanded='true']) { grid-template-columns: 0px minmax(0, 1fr); }
 .hush-hour-build-output { flex: 1; min-height: 0; margin: 0; padding: 20px 24px; overflow-y: auto; overflow-wrap: anywhere; white-space: pre-wrap; font: var(--type-body)/1.65 'Cascadia Mono', Consolas, 'Microsoft YaHei', monospace; color: var(--ink); }

@@ -5,6 +5,7 @@
 import { z } from 'zod';
 
 export const READING_STATUSES = ['wish', 'reading', 'done', 'paused'] as const;
+export const READING_CURRENT_BOOK_KEY = 'wb.reading.curBookId';
 export type ReadingStatus = (typeof READING_STATUSES)[number];
 export const READING_STATUS_LABEL: Record<ReadingStatus, string> = {
   wish: '想读', reading: '在读', done: '已读', paused: '搁置',

@@ -195,8 +195,8 @@ function monthCells(y: number, m: number) {
   }
   return items;
 }
-export function DatePicker({ id, value, onChange, yearRange, 'aria-invalid': invalid, 'aria-describedby': describedBy }: {
-  id?: string; value: string; onChange(value: string): void; yearRange?: { min: number; max: number }; 'aria-invalid'?: boolean | 'true' | 'false'; 'aria-describedby'?: string;
+export function DatePicker({ id, value, onChange, yearRange, clearable = true, 'aria-invalid': invalid, 'aria-describedby': describedBy }: {
+  id?: string; value: string; onChange(value: string): void; yearRange?: { min: number; max: number }; clearable?: boolean; 'aria-invalid'?: boolean | 'true' | 'false'; 'aria-describedby'?: string;
 }) {
   const gridId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
@@ -338,7 +338,7 @@ export function DatePicker({ id, value, onChange, yearRange, 'aria-invalid': inv
         {monthCells(view.y, view.m).map(cell => <button key={cell.iso} type="button" id={`${gridId}-${cell.iso}`} role="gridcell" aria-label={cell.iso} aria-selected={cell.iso === value} className={[cell.outside && 'is-outside', cell.iso === today && 'is-today', cell.iso === value && 'is-selected', cell.iso === cursor && 'is-active'].filter(Boolean).join(' ')} onMouseEnter={() => { if (!yearRange) setCursor(cell.iso); }} onMouseMove={() => { if (yearRange && !browseMenuIsOpen()) setCursor(cell.iso); }} onClick={() => pick(cell.iso)}>{cell.day}</button>)}
       </div>
       <div className="date-menu-actions">
-        <button type="button" onClick={() => pick('')}>清除</button>
+        {clearable && <button type="button" onClick={() => pick('')}>清除</button>}
         <button type="button" onClick={() => pick(today)}>今天</button>
       </div>
     </div>, trigger.current?.closest('dialog') ?? document.body) : null}
@@ -488,18 +488,60 @@ export function TimePicker({ id, value, onChange, direction = 'auto', 'aria-inva
 export function IconButton({ label, children, onClick, className, ...props }: ComponentPropsWithRef<'button'> & { label: string }) {
   return <button type="button" className={`icon-button${className ? ` ${className}` : ''}`} aria-label={label} title={label} onClick={onClick} {...props}>{children}</button>;
 }
-export function Modal({ title, children, close, dirty = false, busy = false, subhead, headingExtra, titleIcon, closeText, className }: { title: string; children: ReactNode; close(): void; dirty?: boolean; busy?: boolean; subhead?: ReactNode; headingExtra?: ReactNode; titleIcon?: ReactNode; closeText?: string; className?: string }) {
+export function Modal({ id, anchor, title, children, close, dirty = false, busy = false, subhead, headingExtra, titleIcon, closeText, className }: { id?: string; anchor?: HTMLElement | null; title: string; children: ReactNode; close(): void; dirty?: boolean; busy?: boolean; subhead?: ReactNode; headingExtra?: ReactNode; titleIcon?: ReactNode; closeText?: string; className?: string }) {
   const ref = useRef<HTMLDialogElement>(null);
   const discard = useRef<HTMLDialogElement>(null);
+  function requestClose() { if (busy) return; if (dirty) { if (!discard.current?.open) discard.current?.showModal(); } else close(); }
+  const closeRequest = useRef(requestClose);
+  closeRequest.current = requestClose;
   useLayoutEffect(() => {
     const element = ref.current!;
-    const previous = document.activeElement;
-    element.showModal();
-    return () => { discard.current?.close(); element.close(); if (previous instanceof HTMLElement && previous.isConnected) previous.focus(); };
-  }, []);
-  function requestClose() { if (busy) return; if (dirty) discard.current?.showModal(); else close(); }
+    const previous = anchor ?? document.activeElement;
+    if (!anchor) {
+      element.showModal();
+      return () => { discard.current?.close(); element.close(); if (previous instanceof HTMLElement && previous.isConnected) previous.focus(); };
+    }
+    element.showPopover();
+    function place() {
+      const rect = anchor!.getBoundingClientRect(), gap = 8, edge = 12;
+      const below = window.innerHeight - rect.bottom - gap - edge, above = rect.top - gap - edge;
+      element.style.maxHeight = '';
+      const up = element.offsetHeight > below && above > below;
+      element.style.maxHeight = `${Math.max(0, Math.min(520, up ? above : below))}px`;
+      element.style.left = `${Math.max(edge, Math.min(rect.right - element.offsetWidth, window.innerWidth - element.offsetWidth - edge))}px`;
+      element.style.top = `${Math.max(edge, up ? rect.top - element.offsetHeight - gap : rect.bottom + gap)}px`;
+    }
+    place();
+    (element.querySelector<HTMLElement>('[autofocus], input:not([disabled]), textarea:not([disabled])') ?? element).focus({ preventScroll: true });
+    function outside(event: PointerEvent) {
+      const target = event.target as Node;
+      if (element.contains(target) || anchor!.contains(target) || discard.current?.open) return;
+      closeRequest.current();
+    }
+    function escape(event: globalThis.KeyboardEvent) {
+      if (event.key !== 'Escape' || event.defaultPrevented || discard.current?.open) return;
+      event.preventDefault(); closeRequest.current();
+    }
+    function scroll(event: Event) { if (!(event.target instanceof Node) || !element.contains(event.target)) place(); }
+    const observer = new ResizeObserver(place);
+    observer.observe(element); observer.observe(anchor);
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', scroll, true);
+    window.addEventListener('pointerdown', outside);
+    window.addEventListener('keydown', escape);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', scroll, true);
+      window.removeEventListener('pointerdown', outside);
+      window.removeEventListener('keydown', escape);
+      discard.current?.close();
+      if (element.matches(':popover-open')) element.hidePopover();
+      if (previous instanceof HTMLElement && previous.isConnected) previous.focus({ preventScroll: true });
+    };
+  }, [anchor]);
   return <>
-    <dialog ref={ref} className={`modal${className ? ` ${className}` : ''}`} aria-label={title} aria-busy={busy || undefined} onCancel={event => { event.preventDefault(); requestClose(); }}>
+    <dialog ref={ref} id={id} popover={anchor ? 'manual' : undefined} className={`modal${className ? ` ${className}` : ''}`} aria-label={title} aria-busy={busy || undefined} onCancel={event => { if (event.target !== event.currentTarget) return; event.preventDefault(); requestClose(); }}>
       <header className="modal-heading">
         <div className="modal-heading-row"><div className="modal-heading-lead"><h2>{titleIcon ? <span className="modal-title-icon" aria-hidden="true">{titleIcon}</span> : null}{title}</h2>{headingExtra}</div>{closeText ? <button type="button" className="modal-text-close" disabled={busy} onClick={requestClose}>{closeText}</button> : <IconButton label="关闭" disabled={busy} onClick={requestClose}><X size={20} /></IconButton>}</div>
         {subhead}

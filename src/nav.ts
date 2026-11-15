@@ -22,9 +22,7 @@ export const NAV: WorkbenchDef[] = [
     id: 'home',
     title: '首页',
     subs: [
-      { label: '今日概览', view: 'home' },
-      { label: '事项库', pending: true },
-      { label: '本周回顾', pending: true },
+      { label: '我的看板', view: 'home' },
     ],
   },
   {
@@ -65,13 +63,14 @@ export const NAV: WorkbenchDef[] = [
     id: 'life',
     title: '小工具',
     subs: [
+      { label: '日程和待办', view: 'todo' },
       { label: '命理', view: 'bazi' },
       { label: '阅读清单', view: 'reading' },
       { label: '每日签到', view: 'checkin' },
     ],
   },
   {
-    // 设置复用「图标栏 + 二级目录」导航。
+    // 设置分类固定在设置页内部,工作台导航只保留一个入口。
     id: 'settings',
     title: '设置',
     subs: [

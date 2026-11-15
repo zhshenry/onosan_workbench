@@ -137,8 +137,8 @@ async function showLifecycleIsland() {
 }
 async function doneLibrary() {
   const home = page.locator('#view-home');
-  await home.getByRole('button', { name: '事项库', exact: true }).click();
-  const library = home.getByRole('region', { name: '事项库', exact: true });
+  await home.getByRole('button', { name: '全部事项', exact: true }).click();
+  const library = home.getByRole('region', { name: '全部事项', exact: true });
   await library.getByRole('button', { name: /^已完成/ }).click();
   await library.getByRole('button', { name: `编辑 ${editedTitle}`, exact: true }).waitFor({ state: 'visible' });
   return library;

@@ -272,6 +272,9 @@
 .modal.task-modal .sticky-actions { position: static; flex-shrink: 0; margin: auto 0 0; padding: 12px 2px 14px; }
 .modal.task-modal .sticky-actions button { min-height: 22px; padding: 2px 8px; font-size: var(--type-caption); white-space: nowrap; }
 .modal.task-create-modal { width: calc(100% - 32px); max-width: 408px; height: min(430px, calc(100% - 56px)); min-height: 0; max-height: calc(100% - 56px); overflow: hidden; }
+.modal.task-create-popover { inset: auto; margin: 0; width: min(408px, calc(100vw - 24px)); max-width: calc(100vw - 24px); height: auto; }
+.modal.task-create-popover.has-detail { height: min(430px, calc(100dvh - 24px)); }
+.modal.task-create-popover::backdrop { background: transparent; }
 .modal.task-create-modal .modal-heading { padding: 14px 16px 0; }
 .modal.task-create-modal .modal-heading-row { gap: 8px; padding-bottom: 10px; }
 .modal.task-create-modal .modal-heading-lead { gap: 12px; }

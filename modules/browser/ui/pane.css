@@ -279,12 +279,27 @@
 }
 
 /* 整页视图:占满内容区高度 */
-.content:has(> .media-browser-view) { display: flex; flex-direction: column; min-height: 0; padding: 12px; }
-.view.on.media-browser-view { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.media-browser-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex: none; margin-bottom: 10px; }
+.content:has(> .media-browser-view) { display: flex; flex-direction: column; min-height: 0; padding-inline: 12px; }
+.view.on.media-browser-view { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: clip; border: 1px solid var(--hairline); border-radius: var(--r-panel); background: var(--workbench-card-bg); }
+.media-browser-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex: none; min-height: 76px; padding: 16px 22px; border-bottom: 1px solid var(--hairline); }
+.media-browser-view > .mbp { border: 0; border-radius: 0; background: var(--workbench-card-bg); box-shadow: none; }
+.media-browser-view .mbp-chrome { background: var(--workbench-muted-bg); }
+.media-browser-view .mbp-addr, .media-browser-view .mbp-navigation { background: var(--workbench-card-bg); }
 .media-browser-header h1 { font-size: var(--type-lead); font-weight: 700; line-height: 1.4; }
 .media-browser-header p { margin-top: 2px; color: var(--ink-3); font-size: var(--type-support); }
 .media-browser-header > button { flex: none; }
+
+/* 网页工作台：标签、工具栏与起始页共用一张主卡。 */
+#view-browser .mbp-stage { background: var(--workbench-card-bg); backdrop-filter: none; }
+#view-browser .mbp-tabstrip { background: var(--workbench-card-bg); border-bottom: 1px solid var(--hairline); padding-bottom: 8px; }
+#view-browser .mbp-tab { background: var(--workbench-muted-bg); }
+#view-browser .mbp-tab.on { background: var(--workbench-card-bg); }
+#view-browser .mbp-tab:not(.on):hover { background: var(--glass-lo); }
+#view-browser .mbp-start { background: var(--workbench-card-bg); gap: 20px; padding: clamp(48px, 16vh, 160px) 24px 32px; }
+#view-browser .mbp-biglogo { width: 72px; height: 72px; border-radius: var(--r-panel); color: var(--ink-2); background: var(--workbench-muted-bg); box-shadow: none; }
+#view-browser .mbp-biglogo svg { width: 34px; height: 34px; }
+#view-browser .mbp-chips:empty { display: none; }
+.browser-start-heading { margin: 0 0 14px; color: var(--ink); font-size: var(--type-page); font-weight: 700; line-height: 1.4; }
 
 @media (max-width: 1180px) {
   .mbp-capgrid { grid-template-columns: 1fr 1fr; }

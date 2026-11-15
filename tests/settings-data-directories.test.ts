@@ -25,7 +25,7 @@ test('目录入口归入待办与数据，共享库入口不重复，读取和�
     },
     todo: { info: () => readInfo() },
     appInfo: {
-      about: async () => ({ name: '个人工作台', version: '2.0.0', electron: '44', chrome: '152', userDataPath: 'C:/synthetic/app', todoDbPath: info.path }),
+      about: async () => ({ name: 'OnO Workbench', version: '2.0.0', electron: '44', chrome: '152', userDataPath: 'C:/synthetic/app', todoDbPath: info.path }),
       openUserDataDir: async () => { userDataCalls++; if (failOpen) throw new Error('合成目录错误'); },
       openTodoDir: async () => { todoCalls++; if (failOpen) throw new Error('合成共享库错误'); },
     },
@@ -37,16 +37,12 @@ test('目录入口归入待办与数据，共享库入口不重复，读取和�
   const render = async (view: ViewId) => act(async () => root.render(createElement(SettingsView, { view, uiTheme: 'mist', onUiThemeChange: () => {}, onAvatarColorChange: () => {} })));
   const row = (key: string) => dom.window.document.querySelector<HTMLElement>(`[data-setting-key="${key}"]`)!;
   const open = async (key: string) => act(async () => row(key).querySelector<HTMLButtonElement>('button')!.click());
-  const search = async (value: string) => act(async () => {
-    const input = dom.window.document.querySelector<HTMLInputElement>('.set-search input')!;
-    Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value')!.set!.call(input, value);
-    input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
-  });
   t.after(async () => {
     await act(async () => root.unmount()); dom.window.close();
     names.forEach((name, index) => { if (previous[index]) Object.defineProperty(globalThis, name, previous[index]!); else Reflect.deleteProperty(globalThis, name); });
   });
   await render('settings-data');
+  assert.equal(dom.window.document.querySelector('.set-search'), null);
   assert.equal(row('remindersEnabled').querySelector('button')!.getAttribute('aria-checked'), 'false');
   await open('remindersEnabled');
   assert.equal(settings.remindersEnabled, true);
@@ -65,8 +61,7 @@ test('目录入口归入待办与数据，共享库入口不重复，读取和�
   assert.equal(dom.window.document.querySelector('[role="alert"]')!.textContent, '应用数据目录：合成目录错误');
   await open('dbPath');
   assert.equal(dom.window.document.querySelector('[role="alert"]')!.textContent, '待办共享库：合成共享库错误');
-  await search('应用数据目录'); assert.ok(row('userData')); assert.equal(row('dbPath'), null);
-  await search('synthetic/todo'); assert.ok(row('dbPath')); assert.equal(row('userData'), null);
+  assert.ok(row('userData')); assert.ok(row('dbPath'));
   await render('settings-about');
   assert.equal(row('userData'), null); assert.equal(row('dbPath'), null); assert.equal(row('todoDb'), null);
   assert.ok(row('version')); assert.ok(row('update'));
@@ -84,8 +79,7 @@ test('目录入口归入待办与数据，共享库入口不重复，读取和�
   assert.ok([...dom.window.document.querySelectorAll('[role="alert"]')].some(node => /合成设置保存失败/.test(node.textContent!)));
   await render('settings-notifications');
   assert.equal(dom.window.document.querySelector('h1')!.textContent, '待办与数据');
-  await search('待办提醒');
   assert.ok(row('remindersEnabled'));
-  assert.equal(row('userData'), null);
-  assert.equal(row('dbPath'), null);
+  assert.ok(row('userData'));
+  assert.ok(row('dbPath'));
 });

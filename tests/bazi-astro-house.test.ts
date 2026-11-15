@@ -676,7 +676,7 @@ describe('占星行星落座宫位列', { concurrency: false }, () => {
     const tab = [...harness.doc.querySelectorAll<HTMLElement>('[role="tab"]')].find(item => item.textContent === '占星')!;
     await act(async () => tab.click());
     assert.match(harness.doc.querySelector('.bazi-chart-error')!.textContent!, /未识别这个时区/);
-    assert.equal(harness.doc.querySelector<HTMLButtonElement>('.bazi-top .btn-pri')!.disabled, true);
+    assert.equal(harness.doc.querySelector('.bazi-astro-view'), null, '失效时区不展示占星盘及解读入口');
     await clickTimeControl('.bazi-chart-error button');
     assert.equal(harness.doc.querySelector<HTMLInputElement>('[aria-label="其他地区时区"]')!.value, 'Old/Unknown');
     await chooseShanghaiTime();

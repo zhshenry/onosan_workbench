@@ -29,7 +29,7 @@ export function HushHourView({ active, onPending }: { active: boolean; onPending
   useEffect(() => {
     let current = true;
     const off = api().onChanged(value => { if (current) { setState(value); if (value.service.phase === 'running' || value.build.phase === 'running') setLocalFailure(''); } });
-    void api().open().then(value => { if (current) { setState(value); setLoadedRevision(value.buildRevision); } }, error => { if (current) setLocalFailure(errorText(error)); });
+    void api().state().then(value => { if (current) { setState(value); setLoadedRevision(value.buildRevision); } }, error => { if (current) setLocalFailure(errorText(error)); });
     return () => { current = false; off(); };
   }, []);
   useLayoutEffect(() => { if (active && expanded) restoreButton.current?.focus({ preventScroll: true }); }, [active, expanded]);
@@ -89,7 +89,7 @@ export function HushHourView({ active, onPending }: { active: boolean; onPending
           {building ? <ArrowClockwise className="hush-hour-build-spinner" size={14} aria-hidden="true" /> : error ? <WarningCircle size={14} aria-hidden="true" /> : statusPhase === 'synced' ? <CheckCircle weight="fill" size={14} aria-hidden="true" /> : <Circle weight="fill" size={10} aria-hidden="true" />}{statusLabel}
         </span>
         {error ? <button type="button" className="hush-hour-status-details" onClick={() => setLogsOpen(true)}>{buildFailed && !failure ? '查看日志' : '查看详情'}</button> : null}
-      </div></div><span title={state?.root}>{state?.root || '正在读取项目目录…'}</span></div>
+      </div></div><span title={state?.root}>{!state ? '正在读取项目…' : isOnline ? '正式网页' : running ? '本地预览已启动' : state.service.phase === 'starting' ? '正在打开本地网页…' : '本地预览未启动'}</span></div>
       <div className="game-project-actions">
         <div className="game-service-actions"><button type="button" className="game-primary" title="自动检测源码更新，点击后手动构建并刷新本地预览" disabled={!state || pending} aria-busy={building} onClick={() => { void build(); }}><ArrowClockwise className={building ? 'hush-hour-build-spinner' : undefined} />{building ? '正在构建…' : buildFailed ? '重新构建' : isOnline ? '构建本地' : '构建并刷新'}{statusPhase === 'pending' && state?.sourceChanged ? <span className="game-refresh-badge">有更新</span> : null}</button>
           {running ? <button type="button" disabled={pending} onClick={() => { void act(async () => { setState(await api().stop()); }); }}><Stop />停止</button> : <button type="button" disabled={pending} onClick={() => { void start(); }}><Play weight="fill" />启动本地</button>}
@@ -105,7 +105,7 @@ export function HushHourView({ active, onPending }: { active: boolean; onPending
     </header>
     <div className="game-panels">
       <section className="game-preview glass" aria-label="网页预览">
-        <div className="game-pane-heading game-preview-heading"><div className="game-preview-heading-main"><strong><Globe />双环境预览</strong><div className="game-environments"><Segmented aria-label="网页环境" value={environment} onChange={value => { setEnvironment(value === 'online' ? 'online' : 'local'); setFailure(''); if (value === 'online') setOnlineEntered(true); }} options={[{ value: 'local', label: '本地预览' }, { value: 'online', label: '正式网页' }]} /></div></div><button type="button" className="game-text-button" disabled={!state} onClick={() => setOnlineSettings(true)}><GearSix />设置正式地址</button></div>
+        <div className="game-pane-heading game-preview-heading"><div className="game-preview-heading-main"><div className="game-environments"><Segmented aria-label="网页环境" value={environment} onChange={value => { setEnvironment(value === 'online' ? 'online' : 'local'); setFailure(''); if (value === 'online') setOnlineEntered(true); }} options={[{ value: 'local', label: '本地预览' }, { value: 'online', label: '正式网页' }]} /></div></div><button type="button" className="game-text-button" disabled={!state} onClick={() => setOnlineSettings(true)}><GearSix />设置正式地址</button></div>
         <div className="game-preview-toolbar">
           <button type="button" className="game-icon-button" aria-label="后退" title="后退" disabled={!hasPreview || !browser.canGoBack || previewBusy} onClick={() => preview.current?.back()}><ArrowLeft /></button>
           <button type="button" className="game-icon-button" aria-label="前进" title="前进" disabled={!hasPreview || !browser.canGoForward || previewBusy} onClick={() => preview.current?.forward()}><ArrowRight /></button>
@@ -120,7 +120,7 @@ export function HushHourView({ active, onPending }: { active: boolean; onPending
             <button type="button" role="menuitem" disabled={!ready} onClick={() => { close(); void act(() => api().openExternal(currentTabId)); }}><ArrowSquareOut />在外部浏览器打开</button>
           </>}</GameOptionsMenu>
         </div>
-        <div className="game-environment" hidden={isOnline} inert={isOnline} aria-hidden={isOnline}>{running && state ? <ProjectPreview url={state.service.url} workspace="hush-hour" tabId={tabId} viewport={expanded && !isOnline ? 'fit' : viewport} apiRef={localPreview} onState={setBrowser} /> : <div className="game-preview-empty"><Globe size={44} /><h1>Hush-Hour</h1><p>{state?.service.phase === 'starting' ? '正在打开本地网页…' : '启动本地预览，或构建后查看最新网页。'}</p><button type="button" disabled={pending} onClick={() => { void start(); }}>启动本地</button></div>}</div>
+        <div className="game-environment" hidden={isOnline} inert={isOnline} aria-hidden={isOnline}>{running && state ? <ProjectPreview url={state.service.url} workspace="hush-hour" tabId={tabId} viewport={expanded && !isOnline ? 'fit' : viewport} apiRef={localPreview} onState={setBrowser} /> : <div className="game-preview-empty"><Globe size={44} /><h1>Hush-Hour</h1><p>{state?.service.phase === 'starting' ? '正在打开本地网页…' : '本地预览未启动'}</p></div>}</div>
         <div className="game-environment" hidden={!isOnline} inert={!isOnline} aria-hidden={!isOnline}>{onlineEntered && state?.online.url ? <ProjectPreview url={state.online.url} workspace="hush-hour-online" tabId={onlineTabId} viewport={expanded && isOnline ? 'fit' : onlineViewport} apiRef={onlinePreview} onState={setOnlineBrowser} /> : <div className="game-preview-empty"><Globe size={44} /><h1>正式网页</h1><p>设置发布地址，即可查看正式网页。</p><button type="button" disabled={!state} onClick={() => setOnlineSettings(true)}>设置正式地址</button></div>}</div>
         <footer className="game-preview-footer"><span>{isOnline ? browser.error ? '正式网页载入失败，请检查地址与网络。' : browser.loading ? '正式网页载入中…' : browser.target ? '当前为正式网页预览，与本地独立。' : '正式网页可独立于本地服务访问。' : state?.sourceChanged ? '源码有更新，构建后查看最新网页。' : state?.buildRevision ? '当前为本地静态构建预览。' : '请先生成网页构建。'}</span>{!isOnline ? <button type="button" onClick={() => setLogsOpen(true)}>查看构建日志</button> : null}</footer>
       </section>

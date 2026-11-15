@@ -264,8 +264,8 @@ export async function runContextPickerPilot({ application, page, check, screensh
       await closePanel(page);
     });
     await check('Context picker: real UI creates long todo fixture and keyboard/change/remove/cancel stay read-only', async () => {
-      await navigate(page, 'home', null, 'home');
-      await page.locator('#view-home').getByRole('button', { name: '新增', exact: true }).click();
+      await navigate(page, 'life', '日程待办', 'todo');
+      await page.locator('#view-todo').getByRole('button', { name: '新增', exact: true }).click();
       const editor = page.getByRole('dialog', { name: '新增事项', exact: true });
       await editor.getByRole('textbox', { name: '待办名称', exact: true }).fill(longTitle);
       await editor.getByRole('button', { name: '更多设置：未设置', exact: true }).click();
@@ -273,7 +273,7 @@ export async function runContextPickerPilot({ application, page, check, screensh
       await editor.getByRole('button', { name: '创建', exact: true }).click(); await editor.waitFor({ state: 'hidden' });
       todo = (await eventually(() => taskState(page), state => state.tasks.some(task => task.title === longTitle), 'Todo fixture did not save')).tasks.find(task => task.title === longTitle);
       for (let i = 0; i < 21; i++) {
-        await page.locator('#view-home').getByRole('button', { name: '新增', exact: true }).click();
+        await page.locator('#view-todo').getByRole('button', { name: '新增', exact: true }).click();
         const extra = page.getByRole('dialog', { name: '新增事项', exact: true });
         await extra.getByRole('textbox', { name: '待办名称', exact: true }).fill(`CI参考滚动${marker}-${i}`);
         await extra.getByRole('button', { name: '创建', exact: true }).click(); await extra.waitFor({ state: 'hidden' });
@@ -326,7 +326,7 @@ export async function runContextPickerPilot({ application, page, check, screensh
       const turn = await send(`CI待办参考${marker}`, { module: 'todo', taskId: todo.id }, originalNote);
       assert.deepEqual(turn.contextScope, { module: 'todo' });
       await closePanel(page);
-      await page.locator('#view-home').getByRole('button', { name: `编辑 ${longTitle}`, exact: true }).click();
+      await page.locator('#view-todo').getByRole('button', { name: `编辑 ${longTitle}`, exact: true }).click();
       const editor = page.getByRole('dialog', { name: '编辑事项', exact: true });
       await editor.getByRole('textbox', { name: '备注 / 进展', exact: true }).fill(editedNote);
       await editor.getByRole('button', { name: '保存待办', exact: true }).click(); await editor.waitFor({ state: 'hidden' });
@@ -375,7 +375,7 @@ export async function runContextPickerPilot({ application, page, check, screensh
       assert.deepEqual((await page.evaluate(() => window.workbench.copy.list())).drafts.find(draft => draft.id === primary.id), primary);
       await navigate(page, 'media', '图文发布'); await openPanel(page); assert.equal(await chips(page).count(), 0);
       await selectReference(page, copy.title, true);
-      await navigate(page, 'home', null, 'home'); await openPanel(page); assert.equal(await chips(page).count(), 0);
+      await navigate(page, 'life', '日程待办', 'todo'); await openPanel(page); assert.equal(await chips(page).count(), 0);
       await openChat(page, turns[0].title); assert.equal(await chips(page).count(), 0, 'Reopening a chat does not silently attach past references');
       await selectReference(page, longTitle); await newChat(page); assert.equal(await chips(page).count(), 0, 'New chat cannot inherit references');
     });
@@ -441,7 +441,7 @@ export async function runContextPickerPilot({ application, page, check, screensh
         await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, fixture.theme);
         await page.emulateMedia({ colorScheme: fixture.colorScheme, reducedMotion: 'reduce' });
         await resize(application, page, fixture.width, fixture.height);
-        await navigate(page, 'home', null, 'home'); await openPanel(page);
+        await navigate(page, 'life', '日程待办', 'todo'); await openPanel(page);
         // The narrow-window overlay intentionally hides its resize handle.
         // Every theme first sets 340px with the visible wide-window control.
         if (fixture.width >= 1160) {
@@ -479,7 +479,7 @@ export async function verifyContextPickerRelaunch({ application, page, check, sc
     assert.ok((await page.evaluate(() => window.workbench.copy.list())).drafts.some(draft => draft.id === fixture.copyId));
     assert.ok((await page.evaluate(() => window.workbench.reading.list())).books.some(book => book.id === fixture.readingId));
     assert.ok((await page.evaluate(() => window.workbench.bazi.list())).profiles.some(profile => profile.id === fixture.primaryProfileId));
-    await navigate(page, 'home', null, 'home'); await openPanel(page); await openChat(page, fixture.turns[0].title);
+    await navigate(page, 'life', '日程待办', 'todo'); await openPanel(page); await openChat(page, fixture.turns[0].title);
     await referencePromptBubble(page, fixture.turns[0].prompt).waitFor({ state: 'visible' });
     await screenshot('context-picker-relaunched.png'); await closePanel(page);
   });

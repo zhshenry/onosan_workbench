@@ -44,7 +44,11 @@ export interface TestLane {
   runtime?: 'ready' | 'error' | 'unsupported'; runtimeError?: string; logs?: string[];
 }
 export interface TestRun { id: string; createdAt: string; task: TestTaskInput; input: { system: string; user: string }; lanes: TestLane[]; }
-export type TestRunSummary = Pick<TestRun, 'id' | 'createdAt'> & { title: string; mode: TestTaskInput['mode']; running: boolean; modelCount: number };
+export type TestRunSummary = Pick<TestRun, 'id' | 'createdAt'> & {
+  title: string; mode: TestTaskInput['mode']; running: boolean; modelCount: number;
+  models: Pick<TestModelSnapshot, 'id' | 'name' | 'providerName'>[];
+  failedCount: number; cancelledCount: number;
+};
 export interface AiTestBridge {
   tasks(): Promise<TestTask[]>;
   saveTask(input: TestTaskInput): Promise<TestTask>;

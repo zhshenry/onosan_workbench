@@ -4,7 +4,7 @@ import { act, createElement } from 'react';
 import { JSDOM } from 'jsdom';
 import { DEFAULT_APP_SETTINGS, type AppSettingsPatch, type UiTheme, type ViewId } from '../shared/contracts';
 
-test('通用与外观在同一页保存、搜索，旧分区入口展示合并页', async t => {
+test('通用与外观在同一页保存且无页头搜索，旧分区入口展示合并页', async t => {
   const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost', pretendToBeVisual: true });
   const names = ['window', 'document', 'HTMLElement', 'HTMLInputElement', 'Node', 'navigator', 'IS_REACT_ACT_ENVIRONMENT'] as const;
   const previous = names.map(name => Object.getOwnPropertyDescriptor(globalThis, name));
@@ -25,11 +25,6 @@ test('通用与外观在同一页保存、搜索，旧分区入口展示合并�
   const render = async (view: ViewId = 'settings-general') => act(async () => root.render(createElement(SettingsView, { view, uiTheme: theme, onUiThemeChange: value => { theme = value; }, onAvatarColorChange: () => {} })));
   const row = (key: string) => dom.window.document.querySelector<HTMLElement>(`[data-setting-key="${key}"]`)!;
   const keys = () => [...dom.window.document.querySelectorAll<HTMLElement>('[data-setting-key]')].map(el => el.dataset.settingKey);
-  const search = async (value: string) => act(async () => {
-    const input = dom.window.document.querySelector<HTMLInputElement>('.set-search input')!;
-    Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value')!.set!.call(input, value);
-    input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
-  });
   t.after(async () => {
     await act(async () => root.unmount()); dom.window.close();
     names.forEach((name, index) => { if (previous[index]) Object.defineProperty(globalThis, name, previous[index]!); else Reflect.deleteProperty(globalThis, name); });
@@ -37,6 +32,7 @@ test('通用与外观在同一页保存、搜索，旧分区入口展示合并�
   await render();
   const allKeys = ['launchAtLogin', 'closeAction', 'language', 'uiTheme'];
   assert.deepEqual(keys(), allKeys);
+  assert.equal(dom.window.document.querySelector('.set-search'), null);
   assert.equal(dom.window.document.querySelector('h1')!.textContent, '通用与外观');
   assert.equal(row('launchAtLogin').querySelector('button')!.getAttribute('aria-checked'), 'true');
   assert.equal(row('remindersEnabled'), null);
@@ -50,16 +46,6 @@ test('通用与外观在同一页保存、搜索，旧分区入口展示合并�
   assert.equal(row('launchAtLogin').querySelector('button')!.getAttribute('aria-checked'), 'true');
   assert.equal(settings.uiTheme, 'cool');
   assert.match(dom.window.document.querySelector('[role="alert"]')!.textContent!, /设置保存失败/);
-  await search('主题');
-  assert.deepEqual(keys(), ['uiTheme']);
-  assert.equal(dom.window.document.querySelector('.set-empty'), null);
-  await search('开机');
-  assert.deepEqual(keys(), ['launchAtLogin']);
-  await search('待办提醒');
-  assert.deepEqual(keys(), []);
-  await search('不存在的设置项');
-  assert.equal(dom.window.document.querySelectorAll('.set-empty').length, 1);
-  await act(async () => dom.window.document.querySelector<HTMLButtonElement>('[aria-label="清空设置搜索"]')!.click());
   assert.deepEqual(keys(), allKeys);
   await render('settings-appearance');
   assert.deepEqual(keys(), allKeys);

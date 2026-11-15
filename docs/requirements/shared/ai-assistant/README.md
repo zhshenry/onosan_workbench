@@ -6,6 +6,8 @@
 
 ## 方案与验收文字
 
+- [通用个人 Bot 工作台架构方案](bot-workbench-architecture.md)：跨产品共用的身份、会话、持久消息、任务、记忆、本地常驻与调度、双模式界面、开源工程参考及接入规范（2026-11-15 更新）。
+- [OnO 接入方案与 CMO 复用映射（2026-11-15 更新，方案稿）](bot-architecture-proposal-2026-11-13.md)：OnO 业务绑定、已选视觉参考、托盘与独立 Host 分阶段安排、迁移要求和 CMO 接入位置。
 - [spec.md](spec.md)
 - [preview-qa-2026-09-28.md](preview-qa-2026-09-28.md)
 - [供应商页内配置与验收（2026-11-05）](qa-inline-provider-2026-11-05.md)

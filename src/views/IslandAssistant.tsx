@@ -142,7 +142,7 @@ export function IslandAssistant() {
         onClick={() => setTab(item.value)} onKeyDown={event => { if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); const next = index ? 'chat' : 'messages'; setTab(next); document.getElementById(`assistant-tab-${next}`)?.focus(); } }}>{item.label}</button>)}
     </div>
     {tab === 'messages' ? <section className="island-assistant-messages" id="assistant-messages" role="tabpanel" aria-labelledby="assistant-tab-messages">
-      {island.state && <IslandAgentMessages embedded state={island.state} now={Date.now()} busy={busyAction} run={run} close={close} showReminders={() => { void run(() => wb.island.navigate({ view: 'home' })); }} />}
+      {island.state && <IslandAgentMessages embedded state={island.state} now={Date.now()} busy={busyAction} run={run} close={close} showReminders={() => { void run(() => wb.island.navigate({ view: 'todo' })); }} />}
       {island.error && <p role="alert">{island.error}</p>}
     </section> : <section className="island-assistant-conversation" id="assistant-chat" role="tabpanel" aria-labelledby="assistant-tab-chat">
       <div className="island-assistant-history">

@@ -18,10 +18,11 @@ test('Hush-Hour renders build states and clears recovered startup failures witho
   Object.defineProperty(dom.window.HTMLElement.prototype, 'hidePopover', { value() {} });
   Object.defineProperty(dom.window.HTMLCanvasElement.prototype, 'getContext', { value: () => null });
   let current: HushHourState = { root: 'C:/site', sourceRevision: 'a'.repeat(64), buildRevision: '', sourceChanged: true, sourceError: '', service: { phase: 'error', url: '', message: '旧的启动错误' }, online: { url: '' }, build: { phase: 'idle', output: '', message: '尚未构建' }, captures: [] };
-  let listener: ((state: HushHourState) => void) | undefined, finishBuild: ((state: HushHourState) => void) | undefined, builds = 0;
+  let listener: ((state: HushHourState) => void) | undefined, finishBuild: ((state: HushHourState) => void) | undefined, reads = 0, opens = 0, builds = 0;
   const bridge = {
     onChanged: (callback: typeof listener) => { listener = callback; return () => { listener = undefined; }; },
-    open: async () => { listener?.(current); throw new Error('旧的启动错误'); },
+    state: async () => { reads++; return current; },
+    open: async () => { opens++; listener?.(current); return current; },
     build: () => { builds++; return new Promise<HushHourState>(resolve => { finishBuild = resolve; }); },
   };
   Object.defineProperty(dom.window, 'workbench', { value: { hushHour: bridge as unknown as HushHourBridge } });
@@ -41,6 +42,15 @@ test('Hush-Hour renders build states and clears recovered startup failures witho
     if (previousAct) Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', previousAct); else Reflect.deleteProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT');
   });
   await act(async () => { root.render(createElement(module.exports.HushHourView, { active: true, onPending: () => {} })); });
+
+  await t.test('entering and switching pages only reads state until start is clicked', async () => {
+    assert.equal(reads, 1); assert.equal(opens, 0); assert.equal(builds, 0);
+    for (const active of [false, true, false, true]) await act(async () => { root.render(createElement(module.exports.HushHourView, { active, onPending: () => {} })); });
+    assert.equal(reads, 1); assert.equal(opens, 0); assert.equal(builds, 0);
+    const start = Array.from(dom.window.document.querySelectorAll<HTMLButtonElement>('.game-service-actions button')).find(button => button.textContent === '启动本地')!;
+    await click(start);
+    assert.equal(opens, 1); assert.equal(builds, 0);
+  });
 
   await t.test('initial failure is compact and retrying clears the stale service error during construction', async () => {
     assert.equal(status().textContent, '本地启动失败'); assert.equal(dom.window.document.querySelector('.game-error'), null);

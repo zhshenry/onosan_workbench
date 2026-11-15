@@ -145,7 +145,7 @@ async function captureAssociationFrame({ application, page, screenshot, report, 
   // after the final scroll, with no per-field scroll that could hide an action.
   const frame = await section(page).evaluate(element => {
     const rect = node => { const { x, y, width, height } = node.getBoundingClientRect(); return { x, y, width, height }; };
-    const panel = element.closest('.copy-editor'); const panelBounds = panel.getBoundingClientRect();
+    const panel = element.closest('.copy-publish-scroll'); const panelBounds = panel.getBoundingClientRect();
     const left = Math.max(0, panelBounds.left + panel.clientLeft); const top = Math.max(0, panelBounds.top + panel.clientTop);
     const right = Math.min(innerWidth, panelBounds.left + panel.clientLeft + panel.clientWidth);
     const bottom = Math.min(innerHeight, panelBounds.top + panel.clientTop + panel.clientHeight);
@@ -286,22 +286,23 @@ async function collapseAi(page) {
 async function settledNavigation(page, workbench, label = null) {
   await page.evaluate(async () => { await document.fonts.ready; });
   await page.waitForFunction(({ workbench, label }) => {
-    const title = { media: '自媒体工作台', settings: '设置' }[workbench];
     const rail = document.querySelector('.rail [data-workbench].on');
-    const menu = document.querySelector('.snav:not(.closing) .snav-content[data-swap="idle"]');
-    const tree = menu?.querySelector('.tree[data-switching="false"]');
-    if (rail?.getAttribute('data-workbench') !== workbench || !tree || menu.querySelector('.stitle')?.textContent !== title) return false;
+    const tree = document.querySelector(workbench === 'settings' ? '.settings-sections' : `#rail-branch-${workbench}`);
+    if (!tree || (workbench === 'settings' ? !tree.closest('dialog[open]') : rail?.getAttribute('data-workbench') !== workbench)) return false;
     if (label && tree.querySelector('[aria-current="page"]')?.textContent.trim() !== label) return false;
     const transitions = document.getAnimations().filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity
-      && animation.effect?.target instanceof Element && animation.effect.target.closest('.snav, .content, .rail'));
+      && animation.effect?.target instanceof Element && animation.effect.target.closest('.settings-dialog, .settings-sections, .content, .rail'));
     return !transitions.some(animation => animation.pending || animation.playState === 'running');
   }, { workbench, label });
 }
 async function openCopy(page, label) {
-  await page.bringToFront(); await collapseAi(page);
+  await page.bringToFront();
+  if (await page.getByRole('dialog', { name: '设置', exact: true }).isVisible()) await page.locator('.settings-dialog > .modal-heading').getByRole('button', { name: '关闭', exact: true }).click();
+  await collapseAi(page);
+  if (await page.locator('.nav-toggle').getAttribute('aria-expanded') !== 'true') await page.locator('.nav-toggle').click();
   await page.locator('.rail [data-workbench="media"]').click();
   await settledNavigation(page, 'media');
-  await page.locator('.snav:not(.closing) .tree[data-switching="false"]').getByRole('button', { name: label, exact: true }).click();
+  await page.locator('#rail-branch-media').getByRole('button', { name: label, exact: true }).click();
   await settledNavigation(page, 'media', label);
   await page.waitForFunction(label => {
     const view = document.querySelector(`.content > .view-fade > .copy-wrap .copy-editor[aria-label="${label}"]`);
@@ -314,6 +315,11 @@ async function selectBlog(page, title, keyboard = false) {
   const target = page.getByRole('button', { name: `选择博客《${title}》`, exact: true });
   if (keyboard) { await target.focus(); await page.keyboard.press('Enter'); } else await target.click();
   await page.waitForFunction(title => document.querySelector('.copy-list [aria-pressed="true"]')?.getAttribute('aria-label') === `选择博客《${title}》`, title);
+  const disclosure = page.locator('.pub-association-disclosure');
+  if (!await disclosure.evaluate(element => element.open)) {
+    const summary = disclosure.locator('summary');
+    if (keyboard) { await summary.focus(); await page.keyboard.press('Enter'); } else await summary.click();
+  }
 }
 async function waitStatus(page, text) { await status(page, text).waitFor({ state: 'visible' }); }
 async function waitCopyResult(page, text) {
@@ -588,9 +594,9 @@ export async function runPublishAssociationPilot({ application, page, check, scr
     for (const entry of PUBLISH_ASSOCIATION_MATRIX) {
       await page.locator('.rail [data-workbench="settings"]').click();
       await settledNavigation(page, 'settings');
-      await page.locator('.snav:not(.closing) .tree[data-switching="false"]').getByRole('button', { name: '通用与外观', exact: true }).click();
+      await page.locator('.settings-sections').getByRole('button', { name: '通用与外观', exact: true }).click();
       await settledNavigation(page, 'settings', '通用与外观');
-      await page.locator('.content').getByRole('heading', { name: '通用与外观', exact: true }).waitFor({ state: 'visible' });
+      await page.getByRole('dialog', { name: '设置', exact: true }).getByRole('heading', { name: '通用与外观', exact: true }).waitFor({ state: 'visible' });
       const themeLabel = { mist: '雾灰 · 轻雾', cool: '冷灰 · 凝霜', warm: '暖砂 · 柔雾' }[entry.theme];
       await page.getByRole('radio', { name: themeLabel, exact: true }).click();
       await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, entry.theme);

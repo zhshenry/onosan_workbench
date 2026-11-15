@@ -35,13 +35,13 @@ export function sameAiScope(chat: Pick<ChatSession, 'module' | 'draftId' | 'prof
 const viewWorkbenches: Record<ViewId, WorkbenchId> = {
   browser: 'web', 'hush-hour': 'web', 'personal-website': 'web', game: 'game',
   'ai-test': 'ai-test', 'ai-test-tasks': 'ai-test', 'ai-test-history': 'ai-test',
-  home: 'home', bazi: 'life', reading: 'life', checkin: 'life', copy: 'media', 'copy-publish': 'media', 'media-browser': 'media',
+  home: 'home', todo: 'life', bazi: 'life', reading: 'life', checkin: 'life', copy: 'media', 'copy-publish': 'media', 'media-browser': 'media',
   'settings-profile': 'settings', 'settings-general': 'settings', 'settings-appearance': 'settings', 'settings-island': 'settings',
   'settings-ai': 'settings', 'settings-data': 'settings', 'settings-notifications': 'settings', 'settings-about': 'settings',
 };
 
 export function defaultAiScopeForWorkbench(workbench: WorkbenchId): AiScope | null {
-  if (workbench === 'home') return { module: 'todo' };
+  if (workbench === 'home') return { module: 'workbench', viewId: 'home' };
   if (workbench === 'web') return { module: 'workbench', viewId: 'browser' };
   if (workbench === 'game') return { module: 'workbench', viewId: 'game' };
   if (workbench === 'ai-test') return { module: 'workbench', viewId: 'ai-test' };
@@ -50,7 +50,7 @@ export function defaultAiScopeForWorkbench(workbench: WorkbenchId): AiScope | nu
 }
 
 export function workbenchForScope(scope: AiScope): WorkbenchId | null {
-  if (scope.module === 'todo') return 'home';
+  if (scope.module === 'todo') return 'life';
   if (scope.module === 'copy') return 'media';
   if (scope.module === 'bazi') return 'life';
   if (scope.module === 'reading') return 'life';
@@ -62,6 +62,8 @@ export function workbenchForScope(scope: AiScope): WorkbenchId | null {
 
 export function sameAiWorkbench(chat: Pick<ChatSession, 'module' | 'draftId' | 'profileId' | 'viewId'>, scope: AiScope): boolean {
   const original = chatScope(chat);
+  // 日程待办迁到小工具后仍保留原会话边界，不自动接续命理或阅读对话。
+  if (original.module === 'todo' || scope.module === 'todo') return original.module === scope.module;
   const workbench = workbenchForScope(original);
   return workbench ? workbench === workbenchForScope(scope) : aiScopeKey(original) === aiScopeKey(scope);
 }

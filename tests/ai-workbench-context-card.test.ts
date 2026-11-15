@@ -118,7 +118,7 @@ test('助手卡片显示导航中的工作台名和子页名，专用模块名�
     assert.equal(modname(), '阅读助手');
     assert.equal(objectText(), '海边的卡夫卡');
 
-    await render(pageAiContext('home', none));
+    await render(pageAiContext('todo', none));
     assert.equal(modname(), '待办与日程');
   } finally {
     await act(async () => root.unmount());

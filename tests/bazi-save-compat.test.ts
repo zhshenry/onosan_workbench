@@ -48,7 +48,7 @@ test('命例编辑仅提交输入字段，保存并重载保留 id、创建时�
     assert.ok(element, selector);
     await act(async () => element.click());
   };
-  for (const [label, system] of [['八字', 'bazi'], ['紫微斗数', 'ziwei'], ['占星', 'astro']]) {
+  for (const label of ['八字', '紫微斗数', '占星']) {
     const tab = [...dom.window.document.querySelectorAll<HTMLElement>('[role="tab"]')].find(element => element.textContent === label);
     assert.ok(tab, label);
     await act(async () => tab.click());
@@ -56,14 +56,19 @@ test('命例编辑仅提交输入字段，保存并重载保留 id、创建时�
     assert.ok(panel, label);
     assert.equal(panel.querySelector('textarea'), null, `${label}不再提供笔记编辑`);
     assert.equal([...panel.querySelectorAll('.ptitle')].some(element => element.textContent === '笔记'), false);
-    await click('.bazi-top .btn-pri');
-    assert.equal(requests.at(-1)?.profileId, original.id);
-    assert.equal(requests.at(-1)?.system, system);
-    assert.ok(requests.at(-1)?.prompt.includes(system === 'astro' ? '完整星盘' : label));
-    assert.equal(noteWrites, 0, 'AI 解读不再触发笔记写入');
-    assert.equal(store.all().notes[original.id], '仅测试使用的笔记');
   }
-  assert.equal(requests.length, 3);
+  assert.equal(requests.length, 0, '切换盘面不自动发起解读');
+  assert.equal(dom.window.document.querySelector('.bazi-top .btn-pri'), null);
+  const readingTab = [...dom.window.document.querySelectorAll<HTMLElement>('.bazi-astro-view [role="radio"]')].find(element => element.textContent === '解读');
+  assert.ok(readingTab);
+  await act(async () => readingTab.click());
+  await click('.bazi-as-reading footer .btn-pri');
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].profileId, original.id);
+  assert.equal(requests[0].system, 'astro');
+  assert.ok(requests[0].prompt.includes('完整星盘'));
+  assert.equal(noteWrites, 0, 'AI 解读不再触发笔记写入');
+  assert.equal(store.all().notes[original.id], '仅测试使用的笔记');
   await click('.bazi-psel-btn');
   await click('[aria-label="编辑 测试命例"]');
   await click('.date-picker > button');

@@ -281,8 +281,8 @@ test('阅读清单:确认前不落盘,仅勾选入库;关闭不删;气泡删除;
     rmSync(dir, { recursive: true, force: true });
   });
 
-  const buttonByText = (text: string): HTMLButtonElement => {
-    const found = [...doc.querySelectorAll('button')].find((button) => (button.textContent ?? '').replace(/\s+/g, '') === text.replace(/\s+/g, ''));
+  const buttonByText = (text: string, within: ParentNode = doc): HTMLButtonElement => {
+    const found = [...within.querySelectorAll('button')].find((button) => (button.textContent ?? '').replace(/\s+/g, '') === text.replace(/\s+/g, ''));
     assert.ok(found, `缺少按钮「${text}」:${[...doc.querySelectorAll('button')].map((button) => button.textContent?.replace(/\s+/g, '')).join(' | ')}`);
     return found;
   };
@@ -408,7 +408,7 @@ test('阅读清单:确认前不落盘,仅勾选入库;关闭不删;气泡删除;
   assert.deepEqual([...doc.querySelectorAll('[aria-label="阅读状态"] button')].map((button) => button.textContent), ['想读', '在读', '已读']);
   const dmbokCard = [...doc.querySelectorAll('.bookcard')].find((node) => node.textContent?.includes('DMBOK'));
   assert.match(dmbokCard?.querySelector('.b-progress')?.textContent ?? '', /^0%$/);
-  await click(buttonByText('已读'));
+  await click(buttonByText('已读', doc.querySelector('[aria-label="阅读状态"]')!));
   await waitFor(() => store.all().books[0]?.status === 'done', '状态未切换');
   const statusSave = saves.at(-1)!;
   assert.equal(statusSave.status, 'done');
@@ -455,9 +455,9 @@ test('阅读清单:确认前不落盘,仅勾选入库;关闭不删;气泡删除;
   assert.equal(persisted.books.length, 0);
   assert.equal(persisted.vaultPath, vault);
 
-  store.save({ title: '无进度', status: 'reading', tags: [] });
-  store.save({ title: '零进度', status: 'reading', progressPct: 0, tags: [] });
-  store.save({ title: '旧搁置', status: 'paused', rating: 4, comment: '保留的短评', tags: [] });
+  store.save({ title: '无进度', status: 'reading', tags: ['技术'] });
+  store.save({ title: '零进度', status: 'reading', progressPct: 0, tags: ['笔记'] });
+  store.save({ title: '旧搁置', status: 'paused', rating: 4, comment: '保留的短评', tags: ['技术'] });
   await act(async () => { root.unmount(); });
   mounted = false;
   root = createRoot(doc.getElementById('root')!);
@@ -478,6 +478,18 @@ test('阅读清单:确认前不落盘,仅勾选入库;关闭不删;气泡删除;
   assert.equal(progressOf('无进度'), '0%');
   assert.equal(progressOf('零进度'), '0%');
   assert.match(doc.body.textContent ?? '', /当前为搁置|搁置/);
+  const beforeFilter = saves.length;
+  await click(buttonByText('在读', doc.querySelector('[aria-label="书单状态"]')!));
+  assert.equal(doc.querySelectorAll('.bookcard').length, 2);
+  await click(buttonByText('技术', doc.querySelector('[aria-label="按标签筛选"]')!));
+  assert.equal(doc.querySelectorAll('.bookcard').length, 1);
+  assert.match(doc.querySelector('.bookcard')?.textContent ?? '', /无进度/);
+  await click(buttonByText('已读', doc.querySelector('[aria-label="书单状态"]')!));
+  assert.equal(doc.querySelectorAll('.bookcard').length, 0);
+  assert.match(doc.querySelector('.empty-note')?.textContent ?? '', /没有符合筛选条件/);
+  assert.equal(saves.length, beforeFilter, '筛选不能改写书目状态');
+  await click(buttonByText('全部', doc.querySelector('[aria-label="书单状态"]')!));
+  await click(buttonByText('全部', doc.querySelector('[aria-label="按标签筛选"]')!));
   const pausedCard = [...doc.querySelectorAll('.bookcard')].find((node) => node.textContent?.includes('旧搁置'));
   assert.ok(pausedCard);
   await click(pausedCard);
@@ -486,16 +498,17 @@ test('阅读清单:确认前不落盘,仅勾选入库;关闭不删;气泡删除;
   assert.equal(doc.querySelector('textarea.shortcut'), null);
   assert.equal((doc.body.textContent ?? '').includes('评分与短评'), false);
   assert.equal((doc.body.textContent ?? '').includes('保留的短评'), false);
-  await click(buttonByText('想读'));
+  await click(buttonByText('想读', doc.querySelector('[aria-label="阅读状态"]')!));
   await waitFor(() => store.all().books.find((book) => book.title === '旧搁置')?.status === 'wish', '搁置应能改选为三态之一');
   assert.equal(store.all().books.find((book) => book.title === '旧搁置')?.rating, 4);
   assert.equal(store.all().books.find((book) => book.title === '旧搁置')?.comment, '保留的短评');
   assert.equal((doc.body.textContent ?? '').includes('当前为搁置'), false);
 });
 
-test('阅读清单样式:状态选择单行高度,内容区预留滚动槽', () => {
+test('阅读清单样式:状态选择单行高度,书单和详情独立预留滚动槽', () => {
   const css = readFileSync(new URL('../modules/reading/ui/reading.css', import.meta.url), 'utf8');
   assert.match(css, /\.reading-view \.d-state \.pseg button[\s\S]*white-space:\s*nowrap/);
   assert.match(css, /\.reading-view \.d-state \.pseg button[\s\S]*height:\s*28px/);
-  assert.match(css, /\.content:has\(\.reading-view\)\s*\{[^}]*scrollbar-gutter:\s*stable/);
+  assert.match(css, /\.rd-library-list\s*\{[^}]*scrollbar-gutter:\s*stable/);
+  assert.match(css, /\.detail\s*\{[^}]*scrollbar-gutter:\s*stable/);
 });

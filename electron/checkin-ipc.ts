@@ -4,7 +4,7 @@ import { CheckinProviderSchema, CheckinSettingsSchema, WorkbuddyLoginSchema, Wor
 import { speechAppUrl } from '../shared/speech-contracts';
 import { CheckinService } from './checkin';
 import { CHECKIN_HOSTS, CheckinError, CheckinProviders, checkinError, obj, type CheckinRequest } from './checkin-providers';
-import { checkinDeviceId, qoderNativeIdentity } from './checkin-runtime';
+import { checkinDeviceId, qoderNativeIdentity, traeCheckinDeviceId } from './checkin-runtime';
 
 export function trustedCheckinSender(sender: unknown, primary: unknown, mainFrame: boolean, url: string, appUrl: string): boolean {
   return !!sender && sender === primary && mainFrame && speechAppUrl(url, appUrl);
@@ -41,7 +41,7 @@ export function registerCheckinIpc(primary: () => WebContents | undefined, appUr
     if (!safeStorage.isEncryptionAvailable() || process.platform === 'linux' && safeStorage.getSelectedStorageBackend() === 'basic_text') throw new CheckinError('系统加密服务不可用，暂时不能保存登录凭据。', 'storage');
   };
   const service = new CheckinService({
-    directory: app.getPath('userData'), providers: new CheckinProviders(request),
+    directory: app.getPath('userData'), providers: new CheckinProviders(request, traeCheckinDeviceId),
     protect(value) { requireEncryption(); return safeStorage.encryptString(value).toString('base64'); },
     unprotect(value) { requireEncryption(); return safeStorage.decryptString(Buffer.from(value, 'base64')); },
     async open(value) {

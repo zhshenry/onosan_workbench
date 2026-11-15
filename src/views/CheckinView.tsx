@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { ArrowClockwise, ArrowRight, ArrowSquareOut, Browser, CaretDown, Check, CheckCircle, Circle, CircleNotch, Clock, ClockCounterClockwise, CloudCheck, Desktop, FloppyDisk, Gift, Info, Link, LockKey, PlugsConnected, ShieldCheck, SignOut, WarningCircle } from '@phosphor-icons/react';
+import { ArrowClockwise, ArrowRight, ArrowSquareOut, Browser, CaretDown, Check, CheckCircle, Circle, CircleNotch, Clock, Desktop, FloppyDisk, Gift, Info, Link, LockKey, PlugsConnected, ShieldCheck, SignOut, SlidersHorizontal, WarningCircle } from '@phosphor-icons/react';
 import { CHECKIN_PROVIDERS, DEFAULT_CHECKIN_SETTINGS, emptyCheckinRow, type CheckinProvider, type CheckinRow, type CheckinSettings, type CheckinState, type CheckinStatus } from '../../shared/checkin-contracts';
 import { Modal, Segmented, TimePicker, errorText } from '../ui/controls';
 import workbuddyLogo from '../assets/checkin-providers/workbuddy.svg';
@@ -18,9 +18,9 @@ const captions: Record<CheckinStatus, string> = { disconnected: '未连接', rea
 const working = (row: CheckinRow): boolean => ['checking', 'claiming'].includes(row.status);
 const time = (at: number): string => at ? new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Shanghai' }).format(at) : '尚未检查';
 function Logo({ provider, small = false }: { provider: Provider; small?: boolean }) { return <span className={`provider-logo${small ? ' small' : ''}`}><img src={provider.logo} alt="" /></span>; }
-function Switch({ checked, onChange, label }: { checked: boolean; onChange(value: boolean): void; label: string }) { return <button type="button" className="ci-switch" role="switch" aria-label={label} aria-checked={checked} onClick={() => onChange(!checked)}><span /></button>; }
+function Switch({ checked, onChange, label, disabled = false }: { checked: boolean; onChange(value: boolean): void; label: string; disabled?: boolean }) { return <button type="button" className="ci-switch" role="switch" aria-label={label} aria-checked={checked} disabled={disabled} onClick={() => onChange(!checked)}><span /></button>; }
 function Status({ status }: { status: CheckinStatus }) { const Icon = ['checking', 'claiming'].includes(status) ? CircleNotch : status === 'claimed' ? CheckCircle : ['expired', 'pending', 'error', 'unavailable'].includes(status) ? WarningCircle : status === 'disconnected' ? Link : Clock; return <span className={`ci-status ${status}`}><Icon size={15} className={['checking', 'claiming'].includes(status) ? 'spin' : ''} />{captions[status]}</span>; }
-function useCheckinState() {
+export function useCheckinState() {
   const [state, setState] = useState<CheckinState | null>(null), [error, setError] = useState('');
   useEffect(() => {
     let alive = true, version = 0;
@@ -73,8 +73,8 @@ function ConnectionDialog({ provider, state, close }: { provider: Provider; stat
   </div></Modal>;
 }
 
-function AutoDialog({ state, close, saved }: { state: CheckinState; close(): void; saved(): void }) {
-  const [draft, setDraft] = useState<CheckinSettings>(structuredClone(state.settings)), [busy, setBusy] = useState(false), [error, setError] = useState('');
+function AutoDialog({ state, enable = false, close, saved }: { state: CheckinState; enable?: boolean; close(): void; saved(): void }) {
+  const [draft, setDraft] = useState<CheckinSettings>(() => ({ ...structuredClone(state.settings), enabled: enable || state.settings.enabled })), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const update = (value: Partial<CheckinSettings>) => setDraft(current => ({ ...current, ...value }));
   async function save() {
     if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(draft.time)) { setError('请选择每天检查时间。'); return; }
@@ -91,37 +91,49 @@ function AutoDialog({ state, close, saved }: { state: CheckinState; close(): voi
   </div><div className="dialog-actions ci-modal-footer"><button className="ci-btn outline" disabled={busy} onClick={close}>取消</button><button className="ci-btn primary" disabled={busy} onClick={() => { void save(); }}><FloppyDisk size={16} />保存设置</button></div></Modal>;
 }
 
-export function CheckinHomeCard({ open }: { open(): void }) {
-  const { state, error } = useCheckinState();
-  const [busy, setBusy] = useState(false), [notice, setNotice] = useState('');
+export type CheckinCardVariant = 'parallel' | 'list' | 'tiles' | 'progress';
+export function CheckinHomeContent({ state, error = '', notice = '', busy = false, open, run, embedded = false, variant = 'parallel' }: {
+  state: CheckinState | null; error?: string; notice?: string; busy?: boolean; open(): void; run(): void; embedded?: boolean; variant?: CheckinCardVariant;
+}) {
   const connected = state?.rows.filter(r => r.connected).length || 0, done = state?.rows.filter(r => r.status === 'claimed').length || 0;
-  async function run() { setBusy(true); setNotice(''); try { await api.run([...CHECKIN_PROVIDERS]); } catch (e) { setNotice(errorText(e)); } finally { setBusy(false); } }
-  return <section className="panel glass checkin-scope ci-home-card" aria-label="每日签到">
-    <header className="ci-home-heading">
+  const label = connected ? done === connected ? '检查状态' : '一键签到' : '连接账号';
+  const action = <button className="ci-btn primary" disabled={!state || busy || state.rows.some(working)} onClick={() => { if (!connected) open(); else run(); }}>{busy ? <CircleNotch size={15} className="spin" /> : null}{label}{!busy ? <ArrowRight size={16} /> : null}</button>;
+  return <section className={`panel glass checkin-scope ci-home-card${embedded ? ' embedded' : ''}`} data-variant={variant} aria-label="每日签到">
+    {!embedded ? <header className="ci-home-heading">
       <div><h2><Gift size={18} />每日签到</h2><p className="ci-home-description">{done ? `${done} 个应用的本轮签到已确认` : '三个应用，一处领取'}</p></div>
-      <button className="ci-btn primary" disabled={busy || state?.rows.some(working)} onClick={() => { if (!connected) open(); else void run(); }}>
-        {busy ? <CircleNotch size={15} className="spin" /> : null}
-        {connected ? done === connected ? '检查状态' : '一键签到' : '连接账号'}
-        {!busy ? <ArrowRight size={16} /> : null}
-      </button>
-    </header>
-    <div className="ci-home-providers" role="list" aria-label="签到应用">
+      {action}
+    </header> : null}
+    {variant === 'progress' ? <div className="ci-home-progress"><strong>{state ? done : '—'} / 3</strong><span>本轮已领取</span><progress aria-label="本轮已领取应用数" max={3} value={done} /></div> : <div className="ci-home-providers" role="list" aria-label="签到应用">
       {providers.map(p => {
-        const status = state?.rows.find(r => r.provider === p.id)?.status || 'disconnected';
-        return <div key={p.id} role="listitem" title={p.name}>
-          <Logo provider={p} small />
-          <div className="ci-home-provider-copy"><strong>{p.name}</strong><small className={`ci-home-status ${status}`}><Circle size={6} weight="fill" aria-hidden="true" /><span>{captions[status]}</span></small></div>
+        const row = state?.rows.find(r => r.provider === p.id), status = row?.status || 'disconnected';
+        const caption = variant === 'tiles' && status === 'claimed' ? '已领取' : captions[status];
+        const statusLabel = <small className={`ci-home-status ${status}`}><Circle size={6} weight="fill" aria-hidden="true" /><span>{variant === 'tiles' && !state ? '正在读取' : caption}</span></small>;
+        return <div key={p.id} role="listitem" title={p.name} data-provider={p.id}>
+          {variant === 'tiles' ? <>
+            <div className="ci-home-tile-brand"><Logo provider={p} small /><strong>{p.name}</strong></div>
+            <div className="ci-home-tile-details">{statusLabel}{row?.status === 'claimed' ? <span className="ci-home-reward"><strong>{row.reward === null ? '—' : `+${row.reward}`}</strong>{row.reward !== null ? <small>{p.unit}</small> : null}</span> : null}</div>
+          </> : <>
+            <Logo provider={p} small />
+            <div className="ci-home-provider-copy"><strong>{p.name}</strong>{statusLabel}</div>
+          </>}
         </div>;
       })}
-    </div>
-    <footer className="ci-home-footer"><span>{connected} / 3 个账号已连接</span><button className="ci-link" onClick={open}>管理账号<ArrowRight size={15} /></button></footer>
+    </div>}
+    <footer className="ci-home-footer"><span className="ci-home-count">{state ? variant === 'tiles' ? `${connected} / 3 已连接` : `${connected} / 3 个账号已连接` : '正在读取签到状态…'}</span>{embedded ? action : null}<button className="ci-link" onClick={open}>管理账号<ArrowRight size={15} /></button></footer>
     {error || notice ? <p className="field-error" role="alert">{error || notice}</p> : null}
   </section>;
 }
 
+export function CheckinHomeCard({ open, embedded = false, variant = 'parallel' }: { open(): void; embedded?: boolean; variant?: CheckinCardVariant }) {
+  const { state, error } = useCheckinState();
+  const [busy, setBusy] = useState(false), [notice, setNotice] = useState('');
+  async function run() { setBusy(true); setNotice(''); try { await api.run([...CHECKIN_PROVIDERS]); } catch (e) { setNotice(errorText(e)); } finally { setBusy(false); } }
+  return <CheckinHomeContent state={state} error={error} busy={busy} notice={notice} open={open} run={() => { void run(); }} embedded={embedded} variant={variant} />;
+}
+
 export function CheckinView() {
   const { state, error: loadError } = useCheckinState();
-  const [view, setView] = useState('overview'), [selected, setSelected] = useState<CheckinProvider>('workbuddy'), [dialog, setDialog] = useState<'connect' | 'auto' | 'disconnect' | 'help' | null>(null), [busy, setBusy] = useState(false), [notice, setNotice] = useState(''), [error, setError] = useState('');
+  const [view, setView] = useState('overview'), [selected, setSelected] = useState<CheckinProvider>('workbuddy'), [dialog, setDialog] = useState<'connect' | 'auto' | 'auto-enable' | 'disconnect' | 'help' | null>(null), [busy, setBusy] = useState(false), [notice, setNotice] = useState(''), [error, setError] = useState('');
   useEffect(() => { if (!notice) return; const timer = setTimeout(() => setNotice(''), 4500); return () => clearTimeout(timer); }, [notice]);
   useEffect(() => { document.querySelector('.content')?.scrollTo(0, 0); }, [view]);
   const rows = state?.rows || CHECKIN_PROVIDERS.map(emptyCheckinRow), settings = state?.settings || DEFAULT_CHECKIN_SETTINGS;
@@ -132,25 +144,37 @@ export function CheckinView() {
   function connect(id: CheckinProvider) { setSelected(id); setError(''); setDialog('connect'); }
   function rowAction(p: Provider, row: CheckinRow) {
     const reconnect = !row.connected || row.status === 'expired';
-    return <button className={`ci-btn ${row.status === 'claimed' ? 'claimed-button' : reconnect ? 'outline' : 'ghost'}`} disabled={processing || !state} onClick={() => { if (reconnect) connect(p.id); else void action(() => row.status === 'claimed' || row.status === 'pending' || row.status === 'unavailable' ? api.refresh(p.id) : api.run([p.id])); }}>{working(row) ? <CircleNotch size={15} className="spin" /> : row.status === 'claimed' ? <Check size={15} /> : null}{reconnect ? row.status === 'expired' ? '重新连接' : '连接账号' : row.status === 'pending' ? '核对结果' : row.status === 'claimed' ? '已领取 · 核对' : row.status === 'unavailable' ? '检查状态' : row.status === 'error' ? '重新检查' : '立即签到'}</button>;
+    return <button className={`ci-btn ${row.status === 'claimed' ? 'claimed-button' : reconnect ? 'outline' : row.status === 'ready' ? 'outline ci-ready' : 'ghost'}`} disabled={processing || !state} onClick={() => { if (reconnect) connect(p.id); else void action(() => row.status === 'claimed' || row.status === 'pending' || row.status === 'unavailable' ? api.refresh(p.id) : api.run([p.id])); }}>{working(row) ? <CircleNotch size={15} className="spin" /> : row.status === 'claimed' ? <Check size={15} /> : null}{reconnect ? row.status === 'expired' ? '重新连接' : '连接账号' : row.status === 'pending' ? '核对结果' : row.status === 'claimed' ? '已领取 · 核对' : row.status === 'unavailable' ? '检查状态' : row.status === 'error' ? '重新检查' : '立即签到'}</button>;
   }
   return <section className="view on checkin-scope ci-main" aria-label="每日签到">
-    <header className="page-heading"><div><h1>每日签到</h1><p>连接常用 AI 应用，在这里统一领取每日奖励。</p></div><button className="ci-btn ghost" onClick={() => setDialog('help')}><Info size={17} />使用说明</button></header>
-    <div className="ci-view-tabs"><Segmented aria-label="签到页面" value={view} onChange={setView} options={[{ value: 'overview', label: '签到概览', icon: <Gift size={16} /> }, { value: 'accounts', label: '账号连接', icon: <Link size={16} /> }, { value: 'records', label: '签到记录', icon: <ClockCounterClockwise size={16} /> }]} /></div>
+    <header className="ci-page-header">
+      <div className="page-heading"><h1>每日签到</h1><div className="ci-heading-actions"><button className="ci-btn outline" disabled={!state} onClick={() => setDialog('auto')}><Clock size={16} />自动签到</button><button className="ci-btn outline" disabled={!state || processing} onClick={() => { void action(async () => { for (const id of CHECKIN_PROVIDERS) await api.refresh(id); }); }}><ArrowClockwise size={16} className={processing ? 'spin' : ''} />刷新状态</button><button className="ci-btn ghost ci-help-button" aria-label="使用说明" title="使用说明" onClick={() => setDialog('help')}><Info size={18} /></button></div></div>
+      <div className="ci-view-tabs"><Segmented aria-label="签到页面" value={view} onChange={setView} options={[{ value: 'overview', label: '签到概览' }, { value: 'accounts', label: '账号连接' }, { value: 'records', label: '签到记录' }]} /></div>
+    </header>
     {loadError || error || state?.warning ? <div className="ci-page-error" role="alert"><WarningCircle size={18} /><span>{loadError || error || state?.warning}</span></div> : null}
     {!state && !loadError ? <p className="ci-page-error" role="status">正在读取本机签到状态…</p> : null}
-    {view === 'records' ? <section className="glass ci-panel records-panel" aria-label="签到记录"><div className="section-title"><h2>签到记录</h2><span className="count-chip">{state?.records.length || 0} 条</span></div>{state?.records.length ? <ul className="record-list">{state.records.map(item => <li key={item.id}><span className={`record-symbol${item.status === 'claimed' ? '' : ' error'}`}>{item.status === 'claimed' ? <CheckCircle size={17} /> : <WarningCircle size={17} />}</span><div><strong>{providers.find(p => p.id === item.provider)!.name} · {item.source === 'auto' ? '自动' : '手动'}</strong><p>{item.message}{item.status === 'claimed' && item.reward !== null ? ` · +${item.reward} ${providers.find(p => p.id === item.provider)!.unit}` : ''}</p></div><time dateTime={new Date(item.at).toISOString()}>{time(item.at)}</time></li>)}</ul> : <div className="records-empty"><Clock size={19} /><p>还没有成功签到记录<span>成功领取的奖励和时间会保留在这里。</span></p></div>}</section> : view === 'overview' ? <div className="overview-grid"><div className="overview-primary"><section className="glass ci-panel provider-panel" aria-label="应用签到状态"><div className="provider-panel-heading"><div><h2>本轮签到<span className="count-chip">{done} / 3</span></h2><p>{connections ? `${connections} 个账号已连接，领取前会核对当前状态。` : '先连接账号，之后就能在这里一键领取。'}</p></div><button className="ci-btn primary sign-all" disabled={processing || !connections || !state} aria-busy={processing} onClick={() => { void action(() => api.run([...CHECKIN_PROVIDERS])); }}>{processing ? <CircleNotch size={17} className="spin" /> : <Gift size={17} />}{processing ? '正在处理' : done && done === connections ? '核对签到' : '一键签到'}</button></div>
-      <div className="provider-list">{providers.map(p => { const row = rows.find(r => r.provider === p.id)!; return <article className="provider-row" key={p.id} data-provider={p.id}><div className="provider-row-main"><Logo provider={p} /><div className="provider-identity"><h3>{p.name}<span>国内版</span></h3><p>{row.connected ? row.account : '连接后即可查询与领取'}</p></div><div className="provider-reward"><b>{row.reward === null ? '—' : `${row.status === 'claimed' ? '+' : ''}${row.reward}`}</b><span>{p.unit}</span></div></div><div className="provider-row-footer"><div><Status status={row.status} /><span className="provider-state-note">{row.message}</span></div>{rowAction(p, row)}</div></article>; })}</div>
+    {view === 'records' ? <section className="glass ci-panel records-panel" aria-label="签到记录"><div className="section-title"><h2>签到记录</h2><span className="count-chip">{state?.records.length || 0} 条</span></div>{state?.records.length ? <ul className="record-list">{state.records.map(item => <li key={item.id}><span className={`record-symbol${item.status === 'claimed' ? '' : ' error'}`}>{item.status === 'claimed' ? <CheckCircle size={17} /> : <WarningCircle size={17} />}</span><div><strong>{providers.find(p => p.id === item.provider)!.name} · {item.source === 'auto' ? '自动' : '手动'}</strong><p>{item.message}{item.status === 'claimed' && item.reward !== null ? ` · +${item.reward} ${providers.find(p => p.id === item.provider)!.unit}` : ''}</p></div><time dateTime={new Date(item.at).toISOString()}>{time(item.at)}</time></li>)}</ul> : <div className="records-empty"><Clock size={19} /><p>还没有成功签到记录<span>成功领取的奖励和时间会保留在这里。</span></p></div>}</section> : view === 'overview' ? <section className="glass ci-panel provider-panel" aria-label="应用签到状态"><div className="provider-panel-heading"><div><h2>本轮签到</h2><p>{done} / {providers.length} 已领取，{connections} / {providers.length} 账号已连接</p></div><button className="ci-btn primary sign-all" disabled={processing || !connections || !state} aria-busy={processing} onClick={() => { void action(() => api.run([...CHECKIN_PROVIDERS])); }}>{processing ? <CircleNotch size={17} className="spin" /> : null}{processing ? '正在处理' : done && done === connections ? '核对签到' : '一键签到'}</button></div>
+      <progress className="ci-round-progress" aria-label="本轮已领取应用数" max={providers.length} value={done} />
+      <div className="provider-list" role="table" aria-label="应用签到清单">
+        <div className="provider-table-heading" role="row"><span role="columnheader">应用</span><span role="columnheader">连接状态</span><span role="columnheader">本轮状态</span><span role="columnheader">领取奖励</span><span role="columnheader">操作</span></div>
+        {providers.map(p => { const row = rows.find(r => r.provider === p.id)!; return <article className="provider-row" role="row" key={p.id} data-provider={p.id}>
+          <div className="provider-row-main" role="cell"><Logo provider={p} /><div className="provider-identity"><h3>{p.name}</h3><p>{row.connected ? row.account : `${p.owner} · 国内版`}</p></div></div>
+          <span role="cell" className={`ci-connection ${row.status === 'expired' ? 'expired' : row.connected ? 'connected' : ''}`}><Circle size={8} weight="fill" aria-hidden="true" />{row.status === 'expired' ? '登录已失效' : row.connected ? '已连接' : '未连接'}</span>
+          <div className="provider-round-state" role="cell"><Status status={row.status} />{row.message && <span className="provider-state-note" title={row.message}>{row.message}</span>}</div>
+          <div className="provider-reward" role="cell"><b>{row.reward === null ? '—' : `${row.status === 'claimed' ? '+' : ''}${row.reward}`}</b>{row.reward !== null && <span>{p.unit}</span>}</div>
+          <div className="provider-action" role="cell">{rowAction(p, row)}</div>
+        </article>; })}
+      </div>
       <footer className="provider-panel-foot"><span><ArrowClockwise size={13} />最后检查：{time(lastChecked)}</span><button className="ci-link" onClick={() => setView('accounts')}>管理账号连接<ArrowRight size={14} /></button></footer>
-    </section></div>
-    <aside className="overview-secondary"><section className="glass ci-panel automation-card"><div className="section-title"><h2><Clock size={18} />自动签到</h2><span className={`small-badge${settings.enabled ? ' enabled' : ''}`}>{settings.enabled ? '已开启' : '未开启'}</span></div><div className="scheduled-time">{settings.time}<span>每天 · 北京时间</span></div><p>{settings.enabled ? '到点检查已连接的账号，已领取的周期自动跳过。' : '设定一个时间，把每天重复的操作交给工作台。'}</p><div className="automation-catchup"><CloudCheck size={17} /><span>启动与唤醒后{settings.catchup ? '补查' : '不补查'}</span></div><button className="ci-btn outline full" disabled={!state} onClick={() => setDialog('auto')}>{settings.enabled ? '调整自动签到' : '设置自动签到'}<ArrowRight size={15} /></button><small>需保持 Workbench 运行或驻留托盘</small></section></aside></div> : <div className="glass ci-panel accounts-panel"><nav className="account-provider-list" aria-label="选择要管理的应用">{providers.map(p => { const row = rows.find(r => r.provider === p.id)!; return <button key={p.id} className={selected === p.id ? 'selected' : ''} aria-current={selected === p.id ? 'true' : undefined} onClick={() => setSelected(p.id)}><Logo provider={p} small /><span><strong>{p.name}</strong><small className={row.status === 'expired' ? 'expired' : row.connected ? 'connected' : undefined}>{row.status === 'expired' ? '登录已失效' : row.connected ? '已连接' : '未连接'}</small></span><CaretDown size={13} /></button>; })}<div className="account-local-note"><ShieldCheck size={18} /><p>三个账号分别连接<br />断开一个不影响其他应用</p></div></nav><section className="account-details"><header><div><Logo provider={selectedProvider} /><div><h2>{selectedProvider.name}</h2><p>{selectedProvider.owner} · 国内版</p></div></div><span className={`account-connection-badge${selectedRow.status === 'expired' ? ' expired' : selectedRow.connected ? ' connected' : ''}`}>{selectedRow.status === 'expired' ? '需要重新登录' : selectedRow.connected ? '已连接' : '未连接'}</span></header>
+      <div className="ci-automation-strip"><strong>自动签到</strong><Switch label="自动签到" checked={settings.enabled} disabled={!state || processing} onChange={enabled => { if (enabled) setDialog('auto-enable'); else void action(() => api.saveSettings({ ...settings, enabled: false }), '自动签到已关闭'); }} /><span className="ci-plan-time">计划时间 <b>{settings.time}</b></span><button className="ci-btn outline" disabled={!state || processing} onClick={() => setDialog('auto')}><SlidersHorizontal size={16} />配置</button><span className="ci-automation-hint">仅对已连接账号执行</span></div>
+    </section> : <div className="glass ci-panel accounts-panel"><nav className="account-provider-list" aria-label="选择要管理的应用">{providers.map(p => { const row = rows.find(r => r.provider === p.id)!; return <button key={p.id} className={selected === p.id ? 'selected' : ''} aria-current={selected === p.id ? 'true' : undefined} onClick={() => setSelected(p.id)}><Logo provider={p} small /><span><strong>{p.name}</strong><small className={row.status === 'expired' ? 'expired' : row.connected ? 'connected' : undefined}>{row.status === 'expired' ? '登录已失效' : row.connected ? '已连接' : '未连接'}</small></span><CaretDown size={13} /></button>; })}<div className="account-local-note"><ShieldCheck size={18} /><p>三个账号分别连接<br />断开一个不影响其他应用</p></div></nav><section className="account-details"><header><div><Logo provider={selectedProvider} /><div><h2>{selectedProvider.name}</h2><p>{selectedProvider.owner} · 国内版</p></div></div><span className={`account-connection-badge${selectedRow.status === 'expired' ? ' expired' : selectedRow.connected ? ' connected' : ''}`}>{selectedRow.status === 'expired' ? '需要重新登录' : selectedRow.connected ? '已连接' : '未连接'}</span></header>
       {selectedRow.connected ? <><div className="connected-account"><span className="account-avatar">{selectedRow.account.slice(0, 1).toUpperCase()}</span><div><strong>{selectedRow.account}</strong><span>本机独立连接</span></div><ShieldCheck size={20} /></div><div className="account-meta"><div><span>连接方式</span><strong>{selectedProvider.method}</strong></div><div><span>签到状态</span><Status status={selectedRow.status} /></div></div><p className="provider-state-note">{selectedRow.message}</p></> : <div className="account-empty"><PlugsConnected size={33} /><h3>连接你的 {selectedProvider.name} 账号</h3><p>{selected === 'workbuddy' ? '使用手机号与验证码登录，完成后检查签到活动。' : '在官方浏览器页面登录，返回后检查账号与领取资格。'}</p><button className="ci-btn primary" disabled={!state} onClick={() => connect(selected)}>连接 {selectedProvider.name}<ArrowRight size={16} /></button></div>}
       <section className="account-rules"><h3>签到与奖励</h3><dl><div><dt>每日奖励</dt><dd>{selectedProvider.rule}</dd></div><div><dt>奖励有效期</dt><dd>{selectedProvider.validity}</dd></div><div><dt>领取周期</dt><dd>{selectedProvider.cycle}</dd></div></dl><button className="ci-link" onClick={() => { void action(() => api.openGuide(selected)); }}>查看官方说明<ArrowSquareOut size={14} /></button></section>
       {selectedRow.connected ? <div className="account-actions"><button className="ci-btn outline" disabled={processing} onClick={() => { void action(() => api.refresh(selected)); }}><ArrowClockwise size={16} />检查连接</button><button className="ci-btn ghost" disabled={processing} onClick={() => connect(selected)}>重新连接</button><button className="ci-btn ghost danger-text" disabled={processing} onClick={() => setDialog('disconnect')}><SignOut size={16} />断开连接</button></div> : <div className="privacy-note"><LockKey size={16} /><span>本机加密保存凭据。连接成功后，仍需平台确认领取资格。</span></div>}
     </section></div>}
     <div className={`ci-toast${notice ? ' visible' : ''}`} role="status" aria-live="polite"><CheckCircle size={18} />{notice}</div>
     {dialog === 'connect' && state ? <ConnectionDialog key={selected} provider={selectedProvider} state={state} close={() => setDialog(null)} /> : null}
-    {dialog === 'auto' && state ? <AutoDialog state={state} close={() => setDialog(null)} saved={() => { setDialog(null); setNotice('自动签到设置已保存'); }} /> : null}
+    {(dialog === 'auto' || dialog === 'auto-enable') && state ? <AutoDialog state={state} enable={dialog === 'auto-enable'} close={() => setDialog(null)} saved={() => { setDialog(null); setNotice('自动签到设置已保存'); }} /> : null}
     {dialog === 'disconnect' ? <Modal title={`断开 ${selectedProvider.name} 连接？`} titleIcon={<SignOut size={21} />} close={() => setDialog(null)} busy={busy} className="checkin-scope ci-disconnect-dialog"><div className="ci-dialog-body"><p>将移除此应用在 Workbench 中的登录凭据，并停止为它自动签到。签到历史会保留。</p>{error ? <p className="field-error" role="alert">{error}</p> : null}<div className="dialog-actions"><button className="ci-btn outline" disabled={busy} autoFocus onClick={() => setDialog(null)}>保留连接</button><button className="ci-btn danger" disabled={busy} onClick={() => { void action(async () => { await api.disconnect(selected); setDialog(null); }, '已断开连接'); }}>断开连接</button></div></div></Modal> : null}
     {dialog === 'help' ? <Modal title="如何连接与签到" titleIcon={<Gift size={21} />} close={() => setDialog(null)} className="checkin-scope ci-help-dialog"><div className="ci-dialog-body"><p className="help-intro">连接账号后，在签到概览点击「一键签到」，也可以开启自动签到。</p>{providers.map(p => <div className="help-provider" key={p.id}><Logo provider={p} small /><div><h3>{p.name}</h3><p>{p.id === 'workbuddy' ? '输入手机号 → 获取短信验证码 → 登录并连接。' : '前往官方授权页 → 完成登录 → 返回工作台，自动检查连接。'}</p><small>{p.cycle}。{p.validity}。</small></div></div>)}<div className="connection-note compact"><Info size={20} /><p>登录失效时重新连接；领取待确认时先核对结果。平台未开放活动或未通过设备校验时，可到官方应用处理。一个应用未完成不会阻止其他应用继续签到。</p></div><div className="dialog-actions"><button className="ci-btn primary" onClick={() => { setDialog(null); setView('accounts'); }}>去连接账号<ArrowRight size={15} /></button></div></div></Modal> : null}
   </section>;

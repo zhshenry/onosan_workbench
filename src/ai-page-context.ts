@@ -23,7 +23,7 @@ const unselectedObject: Partial<Record<ViewId, string>> = {
 
 /** 当前页面交给助手卡片的上下文。待办、已选博客、命例和书目继续用各自的专用名称。 */
 export function pageAiContext(view: ViewId, selection: PageAiSelection): PageAiContext {
-  if (view === 'home') return { scope: { module: 'todo' }, label: '待办与日程', object: TODO_AI_WORKBENCH_NAME };
+  if (view === 'todo') return { scope: { module: 'todo' }, label: '待办与日程', object: TODO_AI_WORKBENCH_NAME };
   if (view === 'copy' && selection.copy) {
     return { scope: { module: 'copy', draftId: selection.copy.id }, label: '博客编辑', object: selection.copy.title || '未命名博客' };
   }

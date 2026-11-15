@@ -98,8 +98,24 @@ test('Qoder current campaign is checked, claimed once and confirmed without clai
 test('authorization expiry, risk denial and unknown business errors are actionable and redact payloads', () => {
   assert.throws(() => assertResponse({ status: 401, body: { token: 'secret' } }), /重新连接/);
   assert.throws(() => assertResponse({ status: 200, body: { code: 9095, message: 'secret' } }), /设备校验/);
+  for (const code of [9074, '9074']) assert.throws(() => assertResponse({ status: 200, body: { code, message: 'secret' } }), error => error instanceof CheckinError && error.kind === 'blocked' && /参与用户较多.*9074/.test(error.message) && !/设备|secret/.test(error.message));
   assert.throws(() => assertResponse({ status: 200, body: { code: 3456, message: 'secret' } }), /未接受/);
   assert.equal(checkinError(new Error('private-token')), '操作未完成，请稍后重试。');
+});
+
+test('TRAE device validation failures remain errors rather than reporting no check-in activity', async t => {
+  const h = harness(t, ['trae']);
+  h.providers.onStatus = async () => { throw new CheckinError('平台未通过账号或设备校验', 'blocked'); };
+  await h.service.refresh('trae');
+  assert.equal(h.service.state().rows.find(row => row.provider === 'trae')!.status, 'error');
+  assert.equal(h.providers.claims.length, 0);
+  h.providers.onStatus = undefined;
+  h.providers.onClaim = async () => { assertResponse({ status: 200, body: { code: 9074, message: '当前参与用户太多，请稍后再试' } }); return { reward: null, delayed: false }; };
+  await h.service.run(['trae']);
+  assert.equal(h.service.state().rows.find(row => row.provider === 'trae')!.status, 'error');
+  assert.match(h.service.state().rows.find(row => row.provider === 'trae')!.message, /9074/);
+  assert.equal(h.service.state().records.length, 0);
+  assert.equal(JSON.parse(readFileSync(h.file, 'utf8')).attempts.trae, undefined);
 });
 test('Qoder period changes at Beijing 10:00 and is independent of the OS timezone', () => {
   assert.equal(checkinCycle('qoder', Date.parse('2026-11-10T09:59:59+08:00')), '2026-11-09');
@@ -118,6 +134,110 @@ test('one-click checks then claims and confirms; an already claimed account is n
   const raw = readFileSync(h.file, 'utf8');
   assert.ok(!raw.includes('private-access-token') && !raw.includes('private-refresh-token'));
   assert.ok(!JSON.stringify(h.service.state()).includes('private-access-token'));
+});
+
+test('checkin history: repeated manual and automatic checks preserve one success per claim across restart', async t => {
+  const h = harness(t, [...CHECKIN_PROVIDERS]);
+  await h.service.run([...CHECKIN_PROVIDERS]);
+  const records = h.service.state().records;
+  assert.equal(records.length, 3);
+  h.setTime(at + 3600000);
+  await h.service.run([...CHECKIN_PROVIDERS]);
+  await h.service.run([...CHECKIN_PROVIDERS], 'auto');
+  for (const provider of CHECKIN_PROVIDERS) await h.service.refresh(provider);
+  assert.deepEqual(h.service.state().records, records);
+  h.providers.onStatus = async () => { throw new CheckinError('网络不可用', 'network'); };
+  await h.service.run([...CHECKIN_PROVIDERS]);
+  h.providers.onStatus = undefined;
+  const next = h.restart();
+  await next.run([...CHECKIN_PROVIDERS]);
+  next.disconnect('workbuddy');
+  await next.loginWorkbuddy({ phone: '13800000000', code: '123456' });
+  await next.run(['workbuddy']);
+  assert.deepEqual(next.state().records, records);
+  assert.deepEqual(h.providers.claims, [...CHECKIN_PROVIDERS]);
+});
+
+test('checkin history: observing an already claimed platform status does not invent a local success', async t => {
+  const h = harness(t, [...CHECKIN_PROVIDERS]);
+  for (const provider of CHECKIN_PROVIDERS) {
+    h.providers.states.set(provider, { status: 'claimed', message: '平台已确认本轮签到', reward: null });
+    await h.service.refresh(provider);
+  }
+  await h.service.run([...CHECKIN_PROVIDERS]);
+  await h.service.run([...CHECKIN_PROVIDERS], 'auto');
+  assert.ok(h.service.state().rows.every(row => row.status === 'claimed'));
+  assert.deepEqual(h.service.state().records, []);
+  assert.deepEqual(h.providers.claims, []);
+});
+
+test('checkin history: new cycles and a different connected account retain their own confirmed successes', async t => {
+  const h = harness(t, [...CHECKIN_PROVIDERS]);
+  await h.service.run([...CHECKIN_PROVIDERS]);
+  h.setTime(at + 86400000);
+  h.providers.states.clear();
+  await h.service.run([...CHECKIN_PROVIDERS], 'auto');
+  assert.equal(h.service.state().records.length, 6);
+  assert.ok(h.service.state().records.slice(0, 3).every(record => record.source === 'auto'));
+  h.service.disconnect('workbuddy');
+  h.providers.onLogin = async () => credential('user-2');
+  h.providers.states.delete('workbuddy');
+  await h.service.loginWorkbuddy({ phone: '13800000000', code: '123456' });
+  await h.service.run(['workbuddy']);
+  assert.equal(h.service.state().records.length, 7);
+  await h.service.run([...CHECKIN_PROVIDERS]);
+  assert.equal(h.service.state().records.length, 7);
+  assert.equal(h.providers.claims.length, 7);
+});
+
+test('checkin history: legacy confirmed rows do not gain another success after upgrading and reconnecting', async t => {
+  const h = harness(t);
+  await h.service.run(['workbuddy']);
+  const records = h.service.state().records, saved = JSON.parse(readFileSync(h.file, 'utf8'));
+  delete saved.attempts.workbuddy.recorded;
+  writeFileSync(h.file, JSON.stringify(saved));
+  const next = h.restart();
+  next.disconnect('workbuddy');
+  await next.loginWorkbuddy({ phone: '13800000000', code: '123456' });
+  await next.run(['workbuddy']);
+  assert.deepEqual(next.state().records, records);
+  assert.equal(h.providers.claims.length, 1);
+});
+
+test('checkin history: an unrecorded legacy claim is still confirmed once after upgrading', async t => {
+  const h = harness(t);
+  h.providers.onClaim = async () => { throw new CheckinError('网络不可用', 'network'); };
+  await h.service.run(['workbuddy']);
+  const saved = JSON.parse(readFileSync(h.file, 'utf8'));
+  saved.rows[0].status = 'claimed';
+  writeFileSync(h.file, JSON.stringify(saved));
+  h.providers.states.set('workbuddy', { status: 'claimed', message: '平台确认领取', reward: null });
+  const next = h.restart();
+  await next.refresh('workbuddy');
+  assert.equal(next.state().records.length, 1);
+  await next.run(['workbuddy']);
+  assert.equal(next.state().records.length, 1);
+  assert.equal(h.providers.claims.length, 1);
+});
+
+test('checkin history: a failed history save is confirmed once on retry without another claim', async t => {
+  let fail = true;
+  const h = harness(t, ['workbuddy'], { write(file, value) {
+    if (fail && (value as { records: unknown[] }).records.length) throw Error('disk failure');
+    writeFileSync(file, JSON.stringify(value));
+  } });
+  await h.service.run(['workbuddy']);
+  assert.equal(h.service.state().rows[0].status, 'pending');
+  assert.deepEqual(h.service.state().records, []);
+  fail = false;
+  const next = h.restart();
+  await next.refresh('workbuddy');
+  assert.equal(next.state().records.length, 1);
+  const records = next.state().records;
+  await next.run(['workbuddy']);
+  await next.refresh('workbuddy');
+  assert.deepEqual(next.state().records, records);
+  assert.equal(h.providers.claims.length, 1);
 });
 
 test('checkin history exposes legacy successes and only stores newly confirmed successes', async t => {
@@ -162,6 +282,7 @@ test('a timed out claim remains pending across clicks, restart and reauthorizati
   assert.equal(next.state().records.length, 1);
   assert.equal(next.state().records[0].status, 'claimed');
   await next.refresh('workbuddy');
+  await next.run(['workbuddy']);
   assert.equal(next.state().records.length, 1, 'rechecking a confirmed result adds no history entry');
   assert.equal(h.providers.claims.length, 1);
 });
@@ -256,11 +377,12 @@ test('catchup disabled skips startup and a long sleep, then runs on the next sch
 test('loopback authorization rejects the wrong path and clears on cancellation', async () => {
   const controller = new AbortController(), callback = await traeCallback(controller.signal);
   try {
-    const bad = new URL(callback.url); bad.pathname = '/authorize';
+    const bad = new URL(callback.url); bad.pathname = '/other-attempt/authorize';
     assert.equal((await fetch(bad)).status, 404);
-    const good = new URL(callback.url); good.searchParams.set('refreshToken', 'test-only');
+    const good = new URL(callback.url); good.searchParams.set('authCodeInfo', JSON.stringify({ AuthCode: 'test-only' }));
+    good.searchParams.set('loginTraceID', callback.loginTraceId);
     const response = await fetch(good); assert.equal(response.status, 200); assert.match(response.headers.get('cache-control') || '', /no-store/);
-    assert.equal((await callback.result).get('refreshToken'), 'test-only');
+    assert.equal(JSON.parse((await callback.result).get('authCodeInfo')!).AuthCode, 'test-only');
     assert.equal((await fetch(good)).status, 404);
   } finally { callback.close(); }
   const second = await traeCallback(controller.signal); controller.abort(); await assert.rejects(second.result); second.close();
@@ -281,12 +403,18 @@ test('Qoder browser device flow uses PKCE and verifies the returned identity', a
   assert.equal(c.userId, 'verified-id'); assert.equal(calls, 2); assert.equal(new URL(opened).hostname, 'qoder.com.cn');
 });
 test('platform adapters use TRAE CN endpoints and region; only the selected Qoder daily campaign can be claimed', async () => {
-  const calls: { url: string; method?: string; headers?: Record<string, string> }[] = [];
-  const p = new CheckinProviders(async (url, options) => { calls.push({ url, method: options.method, headers: options.headers }); return { status: 200, body: { code: 0, checked_in: false, enable: true, credits: 150 } }; });
+  const calls: { url: string; method?: string; headers?: Record<string, string>; body?: unknown }[] = [];
+  const p = new CheckinProviders(async (url, options) => { calls.push({ url, method: options.method, headers: options.headers, body: options.body }); return { status: 200, body: { code: 0, checked_in: false, enable: true, credits: 150 } }; });
   await p.status('trae', credential(), new AbortController().signal);
   assert.equal(calls[0].method, 'POST');
   assert.equal(calls[0].url, 'https://api.trae.cn/trae/api/v2/ug/checkin_credits/status');
   assert.equal(calls[0].headers?.['X-User-Region'], 'CN');
+  assert.deepEqual(calls[0].body, { req_source: 1 });
+  await p.claim('trae', credential(), { status: 'ready', message: '', reward: 150 }, new AbortController().signal);
+  assert.equal(calls[1].url, 'https://api.trae.cn/trae/api/v2/ug/checkin_credits/claim');
+  assert.equal(calls[1].method, 'POST');
+  assert.deepEqual(calls[1].body, { req_source: 1 });
   await p.claim('qoder', credential(), { status: 'ready', message: '', reward: 100, campaignId: 'daily-123' }, new AbortController().signal);
-  assert.ok(calls[1].url.endsWith('/campaigns/daily-123/claim'));
+  assert.ok(calls[2].url.endsWith('/campaigns/daily-123/claim'));
+  assert.deepEqual(calls[2].body, {});
 });

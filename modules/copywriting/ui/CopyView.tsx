@@ -206,7 +206,7 @@ export function CopyView({ onPending, onCurrentDraft, onSaveState, requestedDraf
       {loadError && <div className="todo-load-error" role="alert">{loadError}</div>}
 
       {/* 左:草稿列表 */}
-      <section className="panel glass copy-list" aria-label="博客列表">
+      <section className="copy-list" aria-label="博客列表">
         <div className="phead">
           <span className="ptitle">我的博客</span>
           <span className="copy-count">{drafts.length}</span>
@@ -244,7 +244,7 @@ export function CopyView({ onPending, onCurrentDraft, onSaveState, requestedDraf
       </section>
 
       {/* 右:编辑器 */}
-      <section className="panel glass copy-editor" aria-label="博客编辑">
+      <section className="copy-editor" aria-label="博客编辑">
         {curDraft ? (
           <>
             <div className="copy-editor-head">

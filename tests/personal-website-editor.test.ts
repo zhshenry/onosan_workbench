@@ -29,8 +29,8 @@ test('editor validates, previews, saves and recovers conflicting drafts against 
   Object.defineProperty(dom.window.HTMLElement.prototype, 'hidePopover', { value() {} });
   Object.defineProperty(dom.window.HTMLCanvasElement.prototype, 'getContext', { value: () => null });
   const state: WebsiteState = { root: directory, onlineUrl: '', service: { phase: 'stopped', url: '', message: '本地未启动', output: '' }, build: { phase: 'idle', message: '尚未构建', output: '' }, checks: { phase: 'idle', results: [] } };
-  let buildAttempts = 0;
-  const bridge = { start: async () => state, onChanged: () => () => {}, list: () => content.list(), read: (id: string) => content.read(id), save: (input: unknown) => content.save(input), previewSave: (input: unknown) => content.previewSave(input), coverPreview: async () => '', build: async () => { if (++buildAttempts === 1) throw new Error('构建暂不可用，请重试'); return { ...state, build: { phase: 'passed', message: '构建成功', output: '', finishedAt: Date.now() } }; } };
+  let stateReads = 0, starts = 0, buildAttempts = 0;
+  const bridge = { state: async () => { stateReads++; return state; }, start: async () => { starts++; return state; }, onChanged: () => () => {}, list: () => content.list(), read: (id: string) => content.read(id), save: (input: unknown) => content.save(input), previewSave: (input: unknown) => content.previewSave(input), coverPreview: async () => '', build: async () => { if (++buildAttempts === 1) throw new Error('构建暂不可用，请重试'); return { ...state, build: { phase: 'passed', message: '构建成功', output: '', finishedAt: Date.now() } }; } };
   Object.defineProperty(dom.window, 'workbench', { value: { personalWebsite: bridge } });
   const code = buildSync({ entryPoints: ['src/views/PersonalWebsiteView.tsx'], bundle: true, platform: 'node', format: 'cjs', external: ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', '@phosphor-icons/react'], loader: { '.css': 'empty', '.png': 'dataurl' }, write: false }).outputFiles[0].text;
   const module = { exports: {} as { PersonalWebsiteView: (props: { active: boolean; onPending(): void; onAskAI(): void }) => ReturnType<typeof createElement> } };
@@ -38,7 +38,7 @@ test('editor validates, previews, saves and recovers conflicting drafts against 
   const { createRoot } = await import('react-dom/client');
   let root = createRoot(dom.window.document.getElementById('root')!);
   const query = <T extends HTMLElement = HTMLElement>(selector: string) => dom.window.document.querySelector<T>(selector)!;
-  const render = () => act(async () => root.render(createElement(module.exports.PersonalWebsiteView, { active: true, onPending() {}, onAskAI() {} })));
+  const render = (active = true) => act(async () => root.render(createElement(module.exports.PersonalWebsiteView, { active, onPending() {}, onAskAI() {} })));
   const waitFor = async (check: () => boolean) => { for (let i = 0; i < 100; i++) { await act(async () => { await new Promise(done => setTimeout(done, 10)); }); if (check()) return; } assert.fail('UI did not reach expected state'); };
   const fill = async (selector: string, value: string) => { const input = query<HTMLInputElement | HTMLTextAreaElement>(selector); await act(async () => { Object.getOwnPropertyDescriptor(input instanceof dom.window.HTMLTextAreaElement ? dom.window.HTMLTextAreaElement.prototype : dom.window.HTMLInputElement.prototype, 'value')!.set!.call(input, value); input.dispatchEvent(new dom.window.Event('input', { bubbles: true })); }); };
   const click = (element: HTMLElement) => act(async () => element.click());
@@ -50,6 +50,12 @@ test('editor validates, previews, saves and recovers conflicting drafts against 
     assert.ok(resolve(directory).startsWith(resolve(tmpdir()) + sep + 'personal-editor-')); await rm(directory, { recursive: true, force: true });
   });
   await render(); await waitFor(() => !!query('#personal-title'));
+  assert.equal(stateReads, 1); assert.equal(starts, 0); assert.equal(buildAttempts, 0);
+  assert.match(query('.personal-project .game-service').textContent!, /本地未启动/);
+  for (const active of [false, true, false, true]) await render(active);
+  assert.equal(stateReads, 1); assert.equal(starts, 0); assert.equal(buildAttempts, 0);
+  await click(query('.personal-project .game-primary'));
+  assert.equal(starts, 1); assert.equal(buildAttempts, 0);
   assert.equal(query<HTMLButtonElement>('.personal-editor-footer button').disabled, true);
   await fill('#personal-title', ''); await submit();
   assert.equal(query('#personal-title').getAttribute('aria-invalid'), 'true');
@@ -100,6 +106,7 @@ test('editor validates, previews, saves and recovers conflicting drafts against 
   await act(async () => root.unmount()); await unlink(file);
   root = createRoot(dom.window.document.getElementById('root')!); await render();
   await waitFor(() => !!query('#personal-body'));
+  assert.equal(stateReads, 2); assert.equal(starts, 1); assert.equal(buildAttempts, 2);
   assert.equal(query<HTMLTextAreaElement>('#personal-body').value, 'Keep my unsaved draft');
   assert.match(query('.personal-error').textContent!, /草稿已保留/);
   assert.match(dom.window.localStorage.getItem('personal-website-draft-v1')!, /Keep my unsaved draft/);

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { ArrowClockwise, ArrowSquareOut, CaretDown, CaretRight, CheckCircle, Code, Columns, CornersOut, DownloadSimple, Eye, FileCode, FileText, Flask, FolderOpen, LockSimple, Play, Plus, Robot, SlidersHorizontal, Stop, X } from '@phosphor-icons/react';
+import { ArrowClockwise, ArrowSquareOut, CaretDown, CaretRight, CheckCircle, Code, Columns, CornersOut, Cube, DownloadSimple, Eye, FileCode, FileText, Flask, FolderOpen, LockSimple, Play, Plus, Robot, SlidersHorizontal, Stack, Stop, X } from '@phosphor-icons/react';
 import type { ViewId } from '../../shared/contracts';
 import type { AiConfig } from '../../shared/workbench-api';
 import { DEFAULT_TEST_TASK, testTaskSchema, testCheckSchema, type TestLane, type TestRun, type TestRunSummary, type TestTask, type TestTaskInput } from '../../shared/ai-test-contracts';
@@ -135,20 +135,10 @@ function AiTestView({ active, view, onNavigate }: { active: boolean; view: ViewI
   }
   const showCompare = view === 'ai-test';
   return <div className="ai-test">
-    <div className="at-tabs" ref={tabStrip} role="tablist" aria-label="测试结果标签" hidden={!showCompare}>
-      <button id="at-overview-tab" role="tab" aria-selected={selectedTab === 'overview'} aria-controls="at-overview" onClick={() => setSelectedTab('overview')}><Columns size={16} />对比总览</button>
-      {tabs.map(tab => {
-        const key = tabKey(tab.runId, tab.laneId), run = runs[tab.runId], lane = run?.lanes.find(item => item.id === tab.laneId);
-        return lane ? <div className={'at-result-tab' + (selectedTab === key ? ' is-selected' : '')} key={key}>
-          <button role="tab" aria-selected={selectedTab === key} aria-controls={'at-panel-' + lane.id} id={'at-tab-' + lane.id} onClick={() => setSelectedTab(key)} title={run.task.title + ' · ' + lane.model.name}><FileCode size={16} /><span>{run.task.title} · {lane.model.name}</span></button>
-          <button aria-label={'关闭 ' + lane.model.name + ' 结果标签'} onClick={() => closeTab(key)}><X size={13} /></button>
-        </div> : null;
-      })}
-    </div>
     {error && <div className="at-error" role="alert">{error}<button aria-label="关闭错误提示" onClick={() => setError('')}><X size={16} /></button></div>}
-    <div id="at-overview" role="tabpanel" aria-labelledby="at-overview-tab" className="at-overview" hidden={!showCompare || selectedTab !== 'overview'}>
+    <section className="at-config-card" aria-label="测试配置" hidden={!showCompare || selectedTab !== 'overview'}>
       <header className="at-heading">
-        <div><h1>任务对比</h1><p>同一套输入，比较不同模型的回复、代码与产物。</p></div>
+        <div><h1>任务对比</h1></div>
         <div className="at-actions">
           <Segmented aria-label="测试模式" value={task.mode} onChange={value => change('mode', value as TestTaskInput['mode'])} options={[{ value: 'direct', label: '模型直出' }, { value: 'agent', label: 'Agent 执行', icon: <Robot size={15} /> }]} />
           <button className="btn btn-pri" disabled={busy || isRunning || !config?.aiEnabled || !config.models.length} onClick={() => void perform(() => start())}><Play size={16} weight="fill" />{busy ? '处理中…' : '开始测试'}</button>
@@ -173,33 +163,81 @@ function AiTestView({ active, view, onNavigate }: { active: boolean; view: ViewI
             <button className="btn btn-sec btn-sm" aria-haspopup="dialog" aria-expanded={!!settingsDraft} onClick={() => { setSettingsDraft({ temperature: task.temperature, maxTokens: task.maxTokens, timeoutSeconds: task.timeoutSeconds, maxToolCalls: task.maxToolCalls }); setSettingsError(null); }}><SlidersHorizontal size={14} />模型设置</button>
           </div></div>
           <div className="at-config-group at-config-checks" role="group" aria-label="校验"><span className="at-config-label" aria-hidden="true">校验</span><div className="at-config-controls">
-            <details className="at-check-editor"><summary className="btn btn-sec btn-sm"><CheckCircle size={14} />统一校验配置<CaretDown size={12} className="at-config-caret" /></summary><p>网页断言独立运行，只有返回 true 才通过。可编辑或清空此数组。支持异步函数；setup 可返回刷新前的值供 expression 使用。</p><textarea aria-label="统一校验 JSON" spellCheck={false} value={checksJson} disabled={isRunning} onChange={event => { setChecksJson(event.target.value); setNotice(''); }} /></details>
+            <details className="at-check-editor"><summary className="btn btn-sec btn-sm"><CheckCircle size={14} />统一校验配置<CaretDown size={12} className="at-config-caret" /></summary><p>网页断言独立运行，只有返回 true 才通过。可编辑或清空此数组。支持异步函数；setup 可返回刷新前的值供 expression 使用。</p><textarea className="resize-none" aria-label="统一校验 JSON" spellCheck={false} value={checksJson} disabled={isRunning} onChange={event => { setChecksJson(event.target.value); setNotice(''); }} /></details>
           </div></div>
         </div>
         {task.materials.length > 0 && <div className="at-materials">{task.materials.map((file, index) => <span key={file.path + index}><button onClick={() => setMaterial(file)}><FileCode size={13} />{file.path}</button><button aria-label={'移除材料 ' + file.path} disabled={isRunning} onClick={() => change('materials', task.materials.filter((_, i) => i !== index))}><X size={12} /></button></span>)}</div>}
       </section>
-      <section className="at-results" aria-label="模型对比结果">
-        <div className="at-results-heading"><div><h2>本次结果</h2>{current && <span className="at-muted">{current.task.title} · {modeName(current.task.mode)} · {stamp(current.createdAt)}</span>}</div>
-          <div className="at-actions">
-            {current?.lanes.some(running) && <button className="btn btn-sec btn-sm" onClick={() => void perform(() => api().cancel(current.id))}><Stop size={14} />停止全部</button>}
-            {current && !current.lanes.some(running) && <button className="btn btn-sec btn-sm" disabled={busy || isRunning} onClick={() => void perform(() => start(current.task))}><ArrowClockwise size={14} />复跑本次配置</button>}
-            <Segmented aria-label="结果展示" value={resultView} onChange={setResultView} options={[{ value: 'artifact', label: '代码 + 预览' }, { value: 'reply', label: '原始回复' }, { value: 'files', label: '文件' }]} />
+    </section>
+    <section className="at-result-workspace" aria-label="测试结果" hidden={!showCompare}>
+      <div className="at-tabs" ref={tabStrip} role="tablist" aria-label="测试结果标签">
+        <button id="at-overview-tab" role="tab" aria-selected={selectedTab === 'overview'} aria-controls="at-overview" onClick={() => setSelectedTab('overview')}><Columns size={16} />对比总览</button>
+        {tabs.map(tab => {
+          const key = tabKey(tab.runId, tab.laneId), run = runs[tab.runId], lane = run?.lanes.find(item => item.id === tab.laneId);
+          return lane ? <div className={'at-result-tab' + (selectedTab === key ? ' is-selected' : '')} key={key}>
+            <button role="tab" aria-selected={selectedTab === key} aria-controls={'at-panel-' + lane.id} id={'at-tab-' + lane.id} onClick={() => setSelectedTab(key)} title={run.task.title + ' · ' + lane.model.name}><FileCode size={16} /><span>{run.task.title} · {lane.model.name}</span></button>
+            <button aria-label={'关闭 ' + lane.model.name + ' 结果标签'} onClick={() => closeTab(key)}><X size={13} /></button>
+          </div> : null;
+        })}
+      </div>
+      <div id="at-overview" role="tabpanel" aria-labelledby="at-overview-tab" className="at-overview" hidden={selectedTab !== 'overview'}>
+        <section className="at-results" aria-label="模型对比结果">
+          <div className="at-results-heading"><div><h2>本次结果</h2>{current && <span className="at-muted">{current.task.title} · {modeName(current.task.mode)} · {stamp(current.createdAt)}</span>}</div>
+            <div className="at-actions">
+              {current?.lanes.some(running) && <button className="btn btn-sec btn-sm" onClick={() => void perform(() => api().cancel(current.id))}><Stop size={14} />停止全部</button>}
+              {current && !current.lanes.some(running) && <button className="btn btn-sec btn-sm" disabled={busy || isRunning} onClick={() => void perform(() => start(current.task))}><ArrowClockwise size={14} />复跑本次配置</button>}
+              <Segmented aria-label="结果展示" value={resultView} onChange={setResultView} options={[{ value: 'artifact', label: '代码 + 预览' }, { value: 'reply', label: '原始回复' }, { value: 'files', label: '文件' }]} />
+            </div>
           </div>
-        </div>
-        {current ? <div className="at-lanes" style={{ '--lanes': current.lanes.length } as CSSProperties}>
-          {current.lanes.map(lane => <LaneCard key={lane.id} run={current} lane={lane} view={resultView} open={() => openResult(current, lane)} stop={() => void perform(() => api().cancel(current.id, lane.id))} />)}
-        </div> : <div className="at-empty"><Flask size={32} /><h3>让模型在同一个任务上见真章</h3><p>选择模型，填写提示词并开始。这里会并排展示各自的真实输出和产物。</p></div>}
-        {current && <div className="at-check-bar"><span>{current.task.checks.length ? '已配置 ' + current.task.checks.length + ' 项网页断言；预览呈现不代表校验通过。' : '本次未配置功能断言。生成完成不代表代码已通过校验。'}</span><button className="btn btn-sec btn-sm" disabled={!current.task.checks.length || current.lanes.some(lane => running(lane) || lane.checking) || !current.lanes.some(lane => lane.files.some(file => /\.html?$/i.test(file.path)))} onClick={() => void perform(validateAll)}><Play size={13} />运行统一校验</button></div>}
+          {current ? <div className="at-lanes" style={{ '--lanes': current.lanes.length } as CSSProperties}>
+            {current.lanes.map(lane => <LaneCard key={lane.id} run={current} lane={lane} view={resultView} open={() => openResult(current, lane)} stop={() => void perform(() => api().cancel(current.id, lane.id))} />)}
+          </div> : <div className="at-empty"><Flask size={32} /><h3>让模型在同一个任务上见真章</h3><p>选择模型，填写提示词并开始。这里会并排展示各自的真实输出和产物。</p></div>}
+          {current && <div className="at-check-bar"><span>{current.task.checks.length ? '已配置 ' + current.task.checks.length + ' 项网页断言；预览呈现不代表校验通过。' : '本次未配置功能断言。生成完成不代表代码已通过校验。'}</span><button className="btn btn-sec btn-sm" disabled={!current.task.checks.length || current.lanes.some(lane => running(lane) || lane.checking) || !current.lanes.some(lane => lane.files.some(file => /\.html?$/i.test(file.path)))} onClick={() => void perform(validateAll)}><Play size={13} />运行统一校验</button></div>}
+        </section>
+      </div>
+      {tabs.map(tab => {
+        const run = runs[tab.runId], lane = run?.lanes.find(item => item.id === tab.laneId), key = tabKey(tab.runId, tab.laneId);
+        return run && lane ? <div key={key} className="at-detail-panel" id={'at-panel-' + lane.id} role="tabpanel" aria-labelledby={'at-tab-' + lane.id} hidden={selectedTab !== key}><ResultDetail run={run} lane={lane} receive={receive} perform={perform} /></div> : null;
+      })}
+    </section>
+    {view === 'ai-test-tasks' && <section className="at-library" aria-label="测试任务">
+      <header className="at-heading at-library-heading"><div><h1>测试任务</h1><p>保存统一配置，下次直接载入。</p></div><button className="btn btn-pri" onClick={() => { loadTask({ ...structuredClone(DEFAULT_TEST_TASK), modelIds: task.modelIds }); setCurrentId(''); }}><Plus size={15} />新建测试</button></header>
+      <section className="at-library-content" aria-label="已保存任务">
+        <header className="at-library-title"><h2>已保存任务</h2><span>{tasks.length} 项</span></header>
+        {tasks.length ? <div className="at-library-scroll"><table className="at-library-table at-task-table" aria-label="已保存的测试任务">
+          <colgroup><col /><col /><col /><col /></colgroup>
+          <thead><tr><th scope="col">任务与提示词</th><th scope="col">配置</th><th scope="col">最近更新</th><th scope="col">操作</th></tr></thead>
+          <tbody>{tasks.map(saved => <tr key={saved.id} className="at-record">
+            <td><div className="at-library-task"><FileText size={22} aria-hidden="true" /><div><h3 title={saved.title}>{saved.title}</h3><p className="at-task-summary" title={saved.prompt}>{saved.prompt}</p></div></div></td>
+            <td><div className="at-task-config"><span className="at-mode-badge">{modeName(saved.mode)}</span><div className="at-config-badges"><span><Cube size={14} aria-hidden="true" />{saved.modelIds.length} 个模型</span><span><Stack size={14} aria-hidden="true" />{saved.materials.length} 份材料</span><span><CheckCircle size={14} aria-hidden="true" />{saved.checks.length} 项校验</span></div></div></td>
+            <td className="at-record-date"><time dateTime={saved.updatedAt}>{stamp(saved.updatedAt)}</time></td>
+            <td><div className="at-record-actions"><button className="btn btn-sec btn-sm" onClick={() => loadTask(taskInput(saved))}>载入配置</button></div></td>
+          </tr>)}</tbody>
+        </table></div> : <div className="at-empty"><FolderOpen size={32} /><h3>还没有保存的测试任务</h3><p>在对比总览中填写配置，点击“保存任务”即可复用。</p><button className="btn btn-sec" onClick={() => onNavigate('ai-test')}>前往对比测试</button></div>}
       </section>
-    </div>
-    {tabs.map(tab => {
-      const run = runs[tab.runId], lane = run?.lanes.find(item => item.id === tab.laneId), key = tabKey(tab.runId, tab.laneId);
-      return run && lane ? <div key={key} className="at-detail-panel" id={'at-panel-' + lane.id} role="tabpanel" aria-labelledby={'at-tab-' + lane.id} hidden={!showCompare || selectedTab !== key}><ResultDetail run={run} lane={lane} receive={receive} perform={perform} /></div> : null;
-    })}
-    {view === 'ai-test-tasks' && <div className="at-library"><header className="at-heading"><div><h1>测试任务</h1><p>复用相同的提示词、材料、模型和校验配置。</p></div><button className="btn btn-pri" onClick={() => { loadTask({ ...structuredClone(DEFAULT_TEST_TASK), modelIds: task.modelIds }); setCurrentId(''); }}><Plus size={15} />新建测试</button></header>
-      {tasks.length ? tasks.map(saved => <article key={saved.id} className="at-record"><FileText size={22} /><div><h3>{saved.title}</h3><p>{modeName(saved.mode)} · {saved.modelIds.length} 个模型 · {stamp(saved.updatedAt)}</p><span>{saved.prompt.slice(0, 150)}</span></div><button className="btn btn-sec btn-sm" onClick={() => loadTask(taskInput(saved))}>载入配置</button></article>) : <div className="at-empty"><FolderOpen size={32} /><h3>还没有保存的测试任务</h3><p>在对比总览中填写配置，点击“保存任务”即可复用。</p><button className="btn btn-sec" onClick={() => onNavigate('ai-test')}>前往对比测试</button></div>}</div>}
-    {view === 'ai-test-history' && <div className="at-library"><header className="at-heading"><div><h1>运行记录</h1><p>每次测试独立保存输入快照和各模型结果。复跑会创建新记录，使用当前供应商连接。</p></div><button className="btn btn-sec" onClick={() => void perform(refresh)}><ArrowClockwise size={15} />刷新记录</button></header>
-      {history.length ? history.map(summary => <article key={summary.id} className="at-record"><Flask size={22} /><div><h3>{summary.title}</h3><p>{modeName(summary.mode)} · {summary.modelCount} 个模型 · {stamp(summary.createdAt)} · {summary.running ? '执行中' : '已结束'}</p></div><button className="btn btn-sec btn-sm" onClick={() => void perform(() => openRun(summary.id))}>查看结果</button><button className="btn btn-sec btn-sm" disabled={busy || isRunning} onClick={() => void perform(async () => { const run = await api().run(summary.id); loadTask(run.task); })}>载入输入</button></article>) : <div className="at-empty"><Flask size={32} /><h3>还没有运行记录</h3><p>完成第一次测试后，提示词和真实结果会保存在这里。</p></div>}</div>}
+    </section>}
+    {view === 'ai-test-history' && <section className="at-library" aria-label="运行记录">
+      <header className="at-heading at-library-heading"><div><h1>运行记录</h1><p>每次执行独立保存，随时查看结果与输入。</p></div><button className="btn btn-sec" onClick={() => void perform(refresh)}><ArrowClockwise size={15} />刷新记录</button></header>
+      <section className="at-library-content" aria-label="全部记录">
+        <header className="at-library-title"><h2>全部记录</h2><span>{history.length} 条</span></header>
+        {history.length ? <div className="at-library-scroll"><table className="at-library-table at-history-table" aria-label="测试运行记录">
+          <colgroup><col /><col /><col /><col /><col /></colgroup>
+          <thead><tr><th scope="col">测试任务</th><th scope="col">参与模型</th><th scope="col">开始时间</th><th scope="col">运行状态</th><th scope="col">操作</th></tr></thead>
+          <tbody>{history.map(summary => {
+            const stopped = summary.cancelledCount === summary.modelCount;
+            const status = summary.running ? '执行中' : stopped ? '已停止' : '已结束';
+            const detail = summary.running ? '正在执行本轮测试' : summary.failedCount ? '含 ' + summary.failedCount + ' 项执行失败' : stopped ? '已生成内容保留' : summary.cancelledCount ? summary.cancelledCount + ' 个模型已停止' : summary.modelCount + ' 个模型均已结束';
+            return <tr key={summary.id} className="at-record">
+              <td><div className="at-library-task"><FileText size={22} aria-hidden="true" /><div><h3 title={summary.title}>{summary.title}</h3><p>{modeName(summary.mode)}</p></div></div></td>
+              <td><div className="at-record-models">{summary.models.map(model => <span key={model.id} title={model.providerName + ' · ' + model.name}>{model.name}</span>)}</div></td>
+              <td className="at-record-date"><time dateTime={summary.createdAt}>{stamp(summary.createdAt)}</time></td>
+              <td><div className="at-record-state"><span data-tone={summary.running ? 'running' : summary.failedCount ? 'warning' : 'neutral'}>{summary.running ? <Play size={14} aria-hidden="true" /> : stopped ? <Stop size={14} aria-hidden="true" /> : <CheckCircle size={14} aria-hidden="true" />}{status}</span><p>{detail}</p></div></td>
+              <td><div className="at-record-actions"><button className="btn btn-sec btn-sm at-view-result" onClick={() => void perform(() => openRun(summary.id))}>查看结果</button><button className="btn btn-sec btn-sm" disabled={busy || isRunning} onClick={() => void perform(async () => { const run = await api().run(summary.id); loadTask(run.task); })}>载入输入</button></div></td>
+            </tr>;
+          })}</tbody>
+        </table></div> : <div className="at-empty"><Flask size={32} /><h3>还没有运行记录</h3><p>完成第一次测试后，提示词和真实结果会保存在这里。</p></div>}
+      </section>
+    </section>}
     {material && <Modal title={material.path} close={() => setMaterial(null)} className="at-material-modal"><p className="at-muted">本轮相同参考材料 · 只读</p><pre>{material.content}</pre></Modal>}
     {settingsDraft && <Modal title="模型设置" close={() => setSettingsDraft(null)} dirty={modelSettingsFields.some(field => settingsDraft[field.key] !== task[field.key])} className="at-settings-modal">
       <form className="form-body" noValidate onSubmit={event => {
@@ -257,8 +295,7 @@ function ArtifactPreview({ run, lane, compact = false, reload = 0 }: { run: Test
 function LaneCard({ run, lane, view, open, stop }: { run: TestRun; lane: TestLane; view: string; open(): void; stop(): void }) {
   const first = lane.files.find(file => file.path === 'index.html') ?? lane.files[0];
   return <article className="at-lane" aria-label={lane.model.name + ' 的结果'}>
-    <header><span className="at-model-avatar">{lane.model.name.slice(0, 1).toUpperCase()}</span><div><h3 title={lane.model.name}>{lane.model.name}</h3><small>{lane.model.providerName}</small></div>{running(lane) && <button className="at-stop" onClick={stop} aria-label={'停止 ' + lane.model.name}><Stop size={14} /></button>}</header>
-    <Evidence lane={lane} />
+    <header><span className="at-model-avatar">{lane.model.name.slice(0, 1).toUpperCase()}</span><div className="at-model-title"><h3 title={lane.model.name}>{lane.model.name}</h3><small>{lane.model.providerName}</small></div><Evidence lane={lane} />{running(lane) && <button className="at-stop" onClick={stop} aria-label={'停止 ' + lane.model.name}><Stop size={14} /></button>}</header>
     {lane.error && <p className="at-lane-error">{lane.error}</p>}
     {view === 'reply' ? <pre className="at-reply">{lane.reply || '等待回复…'}</pre> : view === 'files' ? <div className="at-file-list">{lane.files.length ? lane.files.map(file => <button key={file.path} onClick={open}><FileCode size={15} /><span>{file.path}</span><small>{file.content.length.toLocaleString()} 字符</small></button>) : <p>尚无文件产物</p>}</div> : <div className="at-card-artifact">
       <details className="at-code-disclosure"><summary className="at-code-caption" aria-label={'代码 ' + lane.model.name}><CaretRight size={13} className="at-code-caret" /><FileCode size={13} /><span>{first?.path ?? '生成内容'}</span><small className="at-code-show">查看代码</small><small className="at-code-hide">收起代码</small><LockSimple size={12} aria-label="只读" /></summary>

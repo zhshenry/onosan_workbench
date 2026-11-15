@@ -1,63 +1,39 @@
 import { shiShen, WUXING_OF, type BaziChart, type BaziProfile } from '../../../shared/bazi-contracts';
-import { PAN_WX } from './tokens';
+import { CaretDown } from '@phosphor-icons/react';
+import { PAN_WX, WUXING_ORDER } from './tokens';
 
 const nowYear = (): number => new Date().getFullYear();
 
-/** 五行环(8 字占比圆环) */
-function WuxingRing({ count }: { count: Record<string, number> }) {
-  const order = ['木', '火', '土', '金', '水'] as const;
-  const total = order.reduce((sum, w) => sum + (count[w] ?? 0), 0) || 1;
-  const r = 22;
-  const c = 29;
-  let acc = -90;
-  const segs = order.map((w) => {
-    const sweep = ((count[w] ?? 0) / total) * 360;
-    const a0 = acc;
-    const a1 = acc + sweep;
-    acc = a1;
-    if (sweep <= 0) return null;
-    const rad0 = (a0 * Math.PI) / 180;
-    const rad1 = (a1 * Math.PI) / 180;
-    const large = sweep > 180 ? 1 : 0;
-    const d = `M${(c + r * Math.cos(rad0)).toFixed(2)} ${(c + r * Math.sin(rad0)).toFixed(2)} A${r} ${r} 0 ${large} 1 ${(c + r * Math.cos(rad1)).toFixed(2)} ${(c + r * Math.sin(rad1)).toFixed(2)}`;
-    return <path key={w} d={d} fill="none" stroke={PAN_WX[w]} strokeWidth={7} />;
-  });
-  const max = Math.max(...order.map((w) => count[w] ?? 0));
-  const most = order.filter((w) => (count[w] ?? 0) === max);
-  return (
-    <div className="bazi-pan-ringbox">
-      <svg width={58} height={58} viewBox="0 0 58 58" aria-hidden="true">
-        {segs}
-        <text x={29} y={33} textAnchor="middle" fontSize={11} fontWeight={700} fill="var(--bazi-pan-ink)">8字</text>
-      </svg>
-      <div className="bazi-pan-ringtxt">
-        {order.map((w) => <span key={w}><i className="bazi-ring-dot" style={{ background: PAN_WX[w] }} />{w}{count[w] ?? 0} </span>)}
-        <br /><b>{most.join('、')}数量最多</b>
-      </div>
-    </div>
-  );
-}
-
-export function BaziPan({ profile, chart, openDy, onOpenDy }: {
+export function BaziPan({ profile, chart }: {
   profile: BaziProfile;
   chart: BaziChart;
-  openDy: number;
-  onOpenDy(index: number): void;
 }) {
-  const year = nowYear();
-  const idxNow = chart.yun ? chart.yun.list.findIndex((d) => year >= d.startYear && year <= d.endYear) : -1;
+  const total = WUXING_ORDER.reduce((sum, wx) => sum + chart.count[wx], 0);
   return (
-    <div className="bazi-pan" id="bazi-pan-bazi">
-      <span className="bazi-pan-tag">四柱命盘</span>
+    <section className="bazi-pan" id="bazi-pan-bazi" aria-label="四柱命盘">
       <div className="bazi-pan-head">
-        <div className="bazi-pan-who">
-          <b>{profile.name}{profile.tag && <span className="bazi-ptag">{profile.tag}</span>}</b>
-          <div className="bazi-pan-meta">
-            公历 {profile.date} {profile.time} · {profile.gender === 1 ? '男' : '女'} · 农历 {chart.lunarText} {chart.hourText}
+        <div className="bazi-chart-heading">
+          <h2 className="bazi-card-title">四柱命盘</h2>
+          <div className="bazi-pan-who">
+            <div className="bazi-pan-meta"><b>{profile.name}</b>{profile.tag && <span className="bazi-ptag">{profile.tag}</span>} · {profile.gender === 1 ? '男' : '女'}</div>
+            <div className="bazi-pan-meta">公历 {profile.date} {profile.time} · 钟表时间</div>
+            <div className="bazi-pan-meta">农历 {chart.lunarText} {chart.hourText} · 未校正真太阳时{profile.time.startsWith('23:') && ' · 晚子时日柱按当天'}</div>
           </div>
-          <div className="bazi-pan-meta">钟表时间 · 未校正真太阳时{profile.time.startsWith('23:') && ' · 晚子时日柱按当天'}</div>
         </div>
-        <WuxingRing count={chart.count} />
+        <div className="bazi-element-summary">
+          <svg className="bazi-element-ring" viewBox="0 0 80 80" role="img" aria-label={`五行分布：${WUXING_ORDER.map(wx => `${wx} ${chart.count[wx]}`).join('、')}`}>
+            {WUXING_ORDER.map((wx, index) => chart.count[wx] > 0 && (
+              <circle key={wx} cx="40" cy="40" r="32" fill="none" stroke={PAN_WX[wx]} strokeWidth="10"
+                pathLength={total} strokeDasharray={`${chart.count[wx]} ${total - chart.count[wx]}`}
+                strokeDashoffset={-WUXING_ORDER.slice(0, index).reduce((sum, value) => sum + chart.count[value], 0)}
+                transform="rotate(-90 40 40)" />
+            ))}
+            <text x="40" y="40" textAnchor="middle" dominantBaseline="central">{total}字</text>
+          </svg>
+          <div className="bazi-element-legend" aria-hidden="true">
+            {WUXING_ORDER.map(wx => <span key={wx}><i style={{ background: PAN_WX[wx] }} />{wx}{chart.count[wx]}</span>)}
+          </div>
+        </div>
       </div>
       <div className="bazi-pan-div" />
       <div className="bazi-pan-pillars">
@@ -70,7 +46,7 @@ export function BaziPan({ profile, chart, openDy, onOpenDy }: {
             <div className="bazi-pan-pss">{i === 2 ? '' : p.ssGan}</div>
             <div className="bazi-pan-pgan" style={{ color: PAN_WX[WUXING_OF[p.gan]] }}>{p.gan}</div>
             <div className="bazi-pan-pzhi" style={{ color: PAN_WX[WUXING_OF[p.zhi]] }}>{p.zhi}</div>
-            <div className="bazi-pan-pssz">{i === 2 ? '' : p.ssZhi[0] ?? ''}</div>
+            <div className="bazi-pan-pssz">藏干</div>
             <div className="bazi-pan-phide">
               {p.hideGan.map((g, k) => (
                 <span key={`${g}-${k}`} className="hi"><b>{g}</b>·{p.ssZhi[k] ?? ''}</span>
@@ -85,16 +61,32 @@ export function BaziPan({ profile, chart, openDy, onOpenDy }: {
         <span>生肖 <b>{chart.shengXiao}</b></span>
         <span className="bazi-pan-gz">{chart.pillars.map((p) => p.ganZhi).join(' ')}</span>
       </div>
+    </section>
+  );
+}
+
+export function BaziCycles({ chart, openDy, onOpenDy }: {
+  chart: BaziChart;
+  openDy: number;
+  onOpenDy(index: number): void;
+}) {
+  const year = nowYear();
+  const idxNow = chart.yun ? chart.yun.list.findIndex((d) => year >= d.startYear && year <= d.endYear) : -1;
+  return (
+    <details className="bazi-cycles" open>
+      <summary className="bazi-cycles-heading">
+        <h2 className="bazi-card-title">大运流年</h2>
+        {chart.yun && <span className="bazi-cycles-start">起运 {chart.yun.startYear} 年 {chart.yun.startMonth} 个月</span>}
+        <CaretDown size={16} aria-hidden="true" />
+      </summary>
       {chart.yun ? (
         <div className="bazi-pan-dy">
-          <div className="bazi-pan-dyhead">
-            出生后 <b>{chart.yun.startYear} 年 {chart.yun.startMonth} 个月</b>起运 · {chart.yun.startSolar} 交入第一步 · 点击大运看流年
-          </div>
           <div className="bazi-dychips">
             {chart.yun.list.map((d, i) => (
               <button
                 key={`${d.ganZhi}-${d.startYear}`}
                 className={`bazi-dychip${i === openDy ? ' on' : ''}${i === idxNow ? ' now' : ''}`}
+                aria-pressed={i === openDy}
                 onClick={() => onOpenDy(i)}
               >
                 <span className="bazi-dz">
@@ -129,10 +121,11 @@ export function BaziPan({ profile, chart, openDy, onOpenDy }: {
               </div>
             </div>
           )}
+          <div className="bazi-pan-dyhead">{chart.yun.startSolar} 交入第一步 · 点击大运查看对应流年</div>
         </div>
       ) : (
         <div className="bazi-pan-dy"><div className="bazi-pan-dyhead">起运信息暂无法计算,主盘不受影响。</div></div>
       )}
-    </div>
+    </details>
   );
 }

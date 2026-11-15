@@ -31,7 +31,7 @@ test('island displays: single screen is read-only, multiple screens retain auto/
     await act(async () => root.unmount()); assert.equal(listeners.size, 0); dom.window.close();
     names.forEach((name, i) => { if (previous[i]) Object.defineProperty(globalThis, name, previous[i]!); else Reflect.deleteProperty(globalThis, name); });
   });
-  await act(async () => root.render(createElement(IslandSettingsSection, { query: '', resetSearch: () => {} })));
+  await act(async () => root.render(createElement(IslandSettingsSection, { query: '' })));
   assert.match(dom.window.document.querySelector('.island-display-value')!.textContent!, /正在读取显示器/);
   await act(async () => requests.shift()!([panel]));
   assert.equal(selector(), null); assert.equal(dom.window.document.querySelector('.island-display-value')!.textContent, panel.label);

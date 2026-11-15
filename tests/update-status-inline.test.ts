@@ -24,7 +24,7 @@ test('应用更新 v2 真实 React 行内展示、错误详情及现有动作隔
   let installAction = () => Promise.resolve();
   let checks = 0, installs = 0, unsubscribes = 0;
   Object.defineProperty(dom.window, 'workbench', { value: {
-    appInfo: { about: async () => ({ name: '个人工作台', version: '0.1.0', electron: '44.4.4', chrome: '152', userDataPath: 'synthetic', todoDbPath: 'synthetic' }) },
+    appInfo: { about: async () => ({ name: 'OnO Workbench', version: '0.1.0', electron: '44.4.4', chrome: '152', userDataPath: 'synthetic', todoDbPath: 'synthetic' }) },
     updater: { status: () => statusRead(), onStatus: (callback: (value: UpdateStatus) => void) => { listener = callback; return () => { listener = undefined; unsubscribes++; }; },
       check: () => { checks++; return checkAction(); }, install: () => { installs++; return installAction(); } },
   } });
@@ -154,25 +154,16 @@ test('应用更新 v2 真实 React 行内展示、错误详情及现有动作隔
     checkAction = () => Promise.resolve();
   });
 
-  await t.test('搜索过滤整个更新行及进度/详情，清空搜索恢复且焦点返回输入', async () => {
+  await t.test('关于页无页头搜索，更新进度与错误详情始终在本行显示', async () => {
     await emit(snapshot('downloading', { progress: 42 }));
-    const input = dom.window.document.querySelector<HTMLInputElement>('[aria-label="搜索当前页设置"]')!;
-    const search = async (text: string) => act(async () => {
-      Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value')!.set!.call(input, text);
-      input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
-    });
-    await search('个人工作台');
-    assert.equal(dom.window.document.querySelector('.set-update-row'), null);
-    assert.equal(dom.window.document.querySelector('progress'), null);
-    await click(dom.window.document.querySelector<HTMLElement>('[aria-label="清空设置搜索"]')!);
-    assert.ok(row()); assert.equal(dom.window.document.activeElement, input);
+    assert.equal(dom.window.document.querySelector('[aria-label="搜索当前页设置"]'), null);
+    assert.ok(row());
+    assert.equal(dom.window.document.querySelector('progress')?.value, 42);
     await emit(snapshot('error', { message: '合成长错误' }));
     await click(row().querySelector<HTMLElement>('.set-update-details-toggle')!);
-    await search('不存在的设置');
-    assert.equal(dom.window.document.querySelector('.set-update-row'), null);
-    assert.equal(dom.window.document.querySelector('.set-update-details'), null);
-    assert.equal(dom.window.document.querySelector('.set-empty')?.textContent, '没有匹配的设置');
-    await click(dom.window.document.querySelector<HTMLElement>('[aria-label="清空设置搜索"]')!);
+    assert.equal(row().querySelector('.set-update-details')?.textContent, '合成长错误');
+    await emit(snapshot('latest'));
+    assert.equal(row().querySelector('.set-update-details'), null);
   });
 
   await t.test('初始读取失败在本行显示完整详情，迟到快照或失败不能覆盖新事件', async () => {
