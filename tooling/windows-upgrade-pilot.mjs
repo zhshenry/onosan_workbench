@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import path from 'node:path';
 import { _electron as electron } from 'playwright';
 import { findRelease, hashFile } from './release-assets.mjs';
+import { navigateInstalled } from './installed-navigation.mjs';
 
 assert.ok(process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_ENVIRONMENT === 'github-hosted', 'Use a fresh GitHub-hosted Windows runner; never run a real upgrade on a developer profile.');
 const tag = process.env.WORKBENCH_RELEASE_TAG;
@@ -80,14 +81,23 @@ try {
   let taskId;
   await check('Create a persisted task and choose exit-on-close through the old UI', async () => {
     assert.equal((await page.evaluate(() => window.workbench.todo.state())).tasks.length, 0);
-    await page.locator('#view-home').getByRole('button', { name: '新增', exact: true }).click();
+    const homeCreate = page.locator('#view-home').getByRole('button', { name: '新增', exact: true });
+    if (await homeCreate.isVisible()) await homeCreate.click();
+    else {
+      await navigateInstalled(page, 'life', '日程和待办', 'todo');
+      await page.locator('#view-todo').getByRole('button', { name: '新增', exact: true }).click();
+    }
     const dialog = page.getByRole('dialog', { name: '新增事项', exact: true });
     await dialog.getByRole('textbox', { name: '待办名称', exact: true }).fill(title);
     await dialog.getByRole('button', { name: '创建', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });
     taskId = (await page.evaluate(() => window.workbench.todo.state())).tasks.find(task => task.title === title).id;
     await page.locator('.rail [data-workbench="settings"]').click();
-    if (!await page.getByRole('button', { name: '退出应用', exact: true }).isVisible()) await page.locator('.tree').getByRole('button', { name: /^(?:通用|通用与外观|通用&外观)$/ }).click();
+    if (!await page.getByRole('button', { name: '退出应用', exact: true }).isVisible()) {
+      const settings = page.getByRole('dialog', { name: '设置', exact: true });
+      const categories = await settings.isVisible() ? settings.locator('.settings-sections') : page.locator('.tree');
+      await categories.getByRole('button', { name: /^(?:通用|通用与外观|通用&外观)$/ }).click();
+    }
     await page.getByRole('button', { name: '退出应用', exact: true }).click();
     await page.waitForFunction(() => window.workbench.settings.get().then(value => value.closeAction === 'exit'));
   });
