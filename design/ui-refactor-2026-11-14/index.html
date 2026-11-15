@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ono Workbench · UI 重构高保真方案</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  :root { font-family: "Segoe UI Variable Text","Segoe UI","Microsoft YaHei",sans-serif; }
+  body { min-height: 100vh; overflow: hidden; color: var(--ink); background: var(--field-base); }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  .num { font-family: Bahnschrift,"Segoe UI Variable Display","Microsoft YaHei",sans-serif; font-variant-numeric: tabular-nums; }
+
+  /* ---------- scheme tokens ---------- */
+  body[data-scheme="a"]{
+    --field-base:#e8e9ec; --blob1:rgba(127,157,211,.62); --blob2:rgba(244,205,164,.66); --blob3:rgba(168,211,196,.52); --blob4:rgba(196,181,226,.42);
+    --shell:rgba(255,255,255,.46); --card:rgba(255,255,255,.60); --card-strong:rgba(255,255,255,.72); --inner:rgba(255,255,255,.58); --inner-strong:rgba(255,255,255,.80);
+    --line:rgba(255,255,255,.78); --line-soft:rgba(31,41,55,.09); --hi:rgba(255,255,255,.9);
+    --ink:#1c2027; --ink2:#454c58; --ink3:#68707d;
+    --accent:#4a67a3; --accent-soft:rgba(127,157,211,.22); --teal:#177568; --violet:#6546a8; --amber:#96660f; --danger:#b23c3c;
+    --primary:#22252b; --primary-fg:#fff; --blur:22px; --sat:1.55;
+    --shadow:0 18px 44px rgba(43,49,66,.13),0 3px 10px rgba(43,49,66,.06); --shadow-sm:0 8px 24px rgba(43,49,66,.09),0 1px 3px rgba(43,49,66,.04);
+    --radius:22px; --track:rgba(28,35,50,.10); --selected:#fff;
+  }
+  body[data-scheme="c"]{
+    --field-base:#eee4d7; --blob1:rgba(238,176,128,.72); --blob2:rgba(255,226,188,.88); --blob3:rgba(183,199,165,.52); --blob4:rgba(226,164,148,.48);
+    --shell:rgba(255,248,238,.50); --card:rgba(255,251,245,.63); --card-strong:rgba(255,253,249,.76); --inner:rgba(255,255,255,.55); --inner-strong:rgba(255,255,255,.82);
+    --line:rgba(255,255,255,.76); --line-soft:rgba(84,58,36,.11); --hi:rgba(255,255,255,.92);
+    --ink:#282019; --ink2:#594a3d; --ink3:#7d6c5d;
+    --accent:#8f5b25; --accent-soft:rgba(220,157,91,.24); --teal:#277568; --violet:#6b4d9e; --amber:#a06808; --danger:#b23f35;
+    --primary:#2c211a; --primary-fg:#fff7ec; --blur:22px; --sat:1.45;
+    --shadow:0 18px 44px rgba(96,66,38,.14),0 3px 10px rgba(96,66,38,.06); --shadow-sm:0 8px 24px rgba(96,66,38,.10),0 1px 3px rgba(96,66,38,.04);
+    --radius:22px; --track:rgba(84,58,36,.11); --selected:#fffdf8;
+  }
+  /* ---------- v2: reinforced frosted glass (A+) ---------- */
+  body[data-scheme="a2"]{
+    --field-base:#e3e6eb; --blob1:rgba(96,138,205,.78); --blob2:rgba(246,183,116,.82); --blob3:rgba(126,196,170,.68); --blob4:rgba(171,148,224,.58);
+    --shell:rgba(255,255,255,.34); --card:rgba(255,255,255,.44); --card-strong:rgba(255,255,255,.60); --inner:rgba(255,255,255,.40); --inner-strong:rgba(255,255,255,.68);
+    --g1:rgba(255,255,255,.66); --g2:rgba(255,255,255,.30);
+    --line:rgba(255,255,255,.88); --line-soft:rgba(31,41,55,.10); --hi:rgba(255,255,255,1);
+    --ink:#1a1f28; --ink2:#424b59; --ink3:#626c7a;
+    --accent:#4063a6; --accent-soft:rgba(110,150,215,.26); --teal:#146f62; --violet:#5f43a3; --amber:#8f610d; --danger:#ac3535;
+    --primary:#20232a; --primary-fg:#fff; --blur:30px; --sat:1.85;
+    --shadow:0 24px 56px rgba(43,49,66,.18),0 4px 14px rgba(43,49,66,.08); --shadow-sm:0 12px 32px rgba(43,49,66,.13),0 2px 6px rgba(43,49,66,.05);
+    --radius:24px; --track:rgba(28,35,50,.12); --selected:#fff;
+  }
+  body[data-scheme="a2"] .glass,
+  body[data-scheme="a2"] .glass-shell {
+    background: linear-gradient(145deg, var(--g1), var(--g2) 58%, var(--g2));
+    box-shadow: var(--shadow-sm), inset 0 1px 0 var(--hi), inset 1px 0 0 rgba(255,255,255,.38), inset 0 -1px 0 rgba(30,35,50,.06);
+  }
+  body[data-scheme="a2"] .field .b5 { opacity:.58; }
+  body[data-scheme="a2"] .field .b6 { opacity:.62; }
+  body[data-scheme="a2"] .field::before {
+    content:""; position:absolute; inset:0;
+    background:
+      linear-gradient(115deg, transparent 8%, rgba(255,255,255,.38) 34%, transparent 52%),
+      radial-gradient(560px 300px at 82% 68%, var(--blob1), transparent 70%),
+      radial-gradient(480px 320px at 12% 84%, var(--blob2), transparent 70%);
+    opacity:.75;
+  }
+  body[data-scheme="a2"] .event, body[data-scheme="a2"] .task, body[data-scheme="a2"] .quota-row, body[data-scheme="a2"] .tile {
+    -webkit-backdrop-filter: blur(14px) saturate(var(--sat)); backdrop-filter: blur(14px) saturate(var(--sat));
+    box-shadow: inset 0 1px 0 var(--hi), 0 5px 16px rgba(35,42,60,.06);
+  }
+  body[data-scheme="a2"] .content { gap:14px; }
+  body[data-scheme="a2"] .grid,
+  body[data-scheme="a2"] .workspace { gap:14px; }
+
+  /* ---------- round 3: E/F/G/H (low-saturation, mid-strength glass) ---------- */
+  body[data-scheme="e"]{
+    --field-base:#e6ede8; --blob1:rgba(141,196,171,.66); --blob2:rgba(246,225,180,.64); --blob3:rgba(149,197,203,.56); --blob4:rgba(174,196,152,.50);
+    --shell:rgba(255,255,255,.40); --card:rgba(255,255,255,.52); --card-strong:rgba(255,255,255,.66); --inner:rgba(255,255,255,.48); --inner-strong:rgba(255,255,255,.74);
+    --g1:rgba(255,255,255,.64); --g2:rgba(255,255,255,.34);
+    --line:rgba(255,255,255,.84); --line-soft:rgba(31,53,45,.10); --hi:rgba(255,255,255,.96);
+    --ink:#1e2a26; --ink2:#42564f; --ink3:#677a72;
+    --accent:#2e7d6b; --accent-soft:rgba(96,178,152,.24); --teal:#14705e; --violet:#5f5aa8; --amber:#8a6514; --danger:#ad3a36;
+    --primary:#20302a; --primary-fg:#fff; --blur:26px; --sat:1.65;
+    --shadow:0 20px 48px rgba(42,66,56,.15),0 3px 12px rgba(42,66,56,.06); --shadow-sm:0 10px 28px rgba(42,66,56,.11),0 2px 5px rgba(42,66,56,.04);
+    --radius:23px; --track:rgba(31,53,45,.11); --selected:#fff;
+  }
+  body[data-scheme="f"]{
+    --field-base:#eae8f1; --blob1:rgba(181,166,222,.62); --blob2:rgba(238,226,205,.58); --blob3:rgba(233,190,203,.58); --blob4:rgba(150,166,214,.52);
+    --shell:rgba(255,255,255,.40); --card:rgba(255,255,255,.52); --card-strong:rgba(255,255,255,.66); --inner:rgba(255,255,255,.48); --inner-strong:rgba(255,255,255,.74);
+    --g1:rgba(255,255,255,.64); --g2:rgba(255,255,255,.34);
+    --line:rgba(255,255,255,.84); --line-soft:rgba(49,42,78,.10); --hi:rgba(255,255,255,.96);
+    --ink:#252233; --ink2:#4c4763; --ink3:#716b88;
+    --accent:#6a5aa8; --accent-soft:rgba(150,132,205,.24); --teal:#177568; --violet:#7a539e; --amber:#8f6511; --danger:#ae3a41;
+    --primary:#272235; --primary-fg:#fff; --blur:26px; --sat:1.65;
+    --shadow:0 20px 48px rgba(58,50,92,.15),0 3px 12px rgba(58,50,92,.06); --shadow-sm:0 10px 28px rgba(58,50,92,.11),0 2px 5px rgba(58,50,92,.04);
+    --radius:23px; --track:rgba(49,42,78,.11); --selected:#fff;
+  }
+  body[data-scheme="g"]{
+    --field-base:#f0e9e5; --blob1:rgba(224,175,183,.62); --blob2:rgba(240,210,172,.66); --blob3:rgba(199,174,194,.50); --blob4:rgba(233,205,190,.58);
+    --shell:rgba(255,255,255,.42); --card:rgba(255,255,255,.54); --card-strong:rgba(255,255,255,.68); --inner:rgba(255,255,255,.50); --inner-strong:rgba(255,255,255,.76);
+    --g1:rgba(255,255,255,.66); --g2:rgba(255,255,255,.36);
+    --line:rgba(255,255,255,.85); --line-soft:rgba(80,52,58,.10); --hi:rgba(255,255,255,.96);
+    --ink:#2b2226; --ink2:#5a474e; --ink3:#7e6a71;
+    --accent:#96586a; --accent-soft:rgba(205,140,155,.24); --teal:#267568; --violet:#6c539d; --amber:#8f6511; --danger:#b03a34;
+    --primary:#2e2226; --primary-fg:#fff; --blur:26px; --sat:1.6;
+    --shadow:0 20px 48px rgba(92,60,66,.14),0 3px 12px rgba(92,60,66,.06); --shadow-sm:0 10px 28px rgba(92,60,66,.10),0 2px 5px rgba(92,60,66,.04);
+    --radius:23px; --track:rgba(80,52,58,.11); --selected:#fff;
+  }
+  body[data-scheme="h"]{
+    --field-base:#eceae4; --blob1:rgba(198,191,176,.72); --blob2:rgba(233,220,194,.74); --blob3:rgba(172,180,150,.48); --blob4:rgba(166,179,191,.44);
+    --shell:rgba(255,255,255,.42); --card:rgba(255,255,255,.54); --card-strong:rgba(255,255,255,.68); --inner:rgba(255,255,255,.50); --inner-strong:rgba(255,255,255,.76);
+    --g1:rgba(255,255,255,.66); --g2:rgba(255,255,255,.36);
+    --line:rgba(255,255,255,.85); --line-soft:rgba(58,56,46,.11); --hi:rgba(255,255,255,.96);
+    --ink:#26261f; --ink2:#504e43; --ink3:#73705f;
+    --accent:#68755a; --accent-soft:rgba(146,158,122,.25); --teal:#227568; --violet:#62549e; --amber:#8c6412; --danger:#ae3b34;
+    --primary:#262622; --primary-fg:#fff; --blur:26px; --sat:1.6;
+    --shadow:0 20px 48px rgba(70,66,52,.14),0 3px 12px rgba(70,66,52,.06); --shadow-sm:0 10px 28px rgba(70,66,52,.10),0 2px 5px rgba(70,66,52,.04);
+    --radius:23px; --track:rgba(58,56,46,.11); --selected:#fff;
+  }
+  /* ---------- round 4: strong-glass variants C+ / E+ / F+ / G+ / H+ ---------- */
+  body[data-scheme="c2"]{
+    --field-base:#eee3d2; --blob1:rgba(238,171,118,.82); --blob2:rgba(255,222,182,.94); --blob3:rgba(178,196,158,.62); --blob4:rgba(228,160,142,.58);
+    --shell:rgba(255,248,238,.36); --card:rgba(255,251,245,.46); --card-strong:rgba(255,253,249,.62); --inner:rgba(255,255,255,.42); --inner-strong:rgba(255,255,255,.70);
+    --g1:rgba(255,255,255,.68); --g2:rgba(255,244,226,.32);
+    --line:rgba(255,255,255,.88); --line-soft:rgba(84,58,36,.12); --hi:rgba(255,255,255,1);
+    --ink:#282019; --ink2:#594a3d; --ink3:#776552;
+    --accent:#8f5b25; --accent-soft:rgba(220,157,91,.28); --teal:#277568; --violet:#6b4d9e; --amber:#a06808; --danger:#b23f35;
+    --primary:#2c211a; --primary-fg:#fff7ec; --blur:30px; --sat:1.58;
+    --shadow:0 24px 56px rgba(96,66,38,.18),0 4px 14px rgba(96,66,38,.08); --shadow-sm:0 12px 32px rgba(96,66,38,.13),0 2px 6px rgba(96,66,38,.05);
+    --radius:24px; --track:rgba(84,58,36,.12); --selected:#fffdf8;
+  }
+  body[data-scheme="e2"]{
+    --field-base:#e2ece4; --blob1:rgba(126,196,166,.80); --blob2:rgba(248,220,168,.78); --blob3:rgba(134,198,205,.70); --blob4:rgba(164,196,144,.64);
+    --shell:rgba(255,255,255,.34); --card:rgba(255,255,255,.44); --card-strong:rgba(255,255,255,.60); --inner:rgba(255,255,255,.40); --inner-strong:rgba(255,255,255,.68);
+    --g1:rgba(255,255,255,.66); --g2:rgba(255,255,255,.30);
+    --line:rgba(255,255,255,.88); --line-soft:rgba(31,53,45,.11); --hi:rgba(255,255,255,1);
+    --ink:#1c2924; --ink2:#3f554c; --ink3:#5f7369;
+    --accent:#22755f; --accent-soft:rgba(96,178,152,.28); --teal:#12705e; --violet:#5f5aa8; --amber:#8a6514; --danger:#ad3a36;
+    --primary:#20302a; --primary-fg:#fff; --blur:30px; --sat:1.82;
+    --shadow:0 24px 56px rgba(42,66,56,.18),0 4px 14px rgba(42,66,56,.08); --shadow-sm:0 12px 32px rgba(42,66,56,.13),0 2px 6px rgba(42,66,56,.05);
+    --radius:24px; --track:rgba(31,53,45,.12); --selected:#fff;
+  }
+  body[data-scheme="f2"]{
+    --field-base:#e7e3f0; --blob1:rgba(174,156,220,.76); --blob2:rgba(240,224,200,.72); --blob3:rgba(234,182,198,.72); --blob4:rgba(140,158,214,.66);
+    --shell:rgba(255,255,255,.34); --card:rgba(255,255,255,.44); --card-strong:rgba(255,255,255,.60); --inner:rgba(255,255,255,.40); --inner-strong:rgba(255,255,255,.68);
+    --g1:rgba(255,255,255,.66); --g2:rgba(255,255,255,.30);
+    --line:rgba(255,255,255,.88); --line-soft:rgba(49,42,78,.11); --hi:rgba(255,255,255,1);
+    --ink:#231f31; --ink2:#4a4462; --ink3:#6d6784;
+    --accent:#6350a6; --accent-soft:rgba(150,132,205,.28); --teal:#177568; --violet:#7a539e; --amber:#8f6511; --danger:#ae3a41;
+    --primary:#272235; --primary-fg:#fff; --blur:30px; --sat:1.82;
+    --shadow:0 24px 56px rgba(58,50,92,.18),0 4px 14px rgba(58,50,92,.08); --shadow-sm:0 12px 32px rgba(58,50,92,.13),0 2px 6px rgba(58,50,92,.05);
+    --radius:24px; --track:rgba(49,42,78,.12); --selected:#fff;
+  }
+  body[data-scheme="g2"]{
+    --field-base:#efe5e0; --blob1:rgba(222,164,174,.76); --blob2:rgba(242,204,164,.80); --blob3:rgba(196,166,192,.64); --blob4:rgba(234,196,180,.72);
+    --shell:rgba(255,255,255,.36); --card:rgba(255,255,255,.46); --card-strong:rgba(255,255,255,.62); --inner:rgba(255,255,255,.42); --inner-strong:rgba(255,255,255,.70);
+    --g1:rgba(255,255,255,.68); --g2:rgba(255,255,255,.32);
+    --line:rgba(255,255,255,.88); --line-soft:rgba(80,52,58,.11); --hi:rgba(255,255,255,1);
+    --ink:#2a2125; --ink2:#58464d; --ink3:#786269;
+    --accent:#935365; --accent-soft:rgba(205,140,155,.28); --teal:#267568; --violet:#6c539d; --amber:#8f6511; --danger:#b03a34;
+    --primary:#2e2226; --primary-fg:#fff; --blur:30px; --sat:1.75;
+    --shadow:0 24px 56px rgba(92,60,66,.17),0 4px 14px rgba(92,60,66,.08); --shadow-sm:0 12px 32px rgba(92,60,66,.12),0 2px 6px rgba(92,60,66,.05);
+    --radius:24px; --track:rgba(80,52,58,.12); --selected:#fff;
+  }
+  body[data-scheme="h2"]{
+    --field-base:#eae7de; --blob1:rgba(192,184,166,.86); --blob2:rgba(236,220,190,.88); --blob3:rgba(164,174,140,.62); --blob4:rgba(156,171,184,.58);
+    --shell:rgba(255,255,255,.36); --card:rgba(255,255,255,.46); --card-strong:rgba(255,255,255,.62); --inner:rgba(255,255,255,.42); --inner-strong:rgba(255,255,255,.70);
+    --g1:rgba(255,255,255,.68); --g2:rgba(255,255,255,.32);
+    --line:rgba(255,255,255,.88); --line-soft:rgba(58,56,46,.12); --hi:rgba(255,255,255,1);
+    --ink:#24241e; --ink2:#4d4b40; --ink3:#6e6a58;
+    --accent:#5f7050; --accent-soft:rgba(146,158,122,.30); --teal:#227568; --violet:#62549e; --amber:#8c6412; --danger:#ae3b34;
+    --primary:#262622; --primary-fg:#fff; --blur:30px; --sat:1.75;
+    --shadow:0 24px 56px rgba(70,66,52,.17),0 4px 14px rgba(70,66,52,.08); --shadow-sm:0 12px 32px rgba(70,66,52,.12),0 2px 6px rgba(70,66,52,.05);
+    --radius:24px; --track:rgba(58,56,46,.12); --selected:#fff;
+  }
+  body:is([data-scheme="c2"],[data-scheme="e2"],[data-scheme="f2"],[data-scheme="g2"],[data-scheme="h2"]) .glass,
+  body:is([data-scheme="c2"],[data-scheme="e2"],[data-scheme="f2"],[data-scheme="g2"],[data-scheme="h2"]) .glass-shell {
+    background: linear-gradient(145deg, var(--g1), var(--g2) 58%, var(--g2));
+    box-shadow: var(--shadow-sm), inset 0 1px 0 var(--hi), inset 1px 0 0 rgba(255,255,255,.38), inset 0 -1px 0 rgba(30,35,50,.06);
+  }
+  body:is([data-scheme="c2"],[data-scheme="e2"],[data-scheme="f2"],[data-scheme="g2"],[data-scheme="h2"]) .field .b5 { opacity:.56; }
+  body:is([data-scheme="c2"],[data-scheme="e2"],[data-scheme="f2"],[data-scheme="g2"],[data-scheme="h2"]) .field .b6 { opacity:.60; }
+  body:is([data-scheme="c2"],[data-scheme="e2"],[data-scheme="f2"],[data-scheme="g2"],[data-scheme="h2"]) .field::before {
+    content:""; position:absolute; inset:0;
+    background:
+      linear-gradient(115deg, transparent 8%, rgba(255,255,255,.36) 34%, transparent 52%),
+      radial-gradient(560px 300px at 82% 68%, var(--blob3), transparent 70%),
+      radial-gradient(480px 320px at 12% 84%, var(--blob2), transparent 70%);
+    opacity:.72;
+  }
+  body:is([data-scheme="c2"],[data-scheme="e2"],[data-scheme="f2"],[data-scheme="g2"],[data-scheme="h2"]) :is(.event,.task,.quota-row,.tile) {
+    -webkit-backdrop-filter: blur(14px) saturate(var(--sat)); backdrop-filter: blur(14px) saturate(var(--sat));
+    box-shadow: inset 0 1px 0 var(--hi), 0 5px 16px rgba(35,42,60,.06);
+  }
+  body:is([data-scheme="c2"],[data-scheme="e2"],[data-scheme="f2"],[data-scheme="g2"],[data-scheme="h2"]) .content { gap:14px; }
+  body:is([data-scheme="c2"],[data-scheme="e2"],[data-scheme="f2"],[data-scheme="g2"],[data-scheme="h2"]) :is(.grid,.workspace) { gap:14px; }
+
+  body:is([data-scheme="e"],[data-scheme="f"],[data-scheme="g"],[data-scheme="h"]) .glass,
+  body:is([data-scheme="e"],[data-scheme="f"],[data-scheme="g"],[data-scheme="h"]) .glass-shell {
+    background: linear-gradient(145deg, var(--g1), var(--g2) 58%, var(--g2));
+    box-shadow: var(--shadow-sm), inset 0 1px 0 var(--hi), inset 1px 0 0 rgba(255,255,255,.36), inset 0 -1px 0 rgba(30,35,50,.05);
+  }
+  body:is([data-scheme="e"],[data-scheme="f"],[data-scheme="g"],[data-scheme="h"]) .field::before {
+    content:""; position:absolute; inset:0;
+    background:
+      linear-gradient(115deg, transparent 10%, rgba(255,255,255,.32) 36%, transparent 54%),
+      radial-gradient(560px 300px at 82% 68%, var(--blob3), transparent 70%),
+      radial-gradient(480px 320px at 12% 84%, var(--blob2), transparent 70%);
+    opacity:.65;
+  }
+  body:is([data-scheme="e"],[data-scheme="f"],[data-scheme="g"],[data-scheme="h"]) :is(.event,.task,.quota-row,.tile) {
+    -webkit-backdrop-filter: blur(14px) saturate(var(--sat)); backdrop-filter: blur(14px) saturate(var(--sat));
+    box-shadow: inset 0 1px 0 var(--hi), 0 5px 16px rgba(35,42,60,.05);
+  }
+
+  /* ---------- field: what the glass blurs ---------- */
+  .field { position: fixed; inset: 0; overflow: hidden; background: var(--field-base); }
+  .field i { position: absolute; border-radius: 50%; display: block; }
+  .field .b1 { width: 58vw; height: 58vw; left: -14vw; top: -24vw; background: radial-gradient(circle at 42% 42%, var(--blob1), transparent 66%); }
+  .field .b2 { width: 52vw; height: 52vw; right: -12vw; top: -16vw; background: radial-gradient(circle at 50% 50%, var(--blob2), transparent 67%); }
+  .field .b3 { width: 46vw; height: 46vw; left: 30vw; bottom: -26vw; background: radial-gradient(circle at 50% 50%, var(--blob3), transparent 68%); }
+  .field .b4 { width: 34vw; height: 34vw; right: 22vw; bottom: -18vw; background: radial-gradient(circle at 50% 50%, var(--blob4), transparent 66%); }
+  .field .b5 { width: 300px; height: 300px; left: 58%; top: 24%; border-radius: 38% 62% 55% 45%; background: var(--blob1); opacity: .34; transform: rotate(18deg); }
+  .field .b6 { width: 220px; height: 220px; left: 7%; top: 58%; border-radius: 50%; background: var(--blob2); opacity: .38; }
+  .field::after { content:""; position:absolute; inset:0; opacity:.5; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .035 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E"); mix-blend-mode: overlay; pointer-events:none; }
+
+  /* ---------- app frame (layout unchanged) ---------- */
+  .app { position: relative; z-index: 1; height: 100vh; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; }
+  .glass { background: var(--card); -webkit-backdrop-filter: blur(var(--blur)) saturate(var(--sat)); backdrop-filter: blur(var(--blur)) saturate(var(--sat)); border: 1px solid var(--line); box-shadow: var(--shadow-sm), inset 0 1px 0 var(--hi); border-radius: var(--radius); }
+  .glass-shell { background: var(--shell); -webkit-backdrop-filter: blur(var(--blur)) saturate(var(--sat)); backdrop-filter: blur(var(--blur)) saturate(var(--sat)); border: 1px solid var(--line); box-shadow: var(--shadow-sm), inset 0 1px 0 var(--hi); }
+
+  .topbar { height: 54px; flex: none; border-radius: 18px; display: flex; align-items: center; gap: 14px; padding: 0 12px 0 14px; }
+  .logo { display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:-.01em; white-space:nowrap; }
+  .logo-mark { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; color:#fff; font-weight:800; background: conic-gradient(from 210deg,#7f9dd3,#b79aff,#4a67a3,#7f9dd3); box-shadow: inset 0 0 0 5px rgba(10,12,18,.88), 0 4px 12px rgba(40,50,80,.28); font-size:13px; }
+  .icon-btn { width:36px; height:36px; border-radius:11px; display:grid; place-items:center; color:var(--ink2); flex:none; }
+  .icon-btn:hover { background: var(--inner-strong); color: var(--ink); }
+  .capsules { margin: 0 auto; display:flex; align-items:center; gap:0; background: var(--inner); border:1px solid var(--line-soft); border-radius:999px; padding:4px; box-shadow: inset 0 1px 0 var(--hi); }
+  .cap { display:flex; align-items:center; gap:8px; padding:6px 13px; border-radius:999px; font-size:13px; color:var(--ink2); white-space:nowrap; }
+  .cap strong { color: var(--ink); font-weight:650; }
+  .cap .prog { width:58px; height:5px; border-radius:99px; background: var(--track); overflow:hidden; }
+  .cap .prog i { display:block; height:100%; width:60%; background: var(--accent); border-radius:99px; }
+  .cap-sep { width:1px; height:20px; background: var(--line-soft); }
+  .top-actions { display:flex; align-items:center; gap:4px; margin-left:auto; }
+  .capsules + .top-actions { margin-left: 0; }
+  .avatar { width:32px; height:32px; border-radius:50%; background: var(--accent); color:#fff; display:grid; place-items:center; font-weight:700; font-size:13px; margin-left:4px; }
+  .win { display:flex; gap:2px; margin-left:6px; color:var(--ink3); }
+  .win span { width:34px; height:32px; display:grid; place-items:center; border-radius:8px; font-size:14px; }
+  .win span:hover { background: var(--inner-strong); color:var(--ink); }
+
+  .main { flex:1; min-height:0; display:flex; gap:12px; }
+  .rail { width:76px; flex:none; border-radius: var(--radius); display:flex; flex-direction:column; align-items:stretch; padding:12px 9px; gap:4px; }
+  .rail-item { display:flex; flex-direction:column; align-items:center; gap:5px; padding:10px 2px 8px; border-radius:14px; color:var(--ink2); font-size:11px; line-height:1; }
+  .rail-item svg { width:21px; height:21px; }
+  .rail-item:hover { background: var(--inner); color: var(--ink); }
+  .rail-item.on { background: var(--primary); color: var(--primary-fg); box-shadow: 0 8px 18px rgba(20,24,36,.20), inset 0 1px 0 rgba(255,255,255,.22); position:relative; }
+  .rail-item.on::after { content:""; position:absolute; right:-9px; top:50%; transform:translateY(-50%); width:4px; height:20px; border-radius:99px; background: var(--accent); }
+  .rail .spacer { flex:1; }
+  .content { flex:1; min-width:0; overflow:hidden; display:flex; flex-direction:column; gap:12px; padding:2px 2px 4px; }
+
+  .page-head { flex:none; display:flex; align-items:center; justify-content:space-between; gap:18px; padding:20px 24px; min-height:104px; }
+  .page-head h1 { font-size:27px; letter-spacing:-.025em; line-height:1.25; font-weight:750; }
+  .page-head p { margin-top:5px; color:var(--ink3); font-size:14px; }
+  .page-head p b { color: var(--ink2); }
+  .bad { color: var(--danger); font-weight:650; }
+  .actions { display:flex; gap:8px; flex:none; }
+  .btn { min-height:36px; padding:0 16px; border-radius:12px; display:inline-flex; align-items:center; gap:7px; font-size:14px; font-weight:600; border:1px solid var(--line-soft); background: var(--inner-strong); box-shadow: inset 0 1px 0 var(--hi), 0 4px 12px rgba(30,38,55,.07); white-space:nowrap; }
+  .btn:hover { filter:brightness(1.03); }
+  .btn-pri { background: var(--primary); color: var(--primary-fg); border-color: transparent; box-shadow: 0 8px 20px rgba(20,24,36,.20), inset 0 1px 0 rgba(255,255,255,.22); }
+
+  /* ---------- home ---------- */
+  .grid { flex:1; min-height:0; display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; align-content:start; }
+  .card { padding:18px 20px; min-height:258px; display:flex; flex-direction:column; }
+  .span4 { grid-column: span 4; } .span3 { grid-column: span 3; } .span2 { grid-column: span 2; }
+  .card-head { display:flex; align-items:center; gap:9px; margin-bottom:14px; }
+  .card-head svg { width:19px; height:19px; color: var(--ink2); }
+  .card-head h2 { font-size:17px; font-weight:720; letter-spacing:-.01em; }
+  .card-head .right { margin-left:auto; font-size:12px; color:var(--ink3); display:flex; gap:10px; align-items:center; }
+  .legend span::before { content:""; display:inline-block; width:7px; height:7px; border-radius:2px; margin-right:4px; background:var(--c); }
+  .card-foot { margin-top:auto; padding-top:11px; border-top:1px solid var(--line-soft); display:flex; justify-content:space-between; align-items:center; font-size:12.5px; color:var(--ink3); }
+  .link { color: var(--accent); font-weight:650; display:inline-flex; gap:5px; align-items:center; }
+  .bars { flex:1; display:grid; grid-template-columns:repeat(7,1fr); align-items:end; gap:8px; padding: 2px 4px 0; }
+  .day { display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:4px; height:100%; font-size:12px; color:var(--ink3); }
+  .day .n { font-size:12.5px; color:var(--ink2); font-weight:600; }
+  .stack { width:26px; border-radius:6px 6px 2px 2px; overflow:hidden; display:flex; flex-direction:column-reverse; background: var(--track); }
+  .stack i { display:block; width:100%; }
+  .pair { display:flex; align-items:flex-end; gap:4px; height:100%; }
+  .pair .col { display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:4px; height:100%; }
+  .pair .bar { width:13px; border-radius:5px 5px 2px 2px; }
+  .quota-row { display:grid; grid-template-columns: 1fr auto; gap:3px 10px; padding:9px 11px; border-radius:13px; background:var(--inner); border:1px solid var(--line-soft); box-shadow: inset 0 1px 0 var(--hi); margin-bottom:8px; align-items:center; }
+  .brand { display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:650; min-width:0; }
+  .brand-badge { width:22px; height:22px; border-radius:7px; display:grid; place-items:center; color:#fff; font-size:11px; font-weight:800; flex:none; }
+  .quota-val { grid-row:1/3; grid-column:2; font-size:21px; font-weight:750; letter-spacing:-.02em; }
+  .quota-val small { font-size:11px; color:var(--ink3); font-weight:600; }
+  .quota-cap { font-size:11.5px; color:var(--ink3); }
+  .gauge { grid-column:1/-1; height:5px; border-radius:99px; background:var(--track); overflow:hidden; margin-top:4px; }
+  .gauge i { display:block; height:100%; border-radius:99px; }
+  .tiles { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; flex:1; align-content:center; }
+  .tile { padding:13px; border-radius:15px; background:var(--inner); border:1px solid var(--line-soft); box-shadow: inset 0 1px 0 var(--hi); display:flex; flex-direction:column; gap:8px; }
+  .tile .brand { font-size:13px; }
+  .tile small { color:var(--ink3); font-size:11.5px; line-height:1.45; }
+  .pill { align-self:flex-start; font-size:11px; font-weight:700; padding:3px 8px; border-radius:999px; background:var(--accent-soft); color:var(--accent); }
+  .pill.ok { background: color-mix(in srgb, var(--teal) 16%, transparent); color: var(--teal); }
+
+  /* ---------- todo ---------- */
+  .workspace { flex:1; min-height:0; display:grid; grid-template-columns: 48fr 52fr; gap:12px; }
+  .board { padding:20px 22px; display:flex; flex-direction:column; min-height:0; }
+  .board-head { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .board-head h2 { font-size:21px; font-weight:750; letter-spacing:-.02em; }
+  .board-head .count { font-size:12.5px; color:var(--ink3); }
+  .seg { margin-left:auto; display:flex; gap:2px; padding:3px; border-radius:999px; background: var(--track); }
+  .seg button { padding:5px 14px; border-radius:999px; font-size:13px; color:var(--ink2); }
+  .seg button.on { background: var(--selected); color: var(--accent); font-weight:700; box-shadow: 0 3px 8px rgba(25,35,55,.13); }
+  .date-btn { display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; padding:7px 11px; border-radius:11px; background:var(--inner); border:1px solid var(--line-soft); }
+  .week { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:14px; }
+  .wd { display:flex; flex-direction:column; align-items:center; gap:4px; padding:9px 2px 7px; border-radius:13px; font-size:12px; color:var(--ink3); }
+  .wd b { font-size:15px; color:var(--ink2); font-weight:650; }
+  .wd i { width:5px; height:5px; border-radius:50%; background: var(--accent); opacity:0; }
+  .wd.has i { opacity:1; }
+  .wd.on { background: var(--accent); color:#fff; box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 35%, transparent); }
+  .wd.on b { color:#fff; } .wd.on i { background:#fff; }
+  .sched { display:flex; flex-direction:column; gap:8px; overflow:hidden; }
+  .event { display:flex; gap:13px; padding:11px 13px; border-radius:15px; background:var(--inner); border:1px solid var(--line-soft); box-shadow: inset 0 1px 0 var(--hi); align-items:flex-start; }
+  .event .time { flex:none; width:86px; font-size:12.5px; color:var(--ink3); line-height:1.5; }
+  .event .time b { display:block; color:var(--ink); font-size:13px; }
+  .event h3 { font-size:14.5px; font-weight:650; line-height:1.4; }
+  .event p { font-size:12px; color:var(--ink3); margin-top:2px; }
+  .event .tag { margin-left:auto; flex:none; }
+  .tag { font-size:11px; font-weight:650; padding:3px 8px; border-radius:999px; background:var(--inner-strong); color:var(--ink2); border:1px solid var(--line-soft); white-space:nowrap; }
+  .tag.hi { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); border-color: transparent; }
+  .tag.md { background:var(--accent-soft); color:var(--accent); border-color: transparent; }
+  .todo-list { display:flex; flex-direction:column; gap:7px; overflow:hidden; }
+  .task { display:flex; align-items:flex-start; gap:11px; padding:11px 13px; border-radius:15px; background:var(--inner); border:1px solid var(--line-soft); box-shadow: inset 0 1px 0 var(--hi); }
+  .task:hover { background: var(--inner-strong); }
+  .check { width:20px; height:20px; flex:none; border-radius:7px; border:1.6px solid color-mix(in srgb, var(--ink3) 55%, transparent); margin-top:1px; display:grid; place-items:center; color:#fff; font-size:12px; }
+  .task.done .check { background: var(--accent); border-color: var(--accent); }
+  .task .body { flex:1; min-width:0; }
+  .task h3 { font-size:14.5px; font-weight:620; line-height:1.4; }
+  .task.done h3 { color: var(--ink3); text-decoration: line-through; text-decoration-thickness:1px; }
+  .meta { display:flex; gap:6px; align-items:center; margin-top:5px; flex-wrap:wrap; font-size:11.5px; color:var(--ink3); }
+  .section-label { font-size:12px; color:var(--ink3); font-weight:650; margin:10px 2px 2px; }
+
+  /* ---------- prototype switcher (not app UI) ---------- */
+  .switcher { position:fixed; z-index:10; left:50%; bottom:18px; transform:translateX(-50%); display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:6px; padding:6px; max-width:calc(100vw - 32px); border-radius:26px; background:rgba(18,20,27,.78); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); color:#eef1f6; box-shadow:0 16px 40px rgba(0,0,0,.32); border:1px solid rgba(255,255,255,.18); }
+  .switcher button { padding:8px 13px; border-radius:999px; font-size:13px; color:#c9d0dd; white-space:nowrap; }
+  .switcher button.on { background:#fff; color:#171a21; font-weight:700; }
+  .switcher .sep { width:1px; height:20px; background:rgba(255,255,255,.22); margin:0 2px; }
+  body.shot .switcher { display:none; }
+  .page { display:none; flex-direction:column; gap:12px; flex:1; min-height:0; }
+  .page.on { display:flex; }
+  @media (max-width:1100px){ .capsules .cap:nth-child(3){display:none} }
+</style>
+</head>
+<body data-scheme="a">
+  <div class="field" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i><i class="b5"></i><i class="b6"></i></div>
+
+  <div class="app">
+    <header class="topbar glass-shell">
+      <div class="logo"><span class="logo-mark">O</span><span>Ono Workbench</span></div>
+      <button class="icon-btn" aria-label="收起导航"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9.5 4v16"/></svg></button>
+      <div class="capsules">
+        <span class="cap"><strong>日程</strong> 09:30 产品周会</span><span class="cap-sep"></span>
+        <span class="cap"><strong>待办</strong> 3 / 5 <span class="prog"><i></i></span></span>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" aria-label="更新"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 3v5h-5"/></svg></button>
+        <button class="icon-btn" aria-label="悬浮待办"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1 1 2-2M3.5 12l1 1 2-2M3.5 18l1 1 2-2"/></svg></button>
+        <button class="icon-btn" aria-label="AI 助手"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg></button>
+        <span class="avatar">O</span>
+        <span class="win"><span>—</span><span>□</span><span>×</span></span>
+      </div>
+    </header>
+
+    <div class="main">
+      <nav class="rail glass-shell" aria-label="工作台">
+        <button class="rail-item on" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 11.5 12 4l8 7.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></svg>首页</button>
+        <button class="rail-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 4h14v16H5z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>自媒体</button>
+        <button class="rail-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9h12a4 4 0 0 1 4 4.6c0 2-1.7 3.4-3.4 2.8L16 15H8l-2.6 1.4C3.7 17 2 15.6 2 13.6A4 4 0 0 1 6 9z"/><path d="M8 12v3M6.5 13.5h3"/></svg>游戏</button>
+        <button class="rail-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.7 2.6 4 5.6 4 9s-1.3 6.4-4 9c-2.7-2.6-4-5.6-4-9s1.3-6.4 4-9z"/></svg>网页</button>
+        <button class="rail-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3h6M10 3v6L4.8 18a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3L14 9V3"/></svg>AI 测试</button>
+        <button class="rail-item" data-nav="todo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>小工具</button>
+        <span class="spacer"></span>
+        <button class="rail-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 0 0-.2-1.4l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2.4-1.4L13.7 2h-3.4l-.4 2.5a7 7 0 0 0-2.4 1.4l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .5.1.9.2 1.4l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2.4 1.4l.4 2.5h3.4l.4-2.5a7 7 0 0 0 2.4-1.4l2.3 1 2-3.4-2-1.5c.1-.5.2-.9.2-1.4z"/></svg>设置</button>
+      </nav>
+
+      <main class="content">
+        <!-- HOME -->
+        <div class="page on" id="page-home">
+          <section class="page-head glass">
+            <div><h1>Ono的看板</h1><p>11月14日 周六 · 晚上好，Ono</p></div>
+            <div class="actions"><button class="btn btn-pri">＋ 添加卡片</button><button class="btn">编辑布局</button></div>
+          </section>
+          <div class="grid">
+            <article class="card glass span4">
+              <div class="card-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg><h2>待办摘要</h2><span class="right legend"><span style="--c:var(--teal)">已完成 9</span><span style="--c:var(--accent)">待办 11</span></span></div>
+              <div class="bars">
+                <div class="day"><span class="n num">4</span><span class="stack" style="height:44px"><i style="height:55%;background:var(--accent)"></i><i style="height:45%;background:var(--teal)"></i></span>一</div>
+                <div class="day"><span class="n num">6</span><span class="stack" style="height:64px"><i style="height:50%;background:var(--accent)"></i><i style="height:50%;background:var(--teal)"></i></span>二</div>
+                <div class="day"><span class="n num">3</span><span class="stack" style="height:34px"><i style="height:66%;background:var(--accent)"></i><i style="height:34%;background:var(--teal)"></i></span>三</div>
+                <div class="day"><span class="n num">7</span><span class="stack" style="height:76px"><i style="height:43%;background:var(--accent)"></i><i style="height:57%;background:var(--teal)"></i></span>四</div>
+                <div class="day"><span class="n num">5</span><span class="stack" style="height:54px"><i style="height:60%;background:var(--accent)"></i><i style="height:40%;background:var(--teal)"></i></span>五</div>
+                <div class="day"><span class="n num">2</span><span class="stack" style="height:24px"><i style="height:50%;background:var(--accent)"></i><i style="height:50%;background:var(--teal)"></i></span>六</div>
+                <div class="day"><span class="n num">5</span><span class="stack" style="height:56px"><i style="height:40%;background:var(--accent)"></i><i style="height:60%;background:var(--teal)"></i></span>今</div>
+              </div>
+              <footer class="card-foot"><span>更早待办 2 项</span><span class="link">日程待办 →</span></footer>
+            </article>
+
+            <article class="card glass span2">
+              <div class="card-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7z"/></svg><h2>AI 额度</h2></div>
+              <div>
+                <div class="quota-row"><span class="brand"><span class="brand-badge" style="background:var(--violet)">C</span>Codex</span><strong class="quota-val num">72<small>%</small></strong><span class="quota-cap">5 小时窗口</span><span class="gauge"><i style="width:72%;background:var(--violet)"></i></span></div>
+                <div class="quota-row"><span class="brand"><span class="brand-badge" style="background:var(--teal)">Z</span>Z Code</span><strong class="quota-val num">48<small>%</small></strong><span class="quota-cap">周窗口</span><span class="gauge"><i style="width:48%;background:var(--teal)"></i></span></div>
+                <div class="quota-row"><span class="brand"><span class="brand-badge" style="background:var(--accent)">Cu</span>Cursor</span><strong class="quota-val num">86<small>%</small></strong><span class="quota-cap">月窗口</span><span class="gauge"><i style="width:86%;background:var(--accent)"></i></span></div>
+              </div>
+              <footer class="card-foot"><span>3 个账号已接入</span><span class="link">管理账号 →</span></footer>
+            </article>
+
+            <article class="card glass span3">
+              <div class="card-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M12 10v10M4 14h16M12 10a3 3 0 1 1 3-3c0 2-3 3-3 3zM12 10a3 3 0 1 0-3-3c0 2 3 3 3 3z"/></svg><h2>每日签到</h2><span class="right">3 个平台</span></div>
+              <div class="tiles">
+                <div class="tile"><span class="brand"><span class="brand-badge" style="background:var(--teal)">W</span>WorkBuddy</span><small>今日已领取，奖励已确认到账。</small><span class="pill ok">已签到</span></div>
+                <div class="tile"><span class="brand"><span class="brand-badge" style="background:var(--violet)">Q</span>Qoder</span><small>符合领取资格，可手动确认领取。</small><span class="pill">可领取</span></div>
+                <div class="tile"><span class="brand"><span class="brand-badge" style="background:var(--accent)">T</span>TRAE CN</span><small>账号已连接，等待今日活动开启。</small><span class="pill">已连接</span></div>
+              </div>
+              <footer class="card-foot"><span>3 个账号已连接</span><span class="link">管理账号 →</span></footer>
+            </article>
+
+            <article class="card glass span3">
+              <div class="card-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2" transform="translate(-1 0)"/></svg><h2>日程待办统计</h2><span class="right legend"><span style="--c:var(--violet)">日程 6</span><span style="--c:var(--accent)">待办 9</span></span></div>
+              <div class="bars">
+                <div class="day"><span class="pair"><span class="col"><span class="n num">2</span><span class="bar" style="height:42px;background:var(--violet)"></span></span><span class="col"><span class="n num">3</span><span class="bar" style="height:62px;background:var(--accent)"></span></span></span>今</div>
+                <div class="day"><span class="pair"><span class="col"><span class="n num">1</span><span class="bar" style="height:24px;background:var(--violet)"></span></span><span class="col"><span class="n num">2</span><span class="bar" style="height:44px;background:var(--accent)"></span></span></span>日</div>
+                <div class="day"><span class="pair"><span class="col"><span class="n num">2</span><span class="bar" style="height:42px;background:var(--violet)"></span></span><span class="col"><span class="n num">1</span><span class="bar" style="height:24px;background:var(--accent)"></span></span></span>一</div>
+                <div class="day"><span class="pair"><span class="col"><span class="n num">0</span><span class="bar" style="height:4px;background:var(--track)"></span></span><span class="col"><span class="n num">2</span><span class="bar" style="height:44px;background:var(--accent)"></span></span></span>二</div>
+                <div class="day"><span class="pair"><span class="col"><span class="n num">1</span><span class="bar" style="height:24px;background:var(--violet)"></span></span><span class="col"><span class="n num">1</span><span class="bar" style="height:24px;background:var(--accent)"></span></span></span>三</div>
+                <div class="day"><span class="pair"><span class="col"><span class="n num">0</span><span class="bar" style="height:4px;background:var(--track)"></span></span><span class="col"><span class="n num">0</span><span class="bar" style="height:4px;background:var(--track)"></span></span></span>四</div>
+                <div class="day"><span class="pair"><span class="col"><span class="n num">0</span><span class="bar" style="height:4px;background:var(--track)"></span></span><span class="col"><span class="n num">0</span><span class="bar" style="height:4px;background:var(--track)"></span></span></span>五</div>
+              </div>
+              <footer class="card-foot"><span>11/14 – 11/20 · 未完成事项</span><span class="link">日程待办 →</span></footer>
+            </article>
+          </div>
+        </div>
+
+        <!-- TODO -->
+        <div class="page" id="page-todo">
+          <section class="page-head glass">
+            <div><h1>日程待办</h1><p>今天已完成 <b>3</b> 项，还有 <b>5</b> 项待办 · <span class="bad">逾期 1 项</span></p></div>
+            <div class="actions"><button class="btn btn-pri">＋ 新增</button></div>
+          </section>
+          <div class="workspace">
+            <article class="board glass">
+              <div class="board-head"><h2>日程</h2><span class="seg"><button class="on">日</button><button>周</button></span><button class="date-btn">2026年11月14日 周六 ▾</button></div>
+              <div class="week">
+                <span class="wd has">一<b class="num">9</b><i></i></span><span class="wd">二<b class="num">10</b><i></i></span><span class="wd has">三<b class="num">11</b><i></i></span><span class="wd">四<b class="num">12</b><i></i></span><span class="wd has">五<b class="num">13</b><i></i></span><span class="wd on">六<b class="num">14</b><i></i></span><span class="wd has">日<b class="num">15</b><i></i></span>
+              </div>
+              <div class="sched">
+                <div class="event"><span class="time"><b class="num">09:30</b>10:30 结束</span><span><h3>产品周会</h3><p>线上会议 · 复盘本周工作台改版进度</p></span><span class="tag md">会议</span></div>
+                <div class="event"><span class="time"><b class="num">14:00</b>15:00 结束</span><span><h3>命理盘面验收</h3><p>核对三主题下五行色的对比度</p></span><span class="tag">专注</span></div>
+                <div class="event"><span class="time"><b class="num">19:30</b>20:15 结束</span><span><h3>博客发布检查</h3><p>图文发布前的标题与标签确认</p></span><span class="tag">创作</span></div>
+                <div class="event"><span class="time"><b class="num">21:00</b>时间待定</span><span><h3>阅读《设计心理学》</h3><p>第 4 章 · 便利贴区有上次摘录</p></span><span class="tag">阅读</span></div>
+              </div>
+              <footer class="card-foot"><span>明日第一项 · 09:00 站会</span><span class="link">查看明日 →</span></footer>
+            </article>
+
+            <article class="board glass">
+              <div class="board-head"><h2>待办</h2><span class="count">5 项未完成</span><button class="btn" style="margin-left:auto;min-height:34px">全部事项</button></div>
+              <div class="todo-list">
+                <div class="task"><span class="check"></span><span class="body"><h3>完成工作台 UI 四套方案对比</h3><span class="meta"><span class="tag hi">高优先级</span><span>今天 18:00</span><span>· 工作</span></span></span></div>
+                <div class="task"><span class="check"></span><span class="body"><h3>回复博客评论并整理下一篇选题</h3><span class="meta"><span class="tag md">中优先级</span><span>今天</span><span>· 自媒体</span></span></span></div>
+                <div class="task"><span class="check"></span><span class="body"><h3>核对 AI 额度三个账号的连接状态</h3><span class="meta"><span class="tag">低优先级</span><span>明天</span><span>· 工具</span></span></span></div>
+                <div class="task"><span class="check"></span><span class="body"><h3>把旧待办浮窗的截图归档到验收记录</h3><span class="meta"><span class="tag hi">已逾期 1 天</span><span>· 工作</span></span></span></div>
+                <div class="section-label">已完成</div>
+                <div class="task done"><span class="check">✓</span><span class="body"><h3>整理首页看板卡片的真实数据口径</h3><span class="meta"><span>今天 10:24 完成</span></span></span></div>
+                <div class="task done"><span class="check">✓</span><span class="body"><h3>喝水提醒间隔改为 60 分钟</h3><span class="meta"><span>今天 09:12 完成</span></span></span></div>
+              </div>
+              <footer class="card-foot"><span>与 To-Do-List 共享库实时同步</span><span class="link">事项库 →</span></footer>
+            </article>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="switcher" role="group" aria-label="方案切换">
+    <button data-set-scheme="a" class="on">A 雾珀</button><button data-set-scheme="a2">A+ 强玻璃</button><button data-set-scheme="c">C 暖砂</button><button data-set-scheme="c2">C+ 强玻璃</button>
+    <button data-set-scheme="e">E 青瓷</button><button data-set-scheme="e2">E+ 强玻璃</button><button data-set-scheme="f">F 藤紫</button><button data-set-scheme="f2">F+ 强玻璃</button><button data-set-scheme="g">G 蔷薇</button><button data-set-scheme="g2">G+ 强玻璃</button><button data-set-scheme="h">H 燕麦</button><button data-set-scheme="h2">H+ 强玻璃</button>
+    <span class="sep"></span><button data-set-page="home" class="on">首页</button><button data-set-page="todo">待办页</button>
+  </div>
+
+<script>
+  const q = new URLSearchParams(location.search);
+  const ALLOWED = ['a','a2','c','c2','e','e2','f','f2','g','g2','h','h2'];
+  function apply(){
+    const raw = q.get('scheme') || 'a', scheme = ALLOWED.includes(raw) ? raw : 'a', page = q.get('page') || 'home';
+    document.body.dataset.scheme = scheme;
+    if (q.get('shot')) document.body.classList.add('shot');
+    document.querySelectorAll('[data-set-scheme]').forEach(b => b.classList.toggle('on', b.dataset.setScheme === scheme));
+    document.querySelectorAll('[data-set-page]').forEach(b => b.classList.toggle('on', b.dataset.setPage === page));
+    document.getElementById('page-home').classList.toggle('on', page === 'home');
+    document.getElementById('page-todo').classList.toggle('on', page === 'todo');
+    document.querySelectorAll('.rail-item').forEach(b => b.classList.toggle('on', b.dataset.nav === page));
+  }
+  document.querySelectorAll('[data-set-scheme]').forEach(b => b.addEventListener('click', () => { q.set('scheme', b.dataset.setScheme); history.replaceState(null,'','?'+q); apply(); }));
+  document.querySelectorAll('[data-set-page]').forEach(b => b.addEventListener('click', () => { q.set('page', b.dataset.setPage); history.replaceState(null,'','?'+q); apply(); }));
+  apply();
+</script>
+</body>
+</html>

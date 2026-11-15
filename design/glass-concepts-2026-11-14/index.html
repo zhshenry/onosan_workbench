@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OnO Workbench · 磨砂玻璃方案稿</title>
+<link rel="stylesheet" href="concepts.css">
+</head>
+<body class="deck" data-scheme="e">
+
+<header class="deck-bar">
+  <h1>磨砂玻璃方案稿</h1>
+  <div class="deck-tabs" role="group" aria-label="方案" data-control="scheme">
+    <button type="button" data-value="e">E 融合</button>
+    <button type="button" data-value="a">A 窗影</button>
+    <button type="button" data-value="b">B 空间窗景</button>
+    <button type="button" data-value="c">C 午夜线路</button>
+    <button type="button" data-value="d">D 轻雾玻璃</button>
+  </div>
+  <div class="deck-tabs" role="group" aria-label="页面" data-control="page">
+    <button type="button" data-value="home">首页</button>
+    <button type="button" data-value="todo">日程待办</button>
+  </div>
+  <div class="deck-tabs nav-tabs" role="group" aria-label="导航" data-control="nav">
+    <button type="button" data-value="collapsed">导航收起</button>
+    <button type="button" data-value="expanded">导航展开</button>
+  </div>
+  <div class="deck-tabs" role="group" aria-label="AI 栏" data-control="ai">
+    <button type="button" data-value="open">AI 栏开</button>
+    <button type="button" data-value="closed">AI 栏关</button>
+  </div>
+  <div class="deck-tabs light-tabs" role="group" aria-label="光线" data-control="light">
+    <button type="button" data-value="morning">上午光</button>
+    <button type="button" data-value="afternoon">午后光</button>
+    <button type="button" data-value="dusk">傍晚光</button>
+  </div>
+</header>
+
+<div class="deck-main">
+<div class="stage-wrap">
+<div class="stage">
+<div class="win" data-scheme="e" data-layout="float" data-page="home" data-light="afternoon" data-nav="collapsed" data-ai="open">
+
+  <div class="field" aria-hidden="true">
+    <div class="field-img"></div>
+    <svg class="field-routes" viewBox="0 0 1280 820" preserveAspectRatio="none">
+      <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M-40 196H250L374 320V520L470 616H1320" stroke="#a68aff" stroke-width="20"/>
+        <path d="M610 -40V218L734 342H1320" stroke="#5b8cff" stroke-width="20"/>
+        <path d="M-40 640H60L180 760H1320" stroke="#36c98f" stroke-width="20"/>
+        <path d="M1010 860V610L1110 510H1320" stroke="#ff6a5f" stroke-width="20"/>
+        <path d="M520 760V860" stroke="#f4b740" stroke-width="12"/>
+        <path d="M-40 92H140L196 36H520" stroke="#f4b740" stroke-width="12"/>
+      </g>
+      <g fill="#eef2fa">
+        <rect x="257" y="738" width="6" height="14" rx="2"/><rect x="357" y="738" width="6" height="14" rx="2"/>
+        <rect x="437" y="738" width="6" height="14" rx="2"/><rect x="617" y="738" width="6" height="14" rx="2"/>
+        <rect x="717" y="738" width="6" height="14" rx="2"/><rect x="817" y="738" width="6" height="14" rx="2"/>
+        <rect x="200" y="182" width="6" height="14" rx="2"/><rect x="383" y="420" width="14" height="6" rx="2"/>
+        <rect x="596" y="120" width="14" height="6" rx="2"/><rect x="900" y="328" width="6" height="14" rx="2"/>
+        <rect x="1060" y="328" width="6" height="14" rx="2"/><rect x="996" y="700" width="14" height="6" rx="2"/>
+      </g>
+      <g fill="#eef2fa" stroke="#0a1430" stroke-width="5">
+        <circle cx="520" cy="760" r="14"/><circle cx="1010" cy="760" r="14"/><circle cx="1010" cy="616" r="14"/>
+        <circle cx="374" cy="320" r="13"/><circle cx="610" cy="36" r="13"/>
+      </g>
+    </svg>
+    <div class="field-shade"></div>
+    <div class="field-glow"></div>
+  </div>
+
+  <header class="topbar">
+    <div class="tb-brand">
+      <span class="logo" title="个人工作台"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.7"/><circle cx="17.15" cy="6.85" r="2.15" fill="var(--logo-dot, #7f9dd3)"/></svg></span>
+      <button class="ibtn nav-toggle" type="button" data-action="nav" aria-label="展开导航" aria-expanded="false" aria-controls="workbench-navigation"><i class="ic" data-icon="sidebar"></i></button>
+    </div>
+    <div class="tb-center">
+      <div class="cap cap-sched">
+        <span class="cap-label"><i class="ic" data-icon="calendar"></i>日程</span>
+        <span class="cap-div"></span>
+        <span class="cap-date">11月14日 周六</span>
+        <span class="cap-div"></span>
+        <span class="schip now"><span class="live"></span><span class="t">14:00–15:00</span><span class="n">项目设计评审</span></span>
+        <span class="cap-caret"><i class="ic" data-icon="caret-down"></i></span>
+      </div>
+      <div class="cap cap-todo">
+        <span class="cap-label"><i class="ic" data-icon="check-square"></i>待办</span>
+        <span class="cap-div"></span>
+        <span class="cap-num">1/7</span>
+        <span class="pill-bad">逾期 1</span>
+        <span class="cap-caret"><i class="ic" data-icon="caret-down"></i></span>
+      </div>
+    </div>
+    <div class="tb-right">
+      <button class="ibtn" type="button" aria-label="应用更新"><i class="ic" data-icon="download"></i></button>
+      <button class="ibtn mascot" type="button" aria-label="打开桌面灵动岛"><svg viewBox="0 0 24 24"><defs><linearGradient id="mg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#76aeff"/><stop offset="1" stop-color="#b79aff"/></linearGradient></defs><circle cx="12" cy="12" r="9.1" fill="#090a0c" stroke="url(#mg)" stroke-width="2.6"/><ellipse cx="9.4" cy="11.6" rx="1.35" ry="1.9" fill="#fff"/><ellipse cx="14.6" cy="11.6" rx="1.35" ry="1.9" fill="#fff"/></svg></button>
+      <button class="ibtn ai-btn on" type="button" data-action="ai" aria-label="收起 AI 助手" aria-expanded="true"><i class="ic" data-icon="sparkle-fill"></i></button>
+      <span class="vdiv"></span>
+      <span class="avatar" title="Ono">O</span>
+      <span class="vdiv vdiv-end"></span>
+    </div>
+    <div class="wbtns">
+      <button class="wbtn" type="button" aria-label="最小化"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+      <button class="wbtn" type="button" aria-label="最大化"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="5" width="14" height="14" rx="2"/></svg></button>
+      <button class="wbtn" type="button" aria-label="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+  </header>
+
+  <aside class="rail" id="workbench-navigation" aria-label="工作台导航">
+    <nav class="rail-nav" aria-label="工作台">
+      <div class="rgroup" data-wb="home">
+        <button class="ritem" type="button" data-wb="home" title="首页"><span class="ri-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.2 12 4.4l8 6.8V19a1 1 0 0 1-1 1h-4.6v-5.2h-4.8V20H5a1 1 0 0 1-1-1Z"/></svg></span><span class="ri-label">首页</span></button>
+      </div>
+      <div class="rgroup" data-wb="media">
+        <button class="ritem" type="button" data-wb="media" title="自媒体工作台"><span class="ri-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="m10 9.5 4.5 2.5L10 14.5Z"/></svg></span><span class="ri-label">自媒体工作台</span></button>
+        <div class="rbranch"><button class="rsub" type="button"><span>博客编辑</span></button><button class="rsub" type="button"><span>图文发布</span></button><button class="rsub" type="button"><span>我的小红书</span></button></div>
+      </div>
+      <div class="rgroup" data-wb="game">
+        <button class="ritem" type="button" data-wb="game" title="游戏工作台"><span class="ri-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8h11a4 4 0 0 1 4 4.2l-.4 4.3a2.4 2.4 0 0 1-4.2 1.4L15 16H9l-1.9 1.9a2.4 2.4 0 0 1-4.2-1.4l-.4-4.3A4 4 0 0 1 6.5 8Z"/><path d="M8.5 11v3M7 12.5h3M15.5 11.5h.01M17.5 13.5h.01"/></svg></span><span class="ri-label">游戏工作台</span></button>
+        <div class="rbranch"><button class="rsub" type="button"><span>轨迹侦探</span></button></div>
+      </div>
+      <div class="rgroup" data-wb="web">
+        <button class="ritem" type="button" data-wb="web" title="网页工作台"><span class="ri-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 9h17M7 6.8h.01M9.6 6.8h.01"/></svg></span><span class="ri-label">网页工作台</span></button>
+        <div class="rbranch"><button class="rsub" type="button"><span>浏览器</span></button><button class="rsub" type="button"><span>Hush-Hour</span></button><button class="rsub" type="button"><span>个人网站</span></button></div>
+      </div>
+      <div class="rgroup" data-wb="ai-test">
+        <button class="ritem" type="button" data-wb="ai-test" title="AI 测试工作台"><span class="ri-icon"><i class="ic" data-icon="flask"></i></span><span class="ri-label">AI 测试工作台</span></button>
+        <div class="rbranch"><button class="rsub" type="button"><span>对比测试</span></button><button class="rsub" type="button"><span>测试任务</span></button><button class="rsub" type="button"><span>运行记录</span></button></div>
+      </div>
+      <div class="rgroup" data-wb="life">
+        <button class="ritem" type="button" data-wb="life" title="小工具"><span class="ri-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 14.2A7.6 7.6 0 0 1 9.8 4.5a7.6 7.6 0 1 0 9.7 9.7Z"/></svg></span><span class="ri-label">小工具</span></button>
+        <div class="rbranch"><button class="rsub" type="button" data-view="todo"><span>日程和待办</span></button><button class="rsub" type="button"><span>命理</span></button><button class="rsub" type="button"><span>阅读清单</span></button><button class="rsub" type="button"><span>每日签到</span></button></div>
+      </div>
+    </nav>
+    <div class="rail-bot"><button class="ritem" type="button" data-wb="settings" title="设置"><span class="ri-icon"><i class="ic" data-icon="gear"></i></span><span class="ri-label">设置</span></button></div>
+    <div class="rflyout" role="menu" aria-label="二级目录"><h4></h4><div class="rflyout-list"></div></div>
+  </aside>
+
+  <main class="content">
+
+    <!-- 首页 · 我的看板 -->
+    <section class="page page-home">
+      <header class="dash-head card">
+        <div>
+          <h1>Ono的看板</h1>
+          <p>11月14日 周六 · 下午好，Ono</p>
+        </div>
+        <div class="head-actions">
+          <button class="btn btn-pri" type="button"><i class="ic" data-icon="plus"></i>添加卡片</button>
+          <button class="btn btn-sec" type="button"><i class="ic" data-icon="pencil"></i>编辑布局</button>
+        </div>
+      </header>
+
+      <div class="dash-grid">
+        <article class="card widget w4" data-widget="today">
+          <header class="w-head"><i class="ic" data-icon="calendar"></i><h2>待办摘要</h2></header>
+          <div class="w-body">
+            <div class="sum-head"><strong>近7天 · 按计划日期</strong><div class="legend"><span style="--c: var(--teal)">已完成 12</span><span style="--c: var(--blue)">待办 6</span></div></div>
+            <div class="bars" role="img" aria-label="近七天按计划日期的完成与待办">
+              <div class="day"><b>1</b><div class="stack" style="--h:.167"><i class="done" style="flex:1"></i></div><small>日</small></div>
+              <div class="day"><b>3</b><div class="stack" style="--h:.5"><i class="done" style="flex:3"></i></div><small>一</small></div>
+              <div class="day"><b>2</b><div class="stack" style="--h:.333"><i class="done" style="flex:2"></i></div><small>二</small></div>
+              <div class="day"><b>2</b><div class="stack" style="--h:.333"><i class="done" style="flex:2"></i></div><small>三</small></div>
+              <div class="day"><b>1</b><div class="stack" style="--h:.167"><i class="done" style="flex:1"></i></div><small>四</small></div>
+              <div class="day"><b>3</b><div class="stack" style="--h:.5"><i class="pend" style="flex:1"></i><i class="done" style="flex:2"></i></div><small>五</small></div>
+              <div class="day today"><b>6</b><div class="stack" style="--h:1"><i class="pend" style="flex:5"></i><i class="done" style="flex:1"></i></div><small>今</small></div>
+            </div>
+          </div>
+          <footer class="w-foot"><span>今天已完成 1 · 待办 5</span><a class="link">日程待办<i class="ic" data-icon="arrow-right"></i></a></footer>
+        </article>
+
+        <article class="card widget w2" data-widget="focus">
+          <header class="w-head"><i class="ic" data-icon="timer"></i><h2>专注计时</h2></header>
+          <div class="w-body focus">
+            <div class="ring" role="img" aria-label="专注剩余 25:00">
+              <svg viewBox="0 0 100 100" aria-hidden="true">
+                <circle class="track" cx="50" cy="50" r="44"/>
+                <circle class="val" cx="50" cy="50" r="44" pathLength="100" stroke-dasharray="100 100"/>
+                <g class="ticks"><circle cx="94" cy="50" r="3.4"/><circle cx="63.6" cy="91.8" r="3.4"/><circle cx="14.4" cy="75.9" r="3.4"/><circle cx="14.4" cy="24.1" r="3.4"/><circle cx="63.6" cy="8.2" r="3.4"/></g>
+              </svg>
+              <strong>25:00</strong>
+            </div>
+            <span>专注一件事</span>
+            <button class="btn btn-pri btn-sm" type="button"><i class="ic" data-icon="play"></i>开始专注</button>
+          </div>
+        </article>
+
+        <article class="card widget w4" data-widget="checkin">
+          <header class="w-head"><i class="ic" data-icon="gift"></i><h2>每日签到</h2></header>
+          <div class="w-body ci-providers" role="list" aria-label="签到应用">
+            <div class="ci-prov" role="listitem"><span class="ci-logo"><img src="../../src/assets/checkin-providers/workbuddy.svg" alt=""></span><div class="ci-copy"><strong>WorkBuddy</strong><small class="ci-status claimed">本轮已领取</small></div></div>
+            <div class="ci-prov" role="listitem"><span class="ci-logo"><img src="../../src/assets/checkin-providers/qoder.svg" alt=""></span><div class="ci-copy"><strong>Qoder</strong><small class="ci-status ready">待签到</small></div></div>
+            <div class="ci-prov" role="listitem"><span class="ci-logo"><img src="../../src/assets/checkin-providers/trae.png" alt=""></span><div class="ci-copy"><strong>TRAE CN</strong><small class="ci-status off">未连接</small></div></div>
+          </div>
+          <footer class="w-foot"><span>2 / 3 个账号已连接</span><button class="btn btn-pri btn-sm grow" type="button">一键签到<i class="ic" data-icon="arrow-right"></i></button><a class="link">管理账号<i class="ic" data-icon="arrow-right"></i></a></footer>
+        </article>
+
+        <article class="card widget w2" data-widget="quota">
+          <header class="w-head"><i class="ic" data-icon="sparkle"></i><h2>AI 额度</h2></header>
+          <div class="w-body q-grid" role="list" aria-label="额度来源">
+            <div class="q-cell" role="listitem" style="--qc: var(--violet)"><span class="q-brand"><img src="../../src/assets/quota-providers/codex.png" alt="">Codex</span><strong class="q-val">72<small>%</small></strong><small class="q-cap">5 小时</small><span class="q-gauge"><i style="--v:72%"></i></span></div>
+            <div class="q-cell" role="listitem" style="--qc: var(--teal)"><span class="q-brand"><img src="../../src/assets/quota-providers/zcode.png" alt="">Z Code</span><strong class="q-val">88<small>%</small></strong><small class="q-cap">本周</small><span class="q-gauge"><i style="--v:88%"></i></span></div>
+            <div class="q-cell" role="listitem" style="--qc: var(--blue)"><span class="q-brand"><img src="../../src/assets/quota-providers/cursor.svg" alt="">Cursor</span><strong class="q-val">41<small>%</small></strong><small class="q-cap">本月</small><span class="q-gauge"><i style="--v:41%"></i></span></div>
+            <div class="q-cell" role="listitem" style="--qc: var(--amber, #895418)"><span class="q-brand"><img src="../../src/assets/quota-providers/grokbot.png" alt="">Grok Bot</span><strong class="q-val"><i class="ic" data-icon="link"></i></strong><small class="q-cap">未连接</small><span class="q-gauge"></span></div>
+          </div>
+          <footer class="w-foot"><span>3 个账号已接入</span><a class="link">管理账号<i class="ic" data-icon="arrow-right"></i></a></footer>
+        </article>
+      </div>
+    </section>
+
+    <!-- 小工具 · 日程和待办 -->
+    <section class="page page-todo">
+      <header class="todo-head card">
+        <div>
+          <h1>日程待办</h1>
+          <p>今天已完成 <b>1</b> 项，还有 <b>6</b> 项待办 · <span class="bad">逾期 1 项</span></p>
+        </div>
+        <button class="btn btn-pri" type="button"><i class="ic" data-icon="plus"></i>新增</button>
+      </header>
+
+      <div class="todo-cols">
+        <section class="card sched-card" aria-label="日程">
+          <header class="col-head">
+            <h2>日程</h2>
+            <div class="seg" role="group" aria-label="日程显示方式"><button class="on" type="button">日</button><button type="button">周</button></div>
+          </header>
+          <div class="sched-tools"><button class="date-pick" type="button"><i class="ic" data-icon="calendar"></i>2026年11月14日<i class="ic" data-icon="caret-down"></i></button></div>
+          <div class="week" role="group" aria-label="日程日期">
+            <div class="wd"><span>一</span><b>9</b><i></i></div>
+            <div class="wd has-sched"><span>二</span><b>10</b><i class="has"></i></div>
+            <div class="wd"><span>三</span><b>11</b><i></i></div>
+            <div class="wd has-sched"><span>四</span><b>12</b><i class="has"></i></div>
+            <div class="wd"><span>五</span><b>13</b><i></i></div>
+            <div class="wd sel today has-sched"><span>六</span><b>14</b><i class="has"></i></div>
+            <div class="wd has-sched"><span>日</span><b>15</b><i class="has"></i></div>
+          </div>
+          <div class="list-head"><h3>今天的日程</h3><span>2 项</span></div>
+          <ul class="agenda">
+            <li class="now"><span class="a-icon"><i class="ic" data-icon="calendar"></i></span><span class="a-title"><strong>项目设计评审</strong><small>进行中</small></span><time>14:00–15:00</time></li>
+            <li><span class="a-icon"><i class="ic" data-icon="calendar"></i></span><span class="a-title"><strong>同步本周安排</strong><small></small></span><time>16:00–16:30</time></li>
+          </ul>
+          <button class="next-day" type="button"><i class="ic" data-icon="calendar"></i>明天 11月15日 · 需求评审 10:00–11:00</button>
+        </section>
+
+        <section class="card todo-card" aria-label="待办">
+          <header class="col-head">
+            <h2>待办<span class="count">6</span></h2>
+            <button class="btn btn-sec btn-sm" type="button"><i class="ic" data-icon="note"></i>全部事项</button>
+          </header>
+          <ul class="plan">
+            <li class="overdue"><span class="check"></span><span class="p-title">补齐昨日会议纪要</span><span class="p-meta"><span class="pill-over">已超期</span><span class="p-cat" style="--c: var(--blue)">工作</span></span><time class="p-time bad">11/13 18:00</time></li>
+            <li class="current"><span class="check"></span><span class="p-title">整理本周工作计划</span><span class="p-meta"><span class="p-cat" style="--c: var(--blue)">工作</span></span><time class="p-time">今天 18:00</time></li>
+            <li><span class="check"></span><span class="p-title">核对项目需求与交付清单，补充边界条件</span><span class="p-meta"><span class="p-cat" style="--c: var(--blue)">工作</span><span class="p-pct">65%</span></span><time class="p-time">今天 18:00</time></li>
+            <li><span class="check"></span><span class="p-title">完成第一篇博客编写</span><span class="p-meta"><span class="p-cat" style="--c: var(--rose, #a3476a)">自媒体</span></span><time class="p-time">今天 20:00</time></li>
+            <li><span class="check"></span><span class="p-title">准备下周沟通提纲</span><span class="p-meta"><span class="p-cat" style="--c: var(--blue)">工作</span></span><time class="p-time">今天 21:00</time></li>
+            <li><span class="check"></span><span class="p-title">整理学习资料</span><span class="p-meta"><span class="p-cat">无标签</span></span><time class="p-time">今天 21:30</time></li>
+          </ul>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <aside class="ai" aria-label="AI 助手">
+    <header class="ai-head">
+      <span class="ai-title"><i class="ic" data-icon="sparkle-fill"></i>AI 助手</span>
+      <button class="ibtn sm mirror" type="button" data-action="ai" aria-label="收起 AI 助手"><i class="ic" data-icon="sidebar"></i></button>
+    </header>
+    <div class="ai-ctx">
+      <div class="ai-ctx-main for-home"><span class="ai-ctx-icon"><i class="ic" data-icon="house"></i></span><span><strong>我的看板</strong> <em>首页</em></span><i class="ic" data-icon="info"></i></div>
+      <div class="ai-ctx-main for-todo"><span class="ai-ctx-icon"><i class="ic" data-icon="check-square"></i></span><span><strong>日程和待办</strong> <em>小工具</em></span><i class="ic" data-icon="info"></i></div>
+      <div class="ai-ctx-row"><span class="tag for-home">首页</span><span class="tag for-todo">小工具</span><button class="chat-select" type="button">新对话<i class="ic" data-icon="caret-down"></i></button><button class="ibtn sm" type="button" aria-label="新建对话"><i class="ic" data-icon="plus"></i></button></div>
+    </div>
+    <div class="ai-empty">
+      <span class="ai-empty-icon"><i class="ic" data-icon="sparkle"></i></span>
+      <strong class="for-home">首页</strong><p class="for-home">说说你想解决的问题。</p>
+      <strong class="for-todo">待办与日程</strong><p class="for-todo">查询待办、整理日程，修改会先让你确认。</p>
+    </div>
+    <div class="ai-compose">
+      <div class="ai-input">围绕正在协助的对象继续聊聊…</div>
+      <div class="ai-tools">
+        <button class="ai-add" type="button" aria-label="添加参考"><i class="ic" data-icon="plus"></i></button>
+        <button class="model" type="button">模型A<i class="ic" data-icon="caret-down"></i></button>
+        <button class="ibtn sm" type="button" aria-label="语音输入"><i class="ic" data-icon="mic"></i></button>
+        <button class="send" type="button" aria-label="发送"><i class="ic" data-icon="send"></i></button>
+      </div>
+    </div>
+  </aside>
+</div>
+</div>
+</div>
+
+<aside class="notes">
+  <section class="note" data-for="e">
+    <h2>E　融合：B 的布局 · A 的窗影</h2>
+    <p class="lede">保留 B 的悬浮顶栏、悬浮导航和两扇玻璃窗，背景换成 A 的窗格光与树影。颜色收敛到墨色加一种雾蓝，绿只表示已完成，红只表示逾期，橙只留给 AI。</p>
+    <h3>导航收起（默认）</h3>
+    <ul>
+      <li>60px 悬浮胶囊，图标在圆形按钮里，当前工作台是白色圆片。</li>
+      <li>当前工作台的子目录保留同样高度、不显示文字，每个子页一个小圆点，当前页是带光圈的雾蓝点；展开和收起时图标位置不变。</li>
+      <li>悬停、点击或键盘聚焦一级图标，右侧弹出玻璃悬浮目录；首页直接进入，没有子目录。</li>
+    </ul>
+    <h3>导航展开</h3>
+    <ul>
+      <li>宽度 60 → 200px，图标原地不动，名称淡入；当前工作台的白色圆片延长成胶囊。</li>
+      <li>当前工作台的子目录列在下方，缩进加一条细竖线，当前页是白底雾蓝字。展开时不再弹悬浮目录。</li>
+      <li>内容窗随之右移 140px；AI 栏开着时内容区约 650px，看板和日程待办按现有规则改成两列或上下排列。</li>
+    </ul>
+    <h3>和 B 原稿的差别</h3>
+    <ul>
+      <li>导航胶囊在顶栏下方、底部设置按钮上方的区域垂直居中；展开和收起共用同一居中规则。</li>
+      <li>设置从胶囊里拿出来，成为底部单独的圆钮，位置始终固定。</li>
+      <li>额度卡不再用四种品牌色，只靠品牌图标区分，进度统一雾蓝。</li>
+    </ul>
+    <h3>可以直接试</h3>
+    <p>点顶栏 Logo 右边的按钮展开或收起导航；点 AI 图标收起或打开 AI 栏；导航收起时把鼠标移到图标上看悬浮目录；点「首页」「小工具」或「日程和待办」切换页面。上方还能切换上午 / 午后 / 傍晚的光线。</p>
+    <div class="chips">
+      <span><i style="background:#efe2c4"></i>窗光</span><span><i style="background:#b9b5ae"></i>冷阴影</span><span><i style="background:rgba(252,251,248,.92)"></i>亮玻璃</span><span><i style="background:#1f2225"></i>墨色</span><span><i style="background:#3c5c97"></i>雾蓝</span><span><i style="background:#2c6b5c"></i>完成</span><span><i style="background:#a9433f"></i>逾期</span>
+    </div>
+    <p class="risk"><b>风险：</b>亮玻璃叠在树影上，卡片之间的层次主要靠投影和高光边，低对比度显示器上可能偏淡；导航展开加 AI 栏同开时，1280 宽的窗口内容会比较挤。</p>
+  </section>
+
+  <section class="note" data-for="a">
+    <h2>A　窗影 · 磨砂隔断</h2>
+    <p class="lede">把工作台做成午后工作室里的一组磨砂玻璃隔断。玻璃后面是窗格光斑和树影，顶栏、导航、卡片、AI 栏都透出这片光影，玻璃的颗粒、亮边和投影都看得见。</p>
+    <h3>背景</h3>
+    <p>一面灰泥墙上的窗格光与树影：光斑是暖金色，阴影偏冷灰。取代现在灰白、没有层次的雾团贴图，玻璃终于有东西可以「磨」。</p>
+    <h3>材质</h3>
+    <ul>
+      <li>重磨砂：模糊 20px、白色 40–50%，叠一层很淡的砂面颗粒。</li>
+      <li>上沿有一道抛光亮边、下沿一道暗边，像玻璃的厚度。</li>
+      <li>列表、输入框等需要读字的区域再实一层，保证对比度。</li>
+    </ul>
+    <h3>页面节奏</h3>
+    <ul>
+      <li>取自「灯箱上的时刻表玻片」：每屏只有一块不透明的墨色面板。首页是专注计时，日程待办是正在进行的日程，其余全是玻璃，视线有落点。</li>
+      <li>取自「车站翻牌时刻表」：日程和待办的时间固定在右侧同一列，等宽数字、右对齐，扫读像时刻表。</li>
+    </ul>
+    <h3>动效</h3>
+    <p>光斑缓慢明暗呼吸、画面极慢地漂移；光线随时段换角度和色温（上方可切换上午光 / 午后光 / 傍晚光）。系统开启减少动态效果时完全静止。</p>
+    <div class="chips">
+      <span><i style="background:#efe2c4"></i>窗光</span><span><i style="background:#b9b5ae"></i>冷阴影</span><span><i style="background:rgba(249,247,243,.9)"></i>磨砂白</span><span><i style="background:#1c1f22"></i>墨色面板</span><span><i style="background:#3c5c97"></i>雾蓝数据</span><span><i style="background:#2c6b5c"></i>完成青</span><span><i style="background:#a9433f"></i>逾期红</span>
+    </div>
+    <p class="risk"><b>风险：</b>光斑调得过黄会滑向常见的「米黄 + 橙」配色；树影背景的对比度要压住，不能干扰文字；大面积实时模糊在低配笔记本上更耗电。</p>
+    <p class="aside">另外考虑过、没有做成整套的两个方向：车站翻牌时刻表（深色翻牌数字）和灯箱上的时刻表玻片（倾斜玻片排版）。它们各贡献了上面一条规则。</p>
+  </section>
+
+  <section class="note" data-for="b">
+    <h2>B　空间窗景</h2>
+    <p class="lede">像 visionOS 一样，把工作台变成悬浮在真实房间里的几扇玻璃窗：顶栏拆成四枚悬浮条，导航是左侧悬浮的竖向标签栏，内容和 AI 各是一扇独立的窗。</p>
+    <h3>背景</h3>
+    <p>一张柔焦的实景房间照片。正式版可以开放「换成自己的照片」，并提供背景压暗。</p>
+    <h3>材质</h3>
+    <ul>
+      <li>亮玻璃：白色 26–44% 渐变、模糊 34px、饱和度 1.8，透出房间的颜色。</li>
+      <li>高光边从左上向右下渐弱；层级靠投影深浅区分，AI 窗离你最近。</li>
+      <li>卡片是窗内更亮的「托盘」，没有描边；按钮、日期、分段控件都是胶囊。</li>
+    </ul>
+    <h3>布局变化</h3>
+    <p>位置和尺寸基本不动；导航从整列变成悬浮胶囊，卡片之间露出窗内玻璃而不是背景。导航的收起、悬浮目录和展开三种状态与 E 共用，说明见 E。</p>
+    <div class="chips">
+      <span><i style="background:#e9e1d4"></i>房间暖白</span><span><i style="background:rgba(255,255,255,.6)"></i>亮玻璃</span><span><i style="background:#1c1c1e"></i>墨色主按钮</span><span><i style="background:#2f66c9"></i>系统蓝</span><span><i style="background:#237a6a"></i>完成青</span><span><i style="background:#c43c33"></i>逾期红</span>
+    </div>
+    <p class="risk"><b>风险：</b>这是我排在第一的方向，但它最接近苹果现成的设计语言，熟悉、好上手，辨识度却不是自己的；照片内容会和信息抢注意力。</p>
+  </section>
+
+  <section class="note" data-for="c">
+    <h2>C　午夜线路</h2>
+    <p class="lede">深色烟熏玻璃压在一张午夜蓝的线路图上。日程、待办、已完成、逾期各占一条线路色；日程按时间排成站点，正在进行的那一项是换乘站。</p>
+    <h3>背景</h3>
+    <p>午夜蓝珐琅底 + 几条线路。卡片下面的线路透过玻璃变成柔和色光，卡片之间和空白处能看到清晰的站点。</p>
+    <h3>材质</h3>
+    <ul>
+      <li>海军蓝烟熏玻璃：不透明度约 62%、模糊 18px，细亮边。</li>
+      <li>主按钮用瓷白反色，导航是一条竖线上的站点，选中项是换乘站。</li>
+      <li>一周日期条、日程列表、待办列表都画成线路；逾期那一站是红色。</li>
+    </ul>
+    <div class="chips">
+      <span><i style="background:#0b1631"></i>午夜蓝</span><span><i style="background:#eef2fa"></i>瓷白</span><span><i style="background:#a68aff"></i>日程线</span><span><i style="background:#6d98ff"></i>待办线</span><span><i style="background:#3fcf97"></i>完成线</span><span><i style="background:#ff6f64"></i>逾期</span>
+    </div>
+    <p class="risk"><b>风险：</b>从现在的浅色品牌转成深色，白天长时间使用不如浅色舒适，可能需要和浅色方案并存；线路色的含义需要学一次；AI 的橙色入口要和线路色拉开。</p>
+  </section>
+
+  <section class="note" data-for="d">
+    <h2>D　轻雾玻璃</h2>
+    <p class="lede">行业里最常见的玻璃拟态做法，作为对照：浅色渐变色团背景、半透明白卡片、大圆角、胶囊按钮、柔和的紫蓝投影。</p>
+    <h3>材质</h3>
+    <ul>
+      <li>白色 44–48%、模糊 24px、饱和度 1.8，白色细描边。</li>
+      <li>靛紫作为数据与选中色，主按钮深靛蓝。</li>
+    </ul>
+    <div class="chips">
+      <span><i style="background:#d8d0ff"></i>薰衣草</span><span><i style="background:#cfe6ff"></i>天蓝</span><span><i style="background:#ffd9cb"></i>蜜桃</span><span><i style="background:#5b57d6"></i>靛紫</span><span><i style="background:#1d2042"></i>深靛</span>
+    </div>
+    <p class="risk"><b>风险：</b>好看、稳妥，但和大量仪表盘模板很像，没有自己的个性；彩色渐变团久看容易显得模板化。</p>
+  </section>
+</aside>
+</div>
+
+<div class="deck-toast" role="status" aria-live="polite"></div>
+<script src="icons.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

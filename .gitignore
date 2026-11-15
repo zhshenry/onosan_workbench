@@ -1,6 +1,7 @@
 node_modules/
 /vendor/speech/
 /artifacts/
+/.tmp/
 dist/
 dist-electron/
 release/
@@ -8,6 +9,8 @@ test-results/
 design/_edge_tmp*/
 design/mockups/_shots/
 design/references/*.png
+/design/glass-concepts-2026-11-14/shots/
+/design/ui-refactor-2026-11-14/screenshots/
 .claude/
 .zcode/
 *.log
