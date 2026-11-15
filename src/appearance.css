@@ -67,17 +67,20 @@
   --glass-hi: #fff; --glass-lo: #fff; --glass-line: var(--hairline);
   --glass-surface: #fff; --glass-filter: none;
   --panel-bg: #fff; --panel-shadow: 0 4px 14px #2925210a;
+  --nav-menu-bg: #fff;
 }
 :root[data-glass='normal'], .material-preview[data-material='normal'] {
   --glass-hi: #ffffffc2; --glass-lo: #ffffff6b; --glass-line: #ffffffd9;
   --glass-surface: #ffffff8f; --glass-filter: blur(18px) saturate(1.15);
   --panel-bg: linear-gradient(145deg, #ffffffc2, #ffffffa3);
+  --nav-menu-bg: linear-gradient(145deg, #fffffff0, #ffffffe6);
   --panel-shadow: inset 0 1px 0 var(--glass-line), 0 4px 14px #2925210a;
 }
 :root[data-glass='strong'], .material-preview[data-material='strong'] {
   --glass-hi: #ffffffa8; --glass-lo: #ffffff4d; --glass-line: #ffffffe0;
   --glass-surface: #ffffff70; --glass-filter: blur(30px) saturate(1.4);
   --panel-bg: linear-gradient(145deg, #ffffffa8, #ffffff80);
+  --nav-menu-bg: linear-gradient(145deg, #ffffffe0, #ffffffcc);
   --panel-shadow: inset 0 1px 0 #ffffffe6, inset 0 -1px 0 #1c20270a, 0 2px 5px #29252108, 0 12px 28px #29252110;
 }
 /* Headers, functional cards and continuous workspaces share one material layer. */
@@ -101,8 +104,13 @@
 @media (max-width: 1159px) {
   :root[data-glass]:not([data-glass='solid']) .win .ai-panel { background: linear-gradient(#fffffff5, #ffffffed); }
 }
-/* Overlays must occlude the text behind them. Keep sticky table headers and website canvases opaque. */
-.win :is(.rail-flyout-card, .ipop, .ai-history-menu), dialog.modal { background: var(--overlay-bg); }
+/* Navigation menus use a denser material to soften underlying text. Other overlays remain opaque. */
+.win .rail-flyout-card {
+  background: var(--nav-menu-bg);
+  -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+  box-shadow: var(--panel-shadow), var(--shadow);
+}
+.win :is(.ipop, .ai-history-menu), dialog.modal { background: var(--overlay-bg); }
 :root[data-glass='strong'] .modal.settings-dialog { background: #fffffff0; backdrop-filter: blur(30px) saturate(1.4); box-shadow: var(--panel-shadow), 0 24px 64px #161d2933; }
 :root[data-glass='strong'] .settings-content { background: color-mix(in srgb, var(--scene-base) 20%, #ffffffde); }
 /* Floating surfaces keep the shared shell's sidebar reservation and topbar geometry. */
@@ -199,14 +207,15 @@
 }
 @container settings-content (max-width: 320px) { .appearance-pair { grid-template-columns: 1fr; } }
 @media (prefers-reduced-transparency: reduce) {
-  :root[data-glass]:not([data-glass='solid']), .material-preview[data-material]:not([data-material='solid']) { --glass-hi: #f9fafb; --glass-lo: #f3f5f7; --glass-surface: #f9fafb; --glass-filter: none; --panel-bg: linear-gradient(#fff, #f9fafb); }
+  :root[data-glass]:not([data-glass='solid']), .material-preview[data-material]:not([data-material='solid']) { --glass-hi: #f9fafb; --glass-lo: #f3f5f7; --glass-surface: #f9fafb; --glass-filter: none; --panel-bg: linear-gradient(#fff, #f9fafb); --nav-menu-bg: var(--overlay-bg); }
   .material-preview[data-material] i { backdrop-filter: none; }
 }
 @supports not (backdrop-filter: blur(1px)) {
-  :root[data-glass]:not([data-glass='solid']), .material-preview[data-material]:not([data-material='solid']) { --glass-hi: #f9fafb; --glass-lo: #f3f5f7; --glass-surface: #f9fafb; --panel-bg: linear-gradient(#fff, #f9fafb); }
+  :root[data-glass]:not([data-glass='solid']), .material-preview[data-material]:not([data-material='solid']) { --glass-hi: #f9fafb; --glass-lo: #f3f5f7; --glass-surface: #f9fafb; --glass-filter: none; --panel-bg: linear-gradient(#fff, #f9fafb); --nav-menu-bg: var(--overlay-bg); }
 }
 @media (forced-colors: active) {
   .win::before { display: none; }
+  .win .rail-flyout-card { background: Canvas; border-color: CanvasText; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
   .appearance-choice { border-color: ButtonText; }
   .appearance-choice:has(input:checked) { outline: 2px solid Highlight; }
   :root[data-navigation='floating'] :is(.rail-nav, .rbot, .tb-brand, .tb-tools, .wbtns, .tb-middle) { border: 1px solid CanvasText; background: Canvas; }
