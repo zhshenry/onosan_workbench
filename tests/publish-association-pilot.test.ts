@@ -44,10 +44,10 @@ function runtimeFixture() {
   return { application, runtime, handlers, writes, mark, clear, read, save, event };
 }
 
-test('Publish association native matrix covers all themes, real sizes and motion modes with four fixed screenshots', () => {
+test('Publish association native matrix covers representative current themes, real sizes and motion modes with four fixed screenshots', () => {
   assert.equal(PUBLISH_ASSOCIATION_MATRIX.length, 12);
   assert.ok(Object.isFrozen(PUBLISH_ASSOCIATION_MATRIX) && PUBLISH_ASSOCIATION_MATRIX.every(Object.isFrozen));
-  for (const theme of ['mist', 'cool', 'warm']) for (const size of ['1280x820', '1024x680']) for (const reducedMotion of ['no-preference', 'reduce']) {
+  for (const theme of ['mist', 'celadon', 'warm']) for (const size of ['1280x820', '1024x680']) for (const reducedMotion of ['no-preference', 'reduce']) {
     assert.equal(PUBLISH_ASSOCIATION_MATRIX.filter(entry => entry.theme === theme && `${entry.width}x${entry.height}` === size && entry.reducedMotion === reducedMotion).length, 1);
   }
   assert.deepEqual(PUBLISH_ASSOCIATION_SCREENSHOTS, ['publish-association-unlinked.png', 'publish-association-pending.png', 'publish-association-linked.png', 'publish-association-error.png']);

@@ -5,13 +5,13 @@ import { navigateInstalled } from './installed-navigation.mjs';
 
 export const YEAR_DROPDOWN_SCREENSHOTS = Object.freeze([
   'year-dropdown-mist-1024x680.png',
-  'year-dropdown-cool-1024x680.png',
+  'year-dropdown-celadon-1024x680.png',
   'year-dropdown-warm-1024x680.png',
   'year-dropdown-saved.png',
   'year-dropdown-relaunched.png',
 ]);
 export const YEAR_DROPDOWN_MATRIX = Object.freeze([
-  ['mist', '雾灰 · 轻雾'], ['cool', '冷灰 · 凝霜'], ['warm', '暖砂 · 柔雾'],
+  ['mist', '雾珀'], ['celadon', '青瓷'], ['warm', '暖砂'],
 ].flatMap(([theme, label]) => [[1280, 820], [1024, 680]].map(([width, height]) => Object.freeze({
   theme, label, width, height, reducedMotion: theme === 'mist' && width === 1280 ? 'no-preference' : 'reduce',
 }))));
@@ -302,7 +302,7 @@ export async function runYearDropdownPilot({ application, page, check, screensho
     await check(`Year picker: ${fixture.theme} ${fixture.width}x${fixture.height} actual app, scroll visibility and overlay boundaries`, async () => {
       await page.emulateMedia({ reducedMotion: fixture.reducedMotion });
       await navigateInstalled(page, 'settings', '个性化');
-      await page.getByRole('radio', { name: fixture.label, exact: true }).click();
+      await page.getByRole('radio', { name: new RegExp(`^${fixture.label}(?:\\s|$)`) }).locator('..').click();
       await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, fixture.theme);
       assert.equal((await page.evaluate(() => window.workbench.settings.get())).uiTheme, fixture.theme);
       await resize(application, page, fixture.width, fixture.height);

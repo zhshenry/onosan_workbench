@@ -223,7 +223,7 @@ test('Reference geometry enforces true viewport containment, stable controls and
 test('Reference matrix covers real app themes and sizes while labeling emulated OS light/dark separately', () => {
   assert.ok(Object.isFrozen(CONTEXT_PICKER_MATRIX)); assert.ok(CONTEXT_PICKER_MATRIX.every(Object.isFrozen));
   assert.deepEqual(CONTEXT_PICKER_MATRIX.map(({ theme, width, height, colorScheme }) => `${theme}:${width}x${height}:${colorScheme}`), [
-    'mist:1280x820:light', 'mist:1024x680:dark', 'cool:1280x820:light', 'cool:1024x680:dark', 'warm:1280x820:light', 'warm:1024x680:dark',
+    'mist:1280x820:light', 'mist:1024x680:dark', 'celadon:1280x820:light', 'celadon:1024x680:dark', 'warm:1280x820:light', 'warm:1024x680:dark',
   ]);
 });
 
@@ -232,7 +232,7 @@ test('Reference screenshots extend only the fixed allowlist and share the origin
   t.after(() => rm(directory, { recursive: true, force: true }));
   assert.ok(Object.isFrozen(CONTEXT_PICKER_SCREENSHOTS));
   assert.deepEqual(CONTEXT_PICKER_SCREENSHOTS, [
-    'context-picker-mist-1024x680.png', 'context-picker-cool-1024x680.png', 'context-picker-warm-1024x680.png',
+    'context-picker-mist-1024x680.png', 'context-picker-celadon-1024x680.png', 'context-picker-warm-1024x680.png',
     'context-picker-saved.png', 'context-picker-relaunched.png',
   ]);
   // Signature-only byte fixtures test the guard, never claim actual UI screenshots.

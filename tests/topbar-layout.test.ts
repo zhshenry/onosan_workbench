@@ -41,6 +41,15 @@ test('several schedule chips stay inside the centered band and scroll', () => {
   assert.equal(placed.width, 1190 - 2 * (292 + 12));
 });
 
+test('a crowded schedule list preserves its controls before allocating the scrolling track', () => {
+  const placed = place({ barWidth: 1159, padLeft: 114, rightInset: 446, naturalWidth: 820, readableWidth: 397 });
+  assert.equal(placed.width, 397);
+  const left = 1159 / 2 - placed.width / 2 - placed.nudge;
+  const right = left + placed.width;
+  assert.ok(left >= 114);
+  assert.ok(right <= 1159 - 446 - 12);
+});
+
 test('a crowded narrow bar keeps the compact pair visible beside the right controls', () => {
   const placed = place({ barWidth: 729, padLeft: 14, rightInset: 372, naturalWidth: 246, readableWidth: 246 });
   assert.equal(placed.width, 246);

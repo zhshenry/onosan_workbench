@@ -6,7 +6,7 @@ import { navigateInstalled } from './installed-navigation.mjs';
 
 export const MEDIA_KEEPALIVE_SCREENSHOTS = Object.freeze([
   'media-keepalive-before.png', 'media-keepalive-hidden.png',
-  ...['mist', 'cool', 'warm'].flatMap(theme => [1280, 1024].map(width => `media-keepalive-${theme}-${width}.png`)),
+  ...['mist', 'celadon', 'warm'].flatMap(theme => [1280, 1024].map(width => `media-keepalive-${theme}-${width}.png`)),
 ]);
 export const MEDIA_FIXTURE_ORIGIN = 'https://creator.xiaohongshu.com';
 export const MEDIA_FIXTURE_PATHS = Object.freeze(['/', '/note/keepalive', '/note/next', '/offline']);
@@ -588,9 +588,9 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       await creator(page, true); assertMediaStatePreserved(preserved, await nativeState(application, id));
     });
     await check('Three themes, two native sizes, AI/navigation changes and reduced motion retain accurate guest bounds', async () => {
-      for (const [theme, label] of [['mist','雾灰 · 轻雾'],['cool','冷灰 · 凝霜'],['warm','暖砂 · 柔雾']]) {
+      for (const [theme, label] of [['mist','雾珀'],['celadon','青瓷'],['warm','暖砂']]) {
         await aiVisible(page, false); await subview(page, 'settings', '个性化');
-        await page.getByRole('radio', { name:label, exact:true }).click();
+        await page.getByRole('radio', { name:new RegExp(`^${label}(?:\\s|$)`) }).locator('..').click();
         await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, theme);
         for (const [width,height] of [[1280,820],[1024,680]]) for (const motion of ['no-preference','reduce']) for (const aiOpen of [false,true]) {
           await navigateInstalled(page,'life','日程和待办','todo');
@@ -621,6 +621,7 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
       assert.equal(after.id,id); assert.deepEqual(after.history,before.history);
     });
     await check('Local load error and real renderer crash recover normally without claiming lost-state persistence', async () => {
+      await focusMediaFixtureControl({application,page,native,id,selector:'#click-target',observation:report.mediaKeepaliveRecoveryInput={}});
       await clickGuest(application,page,id,'#offline'); await page.locator('.media-browser-host .mbp-error').waitFor({state:'visible'});
       await application.evaluate(()=>{globalThis.__onoMediaKeepaliveFixture.failOffline=false;});
       // A failed in-page link need not commit: retry the current observed address,
@@ -712,8 +713,8 @@ export async function runMediaKeepalivePilot({ application, page, check, screens
     await page.emulateMedia({reducedMotion:'no-preference'});
     await native.evaluate((win,size)=>win.setContentSize(size[0],size[1]),originalSize);
     await aiVisible(page,false); await subview(page,'settings','个性化');
-    const labels={mist:'雾灰 · 轻雾',cool:'冷灰 · 凝霜',warm:'暖砂 · 柔雾'};
-    await page.getByRole('radio',{name:labels[initial.theme]??labels.mist,exact:true}).click();
+    const labels={mist:'雾珀',celadon:'青瓷',warm:'暖砂'};
+    await page.getByRole('radio',{name:new RegExp(`^${labels[initial.theme]??labels.mist}(?:\\s|$)`)}).locator('..').click();
     await navigateInstalled(page,'life','日程和待办','todo'); await aiVisible(page,initial.aiOpen);
     } catch (cleanupError) {
       report.errors.push(`Media keepalive fixture cleanup: ${String(cleanupError).slice(0,2000)}`);

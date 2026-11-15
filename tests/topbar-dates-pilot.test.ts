@@ -24,7 +24,7 @@ const geometry = () => ({
 test('Topbar matrix covers all themes at real 1280/1024 windows and actual 100%/125% Electron zoom', () => {
   assert.equal(TOPBAR_DATES_MATRIX.length, 12);
   assert.ok(Object.isFrozen(TOPBAR_DATES_MATRIX)); assert.ok(TOPBAR_DATES_MATRIX.every(Object.isFrozen));
-  for (const theme of ['mist', 'cool', 'warm']) for (const size of ['1280x820', '1024x680']) for (const zoom of [1, 1.25]) {
+  for (const theme of ['mist', 'celadon', 'warm']) for (const size of ['1280x820', '1024x680']) for (const zoom of [1, 1.25]) {
     assert.equal(TOPBAR_DATES_MATRIX.filter(value => value.theme === theme && `${value.width}x${value.height}` === size && value.zoom === zoom).length, 1);
   }
 });
@@ -36,7 +36,7 @@ test('Topbar screenshots have exact bounded names and retain the one aggregate r
   assert.deepEqual(TOPBAR_DATES_SCREENSHOTS, [
     'topbar-dates-persisted.png', 'topbar-dates-relaunched.png',
     'topbar-dates-mist-todo-1024-zoom125.png', 'topbar-dates-mist-schedule-1024-zoom125.png',
-    'topbar-dates-cool-todo-1024-zoom125.png', 'topbar-dates-cool-schedule-1024-zoom125.png',
+    'topbar-dates-celadon-todo-1024-zoom125.png', 'topbar-dates-celadon-schedule-1024-zoom125.png',
     'topbar-dates-warm-todo-1024-zoom125.png', 'topbar-dates-warm-schedule-1024-zoom125.png',
   ]);
   // Signature bytes are unit fixtures, never claimed as app screenshots.

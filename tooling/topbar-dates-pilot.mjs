@@ -6,12 +6,12 @@ import { navigateInstalled } from './installed-navigation.mjs';
 
 export const TOPBAR_DATES_SCREENSHOTS = Object.freeze([
   'topbar-dates-persisted.png', 'topbar-dates-relaunched.png',
-  ...['mist', 'cool', 'warm'].flatMap(theme => [
+  ...['mist', 'celadon', 'warm'].flatMap(theme => [
     `topbar-dates-${theme}-todo-1024-zoom125.png`, `topbar-dates-${theme}-schedule-1024-zoom125.png`,
   ]),
 ]);
 export const TOPBAR_DATES_MATRIX = Object.freeze([
-  ['mist', '雾灰 · 轻雾'], ['cool', '冷灰 · 凝霜'], ['warm', '暖砂 · 柔雾'],
+  ['mist', '雾珀'], ['celadon', '青瓷'], ['warm', '暖砂'],
 ].flatMap(([theme, label]) => [[1280, 820], [1024, 680]].flatMap(([width, height]) => [1, 1.25].map(zoom => Object.freeze({ theme, label, width, height, zoom })))));
 const state = page => page.evaluate(() => window.workbench.todo.state());
 const chatList = page => page.evaluate(() => window.workbench.ai.chatList());
@@ -410,7 +410,7 @@ export async function runTopbarDatesPilot({ application, page, check, screenshot
       await check(`Topbar dates: renderer-only ${fixture.theme} ${fixture.width}x${fixture.height} zoom ${fixture.zoom}`, async () => {
         await dismiss(page);
         await navigateInstalled(page, 'settings', '个性化');
-        await page.getByRole('radio', { name: fixture.label, exact: true }).click();
+        await page.getByRole('radio', { name: new RegExp(`^${fixture.label}(?:\\s|$)`) }).locator('..').click();
         await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, fixture.theme);
         await navigateInstalled(page, 'life', '命理', 'bazi');
         await resize(application, page, fixture);
@@ -441,9 +441,18 @@ export async function runTopbarDatesPilot({ application, page, check, screenshot
             const hit = document.elementFromPoint(titleBounds.x + titleBounds.width / 2, titleBounds.y + titleBounds.height / 2);
             return node.scrollWidth <= node.clientWidth && bounds.width > 0 && bounds.left >= track.left - 1 && bounds.right <= track.right + 1
               && capsule.top >= topbar.top - 1 && capsule.bottom <= topbar.bottom + 1 && capsule.right <= right.left + 1
-              && titleBounds.width >= 24 && button.title === title.textContent && (hit === button || button.contains(hit))
+              && titleBounds.width >= 24 && titleBounds.right <= Math.min(capsule.right, track.right) + 1
+              && button.title === title.textContent && (hit === button || button.contains(hit))
               && [...range.getClientRects()].filter(rect => rect.width > 0).every(rect => rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1 && rect.top >= bounds.top - 1 && rect.bottom <= bounds.bottom + 1);
           });
+          if (!visible) {
+            console.log(`TOPBAR_CAPSULE_BOUNDS ${JSON.stringify(await capsule.evaluate(button => {
+              const measure = node => ({ bounds: node.getBoundingClientRect().toJSON(), clientWidth: node.clientWidth, scrollWidth: node.scrollWidth, text: node.textContent });
+              return { time: measure(button.querySelector('.t')), title: measure(button.querySelector('.n')), capsule: measure(button),
+                track: measure(button.closest('.sched-track')), middle: measure(button.closest('.tb-middle')), right: measure(document.querySelector('.tb-right')) };
+            }))}`);
+            await screenshot('failure.png');
+          }
           assert.equal(visible, true, `Capsule must show its complete date/time range at ${width}px`);
         }
       }

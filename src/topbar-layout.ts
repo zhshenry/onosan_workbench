@@ -14,8 +14,8 @@ export interface TopbarCapsuleBox {
   /** Unconstrained width of the capsule group, excluding popovers. */
   naturalWidth: number;
   /**
-   * Minimum width that keeps an empty pair, or a single schedule date, intact.
-   * Zero lets the group stop at the centered band (several chips scroll).
+   * Minimum width that keeps the controls, or a single schedule date, intact.
+   * Several chips may scroll within the remaining track width.
    */
   readableWidth: number;
   gap?: number;
@@ -70,6 +70,10 @@ export function applyTopbarCapsulePlacement(bar: HTMLElement): void {
     const slack = track && chip ? Math.max(0, track.getBoundingClientRect().width - chip.getBoundingClientRect().width) : 0;
     const excess = Math.max(0, titleWidth - TOPBAR_TITLE_FLOOR) + slack;
     readable = Math.max(0, natural - excess);
+  } else {
+    const track = middle.querySelector<HTMLElement>('.sched-track');
+    // Multiple chips scroll, but the schedule label and trigger still need room.
+    if (track) readable = Math.max(0, natural - track.getBoundingClientRect().width + 1);
   }
 
   const brand = bar.querySelector<HTMLElement>('.tb-brand')?.getBoundingClientRect();

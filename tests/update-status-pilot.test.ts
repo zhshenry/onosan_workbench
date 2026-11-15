@@ -37,7 +37,7 @@ function fakeRuntime() {
 test('Updater native matrix covers three themes at actual 1280/1024 sizes, normal and reduced motion', () => {
   assert.ok(Object.isFrozen(UPDATE_STATUS_MATRIX)); assert.ok(UPDATE_STATUS_MATRIX.every(Object.isFrozen));
   assert.equal(UPDATE_STATUS_MATRIX.length, 6);
-  for (const theme of ['mist', 'cool', 'warm']) for (const [width, height] of [[1280, 820], [1024, 680]]) {
+  for (const theme of ['mist', 'celadon', 'warm']) for (const [width, height] of [[1280, 820], [1024, 680]]) {
     const entries = UPDATE_STATUS_MATRIX.filter(value => value.theme === theme && value.width === width && value.height === height);
     assert.equal(entries.length, 1);
     assert.equal(entries[0].reducedMotion, width === 1024 ? 'reduce' : 'no-preference');
@@ -49,7 +49,7 @@ test('Updater screenshots add only four exact names to the existing aggregate ar
   t.after(() => rm(directory, { recursive: true, force: true }));
   assert.ok(Object.isFrozen(UPDATE_STATUS_SCREENSHOTS));
   assert.deepEqual(UPDATE_STATUS_SCREENSHOTS, [
-    'update-status-mist-latest-1280x820.png', 'update-status-cool-downloading-1024x680.png',
+    'update-status-mist-latest-1280x820.png', 'update-status-celadon-downloading-1024x680.png',
     'update-status-warm-ready-1024x680.png', 'update-status-error-details-1024x680.png',
   ]);
   // These are signature-only unit fixtures, never claimed as native screenshots.

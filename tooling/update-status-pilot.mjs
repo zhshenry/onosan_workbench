@@ -4,12 +4,12 @@ import assert from 'node:assert/strict';
 
 export const UPDATE_STATUS_SCREENSHOTS = Object.freeze([
   'update-status-mist-latest-1280x820.png',
-  'update-status-cool-downloading-1024x680.png',
+  'update-status-celadon-downloading-1024x680.png',
   'update-status-warm-ready-1024x680.png',
   'update-status-error-details-1024x680.png',
 ]);
 export const UPDATE_STATUS_MATRIX = Object.freeze([
-  ['mist', '雾灰 · 轻雾'], ['cool', '冷灰 · 凝霜'], ['warm', '暖砂 · 柔雾'],
+  ['mist', '雾珀'], ['celadon', '青瓷'], ['warm', '暖砂'],
 ].flatMap(([theme, label]) => [[1280, 820], [1024, 680]].map(([width, height]) => Object.freeze({
   theme, label, width, height, reducedMotion: width === 1024 ? 'reduce' : 'no-preference',
 }))));
@@ -282,7 +282,7 @@ export async function runUpdateStatusPilot({ application, page, check, screensho
       await check(`Update status: ${entry.theme} ${entry.width}x${entry.height}, all phases inline with unchanged right-side actions`, async () => {
         await page.emulateMedia({ reducedMotion: entry.reducedMotion });
         await page.locator('.settings-sections').getByRole('button', { name: '个性化', exact: true }).click();
-        await page.getByRole('radio', { name: entry.label, exact: true }).click();
+        await page.getByRole('radio', { name: new RegExp(`^${entry.label}(?:\\s|$)`) }).locator('..').click();
         await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, entry.theme);
         assert.equal((await page.evaluate(() => window.workbench.settings.get())).uiTheme, entry.theme);
         await resize(application, page, entry.width, entry.height);
@@ -294,7 +294,7 @@ export async function runUpdateStatusPilot({ application, page, check, screensho
           assert.equal(geometries[fixture.key].reducedMotion, entry.reducedMotion === 'reduce');
           assert.equal(await updaterRow(page).locator('.set-update-details-toggle').count(), fixture.key === 'error' ? 1 : 0);
           if (entry.theme === 'mist' && entry.width === 1280 && fixture.key === 'latest') await screenshot(UPDATE_STATUS_SCREENSHOTS[0]);
-          if (entry.theme === 'cool' && entry.width === 1024 && fixture.key === 'downloading') await screenshot(UPDATE_STATUS_SCREENSHOTS[1]);
+          if (entry.theme === 'celadon' && entry.width === 1024 && fixture.key === 'downloading') await screenshot(UPDATE_STATUS_SCREENSHOTS[1]);
           if (entry.theme === 'warm' && entry.width === 1024 && fixture.key === 'ready') await screenshot(UPDATE_STATUS_SCREENSHOTS[2]);
         }
         report.updateStatus.matrix.push({ ...entry, geometries });
@@ -387,7 +387,7 @@ export async function runUpdateStatusPilot({ application, page, check, screensho
     assert.deepEqual(await inspectUpdaterFixture(application), { installed: false });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.locator('.settings-sections').getByRole('button', { name: '个性化', exact: true }).click();
-    await page.getByRole('radio', { name: UPDATE_STATUS_MATRIX.find(entry => entry.theme === originalTheme).label, exact: true }).click();
+    await page.getByRole('radio', { name: new RegExp(`^${UPDATE_STATUS_MATRIX.find(entry => entry.theme === originalTheme).label}(?:\\s|$)`) }).locator('..').click();
     await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, originalTheme);
     await resize(application, page, originalSize[0], originalSize[1]);
     report.updateStatus.restored = true;

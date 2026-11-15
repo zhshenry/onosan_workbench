@@ -74,7 +74,7 @@ test('Year-dropdown evidence has five fixed screenshot names within the existing
   // PNG signatures here are unit fixtures, never app screenshots or acceptance evidence.
   const directory = await fixture(t);
   assert.deepEqual(YEAR_DROPDOWN_SCREENSHOTS, [
-    'year-dropdown-mist-1024x680.png', 'year-dropdown-cool-1024x680.png', 'year-dropdown-warm-1024x680.png',
+    'year-dropdown-mist-1024x680.png', 'year-dropdown-celadon-1024x680.png', 'year-dropdown-warm-1024x680.png',
     'year-dropdown-saved.png', 'year-dropdown-relaunched.png',
   ]);
   for (const name of YEAR_DROPDOWN_SCREENSHOTS) await writeFile(path.join(directory, name), Buffer.from('89504e470d0a1a0a', 'hex'));
@@ -86,9 +86,9 @@ test('Year-dropdown evidence has five fixed screenshot names within the existing
   await assert.rejects(inspectPilotArtifacts(directory), /unapproved artifact/);
 });
 
-test('Year-dropdown matrix covers every approved theme at both actual app sizes', () => {
+test('Year-dropdown matrix covers three representative current themes at both actual app sizes', () => {
   assert.deepEqual(YEAR_DROPDOWN_MATRIX.map(({ theme, width, height }) => `${theme}:${width}x${height}`), [
-    'mist:1280x820', 'mist:1024x680', 'cool:1280x820', 'cool:1024x680', 'warm:1280x820', 'warm:1024x680',
+    'mist:1280x820', 'mist:1024x680', 'celadon:1280x820', 'celadon:1024x680', 'warm:1280x820', 'warm:1024x680',
   ]);
   assert.ok(Object.isFrozen(YEAR_DROPDOWN_MATRIX));
   assert.ok(YEAR_DROPDOWN_MATRIX.every(Object.isFrozen));

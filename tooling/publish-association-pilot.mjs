@@ -9,7 +9,7 @@ export const PUBLISH_ASSOCIATION_SCREENSHOTS = Object.freeze([
   'publish-association-unlinked.png', 'publish-association-pending.png',
   'publish-association-linked.png', 'publish-association-error.png',
 ]);
-export const PUBLISH_ASSOCIATION_MATRIX = Object.freeze(['mist', 'cool', 'warm'].flatMap(theme =>
+export const PUBLISH_ASSOCIATION_MATRIX = Object.freeze(['mist', 'celadon', 'warm'].flatMap(theme =>
   [[1280, 820], [1024, 680]].flatMap(([width, height]) => ['no-preference', 'reduce'].map(reducedMotion =>
     Object.freeze({ theme, width, height, reducedMotion })))));
 const MARK = 'copy:markXhsPublished';
@@ -598,8 +598,8 @@ export async function runPublishAssociationPilot({ application, page, check, scr
       await page.locator('.settings-sections').getByRole('button', { name: '个性化', exact: true }).click();
       await settledNavigation(page, 'settings', '个性化');
       await page.getByRole('dialog', { name: '设置', exact: true }).getByRole('heading', { name: '个性化', exact: true }).waitFor({ state: 'visible' });
-      const themeLabel = { mist: '雾灰 · 轻雾', cool: '冷灰 · 凝霜', warm: '暖砂 · 柔雾' }[entry.theme];
-      await page.getByRole('radio', { name: themeLabel, exact: true }).click();
+      const themeLabel = { mist: '雾珀', celadon: '青瓷', warm: '暖砂' }[entry.theme];
+      await page.getByRole('radio', { name: new RegExp(`^${themeLabel}(?:\\s|$)`) }).locator('..').click();
       await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, entry.theme);
       const win = await application.browserWindow(page); await win.evaluate((win, size) => { win.webContents.setZoomFactor(1); win.setContentSize(size.width, size.height); }, entry);
       assert.ok((await win.evaluate(win => win.getContentSize())).every((value, index) => Math.abs(value - [entry.width, entry.height][index]) <= 1), 'Native content size must match the request within Windows display rounding');

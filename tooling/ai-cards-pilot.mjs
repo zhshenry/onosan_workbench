@@ -126,15 +126,15 @@ export async function runAiCardsPilot({ application, page, check, screenshot, ru
       await lastCard(page).getByRole('alert').scrollIntoViewIfNeeded(); await screenshot('ai-cards-failed.png');
       await lastCard(page).getByRole('button', { name: '保留原内容', exact: true }).click();
     });
-    await check('AI cards: long values, uniform border, narrow panel and all existing themes', async () => {
+    await check('AI cards: long values, uniform border, narrow panel and representative current themes', async () => {
       const longNote = '长备注完整可读，不截断关键内容。'.repeat(30);
       responsePlan = { message: '长内容和窄面板验收。', actions: [{ type: 'update', id: fixture.id, patch: { title: '长标题'.repeat(45), note: longNote, dueAt: null } }] };
       await ask(page, '生成长内容验收建议');
       const separator = panel(page).getByRole('separator', { name: '调整助手宽度', exact: true });
       await separator.focus(); for (let i = 0; i < 10; i++) await page.keyboard.press('ArrowRight');
-      for (const [theme, label] of [['mist', '雾灰 · 轻雾'], ['cool', '冷灰 · 凝霜'], ['warm', '暖砂 · 柔雾']]) {
+      for (const [theme, label] of [['mist', '雾珀'], ['celadon', '青瓷'], ['warm', '暖砂']]) {
         await closePanel(page); await navigateInstalled(page, 'settings', '个性化');
-        await page.getByRole('radio', { name: label, exact: true }).click();
+        await page.getByRole('radio', { name: new RegExp(`^${label}(?:\\s|$)`) }).locator('..').click();
         await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, theme);
         const win = await application.browserWindow(page); await win.evaluate(win => win.setContentSize(1024, 680));
         await home(page); await openPanel(page);

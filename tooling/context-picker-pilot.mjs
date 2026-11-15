@@ -6,12 +6,12 @@ import { createServer } from 'node:http';
 import { navigateInstalled } from './installed-navigation.mjs';
 
 export const CONTEXT_PICKER_SCREENSHOTS = Object.freeze([
-  'context-picker-mist-1024x680.png', 'context-picker-cool-1024x680.png',
+  'context-picker-mist-1024x680.png', 'context-picker-celadon-1024x680.png',
   'context-picker-warm-1024x680.png', 'context-picker-saved.png',
   'context-picker-relaunched.png',
 ]);
 export const CONTEXT_PICKER_MATRIX = Object.freeze([
-  ['mist', '雾灰 · 轻雾'], ['cool', '冷灰 · 凝霜'], ['warm', '暖砂 · 柔雾'],
+  ['mist', '雾珀'], ['celadon', '青瓷'], ['warm', '暖砂'],
 ].flatMap(([theme, label]) => [[1280, 820, 'light'], [1024, 680, 'dark']].map(([width, height, colorScheme]) => Object.freeze({ theme, label, width, height, colorScheme }))));
 
 const panel = page => page.locator('#workbench-ai-panel');
@@ -437,10 +437,10 @@ export async function runContextPickerPilot({ application, page, check, screensh
         await dismiss(page);
       }
     });
-    report.contextPicker = { synthetic: true, model: 'Loopback synthetic SSE only; actual installed renderer, IPC, source resolution and SQLite persistence. No external model/provider verification.', privacyBoundary: 'Only the added reference lane is selection-bounded. The existing latest-120 todo/category context remains unchanged.', themeBoundary: 'mist/cool/warm are app themes; OS light/dark preference is emulated separately and does not claim a new dark app theme.', matrix: [], providerRequests: 0, savedTurns: [] };
+    report.contextPicker = { synthetic: true, model: 'Loopback synthetic SSE only; actual installed renderer, IPC, source resolution and SQLite persistence. No external model/provider verification.', privacyBoundary: 'Only the added reference lane is selection-bounded. The existing latest-120 todo/category context remains unchanged.', themeBoundary: 'Business checks sample mist/celadon/warm; the separate appearance pilot covers all eight themes; OS light/dark preference is emulated separately and does not claim a new dark app theme.', matrix: [], providerRequests: 0, savedTurns: [] };
     for (const fixture of CONTEXT_PICKER_MATRIX) {
       await check(`Context picker: ${fixture.theme} ${fixture.width}x${fixture.height} OS ${fixture.colorScheme}, long title and stable model/send controls`, async () => {
-        await navigate(page, 'settings', '个性化'); await page.getByRole('radio', { name: fixture.label, exact: true }).click();
+        await navigate(page, 'settings', '个性化'); await page.getByRole('radio', { name: new RegExp(`^${fixture.label}(?:\\s|$)`) }).locator('..').click();
         await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, fixture.theme);
         await page.emulateMedia({ colorScheme: fixture.colorScheme, reducedMotion: 'reduce' });
         await resize(application, page, fixture.width, fixture.height);
