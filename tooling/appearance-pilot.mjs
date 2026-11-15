@@ -116,6 +116,41 @@ try {
     await navigateInstalled(page, 'life', '日程和待办', 'todo');
     await shot('todo-floating-strong-windowlight');
   } else {
+    await check('collapsed flyouts accept the first pointer click from another focused workbench', async () => {
+      const win = await app.browserWindow(page);
+      report.railClicks = [];
+      if (await page.locator('.nav-toggle').getAttribute('aria-expanded') === 'true') await page.locator('.nav-toggle').click();
+      for (const [width, height] of [[1440, 940], [1024, 680]]) {
+        await win.evaluate((win, size) => win.setContentSize(...size), [width, height]);
+        for (const nav of ['经典', '悬浮']) {
+          await settings(); await choose('navigationStyle', nav); await closeSettings();
+          for (const [source, workbench, label, view] of [['home', 'game', '轨迹侦探', 'game'], ['game', 'life', '阅读清单', 'reading']]) {
+            for (let attempt = 0; attempt < 2; attempt++) {
+              await page.locator(`.rail [data-workbench="${source}"]`).click();
+              await layoutSnapshot();
+              const trigger = await page.locator(`.rail [data-workbench="${workbench}"]`).boundingBox();
+              await page.mouse.move(trigger.x + trigger.width / 2, trigger.y + trigger.height / 2);
+              await page.waitForFunction(workbench => document.querySelector(`#rail-menu-${workbench} button`), workbench);
+              const item = page.locator(`#rail-menu-${workbench}`).getByRole('button', { name: label, exact: true });
+              const rect = await item.boundingBox();
+              await item.evaluate(el => { window.railClickTarget = el; });
+              // Native pointer events deliberately bypass locator.click's animation/retry waits.
+              await page.mouse.move(rect.x + 35, rect.y + rect.height / 2);
+              await page.mouse.down();
+              const retained = await page.evaluate(() => window.railClickTarget.isConnected && document.activeElement === window.railClickTarget);
+              await page.mouse.up();
+              const context = `${width}, ${nav}, ${source} → ${label}, attempt ${attempt + 1}`;
+              assert.ok(retained, `${context}: focus transfer must not unmount the target before pointerup`);
+              await page.locator(view === 'game' ? '.game-host' : `#view-${view}`).waitFor({ state: 'visible' });
+              assert.equal(await page.locator('.rail-flyout').count(), 0, `${context}: navigation closes the menu`);
+              report.railClicks.push(context);
+            }
+          }
+        }
+      }
+      await win.evaluate(win => win.setContentSize(1440, 940));
+      await navigateInstalled(page, 'home');
+    });
     await check('navigation transition moves only navigation, reverses smoothly and respects reduced motion', async () => {
       await page.emulateMedia({ reducedMotion: 'no-preference' });
       await settings(); await choose('navigationStyle', '经典');

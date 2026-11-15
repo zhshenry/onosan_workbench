@@ -391,7 +391,7 @@ export function App() {
         onBlurCapture={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
             dismissedRailMenu.current = null;
-            if (!event.currentTarget.matches(':hover')) setRailMenu(null);
+            if (!event.currentTarget.matches(':hover')) setRailMenu(current => current === workbench.id ? null : current);
           }
         }}
         onKeyDown={(event) => {
