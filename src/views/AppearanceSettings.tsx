@@ -63,9 +63,9 @@ export function AppearanceSettings({ controller }: { controller: AppearanceContr
       <p role="status">当前：<strong>{{ morning: '上午', afternoon: '午后', dusk: '傍晚' }[windowLight]}</strong></p>
       <p>跟随电脑本地时间切换：06:00–12:00 上午，12:00–18:00 午后，其余时间使用傍晚光线。</p>
     </fieldset>}
-    <div className="appearance-save" role={error ? 'alert' : 'status'}>
-      {error || (status === 'loading' ? '正在读取外观设置…' : status === 'saving' ? '正在保存…' : '已保存，重启后继续使用')}
+    {status !== 'saved' && <div className="appearance-save" role={error ? 'alert' : 'status'}>
+      {error || (status === 'loading' ? '正在读取外观设置…' : '正在保存…')}
       {error && <button type="button" className="btn secondary" onClick={retry}>重试</button>}
-    </div>
+    </div>}
   </section>;
 }

@@ -44,7 +44,7 @@ async function setWindowTime(hour, minute = 0, second = 0) {
 }
 async function choose(key, label) {
   await page.locator(`[data-setting-key="${key}"]`).getByRole('radio', { name: new RegExp(`^${label}`) }).locator('..').click();
-  await page.locator('.appearance-save').filter({ hasText: '已保存' }).waitFor();
+  await page.locator('.appearance-save').waitFor({ state: 'hidden' });
 }
 async function shot(name) {
   await page.evaluate(() => document.fonts.ready);
@@ -472,7 +472,7 @@ try {
       await settings();
       const radio = page.locator('[data-setting-key="uiTheme"] input:checked');
       await radio.focus(); await radio.press('ArrowLeft');
-      await page.locator('.appearance-save').filter({ hasText: '已保存' }).waitFor();
+      await page.locator('.appearance-save').waitFor({ state: 'hidden' });
       assert.equal(await page.evaluate(() => document.activeElement?.tagName), 'INPUT');
       const material = page.locator('[data-setting-key="glassIntensity"]');
       await material.getByRole('radio', { name: /^纯色/ }).focus();
@@ -480,7 +480,7 @@ try {
       await page.waitForFunction(() => document.documentElement.dataset.glass === 'normal');
       await page.keyboard.press('ArrowLeft');
       await page.waitForFunction(() => document.documentElement.dataset.glass === 'solid');
-      await page.locator('.appearance-save').filter({ hasText: '已保存' }).waitFor();
+      await page.locator('.appearance-save').waitFor({ state: 'hidden' });
       await material.screenshot({ path: path.join(output, 'settings-solid-material.png') });
       report.screenshots.push('settings-solid-material.png');
       await choose('uiTheme', '窗影'); await setWindowTime(20);

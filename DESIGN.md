@@ -11,6 +11,7 @@
 - `shared/contracts.ts` 定义三项外观偏好 `uiTheme × navigationStyle × glassIntensity`，`electron/app-settings.ts` 逐字段读取、验证与原子保存。旧文件默认经典导航、普通玻璃；旧 `cool/sunny` 迁移到 `mist`。旧 `windowLight` 字段保持文件兼容，但不驱动显示。不覆盖头像、昵称、提醒、启动或关闭行为。
 - `src/appearance.ts` 由 App 持有生命周期，投射到 `<html data-theme data-navigation data-glass data-window-light>`。实时预览、完整外观快照串行保存；迟到结果不能覆盖新选择，失败恢复最近成功值并保留重试。设置弹窗卸载不终止已提交保存，不以外观值作为工作区 React key。
 - `src/appearance.css` 是主题环境、材质变体和悬浮导航的运行时唯一来源，`src/shell.css` 继续拥有基础字阶、布局和控件。设置缩略图消费同一主题变量，原生 radio 提供键盘组内导航。所有文案为简体中文。
+- 个性化页保存完成后不显示底部常驻提示；只在读取、保存过程中或失败时显示状态，失败保留重试操作。
 
 | 维度 | 可选值 | 默认 / 约束 |
 | --- | --- | --- |
