@@ -1,10 +1,10 @@
 .personal-workspace { container-type: inline-size; gap: 0; }
 .personal-workspace button { white-space: nowrap; }
 .personal-workspace button:disabled { opacity: .5; cursor: not-allowed; }
-.personal-workspace .personal-project { flex: none; min-height: 56px; padding: 10px 16px; gap: 10px; border-radius: 0; border-bottom: 1px solid var(--hairline); flex-wrap: wrap; }
+.personal-workspace .personal-project { flex: none; border-radius: 0; border-bottom: 1px solid var(--hairline); flex-wrap: wrap; }
 .personal-project-icon { width: 24px; height: 24px; color: var(--acc-deep); flex-shrink: 0; }
 .personal-project .game-project-heading { flex-wrap: nowrap; min-width: 0; gap: 12px; }
-.personal-project .game-project-heading strong { font-size: var(--type-section); }
+.personal-project .game-project-heading strong { font-size: var(--type-lead); }
 .personal-project .game-service { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .personal-project .game-project-actions { max-width: 100%; flex-wrap: wrap; gap: 6px; margin-left: auto; }
 .personal-project .game-project-actions button { min-height: 32px; padding: 5px 10px; background: var(--workbench-card-bg); }

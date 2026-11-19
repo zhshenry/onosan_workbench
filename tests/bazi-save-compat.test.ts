@@ -17,6 +17,12 @@ test('命例编辑仅提交输入字段，保存并重载保留 id、创建时�
   assert.equal(store.all().profiles[0].date, original.date);
 
   const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost', pretendToBeVisual: true });
+  const elements = dom.window.HTMLElement.prototype;
+  const matches = elements.matches;
+  const openPopovers = new WeakSet();
+  elements.showPopover = function () { openPopovers.add(this); };
+  elements.hidePopover = function () { openPopovers.delete(this); };
+  elements.matches = function (selector) { return selector === ':popover-open' ? openPopovers.has(this) : matches.call(this, selector); };
   const globals = ['window', 'document', 'HTMLElement', 'HTMLDialogElement', 'Node', 'navigator', 'localStorage', 'getComputedStyle', 'requestAnimationFrame', 'cancelAnimationFrame'] as const;
   const previous = globals.map(name => Object.getOwnPropertyDescriptor(globalThis, name));
   globals.forEach(name => Object.defineProperty(globalThis, name, { configurable: true, value: name === 'window' ? dom.window : dom.window[name] }));

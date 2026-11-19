@@ -1,3 +1,4 @@
+import { hasTaskTime, taskDay } from '../../shared/todo-date';
 // 悬浮待办窗(?window=float 载入):沿用上游 To-Do-List 的内容层级——
 // 标题栏(置顶/收起/隐藏)→ 仪表区(大字日期+事项库/新增)→ 待办/日程双区 → 提醒条;
 // 迷你态 = To-Do-List 式任务卡。数据与主窗同源(IPC 广播 + 轮询);关闭=隐藏由主进程处理。
@@ -6,7 +7,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowsInLineVertical, ArrowsOutLineVertical, ArrowsOutSimple, ArrowsHorizontal, ArrowLeft, CalendarBlank, CaretDown, Check, Circle, Minus, PaperPlaneRight, Plus, PushPin, Sparkle, Stop, X } from '@phosphor-icons/react';
 import { localDay, openToday, type ChatSession, type Task } from '../../shared/todo-contracts';
-import { scheduleStamp } from '../../shared/todo-format';
+import { isOverdue, scheduleStamp } from '../../shared/todo-format';
 import type { AiConfig } from '../../shared/workbench-api';
 import { preferredAiChat, sameAiScope } from '../../shared/ai-scope';
 import { errorText, Select as TodoSelect } from '../ui/controls';
@@ -127,7 +128,7 @@ export function FloatTodoApp() {
   const askAI = (prompt: string): void => {
     void wb.ai.config().then((raw) => {
       const cfg = raw as { aiEnabled?: boolean };
-      if (!cfg.aiEnabled) { setError('请先在主窗 AI 设置中配置并启用'); return; }
+      if (!cfg.aiEnabled) { setError('请先在主窗口的模型配置中添加对话模型'); return; }
       setFloatMode('ai');
       setAiSeed({ text: prompt, nonce: ++seedNonce.current });
     }, () => setError('AI 状态读取失败,请重试'));
@@ -170,10 +171,10 @@ export function FloatTodoApp() {
   const focus = openTasks[currentIndex];
   const categoryById = new Map((data?.categories ?? []).map((c) => [c.id, c]));
   const focusCategory = focus?.categoryId ? categoryById.get(focus.categoryId) : null;
-  const focusOverdue = focus ? (focus.dueAt ? Date.parse(focus.dueAt) < clock.getTime() : focus.plannedDate < today) : false;
-  const focusTime = focus?.dueAt ? new Date(focus.dueAt) : null;
+  const focusOverdue = focus ? isOverdue(focus, clock.getTime()) : false;
+  const focusTime = hasTaskTime(focus?.dateAt) ? new Date(focus!.dateAt!) : null;
   const focusTimeLabel = focusTime ? `${focusTime.getMonth() + 1}/${focusTime.getDate()} ${String(focusTime.getHours()).padStart(2, '0')}:${String(focusTime.getMinutes()).padStart(2, '0')}` : '不限时';
-  const todayTasks = data ? data.tasks.filter((t) => !t.deletedAt && t.plannedDate <= today) : [];
+  const todayTasks = data ? data.tasks.filter((t) => !t.deletedAt && (taskDay(t) === null || taskDay(t)! <= today)) : [];
   const dueReminders = todayTasks.filter((t) => t.status !== 'done' && t.remindAt && Date.parse(t.remindAt) <= clock.getTime());
 
   useEffect(() => {

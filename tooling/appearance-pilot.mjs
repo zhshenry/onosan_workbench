@@ -125,7 +125,7 @@ try {
     if (existing.tasks.some(task => task.title === '核对新版界面')) return existing;
     const now = new Date();
     const day = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    return window.workbench.todo.create({ title: '核对新版界面', kind: 'task', status: 'todo', priority: 'medium', plannedDate: day, dueAt: null, endAt: null, remindAt: null, categoryId: null, progress: null, note: '隔离环境中的验收任务' });
+    return window.workbench.todo.create({ title: '核对新版界面', kind: 'task', status: 'todo', priority: 'medium', dateAt: day, endAt: null, remindAt: null, categoryId: null, progress: null, note: '隔离环境中的验收任务' });
   });
   await settings();
   await choose('uiTheme', '窗影'); await choose('glassIntensity', '强玻璃'); await choose('navigationStyle', '悬浮');
@@ -141,7 +141,7 @@ try {
     assert.ok(g.brand.width < 120);
     assert.equal(await page.locator('.tb-brand').innerText(), '');
     assert.notEqual(await page.locator('.rail-nav-shell').evaluate(el => getComputedStyle(el, '::before').backgroundImage), 'none');
-    assert.notEqual(await page.locator('.dashboard-heading').evaluate(el => getComputedStyle(el).backgroundImage), 'none');
+    assert.notEqual(await page.locator('.dashboard-grid > .dashboard-widget').first().evaluate(el => getComputedStyle(el).backgroundImage), 'none');
   });
   if (process.argv.includes('--preview')) {
     await navigateInstalled(page, 'life', '日程和待办', 'todo');
@@ -330,14 +330,14 @@ try {
             assert.equal(state.saved.uiTheme, state.rendered.theme);
             assert.equal(state.saved.navigationStyle, state.rendered.navigation);
             assert.equal(state.saved.glassIntensity, state.rendered.glass);
-            const [heading, ...cards] = await surfaces('.dashboard-heading, .dashboard-grid > .dashboard-widget');
+            const [firstCard, ...cards] = await surfaces('.dashboard-grid > .dashboard-widget');
             if (glass === '纯色') {
-              assert.deepEqual([heading.background, heading.color, heading.filter], ['none', 'rgb(255, 255, 255)', 'none']);
+              assert.deepEqual([firstCard.background, firstCard.color, firstCard.filter], ['none', 'rgb(255, 255, 255)', 'none']);
             } else {
-              assert.ok(heading.background.includes('rgba('), 'Both glass materials are translucent, including normal');
-              assert.ok(heading.filter.includes(glass === '普通玻璃' ? '18px' : '30px'));
+              assert.ok(firstCard.background.includes('rgba('), 'Both glass materials are translucent, including normal');
+              assert.ok(firstCard.filter.includes(glass === '普通玻璃' ? '18px' : '30px'));
             }
-            for (const card of cards) assertSurface(card, heading);
+            for (const card of cards) assertSurface(card, firstCard);
           }
         }
       }
@@ -369,7 +369,7 @@ try {
       await shot('home-classic-normal-mist');
       assert.notEqual(await page.locator('.topbar').evaluate(el => getComputedStyle(el, '::before').backgroundImage), 'none');
       assert.equal(await page.locator('.rail-nav-shell').evaluate(el => getComputedStyle(el, '::before').opacity), '0');
-      assert.notEqual(await page.locator('.dashboard-heading').evaluate(el => getComputedStyle(el).backgroundImage), 'none');
+      assert.notEqual(await page.locator('.dashboard-grid > .dashboard-widget').first().evaluate(el => getComputedStyle(el).backgroundImage), 'none');
       await page.locator('.todopill').click();
       await page.locator('.ipop').waitFor({ state: 'visible' });
       await shot('classic-todo-popover');
@@ -395,7 +395,7 @@ try {
       for (const [label, material] of [['普通玻璃', 'normal'], ['强玻璃', 'strong'], ['纯色', 'solid']]) {
         await navigateInstalled(page, 'home');
         await settings(); await choose('glassIntensity', label); await closeSettings();
-        const [reference] = await surfaces('.dashboard-heading');
+        const [reference] = await surfaces('.dashboard-grid > .dashboard-widget');
         if (material === 'normal') normal = reference;
         else { assert.notEqual(reference.background, normal.background); assert.notEqual(reference.shadow, normal.shadow); }
         await shot(`home-floating-${material}-celadon`);
@@ -495,8 +495,8 @@ try {
       await page.waitForFunction(() => document.documentElement.dataset.windowLight === 'morning');
       assert.equal(await page.locator('html').getAttribute('data-navigation'), 'floating');
       assert.equal(await page.locator('html').getAttribute('data-glass'), 'solid');
-      const [heading] = await surfaces('.dashboard-heading');
-      assert.deepEqual([heading.background, heading.color, heading.filter], ['none', 'rgb(255, 255, 255)', 'none']);
+      const [firstCard] = await surfaces('.dashboard-grid > .dashboard-widget');
+      assert.deepEqual([firstCard.background, firstCard.color, firstCard.filter], ['none', 'rgb(255, 255, 255)', 'none']);
       const afterTasks = await page.evaluate(() => window.workbench.todo.state());
       assert.deepEqual(afterTasks.tasks, taskState.tasks);
     });

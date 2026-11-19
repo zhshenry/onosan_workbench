@@ -15,12 +15,15 @@ export interface AiConfig {
 
 /** Shared preload/renderer contract; the main process validates mutation inputs. */
 export interface WorkbenchApi {
+  meetingNotes: import('./meeting-notes').MeetingNotesBridge;
+  bot: import('./bot-contracts').BotBridge;
   checkin: import('./checkin-contracts').CheckinBridge;
   island: import('./island-contracts').IslandBridge;
   aiTest: import('./ai-test-contracts').AiTestBridge;
   minimize(): void;
   maximizeToggle(): void;
   close(): void;
+  captureAssistantBackdrop(): Promise<string>;
   onMaximized(callback: (maximized: boolean) => void): () => void;
   browser: import('./browser-contracts').BrowserBridge;
   hushHour: import('./hush-hour-contracts').HushHourBridge;
@@ -83,7 +86,6 @@ export interface WorkbenchApi {
     openLink(url: string): Promise<void>;
     config(): Promise<AiConfig>;
     onConfigChanged(callback: (config: AiConfig) => void): () => void;
-    setEnabled(enabled: boolean): Promise<AiConfig>;
     saveProvider(input: unknown): Promise<AiConfig>;
     removeProvider(id: string): Promise<AiConfig>;
     saveModel(input: unknown): Promise<AiConfig>;

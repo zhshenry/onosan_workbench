@@ -159,7 +159,7 @@ test('命理贡献只使用指定命例和已计算八字，不暴露待办写�
   assert.match(buildBaziContribution(profile, 'astro').systemPrompt(new Date()), /未填写出生地/);
   const shared = withWorkbenchContext(contribution, { module: 'bazi', profileId: profile.id }, profile.name, { module: 'workbench', viewId: 'bazi' });
   assert.deepEqual(shared.toolNames, []);
-  assert.match(shared.systemPrompt(new Date()), /小工具.*profile-1.*测试命例/);
+  assert.match(shared.systemPrompt(new Date()), /命理.*profile-1.*测试命例/);
   assert.match(shared.systemPrompt(new Date()), /当前可核实的业务数据和可用工具仅限本轮/);
   assert.match(shared.systemPrompt(new Date()), /此页面没有提供业务数据或专用工具/);
 });

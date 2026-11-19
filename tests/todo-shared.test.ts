@@ -15,7 +15,7 @@ test('two app connections on one db file see each other\'s writes (cross-app sha
   const workbench = new Store(file, 'shared-tasks');  // 模拟工作台进程
   try {
     // To-Do-List 侧创建,工作台侧立即可见
-    const task = todoList.create({ ...newTask('上游创建的事项'), plannedDate: '2026-09-23' });
+    const task = todoList.create({ ...newTask('上游创建的事项'), dateAt: '2026-09-23' });
     assert.equal(workbench.all().length, 1);
     assert.equal(workbench.get(task.id).title, '上游创建的事项');
 
@@ -53,18 +53,18 @@ test('reminder claiming is mutually exclusive across connections, and unclaim re
   try {
     const now = '2026-09-23T10:00:00Z';
     appA.create({ ...newTask('到点提醒我'), remindAt: now });
-    const dueAt = new Date(now);
+    const dateAt = new Date(now);
     // 双方先后认领:只有第一方拿到
-    const first = appA.claimDue(dueAt);
+    const first = appA.claimDue(dateAt);
     assert.equal(first.length, 1);
-    assert.equal(appB.claimDue(dueAt).length, 0);
-    assert.equal(appA.claimDue(dueAt).length, 0); // 自己也不重复
+    assert.equal(appB.claimDue(dateAt).length, 0);
+    assert.equal(appA.claimDue(dateAt).length, 0); // 自己也不重复
     // due() 也不再返回(上游语义一致)
-    assert.equal(appB.due(dueAt).length, 0);
+    assert.equal(appB.due(dateAt).length, 0);
     // 通知失败归还后,下一轮(任意一方)可重新认领
     appA.unclaim(first[0]);
-    assert.equal(appB.due(dueAt).length, 1);
-    assert.equal(appB.claimDue(dueAt).length, 1);
+    assert.equal(appB.due(dateAt).length, 1);
+    assert.equal(appB.claimDue(dateAt).length, 1);
     // 改期后 remindAt 变化,重新可提醒
     const rescheduled = appA.update(first[0].id, { remindAt: '2026-09-23T11:00:00Z' });
     assert.equal(appA.claimDue(new Date('2026-09-23T11:01:00Z')).length, 1);
@@ -86,16 +86,16 @@ test('workbench opening the shared database leaves To-Do-List chats and schema m
   const workbench = new Store(file, 'shared-tasks');
   try {
     assert.equal(workbench.chat(chat.id).entries[0].actionState, 'pending');
-    assert.equal((workbench.db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version, 3);
+    assert.equal((workbench.db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version, 4);
   } finally { workbench.close(); }
 
   const newer = new DatabaseSync(file);
-  newer.exec('PRAGMA user_version=4;');
+  newer.exec('PRAGMA user_version=5;');
   newer.close();
-  assert.throws(() => new Store(file, 'shared-tasks'), /版本 4/);
+  assert.throws(() => new Store(file, 'shared-tasks'), /版本 5/);
   const unchanged = new DatabaseSync(file);
   try {
-    assert.equal((unchanged.prepare('PRAGMA user_version').get() as { user_version: number }).user_version, 4);
+    assert.equal((unchanged.prepare('PRAGMA user_version').get() as { user_version: number }).user_version, 5);
     const row = unchanged.prepare('SELECT payload FROM chats WHERE id=?').get(chat.id) as { payload: string };
     assert.equal(JSON.parse(row.payload).entries[0].actionState, 'pending');
   }
@@ -108,6 +108,6 @@ test('workbench can create a fresh tasks-only shared database', () => {
   try {
     const tables = (workbench.db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as { name: string }[]).map(row => row.name);
     assert.deepEqual(tables.sort(), ['categories', 'tasks']);
-    assert.equal((workbench.db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version, 3);
+    assert.equal((workbench.db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version, 4);
   } finally { workbench.close(); }
 });

@@ -54,7 +54,7 @@ test('Renderer fixtures have independent exact expectations for current, old-yea
   const fixtures = topbarReadFixtures('2026-10-12');
   assert.deepEqual(fixtures.todo.map(entry => entry.expected), ['10-12 09:00', '2025-12-31 08:30', '10-12 · 不限时', '未设置']);
   assert.deepEqual(fixtures.schedule.map(entry => entry.expected), ['10-12 14:00–15:00', '01-01 23:30–\n01-02 00:30', '2025-12-31 23:30–\n2026-01-01 00:30', '10-12 · 时间待定']);
-  assert.deepEqual(fixtures.edges.map(entry => entry.expected), ['10-12 · 不限时', '10-12 · 时间待定', '未设置', '未设置', '10-12 14:00–时间待定']);
+  assert.deepEqual(fixtures.edges.map(entry => entry.expected), ['未设置', '未设置', '未设置', '未设置', '10-12 14:00–时间待定']);
   const all = [...fixtures.todo, ...fixtures.schedule, ...fixtures.edges];
   assert.equal(new Set(all.map(entry => entry.task.id)).size, all.length);
   assert.ok(all.every(entry => entry.task.title.startsWith('CI renderer-only ') && entry.task.title.length <= 200));
@@ -69,9 +69,10 @@ test('Acceptance fixture expectations agree with product output across calendar 
     for (const entry of fixtures.todo) assert.equal(topbarTodoDate(entry.task, now), entry.expected);
     for (const entry of fixtures.schedule) assert.equal(topbarScheduleDate(entry.task, now), entry.expected);
     for (const entry of fixtures.edges) assert.equal((entry.task.kind === 'meeting' ? topbarScheduleDate : topbarTodoDate)(entry.task, now), entry.expected);
-    for (const list of [fixtures.todo, fixtures.schedule, fixtures.edges]) {
+    for (const list of [fixtures.todo, fixtures.schedule]) {
       assert.equal(activeToday(list.map(entry => entry.task), today).length, list.length, 'Fixtures must exercise existing filters without replacing them');
     }
+    assert.equal(activeToday(fixtures.edges.map(entry => entry.task), today).length, 3, 'Undated or invalid meetings are not silently assigned to today');
     for (const index of [1, 2]) {
       const { id, createdAt, updatedAt, completedAt, notifiedFor, deletedAt, ...input } = fixtures.schedule[index].task;
       assert.equal(taskInputSchema.safeParse(input).success, false, 'Cross-day/year fixture is intentionally renderer-only, not schema-valid persisted CRUD');

@@ -35,6 +35,11 @@ async function injectTopbarAiJob(application, page) {
 }
 const stamp = (day, time) => new Date(`${day}T${time}:00`).toISOString();
 const dateLabel = (day, year) => day.startsWith(`${year}-`) ? day.slice(5) : day;
+const calendarDay = value => {
+  if (!value || !value.includes('T')) return value ?? '';
+  const date = new Date(value);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
 const menu = (page, kind) => page.locator(kind === 'todo' ? '.ipop-todo' : '.ipop-sched');
 
 // Kept independent of production formatting helpers so expected strings cannot
@@ -48,9 +53,9 @@ export function topbarReadFixtures(today) {
   const secondDay = `${year}-01-02`;
   const longTitle = 'CI renderer-only 合成日期验收 · ' + '较长标题仍应保留完整日期和可点击标题区域 '.repeat(6);
   let sequence = 0;
-  const make = (title, kind, plannedDate, dueAt, endAt = null) => ({
+  const make = (title, kind, plannedDate, dateAt, endAt = null) => ({
     id: `00000000-0000-4000-8000-${String(++sequence).padStart(12, '0')}`,
-    title, kind, status: 'todo', priority: 'medium', plannedDate, dueAt, endAt,
+    title, kind, status: 'todo', priority: 'medium', dateAt: dateAt ?? (plannedDate || null), endAt,
     remindAt: null, categoryId: null, progress: null,
     note: 'Renderer-only synthetic read response; never persisted.',
     createdAt: stamp(startOfYear, '00:00'), updatedAt: stamp(startOfYear, '00:00'),
@@ -71,9 +76,9 @@ export function topbarReadFixtures(today) {
       entry(make('CI renderer-only 日程时间待定', 'meeting', today, null), `${today.slice(5)} · 时间待定`),
     ],
     edges: [
-      entry(make('CI renderer-only 无效待办时间', 'task', today, 'invalid-timestamp'), `${today.slice(5)} · 不限时`),
+      entry(make('CI renderer-only 无效待办时间', 'task', today, 'invalid-timestamp'), '未设置'),
       // A valid end avoids exercising unrelated legacy meetingEndAt callers.
-      entry(make('CI renderer-only 无效日程时间', 'meeting', today, 'invalid-timestamp', stamp(today, '15:00')), `${today.slice(5)} · 时间待定`),
+      entry(make('CI renderer-only 无效日程时间', 'meeting', today, 'invalid-timestamp', stamp(today, '15:00')), '未设置'),
       entry(make('CI renderer-only 无日期日程', 'meeting', '', null), '未设置'),
       entry(make('CI renderer-only 无效计划日期', 'task', 'invalid-date', null), '未设置'),
       entry(make('CI renderer-only 无效结束时间', 'meeting', today, stamp(today, '14:00'), 'invalid-timestamp'), `${today.slice(5)} 14:00–时间待定`),
@@ -257,6 +262,8 @@ async function createFixture(page, input) {
   await openMenu(page, input.kind === 'meeting' ? 'schedule' : 'todo');
   await menu(page, input.kind === 'meeting' ? 'schedule' : 'todo').getByRole('button', { name: input.kind === 'meeting' ? '+ 新增日程' : '+ 新增待办', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '新增事项', exact: true });
+  assert.ok(await dialog.evaluate(node => node.matches(':modal') && node.offsetHeight < 200), 'New item starts in a compact modal');
+  assert.deepEqual(await dialog.getByRole('button', { name: '创建', exact: true }).evaluate(node => [node.offsetWidth, node.offsetHeight]), [84, 32]);
   await dialog.getByRole('textbox', { name: input.kind === 'meeting' ? '日程名称' : '待办名称', exact: true }).fill(input.title);
   await dialog.getByRole('button', { name: /^时间安排：/ }).click();
   await dialog.locator('#task-date').click();
@@ -278,11 +285,12 @@ async function createFixture(page, input) {
   await dialog.getByRole('button', { name: '更多设置：未设置', exact: true }).click();
   await dialog.getByRole('textbox', { name: '备注 / 进展', exact: true }).fill('Synthetic topbar acceptance. Saved through the normal editor.');
   await dialog.getByRole('button', { name: '创建', exact: true }).click(); await dialog.waitFor({ state: 'hidden' });
+  assert.ok(await page.locator(input.kind === 'meeting' ? '.smore' : '.todopill').evaluate(node => node === document.activeElement), 'Saving from the topbar returns focus to its capsule');
   const matches = (await state(page)).tasks.filter(task => task.title === input.title);
   assert.equal(matches.length, 1, 'Topbar fixture must be created exactly once');
   const task = matches[0];
-  assert.equal(task.kind, input.kind); assert.equal(task.plannedDate, input.day);
-  assert.equal(task.dueAt, input.start ? stamp(input.day, input.start) : null);
+  assert.equal(task.kind, input.kind); assert.equal(calendarDay(task.dateAt), input.day);
+  assert.equal(task.dateAt, input.start ? stamp(input.day, input.start) : input.day);
   assert.equal(task.endAt, input.end ? stamp(input.day, input.end) : null);
   assert.equal(task.note, 'Synthetic topbar acceptance. Saved through the normal editor.');
   assert.ok(Number.isFinite(Date.parse(task.createdAt)) && Number.isFinite(Date.parse(task.updatedAt)));
@@ -347,11 +355,11 @@ export async function runTopbarDatesPilot({ application, page, check, screenshot
       { title: `CI topbar 日程 ${runId}`, kind: 'meeting', day: calendar.today, start: '14:00', end: '15:00' },
     ]) persisted.push(await createFixture(page, input));
   });
-  const todoEntries = persisted.map(task => ({ task, expected: task.dueAt
-    ? `${dateLabel(task.plannedDate, calendar.year)} ${task.kind === 'meeting' ? '14:00' : task.title.includes('逾期') ? '08:30' : '09:00'}`
-    : `${dateLabel(task.plannedDate, calendar.year)} · 不限时` }));
+  const todoEntries = persisted.map(task => ({ task, expected: task.dateAt?.includes('T')
+    ? `${dateLabel(calendarDay(task.dateAt), calendar.year)} ${task.kind === 'meeting' ? '14:00' : task.title.includes('逾期') ? '08:30' : '09:00'}`
+    : `${dateLabel(calendarDay(task.dateAt), calendar.year)} · 不限时` }));
   const meeting = persisted.find(task => task.kind === 'meeting');
-  const scheduleEntries = [{ task: meeting, expected: `${dateLabel(meeting.plannedDate, calendar.year)} 14:00–15:00` }];
+  const scheduleEntries = [{ task: meeting, expected: `${dateLabel(calendarDay(meeting.dateAt), calendar.year)} 14:00–15:00` }];
   await check('Topbar dates: real persisted labels, capsule parity and original click/dismiss/complete actions', async () => {
     await assertLabels(page, 'todo', todoEntries);
     await screenshot('topbar-dates-persisted.png');
@@ -380,7 +388,7 @@ export async function runTopbarDatesPilot({ application, page, check, screenshot
     await page.waitForFunction(id => window.workbench.todo.state().then(value => value.tasks.some(task => task.id === id && task.status === 'done')), persisted[1].id);
     await row.waitFor({ state: 'hidden' });
     const completed = (await state(page)).tasks.find(task => task.id === persisted[1].id);
-    for (const key of ['id', 'title', 'plannedDate', 'dueAt', 'createdAt', 'note']) assert.equal(completed[key], persisted[1][key]);
+    for (const key of ['id', 'title', 'dateAt', 'createdAt', 'note']) assert.equal(completed[key], persisted[1][key]);
     persisted[1] = completed;
     await dismiss(page);
   });

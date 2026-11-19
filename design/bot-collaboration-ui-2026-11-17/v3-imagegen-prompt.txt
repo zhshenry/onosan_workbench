@@ -1,0 +1,6 @@
+Use case: precise-object-edit.
+Edit target: the referenced high fidelity Chinese AI assistant UI mockup.
+Make ONE targeted change: REMOVE the entire two-button row labeled "小墨" and "日程" near the top of the RIGHT drawer. Do not replace it with tabs, dropdowns, chips, badges, a menu, or any other selector.
+Close the resulting vertical gap: move the existing "Ono ⇄ 日程" pair identity row and all right-drawer content below it upward by approximately 70px, leaving comfortable spacing below "Bot 间对话". Keep the pair avatars, pair names, scope text, two message bodies, sender names, times and waiting status exactly intact.
+Keep the entire accepted LEFT main conversation unchanged, including every word, button, avatar, message, link, deliverable, pending confirmation and composer. Preserve the right drawer width, header, close X, divider, font sizes, colors, bubble styling, current avatar identities and overall 1568x1003 composition.
+No other changes, no added controls, no text outside the UI. This remains a read-only Bot-to-Bot conversation viewer; the selected pair is determined by the clicked handoff event in the main conversation.

@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { CaretDown, Eye, EyeSlash, Lightning, LinkSimple, PencilSimple, Plus, Question, Trash } from '@phosphor-icons/react';
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
+import { CaretDown, Check, Eye, EyeSlash, Lightning, LinkSimple, PencilSimple, Plus, Question, Trash } from '@phosphor-icons/react';
 import { AI_PROVIDER_PRESETS, RLCD_PROVIDER_PRESETS, type AIModel, type AIProtocol, type AIProvider, type AIProviderKind, type RlcdModel, type RlcdProvider, type RlcdProviderKind } from '../../shared/todo-contracts';
 import { errorText, IconButton, Modal, Select as TodoSelect } from '../ui/controls';
 import type { AiConfig } from '../../shared/workbench-api';
-import { GameOptionsMenu } from './GameOptionsMenu';
 
 const api = window.workbench.ai;
 const PROTOCOL_OPTIONS = [
@@ -25,7 +24,7 @@ const RLCD_KIND_OPTIONS = [
 type Surface = 'llm' | 'rlcd';
 type ConfigProvider = AIProvider | RlcdProvider;
 type ConfigModel = AIModel | RlcdModel;
-type ConnectionDraft = { endpoint: string; protocol: AIProtocol; apiKey: string; clearKey: boolean };
+type ConnectionDraft = { name: string; endpoint: string; protocol: AIProtocol; apiKey: string };
 // Unsaved connection fields, including keys, stay in renderer memory only.
 const connectionDrafts = new Map<string, ConnectionDraft>();
 const protocolLabel = (protocol: AIProtocol) => PROTOCOL_OPTIONS.find(option => option.value === protocol)?.label ?? protocol;
@@ -39,20 +38,40 @@ function showConfigHelp(button: HTMLButtonElement, id: string) {
   tip.style.top = `${anchor.bottom + bounds.height <= window.innerHeight - 8 ? anchor.bottom : Math.max(8, anchor.top - bounds.height)}px`;
 }
 
-function ProviderEditor({ surface, provider, saved, close, inline = false, blocked = false, onBusyChange }: {
+function ProviderConfigPanel({ id, open, children }: { id: string; open: boolean; children: ReactNode }) {
+  const panel = useRef<HTMLDivElement>(null);
+  const [retained, setRetained] = useState(open);
+  useLayoutEffect(() => {
+    if (open) { setRetained(true); return; }
+    if (!retained) return;
+    const transition = panel.current?.getAnimations?.().find(animation =>
+      'transitionProperty' in animation && animation.transitionProperty === 'grid-template-rows');
+    if (!transition) { setRetained(false); return; }
+    let active = true;
+    const finish = () => { if (active) setRetained(false); };
+    void transition.finished.then(finish, finish);
+    return () => { active = false; };
+  }, [open, retained]);
+  return <div ref={panel} id={id} className="ai-config-surface-panel ai-provider-config-panel" data-open={open} inert={!open} aria-hidden={!open}>
+    <div className="ai-config-surface-clip">{(open || retained) && children}</div>
+  </div>;
+}
+
+function ProviderEditor({ surface, provider, saved, close, blocked = false, expanded = true, onBusyChange }: {
   surface: Surface; provider: ConfigProvider | null; saved(config: AiConfig): void; close(): void;
-  inline?: boolean; blocked?: boolean; onBusyChange?(busy: boolean): void;
+  blocked?: boolean; expanded?: boolean; onBusyChange?(busy: boolean): void;
 }) {
   const rlcd = surface === 'rlcd';
+  const inline = provider !== null;
   const draftKey = `${surface}:${provider?.id}`;
-  const prefix = inline ? `ai-provider-${surface}-${provider!.id}` : 'ai-provider';
+  const prefix = inline ? `ai-provider-${surface}-${provider.id}` : 'ai-provider';
   const preset = rlcd ? RLCD_PROVIDER_PRESETS.typesafe : AI_PROVIDER_PRESETS.deepseek;
-  const [initial, setInitial] = useState(() => ({
+  const [initial] = useState(() => ({
     kind: provider?.kind ?? (rlcd ? 'typesafe' : 'deepseek') as AIProviderKind | RlcdProviderKind,
     name: provider?.name ?? preset.name,
     endpoint: provider?.endpoint ?? preset.endpoint,
     protocol: provider?.protocol ?? preset.protocol,
-    apiKey: '', clearKey: false,
+    apiKey: '',
   }));
   const [draft, setDraft] = useState(() => inline ? { ...initial, ...connectionDrafts.get(draftKey) } : initial);
   const [visible, setVisible] = useState(false);
@@ -62,18 +81,20 @@ function ProviderEditor({ surface, provider, saved, close, inline = false, block
   const nameInput = useRef<HTMLInputElement>(null);
   const endpointInput = useRef<HTMLInputElement>(null);
   const dirty = JSON.stringify(draft) !== JSON.stringify(initial);
-  const disabled = busy || blocked;
+  const disabled = busy || blocked || !expanded;
+  const keyVisible = visible && expanded;
+  useLayoutEffect(() => { if (!expanded) setVisible(false); }, [expanded]);
   function updateDraft(next: typeof initial) {
     setDraft(next);
     if (inline) {
       if (JSON.stringify(next) === JSON.stringify(initial)) connectionDrafts.delete(draftKey);
-      else connectionDrafts.set(draftKey, { endpoint: next.endpoint, protocol: next.protocol, apiKey: next.apiKey, clearKey: next.clearKey });
+      else connectionDrafts.set(draftKey, { name: next.name, endpoint: next.endpoint, protocol: next.protocol, apiKey: next.apiKey });
     }
   }
 
   async function save(event: FormEvent) {
     event.preventDefault();
-    if (disabled) return;
+    if (disabled || (inline && !dirty)) return;
     setError(''); setInvalid(null);
     if (!draft.name.trim()) {
       setInvalid('name'); setError('请填写供应商名称。'); nameInput.current?.focus(); return;
@@ -88,30 +109,30 @@ function ProviderEditor({ surface, provider, saved, close, inline = false, block
     try {
       const next = await (rlcd ? api.saveRlcdProvider : api.saveProvider)({ ...draft, id: provider?.id, name: draft.name.trim(), endpoint: draft.endpoint.trim(), apiKey: draft.apiKey || undefined });
       if (inline) {
-        const persisted = (rlcd ? next.rlcdProviders : next.providers).find(item => item.id === provider!.id)!;
-        const clean = { ...draft, name: persisted.name, endpoint: persisted.endpoint, protocol: persisted.protocol, apiKey: '', clearKey: false };
-        connectionDrafts.delete(draftKey); setInitial(clean); setDraft(clean); setVisible(false);
+        connectionDrafts.delete(draftKey);
+        setDraft(initial);
+        setVisible(false);
       }
       saved(next);
+      close();
     }
     catch (cause) { setError(errorText(cause)); }
     finally { setBusy(false); onBusyChange?.(false); }
   }
 
-  const form = <form className={inline ? 'ai-provider-inline' : undefined} aria-label={inline ? `${provider!.name}连接配置` : undefined} aria-busy={disabled || undefined} noValidate onSubmit={event => void save(event)} onKeyDown={event => { if (event.key === 'Enter' && event.nativeEvent.isComposing) event.preventDefault(); }}>
+  const form = <form id={inline ? prefix : undefined} className={inline ? 'ai-provider-inline' : undefined} aria-label={inline ? `${provider.name}连接配置` : undefined} aria-busy={disabled || undefined} noValidate onSubmit={event => void save(event)} onKeyDown={event => { if (event.key === 'Enter' && event.nativeEvent.isComposing) event.preventDefault(); }}>
       <div className="ai-config-fields">
         {!provider && <div className="ai-config-field full">
           <label htmlFor={`${prefix}-kind`}>供应商类型</label>
           <TodoSelect id={`${prefix}-kind`} aria-label="供应商类型" value={draft.kind} disabled={disabled || Boolean(draft.apiKey)} options={rlcd ? RLCD_KIND_OPTIONS : LLM_KIND_OPTIONS}
             onChange={value => { const kind = value as AIProviderKind | RlcdProviderKind; updateDraft({ ...draft, kind, ...(rlcd ? RLCD_PROVIDER_PRESETS[kind as RlcdProviderKind] : AI_PROVIDER_PRESETS[kind as AIProviderKind]) }); }} />
-          <span className="field-help">预设会填入服务地址和协议；填写密钥后不能切换类型。</span>
         </div>}
-        {!inline && <div className="ai-config-field">
+        <div className="ai-config-field">
           <label htmlFor={`${prefix}-name`}>供应商名称</label>
           <input ref={nameInput} id={`${prefix}-name`} value={draft.name} maxLength={30} autoComplete="off" placeholder={rlcd ? '例如 TypeSafe' : '例如 DeepSeek'} disabled={disabled}
             aria-invalid={invalid === 'name'} aria-describedby={invalid === 'name' ? `${prefix}-error` : undefined}
             onChange={event => updateDraft({ ...draft, name: event.target.value })} />
-        </div>}
+        </div>
         <div className="ai-config-field">
           <label htmlFor={`${prefix}-protocol`}>{inline ? 'API 格式' : '服务协议'}</label>
           <TodoSelect id={`${prefix}-protocol`} aria-label={inline ? 'API 格式' : '服务协议'} title={protocolLabel(draft.protocol)} value={draft.protocol} options={PROTOCOL_OPTIONS} disabled={disabled}
@@ -124,85 +145,46 @@ function ProviderEditor({ surface, provider, saved, close, inline = false, block
             onChange={event => updateDraft({ ...draft, endpoint: event.target.value })} />
         </div>
         <div className="ai-config-field full ai-provider-key">
-          <label htmlFor={`${prefix}-key`}>API Key <span>{provider?.hasKey && !draft.clearKey ? '已保存' : '可选'}</span></label>
+          <label htmlFor={`${prefix}-key`}>API Key <span>{provider?.hasKey ? '已保存' : '可选'}</span></label>
           <div className="ai-config-secret">
-            <input id={`${prefix}-key`} type={visible ? 'text' : 'password'} value={draft.apiKey} maxLength={4000} autoComplete="new-password" disabled={disabled}
-              placeholder={provider?.hasKey && !draft.clearKey ? inline ? '••••••••••••••••' : '留空保留已保存的密钥' : '填写服务提供的密钥'} aria-label="API Key" title={provider?.hasKey && !draft.clearKey ? '留空保留已保存的密钥' : undefined} aria-describedby={!inline || draft.clearKey ? `${prefix}-key-help` : undefined}
-              onChange={event => updateDraft({ ...draft, apiKey: event.target.value, clearKey: false })} />
-            <IconButton label={visible ? '隐藏密钥' : '显示密钥'} aria-pressed={visible} disabled={disabled || !draft.apiKey} onClick={() => setVisible(!visible)}>
-              {visible ? <EyeSlash size={18} /> : <Eye size={18} />}
+            <input id={`${prefix}-key`} type={keyVisible ? 'text' : 'password'} value={draft.apiKey} maxLength={4000} autoComplete="new-password" disabled={disabled}
+              placeholder={provider?.hasKey ? '••••••••••••••••' : '填写服务提供的密钥'} aria-label="API Key" title={provider?.hasKey ? '留空保留已保存的密钥' : undefined}
+              onChange={event => updateDraft({ ...draft, apiKey: event.target.value })} />
+            <IconButton label={keyVisible ? '隐藏密钥' : '显示密钥'} aria-pressed={keyVisible} disabled={disabled || !draft.apiKey} onClick={() => setVisible(!visible)}>
+              {keyVisible ? <EyeSlash size={18} /> : <Eye size={18} />}
             </IconButton>
-          </div>
-          <div className="ai-config-key-help">
-            {(!inline || draft.clearKey) && <span className="field-help" id={`${prefix}-key-help`}>{draft.clearKey ? '保存后移除密钥。' : '同一供应商的模型共用密钥，保存在本机。'}</span>}
-            {provider?.hasKey && <button type="button" className="ai-config-link" disabled={disabled} onClick={() => updateDraft({ ...draft, apiKey: '', clearKey: !draft.clearKey })}>{draft.clearKey ? '保留原密钥' : '移除密钥'}</button>}
           </div>
         </div>
       </div>
       {(!inline || error) && <div className="ai-config-feedback" id={`${prefix}-error`} role="alert">{error}</div>}
-      <footer className="ai-config-footer">{!inline && <span>点击保存后生效</span>}<button className="ai-config-button primary" type="submit" disabled={disabled || inline && !dirty}>{busy ? '保存中…' : inline ? '保存配置' : '保存供应商'}</button></footer>
+      <footer className="ai-config-footer"><button className="ai-config-button primary" type="submit" disabled={disabled || inline && !dirty}>{busy ? '保存中…' : inline ? '保存配置' : '保存供应商'}</button></footer>
     </form>;
-  return inline ? form : <Modal title={provider ? `编辑${rlcd ? ' RLCD ' : ''}供应商` : `添加${rlcd ? ' RLCD ' : ''}供应商`} className="ai-config-dialog" dirty={dirty} busy={busy} close={close}>{form}</Modal>;
+  return inline ? form : <Modal title={`添加${rlcd ? ' RLCD ' : ''}供应商`} className="ai-config-dialog ai-provider-add-dialog" dirty={dirty} busy={busy} close={close}>{form}</Modal>;
 }
 
-function ModelEditor({ surface, provider, model, saved, close }: {
-  surface: Surface; provider: ConfigProvider; model?: ConfigModel; saved(config: AiConfig): void; close(): void;
-}) {
-  const rlcd = surface === 'rlcd';
-  const [name, setName] = useState(model?.name ?? '');
-  const [busy, setBusy] = useState<'save' | 'test' | null>(null);
-  const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
-  const input = useRef<HTMLInputElement>(null);
-  useEffect(() => { input.current?.focus(); }, []);
-
-  async function run(action: 'save' | 'test') {
-    if (busy) return;
-    setError(''); setNotice('');
-    if (!name.trim()) { setError('请填写模型名称或 ID。'); input.current?.focus(); return; }
-    setBusy(action);
-    try {
-      if (action === 'test') setNotice(await (rlcd ? api.testRlcd : api.test)({ providerId: provider.id, model: name.trim() }));
-      else saved(await (rlcd ? api.saveRlcdModel : api.saveModel)({ id: model?.id, providerId: provider.id, name: name.trim() }));
-    } catch (cause) { setError(errorText(cause)); }
-    finally { setBusy(null); }
-  }
-
-  return <Modal title={model ? `编辑${rlcd ? ' RLCD ' : ''}模型` : `添加${rlcd ? ' RLCD ' : ''}模型`} className="ai-config-dialog" dirty={name !== (model?.name ?? '')} close={() => { if (!busy) close(); }}>
-    <form noValidate onSubmit={event => { event.preventDefault(); void run('save'); }} onKeyDown={event => { if (event.key === 'Enter' && event.nativeEvent.isComposing) event.preventDefault(); }}>
-      <p className="ai-config-context">{provider.name} · {protocolLabel(provider.protocol)}</p>
-      <div className="ai-config-field">
-        <label htmlFor="ai-model-name">模型名称 / ID</label>
-        <input ref={input} id="ai-model-name" autoFocus value={name} maxLength={200} autoComplete="off" disabled={Boolean(busy)} placeholder={rlcd ? '例如决策模型 ID' : '例如 deepseek-chat'} aria-invalid={Boolean(error) && !name.trim()} aria-describedby="ai-model-feedback"
-          onChange={event => { setName(event.target.value); setError(''); setNotice(''); }} />
-        <span className="field-help">使用服务提供的模型 ID。测试连接不会保存配置。</span>
-      </div>
-      <div className="ai-config-feedback" id="ai-model-feedback">{error ? <span role="alert">{error}</span> : <span className="ai-config-success" role="status">{notice}</span>}</div>
-      <footer className="ai-config-footer">
-        <button type="button" className="ai-config-button" disabled={Boolean(busy)} onClick={() => void run('test')}><Lightning size={15} />{busy === 'test' ? '测试中…' : '测试连接'}</button>
-        <button type="submit" className="ai-config-button primary" disabled={Boolean(busy)}>{busy === 'save' ? '保存中…' : model ? '保存模型' : '添加模型'}</button>
-      </footer>
-    </form>
-  </Modal>;
-}
-
-type Editor = { type: 'provider'; surface: Surface; provider: ConfigProvider | null } | { type: 'model'; surface: Surface; provider: ConfigProvider; model?: ConfigModel };
+type ModelEdit = { surface: Surface; providerId: string; model?: ConfigModel; name: string; error?: string };
 type Probe = { surface: Surface; id: string; state: 'pending' | 'ok' | 'error'; message: string };
+type Removal = { surface: Surface; kind: 'provider' | 'model'; id: string; error?: string };
 
 export function AiSettings({ query }: { query: string }) {
   const [config, setConfig] = useState<AiConfig | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [editor, setEditor] = useState<Editor | null>(null);
+  const [addingProvider, setAddingProvider] = useState<Surface | null>(null);
+  const [editingProviders, setEditingProviders] = useState<Partial<Record<Surface, string>>>({});
+  const [modelEdit, setModelEdit] = useState<ModelEdit | null>(null);
   const [selectedProviders, setSelectedProviders] = useState<Partial<Record<Surface, string>>>({});
   const [sectionOpen, setSectionOpen] = useState<Record<Surface, boolean>>({ llm: true, rlcd: true });
   const [probe, setProbe] = useState<Probe | null>(null);
-  const [removing, setRemoving] = useState<{ title: string; detail: string; action(): Promise<AiConfig> } | null>(null);
-  const [removeError, setRemoveError] = useState('');
-  const keepButton = useRef<HTMLButtonElement>(null);
+  const [removal, setRemoval] = useState<Removal | null>(null);
+  const deleting = useRef(false);
+  const providerConfigButtons = useRef<Partial<Record<Surface, HTMLButtonElement | null>>>({});
+  const modelInput = useRef<HTMLInputElement>(null);
+  const modelSaveButton = useRef<HTMLButtonElement>(null);
+  const modelCancelButton = useRef<HTMLButtonElement>(null);
+  const savingModel = useRef(false);
 
-  useEffect(() => { if (removing) keepButton.current?.focus(); }, [removing]);
   useEffect(() => { if (query.trim()) setSectionOpen({ llm: true, rlcd: true }); }, [query]);
   useEffect(() => {
     const dismiss = () => document.querySelectorAll<HTMLElement>('.ai-config-help-tooltip:popover-open').forEach(tip => tip.hidePopover());
@@ -230,12 +212,84 @@ export function AiSettings({ query }: { query: string }) {
     finally { setLoading(false); }
   }
 
-  async function mutate(action: () => Promise<AiConfig>) {
+  async function mutate(action: () => Promise<AiConfig>, onError?: (message: string) => void) {
     if (busy) return;
-    setBusy(true); setError(''); setRemoveError('');
-    try { setConfig(await action()); setRemoving(null); setProbe(null); }
-    catch (cause) { if (removing) setRemoveError(errorText(cause)); else setError(errorText(cause)); }
+    setBusy(true); setError('');
+    try { setConfig(await action()); setProbe(null); }
+    catch (cause) { (onError ?? setError)(errorText(cause)); }
     finally { setBusy(false); }
+  }
+
+  async function removeConfig(target: Removal, confirmation: HTMLButtonElement) {
+    if (busy || deleting.current) return;
+    deleting.current = true;
+    setRemoval(target);
+    const { surface, kind, id } = target;
+    const removeProvider = surface === 'rlcd' ? api.removeRlcdProvider : api.removeProvider;
+    const removeModel = surface === 'rlcd' ? api.removeRlcdModel : api.removeModel;
+    try {
+      await mutate(async () => {
+        const next = await (kind === 'provider' ? removeProvider : removeModel)(id);
+        if (confirmation === document.activeElement) {
+          const focusTarget = kind === 'provider'
+            ? confirmation.closest('.ai-config-section')?.querySelector<HTMLButtonElement>('.ai-config-surface-toggle')
+            : confirmation.closest('.ai-config-models')?.querySelector('h3');
+          focusTarget?.focus({ preventScroll: true });
+        }
+        setRemoval(null);
+        return next;
+      }, error => setRemoval({ ...target, error }));
+    } finally { deleting.current = false; }
+  }
+
+  async function saveModelName(edit: ModelEdit, input = modelInput.current) {
+    if (busy || savingModel.current || !input) return;
+    const name = input.value.trim();
+    if (!name || name === edit.model?.name) { setModelEdit(null); return; }
+    savingModel.current = true;
+    try {
+      await mutate(async () => {
+        const next = await (edit.surface === 'rlcd' ? api.saveRlcdModel : api.saveModel)({ id: edit.model?.id, providerId: edit.providerId, name });
+        setModelEdit(null);
+        return next;
+      }, message => setModelEdit({ ...edit, name, error: message }));
+    } finally { savingModel.current = false; }
+  }
+
+  function modelEditKeepsFocus(target: EventTarget | null) {
+    return target !== null && (target === modelInput.current || target === modelSaveButton.current || target === modelCancelButton.current);
+  }
+
+  function discardNewModel(origin: HTMLElement) {
+    if (modelInput.current) modelInput.current.value = '';
+    const addButton = origin.closest('.ai-config-models')?.querySelector<HTMLButtonElement>('.ai-config-model-head button');
+    setModelEdit(null);
+    window.requestAnimationFrame(() => addButton?.focus({ preventScroll: true }));
+  }
+
+  function modelEditKeyDown(event: KeyboardEvent<HTMLElement>, edit: ModelEdit, saveOnEnter = false) {
+    const cancel = event.key === 'Escape';
+    if (!cancel && !(saveOnEnter && event.key === 'Enter')) return;
+    event.stopPropagation();
+    if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
+    event.preventDefault();
+    if (busy) return;
+    if (cancel && !edit.model) { discardNewModel(event.currentTarget); return; }
+    if (cancel && modelInput.current) modelInput.current.value = edit.model?.name ?? '';
+    event.currentTarget.blur();
+  }
+
+  function modelNameInput(edit: ModelEdit) {
+    return <div className="ai-config-model-editor">
+      <input ref={modelInput} className="ai-config-model-input" autoFocus defaultValue={edit.name} aria-label="模型名称 / ID" placeholder="填写模型名称 / ID"
+        maxLength={200} autoComplete="off" spellCheck={false} readOnly={busy}
+        aria-invalid={edit.error ? true : undefined} aria-describedby={edit.error ? 'ai-config-model-error' : undefined}
+        onBlur={event => {
+          if (!modelEditKeepsFocus(event.relatedTarget)) void saveModelName(edit, event.currentTarget);
+        }}
+        onKeyDown={event => modelEditKeyDown(event, edit, true)} />
+      {edit.error && <p id="ai-config-model-error" className="ai-config-model-error" role="alert">{edit.error}</p>}
+    </div>;
   }
 
   async function test(surface: Surface, model: ConfigModel) {
@@ -247,17 +301,15 @@ export function AiSettings({ query }: { query: string }) {
   }
 
   function saved(next: AiConfig) {
-    if (editor?.type === 'provider' && !editor.provider && config) {
-      const before = editor.surface === 'llm' ? config.providers : config.rlcdProviders;
-      const added = (editor.surface === 'llm' ? next.providers : next.rlcdProviders).find(provider => !before.some(previous => previous.id === provider.id));
-      if (added) setSelectedProviders(previous => ({ ...previous, [editor.surface]: added.id }));
+    if (addingProvider && config) {
+      const before = addingProvider === 'llm' ? config.providers : config.rlcdProviders;
+      const added = (addingProvider === 'llm' ? next.providers : next.rlcdProviders).find(provider => !before.some(previous => previous.id === provider.id));
+      if (added) setSelectedProviders(previous => ({ ...previous, [addingProvider]: added.id }));
     }
-    setConfig(next); setEditor(null); setError(''); setProbe(null);
+    setConfig(next); setError(''); setProbe(null);
   }
 
   if (!config) return <div className="settings-ai"><p className={error ? 'error' : 'help'} role={error ? 'alert' : 'status'}>{loading ? '正在读取 AI 配置…' : error}</p>{!loading && <button className="set-btn" onClick={() => void reload()}>重新加载</button>}</div>;
-  const current = config.models.find(model => model.id === config.activeModelId) ?? config.models[0];
-  const enableHint = !current ? '先添加供应商和模型，即可启用。' : config.aiEnabled ? `当前模型：${current.name}` : '开启后，使用当前模型进行对话与创作。';
   const needle = query.trim().toLocaleLowerCase();
   const includes = (value: string) => value.toLocaleLowerCase().includes(needle);
   const sections = [
@@ -266,16 +318,11 @@ export function AiSettings({ query }: { query: string }) {
   ];
 
   return <div className="settings-ai">
-    <div className="set-rows"><div className="set-row ai-config-enable">
-      <div className="txt"><b>启用 AI 助手</b><span title={enableHint}>{enableHint}</span></div>
-      <div className="ctl"><button type="button" className="toggle" role="switch" aria-label="启用 AI" aria-checked={config.aiEnabled} disabled={busy || !current}
-        onClick={() => void mutate(() => api.setEnabled(!config.aiEnabled))} /></div>
-    </div></div>
     {error && <div className="ai-config-status" role="alert"><span className="error">{error}</span></div>}
     {sections.map(section => {
       const surface = section.surface;
       const providers = section.providers.filter(provider => includes(`${provider.name} ${provider.endpoint} ${protocolLabel(provider.protocol)}`) || section.models.some(model => model.providerId === provider.id && includes(model.name)));
-      const preferred = selectedProviders[surface] ?? (surface === 'llm' ? current?.providerId : undefined);
+      const preferred = selectedProviders[surface];
       const selected = providers.find(provider => provider.id === preferred) ?? providers[0];
       return <section className="set-rows ai-config-section" key={surface} aria-label={section.title}>
         <div className="ai-config-heading"><div>
@@ -291,7 +338,7 @@ export function AiSettings({ query }: { query: string }) {
               <span id={`ai-config-help-${surface}`} className="ai-scope-tooltip ai-config-help-tooltip" popover="auto" role="tooltip">{section.help}</span>
             </span>
           </h2>
-        </div><button type="button" className="ai-config-button primary" disabled={busy || section.providers.length >= 8} title={section.providers.length >= 8 ? '最多保存 8 个供应商' : undefined} onClick={() => setEditor({ type: 'provider', surface, provider: null })}><Plus size={16} />添加供应商</button></div>
+        </div><button type="button" className="ai-config-button primary" disabled={busy || section.providers.length >= 8} title={section.providers.length >= 8 ? '最多保存 8 个供应商' : undefined} onClick={() => setAddingProvider(surface)}><Plus size={15} />添加供应商</button></div>
         <div className="ai-config-surface-panel" id={`ai-surface-${surface}`} data-open={sectionOpen[surface] ? 'true' : 'false'} inert={!sectionOpen[surface]} aria-hidden={!sectionOpen[surface]}>
         <div className="ai-config-surface-clip">
         {providers.length > 0 && <div className="ai-config-workspace">
@@ -299,38 +346,106 @@ export function AiSettings({ query }: { query: string }) {
             <div className="ai-config-provider-list">{providers.map(provider => <button type="button" key={provider.id} className="ai-config-provider-choice"
               aria-label={`查看${section.title}供应商 ${provider.name}`} title={provider.name} aria-pressed={provider.id === selected.id} aria-controls={`ai-provider-details-${surface}`}
               disabled={busy} onClick={() => setSelectedProviders(previous => ({ ...previous, [surface]: provider.id }))}>
-              <span className="ai-config-provider-symbol" aria-hidden="true"><LinkSimple size={20} /></span>
+              <LinkSimple className="ai-config-provider-symbol" size={17} aria-hidden="true" />
               <span className="ai-config-provider-label"><strong>{provider.name}</strong><small>{section.models.filter(model => model.providerId === provider.id).length} 个模型</small></span>
             </button>)}</div>
           </nav>
         <div className="ai-config-list" id={`ai-provider-details-${surface}`}>
           {providers.filter(provider => provider.id === selected.id).map(provider => {
             const models = section.models.filter(model => model.providerId === provider.id);
+            const edit = modelEdit?.surface === surface && modelEdit.providerId === provider.id ? modelEdit : null;
+            const modelRows = edit && !edit.model ? [...models, undefined] : models;
+            const editingConfig = editingProviders[surface] === provider.id;
+            const configPanelId = `ai-provider-${surface}-${provider.id}-panel`;
+            const providerDeleteId = `ai-provider-delete-${surface}-${provider.id}`;
+            const providerDeletion = removal?.kind === 'provider' && removal.surface === surface && removal.id === provider.id ? removal : null;
+            const removalImpact = [models.length ? `${models.length} 个模型` : '', provider.hasKey ? '已保存的密钥' : ''].filter(Boolean).join('和');
             return <article className="ai-config-card" key={provider.id} aria-label={`${provider.name} 配置`}>
               <header className="ai-config-card-head">
-                <div className="ai-config-provider-title"><LinkSimple size={23} aria-hidden="true" /><strong>{provider.name}</strong></div>
-                <div className="ai-config-card-actions">
-                  <GameOptionsMenu kind="project" label={`供应商 ${provider.name} 更多操作`} active={!busy && sectionOpen[surface]} context={`${surface}:${provider.id}:${query}`}>{close => <>
-                    <button type="button" role="menuitem" disabled={busy} onClick={() => { close(); setEditor({ type: 'provider', surface, provider }); }}><PencilSimple size={16} />编辑供应商</button>
-                    <button type="button" role="menuitem" className="ai-config-danger" disabled={busy} onClick={() => { close(); setRemoveError(''); setRemoving({ title: `删除${surface === 'rlcd' ? ' RLCD ' : ''}供应商「${provider.name}」？`, detail: `将移除该供应商、已保存的密钥及其 ${models.length} 个模型。此操作无法撤销。`, action: () => (surface === 'rlcd' ? api.removeRlcdProvider : api.removeProvider)(provider.id) }); }}><Trash size={16} />删除供应商</button>
-                  </>}</GameOptionsMenu>
-                </div>
-              </header>
-              <ProviderEditor key={`${provider.id}:${provider.name}:${provider.endpoint}:${provider.protocol}:${provider.hasKey}`} surface={surface} provider={provider} inline blocked={busy} onBusyChange={setBusy} saved={saved} close={() => setEditor(null)} />
-              <div className="ai-config-models" id={`ai-models-${provider.id}`}>
-                <div className="ai-config-model-head"><h3>模型列表 <span>{models.length}</span></h3><button type="button" className="ai-config-link" disabled={busy || models.length >= 8} title={models.length >= 8 ? '每个供应商最多保存 8 个模型' : undefined} onClick={() => setEditor({ type: 'model', surface, provider })}><Plus size={14} />添加模型</button></div>
-                {models.length ? <ul>{models.map(model => {
-                  const supportsImages = 'supportsImages' in model && model.supportsImages === true;
-                  return <li key={model.id}>
-                  <div className="ai-config-model-row"><span className="ai-config-model-name">{model.name}{surface === 'llm' && current?.id === model.id && <small className="ai-config-badge">当前使用</small>}</span>
-                    <div className="ai-config-model-actions">
-                      <IconButton label={`测试连接 ${model.name}`} title={probe?.surface === surface && probe.id === model.id && probe.state === 'pending' ? '测试中…' : '测试连接'} disabled={busy} onClick={() => void test(surface, model)}><Lightning size={16} /></IconButton>
-                      <IconButton label={`编辑模型 ${model.name}`} disabled={busy} onClick={() => setEditor({ type: 'model', surface, provider, model })}><PencilSimple size={16} /></IconButton>
-                      {surface === 'llm' && <IconButton label={`多模态 ${model.name}`} className="ai-config-multimodal" aria-pressed={supportsImages} title={supportsImages ? '多模态已开启（图片输入），点击关闭' : '多模态已关闭，点击开启图片输入'} disabled={busy} onClick={() => void mutate(() => api.saveModel({ id: model.id, providerId: model.providerId, name: model.name, supportsImages: !supportsImages }))}>{supportsImages ? <Eye size={18} /> : <EyeSlash size={18} />}</IconButton>}
-                      <GameOptionsMenu kind="project" label={`模型 ${model.name} 更多操作`} active={!busy && sectionOpen[surface]} context={`${surface}:${model.id}:${query}`}>{close => <button type="button" role="menuitem" className="ai-config-danger" disabled={busy} onClick={() => { close(); setRemoveError(''); setRemoving({ title: `删除${surface === 'rlcd' ? ' RLCD ' : ''}模型「${model.name}」？`, detail: '将移除该模型配置，供应商和其他模型会保留。', action: () => (surface === 'rlcd' ? api.removeRlcdModel : api.removeModel)(model.id) }); }}><Trash size={16} />删除模型</button>}</GameOptionsMenu>
+                <div className="ai-config-provider-title">
+                  <LinkSimple size={23} aria-hidden="true" />
+                  <div>
+                    <div className="ai-config-provider-name">
+                      <strong>{provider.name}</strong>
+                      <IconButton label={editingConfig ? '收起配置' : '编辑配置'} disabled={busy} aria-expanded={editingConfig}
+                        ref={element => { providerConfigButtons.current[surface] = element; }}
+                        aria-controls={configPanelId}
+                        onClick={() => setEditingProviders(previous => ({ ...previous, [surface]: editingConfig ? undefined : provider.id }))}>
+                        <PencilSimple size={16} aria-hidden="true" />
+                      </IconButton>
+                    </div>
+                    <div className="ai-config-surface-panel" data-open={!editingConfig} aria-hidden={editingConfig}>
+                      <div className="ai-config-surface-clip"><p className="ai-config-provider-summary">{protocolLabel(provider.protocol)} · {provider.hasKey ? '密钥已保存' : '未配置密钥'}</p></div>
                     </div>
                   </div>
-                  {probe?.surface === surface && probe.id === model.id && <p className={`ai-config-test-result ${probe.state}`} role={probe.state === 'error' ? 'alert' : 'status'}>{probe.state === 'ok' ? '连接成功 · ' : probe.state === 'error' ? '连接失败 · ' : ''}{probe.message}</p>}
+                </div>
+                <div className="ai-config-card-actions">
+                  <IconButton label={`删除供应商 ${provider.name}`} title="删除供应商" className="ai-config-danger" disabled={busy} popoverTarget={providerDeleteId}><Trash size={16} aria-hidden="true" /></IconButton>
+                  <div id={providerDeleteId} popover="auto" className="ai-config-delete-confirm ai-config-provider-delete-confirm">
+                    <p id={`${providerDeleteId}-detail`}>{removalImpact ? `同时删除 ${removalImpact}` : '删除后无法撤销'}</p>
+                    <button type="button" aria-label={`确认删除供应商 ${provider.name}`} aria-disabled={busy || undefined}
+                      aria-describedby={`${providerDeleteId}-detail${providerDeletion?.error ? ` ${providerDeleteId}-error` : ''}`}
+                      onClick={event => void removeConfig({ surface, kind: 'provider', id: provider.id }, event.currentTarget)}>
+                      {providerDeletion && !providerDeletion.error ? '删除中…' : '确认删除'}
+                    </button>
+                  </div>
+                </div>
+              </header>
+              {providerDeletion?.error && <p id={`${providerDeleteId}-error`} className="ai-config-test-result error" role="alert">{providerDeletion.error}</p>}
+              <ProviderConfigPanel id={configPanelId} open={editingConfig}>
+                <ProviderEditor key={`${provider.id}:${provider.name}:${provider.endpoint}:${provider.protocol}:${provider.hasKey}`} surface={surface} provider={provider} blocked={busy} expanded={editingConfig && sectionOpen[surface]} onBusyChange={setBusy} saved={saved} close={() => {
+                  const button = providerConfigButtons.current[surface];
+                  setEditingProviders(previous => ({ ...previous, [surface]: undefined }));
+                  window.requestAnimationFrame(() => button?.focus({ preventScroll: true }));
+                }} />
+              </ProviderConfigPanel>
+              <div className="ai-config-models" id={`ai-models-${provider.id}`}>
+                <div className="ai-config-model-head"><h3 tabIndex={-1}>模型列表 <span>{models.length}</span></h3><button type="button" className="ai-config-link" disabled={busy || models.length >= 8} title={models.length >= 8 ? '每个供应商最多保存 8 个模型' : undefined} onClick={() => setModelEdit({ surface, providerId: provider.id, name: '' })}><Plus size={14} />添加模型</button></div>
+                {modelRows.length ? <ul>{modelRows.map(model => {
+                  const deleteId = model ? `ai-model-delete-${surface}-${model.id}` : undefined;
+                  const deletion = model && removal?.kind === 'model' && removal.surface === surface && removal.id === model.id ? removal : null;
+                  const supportsImages = !!model && 'supportsImages' in model && model.supportsImages === true;
+                  const editing = edit && edit.model?.id === model?.id ? edit : null;
+                  const modelLabel = model ? ` ${model.name}` : '';
+                  const probing = model && probe?.surface === surface && probe.id === model.id ? probe : null;
+                  return <li key={model?.id ?? 'new-model'}>
+                  <div className="ai-config-model-row">
+                    <div className="ai-config-model-name">
+                      {model && <span className="ai-config-model-label" aria-hidden={!!editing || undefined}>{model.name}</span>}
+                      {editing && modelNameInput(editing)}
+                    </div>
+                    <div className="ai-config-model-actions">
+                      <IconButton label={`测试连接${modelLabel}`} title={probing?.state === 'pending' ? '测试中…' : model ? '测试连接' : '保存后可测试连接'} disabled={busy || !model} tabIndex={editing ? -1 : undefined} onClick={model ? () => void test(surface, model) : undefined}><Lightning size={16} /></IconButton>
+                      <IconButton label={`${editing ? '保存' : '编辑'}模型${modelLabel}`} ref={editing ? modelSaveButton : undefined} className={editing ? 'ai-config-model-save' : undefined} disabled={busy}
+                        onClick={() => {
+                          if (editing) void saveModelName(editing);
+                          else if (model) setModelEdit({ surface, providerId: provider.id, model, name: model.name });
+                        }}
+                        onBlur={editing ? event => {
+                          if (!modelEditKeepsFocus(event.relatedTarget)) void saveModelName(editing);
+                        } : undefined}
+                        onKeyDown={editing ? event => modelEditKeyDown(event, editing) : undefined}
+                      >{editing ? <Check size={16} /> : <PencilSimple size={16} />}</IconButton>
+                      {surface === 'llm' && <IconButton label={`多模态${modelLabel}`} className="ai-config-multimodal" aria-pressed={supportsImages}
+                        title={!model ? '保存后可设置图片输入' : supportsImages ? '多模态已开启（图片输入），点击关闭' : '多模态已关闭，点击开启图片输入'}
+                        disabled={busy || !model} onClick={model ? () => void mutate(() => api.saveModel({ id: model.id, providerId: model.providerId, name: model.name, supportsImages: !supportsImages })) : undefined}>{supportsImages ? <Eye size={18} /> : <EyeSlash size={18} />}</IconButton>}
+                      <IconButton label={model ? `删除模型${modelLabel}` : '取消新增模型'} title={model ? '删除模型' : '取消新增模型'} className="ai-config-danger" disabled={busy} popoverTarget={deleteId}
+                        ref={model ? undefined : modelCancelButton} onClick={model ? undefined : event => discardNewModel(event.currentTarget)}
+                        onBlur={!model && editing ? event => {
+                          if (!modelEditKeepsFocus(event.relatedTarget)) void saveModelName(editing);
+                        } : undefined}
+                        onKeyDown={!model && editing ? event => modelEditKeyDown(event, editing) : undefined}>
+                        <Trash size={16} aria-hidden="true" />
+                      </IconButton>
+                      {model && <button type="button" id={deleteId} popover="auto" className="ai-config-delete-confirm"
+                        aria-label={`确认删除模型 ${model.name}`} aria-disabled={busy || undefined} aria-describedby={deletion?.error ? `${deleteId}-error` : undefined}
+                        onClick={event => void removeConfig({ surface, kind: 'model', id: model.id }, event.currentTarget)}>
+                        {deletion && !deletion.error ? '删除中…' : '确认删除'}
+                      </button>}
+                    </div>
+                  </div>
+                  {probing && <p className={`ai-config-test-result ${probing.state}`} role={probing.state === 'error' ? 'alert' : 'status'}>{probing.state === 'ok' ? '连接成功 · ' : probing.state === 'error' ? '连接失败 · ' : ''}{probing.message}</p>}
+                  {deletion?.error && <p id={`${deleteId}-error`} className="ai-config-test-result error" role="alert">{deletion.error}</p>}
                 </li>;
                 })}</ul> : <p className="ai-config-empty-models">还没有模型，点击“添加模型”填写服务提供的模型 ID。</p>}
               </div>
@@ -343,13 +458,6 @@ export function AiSettings({ query }: { query: string }) {
         </div>
       </section>;
     })}
-    {editor?.type === 'provider' && <ProviderEditor surface={editor.surface} provider={editor.provider} saved={saved} close={() => setEditor(null)} />}
-    {editor?.type === 'model' && <ModelEditor surface={editor.surface} provider={editor.provider} model={editor.model} saved={saved} close={() => setEditor(null)} />}
-    {removing && <Modal title={removing.title} className="ai-config-dialog" close={() => { if (!busy) setRemoving(null); }}>
-      <div className="ai-config-confirm"><p>{removing.detail}</p>{removeError && <p className="error" role="alert">{removeError}</p>}<div className="ai-config-footer">
-        <button ref={keepButton} type="button" className="ai-config-button" autoFocus disabled={busy} onClick={() => setRemoving(null)}>保留</button>
-        <button type="button" className="ai-config-button danger" disabled={busy} onClick={() => void mutate(removing.action)}>{busy ? '删除中…' : '确认删除'}</button>
-      </div></div>
-    </Modal>}
+    {addingProvider && <ProviderEditor surface={addingProvider} provider={null} saved={saved} close={() => setAddingProvider(null)} />}
   </div>;
 }

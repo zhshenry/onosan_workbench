@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
+import { registerHooks } from 'node:module';
 import test from 'node:test';
-import { act, createElement } from 'react';
+import { Activity, act, createElement } from 'react';
 import { JSDOM } from 'jsdom';
 import { initialIslandData, type IslandState, type QuotaProvider } from '../shared/island-contracts';
 import type { AgentConnection } from '../shared/agent-message-contracts';
@@ -37,9 +38,14 @@ test('额度主从布局保留来源、密钥草稿和失败重试，异步操�
     quotaOfficial: async (id: string) => { officials.push(id); },
   } } });
   const { createRoot } = await import('react-dom/client');
+  const assets = registerHooks({ load(url, context, next) { return /\.(css|svg|png)$/.test(url) ? { format: 'module', source: 'export default "fixture-asset";', shortCircuit: true } : next(url, context); } });
+  t.after(() => assets.deregister());
   const { IslandSettingsSection } = await import('../src/views/IslandSettings');
+  const { AgentConnectionSettings } = await import('../src/views/AgentConnectionSettings');
   const root = createRoot(dom.window.document.getElementById('root')!);
-  const render = async (query = '') => act(async () => root.render(createElement(IslandSettingsSection, { query })));
+  const render = async (query = '', visible = true) => act(async () => {
+    root.render(createElement(Activity, { mode: visible ? 'visible' : 'hidden' }, createElement(AgentConnectionSettings, { query })));
+  });
   const button = (label: string) => [...dom.window.document.querySelectorAll<HTMLButtonElement>('button')].find(b => b.getAttribute('aria-label') === label || b.textContent === label)!;
   const click = async (label: string) => act(async () => button(label).click());
   const input = () => dom.window.document.querySelector<HTMLInputElement>('#island-zcode-key')!;
@@ -58,10 +64,13 @@ test('额度主从布局保留来源、密钥草稿和失败重试，异步操�
     await act(async () => root.unmount()); dom.window.close();
     names.forEach((name, i) => { if (previous[i]) Object.defineProperty(globalThis, name, previous[i]!); else Reflect.deleteProperty(globalThis, name); });
   });
-  await render(); await click('提醒');
+  await act(async () => root.render(createElement(IslandSettingsSection, { query: '' })));
+  assert.equal(button('提醒'), undefined);
+  await click('页面');
   assert.equal(dom.window.document.querySelector('[data-group="agents"]'), null, '不再显示独立消息连接卡片');
+  assert.equal(button('AI 额度'), undefined);
   assert.deepEqual(agentConnects, [], '浏览设置不会自动修改监听配置');
-  await click('AI 额度');
+  await render();
   assert.equal(reminder('Codex')!.textContent, '提醒状态未读取', '读取完成前不伪装成已关闭');
   assert.equal(button('Codex 消息提醒').disabled, true);
   await act(async () => finishAgentLoad(structuredClone(agentConnections)));
@@ -84,7 +93,9 @@ test('额度主从布局保留来源、密钥草稿和失败重试，异步操�
   await click('查看 Z Code 连接'); assert.equal(input().value, 'synthetic-draft'); assert.equal(input().type, 'password');
   await render('Cursor'); assert.equal(detail().dataset.provider, 'cursor');
   await render(); assert.equal(detail().dataset.provider, 'zcode'); assert.equal(input().value, 'synthetic-draft');
-  await click('小工具'); await click('AI 额度'); assert.equal(input().value, 'synthetic-draft');
+  await click('显示密钥');
+  await render('', false); await render();
+  assert.equal(input().value, 'synthetic-draft'); assert.equal(input().type, 'password');
   await click('刷新额度'); assert.equal(refreshes, 1); assert.equal(input().value, 'synthetic-draft');
   await submit(); assert.deepEqual(connects, [['zcode', 'synthetic-draft']]);
   assert.equal(input().disabled, true);

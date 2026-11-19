@@ -144,7 +144,7 @@ function AiTestView({ active, view, onNavigate }: { active: boolean; view: ViewI
           <button className="btn btn-pri" disabled={busy || isRunning || !config?.aiEnabled || !config.models.length} onClick={() => void perform(() => start())}><Play size={16} weight="fill" />{busy ? '处理中…' : '开始测试'}</button>
         </div>
       </header>
-      {config && (!config.aiEnabled || !config.models.length) && <div className="at-callout"><Flask size={18} /><span>先配置并启用模型服务，再选择参与对比的模型。</span><button className="btn btn-sec btn-sm" onClick={() => onNavigate('settings-ai')}>打开 AI 设置</button></div>}
+      {config && (!config.aiEnabled || !config.models.length) && <div className="at-callout"><Flask size={18} /><span>先添加对话模型，再选择参与对比的模型。</span><button className="btn btn-sec btn-sm" onClick={() => onNavigate('settings-ai')}>打开模型配置</button></div>}
       <section className="at-task" aria-label="统一测试配置">
         <div className="at-task-top">
           <input aria-label="测试任务名称" value={task.title} maxLength={80} onChange={event => change('title', event.target.value)} />
@@ -170,12 +170,12 @@ function AiTestView({ active, view, onNavigate }: { active: boolean; view: ViewI
       </section>
     </section>
     <section className="at-result-workspace" aria-label="测试结果" hidden={!showCompare}>
-      <div className="at-tabs" ref={tabStrip} role="tablist" aria-label="测试结果标签">
-        <button id="at-overview-tab" role="tab" aria-selected={selectedTab === 'overview'} aria-controls="at-overview" onClick={() => setSelectedTab('overview')}><Columns size={16} />对比总览</button>
+      <div className="at-tabs content-tabs" ref={tabStrip} role="tablist" aria-label="测试结果标签">
+        <button id="at-overview-tab" role="tab" aria-selected={selectedTab === 'overview'} aria-controls="at-overview" onClick={() => setSelectedTab('overview')}><Columns size={16} aria-hidden="true" />对比总览</button>
         {tabs.map(tab => {
           const key = tabKey(tab.runId, tab.laneId), run = runs[tab.runId], lane = run?.lanes.find(item => item.id === tab.laneId);
           return lane ? <div className={'at-result-tab' + (selectedTab === key ? ' is-selected' : '')} key={key}>
-            <button role="tab" aria-selected={selectedTab === key} aria-controls={'at-panel-' + lane.id} id={'at-tab-' + lane.id} onClick={() => setSelectedTab(key)} title={run.task.title + ' · ' + lane.model.name}><FileCode size={16} /><span>{run.task.title} · {lane.model.name}</span></button>
+            <button role="tab" aria-selected={selectedTab === key} aria-controls={'at-panel-' + lane.id} id={'at-tab-' + lane.id} onClick={() => setSelectedTab(key)} title={run.task.title + ' · ' + lane.model.name}><FileCode size={16} aria-hidden="true" /><span>{run.task.title} · {lane.model.name}</span></button>
             <button aria-label={'关闭 ' + lane.model.name + ' 结果标签'} onClick={() => closeTab(key)}><X size={13} /></button>
           </div> : null;
         })}
@@ -321,7 +321,7 @@ function ResultDetail({ run, lane, receive, perform }: { run: TestRun; lane: Tes
     </div></header>
     <Evidence lane={lane} />
     {lane.error && <p className="at-lane-error">{lane.error}</p>}
-    <div className="at-section-tabs" role="tablist" aria-label="结果内容">{[{ id: 'artifact', label: '产物' }, { id: 'reply', label: '原始回复' }, { id: 'input', label: '输入快照' }].map(item => <button key={item.id} role="tab" aria-selected={section === item.id} onClick={() => setSection(item.id)}>{item.label}</button>)}</div>
+    <div className="at-section-tabs content-tabs" role="tablist" aria-label="结果内容">{[{ id: 'artifact', label: '产物', icon: Cube }, { id: 'reply', label: '原始回复', icon: FileText }, { id: 'input', label: '输入快照', icon: FileCode }].map(item => <button key={item.id} role="tab" aria-selected={section === item.id} onClick={() => setSection(item.id)}><item.icon size={16} aria-hidden="true" />{item.label}</button>)}</div>
     <div className="at-artifact" hidden={section !== 'artifact'}>
       <div className="at-artifact-toolbar">
         <span className="at-readonly"><LockSimple size={13} />只读原始产物</span>

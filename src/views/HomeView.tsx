@@ -1,13 +1,16 @@
+import { hasTaskTime } from '../../shared/todo-date';
+import { isOverdue } from '../../shared/todo-format';
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type DragEvent, type HTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowRight, CalendarBlank, ChartBar, CheckCircle, CheckSquare, DotsSixVertical, Gift, LinkSimple, Pause, PencilSimple, Play, Plus, Sparkle, Timer, VideoCamera, X } from '@phosphor-icons/react';
 import type { ViewId } from '../../shared/contracts';
-import { DASHBOARD_KEY, WIDGET_IDS, WIDGET_ROWS, WIDGET_STYLES, WIDGET_WIDTHS, dashboardPlacements, defaultDashboard, defaultWidget, findDashboardSlot, moveDashboardWidget, readDashboard, resizeDashboardHeight, type DashboardLayout, type DashboardWidget, type WidgetId, type WidgetRows, type WidgetStyle, type WidgetWidth } from '../../shared/dashboard-layout';
+import { DASHBOARD_KEY, WIDGET_IDS, WIDGET_ROWS, WIDGET_STYLES, WIDGET_WIDTHS, dashboardPlacements, defaultDashboard, defaultWidget, findDashboardSlot, moveDashboardWidget, readDashboard, resizeDashboardPlacement, updateDashboardPlacement, type DashboardLayout, type DashboardWidget, type WidgetId, type WidgetPlacement, type WidgetRows, type WidgetStyle, type WidgetWidth } from '../../shared/dashboard-layout';
 import { dashboardSummary } from '../../shared/dashboard-summary';
 import { ISLAND_QUOTA_LABELS, focusRemaining, type QuotaProvider } from '../../shared/island-contracts';
 import { localDay, type Task } from '../../shared/todo-contracts';
 import type { TodoState } from '../../shared/workbench-api';
 import { IconButton, Segmented, errorText } from '../ui/controls';
-import { CheckinHomeCard, CheckinHomeContent, useCheckinState, type CheckinCardVariant } from './CheckinView';
+import { CheckinHomeCard, CheckinHomeContent, useCheckinState, type CheckinCardVariant, type OpenCheckinSettings } from './CheckinView';
 import { GameOptionsMenu } from './GameOptionsMenu';
 import { useIslandState } from './island-state';
 import './home-dashboard.css';
@@ -23,6 +26,7 @@ const widthOptions = WIDGET_WIDTHS.map((width, index) => ({ value: String(width)
 const rowOptions = WIDGET_ROWS.map(rows => ({ value: String(rows), label: `${rows} 行` }));
 const resizeEdges = { left: '左', right: '右', top: '上', bottom: '下' } as const;
 type ResizeEdge = keyof typeof resizeEdges;
+type ResizeStop = { value: number; pixels: number; layout: DashboardLayout };
 const noAction = () => {};
 const timeLabel = (at: string) => new Date(at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
 const quotaLogos = {
@@ -44,15 +48,15 @@ function TodayContent({ data, clock, style, rows = 2, navigate, openTask }: { da
   const summary = dashboardSummary(data?.tasks ?? [], clock), maximum = Math.max(1, ...summary.days.map(day => day.completed + day.pending));
   function taskRow(task: Task, completed = false) {
     const Icon = completed ? CheckCircle : task.kind === 'meeting' ? VideoCamera : CheckSquare;
-    const at = completed ? task.completedAt! : task.dueAt, date = at ? new Date(at) : null;
-    const caption = completed ? `${localDay(date!) === summary.today ? '今天' : `${date!.getMonth() + 1}/${date!.getDate()}`} ${timeLabel(at!)}` : `${task.kind === 'meeting' ? '日程' : task.plannedDate < summary.today ? '逾期待办' : '待办'}${at ? ` · ${timeLabel(at)}` : ''}`;
+    const at = completed ? task.completedAt! : hasTaskTime(task.dateAt) ? task.dateAt : null, date = at ? new Date(at) : null;
+    const caption = completed ? `${localDay(date!) === summary.today ? '今天' : `${date!.getMonth() + 1}/${date!.getDate()}`} ${timeLabel(at!)}` : `${task.kind === 'meeting' ? '日程' : isOverdue(task, clock.getTime()) ? '逾期待办' : '待办'}${at ? ` · ${timeLabel(at)}` : ''}`;
     const content = <><Icon size={18} /><span><strong>{task.title}</strong><small>{caption}</small></span></>;
     return openTask ? <button className="dashboard-task" key={task.id} aria-label={`${task.title}，${caption}`} title={task.title} onClick={() => openTask(task)}>{content}</button> : <div className="dashboard-task" key={task.id}>{content}</div>;
   }
   return <div className={`dashboard-today dashboard-${style}`}>
     {!data ? <p className="dashboard-muted">正在读取日程待办…</p> : style === 'history' ? <>
-      <div className="dashboard-summary-heading"><strong>近7天 · 按计划日期</strong><div className="dashboard-chart-legend"><span data-series="completed">已完成 {summary.plannedCompleted}</span><span data-series="pending">待办 {summary.plannedPending}</span></div></div>
-      <div className="dashboard-history-bars" role="img" aria-label={`按计划日期，${summary.days.map(day => `${day.date} 已完成 ${day.completed} 项、待办 ${day.pending} 项`).join('；')}`}>
+      <div className="dashboard-summary-heading"><strong>近7天 · 按事项日期</strong><div className="dashboard-chart-legend"><span data-series="completed">已完成 {summary.plannedCompleted}</span><span data-series="pending">待办 {summary.plannedPending}</span></div></div>
+      <div className="dashboard-history-bars" role="img" aria-label={`按事项日期，${summary.days.map(day => `${day.date} 已完成 ${day.completed} 项、待办 ${day.pending} 项`).join('；')}`}>
         {summary.days.map(day => <div className="dashboard-history-day" key={day.date} data-date={day.date} data-today={day.date === summary.today} title={`${day.date} · 已完成 ${day.completed} 项 · 待办 ${day.pending} 项`}><span>{day.completed + day.pending}</span><div className="dashboard-history-stack" data-empty={!day.completed && !day.pending} style={{ '--bar-share': (day.completed + day.pending) / maximum } as CSSProperties}>{day.pending ? <i data-series="pending" style={{ flex: day.pending }} /> : null}{day.completed ? <i data-series="completed" style={{ flex: day.completed }} /> : null}</div><small>{day.date === summary.today ? '今' : ['日', '一', '二', '三', '四', '五', '六'][day.weekday]}</small></div>)}
       </div>
     </> : <><strong className="dashboard-section-title">{style === 'agenda' ? '今天要做什么' : '最近做了什么'}</strong><div className="dashboard-task-list">
@@ -133,15 +137,25 @@ function QuotaWidget({ variant, settings }: { variant: WidgetStyle; settings(): 
 function DashboardCard({ widget, children, drag, tools, resize, ...props }: { widget: DashboardWidget; children: ReactNode; drag?: ReactNode; tools?: ReactNode; resize?: ReactNode } & HTMLAttributes<HTMLElement>) {
   const Icon = widgetIcons[widget.id];
   return <article {...props} className="dashboard-widget" data-widget={widget.id} data-width={widget.width} data-rows={widget.rows} data-style={widget.style} style={{ '--widget-span': widget.width, '--widget-rows': widget.rows, '--widget-top-offset': widget.topOffset ?? 0, ...props.style } as CSSProperties}>
-    <header className="dashboard-widget-heading"><Icon size={19} /><h2>{widgetNames[widget.id]}</h2><div className="dashboard-widget-tools">{drag}{tools}</div></header>
+    <header className="dashboard-widget-heading"><Icon size={19} /><h2 title={widgetNames[widget.id]}>{widgetNames[widget.id]}</h2><div className="dashboard-widget-tools">{drag}{tools}</div></header>
     <div className="dashboard-widget-body" inert={!!drag}>{children}</div>{resize}
   </article>;
 }
 
+function measureDashboardCanvas(grid: HTMLDivElement) {
+  const style = getComputedStyle(grid);
+  return {
+    width: parseFloat(style.width) || grid.clientWidth,
+    columns: style.display === 'grid' ? 6 : 1,
+    step: parseFloat(style.getPropertyValue('--widget-row-step')),
+    base: parseFloat(style.getPropertyValue('--widget-base-height')),
+    gap: parseFloat(style.columnGap),
+  };
+}
+
 function widgetPixelWidth(grid: HTMLDivElement, width: WidgetWidth) {
-  const style = getComputedStyle(grid), tracks = style.display === 'grid' ? style.gridTemplateColumns.split(' ').map(Number.parseFloat) : [];
-  const span = tracks.length === 2 ? width >= 4 ? 2 : 1 : width;
-  return tracks.length ? tracks.slice(0, span).reduce((total, track) => total + track, 0) + parseFloat(style.columnGap) * (span - 1) : grid.clientWidth;
+  const canvas = measureDashboardCanvas(grid);
+  return (canvas.width + canvas.gap) * Math.min(width, canvas.columns) / canvas.columns - canvas.gap;
 }
 
 function DashboardPreview({ widget, grid, children }: { widget: DashboardWidget; grid: HTMLDivElement; children: ReactNode }) {
@@ -161,8 +175,9 @@ function DashboardPreview({ widget, grid, children }: { widget: DashboardWidget;
   return <div ref={viewport} className="dashboard-style-preview" inert aria-hidden="true"><div ref={canvas} className="dashboard-preview-canvas"><DashboardCard widget={widget}>{children}</DashboardCard></div></div>;
 }
 
-function DashboardCatalog({ initial, trigger, panelId, grid, layout, data, clock, close, apply }: { initial: CatalogWidgetId; trigger: HTMLButtonElement; panelId: string; grid: HTMLDivElement; layout: DashboardLayout; data: TodoState | null; clock: Date; close(): void; apply(widget: DashboardWidget): void }) {
+function DashboardCatalog({ initial, trigger, panelId, grid, layout, data, clock, close, apply }: { initial: CatalogWidgetId; trigger: HTMLButtonElement; panelId: string; grid: HTMLDivElement; layout: DashboardLayout; data: TodoState | null; clock: Date; close(): void; apply(widget: DashboardWidget): string | void }) {
   const panel = useRef<HTMLDivElement>(null);
+  const [sizeError, setSizeError] = useState('');
   const [id, setId] = useState(initial);
   const scheduleChoice = useRef<CatalogWidgetId>(initial === 'schedule-stats' ? 'schedule-stats' : 'today');
   const [choices, setChoices] = useState(() => Object.fromEntries(CATALOG_IDS.map(key => {
@@ -197,7 +212,9 @@ function DashboardCatalog({ initial, trigger, panelId, grid, layout, data, clock
       if (Math.abs(anchor.top - openedAt.top) > 1 || Math.abs(anchor.left - openedAt.left) > 1) close();
     };
     const observer = new ResizeObserver(place);
-    observer.observe(element); observer.observe(trigger.closest('.content')!);
+    const header = trigger.closest('.bot-workspace-header');
+    observer.observe(element);
+    if (header) observer.observe(header);
     document.addEventListener('pointerdown', pointer);
     window.addEventListener('keydown', escape, true);
     window.addEventListener('resize', place);
@@ -212,6 +229,7 @@ function DashboardCatalog({ initial, trigger, panelId, grid, layout, data, clock
     };
   }, [trigger]);
   function update(patch: Partial<DashboardWidget>, key = id) {
+    setSizeError('');
     setChoices(current => ({ ...current, [key]: { ...current[key], ...patch } })); setId(key);
     if (key === 'today' || key === 'schedule-stats') scheduleChoice.current = key;
   }
@@ -223,35 +241,45 @@ function DashboardCatalog({ initial, trigger, panelId, grid, layout, data, clock
   }
   return <div ref={panel} id={panelId} className="dashboard-catalog-popover" popover="manual" role="dialog" aria-label="添加卡片">
     <header className="dashboard-catalog-heading"><h2>添加卡片</h2><IconButton label="关闭" onClick={dismiss}><X size={18} /></IconButton></header>
-    <div className="dashboard-catalog"><nav className="dashboard-catalog-nav" aria-label="卡片类型">{CATALOG_IDS.filter(key => key !== 'schedule-stats').map(key => { const Icon = widgetIcons[key]; return <button key={key} type="button" aria-pressed={key === 'today' ? schedule : id === key} onClick={() => setId(key === 'today' ? scheduleChoice.current : key)}><Icon size={18} />{key === 'today' ? '日程待办' : widgetNames[key]}</button>; })}</nav>
+    <div className="dashboard-catalog"><nav className="dashboard-catalog-nav" aria-label="卡片类型">{CATALOG_IDS.filter(key => key !== 'schedule-stats').map(key => { const Icon = widgetIcons[key]; return <button key={key} type="button" aria-pressed={key === 'today' ? schedule : id === key} onClick={() => { setSizeError(''); setId(key === 'today' ? scheduleChoice.current : key); }}><Icon size={18} />{key === 'today' ? '日程待办' : widgetNames[key]}</button>; })}</nav>
       <div className="dashboard-catalog-content"><h3>{name}</h3><div className="dashboard-style-options" style={{ '--style-count': styles.length } as CSSProperties} role="group" aria-label="展示样式">{styles.map(style => {
         const key = style === 'counts' ? 'schedule-stats' : schedule ? 'today' : id, widget = { ...choices[key], style };
         return <div className="dashboard-style-option" key={style}><DashboardPreview widget={widget} grid={grid}>{preview(widget)}</DashboardPreview><button className="dashboard-style-choice" type="button" aria-label={`${name}，${styleNames[style]}样式`} aria-pressed={selected.style === style} onClick={() => update({ style }, key)}><span>{styleNames[style]}</span><CheckCircle size={15} weight="fill" aria-hidden="true" /></button></div>;
       })}</div>
         {sourceError ? <p className="field-error" role="alert">{sourceError}</p> : null}
+        {sizeError && <p className="field-error" role="alert">{sizeError}</p>}
         <div className="dashboard-size-controls"><div><span>卡片宽度</span><Segmented aria-label="卡片宽度" value={String(selected.width)} onChange={value => update({ width: Number(value) as WidgetWidth })} options={widthOptions} /></div><div><span>卡片高度</span><Segmented aria-label="卡片高度" value={String(selected.rows)} onChange={value => update({ rows: Number(value) as DashboardWidget['rows'] })} options={rowOptions} /></div></div>
       </div>
-    </div><div className="dashboard-catalog-actions"><button type="button" className="btn btn-sec btn-sm" onClick={dismiss}>取消</button><button type="button" className="btn btn-pri btn-sm" onClick={() => apply(selected)}>{exists ? '应用设置' : '添加到看板'}</button></div>
+    </div><div className="dashboard-catalog-actions"><button type="button" className="btn btn-sec btn-sm" onClick={dismiss}>取消</button><button type="button" className="btn btn-pri btn-sm" onClick={() => { const error = apply(selected); if (error) setSizeError(error); }}>{exists ? '应用设置' : '添加到看板'}</button></div>
   </div>;
 }
 
-export function HomeView({ data, clock, userName, onNavigate, onOpenTask, onPending }: {
-  data: TodoState | null; clock: Date; userName: string; onNavigate(view: ViewId): void; onOpenTask(task: Task): void; onPending(message: string): void;
+export function HomeView({ data, clock, userName, workspaceHeader, onNavigate, onOpenTask, onPending, onOpenCheckinSettings }: {
+  data: TodoState | null; clock: Date; userName: string; workspaceHeader: HTMLDivElement | null; onNavigate(view: ViewId): void; onOpenTask(task: Task): void; onPending(message: string): void;
+  onOpenCheckinSettings?: OpenCheckinSettings;
 }) {
   const [saved, setSaved] = useState(() => { try { return readDashboard(localStorage.getItem(DASHBOARD_KEY)); } catch { return defaultDashboard(); } });
   const [draft, setDraft] = useState<DashboardLayout | null>(null), [catalog, setCatalog] = useState<{ initial: CatalogWidgetId; trigger: HTMLButtonElement } | null>(null);
   const catalogId = useId();
   const addButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => { if (!workspaceHeader) setCatalog(null); }, [workspaceHeader]);
   const [dragged, setDragged] = useState<WidgetId | null>(null), [dropTarget, setDropTarget] = useState<WidgetId | null>(null), [announcement, setAnnouncement] = useState('');
   const [gapTarget, setGapTarget] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const dragOrigin = useRef({ x: 0, y: 0 });
-  const [canvas, setCanvas] = useState<{ width: number; columns: number; step: number; base: number; gap: number } | null>(null);
-  const resizing = useRef<{ widget: DashboardWidget; anchor: DashboardWidget; edge: ResizeEdge; handle: HTMLButtonElement; pointerId: number; origin: number; pixels: number; value: number; stops: { value: number; pixels: number }[] } | null>(null), grid = useRef<HTMLDivElement>(null);
+  const [canvas, setCanvas] = useState<ReturnType<typeof measureDashboardCanvas> | null>(null);
+  const resizing = useRef<{
+    widget: DashboardWidget; original: DashboardLayout; edge: ResizeEdge; handle: HTMLButtonElement;
+    pointerId: number; origin: number; initial: ResizeStop; value: number; stops: ResizeStop[];
+    canvas: ReturnType<typeof measureDashboardCanvas>;
+  } | null>(null), grid = useRef<HTMLDivElement>(null);
   const [activeResize, setActiveResize] = useState<{ id: WidgetId; edge: ResizeEdge } | null>(null);
+  const [resizeCanvasHeight, setResizeCanvasHeight] = useState(0);
   useLayoutEffect(() => {
     const element = grid.current!;
     const measure = () => {
-      const style = getComputedStyle(element), next = { width: element.clientWidth, columns: style.display === 'grid' ? style.gridTemplateColumns.split(' ').length : 1, step: parseFloat(style.getPropertyValue('--widget-row-step')), base: parseFloat(style.getPropertyValue('--widget-base-height')), gap: parseFloat(style.columnGap) };
+      const next = measureDashboardCanvas(element);
+      const capture = resizing.current;
+      if (capture && (capture.canvas.width !== next.width || capture.canvas.columns !== next.columns)) endResize(true);
       setCanvas(current => JSON.stringify(current) === JSON.stringify(next) ? current : next);
     };
     measure(); const observer = new ResizeObserver(measure); observer.observe(element);
@@ -264,41 +292,68 @@ export function HomeView({ data, clock, userName, onNavigate, onOpenTask, onPend
     return () => window.removeEventListener('keydown', cancel, true);
   }, [activeResize]);
   const layout = draft ?? saved, editing = draft !== null;
-  const positioned = layout.widgets.some(widget => widget.position), placements = canvas ? dashboardPlacements(layout.widgets, canvas.columns, canvas.step, canvas.base, canvas.gap) : [];
+  const singleColumn = canvas?.columns === 1;
+  const positioned = layout.widgets.some(widget => widget.position || (singleColumn && widget.singleColumnTop !== undefined)), placements = canvas ? dashboardPlacements(layout.widgets, canvas.columns, canvas.step, canvas.base, canvas.gap) : [];
   const beginEdit = () => setDraft(current => current ?? structuredClone(saved));
-  const changeSize = (id: WidgetId, size: Partial<Pick<DashboardWidget, 'width' | 'rows' | 'topOffset' | 'position'>>) => setDraft(current => current ? { ...current, widgets: current.widgets.map(item => item.id === id ? { ...item, ...size } : item) } : current);
-  function heightAnchor(widget: DashboardWidget): DashboardWidget {
-    const place = placements.find(item => item.id === widget.id);
-    return positioned && canvas && place ? { ...widget, topOffset: undefined, position: { column: widget.position?.column ?? Math.round(place.column * 6 / canvas.columns), top: place.top / canvas.step } } : widget;
+  const gridMinHeight = Math.max(editing ? resizeCanvasHeight : 0, ...(positioned ? placements.map(item => item.top + item.height) : []));
+  function keepResizeCanvasHeight() {
+    const height = grid.current?.clientHeight ?? 0;
+    setResizeCanvasHeight(previous => Math.max(previous, height));
   }
-  function changeHeight(widget: DashboardWidget, rows: WidgetRows, edge: 'top' | 'bottom') {
-    const next = resizeDashboardHeight(widget, rows, edge);
-    changeSize(widget.id, { rows: next.rows, topOffset: next.topOffset, position: next.position });
+  function readPlacements(element: HTMLDivElement, frame: ReturnType<typeof measureDashboardCanvas>): WidgetPlacement[] {
+    const bounds = element.getBoundingClientRect(), unit = (frame.width + frame.gap) / frame.columns;
+    return layout.widgets.map(widget => {
+      const rect = element.querySelector<HTMLElement>(`[data-widget="${widget.id}"]`)!.getBoundingClientRect();
+      return {
+        id: widget.id, column: Math.round((rect.left - bounds.left) / unit),
+        span: Math.round((rect.width + frame.gap) / unit), top: rect.top - bounds.top, height: rect.height,
+      };
+    });
   }
-  function openCatalog(trigger: HTMLButtonElement) { if (catalog?.trigger === trigger) { setCatalog(null); return; } beginEdit(); setCatalog({ initial: CATALOG_IDS.find(key => !layout.widgets.some(widget => widget.id === key)) ?? 'today', trigger }); }
+  function atSize(widget: DashboardWidget, edge: ResizeEdge, origin: WidgetPlacement, occupied: WidgetPlacement[], frame: ReturnType<typeof measureDashboardCanvas>) {
+    const slot = resizeDashboardPlacement(origin, widget, edge, occupied, frame);
+    if (!slot) return null;
+    if (frame.columns === 1 && Math.abs(slot.height - origin.height) < 0.02) {
+      return { ...layout, widgets: layout.widgets.map(item => item.id === widget.id ? widget : item) };
+    }
+    return updateDashboardPlacement(layout, widget, slot, occupied, frame);
+  }
+  function applyCatalogWidget(widget: DashboardWidget) {
+    const existing = layout.widgets.find(item => item.id === widget.id);
+    let next = { ...layout, widgets: existing ? layout.widgets.map(item => item.id === widget.id ? widget : item) : [...layout.widgets, widget] };
+    if (existing && (existing.width !== widget.width || existing.rows !== widget.rows) && canvas && grid.current) {
+      const occupied = readPlacements(grid.current, canvas);
+      const resized = atSize(widget, 'right', occupied.find(item => item.id === widget.id)!, occupied, canvas);
+      if (!resized) return '当前卡片周围空间不足，请选择较小尺寸或先移动卡片。';
+      keepResizeCanvasHeight();
+      next = resized;
+    }
+    setDraft(current => current ? next : current);
+    setCatalog(null);
+    setAnnouncement(`${widgetNames[widget.id]}卡片设置已应用，点击完成保存布局`);
+    requestAnimationFrame(() => addButton.current?.focus({ preventScroll: true }));
+  }
+  function openCatalog(trigger: HTMLButtonElement) { if (resizing.current) return; if (catalog?.trigger === trigger) { setCatalog(null); return; } beginEdit(); setCatalog({ initial: CATALOG_IDS.find(key => !layout.widgets.some(widget => widget.id === key)) ?? 'today', trigger }); }
   function finish() {
     if (!draft) return;
     endResize();
-    try { localStorage.setItem(DASHBOARD_KEY, JSON.stringify(draft)); setSaved(draft); setDraft(null); setAnnouncement('看板布局已保存'); } catch { onPending('看板布局保存失败，请重试'); }
+    try { localStorage.setItem(DASHBOARD_KEY, JSON.stringify(draft)); setSaved(draft); setDraft(null); setResizeCanvasHeight(0); setAnnouncement('看板布局已保存'); } catch { onPending('看板布局保存失败，请重试'); }
   }
   function move(id: WidgetId, target: WidgetId) { setDraft(current => current ? moveDashboardWidget(current, id, target) : current); setAnnouncement(`${widgetNames[id]}已移动`); }
   function placeInCanvas(id: WidgetId, column: number, top: number, commit: boolean) {
     if (!canvas || !grid.current) return;
-    const bounds = grid.current.getBoundingClientRect(), unit = (canvas.width + canvas.gap) / canvas.columns;
-    const occupied = layout.widgets.map(widget => {
-      const rect = grid.current!.querySelector<HTMLElement>(`[data-widget="${widget.id}"]`)!.getBoundingClientRect();
-      return { id: widget.id, column: Math.round((rect.left - bounds.left) / unit), span: Math.round((rect.width + canvas.gap) / unit), top: rect.top - bounds.top, height: rect.height };
-    });
+    const unit = (canvas.width + canvas.gap) / canvas.columns;
+    const occupied = readPlacements(grid.current, canvas);
     const source = occupied.find(item => item.id === id)!;
     // 拖动已吸附网格；碰撞后保留卡片间距，避免再次跳过可用行。
     const slot = findDashboardSlot(Math.max(0, Math.min(canvas.columns - source.span, column)), Math.max(0, top), source.span, source.height, occupied.filter(item => item.id !== id), canvas.gap);
     if (commit) {
-      const widgets = layout.widgets.map(widget => {
-        if (widget.id !== id && widget.position) return widget;
-        const point = widget.id === id ? slot : occupied.find(item => item.id === widget.id)!;
-        return { ...widget, topOffset: undefined, position: { column: Math.round(point.column * 6 / canvas.columns), top: Math.round(point.top / canvas.step * 10000) / 10000 } };
-      }).sort((a, b) => a.position!.top - b.position!.top || a.position!.column - b.position!.column);
-      setDraft(current => current ? { ...current, widgets } : current); setAnnouncement(`${widgetNames[id]}已放置，点击完成保存布局`); setDragged(null); setDropTarget(null); setGapTarget(null);
+      const widget = layout.widgets.find(item => item.id === id)!;
+      const next = updateDashboardPlacement(layout, widget, { ...source, ...slot }, occupied, canvas);
+      const widgets = next.widgets.sort((a, b) => singleColumn
+        ? a.singleColumnTop! - b.singleColumnTop!
+        : a.position!.top - b.position!.top || a.position!.column - b.position!.column);
+      setDraft(current => current ? { ...next, widgets } : current); setAnnouncement(`${widgetNames[id]}已放置，点击完成保存布局`); setDragged(null); setDropTarget(null); setGapTarget(null);
     } else {
       const width = unit * source.span - canvas.gap;
       setDropTarget(null); setGapTarget({ left: slot.column * unit + width / 2, top: slot.top + source.height / 2, width, height: source.height });
@@ -320,68 +375,105 @@ export function HomeView({ data, clock, userName, onNavigate, onOpenTask, onPend
     event.preventDefault(); const index = layout.widgets.findIndex(item => item.id === id), delta = ['ArrowUp', 'ArrowLeft'].includes(event.key) ? -1 : 1;
     const target = layout.widgets[index + delta]; if (target) move(id, target.id);
   }
-  function heightStops(widget: DashboardWidget, edge: ResizeEdge) {
-    return WIDGET_ROWS.filter(value => {
-      if (edge !== 'top') return true;
-      const place = placements.find(item => item.id === widget.id);
-      if (value > widget.rows + (positioned && canvas && place ? place.top / canvas.step : widget.topOffset ?? 0)) return false;
-      if (!positioned || !canvas || !place || value <= widget.rows) return true;
-      const top = place.top - (value - widget.rows) * canvas.step;
-      return findDashboardSlot(place.column, top, place.span, canvas.base + value * canvas.step, placements.filter(item => item.id !== widget.id), canvas.gap).top === top;
+  function resizeStops(widget: DashboardWidget, edge: ResizeEdge): ResizeStop[] {
+    if (!canvas || !grid.current) return [];
+    const horizontal = edge === 'left' || edge === 'right';
+    const occupied = readPlacements(grid.current, canvas), origin = occupied.find(item => item.id === widget.id)!;
+    const sizes = horizontal ? WIDGET_WIDTHS : WIDGET_ROWS;
+    return sizes.flatMap(value => {
+      const next = horizontal ? { ...widget, width: value as WidgetWidth } : { ...widget, rows: value as WidgetRows };
+      const sized = value === (horizontal ? widget.width : widget.rows) ? layout : atSize(next, edge, origin, occupied, canvas);
+      if (!sized) return [];
+      const pixels = horizontal ? widgetPixelWidth(grid.current!, next.width) : canvas.base + next.rows * canvas.step;
+      return [{ value, pixels, layout: sized }];
     });
   }
   function startResize(event: PointerEvent<HTMLButtonElement>, widget: DashboardWidget, edge: ResizeEdge) {
-    if (event.button !== 0 || !grid.current || resizing.current) return;
-    event.preventDefault(); event.currentTarget.focus({ preventScroll: true });
-    const card = event.currentTarget.closest<HTMLElement>('.dashboard-widget')!, rect = card.getBoundingClientRect();
-    const horizontal = edge === 'left' || edge === 'right', step = parseFloat(getComputedStyle(card).getPropertyValue('--widget-row-step'));
-    const stops = horizontal ? WIDGET_WIDTHS.map(value => ({ value, pixels: widgetPixelWidth(grid.current!, value) })) : heightStops(widget, edge).map(value => ({ value, pixels: rect.height + (value - widget.rows) * step }));
-    resizing.current = { widget, anchor: heightAnchor(widget), edge, handle: event.currentTarget, pointerId: event.pointerId, origin: horizontal ? event.clientX : event.clientY, pixels: horizontal ? rect.width : rect.height, value: horizontal ? widget.width : widget.rows, stops };
-    event.currentTarget.setPointerCapture(event.pointerId); setActiveResize({ id: widget.id, edge });
+    const horizontal = edge === 'left' || edge === 'right';
+    if (event.button !== 0 || !canvas || !grid.current || resizing.current || (horizontal && singleColumn)) return;
+    const stops = resizeStops(widget, edge);
+    const initial = stops.find(stop => stop.value === (horizontal ? widget.width : widget.rows));
+    if (!initial) return;
+    event.preventDefault();
+    event.currentTarget.focus({ preventScroll: true });
+    resizing.current = { widget, original: layout, edge, handle: event.currentTarget, pointerId: event.pointerId, origin: horizontal ? event.clientX : event.clientY, initial, value: initial.value, stops, canvas };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    keepResizeCanvasHeight();
+    setActiveResize({ id: widget.id, edge });
   }
   function resize(event: PointerEvent<HTMLButtonElement>) {
-    const current = resizing.current; if (!current || current.pointerId !== event.pointerId) return;
-    const horizontal = current.edge === 'left' || current.edge === 'right', sign = current.edge === 'left' || current.edge === 'top' ? -1 : 1;
-    const desired = current.pixels + ((horizontal ? event.clientX : event.clientY) - current.origin) * sign;
-    const original = current.stops.find(stop => stop.value === (horizontal ? current.widget.width : current.widget.rows))!;
-    const next = current.stops.reduce((a, b) => Math.abs(b.pixels - desired) < Math.abs(a.pixels - desired) ? b : a, original).value;
-    if (next === current.value) return;
-    current.value = next;
-    if (horizontal) changeSize(current.widget.id, { width: next as WidgetWidth }); else changeHeight(next === current.widget.rows ? current.widget : current.anchor, next as WidgetRows, current.edge as 'top' | 'bottom');
+    const current = resizing.current;
+    if (!current || current.pointerId !== event.pointerId) return;
+    const horizontal = current.edge === 'left' || current.edge === 'right';
+    const sign = current.edge === 'left' || current.edge === 'top' ? -1 : 1;
+    const desired = current.initial.pixels + ((horizontal ? event.clientX : event.clientY) - current.origin) * sign;
+    const next = current.stops.reduce((a, b) => Math.abs(b.pixels - desired) < Math.abs(a.pixels - desired) ? b : a, current.initial);
+    if (next.value === current.value) return;
+    current.value = next.value;
+    setDraft(draft => draft ? next.layout : draft);
   }
   function endResize(cancel = false) {
-    const current = resizing.current; if (!current) return;
-    resizing.current = null; setActiveResize(null);
+    const current = resizing.current;
+    if (!current) return;
+    resizing.current = null;
+    setActiveResize(null);
     const horizontal = current.edge === 'left' || current.edge === 'right';
-    if (cancel) changeSize(current.widget.id, { width: current.widget.width, rows: current.widget.rows, topOffset: current.widget.topOffset, position: current.widget.position });
+    if (cancel) setDraft(draft => draft ? current.original : draft);
     if (current.handle.hasPointerCapture(current.pointerId)) current.handle.releasePointerCapture(current.pointerId);
     setAnnouncement(cancel ? '已撤销本次尺寸调整' : `${widgetNames[current.widget.id]}尺寸：${horizontal ? current.value : current.widget.width}列 × ${horizontal ? current.widget.rows : current.value}行，点击完成保存布局`);
+  }
+  function endPointerResize(pointerId: number, cancel = false) {
+    if (resizing.current?.pointerId === pointerId) endResize(cancel);
   }
   function resizeByKey(event: KeyboardEvent<HTMLButtonElement>, widget: DashboardWidget, edge: ResizeEdge) {
     if (event.key === 'Escape' && resizing.current) { event.preventDefault(); event.stopPropagation(); endResize(true); return; }
     if (resizing.current) return;
     const horizontal = edge === 'left' || edge === 'right', keys = horizontal ? ['ArrowLeft', 'ArrowRight'] : ['ArrowUp', 'ArrowDown'];
     if (![...keys, 'Home', 'End'].includes(event.key)) return;
-    event.preventDefault(); const stops: readonly number[] = horizontal ? WIDGET_WIDTHS : heightStops(widget, edge);
-    const index = stops.indexOf(horizontal ? widget.width : widget.rows);
-    const next = stops[event.key === 'Home' ? 0 : event.key === 'End' ? stops.length - 1 : Math.max(0, Math.min(stops.length - 1, index + (event.key === keys[1] ? 1 : -1)))];
-    if (horizontal) changeSize(widget.id, { width: next as WidgetWidth }); else changeHeight(heightAnchor(widget), next as WidgetRows, edge as 'top' | 'bottom');
+    const stops = resizeStops(widget, edge);
+    const index = stops.findIndex(stop => stop.value === (horizontal ? widget.width : widget.rows));
+    if (index < 0) return;
+    event.preventDefault();
+    const motion = (event.key === keys[1] ? 1 : -1) * (edge === 'left' || edge === 'top' ? -1 : 1);
+    const next = stops[event.key === 'Home' ? 0 : event.key === 'End' ? stops.length - 1 : Math.max(0, Math.min(stops.length - 1, index + motion))];
+    if (next !== stops[index]) {
+      keepResizeCanvasHeight();
+      setDraft(draft => draft ? next.layout : draft);
+    }
   }
-  function settings(section: 'quota' | 'tools') {
+  function openToolSettings() {
+    const section = 'tools';
     sessionStorage.setItem('island-settings-section', section); onNavigate('settings-island');
     window.dispatchEvent(new CustomEvent('island-settings-section', { detail: section }));
   }
   function body(widget: DashboardWidget): ReactNode {
     if (widget.id === 'today') return <TodayContent data={data} clock={clock} style={widget.style} rows={widget.rows} navigate={() => onNavigate('todo')} openTask={onOpenTask} />;
     if (widget.id === 'schedule-stats') return <ScheduleStatsContent data={data} clock={clock} navigate={() => onNavigate('todo')} />;
-    if (widget.id === 'focus') return <FocusWidget variant={widget.style} settings={() => settings('tools')} />;
-    if (widget.id === 'checkin') return <CheckinHomeCard open={() => onNavigate('checkin')} embedded variant={widget.style as CheckinCardVariant} />;
-    return <QuotaWidget variant={widget.style} settings={() => settings('quota')} />;
+    if (widget.id === 'focus') return <FocusWidget variant={widget.style} settings={openToolSettings} />;
+    if (widget.id === 'checkin') return <CheckinHomeCard open={() => onNavigate('checkin')} connect={provider => onOpenCheckinSettings ? onOpenCheckinSettings('settings-apps', provider) : onNavigate('settings-apps')} embedded variant={widget.style as CheckinCardVariant} />;
+    return <QuotaWidget variant={widget.style} settings={() => onNavigate('settings-agent-quota')} />;
   }
-  const hour = clock.getHours(), greeting = hour < 5 ? '夜深了' : hour < 11 ? '早上好' : hour < 14 ? '中午好' : hour < 18 ? '下午好' : '晚上好';
+  const name = userName.trim();
+  const title = name ? `${name} 的看板` : '我的看板';
+  const dateLabel = `${clock.getMonth() + 1}月${clock.getDate()}日 ${['周日', '周一', '周二', '周三', '周四', '周五', '周六'][clock.getDay()]}`;
   return <section className="home-dashboard on" id="view-home" data-editing={editing}>
-    <header className="dashboard-heading"><div><h1>{userName.trim() ? `${userName.trim()}的看板` : '我的看板'}<span className="dashboard-edit-label" aria-hidden={!editing}><PencilSimple size={13} />编辑布局</span></h1><p>{clock.getMonth() + 1}月{clock.getDate()}日 {['周日', '周一', '周二', '周三', '周四', '周五', '周六'][clock.getDay()]} · {greeting}{userName.trim() ? `，${userName.trim()}` : ''}</p></div><div className="dashboard-heading-actions"><button ref={addButton} className={`btn ${editing ? 'btn-sec' : 'btn-pri'}`} aria-haspopup="dialog" aria-expanded={catalog !== null} aria-controls={catalog ? catalogId : undefined} onClick={event => openCatalog(event.currentTarget)}><Plus size={16} />添加卡片</button>{editing ? <><button className="btn btn-sec" onClick={() => { endResize(true); setDraft(null); setDragged(null); setDropTarget(null); }}>取消</button><button className="btn btn-pri" onClick={finish}>完成</button></> : <button className="btn btn-sec" onClick={beginEdit}><PencilSimple size={16} />编辑布局</button>}</div></header>
-    <div ref={grid} className="dashboard-grid" data-positioned={positioned} style={positioned ? { minHeight: Math.max(0, ...placements.map(item => item.top + item.height)) } : undefined} onDragOver={event => dropInGap(event)} onDrop={event => dropInGap(event, true)} onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setGapTarget(null); }}>{layout.widgets.map(widget => {
+    {workspaceHeader && createPortal(
+      <div className="dashboard-heading">
+        <div className="dashboard-heading-copy">
+          <h1 title={title}>{title}</h1>
+          <span className="dashboard-heading-date">{dateLabel}</span>
+        </div>
+        <div className="dashboard-heading-actions">
+          <button ref={addButton} className={`btn dashboard-heading-command ${editing ? 'btn-sec' : 'btn-pri'}`} aria-haspopup="dialog" aria-expanded={catalog !== null} aria-controls={catalog ? catalogId : undefined} onClick={event => openCatalog(event.currentTarget)}><Plus size={16} aria-hidden="true" />添加卡片</button>
+          {editing ? <>
+            <button className="btn btn-sec" onClick={() => { endResize(true); setDraft(null); setResizeCanvasHeight(0); setDragged(null); setDropTarget(null); }}>取消</button>
+            <button className="btn btn-pri" onClick={finish}>完成</button>
+          </> : <button className="btn btn-sec dashboard-heading-command" onClick={beginEdit}><PencilSimple size={16} aria-hidden="true" />编辑布局</button>}
+        </div>
+      </div>,
+      workspaceHeader,
+    )}
+    <div ref={grid} className="dashboard-grid" data-positioned={positioned} style={gridMinHeight ? { minHeight: gridMinHeight } : undefined} onDragOver={event => dropInGap(event)} onDrop={event => dropInGap(event, true)} onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setGapTarget(null); }}>{layout.widgets.map(widget => {
       const { id, width, rows, style } = widget;
       const place = positioned ? placements.find(item => item.id === id) : undefined;
       return <DashboardCard key={id} widget={widget} data-dragging={dragged === id} data-drop-target={dropTarget === id} data-resizing={activeResize?.id === id}
@@ -400,10 +492,16 @@ export function HomeView({ data, clock, userName, onNavigate, onOpenTask, onPend
         </>}</GameOptionsMenu></span><button className="ibtn dashboard-remove" disabled={!editing} aria-hidden={!editing} aria-label={`移除${widgetNames[id]}卡片`} title="从看板移除" onClick={() => setDraft(current => current ? { ...current, widgets: current.widgets.filter(item => item.id !== id) } : current)}><X size={16} /></button></>}
         resize={editing ? <>{(Object.entries(resizeEdges) as [ResizeEdge, string][]).map(([edge, label]) => {
           const horizontal = edge === 'left' || edge === 'right';
-          return <button key={edge} type="button" className="dashboard-resize" data-edge={edge} data-active={activeResize?.id === id && activeResize.edge === edge} role="slider" aria-label={`${widgetNames[id]}卡片${horizontal ? '宽度' : '高度'}，${label}边缘`} aria-orientation={horizontal ? 'horizontal' : 'vertical'} aria-valuemin={horizontal ? 2 : 1} aria-valuemax={horizontal ? 6 : heightStops(widget, edge).at(-1)} aria-valuenow={horizontal ? width : rows} aria-valuetext={horizontal ? `${width}列` : `${rows}行`} title={horizontal ? `拖动${label}边调整宽度：2／3／4／6列；支持左右键及 Home／End` : `拖动${label}边调整高度：1／2／3／4行；支持上下键及 Home／End`} onPointerDown={event => startResize(event, widget, edge)} onPointerMove={resize} onPointerUp={() => endResize()} onPointerCancel={() => endResize(true)} onLostPointerCapture={() => endResize(true)} onKeyDown={event => resizeByKey(event, widget, edge)} />;
+          const size = horizontal ? width : rows;
+          const unit = horizontal ? (singleColumn ? '列（宽窗）' : '列') : '行';
+          const opposite = resizeEdges[edge === 'left' ? 'right' : edge === 'right' ? 'left' : edge === 'top' ? 'bottom' : 'top'];
+          const title = horizontal
+            ? (singleColumn ? '单列看板按画布宽度显示。用左右键设置宽窗宽度' : `拖动${label}边调整宽度，固定${opposite}边。支持左右键及 Home／End`)
+            : `拖动${label}边调整高度，固定${opposite}边。支持上下键及 Home／End`;
+          return <button key={edge} type="button" className="dashboard-resize" data-edge={edge} data-active={activeResize?.id === id && activeResize.edge === edge} role="slider" aria-label={`${widgetNames[id]}卡片${horizontal ? '宽度' : '高度'}，${label}边缘`} aria-orientation={horizontal ? 'horizontal' : 'vertical'} aria-valuemin={horizontal ? 2 : 1} aria-valuemax={horizontal ? 6 : 4} aria-valuenow={size} aria-valuetext={`${size}${unit}`} title={title} onPointerDown={event => startResize(event, widget, edge)} onPointerMove={resize} onPointerUp={event => endPointerResize(event.pointerId)} onPointerCancel={event => endPointerResize(event.pointerId, true)} onLostPointerCapture={event => endPointerResize(event.pointerId, true)} onKeyDown={event => resizeByKey(event, widget, edge)} />;
         })}{activeResize?.id === id ? <span className="dashboard-resize-hint" aria-hidden="true">{width}列 × {rows}行</span> : null}</> : undefined}>{body(widget)}</DashboardCard>;
     })}{gapTarget ? <span className="dashboard-gap-target" data-slot={!!gapTarget.width} aria-hidden="true" style={gapTarget}>松开放置</span> : null}</div>
     <span className="sr-only" role="status" aria-live="polite">{announcement}</span>
-    {catalog ? <DashboardCatalog initial={catalog.initial} trigger={catalog.trigger} panelId={catalogId} grid={grid.current!} layout={layout} data={data} clock={clock} close={() => setCatalog(null)} apply={widget => { setDraft(current => current ? { widgets: current.widgets.some(item => item.id === widget.id) ? current.widgets.map(item => item.id === widget.id ? widget : item) : [...current.widgets, widget] } : current); setCatalog(null); setAnnouncement(`${widgetNames[widget.id]}卡片设置已应用，点击完成保存布局`); requestAnimationFrame(() => addButton.current?.focus({ preventScroll: true })); }} /> : null}
+    {catalog && workspaceHeader ? <DashboardCatalog initial={catalog.initial} trigger={catalog.trigger} panelId={catalogId} grid={grid.current!} layout={layout} data={data} clock={clock} close={() => setCatalog(null)} apply={applyCatalogWidget} /> : null}
   </section>;
 }

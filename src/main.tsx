@@ -12,6 +12,9 @@ import '../modules/copywriting/ui/copy.css';
 import '../modules/browser/ui/pane.css';
 import '../modules/reading/ui/reading.css';
 import './appearance.css';
+import './views/bot.css';
+import './views/bot-inspector.css';
+import './ui/navigation.css';
 
 const root = createRoot(document.getElementById('root')!);
 

@@ -1,6 +1,6 @@
 // Display-only formatting for the topbar. Other date entry points keep their
 // existing formatters, and planned calendar dates never pass through UTC.
-type TopbarTaskDate = { plannedDate?: string | null; dueAt?: string | null; endAt?: string | null; kind?: 'task' | 'meeting' };
+type TopbarTaskDate = { dateAt?: string | null; endAt?: string | null; kind?: 'task' | 'meeting'; external?: { isAllDay?: boolean } };
 const pad = (value: number) => String(value).padStart(2, '0');
 
 function calendarDate(value: string | null | undefined): Date | null {
@@ -24,17 +24,18 @@ function dayText(date: Date, now: Date, forceYear = false): string {
 const time = (date: Date) => `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 const sameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 function withoutTime(task: TopbarTaskDate, now: Date, label: string): string {
-  const date = calendarDate(task.plannedDate);
+  const date = calendarDate(task.dateAt) ?? (task.external?.isAllDay ? instant(task.dateAt) : null);
   return date ? `${dayText(date, now)} · ${label}` : '未设置';
 }
 
 export function topbarTodoDate(task: TopbarTaskDate, now = new Date()): string {
-  const date = instant(task.dueAt);
+  const date = instant(task.dateAt);
   return date ? `${dayText(date, now)} ${time(date)}` : withoutTime(task, now, '不限时');
 }
 
 export function topbarScheduleDate(task: TopbarTaskDate, now = new Date()): string {
-  const start = instant(task.dueAt);
+  if (task.external?.isAllDay) return withoutTime(task, now, '全天');
+  const start = instant(task.dateAt);
   if (!start) return withoutTime(task, now, '时间待定');
   const startText = `${dayText(start, now)} ${time(start)}`;
   const end = instant(task.endAt);

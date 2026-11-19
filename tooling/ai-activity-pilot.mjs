@@ -67,7 +67,7 @@ try {
   await page.evaluate(async base => {
     let config = await window.workbench.ai.saveProvider({ kind: 'custom', name: '本机状态验收', endpoint: `${base}/v1`, protocol: 'openai-chat', apiKey: 'synthetic-only' });
     config = await window.workbench.ai.saveModel({ providerId: config.providers[0].id, name: 'fixture' });
-    await window.workbench.ai.activateModel(config.models[0].id); await window.workbench.ai.setEnabled(true);
+    await window.workbench.ai.activateModel(config.models[0].id);
   }, base);
   await page.reload(); await page.locator('#view-home').waitFor();
   await page.getByRole('button', { name: '网页工作台', exact: true }).click(); await page.locator('#view-browser').waitFor();

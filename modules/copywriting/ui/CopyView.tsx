@@ -249,7 +249,6 @@ export function CopyView({ onPending, onCurrentDraft, onSaveState, requestedDraf
           <>
             <div className="copy-editor-head">
               <div>
-                <span className="copy-eyebrow">小红书 · 草稿</span>
                 <h1>博客编辑</h1>
               </div>
               <div className="copy-head-actions">

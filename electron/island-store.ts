@@ -6,6 +6,21 @@ import { writeJsonAtomic } from '../modules/storage/json-file';
 import { localDay } from '../shared/todo-contracts';
 import { focusRemaining, initialIslandData, inTimeRange, IslandNoteDraftSchema, IslandSettingsSchema, ISLAND_NOTE_LIMIT, ISLAND_NOTE_MAX_LENGTH, nextHealthReminder, type IslandData, type IslandReminder, type IslandSettingsPatch } from '../shared/island-contracts';
 
+const islandFilename = 'desktop-island.json';
+const ReminderSettingsSchema = IslandSettingsSchema.pick({
+  scheduleReminders: true, todoReminders: true, sound: true, dnd: true, dndStart: true, dndEnd: true,
+});
+
+// The independent Host reads current preferences without touching the island's data file.
+export function readIslandReminderSettings(directory: string) {
+  try {
+    const saved = JSON.parse(readFileSync(join(directory, islandFilename), 'utf8'));
+    return ReminderSettingsSchema.parse(saved?.settings ?? {});
+  } catch {
+    return ReminderSettingsSchema.parse({});
+  }
+}
+
 const SavedSchema = z.object({
   settings: IslandSettingsSchema,
   files: z.array(z.object({ id: z.string(), path: z.string(), name: z.string(), directory: z.boolean(), addedAt: z.number() })).max(200),
@@ -23,7 +38,7 @@ export class IslandStore {
   private data: IslandData;
   private path: string;
   constructor(dir: string, private now = Date.now) {
-    this.path = join(dir, 'desktop-island.json');
+    this.path = join(dir, islandFilename);
     this.data = initialIslandData(this.now());
     if (existsSync(this.path)) {
       // Do not overwrite a damaged file with defaults on the next ordinary action.
@@ -41,6 +56,7 @@ export class IslandStore {
     }
   }
   read(): IslandData { return structuredClone(this.data); }
+  readSettings() { return structuredClone(this.data.settings); }
   private commit(data: IslandData): IslandData {
     if (this.loadError) throw new Error(this.loadError);
     writeJsonAtomic(this.path, data);

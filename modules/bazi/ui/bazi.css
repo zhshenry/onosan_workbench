@@ -92,7 +92,8 @@
   justify-content: space-between;
   column-gap: 20px;
   row-gap: 14px;
-  padding: 18px 24px;
+  min-height: var(--page-header-height);
+  padding: var(--page-header-padding-block) var(--page-header-padding-inline);
 }
 .bazi-top-lead {
   display: flex;
@@ -122,7 +123,6 @@
 .bazi-top-side .bazi-psel-btn { max-width: 100%; min-width: 0; }
 .bazi-top-side .bazi-psel-btn .bazi-pname,
 .bazi-top-side .bazi-psel-btn .bazi-pbirth { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.bazi-top-side .bazi-psel-menu { left: auto; right: 0; }
 
 /* ---- 命例下拉选择器 ---- */
 .bazi-pbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -138,7 +138,7 @@
 .bazi-psel-caret { color: var(--ink-3); transition: transform 0.16s var(--ease); flex: none; }
 .bazi-psel.open .bazi-psel-caret { transform: rotate(180deg); }
 .bazi-psel-menu {
-  position: absolute; top: calc(100% + 6px); left: 0; z-index: 30; min-width: 250px; padding: 6px;
+  position: fixed; inset: auto; margin: 0; z-index: 30; width: max-content; min-width: 250px; max-width: calc(100vw - 16px); max-height: 360px; padding: 6px; overflow: auto;
   border-radius: 14px; background: var(--glass-hi);
   -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
   border: 1px solid var(--glass-line); box-shadow: var(--shadow);
@@ -185,13 +185,7 @@
 .bazi-pan .bazi-ptag { background: var(--bazi-pan-chip); color: var(--bazi-pan-ink-3); border: 1px solid var(--bazi-pan-line); }
 
 /* ---- 系统页签 ---- */
-.bazi-syseg { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; padding: 3px; margin-bottom: 14px; border: 1px solid var(--hairline); border-radius: 999px; background: var(--todo-subtle); }
-.bazi-syseg button {
-  min-width: 0; min-height: 30px; padding: 5px 12px; border-radius: 999px; font-size: var(--type-control); font-weight: 600; color: var(--ink-3); white-space: nowrap;
-  transition: background 0.16s var(--ease), color 0.16s var(--ease);
-}
-.bazi-syseg button:hover { color: var(--ink); }
-.bazi-syseg button.on { background: var(--acc-soft); color: var(--acc-deep); }
+.bazi-top-switches { min-width: 0; }
 
 /* ========== 盘面(浅雾表面层) ========== */
 .bazi-pan {
@@ -408,28 +402,14 @@
 .bazi-as-cols > * { min-width: 0; }
 .bazi-top-switches { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 20px; }
 .bazi-top-switches .bazi-syseg { margin-bottom: 0; flex: none; }
-.bazi-as-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; font-size: var(--type-control); color: var(--ink-2); }
-.bazi-as-summary b { font-weight: 500; }
-.bazi-as-summary i { font-style: normal; font-size: var(--type-lead); }
 .bazi-as-text-button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 2px 0; color: var(--acc-deep); font-size: var(--type-support); border-radius: 4px; }
 .bazi-as-text-button:hover { text-decoration: underline; }
 .bazi-as-text-button:disabled { color: var(--ink-3); opacity: 0.6; text-decoration: none; }
 .bazi-as-text-button:focus-visible, .bazi-as-row-button:focus-visible { outline: 2px solid var(--acc-ring); outline-offset: 2px; }
-.bazi-as-summary [data-tone='fire'], .bazi-as-selection [data-tone='fire'] { color: var(--bazi-wx-huo); }
-.bazi-as-summary [data-tone='water'], .bazi-as-selection [data-tone='water'] { color: var(--bazi-wx-shui); }
+.bazi-as-selection [data-tone='fire'] { color: var(--bazi-wx-huo); }
+.bazi-as-selection [data-tone='water'] { color: var(--bazi-wx-shui); }
 .bazi-as-selection [data-tone='earth'] { color: var(--bazi-wx-tu); }
 .bazi-as-selection [data-tone='air'] { color: var(--bazi-wx-mu); }
-.bazi-as-distribution-bars { display: grid; gap: 8px; }
-.bazi-as-distribution-bars > div { display: flex; align-items: center; gap: 12px; }
-.bazi-as-distribution-bars b { width: 14px; text-align: right; }
-.bazi-as-meter { flex: 1; height: 6px; background: var(--hairline); border-radius: 4px; overflow: hidden; }
-.bazi-as-meter i { display: block; height: 100%; background: var(--acc); border-radius: inherit; }
-.bazi-as-distribution-bars [data-tone='fire'] i { background: var(--bazi-wx-huo); }
-.bazi-as-distribution-bars [data-tone='earth'] i { background: var(--bazi-wx-tu); }
-.bazi-as-distribution-bars [data-tone='air'] i { background: var(--bazi-wx-mu); }
-.bazi-as-distribution-bars [data-tone='water'] i { background: var(--bazi-wx-shui); }
-.bazi-as-mode-counts { display: flex; gap: 16px; margin-top: 16px; }
-.bazi-as-mode-counts span { flex: 1; display: flex; justify-content: space-between; }
 .bazi-as-pan {
   --astro-surface: #090b0e;
   --astro-ring: #24282f;
@@ -510,21 +490,7 @@
 .bazi-as-legend i.hard { background: var(--bazi-hua-ji); }
 .bazi-as-sidebar { display: flex; flex-direction: column; gap: 12px; min-height: 0; contain: size; }
 .bazi-as-details { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-.bazi-as-details .segmented {
-  display: flex; width: 100%; padding: 0; gap: 16px;
-  border: 0; border-radius: 0; background: none; border-bottom: 1px solid var(--hairline);
-}
-.bazi-as-details .segmented::before { display: none; }
-.bazi-as-details .segmented button {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  width: auto; padding: 6px 12px 10px; min-height: 36px; flex: none;
-  border-radius: 0; border-bottom: 2px solid transparent; color: var(--ink-3);
-  font-size: var(--type-body); font-weight: 700; cursor: pointer;
-}
-.bazi-as-details .segmented button:hover { color: var(--acc-deep); background: var(--acc-soft); }
-.bazi-as-details .segmented button[aria-checked='true'],
-.bazi-as-details .segmented button[aria-checked='true']:hover { color: var(--acc-deep); border-bottom-color: var(--acc-deep); }
-.bazi-as-details .segmented button:focus-visible { outline: 2px solid var(--acc-ring); outline-offset: 2px; border-radius: 4px; }
+.bazi-as-details > .content-tabs { flex: none; width: 100%; border-bottom: 1px solid var(--hairline); }
 .bazi-as-selection .bazi-as-object-note { font-size: var(--type-support); color: var(--ink-3); }
 .bazi-as-detail-body { flex: 1 1 0px; height: 0; min-height: 0; overflow: auto; scrollbar-gutter: stable; }
 .bazi-as-details .bazi-astab { white-space: nowrap; }

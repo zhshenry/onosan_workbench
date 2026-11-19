@@ -15,7 +15,7 @@ import { runTopbarDatesPilot, verifyTopbarDatesRelaunch } from './topbar-dates-p
 import { runYearDropdownPilot, verifyUnboundedDatePicker, verifyYearDropdownRelaunch } from './year-dropdown-pilot.mjs';
 import { runUpdateStatusPilot } from './update-status-pilot.mjs';
 import { runPublishAssociationPilot, verifyPublishAssociationRelaunch } from './publish-association-pilot.mjs';
-import { navigateInstalled } from './installed-navigation.mjs';
+import { collapseInstalledAssistant, navigateInstalled } from './installed-navigation.mjs';
 
 assert.equal(process.platform, 'win32', 'Run the acceptance pilot on standard Windows hosted CI');
 const executablePath = process.env.WORKBENCH_PILOT_EXE;
@@ -42,6 +42,7 @@ const report = {
 };
 let application;
 let page;
+let usesBots;
 function inside(child, root) {
   const relative = path.relative(root, child);
   return relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
@@ -96,7 +97,12 @@ async function launch() {
   assert.ok(page, 'Installed main page must be available independently of island startup order');
   page.setDefaultTimeout(15000);
   page.on('pageerror', error => report.errors.push(error.message.slice(0, 1000)));
-  await page.locator('#view-home').waitFor({ state: 'visible' });
+  await page.locator('.topbar').waitFor();
+  usesBots = (await page.locator('.bot-shell').count()) > 0;
+  if (usesBots) {
+    await collapseInstalledAssistant(page);
+    await navigateInstalled(page, 'home', null, 'home');
+  } else await page.locator('#view-home').waitFor({ state: 'visible' });
   const metadata = await application.evaluate(({ app }) => ({
     isPackaged: app.isPackaged, execPath: process.execPath, appPath: app.getAppPath(),
     appData: app.getPath('appData'), userData: app.getPath('userData'),
@@ -137,8 +143,14 @@ async function normalExit(label, trigger) {
 async function showLifecycleIsland() {
   return openInstalledIsland({ application, page, report });
 }
+async function openTodoWorkspace() {
+  if (usesBots) {
+    await navigateInstalled(page, 'todo', null, 'todo');
+    await page.getByRole('radiogroup', { name: '日程待办视图' }).getByRole('radio', { name: '待办', exact: true }).click();
+  } else await navigateInstalled(page, 'life', '日程和待办', 'todo');
+}
 async function doneLibrary() {
-  await navigateInstalled(page, 'life', '日程和待办', 'todo');
+  await openTodoWorkspace();
   const home = page.locator('#view-todo');
   await home.getByRole('button', { name: '全部事项', exact: true }).click();
   const library = home.getByRole('region', { name: '全部事项', exact: true });
@@ -153,6 +165,7 @@ let topbarDatesFixture;
 let islandFixture;
 let contextPickerFixture;
 let publishAssociationFixture;
+const scheduleBotDraft = 'CI 日程 Bot 草稿';
 try {
   await check('Launch actual installed executable with isolated data and updater disabled', launch);
   await check('Fresh isolated task database is empty', async () => assert.equal((await state()).tasks.length, 0));
@@ -168,14 +181,13 @@ try {
   await screenshot('initial.png');
   await runIslandEmptyPilot({ application, page, check, screenshot, report });
   await check('Collapse default AI overlay through its normal toolbar control', async () => {
-    await page.locator('.topbar').getByRole('button', { name: '收起 AI 助手', exact: true }).click();
-    await page.locator('#workbench-ai-panel').waitFor({ state: 'hidden' });
+    await collapseInstalledAssistant(page);
   });
   await check('Cancel empty new-task editor without creating a task', async () => {
-    await navigateInstalled(page, 'life', '日程和待办', 'todo');
+    await openTodoWorkspace();
     await page.locator('#view-todo').getByRole('button', { name: '新增', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: '新增事项', exact: true });
-    await dialog.getByRole('button', { name: '关闭', exact: true }).click();
+    await dialog.getByRole('button', { name: usesBots ? '返回' : '关闭', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });
     assert.equal((await state()).tasks.length, 0);
   });
@@ -213,26 +225,53 @@ try {
     await doneLibrary();
   });
   await screenshot('completed.png');
-  birthdayFixture = await runYearDropdownPilot({ application, page, check, screenshot, runId, report });
-  topbarDatesFixture = await runTopbarDatesPilot({ application, page, check, screenshot, runId, report });
-  aiCardsFixture = await runAiCardsPilot({ application, page, check, screenshot, runId, report });
-  islandFixture = await runIslandPilot({ application, page, check, screenshot, runId, report });
-  contextPickerFixture = await runContextPickerPilot({ application, page, check, screenshot, runId, report, birthdayFixture });
-  publishAssociationFixture = await runPublishAssociationPilot({ application, page, check, screenshot, runId, report, dataRoot });
+  if (usesBots) {
+    report.limitations.push('Bot workbench acceptance exercises the current Bot composer, schedule workspace and reminder settings. Legacy assistant, reference picker and workbench surface pilots apply to the previous layout.');
+    await check('Switch installed Bot conversations and persist a scoped draft', async () => {
+      await page.getByRole('combobox', { name: 'AI 助手', exact: true }).click();
+      await page.getByRole('option', { name: '固定', exact: true }).click();
+      const input = page.locator('.bot-compose textarea');
+      await input.fill(scheduleBotDraft);
+      await page.waitForFunction(async expected => {
+        const bot = (await window.workbench.bot.list()).find(value => value.seedKey === 'schedule');
+        return bot && (await window.workbench.bot.getDraft(bot.mainChatId)).text === expected;
+      }, scheduleBotDraft);
+      await page.locator('.rail [data-workbench="home"]').click();
+      await input.waitFor();
+      assert.equal(await input.inputValue(), '');
+      await page.locator('.rail [data-workbench="todo"]').click();
+      await page.waitForFunction(expected => document.querySelector('.bot-compose textarea')?.value === expected, scheduleBotDraft);
+      await collapseInstalledAssistant(page);
+    });
+    await check('Set a reminder range through the installed app UI', async () => {
+      await navigateInstalled(page, 'settings', '待办与日程');
+      await page.getByRole('combobox', { name: '提醒范围', exact: true }).click();
+      await page.getByRole('option', { name: '仅待办', exact: true }).click();
+      await page.waitForFunction(async () => (await window.workbench.settings.get()).reminderRange === 'todo');
+    });
+  } else {
+    birthdayFixture = await runYearDropdownPilot({ application, page, check, screenshot, runId, report });
+    topbarDatesFixture = await runTopbarDatesPilot({ application, page, check, screenshot, runId, report });
+    aiCardsFixture = await runAiCardsPilot({ application, page, check, screenshot, runId, report });
+    islandFixture = await runIslandPilot({ application, page, check, screenshot, runId, report });
+    contextPickerFixture = await runContextPickerPilot({ application, page, check, screenshot, runId, report, birthdayFixture });
+    publishAssociationFixture = await runPublishAssociationPilot({ application, page, check, screenshot, runId, report, dataRoot });
+  }
   await runUpdateStatusPilot({ application, page, check, screenshot, report });
-  await runMediaKeepalivePilot({ application, page, check, screenshot, report });
+  if (!usesBots) await runMediaKeepalivePilot({ application, page, check, screenshot, report });
   await check('Choose exit-on-close in settings and quit through the window close button', async () => {
     await navigateInstalled(page, 'settings', '通用');
     await page.getByRole('button', { name: '退出应用', exact: true }).click();
     await page.waitForFunction(() => window.workbench.settings.get().then(value => value.closeAction === 'exit'));
-    await prepareMediaKeepaliveQuit({ application, page, report });
+    if (usesBots) await page.getByRole('dialog', { name: '设置', exact: true }).getByRole('button', { name: '关闭', exact: true }).click();
+    else await prepareMediaKeepaliveQuit({ application, page, report });
     const exited = new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('Installed process did not exit after UI close')), 20000);
       application.process().once('exit', code => { clearTimeout(timer); code === 0 ? resolve() : reject(new Error(`Exit code ${code}`)); });
     });
     // Attach both rejection handlers immediately, including if clicking closes the target.
     await Promise.all([exited, page.locator('.wbtn.close').click()]);
-    report.mediaKeepaliveQuit.exitCode = 0;
+    if (report.mediaKeepaliveQuit) report.mediaKeepaliveQuit.exitCode = 0;
     application = undefined; page = undefined;
   });
   await check('Relaunch same installed executable and verify persisted task and setting', async () => {
@@ -241,17 +280,28 @@ try {
     assert.equal(persisted.length, 1); assert.equal(persisted[0].id, taskId);
     assert.equal(persisted[0].title, editedTitle); assert.equal(persisted[0].note, note); assert.equal(persisted[0].status, 'done');
     assert.equal((await page.evaluate(() => window.workbench.settings.get())).closeAction, 'exit');
+    if (usesBots) {
+      assert.equal((await page.evaluate(() => window.workbench.settings.get())).reminderRange, 'todo');
+      const drafts = await page.evaluate(async () => {
+        const bots = await window.workbench.bot.list();
+        const byKey = key => window.workbench.bot.getDraft(bots.find(value => value.seedKey === key).mainChatId);
+        return { schedule: (await byKey('schedule')).text, coordinator: (await byKey('coordinator')).text };
+      });
+      assert.deepEqual(drafts, { schedule: scheduleBotDraft, coordinator: '' });
+    }
     await doneLibrary();
     assert.ok((await stat(path.join(dataRoot, 'To-Do-List', 'tasks.db'))).size > 0);
   });
   await screenshot('relaunched.png');
-  await verifyMediaKeepaliveRelaunch({ application, page, check, report });
-  await verifyYearDropdownRelaunch({ page, check, screenshot, fixture: birthdayFixture });
-  await verifyAiCardsRelaunch({ page, check, screenshot, fixture: aiCardsFixture });
-  await verifyContextPickerRelaunch({ application, page, check, screenshot, fixture: contextPickerFixture });
-  await verifyTopbarDatesRelaunch({ page, check, screenshot, fixture: topbarDatesFixture });
-  await verifyIslandRelaunch({ application, page, check, screenshot, report, fixture: islandFixture });
-  await verifyPublishAssociationRelaunch({ application, page, check, fixture: publishAssociationFixture, report });
+  if (!usesBots) {
+    await verifyMediaKeepaliveRelaunch({ application, page, check, report });
+    await verifyYearDropdownRelaunch({ page, check, screenshot, fixture: birthdayFixture });
+    await verifyAiCardsRelaunch({ page, check, screenshot, fixture: aiCardsFixture });
+    await verifyContextPickerRelaunch({ application, page, check, screenshot, fixture: contextPickerFixture });
+    await verifyTopbarDatesRelaunch({ page, check, screenshot, fixture: topbarDatesFixture });
+    await verifyIslandRelaunch({ application, page, check, screenshot, report, fixture: islandFixture });
+    await verifyPublishAssociationRelaunch({ application, page, check, fixture: publishAssociationFixture, report });
+  }
   await check('Desktop island: visible native window permits normal main-window exit', async () => {
     const { island, native } = await showLifecycleIsland();
     await hoverExpandInstalledIsland(island);

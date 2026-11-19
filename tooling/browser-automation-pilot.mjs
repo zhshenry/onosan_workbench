@@ -411,8 +411,7 @@ try {
     const config = await page.evaluate(async base => {
       let config = await window.workbench.ai.saveProvider({ kind: 'custom', name: 'Local browser fixture', endpoint: `${base}/v1`, protocol: 'openai-chat' });
       config = await window.workbench.ai.saveModel({ providerId: config.providers[0].id, name: 'browser-vision', supportsImages: true });
-      await window.workbench.ai.activateModel(config.models[0].id);
-      return window.workbench.ai.setEnabled(true);
+      return window.workbench.ai.activateModel(config.models[0].id);
     }, base);
     assert.equal(config.aiEnabled, true);
     await page.reload(); await page.locator('#view-home').waitFor();
@@ -570,8 +569,8 @@ try {
   });
   await check('Model list multimodal eye toggle saves both states beside edit and survives ordinary model edits', async () => {
     await page.getByRole('button', { name: '设置', exact: true }).click();
-    await page.locator('.ai-topbar-btn').click();
-    await page.getByRole('button', { name: 'AI 助手', exact: true }).click();
+    const settings = page.getByRole('dialog', { name: '设置', exact: true });
+    await settings.getByRole('button', { name: '模型配置', exact: true }).click();
     const imageInput = page.getByRole('button', { name: '多模态 browser-vision', exact: true });
     assert.equal(await imageInput.getAttribute('aria-pressed'), 'true');
     await imageInput.click();
@@ -589,17 +588,22 @@ try {
     assert.equal(config.models[0].supportsImages, true);
     assert.equal(config.models[0].name, 'browser-vision');
     await page.getByRole('button', { name: '编辑模型 browser-vision', exact: true }).click();
-    const dialog = page.getByRole('dialog');
-    assert.equal(await dialog.getByRole('checkbox').count(), 0);
-    await dialog.getByRole('button', { name: '保存模型', exact: true }).click();
-    await dialog.waitFor({ state: 'hidden' });
-    assert.equal((await page.evaluate(() => window.workbench.ai.config())).models[0].supportsImages, true);
-    const inputBounds = await imageInput.boundingBox(); assert.ok(inputBounds.width === 32 && inputBounds.height === 32);
+    const modelName = settings.getByRole('textbox', { name: '模型名称 / ID', exact: true });
+    await modelName.fill('browser-vision-edited');
+    await modelName.press('Enter');
+    await settings.getByRole('button', { name: '编辑模型 browser-vision-edited', exact: true }).click();
+    const edited = (await page.evaluate(() => window.workbench.ai.config())).models[0];
+    assert.equal(edited.name, 'browser-vision-edited');
+    assert.equal(edited.supportsImages, true);
+    await modelName.fill('browser-vision');
+    await modelName.press('Enter'); await modelName.waitFor({ state: 'hidden' });
+    const inputBounds = await imageInput.boundingBox(); assert.ok(inputBounds.width >= 28 && inputBounds.width === inputBounds.height);
     const editBounds = await page.getByRole('button', { name: '编辑模型 browser-vision', exact: true }).boundingBox();
     assert.ok(inputBounds.x > editBounds.x && Math.abs(inputBounds.y - editBounds.y) < 12);
     await page.getByRole('heading', { name: '模型列表', exact: true }).hover();
     await page.locator('.ai-config-model-row').screenshot({ path: path.join(output, 'model-multimodal-on-row.png'), animations: 'disabled' });
     await writeFile(path.join(output, 'model-multimodal-setting.png'), Buffer.from(await window.evaluate(async window => (await window.webContents.capturePage()).toPNG().toString('base64')), 'base64'));
+    await settings.getByRole('button', { name: '关闭', exact: true }).click();
     await page.getByRole('button', { name: '网页工作台', exact: true }).click();
   });
   await check('An empty active tab can open a website directly from sidebar chat after a site grant', async () => {

@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { CaretDown, Pencil, Plus, TrashSimple } from '@phosphor-icons/react';
+import { CaretDown, Pencil, Plus, TrashSimple, CalendarDots, Compass, StarFour } from '@phosphor-icons/react';
 import { buildChart } from '../compute';
 import { buildZiwei, type ZiweiChart } from '../ziwei';
 import { buildAstro, type AstroChart } from '../astro';
@@ -12,7 +12,7 @@ import { WX_VAR, WUXING_ORDER } from './tokens';
 import { CHINA_REGIONS, findRegionByCoords, regionLabel, type ChinaRegionNode } from '../../../shared/china-region-geo';
 import { BaziCycles, BaziPan } from './BaziPan';
 import { ZiweiPan } from './ZiweiPan';
-import { AstroDetails, AstroPan, AstroSummary } from './AstroPan';
+import { AstroDetails, AstroPan } from './AstroPan';
 import { DEFAULT_ASPECT_FILTER, matchingAspect, type AstroAspectFilter, type AstroSection, type AstroSelection } from './astro-insights';
 import { resolveAstroTime, type AstroTimeChoice } from '../../../shared/astro-time';
 import { AstroTimeFields } from './AstroTimeFields';
@@ -27,10 +27,10 @@ const BAZI_MAX_YEAR = 2100;
 const astroReadingDrafts = new Map<string, AstroReadingDraft>();
 
 type TabKey = 'bazi' | 'ziwei' | 'astro';
-const TABS: { key: TabKey; label: string }[] = [
-  { key: 'bazi', label: '八字' },
-  { key: 'ziwei', label: '紫微斗数' },
-  { key: 'astro', label: '占星' },
+const TABS: { key: TabKey; label: string; icon: typeof CalendarDots }[] = [
+  { key: 'bazi', label: '八字', icon: CalendarDots },
+  { key: 'ziwei', label: '紫微斗数', icon: StarFour },
+  { key: 'astro', label: '占星', icon: Compass },
 ];
 
 function collectShenSha(chart: BaziChart): { key: string; name: string; pos: string }[] {
@@ -90,6 +90,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
   const [fLat, setFLat] = useState('');
   const [fLon, setFLon] = useState('');
   const pselRef = useRef<HTMLDivElement>(null);
+  const pselMenuRef = useRef<HTMLDivElement>(null);
   const loadedOnce = useRef(false);
   const handledRequest = useRef<string | null>(null);
   const handledLocate = useRef(0);
@@ -208,20 +209,40 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
     if (astroSelection?.kind !== 'aspect' || !charts?.astro || !matchingAspect(charts.astro.aspects[astroSelection.index], filter)) setAstroSelection(null);
   };
 
-  // 命例下拉:点外部关闭
+  useLayoutEffect(() => {
+    const menu = pselMenuRef.current, trigger = pselRef.current?.querySelector<HTMLButtonElement>('.bazi-psel-btn');
+    if (!pselOpen || !menu || !trigger) return;
+    menu.showPopover();
+    const rect = trigger.getBoundingClientRect(), gap = 6, edge = 8;
+    const below = Math.max(0, window.innerHeight - rect.bottom - gap - edge);
+    const above = Math.max(0, rect.top - gap - edge);
+    const openUp = below < menu.offsetHeight && above > below;
+    menu.style.maxHeight = `${Math.min(360, openUp ? above : below)}px`;
+    menu.style.top = `${openUp ? rect.top - menu.offsetHeight - gap : rect.bottom + gap}px`;
+    menu.style.left = `${Math.max(edge, Math.min(rect.right - menu.offsetWidth, window.innerWidth - menu.offsetWidth - edge))}px`;
+    return () => { if (menu.matches(':popover-open')) menu.hidePopover(); };
+  }, [pselOpen]);
+
+  // 命例下拉:点外部、页面滚动或改变窗口尺寸时关闭。
   useEffect(() => {
     if (!pselOpen) return;
     const onPointerDown = (e: PointerEvent): void => {
       if (pselRef.current && !pselRef.current.contains(e.target as Node)) setPselOpen(false);
     };
     const onKey = (e: globalThis.KeyboardEvent): void => {
-      if (e.key === 'Escape') setPselOpen(false);
+      if (e.key === 'Escape') { setPselOpen(false); pselRef.current?.querySelector<HTMLButtonElement>('.bazi-psel-btn')?.focus(); }
     };
+    const dismiss = () => setPselOpen(false);
+    const onScroll = (e: Event) => { if (!(e.target instanceof Node) || !pselMenuRef.current?.contains(e.target)) dismiss(); };
     document.addEventListener('pointerdown', onPointerDown);
     window.addEventListener('keydown', onKey);
+    window.addEventListener('resize', dismiss);
+    window.addEventListener('scroll', onScroll, true);
     return () => {
       document.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', dismiss);
+      window.removeEventListener('scroll', onScroll, true);
     };
   }, [pselOpen]);
 
@@ -404,20 +425,29 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
           </div>
           {hasProfiles && (
             <div className="bazi-top-switches">
-              <div className="bazi-syseg" role="tablist" aria-label="命理系统">
+              <div className="bazi-syseg content-tabs" role="tablist" aria-label="命理系统" onKeyDown={event => {
+                const current = TABS.findIndex(item => item.key === tab);
+                const next = event.key === 'Home' ? 0 : event.key === 'End' ? TABS.length - 1 : event.key === 'ArrowRight' ? (current + 1) % TABS.length : event.key === 'ArrowLeft' ? (current + TABS.length - 1) % TABS.length : -1;
+                if (next < 0) return;
+                event.preventDefault(); setTab(TABS[next].key);
+                event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next].focus();
+              }}>
                 {TABS.map((t) => (
                   <button
                     key={t.key}
+                    type="button"
                     role="tab"
+                    id={`bazi-tab-${t.key}`}
+                    aria-controls={`bazi-panel-${t.key}`}
                     aria-selected={tab === t.key}
+                    tabIndex={tab === t.key ? 0 : -1}
                     className={tab === t.key ? 'on' : ''}
                     onClick={() => setTab(t.key)}
                   >
-                    {t.label}
+                    <t.icon size={16} aria-hidden="true" />{t.label}
                   </button>
                 ))}
               </div>
-              {tab === 'astro' && astro && <AstroSummary chart={astro} />}
             </div>
           )}
         </div>
@@ -443,7 +473,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
                   )}
                 </button>
                 {pselOpen && (
-                  <div className="bazi-psel-menu" role="listbox" aria-label="命例列表">
+                  <div className="bazi-psel-menu" ref={pselMenuRef} popover="manual" role="listbox" aria-label="命例列表">
                     {profiles.map((p) => (
                       <button
                         key={p.id}
@@ -506,7 +536,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
           </div>}
 
           {profile && chart && (
-            <div className="bazi-tabview bazi-bazi-view" role="tabpanel" hidden={tab !== 'bazi'}>
+            <div className="bazi-tabview bazi-bazi-view" role="tabpanel" id="bazi-panel-bazi" aria-labelledby="bazi-tab-bazi" hidden={tab !== 'bazi'}>
               <div className="bazi-main-card bazi-card">
                 <BaziPan profile={profile} chart={chart} />
                 <BaziCycles chart={chart} openDy={openDy} onOpenDy={setOpenDy} />
@@ -550,7 +580,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
           )}
 
           {profile && ziwei && soulPalace && (
-            <div className="bazi-tabview" role="tabpanel" hidden={tab !== 'ziwei'}>
+            <div className="bazi-tabview" role="tabpanel" id="bazi-panel-ziwei" aria-labelledby="bazi-tab-ziwei" hidden={tab !== 'ziwei'}>
               <div className="bazi-ziwei-stack">
                 <div><ZiweiPan profile={profile} chart={ziwei} /></div>
                 <section className="bazi-analysis bazi-card" aria-label="命宫与四化">
@@ -580,7 +610,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
           )}
 
           {profile && astro && (
-            <div className="bazi-tabview bazi-astro-view" role="tabpanel" hidden={tab !== 'astro'}>
+            <div className="bazi-tabview bazi-astro-view" role="tabpanel" id="bazi-panel-astro" aria-labelledby="bazi-tab-astro" hidden={tab !== 'astro'}>
               <div className="bazi-cols bazi-as-cols">
                 <div><AstroPan profile={profile} chart={astro} onHouseSystemChange={changeHouseSystem} houseSystemSaving={houseSystemSaving}
                   selection={astroSelection} onSelect={selectAstro}

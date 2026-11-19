@@ -1,5 +1,5 @@
 html:has(.island-assistant-app), html:has(.island-assistant-app) body, html:has(.island-assistant-app) #root { margin: 0; width: 100%; height: 100%; min-height: 0; background: transparent; overflow: hidden; }
-.island-assistant-app { display: flex; flex-direction: column; width: 100%; height: 100%; box-sizing: border-box; border: 1px solid var(--island-line); border-radius: var(--r-panel); background: var(--island-surface); color: var(--island-text); font-size: var(--type-body); overflow: hidden; }
+.island-assistant-app { --todo-paper: var(--island-surface); --hairline: var(--island-line); display: flex; flex-direction: column; width: 100%; height: 100%; box-sizing: border-box; border: 1px solid var(--island-line); border-radius: var(--r-panel); background: var(--island-surface); color: var(--island-text); font-size: var(--type-body); overflow: hidden; }
 .island-assistant-app button { color: inherit; cursor: pointer; }
 .island-assistant-app button:disabled { opacity: .45; cursor: default; }
 .island-assistant-app button:focus-visible, .island-assistant-app textarea:focus-visible { outline: 2px solid var(--island-blue); outline-offset: 2px; }
@@ -11,11 +11,10 @@ html:has(.island-assistant-app), html:has(.island-assistant-app) body, html:has(
 .island-assistant-app .icon-button { display: inline-flex; align-items: center; justify-content: center; min-height: 32px; width: 32px; padding: 0; border-radius: var(--r-ctl); background: transparent; }
 .island-assistant-app .icon-button:hover { background: var(--todo-subtle); }
 .island-assistant-header .icon-button[aria-pressed='true'] { color: var(--island-blue); }
-.island-assistant-tabs { display: flex; gap: 16px; margin: 0 16px; border-bottom: 1px solid var(--island-line); flex: none; }
-.island-assistant-tabs button { flex: 0 1 104px; width: 104px; min-width: 0; box-sizing: border-box; min-height: 34px; padding: 4px 12px; border-bottom: 2px solid transparent; font-size: var(--type-body); font-variant-numeric: tabular-nums; color: var(--island-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.island-assistant-tabs button[aria-selected='true'] { color: var(--island-blue); border-bottom-color: var(--island-blue); }
-.island-assistant-tabs button:hover { color: var(--island-text); }
+.island-assistant-tabs.content-tabs { --content-tab-height: 34px; --content-tab-accent: var(--island-blue); --content-tab-text: var(--island-muted); --content-tab-surface: var(--todo-subtle); --content-tab-hover: var(--todo-subtle); margin: 0 16px; padding-bottom: 6px; border-bottom: 1px solid var(--island-line); flex: none; -webkit-app-region: no-drag; }
+.island-assistant-tabs.content-tabs > button { min-inline-size: 104px; font-variant-numeric: tabular-nums; }
 .island-assistant-conversation { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.island-assistant-app > [role='tabpanel'][hidden] { display: none; }
 .island-assistant-history { position: relative; display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; }
 .island-assistant-scroll { flex: 1; min-height: 0; min-width: 0; overflow: auto; padding: 12px 14px; scrollbar-gutter: stable; }
 .island-assistant-app .island-assistant-jump { position: absolute; right: 22px; bottom: 8px; z-index: 1; border: 1px solid var(--island-line); background: var(--island-surface); color: var(--island-text); }
@@ -28,6 +27,7 @@ html:has(.island-assistant-app), html:has(.island-assistant-app) body, html:has(
 .island-assistant-message.user > div { flex: 0 1 auto; max-width: 100%; }
 .island-assistant-user { margin: 0; padding: 9px 12px; border: 1px solid var(--island-line); border-radius: var(--r-card); background: var(--todo-acc-soft); line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
 .island-assistant-message .ai-bubble { padding: 0; border: 0; background: transparent; box-shadow: none; }
+.island-assistant-app .ai-response > .ai-bubble { background: var(--todo-subtle); border-color: var(--island-line); color: var(--island-text); box-shadow: none; }
 .island-assistant-message .ai-markdown { color: var(--island-text); font-size: var(--type-body); line-height: 1.65; }
 .island-assistant-message .ai-markdown > :first-child { margin-top: 0; }
 .island-assistant-message .ai-markdown > :last-child { margin-bottom: 0; }

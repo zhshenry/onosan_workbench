@@ -1,0 +1,79 @@
+{
+  "passed": true,
+  "checks": [
+    "daily toolbar is compact; completed schedules remain visible; there are no workspace tabs",
+    "reminder reuses the existing title card without moving either content panel; dismiss does not complete the meeting",
+    "snooze changes only reminder time and preserves the meeting range",
+    "meeting opens one unified detail surface and arrangement editing still uses the shared modal",
+    "rich text paste is sanitized, autosaved and not limited by the original 5000-character note",
+    "historical schedule and minutes search can find completed meetings and clear the filter",
+    "formatting toolbar preserves editor selection, supports undo and inserts a safe link",
+    "action conversion uses the same centered create dialog and links exactly one real todo",
+    "completion uses existing confirmation and synchronizes the linked action status",
+    "return restores the browsed date and global schedule entry opens the same minutes detail",
+    "three materials keep the same detail geometry and narrow workspaces expose schedule navigation",
+    "real process restart retains notes and the action link"
+  ],
+  "screenshots": [
+    "C:\\Myself\\vibe_coding\\onosan_workbench\\test-results\\meeting-notes\\01-reminder-overview.png",
+    "C:\\Myself\\vibe_coding\\onosan_workbench\\test-results\\meeting-notes\\04-convert-action-modal.png",
+    "C:\\Myself\\vibe_coding\\onosan_workbench\\test-results\\meeting-notes\\03-narrow-meeting.png",
+    "C:\\Myself\\vibe_coding\\onosan_workbench\\test-results\\meeting-notes\\05-narrow-reminder.png",
+    "C:\\Myself\\vibe_coding\\onosan_workbench\\test-results\\meeting-notes\\02-meeting-detail.png"
+  ],
+  "errors": [],
+  "geometry": [
+    {
+      "state": "reminder",
+      "before": {
+        "x": 107,
+        "y": 255,
+        "width": 1413,
+        "height": 707
+      },
+      "after": {
+        "x": 107,
+        "y": 255,
+        "width": 1413,
+        "height": 707
+      }
+    },
+    {
+      "state": "narrow reminder",
+      "before": {
+        "x": 489,
+        "y": 266.28125,
+        "width": 480,
+        "height": 899.609375
+      },
+      "after": {
+        "x": 489,
+        "y": 266.28125,
+        "width": 480,
+        "height": 899.609375
+      }
+    }
+  ],
+  "data": "C:\\Myself\\vibe_coding\\onosan_workbench\\test-results\\meeting-notes\\data-uTeYxj",
+  "browser": "Browser plugin not available; isolated Playwright Electron",
+  "materials": [
+    {
+      "material": "solid",
+      "filter": "none",
+      "reducedTransparency": false,
+      "supportsFilter": true
+    },
+    {
+      "material": "normal",
+      "filter": "blur(18px) saturate(1.15)",
+      "reducedTransparency": false,
+      "supportsFilter": true
+    },
+    {
+      "material": "strong",
+      "filter": "blur(30px) saturate(1.4)",
+      "reducedTransparency": false,
+      "supportsFilter": true
+    }
+  ]
+}

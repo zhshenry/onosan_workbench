@@ -503,7 +503,11 @@ test('island native: visible reminders stay inside island without activating mai
   assert.equal(f.notifications.length, 0); assert.equal(f.owner.state().mode, 'speech'); assert.equal(f.main.focused, false);
   f.owner.showOrHide(); f.owner.remindTasks([{ ...task(), id: 'task-2' }]);
   assert.equal(f.notifications.length, 1); assert.equal(f.owner.isVisible(), false); assert.equal(f.owner.window.isVisible(), false);
+  assert.equal(f.notifications[0].options.silent, true);
   f.notifications[0].emit('failed'); assert.equal(f.unclaimed.length, 1);
+  f.invoke('island:patch', { sound: true });
+  f.owner.remindTasks([{ ...task(), id: 'task-3' }]);
+  assert.equal(f.notifications[1].options.silent, false);
 });
 
 test('island native: hidden water reminders stay silent without a system notification', t => {
@@ -654,11 +658,13 @@ test('island native: disabling the mascot retains ordinary cards and drinking cl
   assert.equal(f.owner.state().mode, 'collapsed'); assert.equal(f.owner.state().water.count, 1);
 });
 
-test('island native: disabled kinds return claims and interaction does not get replaced by reminders', t => {
+test('island native: a claimed schedule reaches the expanded island despite legacy flags', t => {
   const f = fixture(t); f.owner.show(); f.owner.setMode('expanded', true);
-  f.invoke('island:patch', { scheduleReminders: false }); f.owner.remindTasks([task('meeting')]);
-  assert.equal(f.unclaimed.length, 1); assert.equal(f.owner.state().reminders.length, 0);
-  f.owner.remindTasks([task()]); assert.equal(f.owner.state().mode, 'expanded'); assert.equal(f.owner.state().reminders.length, 1);
+  f.invoke('island:patch', { scheduleReminders: false });
+  f.owner.remindTasks([task('meeting')]);
+  assert.equal(f.unclaimed.length, 0);
+  assert.equal(f.owner.state().mode, 'expanded');
+  assert.deepEqual(f.owner.state().reminders.map(reminder => reminder.kind), ['meeting']);
 });
 test('island native: quiet hours and lock suppress notifications, fullscreen restores only user-enabled island', t => {
   const f = fixture(t); f.owner.show();

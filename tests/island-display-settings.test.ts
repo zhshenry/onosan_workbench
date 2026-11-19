@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { registerHooks } from 'node:module';
 import { act, createElement } from 'react';
 import { JSDOM } from 'jsdom';
 import { initialIslandData, type IslandState } from '../shared/island-contracts';
@@ -20,6 +21,8 @@ test('island displays: single screen is read-only, multiple screens retain auto/
     displays: () => deferred ? new Promise<typeof displays>(resolve => requests.push(resolve)) : Promise.resolve(structuredClone(displays)),
     patch: async (patch: Record<string, unknown>) => { state = { ...state, settings: { ...state.settings, ...patch } }; return structuredClone(state); },
   } } });
+  const assets = registerHooks({ load(url, context, next) { return /\.(css|svg|png)$/.test(url) ? { format: 'module', source: 'export default "fixture-asset";', shortCircuit: true } : next(url, context); } });
+  t.after(() => assets.deregister());
   const { createRoot } = await import('react-dom/client');
   const { IslandSettingsSection } = await import('../src/views/IslandSettings');
   const root = createRoot(dom.window.document.getElementById('root')!);
@@ -32,6 +35,8 @@ test('island displays: single screen is read-only, multiple screens retain auto/
     names.forEach((name, i) => { if (previous[i]) Object.defineProperty(globalThis, name, previous[i]!); else Reflect.deleteProperty(globalThis, name); });
   });
   await act(async () => root.render(createElement(IslandSettingsSection, { query: '' })));
+  assert.deepEqual([...dom.window.document.querySelectorAll('.island-settings-layout h2')].map(heading => heading.textContent), ['窗口位置', '展开与外观']);
+  assert.equal(dom.window.document.querySelector('[aria-label="停靠位置"]'), null);
   assert.match(dom.window.document.querySelector('.island-display-value')!.textContent!, /正在读取显示器/);
   await act(async () => requests.shift()!([panel]));
   assert.equal(selector(), null); assert.equal(dom.window.document.querySelector('.island-display-value')!.textContent, panel.label);

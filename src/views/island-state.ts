@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import type { IslandState } from '../../shared/island-contracts';
+import { useEffect, useRef, useState } from 'react';
+import type { IslandSettingsPatch, IslandState } from '../../shared/island-contracts';
 import { errorText } from '../ui/controls';
 
 export function useIslandState() {
@@ -16,4 +16,23 @@ export function useIslandState() {
     return () => { alive = false; off(); offError(); window.removeEventListener('focus', load); };
   }, []);
   return { state, setState, error, setError };
+}
+
+export function useIslandSettingsEditor() {
+  const island = useIslandState();
+  const [busy, setBusy] = useState(false);
+  const saving = useRef(false);
+  const run = async (action: () => Promise<unknown>) => {
+    if (saving.current) return;
+    saving.current = true;
+    setBusy(true);
+    island.setError('');
+    try { await action(); }
+    catch (error) { island.setError(errorText(error)); }
+    finally { saving.current = false; setBusy(false); }
+  };
+  const patch = (value: IslandSettingsPatch) => void run(async () => {
+    island.setState(await window.workbench.island.patch(value));
+  });
+  return { ...island, busy, run, patch };
 }

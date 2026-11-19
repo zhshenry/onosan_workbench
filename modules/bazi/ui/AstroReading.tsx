@@ -36,7 +36,7 @@ export function AstroReading({ draft, onChange, busy, checking, configured, conf
         placeholder="写下你想了解的问题，也可以直接开始解读。" onChange={event => onChange({ ...draft, question: event.target.value })} />
     </div>
     {configError && <p className="bazi-as-reading-error" role="alert">{configError}<button type="button" className="bazi-as-text-button" onClick={onRetryConfig}>重新读取</button></p>}
-    {!checking && !configError && !configured && !busy && <p className="bazi-as-reading-help">请先配置并启用一个对话模型，主题和问题会为你保留。</p>}
+    {!checking && !configError && !configured && !busy && <p className="bazi-as-reading-help">请先配置一个对话模型，主题和问题会为你保留。</p>}
     <footer>
       <button type="button" className="btn btn-pri" disabled={!busy && (checking || !!configError)} onClick={onStart}>
         <Sparkle size={16} weight="fill" aria-hidden="true" />{busy ? '查看解读' : checking ? '读取 AI 配置…' : configured ? '开始解读' : '去配置 AI'}<ArrowUpRight size={15} aria-hidden="true" />

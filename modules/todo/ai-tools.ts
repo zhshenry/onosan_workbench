@@ -1,4 +1,4 @@
-// 待办模块的 AI 贡献(移植自上游 electron/ai.ts 的待办部分,逐行一致):
+// 待办模块的 AI 贡献(移植自上游 electron/ai.ts 的待办部分,补充工作台时间语义):
 // 工具只记建议不写库;系统提示词注入事项快照;planFromReply 校验引用真实性。
 import { randomUUID } from 'node:crypto';
 import { Type } from 'typebox';
@@ -9,9 +9,16 @@ import type { AiModuleContribution } from '../../electron/ai-core';
 const optionalString = Type.Optional(Type.String());
 const optionalNullable = Type.Optional(Type.Union([Type.String(), Type.Null()]));
 const taskParams = {
-  kind: optionalString, status: optionalString, priority: optionalString, plannedDate: optionalString,
-  dueAt: optionalNullable, endAt: optionalNullable, remindAt: optionalNullable, categoryId: optionalNullable, progress: Type.Optional(Type.Union([Type.Number(), Type.Null()])), note: optionalString,
+  kind: optionalString, status: optionalString, priority: optionalString, dateAt: Type.Optional(Type.Union([Type.String(), Type.Null()], { description: '唯一事项日期。待办期限可为 YYYY-MM-DD（不设时刻）、带时区的 ISO 时间或 null（不设日期）；日程开始须为带时区的 ISO 时间。' })),
+  endAt: Type.Optional(Type.Union([Type.String(), Type.Null()], { description: '日程的结束时间；待办可为空或不提供，不需要补齐。' })),
+  remindAt: optionalNullable, categoryId: optionalNullable, progress: Type.Optional(Type.Union([Type.Number(), Type.Null()])), note: optionalString,
 };
+
+export const TODO_TIME_RULES = `事项时间规则，核对和转述其他 Bot 的结果时同样适用：
+kind="task" 是待办，dateAt 是截止时间，endAt 为空或未提供是正常状态。不得因此追问结束时间、建议补齐起止时间或改为日程块，也不得列为待决定、待确认或阻塞。只有用户明确要求改成日程或安排执行时段，才讨论起止时间。
+kind="meeting" 才是日程，dateAt 是开始时间，endAt 是结束时间；日程的起止要求不能套用到待办。
+dateAt 是唯一事项日期，不再另外填写计划日期。null 表示不设日期，不能视为信息缺失或已逾期；YYYY-MM-DD 表示只设日期，按该本地日结束判断截止，不得编造具体时刻；带时区的 ISO 时间才表示具体时刻。日期分组、统计和截止均从 dateAt 推导，不得引用历史 plannedDate 或 dueAt 要求用户修正排期。remindAt 才决定提醒，不能把已设截止时间说成已启用提醒。
+查询、核对或跟进时，备注旧日期可简短指出，尚未开展待办所述工作只是执行状态；清理备注、转换日程或追加派工等可选建议，不是完成当前请求的必要条件，不得主动变成让用户拍板的问题。用户已明确的时间要求应沿用，不得重复询问。`;
 
 export function parsePlan(text: string): AIPlan {
   const trimmed = text.trim().replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
@@ -24,7 +31,7 @@ export function taskSnapshot(tasks: Task[], categories: Category[], selectedTask
   const selected = new Set(selectedTaskIds);
   // Keep the established latest-120 baseline; explicitly selected older tasks are additive.
   const context = [...recent, ...tasks.filter(task => !task.deletedAt && selected.has(task.id) && !recentIds.has(task.id))]
-    .map(({ id, title, kind, status, priority, plannedDate, dueAt, endAt, remindAt, categoryId, progress, note }) => ({ id, title, kind, status, priority, plannedDate, dueAt, endAt, remindAt, categoryId, progress, note: note.slice(0, 1000) }));
+    .map(({ id, title, kind, status, priority, dateAt, endAt, remindAt, categoryId, progress, note }) => ({ id, title, kind, status, priority, dateAt, endAt, remindAt, categoryId, progress, note: note.slice(0, 1000) }));
   return {
     context,
     categoryContext: categories.map(({ id, name, color }) => ({ id, name, color })),
@@ -36,7 +43,7 @@ function toolText(text: string) { return { content: [{ type: 'text' as const, te
 function pickedFields(params: Record<string, unknown>): Record<string, unknown> {
   const patch: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(params)) {
-    if (key !== 'id' && value !== undefined) patch[key] = value;
+    if (!['id', 'replacesProposalId', 'separate'].includes(key) && value !== undefined) patch[key] = value;
   }
   return patch;
 }
@@ -49,8 +56,9 @@ export function requestSystemPrompt(now: Date, snapshot: ReturnType<typeof taskS
 需要查看事项时使用 list_tasks。需要新增事项时使用 propose_create;需要修改已有事项时使用 propose_update,id 必须是真实事项 id;仅在用户明确要求删除事项时使用 propose_remove,用户只是想完成或跳过事项时应使用 propose_update 改状态,不得自行推断删除。需要新增标签时使用 propose_create_category;修改已有标签名称或颜色时使用 propose_update_category;删除标签时使用 propose_remove_category(关联事项会变为无标签)。不要声称已保存或提醒已生效,操作将由用户预览后应用。不得执行代码、SQL、访问其他文件。
 categoryId 只能使用已有标签或本次 propose_create_category 返回的 id,不能编造。已有标签:${JSON.stringify(snapshot.categoryContext)}。
 priority 只能是 high、medium 或 low。
-存在歧义时用中文提问,不要调用修改类工具。查询、复盘和建议安排可以直接回答。未经用户明确要求不修改事项或标签。
-新增或修改日程时必须同时给出开始时间 dueAt 和结束时间 endAt,结束时间需晚于开始时间且与日程在同一天;信息不完整时先询问。信息不足时调用 ask_user 工具一次性问清(question 简短,尽量给 2-4 个候选选项让用户直接选);同一问题只问一次,用户回答后立即据此生成建议,不要重复追问。以下情况必须先问:分类有歧义(存在多个标签且用户未指明)、日程缺少开始或结束时间、指向不明("把它改掉"但本轮有多个事项)。用户明确说了"不设标签""随便"或此前对话已回答过时,不得再问。
+${TODO_TIME_RULES}
+只有完成用户当前明确请求所必需的信息存在歧义时才用中文提问,不要调用修改类工具。查询、复盘和建议安排可以直接回答。未经用户明确要求不修改事项或标签。
+新增日程、将待办改为日程或修改日程时间安排时,必须明确开始时间 dateAt 和结束时间 endAt,结束时间需晚于开始时间且与日程在同一天;所需时间信息不完整时先询问,已有值可沿用,仅查询或更名不要求用户重填时间。必要信息不足时调用 ask_user 工具一次性问清(question 简短,尽量给 2-4 个候选选项让用户直接选);同一问题只问一次,用户回答后立即据此生成建议,不要重复追问。以下情况必须先问:本次需要设置的分类有歧义、日程时间安排缺少必需的开始或结束时间、指向不明("把它改掉"但本轮有多个事项)。用户明确说了"不设标签""随便"或此前对话已回答过时,不得再问。
 最近对话只是上下文,不代表建议已经应用;以最新事项数据和用户在对话中明确说明的应用或放弃状态为准。
 ${snapshot.context.length > 120 ? `这是最近120条及本轮明确选择的更早事项，共 ${snapshot.context.length} 条` : `这是最近 ${snapshot.context.length} 条事项`},不能声称覆盖未提供的数据:${JSON.stringify(snapshot.context)}`;
 }
@@ -75,7 +83,7 @@ export function planFromReply(text: string, actions: AIPlan['actions'], knownTas
 
 /** 构建待办模块的一次性贡献(工具闭包持有快照与建议收集器) */
 export type AskUser = (ask: { id: string; question: string; options: { label: string; description?: string }[] }) => Promise<string>;
-export function buildTodoContribution(tasks: Task[], categories: Category[], onAskUser?: AskUser, selectedTaskIds: readonly string[] = []): AiModuleContribution & { collect(): AIPlan['actions'] } {
+export function buildTodoContribution(tasks: Task[], categories: Category[], onAskUser?: AskUser, selectedTaskIds: readonly string[] = [], revisePending = false): AiModuleContribution & { collect(): AIPlan['actions'] } {
   const snapshot = taskSnapshot(tasks, categories, selectedTaskIds);
   const actions: AIAction[] = [];
   return {
@@ -93,7 +101,10 @@ export function buildTodoContribution(tasks: Task[], categories: Category[], onA
       }),
       defineTool({
         name: 'propose_create', label: '建议新建', description: '提出一条新建事项建议,不会立即写入。',
-        parameters: Type.Object({ title: Type.String({ minLength: 1 }), ...taskParams }),
+        parameters: Type.Object({ title: Type.String({ minLength: 1 }), ...taskParams, ...(revisePending ? {
+          replacesProposalId: Type.Optional(Type.String({ description: '补充或修改原新增建议时填写其 proposalId，保留原事项身份。' })),
+          separate: Type.Optional(Type.Boolean({ description: '仅用户明确要求另外新建一个同名事项时为 true，补充日期等信息不能设为 true。' })),
+        } : {}) }),
         execute: async (_id, params) => {
           const parsed = taskFields.safeParse({ ...newTask(), ...pickedFields(params as Record<string, unknown>), categoryId: params.categoryId ?? null });
           if (!parsed.success) return toolText(parsed.error.issues[0]?.message || '新建事项字段无效');

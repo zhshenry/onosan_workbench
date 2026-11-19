@@ -1,6 +1,6 @@
 .hush-hour-workspace { gap: 0; }
 .hush-hour-workspace > .game-project, .hush-hour-workspace .game-preview { border: 0; border-radius: 0; background: transparent; backdrop-filter: none; box-shadow: none; }
-.hush-hour-workspace > .game-project { flex: none; min-height: 76px; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--hairline); }
+.hush-hour-workspace > .game-project { flex: none; border-bottom: 1px solid var(--hairline); }
 .hush-hour-workspace .hush-hour-project-icon { width: 32px; height: 32px; flex: none; color: var(--acc-deep); }
 .hush-hour-workspace .game-project-name { min-width: 0; }
 .hush-hour-workspace .game-project-actions { max-width: 100%; flex-wrap: wrap; gap: 6px; }

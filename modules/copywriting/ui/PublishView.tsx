@@ -193,7 +193,6 @@ export function PublishView({ onPending, onGoEdit, onOpenCreator }: {
           <>
             <div className="copy-editor-head">
               <div>
-                <span className="copy-eyebrow">小红书 · 图文发布</span>
                 <h1>发布前准备</h1>
                 <p className="pub-preparation-tip">准备新笔记内容,复制后前往小红书手动发布。</p>
               </div>

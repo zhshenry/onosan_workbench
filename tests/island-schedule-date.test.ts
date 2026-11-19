@@ -20,7 +20,7 @@ test('island calendar keeps same-day choices and returns to today across midnigh
   state.settings = { ...state.settings, enabled: true, lastPage: 'schedule', reducedMotion: true, hoverPreview: false, pages: { schedule: true, files: false, quota: true, tools: false } };
   const listeners = new Set<(state: IslandState) => void>();
   const taskListeners = new Set<() => void>();
-  const tasks: Task[] = ['2026-11-13', '2026-11-14', '2026-12-01', '2027-01-01'].flatMap(day => (['task', 'meeting'] as const).map(kind => ({ ...newTask(`${day} ${kind}`), kind, plannedDate: day, id: `${day}-${kind}`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), completedAt: null, notifiedFor: null, deletedAt: null })));
+  const tasks: Task[] = ['2026-11-13', '2026-11-14', '2026-12-01', '2027-01-01'].flatMap(day => (['task', 'meeting'] as const).map(kind => ({ ...newTask(`${day} ${kind}`), kind, dateAt: day, id: `${day}-${kind}`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), completedAt: null, notifiedFor: null, deletedAt: null })));
   const updates: string[] = [];
   let finishUpdate: (() => void) | null = null;
   const emit = () => { for (const listener of listeners) listener(structuredClone(state)); };
@@ -46,8 +46,8 @@ test('island calendar keeps same-day choices and returns to today across midnigh
   const selected = () => calendar().querySelector('[aria-pressed="true"]')?.getAttribute('aria-label');
   const expectDate = (day: string) => {
     assert.equal(selected(), day);
-    assert.deepEqual([...doc.querySelectorAll('.island-task-title b')].map(node => node.textContent), tasks.filter(task => task.kind === 'task' && task.status !== 'done' && task.plannedDate === day).map(task => task.title));
-    assert.deepEqual([...doc.querySelectorAll('.island-agenda-item strong')].map(node => node.textContent), tasks.filter(task => task.kind === 'meeting' && task.plannedDate === day).map(task => task.title));
+    assert.deepEqual([...doc.querySelectorAll('.island-task-title b')].map(node => node.textContent), tasks.filter(task => task.kind === 'task' && task.status !== 'done' && task.dateAt === day).map(task => task.title));
+    assert.deepEqual([...doc.querySelectorAll('.island-agenda-item strong')].map(node => node.textContent), tasks.filter(task => task.kind === 'meeting' && task.dateAt === day).map(task => task.title));
   };
   const time = async (value: Date, tick = true) => act(async () => { t.mock.timers.setTime(value.getTime()); if (tick) t.mock.timers.tick(1000); });
   const mode = async (value: IslandState['mode']) => act(async () => { state = { ...state, mode: value }; emit(); });

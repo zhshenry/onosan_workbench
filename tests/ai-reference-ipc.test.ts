@@ -85,25 +85,25 @@ test('真实 ai:ask 拒绝越界输入后不解密、不存消息；发送冻结
       const mainFrame = {};
       await handlers.get('ai:ask')!({ sender: { mainFrame }, senderFrame: mainFrame }, id, '请按明确选中的资料回答', context);
     };
-    const life = ai.newChat({ module: 'workbench', viewId: 'workspace:life' });
+    const readingChat = ai.newChat({ module: 'workbench', viewId: 'workspace:reading' });
     const invalid = [
-      { pageScope: { module: 'workbench', viewId: 'reading' }, references: [{ module: 'bazi', profileId: 'same-life-wrong-module' }] },
-      { pageScope: { module: 'workbench', viewId: 'bazi' }, references: [{ module: 'reading', profileId: 'same-life-wrong-module' }] },
+      { pageScope: { module: 'workbench', viewId: 'reading' }, references: [{ module: 'bazi', profileId: 'wrong-reference-module' }] },
+      { pageScope: { module: 'workbench', viewId: 'bazi' }, references: [{ module: 'reading', profileId: 'wrong-reference-module' }] },
       { pageScope: { module: 'workbench', viewId: 'reading' }, references: [{ module: 'reading', profileId: 'not-a-book' }] },
       { pageScope: { module: 'workbench', viewId: 'reading' }, references: [{ module: 'reading', profileId: 'book', content: 'forged content' }] },
       { pageScope: { module: 'workbench', viewId: 'reading' }, referenceSnapshots: [{ content: 'forged snapshot' }] },
     ];
-    const before = JSON.stringify(ai.chat(life.id));
-    for (const context of invalid) await assert.rejects(() => ask(life.id, context));
+    const before = JSON.stringify(ai.chat(readingChat.id));
+    for (const context of invalid) await assert.rejects(() => ask(readingChat.id, context));
     assert.equal(state.decryptions, 0);
     assert.equal(requests.length, 0);
-    assert.equal(JSON.stringify(ai.chat(life.id)), before);
+    assert.equal(JSON.stringify(ai.chat(readingChat.id)), before);
 
     const selectedBook = reading.save({ title: '仅书目字段', author: '已记录作者', status: 'reading', comment: '已记录短评', tags: ['参考'], link: { vault: 'FORBIDDEN_VAULT', folder: 'FORBIDDEN_FOLDER' } }).books[0];
     reading.setVaultPath(join(dir, 'FORBIDDEN_VAULT_PATH'));
     action = { name: 'read_reference', arguments: { id: `reading:${selectedBook.id}` } };
-    await ask(life.id, { scope: { module: 'workbench', viewId: 'workspace:life' }, pageScope: { module: 'workbench', viewId: 'reading' }, references: [{ module: 'reading', profileId: selectedBook.id }] });
-    const bookEntry = ai.chat(life.id).entries[0];
+    await ask(readingChat.id, { scope: { module: 'workbench', viewId: 'workspace:reading' }, pageScope: { module: 'workbench', viewId: 'reading' }, references: [{ module: 'reading', profileId: selectedBook.id }] });
+    const bookEntry = ai.chat(readingChat.id).entries[0];
     assert.match(bookEntry.referenceSnapshots![0].content, /已记录作者/);
     assert.ok(!JSON.stringify(requests).includes('FORBIDDEN_'));
     assert.deepEqual(requests[0].tools?.map(tool => tool.function.name), ['read_reference']);

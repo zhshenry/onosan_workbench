@@ -1,11 +1,11 @@
 import type { AiModuleContribution } from '../electron/ai-core';
 import { workbenchForScope, type AiScope } from '../shared/ai-scope';
 
-const workbenchNames = { home: '首页', media: '自媒体工作台', game: '游戏工作台', web: '网页工作台', life: '小工具', 'ai-test': 'AI 测试工作台', settings: '设置' } as const;
+const workbenchNames = { home: '首页', todo: '日程待办', media: '自媒体工作台', game: '游戏工作台', web: '网页工作台', life: '小工具', bazi: '命理', reading: '阅读清单', 'ai-test': 'AI 测试工作台', settings: '设置' } as const;
 const pageNames: Record<string, string> = {
   browser: '浏览器', game: '轨迹侦探 · 运行与测试',
   home: '我的看板', todo: '日程待办', bazi: '命理', copy: '博客编辑', 'copy-publish': '图文发布', 'media-browser': '我的小红书',
-  'settings-profile': '个人资料', 'settings-general': '通用', 'settings-appearance': '外观', 'settings-ai': 'AI 助手',
+  'settings-profile': '个人资料', 'settings-general': '通用', 'settings-appearance': '外观', 'settings-ai': 'AI 助手', 'settings-apps': '应用与账号', 'settings-checkin': '应用与账号 · 自动签到',
   'settings-data': '待办与数据', 'settings-notifications': '通知', 'settings-about': '关于',
 };
 

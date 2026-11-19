@@ -38,7 +38,8 @@ Windows 本机可能因缺少创建文件符号链接的权限而使两项安全
 
 ## 规范与数据
 
-- [DESIGN.md](DESIGN.md)：视觉意图、组件归属与主题规则；运行时 token 由 `src/shell.css` 维护。
+- [AGENTS.md](AGENTS.md) 提供 AI 接手 UI 任务时的阅读和验收入口。
+- [DESIGN.md](DESIGN.md) 的[新增 UI 组件选型](DESIGN.md#新增-ui-组件选型)列出常见场景、首选组件、参考实现和验收点。基础字阶与控件在 `src/shell.css`，主题与材质在 `src/appearance.css`，页签和公共操作尺寸在 `src/ui/navigation.css`。
 - [UX-CONTRACT.md](UX-CONTRACT.md)：导航、输入、弹层、保存、权限等可观察行为。
 - [design-qa.md](design-qa.md)：按日期记录验收结果，历史条目不能代替当前验收。
 - [待办同步台账](modules/todo/SYNC.md)：与 To-Do-List 的移植映射和共享数据库边界。

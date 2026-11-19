@@ -55,3 +55,6 @@ design/references/*.png
 !/docs/requirements/shared/ai-assistant/evidence/68-ai-model-menu-open-1280.png
 !/docs/requirements/shared/topbar/evidence/58-topbar-capsules-center-1280.png
 !/docs/requirements/shared/topbar/evidence/58-topbar-capsules-schedule-popover-1280.png
+/.codeai/
+/ai-sessions/
+/.claude_snapshot/

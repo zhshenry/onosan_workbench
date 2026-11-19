@@ -1,6 +1,7 @@
 import { DEFAULT_APP_SETTINGS } from '../shared/contracts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { registerHooks } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { JSDOM } from 'jsdom';
 import { act, createElement } from 'react';
@@ -26,10 +27,15 @@ test('应用更新 v2 真实 React 行内展示、错误详情及现有动作隔
   let checks = 0, installs = 0, unsubscribes = 0;
   Object.defineProperty(dom.window, 'workbench', { value: {
     appInfo: { about: async () => ({ name: 'OnO Workbench', version: '0.1.0', electron: '44.4.4', chrome: '152', userDataPath: 'synthetic', todoDbPath: 'synthetic' }) },
+    todo: { info: async () => ({ path: 'synthetic', connected: true, schemaVersion: 4, taskCount: 0, categoryCount: 0 }) },
     updater: { status: () => statusRead(), onStatus: (callback: (value: UpdateStatus) => void) => { listener = callback; return () => { listener = undefined; unsubscribes++; }; },
       check: () => { checks++; return checkAction(); }, install: () => { installs++; return installAction(); } },
   } });
   const { createRoot } = await import('react-dom/client');
+  const assets = registerHooks({ load(url, context, next) {
+    return /\.(css|svg|png)$/.test(url) ? { format: 'module', source: 'export default "test-asset";', shortCircuit: true } : next(url, context);
+  } });
+  t.after(() => assets.deregister());
   const { SettingsView } = await import('../src/views/SettingsView');
   let root = createRoot(dom.window.document.getElementById('root')!);
   const render = async () => act(async () => root.render(createElement(SettingsView, { view: 'settings-about', appearance: { value: DEFAULT_APP_SETTINGS, ready: true, status: 'saved', error: '', change: () => {}, retry: () => {} }, onAvatarColorChange: () => {} })));
@@ -134,8 +140,8 @@ test('应用更新 v2 真实 React 行内展示、错误详情及现有动作隔
     await emit(snapshot('latest')); assert.equal(row().querySelector('.set-update-details'), null);
     assert.equal(dom.window.document.querySelector('.settings-page > .help'), null);
     assert.doesNotMatch(dom.window.document.body.textContent ?? '', /零漂移/);
-    assert.equal(dom.window.document.querySelector('[data-setting-key="userData"]'), null);
-    assert.equal(dom.window.document.querySelector('[data-setting-key="todoDb"]'), null);
+    assert.ok(dom.window.document.querySelector('.settings-storage [data-setting-key="userData"]'));
+    assert.equal(dom.window.document.querySelectorAll('.settings-storage [data-setting-key="dbPath"]').length, 1);
     await emit(snapshot('ready'));
     installAction = async () => { throw new Error('合成安装调用失败'); };
     await click(action()); assert.equal(row().querySelector('.set-update-details')?.textContent, '合成安装调用失败');

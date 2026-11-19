@@ -36,8 +36,8 @@ try {
   await main.evaluate(async () => {
     await window.workbench.island.patch({ hideFullscreen: false, reducedMotion: true });
     const now = new Date(), day = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    await window.workbench.todo.create({ title: '灵动岛验收 · 完成回写', kind: 'task', status: 'todo', priority: 'high', plannedDate: day, dueAt: null, endAt: null, remindAt: null, categoryId: null, progress: null, note: '' });
-    await window.workbench.todo.create({ title: '评审一个很长的日程标题，验证换行与完整内容可达', kind: 'meeting', status: 'todo', priority: 'medium', plannedDate: day, dueAt: `${day}T14:00:00+08:00`, endAt: `${day}T15:00:00+08:00`, remindAt: null, categoryId: null, progress: null, note: '' });
+    await window.workbench.todo.create({ title: '灵动岛验收 · 完成回写', kind: 'task', status: 'todo', priority: 'high', dateAt: day, endAt: null, remindAt: null, categoryId: null, progress: null, note: '' });
+    await window.workbench.todo.create({ title: '评审一个很长的日程标题，验证换行与完整内容可达', kind: 'meeting', status: 'todo', priority: 'medium', dateAt: `${day}T14:00:00+08:00`, endAt: `${day}T15:00:00+08:00`, remindAt: null, categoryId: null, progress: null, note: '' });
   });
   await main.getByRole('button', { name: '打开桌面灵动岛', exact: true }).click();
   let island = await application.waitForEvent('window', { predicate: page => page !== main, timeout: 10000 }).catch(() => application.windows().find(page => page !== main));
@@ -157,7 +157,8 @@ try {
   await island.getByRole('button', { name: '桌面灵动岛设置', exact: true }).click();
   await main.getByRole('heading', { name: '桌面灵动岛', exact: true }).waitFor();
   await main.screenshot({ path: join(output, 'settings.png') });
-  await main.getByRole('radio', { name: 'AI 额度', exact: true }).click();
+  await main.getByRole('button', { name: 'Agent连接', exact: true }).click();
+  await main.getByRole('radio', { name: 'Agent额度连接', exact: true }).click();
   await main.getByRole('button', { name: '查看 Z Code 连接', exact: true }).click();
   await main.locator('#island-zcode-key').waitFor();
   assert.equal(await main.locator('#island-zcode-key').getAttribute('type'), 'password');

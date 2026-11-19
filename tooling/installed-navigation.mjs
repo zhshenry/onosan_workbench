@@ -2,7 +2,7 @@
 export async function navigateInstalled(page, workbench, label, view) {
   const settings = page.getByRole('dialog', { name: '设置', exact: true });
   if (workbench === 'settings') {
-    if (!await settings.isVisible()) await page.locator('.rail [data-workbench="settings"]').click();
+    if (!await settings.isVisible()) await page.getByRole('button', { name: '设置', exact: true }).click();
     if (label) await settings.locator('.settings-sections').getByRole('button', { name: label, exact: true }).click();
   } else {
     if (await settings.isVisible()) {
@@ -18,4 +18,19 @@ export async function navigateInstalled(page, workbench, label, view) {
     }
   }
   if (view) await page.locator(`#view-${view}`).waitFor({ state: 'visible' });
+}
+
+export async function collapseInstalledAssistant(page) {
+  const topbar = page.locator('.topbar');
+  await topbar.waitFor();
+  if (await page.locator('.bot-shell').count()) {
+    await topbar.getByRole('combobox', { name: 'AI 助手', exact: true }).click();
+    await page.getByRole('option', { name: '收起助手', exact: true }).click();
+    return;
+  }
+  const collapse = topbar.getByRole('button', { name: '收起 AI 助手', exact: true });
+  if (await collapse.isVisible()) {
+    await collapse.click();
+    await page.locator('#workbench-ai-panel').waitFor({ state: 'hidden' });
+  }
 }

@@ -35,34 +35,36 @@ export function sameAiScope(chat: Pick<ChatSession, 'module' | 'draftId' | 'prof
 const viewWorkbenches: Record<ViewId, WorkbenchId> = {
   browser: 'web', 'hush-hour': 'web', 'personal-website': 'web', game: 'game',
   'ai-test': 'ai-test', 'ai-test-tasks': 'ai-test', 'ai-test-history': 'ai-test',
-  home: 'home', todo: 'life', bazi: 'life', reading: 'life', checkin: 'life', copy: 'media', 'copy-publish': 'media', 'media-browser': 'media',
+  home: 'home', todo: 'todo', bazi: 'bazi', reading: 'reading', checkin: 'home', copy: 'media', 'copy-publish': 'media', 'media-browser': 'media',
   'settings-profile': 'settings', 'settings-general': 'settings', 'settings-appearance': 'settings', 'settings-island': 'settings',
-  'settings-ai': 'settings', 'settings-data': 'settings', 'settings-notifications': 'settings', 'settings-about': 'settings',
+  'settings-ai': 'settings', 'settings-bots': 'settings', 'settings-apps': 'settings', 'settings-agent-quota': 'settings', 'settings-checkin': 'settings', 'settings-data': 'settings', 'settings-notifications': 'settings', 'settings-about': 'settings',
 };
 
 export function defaultAiScopeForWorkbench(workbench: WorkbenchId): AiScope | null {
+  if (workbench === 'todo') return { module: 'todo' };
   if (workbench === 'home') return { module: 'workbench', viewId: 'home' };
   if (workbench === 'web') return { module: 'workbench', viewId: 'browser' };
   if (workbench === 'game') return { module: 'workbench', viewId: 'game' };
   if (workbench === 'ai-test') return { module: 'workbench', viewId: 'ai-test' };
-  if (workbench === 'media' || workbench === 'life' || workbench === 'settings') return { module: 'workbench', viewId: `workspace:${workbench}` };
+  if (workbench === 'media' || workbench === 'life' || workbench === 'bazi' || workbench === 'reading' || workbench === 'settings') return { module: 'workbench', viewId: `workspace:${workbench}` };
   return null;
 }
 
 export function workbenchForScope(scope: AiScope): WorkbenchId | null {
-  if (scope.module === 'todo') return 'life';
+  if (scope.module === 'todo') return 'todo';
   if (scope.module === 'copy') return 'media';
-  if (scope.module === 'bazi') return 'life';
-  if (scope.module === 'reading') return 'life';
+  if (scope.module === 'bazi') return 'bazi';
+  if (scope.module === 'reading') return 'reading';
   if (scope.viewId === 'workspace:media') return 'media';
-  if (scope.viewId === 'workspace:life') return 'life';
+  if (scope.viewId === 'workspace:life' || scope.viewId === 'workspace:bazi') return 'bazi';
+  if (scope.viewId === 'workspace:reading') return 'reading';
   if (scope.viewId === 'workspace:settings') return 'settings';
   return viewWorkbenches[scope.viewId as ViewId] ?? null;
 }
 
 export function sameAiWorkbench(chat: Pick<ChatSession, 'module' | 'draftId' | 'profileId' | 'viewId'>, scope: AiScope): boolean {
   const original = chatScope(chat);
-  // 日程待办迁到小工具后仍保留原会话边界，不自动接续命理或阅读对话。
+  // 旧待办会话继续保持自己的边界，不自动接续命理或阅读对话。
   if (original.module === 'todo' || scope.module === 'todo') return original.module === scope.module;
   const workbench = workbenchForScope(original);
   return workbench ? workbench === workbenchForScope(scope) : aiScopeKey(original) === aiScopeKey(scope);

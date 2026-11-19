@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { localDay } from './todo-contracts';
+import type { ReminderRange } from './contracts';
+import { localDay, type Task } from './todo-contracts';
 import type { AgentConnection, AgentMessage, AgentProvider, AgentReadTarget } from './agent-message-contracts';
 
 export const ISLAND_PAGES = ['schedule', 'files', 'quota', 'tools'] as const;
@@ -62,7 +63,7 @@ export interface QuotaProvider {
   account: string; accountKey?: string; plan: string; windows: QuotaWindow[]; updatedAt: number | null; message: string;
   issue?: 'auth-required' | 'cli-unavailable';
 }
-export type IslandNavigation = { view: 'home' | 'todo' | 'settings-island' | 'settings-general' | 'settings-ai'; taskId?: string; section?: 'quota' | 'water' | 'sedentary' | 'agents' };
+export type IslandNavigation = { view: 'home' | 'todo' | 'settings-island' | 'settings-agent-quota' | 'settings-general' | 'settings-ai'; taskId?: string; artifactId?: string; botPanel?: 'details' | 'library'; section?: 'quota' | 'water' | 'sedentary' | 'agents' };
 export interface IslandBridge {
   assistant(action: 'show' | 'hide' | 'pin' | 'state' | 'ready'): Promise<{ pinned: boolean; visible: boolean }>;
   onAssistantOpen(callback: () => void): () => void;
@@ -115,6 +116,12 @@ export function inTimeRange(now: Date, start: string, end: string): boolean {
   const minutes = (s: string) => Number(s.slice(0, 2)) * 60 + Number(s.slice(3));
   const a = minutes(start), b = minutes(end);
   return a === b || (a < b ? value >= a && value < b : value >= a || value < b);
+}
+export function inReminderQuietHours(settings: Pick<IslandSettings, 'dnd' | 'dndStart' | 'dndEnd'>, now = new Date()): boolean {
+  return settings.dnd && inTimeRange(now, settings.dndStart, settings.dndEnd);
+}
+export function taskReminderEnabled(range: ReminderRange, kind: Task['kind']): boolean {
+  return range === 'all' || range === (kind === 'meeting' ? 'schedule' : 'todo');
 }
 export function nextHealthReminder(settings: IslandSettings, kind: 'water' | 'sedentary', now: number, delay = settings[`${kind}Minutes`]): number | null {
   const start = settings[`${kind}Start`], end = settings[`${kind}End`], current = new Date(now);

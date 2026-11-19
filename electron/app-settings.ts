@@ -3,15 +3,16 @@
 // - 纯存储,不依赖 electron;开机自启/关闭行为等副作用在 main.ts 应用
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { AppSettingsSchema, DEFAULT_APP_SETTINGS, type AppSettings, type AppSettingsPatch } from '../shared/contracts';
+import { AppSettingsSchema, DEFAULT_APP_SETTINGS, ReminderRangeSchema, type AppSettings, type AppSettingsPatch } from '../shared/contracts';
 import { writeJsonAtomic } from '../modules/storage/json-file';
+import { readIslandReminderSettings } from './island-store';
 
 export class AppSettingsStore {
   private readonly configPath: string;
   private cached: AppSettings | null = null;
 
-  constructor(dir: string) {
-    this.configPath = join(dir, 'app-settings.json');
+  constructor(private readonly directory: string) {
+    this.configPath = join(directory, 'app-settings.json');
   }
 
   read(): AppSettings {
@@ -39,23 +40,31 @@ export class AppSettingsStore {
   }
 
   private readFromDisk(): AppSettings {
+    let stored: Record<string, unknown> = {};
     try {
-      if (!existsSync(this.configPath)) return { ...DEFAULT_APP_SETTINGS };
-      const parsed = JSON.parse(readFileSync(this.configPath, 'utf8')) as unknown;
-      if (typeof parsed !== 'object' || parsed === null) return { ...DEFAULT_APP_SETTINGS };
-      const stored = parsed as Record<string, unknown>;
-      const raw = { ...DEFAULT_APP_SETTINGS, ...stored };
-      // 已下线的冷灰 / 晴蓝迁移到中性雾珀；其余偏好逐字段保留。
-      if (stored.uiTheme === 'sunny' || stored.uiTheme === 'cool') raw.uiTheme = 'mist';
-      // 逐字段恢复:单个字段损坏只丢弃该字段,其余保留(兼容旧文件/局部损坏)
-      const next: Record<string, unknown> = { ...DEFAULT_APP_SETTINGS };
-      for (const key of Object.keys(DEFAULT_APP_SETTINGS) as (keyof AppSettings)[]) {
-        const field = AppSettingsSchema.shape[key].safeParse(raw[key]);
-        if (field.success) next[key] = field.data;
+      if (existsSync(this.configPath)) {
+        const parsed = JSON.parse(readFileSync(this.configPath, 'utf8')) as unknown;
+        if (typeof parsed === 'object' && parsed !== null) stored = parsed as Record<string, unknown>;
       }
-      return next as AppSettings;
-    } catch {
-      return { ...DEFAULT_APP_SETTINGS };
+    } catch { /* 无法读取应用设置时使用默认值。 */ }
+    const raw = { ...DEFAULT_APP_SETTINGS, ...stored };
+    // 已下线的冷灰 / 晴蓝迁移到中性雾珀；其余偏好逐字段保留。
+    if (stored.uiTheme === 'sunny' || stored.uiTheme === 'cool') raw.uiTheme = 'mist';
+    // 逐字段恢复:单个字段损坏只丢弃该字段,其余保留(兼容旧文件/局部损坏)
+    const next: Record<string, unknown> = { ...DEFAULT_APP_SETTINGS };
+    for (const key of Object.keys(DEFAULT_APP_SETTINGS) as (keyof AppSettings)[]) {
+      const field = AppSettingsSchema.shape[key].safeParse(raw[key]);
+      if (field.success) next[key] = field.data;
     }
+    if (!ReminderRangeSchema.safeParse(stored.reminderRange).success) {
+      if (next.remindersEnabled === false) {
+        next.reminderRange = 'off';
+      } else {
+        const { scheduleReminders, todoReminders } = readIslandReminderSettings(this.directory);
+        if (!scheduleReminders) next.reminderRange = todoReminders ? 'todo' : 'off';
+        else if (!todoReminders) next.reminderRange = 'schedule';
+      }
+    }
+    return next as AppSettings;
   }
 }

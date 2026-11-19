@@ -1,0 +1,48 @@
+Create ONE realistic, production-quality, high-fidelity Chinese Electron desktop workbench screen. Target 1920 x 1200, natural 8:5 desktop viewport. One coherent application screenshot, no collage, no surrounding labels, no callouts.
+
+INPUT REFERENCES AND PRIORITY:
+1) The first image is the existing full-window OnO workbench, with a collapsed Bot avatar rail on the far left, conversation panel in the middle-left, and a large workspace on the right. Preserve that product shell, pastel blue / warm white / pale mint glass surfaces, window controls, top utility strip, dashboard hierarchy, and navigation hover geometry.
+2) The second image is a transparent strip of EIGHT EXACT CURRENT avatars rendered from the real application components. In order: Ono blue ring face, 日程 purple rounded-square face, 小墨 graphite drop face, 游伴 green ghost face, 小舟 orange triangular sail face, 小测 pink hexagonal face, 命理 mint flower face, 阅读 cyan orb face. Use these current designs in the sidebar and chat. All faces have two vertical eyes. These replace legacy 3D spheres, gamepads or other avatar art in reference 1. Do not add info badges or white corner buttons to avatars.
+3) The third image is a previous assistant-only mockup. Use ONLY its message typography and subtle bubble materials as reference. Its separate RIGHT collaboration drawer and its "本次工作" scope have been REJECTED. Do NOT reproduce that layout.
+
+CORE LAYOUT — CRITICAL:
+Keep exactly the existing TWO content regions after the narrow left navigation rail:
+- LEFT content region = the existing conversation panel, approximately 500px wide, displaying a temporary read-only Bot-to-Bot conversation view INSIDE it.
+- RIGHT content region = the original large workspace, approximately 1270px wide, fully visible and usable, unchanged position and width from normal parallel mode.
+There is NO third column, NO right-side collaboration drawer, NO modal over the workspace, NO floating extra panel, NO second chat beside this chat. The main user conversation and composer are temporarily replaced only within the left conversation panel. Returning restores them. The workspace never shrinks or disappears when viewing these messages.
+Use margins around 16px and the existing rounded outer glass panels. Keep the original rail narrow, with selected Ono in a subtle rounded-square hit area, no redesigned hover shape. Preserve window-level top capsules rather than restyling unrelated shell controls.
+
+STATE AND INTERACTION BEING SHOWN:
+The user clicked a handoff in Ono's main conversation. That same left panel now displays the ONGOING exchange between Ono and 日程. This is their shared message chronology across DIFFERENT requests. It is NOT one task's activity log. The clicked DataFUN request may have a very subtle blue edge highlight to show where the view landed.
+Do not show any peer-switching tabs, dropdowns, chips, "小墨 / 日程" selector, task filters, task counts, or "本次工作" labels.
+
+LEFT PANEL HEADER:
+One compact 56px high row, aligned in height with the workspace heading. Visible back control "← 返回对话", a subtle divider, then exact blue Ono avatar and "Ono", a small "⇄", exact purple 日程 avatar and "日程". Avoid a redundant second page title, giant heading, work-progress toolbar or deliverables toolbar in this read-only view.
+Below it, an independently scrollable transcript, comfortable 16–18px body text, clear contrast, names and muted time labels. True message bubbles with avatar/name/time, not cards summarizing tasks. No badges saying completed or "任务一/任务二". Bubble width should fit a 500px panel naturally, never squashed.
+
+EXACT MESSAGE CONTENT IN LEFT PANEL:
+Muted chronological separator: "11月16日 周一"
+Ono, blue avatar, time "16:40":
+"查一下 DAMA BOOK 学习的截止日期。"
+日程, purple avatar, time "16:41":
+"当前截止日期是 11月30日 23:59。"
+Muted separator: "今天"
+Ono, blue avatar, time "14:20":
+"把「完成 DataFUN 汇报材料编写」的截止日期改到明天 23:59。其他内容不变，先生成建议，等用户确认后再写入。"
+日程, purple avatar, time "14:21":
+"已找到原待办。建议将截止日期从 11月17日 23:59 改为 11月18日 23:59，尚未应用，等待用户确认。"
+These four actual-message-style bodies belong to one continuous pair transcript. Distinguish the two speakers with subtle neutral vs pale blue bubbles and sender identities; no task divisions.
+At bottom, a small quiet single-line hint "返回主对话后可继续补充或确认". NO text composer, model picker, send button, or approval buttons in this Bot exchange view. The date change is still PENDING.
+
+RIGHT WORKSPACE — PRESERVE EXISTING PRODUCT:
+Heading "工作区" in the same aligned 56px header row, right-side workspace-collapse icon as in the source. Beneath, keep the existing dashboard:
+- A compact header card "OnOSaN的看板", subtitle "11月17日 周二 · 下午好，OnOSaN", right-side rounded-rectangular actions "＋ 添加卡片", "编辑布局".
+- Existing two-column row "待办摘要" and "AI 额度", as in the full-window reference, with source's teal/blue status chart and familiar provider list, not new features.
+- Existing "每日签到" area below with its familiar entries and "一键签到". Keep application connection settings out of this screen.
+The workspace is large and readable, not narrowed into a thin third column.
+Any visible numbers are realistic mock examples, not a new metric system. Reuse source layout and density. Actual current date anchor is 2026-11-17 Tuesday. Any displayed week/day labels must match this anchor; "明天" is 11月18日. Do not carry the stale Nov16 Monday dashboard greeting from the source.
+
+STYLE:
+Stay faithful to the existing app and accepted designs. Light, quiet glass effect, soft blue on left, warm ivory on right, a touch of mint toward bottom. Dark charcoal readable Chinese text, muted slate secondary text, modest blue accent, thin translucent white outer rims, restrained shadows. Message rows use spacing and bubbles rather than nested cards. All content-level action buttons rounded RECTANGLES, not pills. Do not invent a new palette, logo, navigation concept, avatar system, gradients or hover frames. No hidden clipping, unreadable text, giant chat bubbles or large wasted vertical gaps.
+
+Deliver a single polished full-window high-fidelity UI screenshot that makes both the continuous Bot-to-Bot conversation and the preserved large workspace immediately obvious.

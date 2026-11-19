@@ -84,7 +84,7 @@ test('设置:patch 非法值不生效且不写坏文件', () => {
   }
 });
 
-test('设置:旧文件缺新字段自动落默认(remindersEnabled 缺省开启)', () => {
+test('设置:缺失字段保留默认值，旧开关映射为实际生效的提醒范围', () => {
   const dir = tempDir();
   try {
     writeFileSync(
@@ -94,13 +94,22 @@ test('设置:旧文件缺新字段自动落默认(remindersEnabled 缺省开启)
     );
     const store = new AppSettingsStore(dir);
     const s = store.read();
-    assert.equal(s.remindersEnabled, true);
+    assert.equal(s.reminderRange, 'all');
     assert.equal(s.launchAtLogin, true);
     assert.equal(s.closeAction, 'exit');
-    // 显式关闭被保留
-    const patched = store.patch({ remindersEnabled: false });
-    assert.equal(patched.remindersEnabled, false);
-    assert.equal(new AppSettingsStore(dir).read().remindersEnabled, false);
+    for (const [remindersEnabled, scheduleReminders, todoReminders, expected] of [
+      [true, true, true, 'all'], [true, true, false, 'schedule'], [true, false, true, 'todo'],
+      [true, false, false, 'off'], [false, true, true, 'off'],
+    ] as const) {
+      writeFileSync(join(dir, 'app-settings.json'), JSON.stringify({ remindersEnabled }));
+      writeFileSync(join(dir, 'desktop-island.json'), JSON.stringify({ settings: { scheduleReminders, todoReminders } }));
+      assert.equal(new AppSettingsStore(dir).read().reminderRange, expected);
+    }
+    const upgraded = new AppSettingsStore(dir);
+    for (const reminderRange of ['all', 'schedule', 'todo', 'off'] as const) {
+      assert.equal(upgraded.patch({ reminderRange }).reminderRange, reminderRange);
+      assert.equal(new AppSettingsStore(dir).read().reminderRange, reminderRange);
+    }
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -131,7 +140,7 @@ test('设置:八主题与导航/玻璃独立持久化，兼容旧时段字段且
     assert.equal(next.uiTheme, 'warm');
     for (const uiTheme of ['cool', 'sunny']) {
       writeFileSync(join(dir, 'app-settings.json'), JSON.stringify({ uiTheme, profile: { name: '小野', avatarColor: 'teal' }, remindersEnabled: false }), 'utf8');
-      assert.deepEqual(new AppSettingsStore(dir).read(), { ...DEFAULT_APP_SETTINGS, profile: { name: '小野', avatarColor: 'teal' }, remindersEnabled: false });
+      assert.deepEqual(new AppSettingsStore(dir).read(), { ...DEFAULT_APP_SETTINGS, profile: { name: '小野', avatarColor: 'teal' }, remindersEnabled: false, reminderRange: 'off' });
     }
     writeFileSync(join(dir, 'app-settings.json'), JSON.stringify({ navigationStyle: 'bad', glassIntensity: 'strong', windowLight: 'bad', uiTheme: 'rose' }), 'utf8');
     const recovered = new AppSettingsStore(dir).read();

@@ -177,7 +177,7 @@ export function SpeechInput({ anchor, contextKey, draft, onChange, enabled, visi
       const rect = (compose.querySelector('.ai-compose-input') ?? compose).getBoundingClientRect();
       element.style.width = Math.min(432, rect.width) + 'px';
       element.style.maxHeight = Math.max(120, rect.top - 92) + 'px';
-      element.style.left = Math.max(8, Math.min(rect.right - element.offsetWidth, window.innerWidth - element.offsetWidth - 8)) + 'px';
+      element.style.left = Math.max(8, Math.min(rect.left + (rect.width - element.offsetWidth) / 2, window.innerWidth - element.offsetWidth - 8)) + 'px';
       element.style.top = Math.max(84, rect.top - element.offsetHeight - 8) + 'px';
       const bounds = element.getBoundingClientRect();
       element.style.setProperty('--speech-card-left', bounds.left + 'px');
@@ -205,7 +205,7 @@ export function SpeechInput({ anchor, contextKey, draft, onChange, enabled, visi
   const selectedPrefs = active ? activePrefs.current : prefs;
   return <>
     <button ref={trigger} type="button" className={'ai-voice-trigger' + (phase !== 'idle' ? ' active' : '')}
-      aria-label={phase === 'idle' ? '语音听写' : '取消语音听写'} title={!window.workbench.speech ? '请重启工作台以启用语音输入' : enabled ? phase === 'idle' ? '语音听写' : '取消语音听写' : '请先配置并启用 AI 助手'}
+      aria-label={phase === 'idle' ? '语音听写' : '取消语音听写'} title={!window.workbench.speech ? '请重启工作台以启用语音输入' : enabled ? phase === 'idle' ? '语音听写' : '取消语音听写' : '请先配置对话模型'}
       aria-haspopup="dialog" aria-expanded={phase !== 'idle'} aria-controls={id} disabled={!enabled || !window.workbench.speech}
       onClick={() => { if (phase === 'idle') void start(); else cancel(); }}><Microphone size={18} weight={phase !== 'idle' ? 'fill' : 'regular'} /></button>
     {phase !== 'idle' && <div ref={panel} id={id} popover="manual" role="dialog" aria-labelledby={id + '-title'} className="ai-speech-card">

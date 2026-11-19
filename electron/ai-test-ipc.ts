@@ -44,7 +44,7 @@ export class AiTestService {
     const task = testTaskSchema.parse(input);
     if (this.active.size) throw new Error('已有测试正在执行，请等待结束或先停止');
     const config = this.ai.readConfig();
-    if (!config.aiEnabled) throw new Error('请先在 AI 设置中启用模型服务');
+    if (!config.aiEnabled) throw new Error('请先在模型配置中添加对话模型');
     const connections: TestConnection[] = task.modelIds.map(id => {
       const model = config.models.find(item => item.id === id);
       const provider = config.providers.find(item => item.id === model?.providerId);

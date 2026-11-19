@@ -1,12 +1,18 @@
-import { useEffect, useId, useRef, useState } from 'react';
-import { Clock, Plus } from '@phosphor-icons/react';
-import { activeToday, insightTarget, localDay, openToday, type Task } from '../../shared/todo-contracts';
-import { isOverdue } from '../../shared/todo-format';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { CaretRight, FileText, PencilSimple, Plus } from '@phosphor-icons/react';
+import { localDay, taskDay, taskTime, type Task } from '../../shared/todo-contracts';
+import { scheduleStamp } from '../../shared/todo-format';
+import { meetingNoteStatus, meetingTimeStatus } from '../../shared/meeting-notes';
 import { errorText } from '../ui/controls';
 import { TaskEditor, type TaskEditorApi, type TodoState } from '../../modules/todo/ui/TaskEditor';
 import { TodayBoard, type Mutate } from '../../modules/todo/ui/TodayBoard';
+import type { ScheduleTab } from '../../modules/todo/ui/CalendarWorkspace';
 import { TaskLibrary } from '../../modules/todo/ui/TaskLibrary';
 import { IconDocs } from '../icons';
+import { useMeetingNotes } from '../meeting-notes';
+import { MeetingMinutes, type MeetingMinutesHandle } from './MeetingMinutes';
+import { ScheduleReminder } from './ScheduleReminder';
+import './meeting-minutes.css';
 
 const wb = window.workbench;
 
@@ -22,17 +28,57 @@ const editorApi: TaskEditorApi = {
   createCategory: (input) => wb.todo.createCategory(input),
 };
 
-export function TodoView({ data, clock, mutate, editor, setEditor }: {
+export function TodoView({ data, clock, mutate, editor, setEditor, workspaceHeader }: {
   data: TodoState; clock: Date; mutate: Mutate;
   editor: Task | 'new' | null;
   setEditor: (t: Task | 'new' | null) => void;
+  workspaceHeader?: HTMLElement | null;
 }) {
+  const [tab, setTab] = useState<ScheduleTab>('calendar');
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [notice, setNotice] = useState('');
-  const addButton = useRef<HTMLButtonElement>(null);
+  const savedTodo = useRef<Task | null>(null);
   const createId = useId();
+  const meetingNotes = useMeetingNotes();
+  const [activeMeetingId, setActiveMeetingId] = useState<string | null>(null);
+  const [meetingEditor, setMeetingEditor] = useState<Task | null>(null);
+  const minutes = useRef<MeetingMinutesHandle>(null);
+  const selectionRequest = useRef(0), returnFocus = useRef<HTMLElement | null>(null);
+  const activeMeeting = data.tasks.find(task => task.id === activeMeetingId && task.kind === 'meeting' && !task.deletedAt);
+  const editing = meetingEditor ?? (editor && editor !== 'new' && editor.kind === 'meeting' ? null : editor);
+  const sourceNote = editing && editing !== 'new' && editing.kind === 'task' ? meetingNotes.notes.find(note => note.actions.some(action => action.taskId === editing.id)) : undefined;
+  const sourceMeeting = sourceNote ? data.tasks.find(task => task.id === sourceNote.meetingId && task.kind === 'meeting' && !task.deletedAt) : undefined;
+  async function selectMeeting(id: string | null) {
+    const request = ++selectionRequest.current;
+    if (!activeMeetingId && id && document.activeElement instanceof HTMLElement) returnFocus.current = document.activeElement;
+    if (minutes.current && !(await minutes.current.flush())) return;
+    if (request !== selectionRequest.current) return;
+    setActiveMeetingId(id);
+    if (!id) requestAnimationFrame(() => { const target = returnFocus.current; if (target?.isConnected && target.getClientRects().length) target.focus({ preventScroll: true }); else document.getElementById('view-todo')?.focus({ preventScroll: true }); });
+  }
+  function openItem(task: Task) { if (task.kind === 'meeting') void selectMeeting(task.id); else setEditor(task); }
+  useEffect(() => {
+    if (editor && editor !== 'new' && editor.kind === 'meeting') { void selectMeeting(editor.id); setEditor(null); }
+  }, [editor]);
   const today = localDay(clock);
   const categoryById = new Map(data.categories.map((category) => [category.id, category]));
+
+  function saveItem(state: TodoState) {
+    if (tab === 'todo' && editor && editor !== 'new') savedTodo.current = editor;
+    mutate(async () => state);
+    setNotice('事项已保存');
+  }
+
+  useLayoutEffect(() => {
+    const previous = savedTodo.current;
+    // 编辑框关闭与待办列表刷新可能落在不同的渲染批次。
+    if (!previous || editor || data.tasks.some(task => task.id === previous.id && task.updatedAt === previous.updatedAt)) return;
+    savedTodo.current = null;
+    if (tab !== 'todo' || document.activeElement !== document.body) return;
+    const list = document.querySelector('#view-todo .calendar-todos:not([hidden])');
+    const fallback = list?.querySelector<HTMLButtonElement>('.dash-actions .btn-pri');
+    fallback?.focus({ preventScroll: true });
+  }, [data.tasks, editor, tab]);
 
   useEffect(() => {
     if (!notice) return;
@@ -48,6 +94,7 @@ export function TodoView({ data, clock, mutate, editor, setEditor }: {
         setEditor('new');
       } else if (event.key.toLowerCase() === 'f') {
         event.preventDefault();
+        setTab('todo');
         setLibraryOpen(true);
       }
     }
@@ -55,48 +102,51 @@ export function TodoView({ data, clock, mutate, editor, setEditor }: {
     return () => window.removeEventListener('keydown', shortcut);
   }, []);
 
-  const todayTasks = activeToday(data.tasks, today);
-  const openTasks = openToday(data.tasks, today);
-  const doneToday = todayTasks.filter((t) => t.status === 'done').length;
-  const dueReminders = todayTasks.filter((t) => t.status !== 'done' && t.remindAt && Date.parse(t.remindAt) <= clock.getTime());
-  const overdue = openTasks.filter((t) => isOverdue(t, clock.getTime())).length;
+  const notesByMeeting = new Map(meetingNotes.notes.map(note => [note.meetingId, note]));
+  const records = tab === 'records' && !meetingNotes.loading && !meetingNotes.error
+    ? data.tasks.filter(task => task.kind === 'meeting' && !task.deletedAt)
+      .sort((a, b) => (taskDay(b) ?? '').localeCompare(taskDay(a) ?? '') || taskTime(b) - taskTime(a))
+    : [];
+  const notesStatus = (task: Task) => meetingNotes.loading ? '读取纪要中…' : meetingNotes.error ? '纪要读取失败' : meetingNoteStatus(notesByMeeting.get(task.id));
 
-  const insight = insightTarget(openTasks, clock);
+  const addAction = <button type="button" className="btn btn-pri btn-sm" aria-haspopup="dialog" aria-expanded={editor === 'new'}
+    aria-controls={editor === 'new' ? createId : undefined} onClick={() => setEditor('new')}><Plus size={14} aria-hidden="true" />新增</button>;
 
   return (
-    <section className="view on todo-workspace" id="view-todo">
-      <div className="greet">
-        <div>
-          <h1>日程待办</h1>
-          <div className="gsub">
-            今天已完成 <b>{doneToday}</b> 项
-            {openTasks.length > 0 && <> ,还有 <b>{openTasks.length}</b> 项待办</>}
-            {overdue > 0 && <> · <span className="bad">逾期 {overdue} 项</span></>}
-            {insight && <span className="insight"> · {insight.context}</span>}
-          </div>
-        </div>
-        <div className="dash-actions">
-          <button ref={addButton} type="button" className="btn btn-pri btn-sm" aria-haspopup="dialog" aria-expanded={editor === 'new'} aria-controls={editor === 'new' ? createId : undefined} onClick={() => {
-            if (editor === 'new') document.getElementById(createId)?.dispatchEvent(new Event('cancel', { cancelable: true }));
-            else setEditor('new');
-          }}><Plus size={14} />新增</button>
-        </div>
-      </div>
-
-      <div className="todo-panel">
-        {dueReminders.length > 0 && !libraryOpen ? (
-          <div className="reminder-strip">
-            <Clock size={15} />
-            <span>{dueReminders[0].title}</span>
-            <button onClick={() => { void mutate(() => wb.todo.snooze(dueReminders[0].id), '将在10分钟后提醒'); }}>稍后10分钟</button>
-          </div>
-        ) : null}
+    <section className="view on todo-workspace" id="view-todo" aria-label="日程待办" tabIndex={-1}>
+      <div className="todo-panel" hidden={Boolean(activeMeetingId)}>
         <TodayBoard
           tasks={data.tasks}
           today={today}
           categoryById={categoryById}
           planView='rows'
-          variant="workspace"
+          onOpenMeeting={openItem}
+          meetingNotes={meetingNotes.notes}
+          workspace={{
+            tab, onTab: setTab, workspaceHeader: activeMeetingId ? null : workspaceHeader, calendarActions: addAction,
+            headerActions: <ScheduleReminder tasks={data.tasks} clock={clock} open={openItem} mutate={mutate} />,
+            details: task => {
+              const time = meetingTimeStatus(task, clock.getTime());
+              return <>
+                <div className={'calendar-detail-meta meeting-time is-' + time.tone}>{time.label} · {notesStatus(task)}</div>
+                <div className="calendar-detail-actions">
+                  <button type="button" className="btn btn-pri btn-sm" onClick={() => openItem(task)}><FileText size={16} />会议纪要</button>
+                  <button type="button" className="btn btn-sec btn-sm" onClick={() => setMeetingEditor(task)}><PencilSimple size={15} />编辑日程</button>
+                </div>
+              </>;
+            },
+            records: <section className="calendar-records" aria-label="会议记录">
+              {meetingNotes.loading ? <p role="status">正在读取会议纪要…</p>
+                : meetingNotes.error ? <p role="alert">{meetingNotes.error} <button type="button" className="text-button" onClick={() => void meetingNotes.reload()}>重试读取</button></p>
+                : records.length ? <ul className="calendar-record-list">{records.map(task =>
+                  <li key={task.id}><button type="button" onClick={() => openItem(task)}>
+                    <FileText size={17} />
+                    <span><strong>{task.title}</strong><small>{scheduleStamp(task)} · {notesStatus(task)}</small></span>
+                    <CaretRight size={15} />
+                  </button></li>
+                )}</ul> : <p className="plan-empty">暂无会议记录</p>}
+            </section>,
+          }}
           mutating={false}
           api={editorApi}
           mutate={mutate}
@@ -104,23 +154,26 @@ export function TodoView({ data, clock, mutate, editor, setEditor }: {
           toolbar={<>
             <div className="dash-actions">
               <button type="button" className="btn btn-sec btn-sm" aria-pressed={libraryOpen} onClick={() => setLibraryOpen(value => !value)}><IconDocs size={14} />全部事项</button>
+              {addAction}
             </div>
           </>}
-          todoContent={libraryOpen ? <TaskLibrary tasks={data.tasks} categories={data.categories} api={libraryApi} changed={(state) => mutate(async () => state)} edit={setEditor} close={() => setLibraryOpen(false)} /> : undefined}
+          todoContent={libraryOpen ? <TaskLibrary tasks={data.tasks} categories={data.categories} api={libraryApi} changed={(state) => mutate(async () => state)} edit={openItem} close={() => setLibraryOpen(false)} /> : undefined}
         />
       </div>
 
-      {editor ? (
+      {activeMeetingId && (activeMeeting && !meetingNotes.loading && !meetingNotes.error ? <MeetingMinutes key={activeMeetingId} ref={minutes} task={activeMeeting} data={data} notes={meetingNotes.notes} clock={clock} api={editorApi} onSaved={meetingNotes.accept} onSelect={id => void selectMeeting(id)} onBack={() => void selectMeeting(null)} editArrangement={setMeetingEditor} editTodo={setEditor} changed={state => mutate(async () => state)} /> : <div className="meeting-load-state" role={meetingNotes.error || !activeMeeting ? 'alert' : 'status'}><p>{!activeMeeting ? '这条日程已删除或已改为待办，原纪要仍保留。' : meetingNotes.error || '正在读取会议纪要…'}</p>{meetingNotes.error && <button type="button" className="btn btn-sec" onClick={() => void meetingNotes.reload()}>重试读取</button>}<button type="button" className="text-button" onClick={() => void selectMeeting(null)}>返回日程待办</button></div>)}
+
+      {editing ? (
         <TaskEditor
-          key={editor === 'new' ? 'new' : editor.id}
-          task={editor === 'new' ? undefined : editor}
-          id={editor === 'new' ? createId : undefined}
-          anchor={editor === 'new' ? addButton.current : undefined}
+          key={editing === 'new' ? 'new' : editing.id}
+          task={editing === 'new' ? undefined : editing}
+          id={editing === 'new' ? createId : undefined}
           categories={data.categories}
           api={editorApi}
+          meetingSource={sourceMeeting ? { title: sourceMeeting.title, open: () => { setEditor(null); setMeetingEditor(null); void selectMeeting(sourceMeeting.id); } } : undefined}
           changed={(state) => mutate(async () => state)}
-          saved={(state) => { mutate(async () => state); setNotice('事项已保存'); }}
-          close={() => setEditor(null)}
+          saved={saveItem}
+          close={() => { setEditor(null); setMeetingEditor(null); }}
         />
       ) : null}
 
@@ -140,7 +193,7 @@ export function useTodoData(): { data: TodoState | null; error: string; mutate: 
     const load = async (): Promise<void> => {
       try {
         const state = (await wb.todo.state());
-        if (alive) { setData(state); setError(''); }
+        if (alive) { setData(state); setClock(new Date()); setError(''); }
       } catch (e) {
         if (alive) setError(errorText(e));
       }

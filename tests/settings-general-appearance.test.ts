@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { registerHooks } from 'node:module';
 import { act, createElement } from 'react';
 import { JSDOM } from 'jsdom';
 import { DEFAULT_APP_SETTINGS, type AppSettingsPatch, type UiTheme, type ViewId } from '../shared/contracts';
+import { initialIslandData, type IslandSettingsPatch } from '../shared/island-contracts';
 
 test('通用与个性化分区独立，切换保留外观选择与原设置保存', async t => {
   const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost', pretendToBeVisual: true });
@@ -10,8 +12,13 @@ test('通用与个性化分区独立，切换保留外观选择与原设置保�
   const previous = names.map(name => Object.getOwnPropertyDescriptor(globalThis, name));
   names.forEach(name => Object.defineProperty(globalThis, name, { configurable: true, value: name === 'window' ? dom.window : name === 'IS_REACT_ACT_ENVIRONMENT' ? true : dom.window[name] }));
   let settings = { ...structuredClone(DEFAULT_APP_SETTINGS), launchAtLogin: true, remindersEnabled: false, uiTheme: 'warm' as UiTheme };
+  const island = initialIslandData();
   let failWrite = false;
-  Object.defineProperty(dom.window, 'workbench', { value: { settings: {
+  Object.defineProperty(dom.window, 'workbench', { value: { island: {
+    state: async () => structuredClone(island),
+    patch: async (patch: IslandSettingsPatch) => { Object.assign(island.settings, patch); return structuredClone(island); },
+    onChanged: () => () => {}, onError: () => () => {},
+  }, bot: { getHostState: async () => ({ connected: true, supervised: false, active: 0, queued: 0 }) }, settings: {
     get: async () => structuredClone(settings),
     patch: async (patch: AppSettingsPatch) => {
       if (failWrite) throw new Error('设置保存失败');
@@ -19,6 +26,8 @@ test('通用与个性化分区独立，切换保留外观选择与原设置保�
       return structuredClone(settings);
     },
   } } });
+  const assets = registerHooks({ load(url, context, next) { return /\.(css|svg|png)$/.test(url) ? { format: 'module', source: 'export default "test-asset";', shortCircuit: true } : next(url, context); } });
+  t.after(() => assets.deregister());
   const { createRoot } = await import('react-dom/client');
   const { SettingsView } = await import('../src/views/SettingsView');
   const { useAppearanceSettings } = await import('../src/appearance');
@@ -35,13 +44,21 @@ test('通用与个性化分区独立，切换保留外观选择与原设置保�
     names.forEach((name, index) => { if (previous[index]) Object.defineProperty(globalThis, name, previous[index]!); else Reflect.deleteProperty(globalThis, name); });
   });
   await render();
-  const generalKeys = ['launchAtLogin', 'closeAction', 'language'];
+  const generalKeys = ['launchAtLogin', 'closeAction', 'language', 'sound', 'dnd'];
   const appearanceKeys = ['navigationStyle', 'glassIntensity', 'uiTheme'];
   assert.deepEqual(keys(), generalKeys);
   assert.equal(dom.window.document.querySelector('.set-search'), null);
   assert.equal(dom.window.document.querySelector('h1')!.textContent, '通用');
   assert.equal(row('launchAtLogin').querySelector('button')!.getAttribute('aria-checked'), 'true');
   assert.equal(row('remindersEnabled'), null);
+  assert.equal(row('dndTime'), null);
+  await act(async () => row('sound').querySelector('button')!.click());
+  await act(async () => row('dnd').querySelector('button')!.click());
+  assert.equal(island.settings.sound, true);
+  assert.equal(island.settings.dnd, true);
+  assert.ok(row('dndTime').querySelector('fieldset'));
+  await act(async () => row('dnd').querySelector('button')!.click());
+  assert.equal(row('dndTime'), null);
   await render('settings-appearance');
   assert.deepEqual(keys(), appearanceKeys);
   assert.equal(dom.window.document.querySelector('h1')!.textContent, '个性化');

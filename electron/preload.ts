@@ -4,6 +4,30 @@ import type { MediaCaptureItem } from '../shared/media-capture-contracts';
 import type { BrowserTask, BrowserTabCommand } from '../shared/browser-automation-contracts';
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
 
+const botCall = async <T>(method: string, ...args: unknown[]): Promise<T> => {
+  const result = await ipcRenderer.invoke('bot:call', method, args);
+  if (!result.ok) throw Object.assign(new Error(result.error.message), result.error);
+  return result.value as T;
+};
+const bot: WorkbenchApi['bot'] = {
+  list: () => botCall('list'), open: (id, view) => botCall('open', id, view), updateProfile: (id, revision, patch) => botCall('updateProfile', id, revision, patch),
+  markRead: id => botCall('markRead', id), getLaunchTarget: () => botCall('getLaunchTarget'),
+  getDraft: id => botCall('getDraft', id), saveDraft: (id, revision, value) => botCall('saveDraft', id, revision, value),
+  getSubmissionStatus: (input, epoch) => botCall('getSubmissionStatus', input, epoch), getPendingSubmission: id => botCall('getPendingSubmission', id), retainPendingDraft: (id, value) => botCall('retainPendingDraft', id, value), acknowledgeSubmission: (id, requestId) => botCall('acknowledgeSubmission', id, requestId),
+  submit: input => botCall('submit', input), listTasks: (id, limit) => botCall('listTasks', id, limit), getTask: id => botCall('getTask', id), cancelTask: (id, revision) => botCall('cancelTask', id, revision), retryTask: (id, revision) => botCall('retryTask', id, revision),
+  getCollaboration: id => botCall('getCollaboration', id), getBotExchange: (a, b, query) => botCall('getBotExchange', a, b, query),
+  answerAction: (id, revision, answer) => botCall('answerAction', id, revision, answer), listArtifacts: id => botCall('listArtifacts', id), openArtifact: id => botCall('openArtifact', id),
+  reconcileAction: (id, revision, result, note) => botCall('reconcileAction', id, revision, result, note), undoAction: (id, revision) => botCall('undoAction', id, revision),
+  listMemories: id => botCall('listMemories', id), updateMemory: input => botCall('updateMemory', input), removeMemory: (id, revision) => botCall('removeMemory', id, revision),
+  listSchedules: id => botCall('listSchedules', id), saveSchedule: input => botCall('saveSchedule', input), setScheduleEnabled: (id, revision, enabled) => botCall('setScheduleEnabled', id, revision, enabled),
+  removeSchedule: (id, revision) => botCall('removeSchedule', id, revision),
+  getHostState: () => botCall('getHostState'), setBackground: enabled => botCall('setBackground', enabled),
+  syncChat: (id, after, epoch, view) => botCall('syncChat', id, after, epoch, view),
+  getConversationEntries: id => botCall('getConversationEntries', id),
+  onChatUpdate: callback => { const listener = (_event: unknown, value: import('../shared/bot-contracts').BotChatUpdate) => callback(value); ipcRenderer.on('bot:chat-update', listener); return () => ipcRenderer.off('bot:chat-update', listener); },
+  onChanged: callback => { const listener = (_event: unknown, value: import('../shared/bot-contracts').BotChanged) => callback(value); ipcRenderer.on('bot:changed', listener); return () => ipcRenderer.off('bot:changed', listener); },
+};
+
 const onAsk = (callback: (ask: { id: string; sessionId: string; question: string; options: { label: string; description?: string }[] }) => void): (() => void) => {
   const listener = (_event: unknown, ask: { id: string; sessionId: string; question: string; options: { label: string; description?: string }[] }): void => callback(ask);
   ipcRenderer.on('ai:ask', listener);
@@ -33,6 +57,17 @@ const todo: WorkbenchApi['todo'] = {
     return () => {
       ipcRenderer.off('todo:changed', listener);
     };
+  },
+};
+
+const meetingNotes: WorkbenchApi['meetingNotes'] = {
+  list: () => ipcRenderer.invoke('meeting-notes:list'),
+  save: (id, draft, revision) => ipcRenderer.invoke('meeting-notes:save', id, draft, revision),
+  createTask: (id, actionId, input, revision) => ipcRenderer.invoke('meeting-notes:createTask', id, actionId, input, revision),
+  onChanged: callback => {
+    const listener = (_event: unknown, note: import('../shared/meeting-notes').MeetingNote) => callback(note);
+    ipcRenderer.on('meeting-notes:changed', listener);
+    return () => ipcRenderer.off('meeting-notes:changed', listener);
   },
 };
 
@@ -73,7 +108,6 @@ const ai: WorkbenchApi['ai'] = {
     ipcRenderer.on('ai:config-changed', listener);
     return () => ipcRenderer.off('ai:config-changed', listener);
   },
-  setEnabled: (enabled: boolean) => ipcRenderer.invoke('ai:setEnabled', { aiEnabled: enabled }),
   saveProvider: (input: unknown) => ipcRenderer.invoke('ai:provider:save', input),
   removeProvider: (id: string) => ipcRenderer.invoke('ai:provider:remove', id),
   saveModel: (input: unknown) => ipcRenderer.invoke('ai:model:save', input),
@@ -379,6 +413,7 @@ const hushHour: WorkbenchApi['hushHour'] = {
 };
 
 const api: WorkbenchApi = {
+  bot,
   checkin: {
     state: () => ipcRenderer.invoke('checkin:state'),
     run: providers => ipcRenderer.invoke('checkin:run', providers),
@@ -406,6 +441,7 @@ const api: WorkbenchApi = {
   close: (): void => {
     ipcRenderer.send('win:close');
   },
+  captureAssistantBackdrop: () => ipcRenderer.invoke('win:assistantBackdrop'),
   onMaximized: (callback: (maximized: boolean) => void): (() => void) => {
     const listener = (_event: unknown, maximized: boolean): void => callback(maximized);
     ipcRenderer.on('win:maximized', listener);
@@ -414,6 +450,7 @@ const api: WorkbenchApi = {
     };
   },
   todo,
+  meetingNotes,
   island,
   reading,
   float,

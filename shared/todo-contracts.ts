@@ -1,17 +1,12 @@
 import { z } from 'zod';
 import type { CopyAiAction } from './copy-contracts';
+import { hasTaskTime, localDay, taskDateSchema, taskDay } from './todo-date';
+export { hasTaskTime, localDay, taskDay } from './todo-date';
 
 // Keep the dock implementation and saved preferences available for a future return,
 // while excluding the feature from the current shipping runtime and UI.
 export const DOCK_FEATURE_ENABLED = false;
 
-export function localDay(date = new Date()): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '请填写有效的计划日期').refine(value => {
-  const d = new Date(`${value}T12:00:00`);
-  return Number.isFinite(d.getTime()) && localDay(d) === value;
-}, '日期无效');
 const instant = z.iso.datetime({ offset: true, error: '请填写有效时间' }).nullable();
 export const categoryInputSchema = z.object({
   name: z.string().trim().min(1, '请填写标签名称').max(30, '标签名称最多30字'),
@@ -25,8 +20,7 @@ export const taskFields = z.object({
   kind: z.enum(['task', 'meeting']),
   status: z.enum(['todo', 'doing', 'done']),
   priority: z.enum(['high', 'medium', 'low']),
-  plannedDate: day,
-  dueAt: instant,
+  dateAt: taskDateSchema,
   endAt: instant.default(null),
   remindAt: instant,
   categoryId: z.string().uuid().nullable().default(null),
@@ -35,6 +29,9 @@ export const taskFields = z.object({
 }).strict();
 export type TaskInput = z.infer<typeof taskFields>;
 export interface Task extends Omit<TaskInput, 'endAt'> {
+  /** CMO-owned external event metadata is preserved in the shared task record. */
+  source?: 'local' | 'welink';
+  external?: { provider?: string; isAllDay?: boolean; [key: string]: unknown };
   /** Older shared-database records may not have an end time until normalized on read. */
   endAt?: string | null;
   id: string; createdAt: string; updatedAt: string; completedAt: string | null;
@@ -42,13 +39,13 @@ export interface Task extends Omit<TaskInput, 'endAt'> {
 }
 function validateMeetingRange(task: TaskInput, ctx: z.RefinementCtx, requireRange = false) {
   if (task.kind !== 'meeting') return;
-  if (!task.dueAt && !task.endAt && !requireRange) return;
-  if (!task.dueAt) ctx.addIssue({ code: 'custom', path: ['dueAt'], message: '请填写日程开始时间' });
+  if (!task.dateAt && !task.endAt && !requireRange) return;
+  if (!hasTaskTime(task.dateAt)) ctx.addIssue({ code: 'custom', path: ['dateAt'], message: '请填写日程开始时间' });
   if (!task.endAt) ctx.addIssue({ code: 'custom', path: ['endAt'], message: '请填写日程结束时间' });
-  if (!task.dueAt || !task.endAt) return;
-  const start = new Date(task.dueAt);
+  if (!hasTaskTime(task.dateAt) || !task.endAt) return;
+  const start = new Date(task.dateAt);
   const end = new Date(task.endAt);
-  if (localDay(start) !== task.plannedDate || localDay(end) !== task.plannedDate) {
+  if (localDay(start) !== localDay(end)) {
     ctx.addIssue({ code: 'custom', path: ['endAt'], message: '日程开始和结束时间需在所选日期内' });
   } else if (end.getTime() <= start.getTime()) {
     ctx.addIssue({ code: 'custom', path: ['endAt'], message: '结束时间需晚于开始时间' });
@@ -105,8 +102,13 @@ export interface CopyProposal { token: string; message: string; actions: CopyAiA
 export interface CopySource { draftId: string; start: number; end: number; text: string; }
 export interface AIToolEvent { id: string; name: string; label: string; status: 'running' | 'complete' | 'error' | 'interrupted'; output: string; }
 export type AIResponsePhase = 'waiting' | 'replying';
+export interface AIResponseTextPart { kind: 'thinking' | 'text'; turn: number; index: number; text: string; startedAt: number; }
+export type AIResponsePart = AIResponseTextPart | { kind: 'tool'; toolId: string; startedAt: number };
 export interface ChatEntry {
   id: string; role: 'user' | 'assistant'; content: string; proposal?: Proposal;
+  createdAt?: string;
+  /** Incoming Bot events preceding this reply; content stays in the pair history. */
+  receivedBotMessages?: { id: string; fromBotId: string; toBotId: string }[];
   /** Runtime-only card details; not a new cross-session history. */
   todoReceipt?: import('./todo-proposal').ProposalReceipt;
   todoApplyError?: string;
@@ -122,6 +124,7 @@ export interface ChatEntry {
   astroReading?: { topic: import('./astro-reading').AstroReadingTopic; profileName: string };
   actionState?: 'pending' | 'applied' | 'discarded' | 'expired' | 'revised' | 'undone'; streaming?: boolean;
   tools?: AIToolEvent[]; thinking?: string; thinkingActive?: boolean; responsePhase?: AIResponsePhase; error?: string;
+  responseParts?: AIResponsePart[]; responseFinishedAt?: number;
   /** 思考阶段累计毫秒；活动阶段的时间锚点仅用于实时显示，恢复中断时移除。 */
   thinkingMs?: number; thinkingStartedAt?: number;
   /** 本轮实际执行的浏览器任务，不能用会话的最新任务替代历史回复。 */
@@ -165,13 +168,13 @@ export type AssistantAnchor = { side: 'left' | 'right' | 'top' | 'bottom'; along
 // 属应用壳而非待办内核,工作台自建自己的 API(见 electron/preload.ts),因此不移植。
 // 其余内容与上游 shared/contracts.ts 保持逐行平行,便于 sync diff;基准版本见 modules/todo/SYNC.md。
 export function newTask(title = ''): TaskInput {
-  return { title, kind: 'task', status: 'todo', priority: 'medium', plannedDate: localDay(), dueAt: null, endAt: null, remindAt: null, categoryId: null, progress: null, note: '' };
+  return { title, kind: 'task', status: 'todo', priority: 'medium', dateAt: null, endAt: null, remindAt: null, categoryId: null, progress: null, note: '' };
 }
-export function taskTime(task: Task): number { return task.dueAt ? Date.parse(task.dueAt) : Number.MAX_SAFE_INTEGER; }
+export function taskTime(task: Task): number { return hasTaskTime(task.dateAt) ? Date.parse(task.dateAt) : Number.MAX_SAFE_INTEGER; }
 function visibleToday(task: Task, today: string): boolean {
   if (task.deletedAt) return false;
   if (task.status === 'done') return Boolean(task.completedAt && localDay(new Date(task.completedAt)) === today);
-  return task.kind === 'task' || task.plannedDate <= today;
+  return task.kind === 'task' || Boolean(taskDay(task) && taskDay(task)! <= today);
 }
 export function activeToday(tasks: Task[], today = localDay()): Task[] {
   return tasks.filter(t => visibleToday(t, today))
@@ -182,7 +185,7 @@ export function openToday(tasks: Task[], today = localDay()): Task[] {
 }
 export interface InsightSuggestion { title: string; context: string; prompt: string; }
 export function insightTarget(tasks: Task[], now = new Date()): InsightSuggestion | null {
-  const due = (t: Task) => (t.dueAt ? Date.parse(t.dueAt) : NaN);
+  const due = (t: Task) => (hasTaskTime(t.dateAt) ? Date.parse(t.dateAt) : NaN);
   const soonest = (list: Task[]) => list.filter(t => Number.isFinite(due(t))).sort((a, b) => due(a) - due(b))[0];
   const meeting = soonest(tasks.filter(t => t.kind === 'meeting'));
   if (meeting) {

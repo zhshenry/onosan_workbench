@@ -1,11 +1,11 @@
 import type { AIAction, Category, Task } from './todo-contracts';
+import { hasTaskTime } from './todo-date';
 
 export interface ProposalField { label: string; before: string; after: string; }
 export interface ProposalPreview { title: string; verb: string; fields: ProposalField[]; warning?: string; }
 export interface ProposalReceipt { appliedIndices: number[]; appliedCount: number; }
 const labels: Record<string, string> = {
-  title: '事项名称', kind: '事项类型', status: '状态', priority: '优先级', plannedDate: '计划日期',
-  dueAt: '截止时间', endAt: '结束时间', remindAt: '提醒时间', categoryId: '标签', progress: '进度', note: '备注', name: '标签名称', color: '标签颜色',
+  title: '事项名称', kind: '事项类型', status: '状态', priority: '优先级', dateAt: '完成期限', endAt: '结束时间', remindAt: '提醒时间', categoryId: '标签', progress: '进度', note: '备注', name: '标签名称', color: '标签颜色',
 };
 const values: Record<string, string> = { task: '待办', meeting: '日程', todo: '待办', doing: '进行中', done: '已完成', high: '高', medium: '中', low: '低' };
 function display(key: string, value: unknown, categories: Map<string, string>): string {
@@ -13,7 +13,8 @@ function display(key: string, value: unknown, categories: Map<string, string>): 
   if (key === 'categoryId') return categories.get(String(value)) ?? '标签不可用';
   if (['kind', 'status', 'priority'].includes(key)) return values[String(value)] ?? '未知';
   if (key === 'progress') return `${value}%`;
-  if (['dueAt', 'endAt', 'remindAt'].includes(key)) {
+  if (key === 'dateAt' && !hasTaskTime(String(value))) return String(value);
+  if (['dateAt', 'endAt', 'remindAt'].includes(key)) {
     const date = new Date(String(value));
     if (!Number.isFinite(date.getTime())) return '时间无效';
     const pad = (n: number) => String(n).padStart(2, '0');
@@ -27,7 +28,7 @@ export function previewTodoActions(actions: AIAction[], tasks: Task[], categorie
   const proposedNames = new Map(names);
   for (const action of actions) if (action.type === 'create_category') proposedNames.set(action.category.id, action.category.name);
   const fields = (patch: object, before: object | undefined, meeting = false): ProposalField[] => Object.entries(patch).map(([key, value]) => ({
-    label: key === 'categoryId' ? '标签（建议生成时名称）' : key === 'dueAt' && meeting ? '开始时间' : labels[key] ?? '字段',
+    label: key === 'categoryId' ? '标签（建议生成时名称）' : key === 'dateAt' && meeting ? '开始时间' : labels[key] ?? '字段',
     before: before ? display(key, (before as Record<string, unknown>)[key], names) : '无原始快照',
     after: display(key, value, proposedNames),
   }));

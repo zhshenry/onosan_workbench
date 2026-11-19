@@ -4,6 +4,7 @@ import { CalendarBlank, Check, Circle, MagnifyingGlass, X } from '@phosphor-icon
 import { aiReferenceKey, aiReferenceLimit, type AiReference } from '../../shared/ai-reference';
 import { READING_STATUS_LABEL } from '../../shared/reading-contracts';
 import { scheduleStamp } from '../../shared/todo-format';
+import { Segmented } from '../ui/controls';
 import { matchesTodoPickerFilter, TODO_STATUS_LABEL, TodoPickerFilters, todoPickerStatusKey, type TodoKindFilter, type TodoStatusFilter } from './todo-picker-filters';
 
 export type ReferenceMode = AiReference['module'];
@@ -45,8 +46,9 @@ export async function loadReferenceOptions(mode: ReferenceMode): Promise<Referen
     detail: [book.author, ...(book.tags ?? [])].filter(Boolean).join(' · ') || '已记录书目', status: READING_STATUS_LABEL[book.status], statusKey: book.status }));
 }
 
-export function AiReferencePicker({ id, mode, unavailable, options, selected, loading, error, notice, anchor, trigger, onChange, onRetry, onClose }: {
+export function AiReferencePicker({ id, mode, modeOptions, onModeChange, unavailable, options, selected, loading, error, notice, anchor, trigger, onChange, onRetry, onClose }: {
   id: string; mode: ReferenceMode | null; unavailable: string; options: ReferenceOption[]; selected: AiReference[];
+  modeOptions?: ReferenceMode[]; onModeChange?(mode: ReferenceMode): void;
   loading: boolean; error: string; notice: string; anchor: RefObject<HTMLDivElement | null>; trigger: RefObject<HTMLButtonElement | null>;
   onChange(references: AiReference[]): void; onRetry(): void; onClose(restoreFocus?: boolean): void;
 }) {
@@ -74,10 +76,11 @@ export function AiReferencePicker({ id, mode, unavailable, options, selected, lo
   useLayoutEffect(() => {
     const element = menu.current; const rect = anchor.current?.getBoundingClientRect();
     if (!element || !rect) return;
-    element.style.width = `${Math.min(rect.width || 320, window.innerWidth - 16)}px`;
-    element.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - (rect.width || 320) - 8))}px`;
+    const width = Math.min(rect.width || 320, window.innerWidth - 16, modeOptions ? 420 : window.innerWidth);
+    element.style.width = `${width}px`;
+    element.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))}px`;
     element.style.bottom = `${Math.max(8, window.innerHeight - rect.top + 6)}px`;
-    element.style.maxHeight = `${Math.max(120, rect.top - 14)}px`;
+    element.style.maxHeight = `${Math.max(120, Math.min(rect.top - 14, modeOptions ? 340 : window.innerHeight))}px`;
   });
   useLayoutEffect(() => {
     if (!lightList) { (search.current ?? closeButton.current)?.focus(); return; }
@@ -114,9 +117,9 @@ export function AiReferencePicker({ id, mode, unavailable, options, selected, lo
     if (multi) setPending(next);
     else { onChange(next); if (lightList) onClose(); }
   };
-  return createPortal(<div id={id} ref={menu} className={`ai-reference-dialog${lightList ? ' ai-reference-light-list' : ''}`} role="dialog" tabIndex={-1} aria-label={`关联已有${label}`} aria-describedby={lightList ? undefined : `${id}-help`}
+  return createPortal(<div id={id} ref={menu} className={`ai-reference-dialog${lightList ? ' ai-reference-light-list' : ''}${modeOptions ? ' ai-reference-bot' : ''}`} role="dialog" tabIndex={-1} aria-label={`关联已有${label}`} aria-describedby={lightList ? undefined : `${id}-help`}
     onKeyDown={event => {
-      if (event.nativeEvent.isComposing || event.keyCode === 229) return;
+      if (event.defaultPrevented || event.nativeEvent.isComposing || event.keyCode === 229) return;
       const inputs = [...event.currentTarget.querySelectorAll<HTMLInputElement>('.ai-reference-option input:not(:disabled)')];
       const active = inputs.indexOf(document.activeElement as HTMLInputElement);
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || (lightList && (event.key === 'Home' || event.key === 'End'))) {
@@ -127,7 +130,7 @@ export function AiReferencePicker({ id, mode, unavailable, options, selected, lo
         event.preventDefault(); (inputs[active >= 0 ? active : 0])?.click();
       }
     }}>
-    {!lightList && <header className="ai-reference-head"><strong>关联已有{label}</strong><button ref={closeButton} type="button" aria-label="关闭上下文选择器" onClick={() => onClose()}><X size={15} /></button></header>}
+    {(!lightList || modeOptions) && <header className="ai-reference-head">{modeOptions && modeOptions.length > 1 ? <Segmented aria-label="参考内容类型" value={mode ?? modeOptions[0]} options={modeOptions.map(value => ({ value, label: REFERENCE_LABELS[value] }))} onChange={value => onModeChange?.(value as ReferenceMode)} /> : <strong>关联已有{label}</strong>}<button ref={closeButton} type="button" aria-label="关闭上下文选择器" onClick={() => onClose()}><X size={15} /></button></header>}
     {mode ? <>
       {lightList && <TodoPickerFilters status={statusFilter} kind={kindFilter} onStatus={setStatusFilter} onKind={setKindFilter} />}
       {!lightList && <label className="ai-reference-search"><MagnifyingGlass size={15} /><input ref={search} value={query} onChange={event => setQuery(event.target.value)} placeholder={`搜索${label}`} aria-label={`搜索${label}`} />

@@ -45,7 +45,7 @@ export function resolveAiReferences(
         const category = sources.todo.categories().find(item => item.id === task.categoryId);
         content = `参考事项（发送时快照）：${JSON.stringify({
           id, title: task.title, kind: task.kind, status: task.status, priority: task.priority,
-          plannedDate: task.plannedDate, dueAt: task.dueAt, endAt: task.endAt ?? null,
+          dateAt: task.dateAt, endAt: task.endAt ?? null,
           remindAt: task.remindAt, progress: task.progress, categoryId: task.categoryId,
           categoryName: category?.name, note: bounded(task.note, 5000),
         })}`;

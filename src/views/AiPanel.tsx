@@ -1,7 +1,7 @@
 import type { AiConfig } from '../../shared/workbench-api';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowsClockwise, CaretDown, Copy, DotsThree, Flask, GearSix, Info, MagnifyingGlass, PaperPlaneRight, Plus, PushPin, SidebarSimple, Sparkle, Stop, Trash, X } from '@phosphor-icons/react';
+import { ArrowsClockwise, BookOpen, CaretDown, Copy, DotsThree, Flask, GearSix, Info, MagnifyingGlass, PaperPlaneRight, Plus, PushPin, SidebarSimple, Sparkle, Stop, Trash, X } from '@phosphor-icons/react';
 import { IconCheckSquare, IconGamepad, IconHome, IconMoon, IconVideo, IconWeb } from '../icons';
 import type { ChatSession, ChatSummary, CopySource } from '../../shared/todo-contracts';
 import { aiScopeKey, chatContextScope, chatScope, defaultAiScopeForWorkbench, preferredAiChat, sameAiScope, sameAiWorkbench, TODO_AI_WORKBENCH_NAME, workbenchForScope, type AiScope } from '../../shared/ai-scope';
@@ -242,6 +242,8 @@ export function AiPanel({ open, onClose, seed, onSeedFinished, requestedChatId, 
   }, []);
   const pageContextRef = useRef(context);
   const pageWorkbench = workbenchForScope(context.scope);
+  const ContextIcon = pageWorkbench === 'settings' ? GearSix : pageWorkbench === 'ai-test' ? Flask
+    : ({ home: IconHome, todo: IconCheckSquare, media: IconVideo, game: IconGamepad, web: IconWeb, life: IconMoon, bazi: IconMoon, reading: BookOpen } as const)[pageWorkbench ?? 'home'];
   const pageWorkspaceKey = workspaceKey(context.scope);
   const browserWorkspace = context.scope.module === 'workbench' && pageWorkbench === workbenchForScope(activeContext.scope)
     ? context.scope.viewId === 'browser' ? 'default' : context.scope.viewId === 'media-browser' ? 'xhs-creator' : null : null;
@@ -717,7 +719,7 @@ export function AiPanel({ open, onClose, seed, onSeedFinished, requestedChatId, 
       <div className={fixedContext ? 'ai-ctxcard pinned' : 'ai-ctxcard'}>
         <div className="ai-ctx-main">
           <span className="ai-ctx-modicon" aria-hidden="true" title={activeContext.label}>
-            {activeContext.scope.module === 'copy' ? <IconVideo /> : activeContext.scope.module === 'bazi' ? <IconMoon /> : activeContext.scope.module === 'todo' ? <IconCheckSquare /> : pageWorkbench === 'settings' ? <GearSix size={16} /> : pageWorkbench === 'ai-test' ? <Flask size={16} /> : ({ home: IconHome, media: IconVideo, game: IconGamepad, web: IconWeb, life: IconMoon } as const)[pageWorkbench ?? 'home']({})}
+            {activeContext.scope.module === 'copy' ? <IconVideo /> : activeContext.scope.module === 'bazi' ? <IconMoon /> : activeContext.scope.module === 'todo' ? <IconCheckSquare /> : <ContextIcon size={16} />}
           </span>
           <div className="ai-ctx-body">
             <div className="ai-ctx-kicker">
@@ -817,7 +819,7 @@ export function AiPanel({ open, onClose, seed, onSeedFinished, requestedChatId, 
                   {references.map(reference => <span className="ai-reference-chip" key={aiReferenceKey(reference)}><span title={objectNames[aiReferenceKey(reference)]}>{REFERENCE_LABELS[reference.module]} · {objectNames[aiReferenceKey(reference)] ?? '已关联内容'}</span><button type="button" aria-label={`移除参考：${objectNames[aiReferenceKey(reference)] ?? '已关联内容'}`} onClick={() => updateReferences(references.filter(item => aiReferenceKey(item) !== aiReferenceKey(reference)))}><X size={12} /></button></span>)}
                 </div>}
                 {referenceNotice && <p className="ai-reference-notice" role="status">{referenceNotice}</p>}
-                <textarea aria-label="发送给当前对话的 AI 助手" value={input} placeholder={config?.aiEnabled ? '围绕正在协助的对象继续聊聊…' : '请先在 AI 设置中配置并启用'} disabled={!config?.aiEnabled}
+                <textarea aria-label="发送给当前对话的 AI 助手" value={input} placeholder={config?.aiEnabled ? '围绕正在协助的对象继续聊聊…' : '请先在模型配置中添加对话模型'} disabled={!config?.aiEnabled}
                   onChange={event => setInput(event.target.value)}
                   onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); send(); } }} />
                 <div className="ai-compose-toolbar">

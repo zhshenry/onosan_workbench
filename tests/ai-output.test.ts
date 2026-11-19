@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { assistantThinking, runAgentLoop } from '../electron/ai-core';
 import { AiStore } from '../electron/ai-store';
 import { buildTodoContribution } from '../modules/todo/ai-tools';
-import type { AIResponsePhase, AIToolEvent } from '../shared/todo-contracts';
+import type { AIResponsePhase, AIResponseTextPart, AIToolEvent } from '../shared/todo-contracts';
 
 test('只提取助手可见思考，不包含签名、遮蔽内容、正文或工具输入', () => {
   const content = [
@@ -48,9 +48,17 @@ test('真实流式适配保留工具前后思考，分离正文，完成后结�
   const tools: AIToolEvent[] = [];
   const phases: AIResponsePhase[] = [];
   const texts: string[] = [];
+  const sequence: (AIResponseTextPart | AIToolEvent)[] = [];
+  const directory = mkdtempSync(join(tmpdir(), 'wb-ai-ordered-output-'));
   try {
     const result = await runAgentLoop({ endpoint: `http://127.0.0.1:${address.port}/v1`, model: 'qa-model', protocol: 'openai-chat', key: 'local-test' },
-      '看看今日待办', [], AbortSignal.timeout(15000), buildTodoContribution([], []), text => texts.push(text), tool => tools.push(tool), (text, active) => thoughts.push({ text, active }), phase => phases.push(phase));
+      '看看今日待办', [], AbortSignal.timeout(15000), buildTodoContribution([], []), text => texts.push(text), tool => {
+        tools.push(tool);
+        if (tool.status === 'running') sequence.push(tool);
+      }, (text, active) => thoughts.push({ text, active }), phase => phases.push(phase), {
+        cwd: directory, directory, onSession() {},
+        onResponseText(part) { sequence.push(part); },
+      });
     assert.equal(requests, 2);
     assert.equal(result.reply, '## 今日安排\n\n**暂无待办**。');
     assert.equal(texts.at(-1), result.reply);
@@ -59,9 +67,17 @@ test('真实流式适配保留工具前后思考，分离正文，完成后结�
     assert.deepEqual(tools.map(tool => tool.status), ['running', 'complete']);
     assert.match(tools.at(-1)!.output, /tasks/);
     assert.deepEqual(phases, ['waiting', 'replying', 'waiting', 'replying']);
+    assert.deepEqual(sequence.map(part => 'text' in part ? [part.kind, part.text] : ['tool', part.name]), [
+      ['thinking', '先查询任务。'],
+      ['text', '我先查看当前待办。'],
+      ['tool', 'list_tasks'],
+      ['thinking', '已取得结果。'],
+      ['text', '## 今日安排\n\n**暂无待办**。'],
+    ]);
   } finally {
     server.closeAllConnections();
     await new Promise<void>(resolve => server.close(() => resolve()));
+    rmSync(directory, { recursive: true, force: true });
   }
 });
 

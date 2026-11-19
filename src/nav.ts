@@ -23,7 +23,13 @@ export const NAV: WorkbenchDef[] = [
     title: '首页',
     subs: [
       { label: '我的看板', view: 'home' },
+      { label: '每日签到', view: 'checkin' },
     ],
+  },
+  {
+    id: 'todo',
+    title: '日程待办',
+    subs: [{ label: '日程待办', view: 'todo' }],
   },
   {
     id: 'media',
@@ -60,14 +66,14 @@ export const NAV: WorkbenchDef[] = [
     ],
   },
   {
-    id: 'life',
-    title: '小工具',
-    subs: [
-      { label: '日程和待办', view: 'todo' },
-      { label: '命理', view: 'bazi' },
-      { label: '阅读清单', view: 'reading' },
-      { label: '每日签到', view: 'checkin' },
-    ],
+    id: 'bazi',
+    title: '命理',
+    subs: [{ label: '命理', view: 'bazi' }],
+  },
+  {
+    id: 'reading',
+    title: '阅读清单',
+    subs: [{ label: '阅读清单', view: 'reading' }],
   },
   {
     // 设置分类固定在设置页内部,工作台导航只保留一个入口。
@@ -78,8 +84,10 @@ export const NAV: WorkbenchDef[] = [
       { label: '通用', view: 'settings-general' },
       { label: '个性化', view: 'settings-appearance' },
       { label: '桌面灵动岛', view: 'settings-island' },
-      { label: 'AI 助手', view: 'settings-ai' },
-      { label: '待办与数据', view: 'settings-data' },
+      { label: '模型配置', view: 'settings-ai' },
+      { label: 'Bot 管理', view: 'settings-bots' },
+      { label: 'Agent连接', view: 'settings-apps' },
+      { label: '待办与日程', view: 'settings-data' },
       { label: '关于', view: 'settings-about' },
     ],
   },
@@ -87,6 +95,9 @@ export const NAV: WorkbenchDef[] = [
 
 export const resolveView = (view: ViewId): ViewId =>
   view === 'settings-notifications' ? 'settings-data' : view;
+
+export const navigationView = (view: ViewId): ViewId =>
+  view === 'settings-checkin' || view === 'settings-agent-quota' ? 'settings-apps' : resolveView(view);
 
 export const workbenchById = (id: WorkbenchId): WorkbenchDef => {
   const wb = NAV.find((w) => w.id === id);
@@ -96,7 +107,7 @@ export const workbenchById = (id: WorkbenchId): WorkbenchDef => {
 
 /** 页面归属的大工作台(用于从内容区链接跳转时联动一级导航) */
 export const ownerOfWorkbench = (view: ViewId): WorkbenchId | undefined =>
-  NAV.find((w) => w.subs.some((s) => s.view === resolveView(view)))?.id;
+  NAV.find((w) => w.subs.some((s) => s.view === navigationView(view)))?.id;
 
 /** 工作台的默认路由(第一个已上线子页;全未上线时由内容区显示规划占位页) */
 export const defaultViewOfWorkbench = (id: WorkbenchId): ViewId =>
@@ -112,7 +123,7 @@ export function workbenchAiContext(viewId: string): { label: string; object: str
     const title = workbench?.title ?? '当前工作台';
     return { label: title, object: title };
   }
-  const view = resolveView(viewId as ViewId);
+  const view = navigationView(viewId as ViewId);
   const workbench = NAV.find((item) => item.subs.some((sub) => sub.view === view));
   const sub = workbench?.subs.find((item) => item.view === view);
   return { label: workbench?.title ?? '当前工作台', object: sub?.label ?? viewId };

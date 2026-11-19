@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import path from 'node:path';
 import { _electron as electron } from 'playwright';
 import { findRelease, hashFile } from './release-assets.mjs';
-import { navigateInstalled } from './installed-navigation.mjs';
+import { collapseInstalledAssistant, navigateInstalled } from './installed-navigation.mjs';
 
 assert.ok(process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_ENVIRONMENT === 'github-hosted', 'Use a fresh GitHub-hosted Windows runner; never run a real upgrade on a developer profile.');
 const tag = process.env.WORKBENCH_RELEASE_TAG;
@@ -46,12 +46,8 @@ async function launch(version) {
   application = await electron.launch({ executablePath, cwd: installDirectory, args: ['--force-device-scale-factor=1'], env, timeout: 60000 });
   page = await application.firstWindow(); page.setDefaultTimeout(20000);
   page.on('pageerror', error => report.errors.push(error.message));
-  await page.locator('#view-home').waitFor();
-  const collapseAi = page.locator('.topbar').getByRole('button', { name: '收起 AI 助手', exact: true });
-  if (await collapseAi.isVisible()) {
-    await collapseAi.click();
-    await page.locator('#workbench-ai-panel').waitFor({ state: 'hidden' });
-  }
+  await collapseInstalledAssistant(page);
+  await navigateInstalled(page, 'home', null, 'home');
   const identity = await application.evaluate(({ app }) => ({ version: app.getVersion(), isPackaged: app.isPackaged, executable: process.execPath, userData: app.getPath('userData'), appData: app.getPath('appData') }));
   assert.equal(identity.version, version); assert.equal(identity.isPackaged, true);
   assert.equal(identity.executable.toLowerCase(), executablePath.toLowerCase());

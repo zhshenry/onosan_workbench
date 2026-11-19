@@ -6,9 +6,9 @@
 .view-fade:has(> .reading-view) { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .reading-view.view.on { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: 16px; container: reading / inline-size; }
 .reading-view .rd-heading, .rd-workspace { background: var(--workbench-card-bg); border: 1px solid var(--hairline); border-radius: var(--r-panel); box-shadow: var(--shadow-sm); }
-.reading-view .rd-heading { flex: none; align-items: center; padding: 20px 24px; margin: 0; flex-wrap: wrap; }
-.rd-heading-copy { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; min-width: 0; }
-.rd-heading-copy .gsub { margin: 0; font-size: var(--type-support); }
+.reading-view .rd-heading { flex: none; align-items: center; padding: var(--page-header-padding-block) var(--page-header-padding-inline); min-height: var(--page-header-height); margin: 0; flex-wrap: wrap; }
+.rd-heading-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.rd-heading-copy .gsub { margin: 0; font-size: var(--type-control); }
 .rd-workspace { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 .rd-cols { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(260px, .4fr) minmax(0, .6fr); }
 .rd-library { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid var(--hairline); }

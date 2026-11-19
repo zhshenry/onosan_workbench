@@ -3,6 +3,8 @@ import { randomUUID } from 'node:crypto';
 import type { ChatSession, ChatSummary } from '../../shared/todo-contracts';
 import { aiPlanSchema, categoryInputSchema, localDay, taskInputSchema, taskPatchSchema, type AIPlan, type Category, type Task, type TaskInput } from '../../shared/todo-contracts';
 import { meetingEndAt, scheduleStamp } from '../../shared/todo-format';
+import { hasTaskTime, migrateTaskDate, taskDay } from '../../shared/todo-date';
+import { migrateTaskDates } from './date-migration';
 
 export class Store {
   readonly db: DatabaseSync;
@@ -14,12 +16,13 @@ export class Store {
       if (version === 0 && tables.length === 0) {
         this.db.exec(`CREATE TABLE tasks (id TEXT PRIMARY KEY, payload TEXT NOT NULL);
           CREATE TABLE categories (id TEXT PRIMARY KEY, payload TEXT NOT NULL);
-          PRAGMA user_version=3;`);
-      } else if (version !== 3 || !tables.includes('tasks') || !tables.includes('categories')) {
+          PRAGMA user_version=4;`);
+      } else if (![3, 4].includes(version) || !tables.includes('tasks') || !tables.includes('categories')) {
         this.db.close();
-        throw new Error(`待办共享库结构不兼容(版本 ${version}),请先同步 To-Do-List 数据结构`);
+        throw new Error(`待办共享库结构不兼容(版本 ${version}),请同步 OnO 和 CMO 的日期版本`);
       }
       this.db.exec('PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000;');
+      migrateTaskDates(this.db);
       return;
     }
     this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000;
@@ -27,7 +30,10 @@ export class Store {
       CREATE TABLE IF NOT EXISTS categories (id TEXT PRIMARY KEY, payload TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS chats (id TEXT PRIMARY KEY, payload TEXT NOT NULL);
-      PRAGMA user_version=3;`);
+      `);
+    const version = (this.db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version;
+    if (version === 0) this.db.exec('PRAGMA user_version=4;');
+    else migrateTaskDates(this.db);
     this.recoverChats();
   }
   chats(): ChatSummary[] {
@@ -99,6 +105,9 @@ export class Store {
     });
   }
   all(includeDeleted = false): Task[] {
+    return this.taskRows(includeDeleted).filter(task => task.kind !== 'meeting' || task.source !== 'welink');
+  }
+  private taskRows(includeDeleted: boolean): Task[] {
     return (this.db.prepare('SELECT payload FROM tasks').all() as { payload: string }[])
       .map(row => this.normalizeTask(JSON.parse(row.payload) as Task)).filter(t => includeDeleted || !t.deletedAt);
   }
@@ -108,15 +117,17 @@ export class Store {
     return this.normalizeTask(JSON.parse(row.payload));
   }
   normalizeTask(task: Task): Task {
+    task = migrateTaskDate(task);
     return { ...task, endAt: task.kind === 'meeting' ? task.endAt ?? meetingEndAt(task) : task.endAt ?? null, categoryId: task.categoryId ?? null, progress: typeof task.progress === 'number' ? task.progress : null, priority: task.priority === 'high' || task.priority === 'low' ? task.priority : 'medium' };
   }
   put(task: Task): Task {
+    task = this.normalizeTask(task);
     this.db.prepare('INSERT OR REPLACE INTO tasks(id,payload) VALUES (?,?)').run(task.id, JSON.stringify(task));
     return task;
   }
   create(input: unknown): Task {
     const data = taskInputSchema.parse(input);
-    if (data.kind === 'meeting' && (!data.dueAt || !data.endAt)) throw new Error('日程需要设置开始和结束时间');
+    if (data.kind === 'meeting' && (!hasTaskTime(data.dateAt) || !data.endAt)) throw new Error('日程需要设置开始和结束时间');
     this.assertCategory(data.categoryId);
     const now = new Date().toISOString();
     return this.put({ ...data, id: randomUUID(), createdAt: now, updatedAt: now,
@@ -126,8 +137,14 @@ export class Store {
     const old = this.get(id);
     if (old.deletedAt) throw new Error('这条事项已删除');
     if (revision && old.updatedAt !== revision) throw new Error('事项已在其他操作中更新，请重新打开后修改');
+    if (old.source === 'welink') {
+      const completion = taskPatchSchema.pick({ status: true }).required().safeParse(patch);
+      if (!completion.success || completion.data.status !== 'done') throw new Error('CMO 同步的外部日程仅支持标记完成，请在来源应用修改安排');
+      const now = new Date(Math.max(Date.now(), Date.parse(old.updatedAt) + 1)).toISOString();
+      return this.put({ ...old, status: 'done', completedAt: old.completedAt ?? now, updatedAt: now });
+    }
     const next = taskInputSchema.parse({ ...this.fields(old), ...taskPatchSchema.parse(patch) });
-    if (next.kind === 'meeting' && old.kind !== 'meeting' && (!next.dueAt || !next.endAt)) throw new Error('日程需要设置开始和结束时间');
+    if (next.kind === 'meeting' && old.kind !== 'meeting' && (!hasTaskTime(next.dateAt) || !next.endAt)) throw new Error('日程需要设置开始和结束时间');
     this.assertCategory(next.categoryId);
     const now = new Date(Math.max(Date.now(), Date.parse(old.updatedAt) + 1)).toISOString();
     return this.put({ ...old, ...next, updatedAt: now,
@@ -135,8 +152,8 @@ export class Store {
       notifiedFor: next.remindAt !== old.remindAt || (old.status === 'done' && next.status !== 'done') ? null : old.notifiedFor });
   }
   fields(task: Task): TaskInput {
-    const { title, kind, status, priority, plannedDate, dueAt, endAt, remindAt, categoryId, progress, note } = task;
-    return { title, kind, status, priority, plannedDate, dueAt, endAt: endAt ?? null, remindAt, categoryId, progress, note };
+    const { title, kind, status, priority, dateAt, endAt, remindAt, categoryId, progress, note } = task;
+    return { title, kind, status, priority, dateAt, endAt: endAt ?? null, remindAt, categoryId, progress, note };
   }
   categories(): Category[] {
     return (this.db.prepare('SELECT payload FROM categories').all() as { payload: string }[])
@@ -177,7 +194,7 @@ export class Store {
     return this.putCategory({ ...old, ...data, updatedAt });
   }
   dropCategory(id: string): void {
-    for (const task of this.all(true).filter(item => item.categoryId === id)) {
+    for (const task of this.taskRows(true).filter(item => item.categoryId === id)) {
       const updatedAt = new Date(Math.max(Date.now(), Date.parse(task.updatedAt) + 1)).toISOString();
       this.put({ ...task, categoryId: null, updatedAt });
     }
@@ -191,6 +208,7 @@ export class Store {
   remove(id: string, revision: string): void {
     const task = this.get(id);
     if (task.updatedAt !== revision) throw new Error('事项已更新，请重新打开后删除');
+    if (task.source === 'welink') throw new Error('CMO 同步的外部日程请在来源应用取消');
     const now = new Date(Math.max(Date.now(), Date.parse(task.updatedAt) + 1)).toISOString();
     this.put({ ...task, deletedAt: now, updatedAt: now });
   }
@@ -210,10 +228,11 @@ export class Store {
   // 工作台新增(上游无):跨应用共享库的提醒原子认领。
   // BEGIN IMMEDIATE 事务内重读并抢先写入 notifiedFor,多进程同时轮询时只有认领成功的一方弹通知;
   // 通知发送失败时用 unclaim 归还,保证提醒不丢。建议上游 To-Do-List 吸收同款以彻底消除双弹。
-  claimDue(now = new Date()): Task[] {
+  claimDue(now = new Date(), eligible?: (task: Task) => boolean): Task[] {
     const claimed: Task[] = [];
     this.transaction(() => {
       for (const task of this.due(now)) {
+        if (eligible && !eligible(task)) continue;
         const current = this.get(task.id);
         if (current.remindAt !== task.remindAt || current.notifiedFor === task.remindAt) continue;
         this.put({ ...current, notifiedFor: current.remindAt });
@@ -295,8 +314,8 @@ export class Store {
   review(today = localDay()): string {
     const tasks = this.all();
     const completed = tasks.filter(t => t.completedAt && localDay(new Date(t.completedAt)) === today);
-    const pending = tasks.filter(t => !t.deletedAt && t.status !== 'done' && (t.kind === 'task' || t.plannedDate <= today));
-    return `# ${today} 每日复盘\n\n## 已完成 · ${completed.length} 项\n${completed.map(t => `- ${t.title}${t.note ? `\n  ${t.note}` : ''}`).join('\n') || '今天还没有完成的事项。'}\n\n## 待继续 · ${pending.length} 项\n${pending.map(t => `- ${t.title}${t.dueAt ? `（${scheduleStamp(t)}）` : ''}`).join('\n') || '今天的事项都已处理。'}`;
+    const pending = tasks.filter(t => !t.deletedAt && t.status !== 'done' && (t.kind === 'task' || Boolean(taskDay(t) && taskDay(t)! <= today)));
+    return `# ${today} 每日复盘\n\n## 已完成 · ${completed.length} 项\n${completed.map(t => `- ${t.title}${t.note ? `\n  ${t.note}` : ''}`).join('\n') || '今天还没有完成的事项。'}\n\n## 待继续 · ${pending.length} 项\n${pending.map(t => `- ${t.title}${t.dateAt ? `（${scheduleStamp(t)}）` : ''}`).join('\n') || '今天的事项都已处理。'}`;
   }
   close(): void { this.db.close(); }
 }

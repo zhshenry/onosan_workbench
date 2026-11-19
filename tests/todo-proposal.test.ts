@@ -8,16 +8,16 @@ import { AiStore } from '../electron/ai-store';
 import { Store } from '../modules/todo/store';
 import { newTask, type AIAction, type Category, type Task } from '../shared/todo-contracts';
 import { previewTodoActions } from '../shared/todo-proposal';
-const task: Task = { ...newTask('真实事项'), id: randomUUID(), createdAt: '2026-10-01T00:00:00Z', updatedAt: '2026-10-01T00:00:00Z', completedAt: null, notifiedFor: null, deletedAt: null, note: '旧备注', dueAt: '2026-09-30T23:59:00Z' };
+const task: Task = { ...newTask('真实事项'), id: randomUUID(), createdAt: '2026-10-01T00:00:00Z', updatedAt: '2026-10-01T00:00:00Z', completedAt: null, notifiedFor: null, deletedAt: null, note: '旧备注', dateAt: '2026-09-30T23:59:00Z' };
 const category: Category = { id: randomUUID(), name: '真实标签', color: '#123456', createdAt: task.createdAt, updatedAt: task.updatedAt };
 
 test('proposal preview uses immutable actual target/old values and Chinese fields, not model prose', () => {
   const source = { ...task };
-  const actions: AIAction[] = [{ type: 'update', id: source.id, patch: { dueAt: '2026-10-31T23:59:00Z', note: null as never, categoryId: category.id, progress: 0 } }];
+  const actions: AIAction[] = [{ type: 'update', id: source.id, patch: { dateAt: '2026-10-31T23:59:00Z', note: null as never, categoryId: category.id, progress: 0 } }];
   const preview = previewTodoActions(actions, [source], [category])[0];
   source.title = '后来标题'; source.note = '后来备注';
   assert.equal(preview.title, '真实事项');
-  assert.deepEqual(preview.fields.map(f => f.label), ['截止时间', '备注', '标签（建议生成时名称）', '进度']);
+  assert.deepEqual(preview.fields.map(f => f.label), ['完成期限', '备注', '标签（建议生成时名称）', '进度']);
   assert.equal(preview.fields[1].before, '旧备注'); assert.equal(preview.fields[1].after, '未设置');
   assert.equal(preview.fields[2].after, '真实标签'); assert.equal(preview.fields[3].after, '0%');
   assert.match(preview.fields[0].before, /^2026-\d\d-\d\d \d\d:\d\d$/);

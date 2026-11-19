@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dashboardPlacements, defaultDashboard, defaultWidget, findDashboardSlot, moveDashboardWidget, readDashboard, resizeDashboardHeight, WIDGET_IDS, WIDGET_STYLES, type DashboardLayout } from '../shared/dashboard-layout';
+import { dashboardPlacements, defaultDashboard, defaultWidget, findDashboardSlot, moveDashboardWidget, readDashboard, resizeDashboardHeight, resizeDashboardPlacement, updateDashboardPlacement, WIDGET_IDS, WIDGET_STYLES, type DashboardLayout } from '../shared/dashboard-layout';
 import { dashboardSummary } from '../shared/dashboard-summary';
 import { localDay, type Task } from '../shared/todo-contracts';
 import { defaultAiScopeForWorkbench, chatScope, sameAiWorkbench, workbenchForScope } from '../shared/ai-scope';
@@ -120,11 +120,11 @@ test('定位后的调序使用已有落位，顶部缩高固定底边，原布�
 
 const clock = new Date(2026, 10, 14, 17);
 function task(id: string, patch: Partial<Task> = {}): Task {
-  return { id, title: id, kind: 'task', status: 'todo', priority: 'medium', plannedDate: '2026-11-14', dueAt: null, endAt: null, remindAt: null, categoryId: null, progress: null, note: '', createdAt: clock.toISOString(), updatedAt: clock.toISOString(), completedAt: null, notifiedFor: null, deletedAt: null, ...patch };
+  return { id, title: id, kind: 'task', status: 'todo', priority: 'medium', dateAt: '2026-11-14', endAt: null, remindAt: null, categoryId: null, progress: null, note: '', createdAt: clock.toISOString(), updatedAt: clock.toISOString(), completedAt: null, notifiedFor: null, deletedAt: null, ...patch };
 }
 test('摘要按计划日期统计任务当前完成状态，日程与删除项不计，进行中归待办，更早任务单列', () => {
   const at = (day: number, hour = 10) => new Date(2026, 10, day, hour).toISOString();
-  const tasks = [task('done-later', { plannedDate: '2026-11-13', status: 'done', completedAt: at(14) }), task('today'), task('doing', { status: 'doing' }), task('first-day', { plannedDate: '2026-11-08', status: 'done', completedAt: at(14) }), task('old', { plannedDate: '2026-11-07' }), task('old-doing', { plannedDate: '2026-11-07', status: 'doing' }), task('old-done', { plannedDate: '2026-11-07', status: 'done', completedAt: at(14) }), task('deleted', { status: 'done', completedAt: at(14), deletedAt: at(14) }), task('future', { plannedDate: '2026-11-15' }), task('meeting', { kind: 'meeting', status: 'done', completedAt: at(13) }), task('reopened', { plannedDate: '2026-11-13', status: 'doing', completedAt: at(14) }), task('missing', { status: 'done' })];
+  const tasks = [task('done-later', { dateAt: '2026-11-13', status: 'done', completedAt: at(14) }), task('today'), task('doing', { status: 'doing' }), task('first-day', { dateAt: '2026-11-08', status: 'done', completedAt: at(14) }), task('old', { dateAt: '2026-11-07' }), task('old-doing', { dateAt: '2026-11-07', status: 'doing' }), task('old-done', { dateAt: '2026-11-07', status: 'done', completedAt: at(14) }), task('deleted', { status: 'done', completedAt: at(14), deletedAt: at(14) }), task('future', { dateAt: '2026-11-15' }), task('meeting', { kind: 'meeting', status: 'done', completedAt: at(13) }), task('reopened', { dateAt: '2026-11-13', status: 'doing', completedAt: at(14) }), task('missing', { status: 'done' })];
   const before = structuredClone(tasks), summary = dashboardSummary(tasks, clock);
   assert.deepEqual(summary.days.map(day => day.date), ['2026-11-08', '2026-11-09', '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13', '2026-11-14']);
   assert.deepEqual(summary.days.map(day => day.completed), [1, 0, 0, 0, 0, 1, 1]);
@@ -135,16 +135,16 @@ test('摘要按计划日期统计任务当前完成状态，日程与删除项�
 });
 
 test('修改计划日期后统计移动到新日期，重新打开任务后从完成转为待办', () => {
-  const item = task('moved', { plannedDate: '2026-11-13', status: 'done', completedAt: clock.toISOString() });
+  const item = task('moved', { dateAt: '2026-11-13', status: 'done', completedAt: clock.toISOString() });
   assert.equal(dashboardSummary([item], clock).days[5].completed, 1);
-  const moved = dashboardSummary([{ ...item, plannedDate: '2026-11-14' }], clock);
+  const moved = dashboardSummary([{ ...item, dateAt: '2026-11-14' }], clock);
   assert.equal(moved.days[5].completed, 0); assert.equal(moved.days[6].completed, 1);
   const reopened = dashboardSummary([{ ...item, status: 'todo' }], clock);
   assert.equal(reopened.days[5].completed, 0); assert.equal(reopened.days[5].pending, 1);
 });
 
 test('统计卡片显示今天起七天的未完成日程与待办，排除过去、范围外、完成和删除事项', () => {
-  const tasks = [task('today'), task('doing', { status: 'doing' }), task('meeting', { kind: 'meeting' }), task('ongoing-meeting', { kind: 'meeting', status: 'doing' }), task('tomorrow', { plannedDate: '2026-11-15' }), task('last-day', { plannedDate: '2026-11-20', kind: 'meeting' }), task('too-late', { plannedDate: '2026-11-21' }), task('old', { plannedDate: '2026-11-13' }), task('done', { status: 'done' }), task('done-meeting', { kind: 'meeting', status: 'done' }), task('deleted', { deletedAt: clock.toISOString() }), task('deleted-meeting', { kind: 'meeting', deletedAt: clock.toISOString() })];
+  const tasks = [task('today'), task('doing', { status: 'doing' }), task('meeting', { kind: 'meeting' }), task('ongoing-meeting', { kind: 'meeting', status: 'doing' }), task('tomorrow', { dateAt: '2026-11-15' }), task('last-day', { dateAt: '2026-11-20', kind: 'meeting' }), task('too-late', { dateAt: '2026-11-21' }), task('old', { dateAt: '2026-11-13' }), task('done', { status: 'done' }), task('done-meeting', { kind: 'meeting', status: 'done' }), task('deleted', { deletedAt: clock.toISOString() }), task('deleted-meeting', { kind: 'meeting', deletedAt: clock.toISOString() })];
   const before = structuredClone(tasks), summary = dashboardSummary(tasks, clock);
   assert.deepEqual(summary.upcomingDays.map(day => day.date), ['2026-11-14', '2026-11-15', '2026-11-16', '2026-11-17', '2026-11-18', '2026-11-19', '2026-11-20']);
   assert.deepEqual(summary.upcomingDays.map(day => day.tasks), [2, 1, 0, 0, 0, 0, 0]);
@@ -152,32 +152,80 @@ test('统计卡片显示今天起七天的未完成日程与待办，排除过�
   assert.deepEqual(tasks, before);
 });
 test('今日安排包括今日和逾期待办，排除未来待办及非当日日程', () => {
-  const summary = dashboardSummary([task('future', { plannedDate: '2026-11-15' }), task('overdue', { plannedDate: '2026-11-13' }), task('today'), task('old-meeting', { kind: 'meeting', plannedDate: '2026-11-13' }), task('meeting', { kind: 'meeting', dueAt: new Date(2026, 10, 14, 14, 30).toISOString() })], clock);
+  const summary = dashboardSummary([task('future', { dateAt: '2026-11-15' }), task('overdue', { dateAt: '2026-11-13' }), task('today'), task('old-meeting', { kind: 'meeting', dateAt: '2026-11-13' }), task('meeting', { kind: 'meeting', dateAt: new Date(2026, 10, 14, 14, 30).toISOString() })], clock);
   assert.equal(summary.pending, 2); assert.equal(summary.meetings, 1);
   assert.deepEqual(summary.agenda.map(item => item.id), ['meeting', 'overdue', 'today']);
 });
 test('近7天跨年和本地午夜保持连续日期，空数据为真实零值', () => {
   const now = new Date(2027, 0, 2, 0, 1), beforeMidnight = new Date(2027, 0, 1, 23, 59);
-  const summary = dashboardSummary([task('midnight', { plannedDate: localDay(beforeMidnight), status: 'done', completedAt: beforeMidnight.toISOString() })], now);
+  const summary = dashboardSummary([task('midnight', { dateAt: localDay(beforeMidnight), status: 'done', completedAt: beforeMidnight.toISOString() })], now);
   assert.equal(summary.days[0].date, '2026-12-27');
   assert.equal(summary.days[6].date, localDay(now));
   assert.equal(summary.days[5].completed, 1); assert.equal(summary.days[6].completed, 0);
-  const yearEnd = dashboardSummary([task('next-year', { plannedDate: '2027-01-01' })], new Date(2026, 11, 30, 23, 59));
+  const yearEnd = dashboardSummary([task('next-year', { dateAt: '2027-01-01' })], new Date(2026, 11, 30, 23, 59));
   assert.equal(yearEnd.upcomingDays[6].date, '2027-01-05'); assert.equal(yearEnd.upcomingDays[2].tasks, 1);
   assert.equal(dashboardSummary([], now).total, 0);
   assert.ok(dashboardSummary([], now).upcomingDays.every(day => day.meetings === 0 && day.tasks === 0));
   assert.deepEqual(dashboardSummary([], now).agenda, []);
 });
 
-test('完整日程待办归属小工具，首页没有旧事项库占位，两个页面的 AI 上下文分开', () => {
+test('完整日程待办归属独立工作台，首页没有旧事项库占位，两个页面的 AI 上下文分开', () => {
   const selection = { copy: null, bazi: null, reading: null };
-  assert.equal(ownerOfWorkbench('todo'), 'life');
-  assert.deepEqual(NAV.find(item => item.id === 'home')?.subs, [{ label: '我的看板', view: 'home' }]);
+  assert.equal(ownerOfWorkbench('todo'), 'todo');
+  assert.deepEqual(NAV.find(item => item.id === 'home')?.subs, [{ label: '我的看板', view: 'home' }, { label: '每日签到', view: 'checkin' }]);
   assert.deepEqual(pageAiContext('home', selection), { scope: { module: 'workbench', viewId: 'home' }, label: '首页', object: '我的看板' });
   assert.deepEqual(pageAiContext('todo', selection).scope, { module: 'todo' });
   assert.deepEqual(defaultAiScopeForWorkbench('home'), { module: 'workbench', viewId: 'home' });
-  assert.equal(workbenchForScope({ module: 'todo' }), 'life');
+  assert.equal(workbenchForScope({ module: 'todo' }), 'todo');
   assert.equal(sameAiWorkbench({ module: 'todo' }, { module: 'bazi', profileId: 'profile-1' }), false, '导航迁移不合并待办与命理会话');
   assert.equal(sameAiWorkbench({ module: 'todo' }, { module: 'workbench', viewId: 'home' }), false);
   assert.deepEqual(chatScope({}), { module: 'todo' }, '旧待办会话不改写或丢弃');
+});
+
+test('左右调整分别固定右边和左边，临近画布或邻卡时限制尺寸档', () => {
+  const grid = { columns: 6, step: 80, base: 100, gap: 12 };
+  const original = { id: 'today' as const, column: 1, span: 3, top: 160, height: 260 };
+  const neighbor = { id: 'quota' as const, column: 4, span: 2, top: 160, height: 260 };
+  const occupied = [original, neighbor];
+  assert.deepEqual(resizeDashboardPlacement(original, { width: 2, rows: 2 }, 'left', occupied, grid),
+    { ...original, column: 2, span: 2 });
+  assert.deepEqual(resizeDashboardPlacement(original, { width: 2, rows: 2 }, 'right', occupied, grid),
+    { ...original, span: 2 });
+  assert.deepEqual(resizeDashboardPlacement(original, { width: 4, rows: 2 }, 'left', occupied, grid),
+    { ...original, column: 0, span: 4 });
+  assert.equal(resizeDashboardPlacement(original, { width: 4, rows: 2 }, 'right', occupied, grid), null);
+  assert.equal(resizeDashboardPlacement(original, { width: 6, rows: 2 }, 'left', occupied, grid), null);
+});
+
+test('上下调整分别固定底边和顶边，扩张需要完整的卡片间距', () => {
+  const grid = { columns: 6, step: 80, base: 100, gap: 12 };
+  const original = { id: 'today' as const, column: 0, span: 3, top: 80, height: 260 };
+  assert.deepEqual(resizeDashboardPlacement(original, { width: 3, rows: 1 }, 'top', [original], grid),
+    { ...original, top: 160, height: 180 });
+  assert.deepEqual(resizeDashboardPlacement(original, { width: 3, rows: 1 }, 'bottom', [original], grid),
+    { ...original, height: 180 });
+  assert.deepEqual(resizeDashboardPlacement(original, { width: 3, rows: 3 }, 'top', [original], grid),
+    { ...original, top: 0, height: 340 });
+  assert.equal(resizeDashboardPlacement(original, { width: 3, rows: 4 }, 'top', [original], grid), null);
+  const nextRow = { id: 'quota' as const, column: 0, span: 3, top: 432, height: 260 };
+  assert.deepEqual(resizeDashboardPlacement(original, { width: 3, rows: 3 }, 'bottom', [original, nextRow], grid),
+    { ...original, height: 340 });
+  assert.equal(resizeDashboardPlacement(original, { width: 3, rows: 3 }, 'bottom', [original, { ...nextRow, top: 431 }], grid), null);
+});
+
+test('调尺寸在草稿中保留邻卡坐标，单列留白独立保存并兼容旧布局', () => {
+  const grid = { columns: 6, step: 80, base: 100, gap: 12 };
+  const today = { ...defaultWidget('today'), width: 3 as const, position: { column: 0, top: 0 } };
+  const quota = { ...defaultWidget('quota'), width: 3 as const, position: { column: 3, top: 0 } };
+  const layout = { widgets: [today, quota] };
+  const wide = dashboardPlacements(layout.widgets, 6, 80, 100, 12);
+  const compact = dashboardPlacements(layout.widgets, 1, 80, 100, 12);
+  const shrunk = updateDashboardPlacement(layout, { ...today, rows: 1 },
+    { ...compact[0], height: 180 }, compact, { ...grid, columns: 1 });
+  const reloaded = readDashboard(JSON.stringify(shrunk));
+  assert.deepEqual(reloaded.widgets.map(widget => widget.position), layout.widgets.map(widget => widget.position));
+  assert.equal(dashboardPlacements(reloaded.widgets, 1, 80, 100, 12)[1].top, 272);
+  assert.deepEqual(dashboardPlacements(reloaded.widgets, 6, 80, 100, 12)[1], wide[1]);
+  assert.equal(readDashboard(JSON.stringify({ widgets: [{ ...quota, singleColumnTop: -1 }] })).widgets[0].singleColumnTop, undefined);
+  assert.equal(layout.widgets[0].rows, 2);
 });

@@ -1,5 +1,712 @@
 # 设计验收索引
 
+## 2026-11-19 · 日程页签、新增事项与通用控件
+
+独立资料目录中的 Windows Electron 窗口实测。日程、待办和会议记录三项页签点击高度均为 44px，选中线为 36×3px。方向键切换后焦点留在新选项。页头新增按钮为 36px，新增弹框初始为 408×174px。「返回」为 44×32px，表单工具为 32×32px，「创建」切换到「创建中…」时保持 84×32px 和标题输入框宽度。
+
+在 1024×680 窗口、125% 缩放下，核对顶栏逾期图标和数字、青瓷强玻璃下的摘要色、日期和时间浮层底部操作。200% 缩放时详细字段在弹框内滚动。主页面、Ctrl+N、顶栏日程和待办入口的 Esc 层级和焦点归还通过。模拟一次保存失败后保留草稿，重试通过真实接口写入一条记录。切页为 240ms 原位淡入，减少动态效果时切页和弹框直接显示，高对比模式仍显示选中线。
+
+72 项相关回归、两套 TypeScript 检查、字阶检查和 Vite 渲染端构建通过。顶栏验收脚本增加紧凑尺寸和保存后归还焦点的断言。
+
+## 2026-11-18 · Bot 名片与卡内侧栏
+
+使用独立数据目录启动本项目的 Electron 窗口，通过本机模拟模型完成对话并保存交付件。核对顶部名片相对正文的中心位置、侧栏分隔线、头像与资料保存、工作台独立开合、右键和键盘菜单、资料库预览与来源任务、1024px 窗口和重启后的草稿。模型请求记录确认，分别选择模型的两个 Bot 实际发往各自配置的模型。
+
+OnO 构建、68 项 Bot 回归和 23 组原有 Electron 界面流程通过。本轮另跑了六组隔离桌面流程，包括定时任务草稿跨页签保留、灵动岛查看工作记录并转到主窗口编辑资料。项目全量测试仍有 19 项失败，逐项在还原本轮改动的临时源码副本复现。
+
+## Bot 原地协作与双方记录（2026-11-17）
+
+final result: passed（六项隔离Electron核心流程），partial（完整P0–P5方案）。主对话原地澄清/确认、同卡补充、单次真实待办写入、原区域双方记录与草稿保留、浮动布局和1060px窄窗通过；宽窗约1586px。工作区矩形前后完全一致，双方记录无横向溢出，页面异常与Vite覆盖层为0。已人工查看浮动及窄窗截图。未改头像或侧栏外框。
+
+Browser plugin not available，采用项目Playwright Electron、独立临时数据、loopback模型夹具。81项相关检查、类型检查、构建通过；扩大检查另有4项旧阅读引用夹具失败，详见[首批实施记录](docs/requirements/shared/ai-assistant/bot-collaboration-implementation-2026-11-17.md)。完整主题/缩放、灵动岛操作、真实模型负载及悬停延迟矩阵仍待验收。截图与report.json位于实施记录列出的bot-implementation目录。
+
+## Bot 动效聚焦执行状态（2026-11-17）
+
+final result: passed（本次头像动效范围；空闲与提醒规则以本节为准，替代下方增强动效版本的空闲循环）。
+
+按用户确认，空闲与排队默认完全静止；悬停反馈 600ms 后自动结束，鼠标留在按钮内不重复播放，点击短弹 480ms。思考、搜索、执行、交接与回复继续使用明显的循环动作；等待协作改为 3.2 秒小幅慢摆。等待用户／资源或中断仅提醒一次，成功完成回弹一次后静止，保留原状态角标。主动执行增加固定实心状态点，等待协作使用空心点；展开侧栏显示真实阶段，折叠时沿用可访问名称和提示。30 秒无操作、隐藏与离屏仍暂停循环，固定状态点和文字保留；减少动态效果时关闭动作。消息、资料与选择器头像不参与动画。
+
+本次生产代码限于 BotAvatar.tsx、bot-avatar-motion.ts、bot.css 与 App.tsx 的侧栏阶段文案；未修改任务协议、运行时或数据。npm run verify 通过字阶检查、两套 TypeScript 和前后端构建。该结果不代表并行架构任务或全库测试均通过。
+
+Browser plugin not available，使用项目现有 Playwright Electron、独立测试资料、本机假模型与专用 5191 开发服务。DPR1 为 16/16，DPR2 为 15/15：真实思考／回复、后台执行、委派父子状态、等待用户、成功仅一次、取消／失败、空闲与排队无循环、有限悬停／点击、减少动态效果、可见性通知与真实离屏观察、图形头像实际位移均通过。DPR1 另等待 30.5 秒验证休息与唤醒，暂停后状态标记仍可见。两组页面和控制台错误均为 0。
+
+补查真实宽窗口：DPR1 内容视口 1800×1000、DPR2 为 1799×1000，分别通过 3/3 检查。经典／悬浮的展开阶段文字实际可见，折叠后隐藏；42px 头像、54px 选中框及头像坐标保持。减少动态效果下实心／空心标记仍可区分。已直接查看原生截图；sidebar-state-focus.gif 由 DPR1 真实委派流程的 40 帧原生侧栏截图编码，保留采样时序，未缩放或重画。
+
+验证修正与边界：最初测试服务受沙箱回环限制，改用本任务专用服务后可达；并行架构改动导致前后端 syncChat 版本短暂不一致，重新构建后恢复，未为此修改架构代码。悬停测试最初命中圆角外部，修正为按钮中心后通过。可见性使用模拟 document.hidden 与 visibilitychange，离屏用测试位移触发真实 IntersectionObserver；不等同于操作系统最小化实测。工具短阶段由生产组件受控画廊覆盖，不将其称为真实工具任务同时运行。未调用真实模型、修改真实账号资料或发布安装包。
+
+静态工具：premium strict audit 与上一轮的文件／规则／消息集合相同，仍有 22 项原有问题；design.md lint 为 0 错误、1 个原有无 YAML 警告。git diff --check 通过。DESIGN.md、UX-CONTRACT.md、头像规范与三份外观方案均同步最新规则；CMO 仍仅更新设计实施输入。
+
+证据目录：C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/bot-motion-focus-2026-11-17/，含 1x.json、2x.json、wide-1x.json、wide-2x.json、premium-audit.json、原生截图、wide-recording.json 与 sidebar-state-focus.gif。脚本为目录上级 bot-motion-focus-check.mjs 和 bot-motion-focus-wide-check.mjs。
+
+## Bot 分状态与增强动效（2026-11-17）
+
+final result: passed（本次动效与状态范围；取代下一节的轻幅版本）。
+
+按用户要求参考 DS-Bot，增大主体倾斜、跳动和压缩拉伸，42px 头像可见约 3–5px 的主体位移；思考、查找资料、执行、交接、回复分别表达。等待协作慢摆，等待用户／资源或中断短跳两次并保留问号提示；真实成功后回弹 1.1 秒。完成标记初次加载、重复刷新以及取消／失败都不触发成功回弹。空闲角色按身份错开节奏，悬停移眼、歪头，点击短弹，30 秒无输入暂停循环。消息正文、资料和选择器头像保持静止。
+
+状态接线：BotRuntime 的思考、回复和工具回调更新 BotStore 内存 activity，只在阶段变化时通知；不修改任务 revision、时间戳或数据库结构。BotCard.runningCount 和等待计数保持；正在运行优先于旧等待任务。成功标记仅来自 completed 任务。Bot Host 合约更新为 v6，沿用空闲时替换旧 v1–v5 Host 的保护；开发版需要完整重启 npm run dev 才载入后台状态代码。
+
+验证：npm run verify 通过字阶检查、两套 TypeScript 和前后端构建。四份相关测试 bot-avatar、bot-host、bot-activity、bot-thinking 共 26 项通过；首次沙箱运行中两项本机模型用例受回环网络限制失败，允许回环后单独复跑 bot-thinking 两项通过。覆盖阶段事件去重、状态优先级、任务版本不变、恢复／重试清理旧阶段、真实 thinking→searching→replying 和成功标记。不是全库测试结论。
+
+Browser plugin not available，使用项目现有 Playwright Electron，在 http://127.0.0.1:5186/ 与全新隔离资料、本机假模型下验证。最终 DPR1 为 15/15，DPR2 为 14/14，页面错误和控制台错误均为 0。实测真实思考／回复、切换 Bot 后后台继续、委派父子状态、待确认、完成仅一次、失败／取消、鼠标与键盘、减少动态效果、导航经典／悬浮与展开／折叠、1024×600 窗口。42px 头像、54px 点击框和导航坐标保持。DPR1 另等候 30.5 秒验证休息与输入唤醒。图形头像实际路径在动画组内，有主体位移且没有角色眼睛。
+
+边界：工具短阶段的各动作由生产 BotAvatar 受控属性画廊检查；真实运行流程另由前述本机模型验证，不把画廊当作八个后台任务同时执行。可见性检查通过模拟 document.hidden 与 visibilitychange；离屏通过测试专用位移触发真实 IntersectionObserver，未声称操作系统最小化或默认八项滚动均已实测。未实测已安装版升级或忙碌旧 Host 的版本接替。源码参考 DS-Bot 的 mark.js、styles.js、motion-rest.js，未运行对方应用，也未引入其依赖或角色资产。
+
+静态工具：premium strict audit 仍为原有 22 项问题，未标记本次动效新增行；design.md lint 为 0 错误、1 个原有无 YAML 警告。保留原 npm 镜像配置和构建大分块警告，不扩大修改范围。DESIGN.md、UX-CONTRACT.md、头像规范与三份外观方案已同步；CMO 仅更新实施输入，不代表 CMO 已实现。
+
+证据目录：C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/bot-motion-v2-2026-11-17/，含 1x.json、2x.json、premium-audit.json、原生窗口截图和 state-motion.gif。检查脚本为目录上级 bot-motion-v2-check.mjs；动图由 bot-motion-v2-record.mjs 在生产组件画廊逐帧捕获后编码，录制时长保留在 recording.json。
+
+## Bot 侧栏执行动效（2026-11-17）
+
+final result: passed（本次目标流程）；项目全量静态审计仍有原有问题，详见本节边界。
+
+用户确认“头像神态”。检查 DS-Bot 的 mark.js、styles.js、sidebar.js 与 motion-rest.js 后，采用真实任务驱动的 SVG 分层动作思路；ONO 沿用自己的头像形状、色板、状态和 CSS，不引入外部角色资产。BotCard.runningCount 仅统计 running，App 通过原 task 通知更新侧栏，选中态独立。角色轻微呼吸、眼神轻移并间歇眨眼，图形仅呼吸；消息记录、资料和选择器静止。等待用户／其他 Bot／资源、排队、完成、失败、取消和中断停止忙碌循环。窗口可见性通知与 IntersectionObserver 控制暂停，减少动态效果关闭动画。修正暂停选择器优先级，确保眼睛和主体都暂停。
+
+验证命令：npm run verify；node node_modules/tsx/dist/cli.mjs --test tests/bot-avatar.test.ts tests/bot-host.test.ts。前者通过字阶检查、两套 TypeScript 与前后端构建，后者 22/22 通过；新增用例覆盖委派中的父子 Bot、队列、各等待／终止状态与恢复执行。不是全量测试套件结论。
+
+Browser plugin not available，使用本地 Playwright Electron；入口 http://localhost:5174/，全新隔离资料和本地假模型，不连接真实账号。1400×1000、1024×600，DPR 1／2 各 11/11 检查通过：页面身份／非空／无错误覆盖；42px 头像和 54px 点击框；真实发送驱动动作且消息头像静止；眨眼形变；切换选择与待确认角标独立；经典／悬浮、展开／收起不改变头像坐标；减少动态效果；可见性通知暂停／恢复；完成；图形与取消；失败；真实 IntersectionObserver 离屏与返回。页面错误和控制台错误均为 0。截图已直接检查，选中底框、名字、角标、头像和导航布局保持。
+
+边界：Playwright Electron 的窗口自动化设置使 document.hidden 在原生隐藏／最小化后仍保持 false；可见性监听使用模拟 visibilitychange 与 hidden 值验证，不能视为普通启动后的操作系统隐藏实测。离屏检查通过测试专用位移把头像移出视口，再复位，使用真实 IntersectionObserver，不声称默认八个联系人必然出现滚动条。未实测已安装应用升级或旧 v4 Host 在忙碌期间接替；v5 继续复用空闲升级保护，不强制终止旧任务。
+
+静态工具：缓存中的 @google/design.md 0.4.0 lint DESIGN.md 为 0 错误、1 个原有无 YAML 格式警告；premium strict audit 为 22 个既有问题（原生 select 归属未声明、无动作按钮与表单 noValidate／textarea resize 静态规则），均不在本次新增头像／状态代码中，本轮不扩大范围修理，不能据此宣称全项目静态审计通过。
+
+DESIGN.md、UX-CONTRACT.md、Bot 头像方案与三份外观方案已同步；CMO 仅补充设计输入。证据位于任务视觉目录 bot-motion-2026-11-17/1x.json、2x.json、premium-audit.json、sidebar-working.gif 及两种比例截图；测试脚本为同目录上级 bot-motion-check.mjs。
+
+
+## Bot 加号引用弹层布局（2026-11-17）
+
+final result: passed
+
+原布局把资料类型下拉放在 `.bot-compose` 内，资料列表则单独 portal 到上方，打开“＋”会额外撑高输入卡片。现将 Bot 允许的资料类型通过 `AiReferencePicker` 的可选类型参数传入，在弹层顶部复用 `Segmented`；固定类型 Bot 显示原类型标题。旧助手未传类型参数时保持原展示。Bot 弹层最大 420×340px，水平边界不超出输入卡片，只有资料列表内部滚动；普通用途说明改为次要文字色。修正头部关闭按钮选择器对嵌套类型按钮的误匹配，保留完整点击区域；已处理子控件的键盘事件不再被列表导航接管。
+
+`npm run verify` 通过。当前 5174 开发服务使用独立资料、25 条示例事项与两篇示例博文，在 DPR1／2 下各通过 8 组检查：打开前后输入卡片高度与位置一致，420×340px 长列表滚动，状态／类型筛选与空态，弹层内来源切换、博文搜索与多选确认，键盘来源切换，事项点击即选／关闭，窄短窗及 Escape 焦点／草稿保留，浮动与灵动岛边界。窄栏弹层宽 318px，灵动岛为 378px，高度均不超过 340px；所有类型按钮点击宽度至少 32px。两组页面错误均为 0。已直接检查最终截图，输入卡片不再出现多余的资料类型行；截图仅为隔离示例数据，没有调用模型或修改真实资料。DESIGN.md、UX-CONTRACT.md 与三份外观方案同步此规则；CMO 仍仅更新实施输入。
+
+额外运行既有参考／选择器／导航测试共 23 项：首次 19 项通过，1 项本机模拟模型请求在沙箱回环限制下失败，允许回环网络复跑后通过；剩余 3 项失败来自 `tests/ai-reference.test.ts` 仍以旧 `workspace:life` 作为阅读／命理的共同工作台标识，与当前领域拆分不符。这些用例不导入本轮修改的 UI 组件，本轮未修改其领域校验、后台读取或测试期望，也未将它们记为通过。选择器组件与工作台导航两份测试通过。本节的 passed 指当前布局与交互范围，不代表全库测试通过。
+
+证据：[DPR1](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/reference-popup-2026-11-17/1x.json)、[DPR2](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/reference-popup-2026-11-17/2x.json)、[最终实机截图](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/reference-popup-2026-11-17/2x-parallel-560.png)。Browser 插件未提供本次 Electron 能力，使用项目既有 Playwright Electron 路径；未将本次局部检查表述为全量 UI 回归。
+
+## 工作详情底部入口精简（2026-11-17）
+
+final result: passed
+
+按用户标注移除嵌入式任务详情底部“在对话中继续”，并删除其专用空白样式；回对话统一使用顶部“返回对话”，不自动添加任务回复关联。任务确认、继续执行、取消、重试和子任务导航保持。DESIGN.md、UX-CONTRACT.md 和三份外观方案同步最新入口规则，既有 UI 回归脚本改走顶部返回并核对未添加回复目标。
+
+`npm run verify` 通过；当前 5174 开发服务的隔离 Electron 检查通过：底部入口不存在，顶部返回保留草稿，固定目录、紧凑行、长标题、键盘、窄栏和浮动正常，页面错误为 0。未将本次局部检查当作全量回归通过。[实测记录](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/work-detail-return-2026-11-17/1x.json)。
+
+## 工作进度目录固定宽度与紧凑行（2026-11-17）
+
+final result: passed
+
+工作进度双栏的左侧目录从 29% 比例改为固定 280px，右侧占剩余空间；交付件布局保持原规则。工作目录条目统一 72px 高，标题按原 body 字阶最多两行，状态与时间单行；列表省略不改写任务数据，原生完整标题提示与右侧全文均保留。选择、分类、普通聊天折叠、键盘进入详情、窄栏逐页返回和草稿沿用原逻辑。DESIGN.md、UX-CONTRACT.md 及三份外观方案同步该规则，CMO 文件仍仅为实施输入。
+
+`npm run verify` 通过。当前 5174 开发服务使用独立复制的测试资料，在 DPR1／DPR2 下分别验证 1678、1280、1024px 窗口、手动 340px 对话栏、浮动、强制颜色与减弱动效；三组宽窗的目录均为 280px，全部可见条目均为 72px，无横向溢出，长标题最多两行、元数据一行。键盘选中后右侧显示完整标题；窄栏返回恢复原条目焦点，回对话后草稿保留。两组页面错误均为 0。已直接查看实机截图并对照用户提供的长标题页面，没有通过缩小字号压缩内容。未修改真实用户数据或调用模型。
+
+证据：[DPR1 测量](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/progress-density-2026-11-17/1x.json)、[DPR2 测量](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/progress-density-2026-11-17/2x.json)、[开发版实机](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/progress-density-2026-11-17/1x-wide-1024.png)。沿用项目的隔离 Playwright Electron 检查，没有将本次局部检查表述为全量回归。
+
+## Bot 输入卡片焦点与附件入口（2026-11-17）
+
+final result: passed
+
+修正前，文字区 2px 焦点描边外偏 3px，而工具栏紧邻文字区底边，描边覆盖发送按钮顶部。现在焦点描边沿整块 `.bot-compose` 外沿绘制，文字区不再单独描边；输入、工具栏和按钮的实际位置与尺寸保持。附件入口改用 18px Plus 图标，沿用原参考内容选择、禁用和草稿逻辑，引用标签内的回形针保留。
+
+`npm run verify` 通过，包含 23 个 CSS 字阶检查、两套 TypeScript 和 Vite／Electron 构建。当前 `http://localhost:5174/` 隔离 Electron 在 DPR2 下验证 560px／340px 并排、浮动和灵动岛：文字区无内层焦点描边，外沿焦点可见，发送按钮没有覆盖，32px 加号入口不溢出；加号打开原参考内容选择器，Escape 关闭后恢复入口焦点，未发送草稿保留。页面错误为 0。已直接对照修改前后原生截图；不使用真实资料或远程模型，未将本次局部检查表述为全量回归。
+
+证据：[测量结果](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/composer-focus-2026-11-17/after.json)、[修改前](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/composer-focus-2026-11-17/before-parallel-560.png)、[修改后](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/composer-focus-2026-11-17/after-parallel-560.png)。Browser 插件未提供本次 Electron 能力，沿用项目的 Playwright Electron 路径。
+
+## Bot 工作记录默认入口修正（2026-11-17）
+
+final result: passed
+
+用户反馈的开发版单栏已复现：当前 main 的 `npm run dev` 运行在 `http://localhost:5174/`，并排对话可用宽度只有 340–560px，低于目录＋详情的 640px 内容断点；修正前实测 560px，详情被隐藏。页头已是新版，问题来自默认进入路径。此前工作记录验收先手动收起了工作区，漏验普通并排对话直接进入；本节补正该覆盖缺口，不把原宽态通过等同于默认入口通过。
+
+`App.tsx` 将临时阅读状态与手动收起状态分开，`BotPanel.tsx` 在布局阶段通知进入／退出；工作进度、交付件进入时临时展开阅读区，返回对话恢复原布局，手动工作区开关仍优先。切换 Bot、收起助手、浮动模式以及灵动岛外置交付件预览继续使用原路径；复用既有原生工作区显示与激活控制，没有重挂原生内容。`bot.css` 仅关闭主对话浏览器滚动锚点，防止宽度恢复时干扰既有阅读位置恢复。三份外观方案（含 CMO）、DESIGN.md、UX-CONTRACT.md 及源图索引同步此规则；CMO 只更新实施输入。
+
+### 当前开发服务实测
+
+以下均从普通并排对话进入，没有预先手动收起工作区。使用隔离 Electron 资料连接现有 5174 开发服务，没有操作用户真实资料。原生截图不进行尺寸归一化。
+
+| 内容视口 CSS px | DPR | 对话原宽 → 阅读区宽 | 目录／详情 | 返回阅读位置 | 结果 |
+| --- | --- | --- | --- | --- | --- |
+| 1678×1003 | 1 | 380 → 1438px | 同时可见 | 320 → 320px | 8/8 |
+| 1677×1003 | 2 | 560 → 1437px | 同时可见 | 320 → 320px | 8/8 |
+| 1023×1003 | 2 | 380 → 925px | 同时可见 | 320 → 320px | 8/8 |
+
+三组均验证：默认工作进度、返回宽度／草稿／滚动恢复、交付件列表与预览及来源任务返回、手动覆盖、原先收起的工作区、切换 Bot、浮动切换、灵动岛指定交付件预览与关闭。页面身份及非空内容正确，无 Vite 错误覆盖层，报告页面错误为 0。已对照修正前后截图，原有主题、字阶、状态色和共享页头保持；默认进入已显示确认的目录＋详情。示例数据仅用于隔离验收。
+
+- `npm run verify` 通过：23 个 CSS 字阶检查、两套 TypeScript、Vite／Electron 构建；Windows 换行规则的 `git diff --check` 通过。
+- 草稿、工作分类与耗时共 16/16 测试通过。首次沙箱运行中两项耗时测试没有收到本机模拟流，允许回环网络的隔离复跑全部通过；未修改耗时代码来迎合测试。
+- `tooling/bot-ui-pilot.mjs` 最终 23/23 通过，页面错误为 0，覆盖确认写入、浮动／窄栏、主窗口／灵动岛、Host 重启、原生浏览器及动效。脚本按新的宽态返回路径调整，手动最小宽度检查仍保留。一次中途截图超时后，隔离测试改用原生窗口捕获并关闭后台遮挡节流，完整重跑通过；未跳过失败项。
+- Browser 插件未提供本次 Electron 能力，使用项目既有 Playwright Electron 路径。未额外安装依赖；Premium Python 静态审计与 DESIGN.md 第三方 linter 沿用环境不可用的边界，不计为通过。此次本地修正不包含安装包发布。
+
+证据：[修正前默认入口](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/bot-work-default-entry-2026-11-17/before-2x.json)、[开发版 DPR1](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/bot-work-default-entry-2026-11-17/after-1x-380-1678.json)、[开发版 DPR2](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/bot-work-default-entry-2026-11-17/after-2x-560-1678.json)、[窄窗 DPR2](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/bot-work-default-entry-2026-11-17/after-2x-380-1024.json)、[完整 UI 回归](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/bot-work-default-entry-2026-11-17/full-pilot-verified/report.json)。开发版截图：[默认工作进度](design/bot-work-records-2026-11-17/runtime-default-entry.png)、[默认交付件预览](design/bot-work-records-2026-11-17/runtime-default-preview.png)。
+
+
+## Bot 工作进度与交付件（2026-11-17）
+
+final result: passed
+
+本轮根据用户确认落地两页：工作进度采用[目录＋详情稿](design/bot-work-records-2026-11-17/progress-selected.png)，交付件组合采用[空态](design/bot-work-records-2026-11-17/deliverables-empty.png)、[日期清单](design/bot-work-records-2026-11-17/deliverables-list.png)和[宽窗预览](design/bot-work-records-2026-11-17/deliverables-preview.png)。工作进度源图中的旧页头按最新确认统一为 `返回对话 | 工作进度  交付件`，保留原工作区开关。实现位于 `BotPanel.tsx`、`BotWorkViews.tsx`、`BotTasks.tsx` 及 `bot.css`，未迁移任务协议或数据库。
+
+### 对照与修正
+
+已把每张源图与对应实机截图放在同一次视觉输入中比较，另检查了窄栏页头、键盘返回、浮动侧面板与强制颜色状态。首轮与后续对照发现并修正以下 P2，修正后重新捕获验证：
+
+- 页头分隔线贯穿整行，改为居中的短分隔；两个内容页保持同一 56px 几何及返回位置。
+- 默认交付件清单缺少日期层级，补为本地日期分组，今天单独标识，条目继续使用单条分隔。
+- 中等宽度目录挤压标题及原件图标，目录最小宽度改为 240px，行最小高 64px，并调整内距；不通过缩小字号挤入。
+- 来源任务返回缺少明确焦点恢复，保存并恢复原触发按钮，同时保留预览选择与原滚动；原生脚本检查焦点返回。
+- 空态标题过弱、图标缺少底面且位置偏低，改用共享 24px 字阶、主题图标底面和更紧凑的上方间距，并保留源图中的两层说明。
+
+未遗留 P0/P1/P2。源图没有提供 DPR，因此不将位图像素直接当 CSS px；实机保留共享字号和字族。对照采用原生 DPR2 内容截图，按源图画幅等比归一化；不改变运行时布局来拼合截图。归一化前后的尺寸均记录于 `shipping-2x.json`，原始 PNG 以 `-native.png` 保留。
+
+| 对照状态 | 源图像素 | 实机内容 CSS px / DPR | 原生像素 | 归一化结果 |
+| --- | --- | --- | --- | --- |
+| 工作进度 | 1568×1003 | 925×592 / 2 | 1850×1184 | [1568×1003](design/bot-work-records-2026-11-17/runtime-progress.png) |
+| 交付件清单 | 1568×1003 | 925×592 / 2 | 1850×1184 | [1568×1003](design/bot-work-records-2026-11-17/runtime-deliverables-list.png) |
+| 交付件预览 | 1487×1058 | 925×658 / 2 | 1850×1316 | [1487×1058](design/bot-work-records-2026-11-17/runtime-deliverables-preview.png) |
+| 交付件空态 | 1568×1003 | 925×592 / 2 | 1850×1184 | [1568×1003](design/bot-work-records-2026-11-17/runtime-deliverables-empty.png) |
+
+### 五项视觉检查
+
+| 范围 | 结论与约束 |
+| --- | --- |
+| 字体与层级 | 沿用 Bahnschrift／Segoe UI／微软雅黑 UI 回退及共享 24/18/16/14/13/12px 字阶，正文复用 AiResponse；没有从生成图另建字体系统。目录标题与默认清单标题层级分开，实际长标题可换行 |
+| 布局与间距 | 内容容器至少 640px 时目录＋详情，目录为 29% 且至少 240px；窄栏顺序进入详情，返回入口始终可达。空态位于上方阅读区，列表、工作结果与正文不重复套玻璃卡片 |
+| 配色与材质 | 继续消费 appearance.css 的主题与材质变量。三档材质测得页头几何一致；完成用既有青绿色，等待确认保留中性／主色，失败与中断用危险色，状态均有文字。未另设页面背景来模拟源图 |
+| 图标与清晰度 | 复用 Phosphor 的文档、勾选、时钟、返回和原件图标；图标、文字及玻璃仍由原生组件渲染，没有使用整张高保真作为页面，也没有新增伪造图片资产 |
+| 内容与状态 | 使用真实 API 和独立测试资料中的持久化记录；日期、产出 Bot、类型、来源任务和正文关系均可回查。工作区引用没有正文时说明引用关系；图中的示例页脚不进入产品 |
+
+共享字阶、真实 Bot 名称／时间、普通聊天折叠入口、工作区开关以及原 Markdown 项目符号属于明确的产品约束，与概念稿的不同不计为待修视觉错误。CMO 配套方案只更新实施输入，未据 ONO 验收推断 CMO 已实现。
+
+### 运行检查
+
+- `npm run verify` 通过：23 个 CSS 的字阶检查、两套 TypeScript 与 Vite／Electron 构建；最后状态色修正后构建再次通过。`git diff --check` 按 Windows 换行规则通过，新工作视图无尾随空白。
+- 14/14 既有任务分类／草稿测试通过，覆盖普通聊天归档、待确认分类、发送幂等、保存失败、中文输入和跨表面草稿。
+- 项目现有 `tooling/bot-ui-pilot.mjs` 按新入口更新后 23/23 通过，包含真实 UI 确认写入、来源与预览、普通聊天折叠、失败重试入口、340px 并排页头、主窗口／灵动岛、Host 重启、原生浏览器授权与浮动动效。
+- 最终专项：DPR1 11/11、DPR2 12/12 通过，包含空态、日期清单、宽窗双栏、窄栏列表→详情→返回、来源任务与焦点恢复、打开原件、对话草稿／滚动恢复、待确认操作、浮动面板、三档材质、减弱动效和强制颜色。两次页面错误均为 0；DPR2 多一项源图画幅对照。
+- 全部 Electron 实测使用 `WORKBENCH_TEST_DATA_DIR` 和 `WORKBENCH_ISOLATED=1`，没有访问真实用户资料；回归模型由本地模拟服务提供，未将其计作真实远程模型质量验收。
+
+证据目录：[专项 DPR1](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/bot-work-records-2026-11-17/shipping-1x.json)、[专项 DPR2](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/bot-work-records-2026-11-17/shipping-2x.json)、[23 项 UI 回归](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/bot-work-records-2026-11-17/full-pilot-final/report.json)。窄栏阅读见[工作详情](design/bot-work-records-2026-11-17/runtime-progress-narrow.png)与[交付件预览](design/bot-work-records-2026-11-17/runtime-preview-narrow.png)。本轮在本地 main 完成，没有发布安装包。
+
+## Bot 侧栏两态选中框对齐（2026-11-17）
+
+final result: passed
+
+用户指出折叠与展开的选中框高度、左缘不同。修改前实测：折叠 54px 高、距侧栏左缘 6px；展开常规为 64px／12px，短窗为 55px／12px。以原折叠框为基准，将 `src/views/bot.css` 的联系人入口统一为高 54px、左右各外扩 6px并内距 6px，折叠 54×54px、常规展开 196×54px，沿用 14px 圆角。删除折叠、窄窗重复几何及旧短窗按钮高度覆盖；常规 64px、短窗 55px 行位保持。
+
+`npm run verify` 通过，包含 23 个 CSS 的字阶、两套 TypeScript 及 Vite／Electron 构建。隔离 Electron 在 DPR1／DPR2 下各验证 6 种场景、12 个端态：经典／悬浮常规、经典／悬浮短窗、并排常规和窄窗自动图标态。所有正常颜色状态均为高 54px、左内距 6px，8 个头像的 42px 尺寸与修改前横纵坐标保持；动画共抽样 615 帧，选中框高度、左缘及头像位置保持。右键资料开关、焦点恢复、减弱动效和强制颜色检查通过，页面错误均为 0。强制颜色沿用原 1px 系统边线，按同一颜色状态比较两态，未将系统边线差异当成普通主题坐标。
+
+已在同一视觉输入中对照修改前后、同尺寸的折叠与展开截图，核对选中框边界、头像和文字对齐，无遗留 P0/P1/P2。证据：[DPR1 结果](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/bot-nav-alignment-2026-11-17/after-1x.json)、[DPR2 结果](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/bot-nav-alignment-2026-11-17/after-2x.json)、[折叠截图](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/bot-nav-alignment-2026-11-17/after-2x-collapsed.png)、[展开截图](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/bot-nav-alignment-2026-11-17/after-2x-expanded.png)。设计规范与三份外观方案同步该尺寸；未将待讨论的工作进度／交付件高保真作为本轮代码改动。
+
+## 八类页签与标题条统一（2026-11-17）
+
+final result: passed
+
+范围为用户确认的[八类界面总览](design/header-unification-2026-11-17/overview-v1.png)，源图 1086×1448。它是组件对照板，不是新增的两列工作台页面；按各组件主体比较排布、层级和状态，保留运行时真实内容、现有外壳与浮层边界。已在同一视觉输入中打开源图及最终实机截图，检查宽屏、窄工作区、键盘焦点和强玻璃状态。资料浮层对照「资料」选中状态，读取记忆后等待忙碌结束再以 Home 返回，避免将不同面板误作同态比较。
+
+运行时由 `src/ui/navigation.css` 统一短下划线与标题尺寸，`Segmented` 的内容变体沿用原选择与方向键。工作区页面导航保留 aria-current；命理和资料保留 tablist／panel 关联，命理补齐左右键、Home／End 和单个 Tab 停留项。模式筛选和可关闭文档维持原控件。三份外观方案、DESIGN.md 与 UX-CONTRACT.md 已同步本次确认；CMO 仅更新实施输入，不计为 CMO 已实施或验收。
+
+### 视觉对照与修正
+
+| 检查面 | 结论与证据 |
+| --- | --- |
+| 字体 | 复用现有字体、24px 页面／18px 局部标题及 14px 内容页签；公共工作区行内页签使用原 13px 控件字阶。没有扩大应用全局字号 |
+| 间距与布局 | 标题卡最小 80px、12px 20px 内距，真实问候或说明自然增高；项目条实测三页均为 64px。博客目录与编辑标题同高，宽屏横向分组，窄窗换行后所有操作在本容器内可达 |
+| 颜色与材质 | 页签复用 ink／acc／hairline，标题继续由 appearance.css 驱动。八主题×三材质的 24 组绘制检查中，命理页头几何保持一致；未复制独立玻璃配色 |
+| 图片与图标 | 使用当前 BotAvatar、原项目封面与 Phosphor 图标；无新贴图、占位图片或图标重绘。源板未展示的资料浮层下半区继续沿用原内部滚动 |
+| 文案与状态 | 保留原命例、状态、路径、说明和动作；移除单页重复导航与编辑器平台眉题。浏览器操作记录、草稿与命理样例仅存在于隔离测试目录 |
+
+首轮发现并修正：选中项悬停仍出现胶囊底色（调整选择器优先级，所有内容组实际计算背景透明）；命理出现双分隔（保留一条）；两字页签的指示线被限宽为 34px（统一 36×3px）；三个项目标题条高度不一（统一 64px）；博客左侧目录标题仍为旧高度（与编辑标题对齐）。修正后重新构建、实测、截取并对照；未遗留 P0/P1/P2 视觉问题。键盘截图中的焦点环是预期状态。
+
+### 验证结果
+
+- `npm run verify` 通过：23 个 CSS 字阶检查、两套 TypeScript 检查和 Vite／Electron 构建；最终 CSS 修正后再次完成该命令。`git diff --check` 按项目 Windows 换行规则通过。
+- 35/35 专项测试通过：签到 UI、工作台归属与导航、看板布局、媒体实例保留、外观保存与自动光影、日程周导航。未将此前全库测试的历史失败计为本轮通过。
+- 隔离 Electron 在 1568×1003、1024×680、DPR1 和 DPR2 两种显示密度下各通过 15 组流程：页面身份／非空、签到方向键、日周模式保留、命理键盘及星盘内容、阅读标题、草稿跨页保留、AI 测试任务／记录、项目控件、浏览器新增与关闭标签／操作记录、资料页签、灵动岛设置、24 组材质主题几何、窄工作区／并排助手、减少动效和强制颜色。两个最终报告的页面错误与控制台警告均为 0。
+- 报告与全部截图：[DPR1 结果](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/header-unification-implementation-2026-11-17/verification-1x.json)、[DPR2 结果](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/header-unification-implementation-2026-11-17/verification-2x.json)。Browser 插件未提供本次 Electron 能力，使用项目已有的 Playwright Electron 路径及专用 userData，未操作真实账号或调用模型。
+
+代表性截图：[工作区与测试任务](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/header-unification-implementation-2026-11-17/verified-2x-ai-tasks.png)、[命理](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/header-unification-implementation-2026-11-17/verified-2x-bazi.png)、[资料浮层](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/header-unification-implementation-2026-11-17/verified-2x-bot-profile.png)、[编辑器](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/header-unification-implementation-2026-11-17/verified-2x-blog-editor.png)、[网页任务记录](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/header-unification-implementation-2026-11-17/verified-2x-browser-record.png)、[窄窗并排](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/header-unification-implementation-2026-11-17/verified-2x-parallel-narrow.png)。
+
+辅助工具边界：Premium Python 静态审计因环境没有可用 Python 未运行；第三方 DESIGN.md linter 未在离线缓存中，未额外安装。上述结论来自项目检查、实际交互与源板对照，不宣称第三方静态审计或完整读屏合规。此次仅完成 ONO 本地界面调整及方案同步，未执行发布操作。
+
+## 每日签到单行页头定稿（2026-11-17）
+
+final result: passed
+
+用户选定第一张单行下划线方案，视觉依据已保存为 [selected.png](design/checkin-header-2026-11-17/selected.png)，原图 2172×724，主体约 2096×156；背景留白只用于概念展示。实现仅调整 CheckinView 的页头结构及 checkin.css 对应样式，复用原 Segmented、按钮事件和主题材质，未修改签到、授权、记录和自动签到配置逻辑。
+
+对照证据：1568×1003、DPR1 的 [完整页面](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/checkin-inline-header/after-wide.png) 与 1444×80 的 [页头局部](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/checkin-inline-header/after-header.png)；接近参考主体宽度的 CSS 1172×724、DPR2 场景输出 [2094×160 页头](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/checkin-inline-header/visual-header.png)。已在同一视觉检查中打开源图与最终局部图，按主体而非背景留白比较；同时检查 [1024×680 并排助手](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/checkin-inline-header/after-narrow.png) 的完整布局。
+
+五项视觉检查：
+
+- 字体：沿用工作台字体与 24px 标题、14px 页签、13px 操作字阶。图标返回、主标题、选中页签及次要操作层级清楚；概念稿放大的字面与按钮未直接变为全应用字号，这是沿用产品字阶的明确适配。
+- 布局：返回、标题、分隔、文字页签和操作在宽屏同行并居中；页头高 80px。窄工作区操作换到下一行，高 118px，控件完整可见且无水平溢出。取消大块胶囊底面，下划线居中位于选中文本下方。
+- 颜色与材质：主色、次级文字、细边线、控制底面及选中态使用既有 ink／acc／hairline／control 与公共材质映射，没有另建局部主题。
+- 资产：返回、时钟、刷新和说明均使用现有 Phosphor 图标；无新增绘制的图标、栅格占位或变形图片。选定稿只作为设计依据，不作为界面截图贴图使用。
+- 文案：保留每日签到、签到概览、签到记录、自动签到、刷新状态与说明入口；返回按钮通过 aria-label 和 title 表达「返回总台」。未添加示例奖励、指标或新业务入口。
+
+验证：`npm run verify` 的字阶、两套 TypeScript 检查和构建通过；现有 `checkin-ui` 与 `workspace-checkin-navigation` 共 3 项测试通过。隔离 Electron 在 DPR1／DPR2 下均验证了单行布局、控件边界、页签方向键与真实内容切换、下划线选中态、说明弹框、自动签到设置及返回每日签到、返回总台后重进；页面错误 0。未触发真实领取或账号授权。首次配置引导曾挡住首轮截图，已在测试实例中收起后重新完整验收，未修改生产引导逻辑。
+
+无待修复的 P0／P1／P2。参考未定义窄工作区，按现有容器宽度自动折行作为响应式适配；未进行完整读屏合规审计。Browser plugin not available，使用项目既有隔离 Playwright Electron 流程，结果为 [普通清晰度](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/checkin-inline-header/after.json) 与 [200% 对照](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/checkin-inline-header/visual.json)。本节替代下方旧两行压缩方案的当前样式结论，历史证据保留。
+
+## 每日签到页头压缩（2026-11-17）
+
+final result: passed
+
+本次仅修改 `src/views/checkin.css` 四处页头规则：返回入口与标题改为同行，上下内距由 20px 减为 12px、标题与页签间距由 18px 减为 8px，页签最小高度由 36px 减为 32px。标题字号、按钮、页签内容、卡片材质及业务事件保持原有实现。
+
+构建与 22 个 CSS 文件字阶检查通过。隔离 Electron 中，1568×1003 与 1024×680 并排助手两种场景的页头均由 161.59px 降至 102.14px，减少约 37%；返回与标题垂直居中，右侧三项操作可见，无横向溢出。使用方向键切换签到概览／记录后，实际内容与选中状态一致，页面错误为 0。已查看宽屏局部及窄工作区截图；未触发真实签到、刷新或账号授权。
+
+Browser plugin not available，沿用项目隔离 Playwright Electron 工作流。证据位于 [验收结果](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/checkin-compact-header/after.json)、[压缩前](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/checkin-compact-header/before-header.png)、[压缩后](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/checkin-compact-header/after-header.png) 与 [窄工作区](C:/Users/henry/.codex/visualizations/2026/11/15/01a1dddb-9256-79b0-ad61-ca21dc912b70/checkin-compact-header/after-narrow.png)。
+
+## 日程与会议纪要首版（2026-11-17）
+
+final result: passed
+
+此结果限定为本次日程／纪要范围。本地实现完成，未发布。设计依据为 `docs/design/schedule-minutes-optimization-2026-11-17.md` 及 `design/schedule-notes-2026-11-17/high-fidelity/` 下总览 v2、详情 v5、提醒 v2。已在 1568×1003 同尺寸查看设计稿和实际截图，核对连续面板、通顶目录、左侧返回、正文层级、紧凑日期、提醒位置及真实状态；1024×680 并排助手下核对单栏正文、目录展开、独立滚动和提醒操作。
+
+实现沿用现有壳的顶栏、Bot 头像、字阶和主题颜色；左侧目录按方案取 240px，标题 24px、正文 16px，其余使用共享字阶。高保真的放大壳和示例计数不作为全局重做目标；实机使用当前 Bot 系统、真实本地日期和隔离样例数据。首版提供手动纪要、可选模板、基本格式、自动保存、正文搜索、手动行动转待办及来源回跳，AI 整理、音频和结构化负责人留在后续范围。
+
+验收：
+
+- `npm run verify` 通过：22 个 CSS 文件字阶检查、两套 TypeScript 检查及 Vite／Electron 构建。
+- 日程、纪要草稿、纪要存储、共享库和日期控件专项 28/28；最后补强的超长本地稿恢复用例又单独复跑草稿测试 7/7。涵盖中文组合输入、慢响应串行保存、失败重试、本地恢复、版本冲突、共享 schema 不变、日程删除恢复及行动去重／回滚。
+- `node tooling/meeting-notes-pilot.mjs` 的 12 项实机流程全部通过、页面错误 0。完成创建／编辑弹框复用、富文本粘贴和格式工具、超过原 5000 字备注的独立纪要、跨会议保存、完成会议搜索、真实待办转换、原完成确认、来源跳转、返回日期保留和真实进程重启恢复。
+- 提醒前后主内容几何完全一致：宽窗 x107/y255/w1413/h707；窄工作区 x489/y266.28125/w480/h899.609375，后者由工作区内部滚动承载。窄窗提醒弹层位于业务卡片上方，点击可打开对应纪要，不插入中间常驻行。
+- 三档材质几何一致，实际计算值为纯色 `none`、普通 `blur(18px) saturate(1.15)`、强玻璃 `blur(30px) saturate(1.4)`。修正构建中标准滤镜声明被前缀声明覆盖的问题，保持公共材质 token；系统减少透明度与不支持滤镜时继续沿用公共降级。
+- 日期键盘操作与日期边界有专项覆盖；详情初始焦点和返回焦点有显式处理。完整读屏和系统高对比度合规审计不在此次验收结论中。
+
+全量检查实际为 1154 项、1141 通过、13 失败，未声称全库通过。失败集中在 AI 上下文／工作台名称与引用归属、设置测试的 SVG 加载，以及两个 Windows 符号链接权限用例；本次未修改这些失败文件。原沙箱全量曾因临时文件 EPERM 卡住，仅结束已识别的本轮测试树后用正常权限重跑得到上述结果。完整失败日志保留于本地 `test-results/meeting-notes/all-tests-native.log`。
+
+Browser 插件未提供本次 Electron 能力，沿用项目的隔离 Playwright Electron 工作流；专用 userData 与待办库均位于测试目录，不调用外部模型、不写入真实业务样例。原生窗口截图和结构化结果已归档：
+
+[验收报告](design/schedule-notes-2026-11-17/implementation/report.json) · [构建日志](design/schedule-notes-2026-11-17/implementation/verify.log) · [28 项专项](design/schedule-notes-2026-11-17/implementation/focused-tests.log) · [草稿最终复跑](design/schedule-notes-2026-11-17/implementation/draft-tests.log) · [总览提醒](design/schedule-notes-2026-11-17/implementation/01-reminder-overview.png) · [纪要详情](design/schedule-notes-2026-11-17/implementation/02-meeting-detail.png) · [窄窗纪要](design/schedule-notes-2026-11-17/implementation/03-narrow-meeting.png) · [共用新增弹框](design/schedule-notes-2026-11-17/implementation/04-convert-action-modal.png) · [窄窗提醒](design/schedule-notes-2026-11-17/implementation/05-narrow-reminder.png)。正在运行的旧开发主进程须重启 `npm run dev` 后加载新增纪要服务。
+
+## 新头像重复构建的性能回退（2026-11-17）
+
+用户报告新头像上线后全应用、侧栏及按钮悬停反馈迟缓。本轮只在产品源码中为 BotAvatar 增加 React.memo，保留 SVG、颜色、眼神光、全部尺寸、外框及动效。用户进程采样未发现 Bot 后台持续高 CPU；未修改用户数据、外观设置或后台策略。
+
+在 200% 显示、强玻璃／悬浮导航、开发服务器和合成 20 条对话的同类场景采集 CPU profile。改前 12 次连续导航折叠中约 115ms 调用栈涉及 BotAvatar；改后该调用栈未再采样到。该轮脚本时间由约 816ms 降到 605ms，悬停帧间隔 p95 从约 25ms 降到 16.8ms；是本地隔离测量，不代表所有设备或用户窗口的固定数值。分别测试过隐藏头像、独立合成层、SVG 图像与位图覆盖，未观察到足够一致的收益，均未写入产品；也未取消强玻璃或流光。已有玻璃／流光的合成成本仍存在，未把它们直接认定为此次新增回退。
+
+`npm run verify`、6 项头像／工作台测试、200% 显示的 16 项原生头像回归及 diff 检查通过。240 种组合、两类选择与颜色、取消／保存、未保存关闭保护、8 主题、窄窗、强制颜色及灵动岛显示保持；App.tsx 及导航外框规则与本轮改前一致。已清理此前中断验收残留的一个不响应且属于隔离目录的 Host 进程树，用户后台保留。
+
+[改前调用栈](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/performance-regression/avatar-raster-stable/nav.cpuprofile)、[改后调用栈](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/performance-regression/avatar-memo-containment/nav.cpuprofile)、[改前测量](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/performance-regression/avatar-raster-stable/report.json)、[改后测量](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/performance-regression/avatar-memo-containment/report.json)。
+
+## 命理／阅读拆分与签到设置迁移（2026-11-17）
+
+final result: passed
+
+命理、阅读清单各有导航和 Bot 主对话，签到归总台，无额外总台顶部 Tab。账号连接／授权／重连／断开迁至“设置 → 应用与账号”，自动配置迁至“设置 → 每日签到”；原鉴权、加密、周期、去重、核对及通知服务未改动。首页和概览直接定位应用；连接成功从签到返回原页，取消保留选中应用。自动配置显式保存，离开前保护未保存内容，保存失败保留输入。
+
+数据升级前生成一致性备份；原工具助理 ID、混合主对话、草稿、任务和自定义资料留在命理，阅读对象历史转交新阅读身份。已有头像不重写；内部旧 utilities 标识保留以兼容既有任务。Host v4 沿用空闲升级保护，不打断旧后台正在执行的任务。迁移、幂等重开、队列／记忆／草稿保留、领域分开及旧入口兼容已覆盖；旧“小工具”激活路由按原子页恢复到新归属。
+
+87 项相关测试通过，包含原签到服务、IPC 权限、授权取消／迟到响应、设备标识、首页、设置、会话归属、头像与 Host。原 Bot UI 24 项完整回归通过，包含 v3 Host 空闲接替、任务确认、资料／记忆／定时任务、双入口草稿及流式交互。隔离 Electron 100%／200% 各 8 项专项通过，pageerror 为 0；验证具体应用定位、连接取消、返回原页面实例、保存及未保存保护、无账号启用拦截、1024×680 窄窗、减弱动态和小窗顶部页签。消息→对话各连续切换三次，草稿保留，页签仍为 no-drag，无需新增页签修复。截图已查看。
+
+`npm run verify`、最终构建与 diff 检查通过。新自动签到表单使用应用校验并声明 noValidate；补查该表单交互通过。Premium strict 仍为既有 22 项静态问题，无新增项，不计为全库审计通过。
+
+Browser plugin not available，使用隔离资料的 Playwright Electron；仅状态读取与禁用状态下的本地设置保存，未执行真实短信、授权或领取。首次窗口验收启动停滞，已只清理本轮测试进程后重启通过；首次并行 Bot 回归在确认卡片等待超时，未改动业务逻辑，单独重跑 24 项通过。
+
+[87 项测试](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/checkin-workspace-split/final-tests.log)、[100% 专项](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/checkin-workspace-split/retry/report.json)、[200% 专项](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/checkin-workspace-split/verified-200/report.json)、[24 项 Bot 回归](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/checkin-workspace-split/regression-serial/report.json)。
+
+## Bot 矢量头像与独立色板（2026-11-17）
+
+final result: passed (avatar scope)
+
+按已确认的头像系统替换雪碧图裁切：角色／图形各 12 种、10 色共用，角色竖眼与柔和高光，图形使用固定浅底。编辑器仅替换原头像选择区；选择形状／颜色、两类别临时记忆、键盘单选、取消及保存已接入。读取旧值不写数据库，保存使用规范字符串。Host v3 沿用既有空闲升级保护兼容旧 v2 的头像校验，接口字段与数据库结构不变。
+
+`npm run verify`、21 项头像／Host 测试通过。隔离 Electron 100% 的 13 项专项、200% 的 16 项专项及 24 项原 Bot UI 回归通过；两轮专项各绘制 240 种组合，pageerror 为 0。覆盖经典／悬浮导航两态、6×2 网格、10 色、形状和颜色独立、类别记忆／重置、键盘、保存重开、未保存关闭保护、8 主题、强制颜色、减弱动态、1024×680 窄窗和灵动岛。截图已查看。`src/App.tsx` 的 SHA256 及联系人／导航外框规则与改前逐字一致；实际两态头像保持 42px、坐标不移、外框圆角保持 14px。编辑预览 58px、名片 72px、灵动岛标题 30px 保持原占位。
+
+Browser plugin not available，使用隔离资料的 Playwright Electron。额外执行的全量 `npm test` 在沙盒临时文件 rename 遇到 EPERM，多项失败且测试未结束，已仅停止本轮测试进程树，不计为全量通过；其中 Agent 消息与 Bot 待办补充共 25 项在正常权限隔离目录复核全部通过，日志为本目录外部验收文件 `bot-avatar-system/permission-recheck.log`。全库 premium strict 仍报告 22 项既有静态问题，不计为通过；未改动相邻 UI。
+
+[100% 专项](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-avatar-system/verified/report.json)、[200% 与主题专项](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-avatar-system/verified-200/report.json)、[24 项 Bot 回归](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-avatar-system/regression/report.json)、[角色选择器](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-avatar-system/verified/character-picker.png)、[图形选择器](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-avatar-system/verified-200/graphic-picker.png)。
+
+## 联系人资料改为右键打开（2026-11-17）
+
+final result: passed
+
+移除联系人旁的资料图标、选中文字为图标预留的右侧空间及展开／折叠／窄窗下的旧图标样式。右键整个 Bot 联系人区域直接打开原资料面板，锚定主联系人按钮并防止浏览器默认菜单；左键沿用原工作台切换。Shift+F10／菜单键提供相同入口，标题提示右键操作，关闭／Escape 后焦点回到原联系人。资料、记忆、定时任务及未保存确认继续复用原 BotProfile 和 Modal，未修改接口或数据契约。
+
+已先验证改前右键无法打开资料。改后生产构建 100% 与 localhost:5174 开发态 200% 各 14 项、原 Bot UI 回归 23 项，共 51 项通过。覆盖经典／悬浮、展开／折叠、头像及选中联系人右键、两种键盘唤起、焦点恢复、窄窗自动图标导航、左键切换、资料编辑、记忆保存与删除确认、定时任务和主窗口／灵动岛草稿。右键非当前 Bot 不切换工作台，原生页面实例及当前草稿保留，资料面板保持在视口内，pageerror 为 0；实际折叠状态截图已查看。项目 UI 回归的旧信息按钮选择器已同步替换为右键和键盘入口。
+
+npm run verify 与 diff 检查通过。Browser plugin not available，复用隔离资料的 Playwright Electron。首次测试启动的自动审批超时，按工具允许重试后成功；没有未完成的审批。全库 premium strict 仍为既有 22 项静态提示，不计为通过；官方 DESIGN lint 的离线缓存限制沿用前述记录，未安装额外依赖。
+
+[改前验证](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-profile-context/baseline/report.json)、[右键专项](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-profile-context/verified/report.json)、[开发态及 200%](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-profile-context/dev-verified/report.json)、[23 项 Bot UI 回归](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-profile-context/regression/report.json)、[折叠状态右键资料](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-profile-context/verified/悬浮-collapsed-profile.png)。
+
+## 展开联系人与收起状态统一圆角（2026-11-17）
+
+final result: passed
+
+已复现悬浮导航的通用 .rail .ritem 规则将展开联系人覆盖为 24px，而收起状态为 14px。仅在 src/views/bot.css 增加一条 Bot 联系人圆角规则，复用 --r-card 的 14px，使展开后的选中、悬停及焦点底框与收起时一致；头像、行高、内距及外围导航胶囊保持原几何。
+
+生产构建 100% 与 localhost:5174 开发态 200% 各 5 项，共 10 项通过。32 个采样覆盖经典／悬浮、展开／收起及选中／悬停／焦点，四角均为 14px；收起目标仍为 54×54，头像 42×42，展开行 184×64。生产基线与改后全部联系人、头像的坐标及宽高最大差为 0 CSS px。资料入口、关闭恢复焦点及工作台切换正常，pageerror 为 0；已查看实际展开悬停截图。
+
+npm run build、npm run check:typography 与 diff 检查通过。Browser plugin not available，复用隔离资料的 Playwright Electron，不调用模型。全库 premium strict 仍为既有 22 项静态提示，不计为通过；官方 DESIGN lint 的离线缓存限制沿用前述记录，未扩改无关组件或安装依赖。
+
+[复现报告](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-contact-radius/baseline/report.json)、[生产验证](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-contact-radius/verified/report.json)、[开发态及 200% 验证](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-contact-radius/dev-verified/report.json)、[展开悬停效果](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-contact-radius/dev-verified/expanded-hover.png)。
+
+## 灵动岛对话深色气泡可读性（2026-11-17）
+
+final result: passed
+
+已复现浅色文字叠在白色回复气泡上的问题：新 BotPanel 继续复用共享 AiResponse，原来的深色规则仅匹配旧 `.island-assistant-message`；共享 `.ai-bubble` 仍有白色背景。改动仅限 `src/views/island-assistant.css` 的局部配色：回复气泡使用既有 --todo-subtle / --island-text / --island-line，代码块纸面映射至 --island-surface，分隔线沿用 --island-line。字体、尺寸、内距、圆角及对话行为保持。上一条验收记录中的暗色气泡遗留问题已解决。
+
+真实 Electron 与本地 SSE 模型先复现再验证。改前正文对比度 1.08:1，引用、代码、表格及链接也不足；改后正文／标题／强调／引用／表格正文为 12.94:1，行内代码及表头 9.97:1，代码块 15.61:1，链接 6.18:1。用户消息 12.04:1、输入文字 15.61:1，11 类文字均超过 4.5:1。按实际背景透明度逐层合成后计算颜色，非仅比较 CSS 声明。主窗口同样 11 项前后计算色完全一致，继续使用浅色气泡。
+
+生产构建 100% 与 localhost:5174 开发页面 200% 各 5 项，共 10 项通过，覆盖文字对比度、主窗口隔离、消息／对话往返及草稿、280×340 窄窗和代码横向滚动、无 pageerror／框架报错。默认小窗 400×610，实际截图已查看。npm run verify 和 diff 检查通过。Browser plugin not available，复用 Playwright Electron；全部使用临时资料及合成消息，不调用真实模型或发送真实内容。
+
+全库 premium strict 仍为既有 22 项表单／选择器静态提示，不计为通过；未扩改无关组件。DESIGN.md 官方 lint 仍受前述本机无离线缓存限制，未安装额外依赖。
+
+[复现报告](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-island-contrast/baseline/report.json)、[生产验证](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-island-contrast/verified/report.json)、[开发态及 200% 验证](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-island-contrast/dev-verified/report.json)、[实际效果](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-island-contrast/verified/conversation-top.png)。
+
+## 灵动岛小窗消息返回对话（2026-11-17）
+
+final result: passed for the top conversation/messages tabs
+
+按顶部“对话／消息”页签处理。原实现每次离开对话会销毁 BotPanel，返回时重新加载主对话、配置、任务与交付件；现保留两个面板及对话组件状态，通过 hidden 显隐，仅当前面板进入布局及辅助技术范围。隐藏对话使用原 open 生命周期暂停输入、保存草稿，后台消息监听继续保留；页签显式设置为 no-drag，保留两个 aria-controls 目标及原有方向键操作。未改变消息列表“查看对话”的外部跳转。
+
+改动前，独立生产窗口和 localhost:5174 开发窗口的基础往返、键盘与重新打开测试均通过，未重现用户现有窗口卡住。因此本次针对切页重建与页签目标不稳定做修正，不将新窗口测试通过宣称为原窗口根因已完全证实。电脑操作确认了用户当前项目的开发窗口和已有主对话；未发送真实消息或修改真实记录。自动化使用独立资料、12 条合成 Agent 消息和本地 SSE 模型，未依赖真实账号。
+
+改动后生产构建 100%、开发页面 200% 各 9 项，共 18 项通过：两个有效面板目标及单一可见面板、鼠标往返、连续五轮切换、方向键及焦点、关闭重开、280×340 窄窗、消息筛选保留、流式回复跨页接收、控制台与活动面板数量。默认小窗为 400×610；流式用例只提交一次工作，切到消息后完成，返回可见完整回复，主窗口和灵动岛的独立草稿均保留。两组 pageerror 与 console error 均为 0，npm run verify 与改动文件 diff 检查通过。
+
+Browser plugin not available，复用 Playwright Electron 验证。全库 premium strict 仍为原有 22 项表单／选择器静态提示，不计为通过；未重跑无关业务全流程。截图另外显示既有暗色答复气泡对比度不足，本次没有扩改该主题样式。
+
+[生产验证](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-island-tabs/verified/report.json)、[开发态与 200% 验证](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-island-tabs/dev-verified/report.json)、[切回后的对话](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-island-tabs/dev-verified/conversation-with-reply.png)。
+
+## 浮动／收起助手进入并排的统一动效（2026-11-17 追加确认）
+
+final result: passed for the requested transition
+
+工作区继续复用原有 240ms 横向收窄，右边界不动；对话面板直接定位到并排位置，在前 48ms 腾出空间后用 192ms 淡入。仅在浮动／收起进入并排时播放，保留首次加载、Bot 切换、导航伸缩与工作区收放的原行为。没有重挂工作区或改变草稿、消息及任务 API。正常结束、快速反向切换和运行中开启减弱动效均清理透明度动画及临时标记。
+
+真实 Electron 隔离数据验收 18 项通过，窗口为 1280×820、1024×680，覆盖经典／悬浮导航、浮动入口、收起且上次为浮动／并排的入口、折叠导航、减弱动效、连续切换及动效偏好中途改变。15 组逐帧采样共 600 帧，工作区右边界最大偏差为 0 CSS px；13 组正常动效均有工作区中间位置和对话透明度中间值，对话锚点与宽度全程等于最终并排布局。页面实例、草稿、菜单焦点及所测滚动位置保留，未提交任务，pageerror 为 0。导航折叠的补充用例从页面顶部开始，避免把仪表盘变列时浏览器对底部的滚动锚定当成动画复位；不新增滚动拦截。
+
+首次实测发现生产构建将 240ms 规范化为 .24s；已沿用导航现有的秒／毫秒换算，重新构建后完成上述验收。`npm run verify` 通过，最终时长换算调整后构建及类型检查再次通过。Browser plugin not available，使用仓库既有 Playwright Electron 路径；未打开真实用户资料。范围为模式切换展示，未重跑其他 Bot 业务全流程。
+
+全库 premium strict 静态审计仍报告 22 项表单／选择器契约提示，涉及既有 Select 调用及 textarea 检测，未扩改这些控件；不将该审计宣称为通过。DESIGN.md 官方 lint 的离线命令因本机未缓存 @google/design.md 而未执行，不为此次局部改动安装依赖。
+
+[逐帧与交互报告](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-parallel-enter/accepted/report.json)、[最终并排截图](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-parallel-enter/accepted/parallel-final.png)、[静态审计](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-parallel-enter/premium-audit.json)。
+
+## 浮动助手按整个窗口横向居中（2026-11-17 追加确认）
+
+删除原浮动定位中的半个展开侧栏宽度偏移，入口、展开输入框及常规答复共用整个应用窗口中线。只修改 src/views/bot.css 中一处 left 公式，保留宽度、底部距离、动效、草稿与对话行为；仓库 UI 验收补充入口和输入框的全窗口中点断言。
+
+构建通过。隔离 Electron 几何验收 9 项通过，覆盖经典／悬浮、1280px／1024px、侧栏展开／收起，以及正常展开动画。各状态横向中点偏差最大 0.000 CSS px；动画 50 帧最大偏差 0.008 CSS px，pageerror 为 0。使用原有 Electron 验收，未打开实际资料。
+
+[验收报告](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-floating-center/verified/report.json)、[入口截图](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-floating-center/verified/centered-pill.png)、[对话截图](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-floating-center/verified/centered-conversation.png)。
+
+
+## Bot 资料、记忆与定时任务三页签（2026-11-17 选定稿）
+
+final result: passed
+
+视觉依据是用户明确选择的第三张生成稿，原图已保存为[选中稿](docs/requirements/shared/ai-assistant/design/bot-profile-tabs-selected-2026-11-17.png)。已打开原图与最终同一“定时任务”状态的面板截图共同比较。原图 1199×1312px 含外围背景，主体约 1024px 宽；实现按桌面真实弹出面板适配为 440×500 CSS px，并在 200% 显示比例下捕获为 880×1000px。图片中的账号、任务是隔离验收数据，通过真实 Bot API 写入。参考稿“每周工作回顾”是示例文案；运行图使用现有调度接口实际支持的每日计划，不冒充新增每周能力。键盘操作截图保留可见焦点环，原稿未展示该状态。
+
+顶部统一为头像、名称、职责和两行说明摘要，右上为编辑／关闭。资料、记忆、定时任务在同一面板切换，保持尺寸、锚点及外部工作台和草稿。定时任务列表参考稿件中的时钟、双行文案、开关与“已设置／新建”结构；新建表单在原内容区替换列表，取消后返回。完整工作说明在资料页可展开查看，6000 字无标点文本也不会挤掉页签。
+
+初次比较发现并修正：P2 开关继承通用按钮的居中布局，使启用圆点超出轨道，改为沿共享 toggle 的块布局；P2 身份说明的 span 样式误影响头像内层，收紧到文字容器；P2 面板被旧 modal 的 420px 上限限制，明确 440px 变体；有预填文本的表单字段增加稳定的辅助名称，并为日期／时间按实例生成唯一 ID。已重新构建、操作并捕获最终面板。无剩余 P0/P1/P2；实际资料与平台运行条件文案造成的高度差属于功能适配。
+
+| 核对面 | 最终结果 |
+| --- | --- |
+| 字体／层级 | 复用现有系统字体与共享字阶，名称 24px、身份说明 13px、页签 14px，分区标题 18px |
+| 排列／间距 | 72px 头像、24px 面板内边距、36px 页签；身份和右上操作对齐，三态保持 440×500px |
+| 颜色／控件 | 不透底的主题 overlay，主操作和启用态用主题主色，停用态中性灰，圆点保持在轨道内 |
+| 图像质量 | 复用现有高清 Bot 头像与 Phosphor 图标，未使用截图代替交互界面 |
+| 内容／行为 | 所有记忆、任务及开关来自真实接口；未保存表单跨页签保留，关闭先确认，写入保留版本校验 |
+
+Windows Electron、打包后的 dist/index.html、经典／悬浮导航、1280×820 与 1024×680、200% 显示比例及减弱动效已验证。Browser plugin not available；界面依赖 Electron IPC，沿用仓库的隔离 Playwright Electron 验收。没有打开实际用户资料。
+
+npm run verify 通过。仓库 UI 回归 23 项通过，新增覆盖资料面板内新建／暂停计划且不导航、不丢外部草稿；专项 7 项通过，覆盖键盘页签、真实启停、创建、记忆保存／编辑／取消删除、未保存关闭确认、资料编辑／焦点恢复、窄窗、长说明完整查看。两组 pageerror 均为 0；专项确认查看和管理资料没有创建 AI 工作。
+
+证据：[23 项回归](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-profile-tabs/regression/report.json)、[7 项专项](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-profile-tabs/final-proof/report.json)。源代码归属为 src/views/BotProfile.tsx、BotTasks.tsx、bot.css 和 src/App.tsx；未新增调度或记忆后端协议。
+
+- [定时任务页签](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-profile-tabs/final-proof/profile-schedules-card.png)
+- [资料页签](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-profile-tabs/final-proof/profile-data-card.png)
+- [记忆页签](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-profile-tabs/final-proof/profile-memories-card.png)
+- [窄窗真实界面](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-profile-tabs/final-proof/profile-schedules-1024.png)
+
+
+## 日程待办统一新增弹框（2026-11-17）
+
+按用户图一，将日程待办页「新增」和 Ctrl+N 的按钮下方浮层改为居中模态弹框，与顶栏新增日程／待办及悬浮待办宿主共用 `TaskEditor`。移除创建组件的锚定参数和专用浮层样式，保留类型切换、时间／优先级／标签／更多设置及「返回」。标题在弹框打开后的布局阶段聚焦，并使用 `preventScroll`；移除提前执行的输入框 `autoFocus`，保证关闭后恢复仍可用的触发前焦点。设计与交互规则同步到 `DESIGN.md`、`UX-CONTRACT.md`。
+
+字阶检查、前后端构建、两份 TypeScript 及 64 项相关回归通过。独立 Electron 配置与待办数据库的 7 组实机检查通过、pageerror 为 0：页面新增真实待办；Ctrl+N、类型切换、继续编辑和放弃修改；日程缺少时间校验、日期选择器先响应 Escape、09:00—09:30 时间段真实保存；首页顶栏日程及待办两个入口；1024×680 下打开新增及已有事项编辑；最终只有两条待办与一条日程，放弃草稿没有新增记录。1280×820 下各新增入口均为 408×430、坐标 (436,195)，1024×680 下为同样尺寸、坐标 (308,125)，均在窗口中居中。已查看普通及小窗口实际截图。证据见[实机报告](test-results/task-create-modal/report.json)、[页面新增](test-results/task-create-modal/page-task-modal.png)、[小窗口新增](test-results/task-create-modal/small-window-modal.png)。
+
+## 流光小入口、全局光波与紧凑浮动答复（2026-11-17）
+
+按 11-16 用户提供的 metadata-analysis 截图和实际源码调整 OnO 浮动交互。初始只显示 300×44px 小入口，点击经 90ms 轻压、580ms 弹性展开为约 118px 高的输入；一次全局边缘流光／淡色折射光波位于顶栏下方，约 1 秒后移除。输入和答复保持不透底。普通答复只显示当前或最近一轮，最高 240px、短内容自然收缩；待确认、授权和异常保留原处理能力，不能被精简视图丢掉。完整对话回到并排中的同一主对话。
+
+参考项目正式接口当前是 JSON；OnO 保留真实模型 SSE 增量，没有模拟打字或固定假答案。思考和工具明细沿用默认折叠组件。用户向上滚动时停留在当前位置，回到底部恢复跟随；关闭答复／收起输入／隐藏助手均保留文字和后台工作，停止回复才取消原任务。
+
+实现由 src/views/BotPanel.tsx、src/views/bot.css 维护展示，src/bot-floating-motion.ts 维护一次性光波。electron/main.ts / preload.ts 与 shared/workbench-api.ts 只新增临时窗口画面接口，主窗口顶层 sender 校验通过后才返回；不落盘、不写聊天、不上传。GPU 或画面不可用时使用无折射的颜色光波；系统减弱动效时取消位移和光波。新界面遇到旧 preload 时可先展开，不依赖画面接口才能输入。
+
+环境为独立临时用户资料、打包后的 dist/index.html、Windows Electron 与受控本地 SSE 模型。Browser plugin not available，使用仓库 Playwright Electron 验收；测试不打开实际用户资料。覆盖经典／悬浮导航、1544×1018、1280×820、1024×680、减弱动效及原生浏览器。
+
+| 检查 | 结果与证据 |
+| --- | --- |
+| 构建与字阶 | npm run verify 通过：字阶、两端 TypeScript、Vite 和 Electron 构建 |
+| 桌面行为 | tooling/bot-ui-pilot.mjs 的 22 项通过，包含原有草稿、行内确认、消息队列、灵动岛及独立 Host 恢复 |
+| 流式与滚动 | 本地模型每 100ms 返回真实增量；当前轮只显示一条答复，长内容内部滚动，向上阅读保持位置，停止与恢复可操作 |
+| 展开光波 | 实际获得 window-lens 渲染，边界在顶栏下 6px，pointer-events 为 none；结束及隐藏后无残留 |
+| 原生浏览器 | 浏览器已加载本地网页时仍显示光波，原 webview 实例保留 |
+| 降级与权限 | 测试中禁用 WebGL2 后走 2D 颜色光波；灵动岛请求临时画面被拒绝，主窗口可用 |
+| 异常保留 | 旧失败提示与未决操作仍可查看，不能因当前轮为短答复就丢掉 |
+| 运行错误 | 22 项验收 pageerror 为 0，无空白页或框架错误遮罩 |
+
+实际证据：[22 项报告](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-floating-compact/accepted/report.json)、[最终界面定向复核](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-floating-compact/presentation/report.json)。截图是隔离模型数据；真实服务延迟和其他机器的 GPU 性能未在本轮实测。画面是一次临时快照，波前在约 1 秒内展示该帧的轻微折射；操作工作区或调整窗口尺寸会提前移除效果。
+
+- [初始小入口](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-floating-compact/presentation/floating-entry.png)
+- [展开输入框](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-floating-compact/presentation/floating-composer.png)
+- [紧凑短答复](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-floating-compact/presentation/floating-compact-1024.png)
+- [原生浏览器中的光波](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-floating-compact/accepted/floating-browser-wave.png)
+
+
+## 联系人资料图标去白底（2026-11-16 追加确认）
+
+按用户反馈，删除折叠和窄窗自动图标导航中资料入口的白色底板，保留原 17px 细线图标、32×32px 透明点击区域、右下角定位及悬停／键盘焦点反馈。只移除两处背景声明，不改变头像、未读角标、联系人行高或资料打开流程。
+
+构建通过。复用隔离 Electron 导航验收并补充默认背景、边框、阴影和点击区域检查，19 项全部通过、pageerror 为 0，覆盖经典／悬浮、1280×820 与 1024×680、200% 显示比例以及减弱动效。默认背景透明、无描边或阴影，资料点击和键盘焦点恢复正常；已查看两种导航的实际截图。证据见 [资料图标去白底验收](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-info-frameless/verified/report.json)。
+
+## 行内选择卡压缩与直接填写其他回答（2026-11-16 追加确认）
+
+按用户对过高选项卡的反馈，卡片内边距由 16px 收为 12px，去掉标题默认上下留白；选项间距 6px、上下内边距 7px，保留标题与完整说明。原“补充回答”折叠入口改为直接可见的“其他 + 单行输入框 + 提交”，无选项的问题直接显示“你的回答”。输入与按钮同高 32px，空白禁用提交；支持 Enter，输入法合成期间的 Enter 阻止默认提交。原选项直接作答、真实回执、跳过、取消和继续原任务均保持。
+
+`npm run verify` 和 28 项 Host／草稿测试通过。扩展现有隔离 Electron pilot 后，19 项流程检查全部通过、pageerror 为 0；窄窗检查整卡小于 290px、两条带说明的选项均低于 60px，无横向溢出。验证“其他”输入始终可见、无需展开、空白提交禁用、输入法合成事件被阻止、实际 Enter 提交得到原任务回执，以及无选项自由回答、跳过、取消、刷新、并排／浮动、灵动岛与独立 Host 回归。已查看紧凑卡片和填写“其他”的实际截图。Browser plugin 未提供，沿用仓库 Playwright Electron、本机模型夹具与临时数据。证据见 [19 项紧凑选择卡验收](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-compact-question/report.json)。
+
+## 同一事项补充日期的确认去重（2026-11-16 修复）
+
+复现“新增一条事项 → 尚未确认时补充明天完成”：模型虽然表示更新建议，原实现每轮各自保存一份 `create`，两张确认均能创建业务记录。现在向模型提供当前 Bot 主对话的建议标识和真实创建回执，并支持显式修订原新增建议；唯一同名、同类型的单条建议也可关联。完整新版预览与旧确认失效在同一 SQLite 事务提交，旧卡折叠显示“已被新建议替代”，保留原快照但不能再次确认。原建议已应用时使用真实事项 ID 改为修改确认，保留未明确修改的字段和版本保护。不同事项及明确另建的同名事项保持独立；同名歧义、执行中或未知结果不自动重建。此次未扩展批量或委派建议的自动合并。
+
+新增 9 项真实 Runtime／本机模型夹具回归，先复现两项失败，再验证未确认修订、确认后修订、生成期间原卡被确认、迟到确认、不同事项、明确另建同名、显式标识更名、未知结果阻断、保存失败回滚和同名歧义处理。连同现有 Host、待办事务、组件、共享工具、引用和流式适配，73 项相关测试通过；`npm run verify` 通过。
+
+隔离 Electron 的 5 项实机检查通过：同样的两轮输入仅保留一个可应用的确认；旧卡展开只读，迟到 RPC 不写入；刷新恢复替代回执、唯一确认及已保存草稿；确认后补充日期仍更新同一事项 ID，实际只有一条待办。pageerror 为 0，已查看旧卡只读与最终修改确认的截图。使用本机模拟模型和临时数据，验证的是状态与业务副作用，不是外部模型的语言理解质量；用户真实聊天与待办只读核对，未自动改写或清理。证据见 [补充日期实机验收](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-todo-followup/verified/report.json)。后端修复须在工作台及独立 Host 完整重启后载入。
+
+## 设置入口内容左对齐（2026-11-16 追加确认）
+
+设置按钮由整组居中改为左对齐，齿轮中心与 Bot 头像中心对齐，文字左缘与 Bot 名称对齐；原 20px 齿轮、胶囊尺寸和点击流程保持。构建与字体检查通过。隔离 Electron 在 1280×820、1024×680、200% 显示比例下核对经典／悬浮与展开／收起，共 8 项几何检查及键盘打开原设置弹框检查通过，pageerror 为 0；已查看两种导航的实际截图。证据见 [设置入口左对齐验收](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-settings-left/verified/report.json)。
+
+## 待办修改建议紧凑行式（2026-11-16 追加确认）
+
+按用户对过长修改预览的反馈，将逐项标题加大块“修改前／修改后”改为紧凑字段行，前后列标题只显示一次。短值行高 24px；缩小字段列、箭头、内边距和段间距，日期与时间有空间时保持同排。新增事项／标签只显示建议值，未设置字段默认折叠、可键盘展开；修改已有记录保留全部请求字段和前后值，长备注完整换行。字段“标签”缩短展示，原说明留在悬停标题。真实快照、选择、确认、放弃、删除警示及回执保持原流程。
+
+`npm run verify`、最终构建与字体检查通过，9 项待办预览／事务／组件测试通过。隔离 Electron 的 10 项实机检查通过，覆盖 1544×1018 和 1024×680、200% 显示比例、并排与浮动；290px 宽卡片中的完整日期时间前后值均为单行，短值行高 24px，无横向溢出。确认新增只写入一次，取消全部选择后不能应用，放弃修改保留原值，删除警示可见且放弃不删除；未设置字段可用 Enter 展开／收起，长备注末尾完整。pageerror 为 0。已查看最终新增及前后对照截图。
+
+首次实机检查发现窄卡片的字段列和内边距占用过多，日期时间仍换行，已进一步压缩后重新通过。Browser plugin 未提供，使用仓库 Playwright Electron、本地模型夹具及临时数据，未访问用户档案或真实外部模型；技能 Python 静态审计本次未执行。证据见 [10 项紧凑预览验收](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-compact-proposal/verified/report.json)，同目录保留截图。
+
+## 折叠 Bot 导航改为圆角方块（2026-11-16 追加确认）
+
+按用户提供的 Grok Bot 参考图，折叠及窄窗自动图标导航的 Bot 入口改为 54×54px、14px 圆角方块，选中和悬停共用该形状。使用内外边距抵消外扩，保留头像 42×42px 的原坐标及常规 64px／短窗 55px 的联系人行位；展开后的带文字入口、外层胶囊、设置和业务布局保持。
+
+`npm run build` 和 `npm run check:typography` 通过。复用隔离 Electron 导航验收，15 项检查全部通过，覆盖经典／悬浮、1280×820 与 1024×680、200% 显示比例、普通及减弱动效：实际入口均为 54×54px、14px 圆角，头像均为 42×42px 且与按钮中心重合；折叠／展开采样的头像位置和尺寸最大偏移为 0，导航纵向锚点、设置位置、原生工作区与草稿保持。七个联系人逐一点击、资料打开／关闭和键盘切换正常，pageerror 为 0。已查看两种导航截图。Browser plugin 未提供，使用仓库 Playwright Electron 和临时数据；Python 静态审计仍因环境未安装 Python 未运行。证据见 [bot-nav-squares/verified](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-nav-squares/verified/report.json)。
+
+## 主对话行内选择与确认（2026-11-16 追加确认）
+
+参考用户提供的 Grok Bot 截图，将问题选项、补充回答及待办／文章／定时任务确认放到原回复下，直接处理现有 `BotAction`，不再要求先点“等待你确认”跳转任务详情。复用现有后台操作 ID、版本校验和真实回执；原任务与主对话 ID 保持，未发送草稿不变。全行 A/B/C/D 选项可显示说明，支持键盘确认；补充输入原地展开，无选项时直接显示输入，提交时禁用重复点击。已回答保留原问题和回执，已应用业务操作折叠展示，仍可展开查看及使用原有撤销。问题文字与当前回复相同时，待回答卡片使用短标题，避免重复提问。普通问候仍不生成工作卡；浏览器站点授权沿用原组件。共享方案、设计与交互契约已同步。
+
+`npm run verify` 与最终补充可访问说明后的 `npm run build` 通过。隔离 Electron 的 19 项流程检查全部通过，pageerror 为 0：实际选项在主对话内用键盘作答；刷新前后恢复待答卡和已答回执；补充、跳过、取消在并排／浮动模式可用；回答后继续原任务，待办原地预览并明确确认后只写入一次，重复点击不重复创建；输入草稿保留。原有任务详情、交付件、原生浏览器资源桥、灵动岛和 Host 重启回归通过。截图已核对窄窗选项、浮动补充回答、刷新后的回执。
+
+首次新增窄窗用例发现资料信息图标遮住联系人按钮中心，已把折叠状态的信息入口下移至行间留白，联系人头像和导航行高不变，后续完整用例通过。Browser plugin 未提供，使用仓库 Playwright Electron、本地模型夹具及临时数据；未调用真实外部模型，不据此判断模型选择标签的质量。当前没有 Python，技能 Python 静态审计未执行。证据见 [19 项行内交互与既有流程回归](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-inline-actions/report.json)，同目录保留界面截图。
+
+## Bot 输入、资料和工作操作按钮统一（2026-11-16 追加确认）
+
+按用户对三组建议的确认，输入栏附件、语音和发送共用 32×32px、10px 圆角及 18px 图标，模型选择器同高；资料信息和弹框关闭图标的点击区域统一为 32px，保留资料卡整行入口、联系人头像行位与关闭后的焦点恢复。Bot 紧凑工作操作高 32px，记忆和定时任务的添加、取消、保存／创建高 36px，使用主色／中性／危险语义；表单操作区与控件间隔 12px，主要确认靠右。列表“查看任务”改为“查看进度”，当前详情标题只读且去掉重复查看入口，继续对话和子任务逐级查看保持。
+
+新建记忆空白时正确显示禁用的“保存记忆”，已有记忆仍须确认删除。实际保存检查发现表单展开整个读取对象，把只读 `updatedAt` 发给 strict IPC 导致保存失败；已改为显式提交接口允许的字段，后台 schema、版本校验和存储不变。既有 UI pilot 新增真实记忆增改删及取消删除回归，同时核对当前详情没有重复查看按钮。
+
+`npm run verify` 及最终 CSS 调整后的 `npm run build` 通过。既有隔离 Electron pilot 的 17 项流程检查通过，覆盖主对话、任务确认、工作进度与详情、继续对话、交付件、灵动岛、原生浏览器资源桥与 Host 重启；新增隔离检查的 14 项全部通过，覆盖经典／悬浮导航、1544×1018 与 1024×680、并排／浮动模式，按钮普通、悬停、键盘焦点下的实际几何，资料卡关闭焦点恢复，以及记忆增改删、定时任务创建／取消／启停。记忆和计划均使用临时数据目录，测试计划最终暂停。pageerror 与新检查的 console error 均为 0；已查看输入栏、资料卡、记忆表单及定时任务截图。
+
+Browser plugin 未提供，使用仓库 Playwright Electron。首次几何检查在弹窗入场动画中读取尺寸，已改为等待实际动画完成；随后发现并修复上述真实记忆保存失败。最后补齐表单间距后再次通过 14 项检查。当前没有已安装的 Python，技能的 Python 静态审计未执行。最终证据为 [17 项流程回归](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-button-consistency/full-pilot/report.json)与 [14 项样式及表单检查](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-button-consistency/verified/report.json)，截图位于各报告同目录。
+
+## 移除对话标题栏的收起助手按钮（2026-11-16 追加确认）
+
+按用户红框指定，移除并排对话标题栏右侧的“收起助手”图标，工作区展开和仅对话两种状态均不再渲染；工作进度、交付件和工作区收放保留，助手统一从顶栏 AI 下拉菜单收起。浮动答复的独立收放保持。清理失效的图标导入和专用样式，同步设计、交互契约及既有 UI pilot 的入口。
+
+`npm run verify` 通过。隔离 Electron 的 14 项检查通过，覆盖经典／悬浮导航、1544×1018 与 1024×680、并排与仅对话状态：标题栏只保留两个文字按钮，工作进度、交付件、工作区恢复、全局菜单收起／重开及草稿保留可用；既有按钮高度 32px、圆角 10px 和浮动答复操作保持，pageerror 为 0。Browser plugin 未提供，使用仓库 Playwright Electron；首次沙箱启动失败后以临时数据目录运行。首次验证的标题断言早于页面标题初始化，修正测试等待后全部通过；未修改产品标题行为。证据见 [bot-remove-header-collapse/verified](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-remove-header-collapse/verified/)。当前环境没有已安装的 Python，技能的 Python 静态审计未执行。
+
+## 标题栏按钮统一圆角矩形（2026-11-16 追加确认）
+
+按用户明确补充，该行文字入口和图标按钮全部使用圆角矩形，统一为 `--r-ctl` 的 10px 圆角，并排标题行继续保持 32px 按钮高度；本条作为最终形状规范。保留共用底面、边线及悬停反馈，聚焦时也保持 10px 圆角。
+
+`npm run verify` 通过。复用隔离 Electron 验收，14 项检查全部通过：经典／悬浮导航、宽窄窗口、并排／仅对话，普通、悬停和键盘聚焦状态的实际圆角全部为 10px；收起助手隐藏条件、工作区恢复、全局菜单、草稿及浮动答复操作保持。pageerror 为 0。最终报告与截图见 [bot-header-button-rectangles/verified](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-header-button-rectangles/verified/)。
+
+## 标题栏按钮圆角与表面统一（2026-11-16 追加）
+
+按用户截图，将工作区收起／展开按钮的圆角矩形底面统一为 32px 圆形，文字入口继续使用胶囊形。与对话侧按钮共用 `--control-bg` 底面、`--hairline` 边线及悬停亮度反馈；提高该入口样式的作用域优先级，确保全局焦点样式不会把圆形改回方角。位置、尺寸和点击逻辑保持。
+
+`npm run verify` 通过。隔离 Electron 的 14 项检查通过，覆盖经典／悬浮导航、1544×1018 / 1024×680、并排与仅对话状态，检查普通、悬停和键盘聚焦下的圆角、底面、边线及尺寸，并回归工作区恢复、顶栏菜单、草稿和浮动答复收放。pageerror 为 0；已查看仅对话截图。首次试跑被新用户模型配置引导遮挡，关闭测试窗口的引导后完成验收，未修改引导行为。Browser plugin 未提供，使用仓库 Playwright Electron；最终证据见 [bot-header-button-shapes/verified](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-header-button-shapes/verified/)。
+
+## 仅对话时隐藏收起助手按钮（2026-11-16 追加）
+
+工作区已收起、仅显示对话时，隐藏对话标题栏的“收起助手”图标，保留工作进度、交付件及右侧“展开工作区”。展开工作区后恢复该图标；全局 AI 菜单继续可收起助手。复用已有工作区显隐状态，不增加新的模式状态。
+
+`npm run verify` 通过。隔离 Electron 的 6 项检查通过：经典／悬浮导航分别覆盖 1544×1018 和 1024×680，验证按钮不再可见或出现在可访问按钮列表、工作区恢复入口可操作、工作进度与草稿保留、全局菜单收起／重开及恢复后的原按钮可用；两种导航的浮动答复收放均保持可用。标题栏仍为 56px，恢复按钮不与交付件重叠，pageerror 为 0。Browser plugin 未提供，使用仓库 Playwright Electron；证据见 [bot-chat-only-button](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-chat-only-button/)。
+
+## 对话与工作区标题行高度统一（2026-11-16 追加）
+
+复现总台的两侧标题栏高度为 54.14px / 58.19px，标题字号、上下留白与按钮高度使用不同规则。现共用 `--bot-header-height: 56px`，标题统一使用 16px 字阶及 1.2 行高，操作按钮与页面 Tab 均高 32px；两侧标题、按钮中心、分隔线和内容容器上缘对齐。工作区恢复按钮按同一标题行定位。Tab 滚动条保留在行内下方留白，消除其将按钮抬高 5px 的情况；聚焦 Tab 时滚入可见范围。
+
+`npm run verify` 通过。隔离 Electron 的 50 项主验收通过，覆盖经典／悬浮导航、七个 Bot 工作台、1544×1018 / 1024×680 / 840×700 真实内容视口、340/560px 对话宽度及工作区收放。840px 仅在隔离窗口临时降低原生最小尺寸。追加 DPR=2 的 12 项验收通过，实际视口为 1279×820、1023×680、1543×1018。共 62 项通过；所有标题栏实测均为 56px，标题与控件的最大中心偏差均为 0px，pageerror 为 0。过长 Tab 的键盘滚动、按钮完整显示及草稿保留均已检查。
+
+已查看悬浮导航的总台及最窄工作区截图。Browser plugin 未提供，使用仓库 Playwright Electron；最终报告、截图与构建日志见 [bot-header-alignment](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-header-alignment/)，通过报告位于 `verified/report.json` 和 `density2/report.json`，中间试跑不计入通过结果。
+
+## 工作进度入口与普通聊天记录折叠（2026-11-16 追加）
+
+用户确认将 Bot 的“任务”入口改名“工作进度”，并排标题栏、浮动菜单和灵动岛共用同一视图。列表默认展示“需要关注”（待确认、等待资源、失败和中断）及“进行中”（排队、执行、等待 Bot），已结束的工作与普通聊天记录分别使用默认关闭的原生 details/summary。失败或待确认聊天不能因 chat 类型而折叠；普通记录只收纳已完成／取消且没有资料、工具、建议、写入、协作或交付件证据的聊天。展开后的详情、确认、协作和“在对话中继续”沿用原处理。
+
+新增 3 项分类测试通过，覆盖全部未结束状态、聊天与实际工作的证据区分、完整分组和空态。`npm run verify` 通过。隔离 Electron 的 16 组流程全部通过、30 张截图、pageerror 为 0，包含真实待办确认、失败聊天默认可见、普通记录默认收起及 Enter 展开、交付件记录保留为工作、浮动菜单、340px 对话栏、原对话继续，以及主窗口／灵动岛草稿、队列、重启和浏览器授权回归。已查看待确认、普通记录收起及最窄窗口截图。
+
+Browser plugin 未提供，复用仓库 Playwright Electron 与本机确定性模型服务，不读取真实用户数据或调用外部模型。证据见 [bot-work-progress](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-work-progress/)，最终 UI 报告位于 `ui-final/report.json`。首次试跑在新增窄窗检查恢复窗口尺寸后，尚未等待布局动效结束就进入外观几何断言；已修正测试等待并重跑，首次失败不计入通过结果。
+
+## 导航收放的头像与胶囊位置对齐（2026-11-16 追加）
+
+按用户截图复现悬浮导航折叠：联系人胶囊由 y=160px 上移至 151px，首个头像同时从 x=28px 左移至 22px；头像两态本身均为 42×42px。原因是底部设置胶囊两态高度为 48/66px，改变联系人居中空间，且头像的展开内边距和折叠居中规则不同。现将设置胶囊统一为 48px 高，联系人横向内边距统一为 12px，并将头像固定在左侧；不调整正文布局算法、Bot 资料入口或设置交互。
+
+`npm run verify` 通过。隔离 Electron 完成 38 项逐帧检查：经典／悬浮导航，1280×820、1544×1018、1024×680 窗口，并排／浮动／隐藏助手，两个伸缩方向及减弱动效。头像 x/y/宽/高、联系人胶囊 x/y/高、设置胶囊 x/y/高的最大偏差均为 0px；左上 Logo 和折叠开关的几何保持，原生页面、滚动和草稿保留，pageerror 为 0。已查看悬浮导航的展开／折叠截图。
+
+追加 2 倍显示缩放的 6 项检查通过，实际内容视口为 1279×820px，DPR=2；同样核对两套导航、两个方向和减弱动效。总计 44 项通过，报告分别位于 `after/report.json` 和 `density2/report.json`。
+
+Browser plugin 未提供，复用 Playwright Electron 与独立数据目录。复现、构建、逐帧报告和截图保存在 [bot-nav-alignment](C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bot-nav-alignment/)，未修改实际用户数据或生产窗口最小尺寸。
+
+## 工作区图标收放与动效（2026-11-16 追加）
+
+按用户截图，将工作区右上入口统一为右侧分隔的细线矩形图标：18px 图标、32px 点击区域，常态无底面，悬停使用共享控件底色。收起和展开保留同一按钮与锚点、可访问名称及展开状态；替换原文字恢复胶囊。工作区显隐和对话宽度沿用 240ms 导航动效，减弱动效下即时切换，快速反向点击不依赖定时器或卸载页面。
+
+`npm run verify` 通过。隔离 Electron 完成 31 项检查，经典／悬浮导航各覆盖展开／折叠侧栏及真实 1544×1018、1024×680、840×700 内容视口；逐帧确认淡出和宽度中间态，并检查恢复、快速反向、键盘操作、模式切换、Tab／按钮避让及减弱动效。原生内容节点、按钮节点与焦点、滚动位置和输入草稿保持；pageerror 为 0。840px 仅在隔离验收窗口临时降低原生最小尺寸，生产窗口最小尺寸未调整。已查看悬浮导航的展开和收起截图。
+
+追加 16 项导航边界回归全部通过，包括两套导航的最小／最大对话宽度、拖动即时响应、工作区收起后的完整对话和减弱动效。测试先等待工作区收起动效完成，再量测导航独立伸缩；此前把两段不同动画同时量测的失败试跑不计入结果。边界回归日志为 `test-results/bot-workspace-nav-edge.log`，报告保存在同目录 `nav-edge-report.json`。
+
+Browser plugin 未提供，复用仓库 Playwright Electron。证据见 [test-results/bot-workspace-motion/](test-results/bot-workspace-motion/)，日志为 `test-results/bot-workspace-motion-{verify,ui-final}.log`。本机没有 Python 解释器，技能附加的 Python 静态审计未运行；本次采用项目字阶检查、TypeScript、构建和实际交互验证。
+
+## 导航折叠只调整相邻区域（2026-11-16 追加）
+
+并排对话可见时，工作区的分界线与尺寸固定，导航展开／收起释放或占用的空间全部交给对话区；工作区在动画中也保持稳定。浮动或隐藏助手时由工作区跟随导航，浮动输入与答复保持原锚点。收起工作区后的完整对话仍单独伸缩；≤1180px 的图标导航和≤900px 的覆盖式对话沿用原行为。拖动／键盘调宽时停用导航补偿过渡，避免对话和工作区不同步。
+
+`npm run verify` 通过。此前隔离 Electron 几何验收共 64 项通过，覆盖经典／悬浮导航、1544/1280/1024px 实际窗口、并排／浮动／隐藏助手、两个折叠方向、基准最小/最大宽度、拖动、完整对话和减弱动效；当时请求的 840px 被原生最小宽度限制为 1024px，真实 840px 的收放验收见上节。逐帧检查的 26 个工作区固定场景，最大边界误差为 0.015625px；两套导航拖动 36px 均即时响应。原生内容节点、输入草稿和顶栏边界保持，pageerror 为 0。
+
+已查看悬浮导航展开／收起的对比截图，确认工作区保持原位、导航释放空间只增加对话宽度。报告及截图见 [test-results/bot-nav-reflow/](test-results/bot-nav-reflow/)，最终日志为 `test-results/bot-nav-reflow-ui-final.log`、`test-results/bot-nav-reflow-verify.log`。此前调宽动画优先级问题已修复，未通过的试跑不计入通过结果。
+
+## 开发启动连接旧后台导致输入框崩溃（2026-11-16 追加）
+
+从用户当前 Vite 页面核对，报错行是 `draft.value.resources.length`。已确认该开发实例连接到上午残留的旧 Host：getDraft 返回 `{ draft, owner }`，新控制器按直接 DraftSnapshot 读取，导致 text/resources 被写成 undefined。此前使用全新隔离后台的验收未覆盖此升级场景；npm 镜像配置警告不是此次崩溃原因。
+
+启动认证握手现在返回 `bot-workbench/v2` 契约版本。Gateway 只接入匹配版本；对 v1 或无版本标识的旧后台，先核对执行中/排队任务，空闲时正常关闭并启动当前后台。有任务或未知版本不自动停止。草稿读取、保存及提交回执经过结构校验，错误保留有效本地输入并显示提示；异常提交回执继续沿用原请求 ID，避免重复提交。
+
+先用旧包装结构复现失败，再修复至 Bot/草稿 28/28 通过；构建通过。扩展既有 Electron 验收，模拟旧后台常驻，并直接使用当前 `http://localhost:5174` 开发页面：确认新界面读取草稿前旧后台已更新，16 组流程全部通过、25 张截图、pageerror 为 0。报告见 [test-results/bot-ui-host-upgrade-dev/](test-results/bot-ui-host-upgrade-dev/)，日志为 `test-results/bot-host-version-{repro,unit,verify,ui}.log`。模型为本地确定性服务。
+
+隔离验收后，确认真实 OnO 旧后台空闲且原父进程已退出，正常更新该 Host。schema 3→4 自动备份成功；核对 7 个 Bot、11 条对话、2 个任务的 ID 以及原草稿摘要和版本全部保留。记录见 `test-results/bot-live-host-upgrade.json`，只保存标识、计数与内容摘要，不保存正文。原开发窗口处于最小化，未取得其可见状态；可见界面验证在上述同 URL 隔离开发窗口完成。
+
+## Bot 能力标签按大类精简（2026-11-16 追加）
+
+资料区标题改为“能帮你做什么”，保留大类只读标签，不细分具体写作动作。自媒体显示“文章辅助、网页操作、Bot 协作”；日程将长说明简写为“待办管理”。交付件和例行工作不再作为标签重复展示，继续从现有交付件与定时任务入口使用。网页操作的工作区条件放在标签下方，编辑资料页同步采用相同名称。后台能力名录、实际工具和权限保持原注册结果。
+
+`npm run verify` 通过。复用隔离 Electron 名片检查，七个 Bot 及经典／悬浮／窄窗、鼠标移入资料卡共 12 个状态通过，pageerror 为 0；自媒体三个标签在 360px 资料卡内保持一行。检查编辑窗口说明、现有定时任务按钮、键盘关闭和焦点恢复，原后台名录仍包含交付件与例行工作。已查看经典与窄窗截图。证据见 [test-results/bot-capability-labels/](test-results/bot-capability-labels/)，日志为 `test-results/bot-capability-labels-verify.log`、`test-results/bot-capability-labels-ui.log`。
+
+## 主窗口与灵动岛独立草稿（2026-11-16 追加）
+
+未发送文字、引用和任务回复目标按主窗口／灵动岛分别保存；并排与浮动沿用主窗口同一份草稿。两处可以同时输入，移除编辑租约、续约、只读等待和“在此继续输入”。已发送消息、回复和任务状态仍共用总 Bot 主对话；同 Bot 请求进入同一串行队列，发送只清空来源入口。
+
+SQLite v3→v4 在备份后事务新增 `bot_drafts`，以 chat_id + surface 存储独立版本；旧共享正文、版本、引用和回复目标只迁入 main，island 初始为空，Bot 和历史 ID 保持。保存失败保留输入并提供复制、重试；发送准备与迟到回执期间的新输入不被清空，回执不明沿用原请求 ID。主动退出时禁止连接和广播重连事件，避免草稿恢复重新拉起已停止的 Host。
+
+`npm run verify` 通过。Bot/草稿测试 26/26、相关 AI 引用及范围回归 20/20；独立 Host 验收 9 项通过，包含进程重启、原生待办写入及发送去重。本轮使用本地确定性模型服务，没有重新测试外部模型。
+
+最终隔离 Electron 验收 15 组全部通过、24 张截图、pageerror 为 0，覆盖两处同时编辑、主窗口切并排／浮动、灵动岛刷新、两处消息同步、先运行后排队、完整 UI 与 Host 重启后分别恢复草稿及再次执行。已查看 `main-independent-draft.png`、`island-independent-draft.png`，确认不同输入分别保留且没有接管提示。报告与截图见 [test-results/bot-ui-independent-drafts-verified/](test-results/bot-ui-independent-drafts-verified/)，构建及功能日志为 `test-results/bot-independent-drafts-{verify,unit,ai-regression,host,ui-verified}.log`。此前未完成的试跑不计入通过结论。
+
+## 主对话不再重复追加执行记录（2026-11-16 追加）
+
+普通消息仅显示用户消息、Bot 回复和必要的“正在回复…”提示；已完成、已取消记录不再作为卡片追加到主对话末尾。实际有操作/协作的执行、定时工作及待确认、等待资源、失败/中断显示简短状态入口，打开原任务详情处理。完整记录继续位于顶部“任务”；原“回复此任务”改为“在对话中继续”，仍关联原任务并使用同一主对话和输入框。后台任务及历史数据保留。
+
+`npm run verify` 通过。更新既有 Electron 验收脚本，加入普通问候/咨询、失败恢复入口和主对话身份检查；最终 15 组流程全部通过，pageerror 为 0。普通消息处理中不生成任务卡，完成后仅有两问两答；任务页仍可查看两条记录，继续输入不改变主 chatId。待确认入口能打开并实际应用原生待办建议；失败入口能打开原因和继续操作。浮动模式、刷新、灵动岛草稿交接、浏览器授权及后台重启回归通过。
+
+最终报告与 22 张截图见 [test-results/bot-ui-chat-records-final/](test-results/bot-ui-chat-records-final/)，构建日志为 `test-results/bot-chat-records-verify.log`。已查看 `single-main-chat.png`、`chat-execution-records.png`、`chat-pending-confirmation.png` 和 `chat-failure-notice.png`；普通聊天、待处理入口与完整记录的显示范围符合本轮确认。
+
+## 移除并排输入框底行（2026-11-16 追加）
+
+并排输入区不再渲染“草稿已保存 / 历史对话”底行，同步释放该行高度。草稿控制器、异常提示、附件、听写、模型选择和发送行为沿用原实现。
+
+`npm run verify` 通过。使用既有隔离 Electron 验收脚本，13 组流程全部通过，包含草稿切 Bot、切模式、助手收起后恢复及刷新恢复，pageerror 为 0。已查看宽窄窗口截图，确认底行消失、工具栏与输入框边界正常。证据见 [test-results/bot-ui-compose-footer/](test-results/bot-ui-compose-footer/)，构建日志为 `test-results/bot-compose-footer-verify.log`。
+
+## Bot 资料名片移除顶部名称行（2026-11-16 追加）
+
+仅在 `.bot-profile-card` 隐藏重复名称标题，让关闭按钮与头像资料同排，移除原标题区和身份区叠加的顶部留白；资料名片继续以原 Bot 名称提供可访问名称。编辑与记忆窗口沿用原标题样式。
+
+`npm run build` 通过。隔离 Electron 核对七个 Bot 及经典/悬浮、窗口缩放、底部联系人悬停，共 12 个名片场景：顶部不再有名称标题，头像距名片上缘约 20px，关闭按钮不与资料重叠；点击关闭或 Escape 后恢复入口焦点，编辑窗口仍居中，pageerror 为 0。已查看总 Bot 和窄窗名片截图；报告与截图见 [test-results/bot-profile-compact/](test-results/bot-profile-compact/)，构建日志为 `test-results/bot-profile-compact-build.log`。
+
+## 模式下拉增加小示意图（2026-11-16 追加）
+
+使用原 Select 的 `renderOption`，在并排/浮动名称前放置 24×18px 内联 SVG 示意图，颜色跟随文字，图形对辅助技术隐藏。菜单继续固定 148px，顶栏按钮、行高和选中勾保持原样。
+
+`npm run verify` 通过。隔离 Electron 在经典与悬浮导航下，等待展开动画结束后实测菜单宽度均为 148px，无横向溢出；两个图形可见，收起选项没有图形，模式选择、收起后恢复、方向键和 Escape 焦点恢复通过，pageerror 为 0。已查看两种导航的菜单局部截图；证据见 [test-results/bot-mode-diagrams/](test-results/bot-mode-diagrams/)，构建日志为 `test-results/bot-mode-diagrams-verify.log`。
+
+## 收起助手不显示底部胶囊（2026-11-16 追加）
+
+移除全局收起状态的“和 Bot 继续工作”入口及其孤立样式。底部胶囊保留在浮动模式起始或收起输入框时；收起整个助手后，通过顶栏 AI 菜单选择模式重新展开。
+
+`npm run verify` 通过；更新现有 `tooling/bot-ui-pilot.mjs` 的重新展开路径，并断言从面板或菜单收起后不存在助手面板和底部胶囊。隔离 Electron 的 13 组流程全部通过，草稿恢复、浮动胶囊展开/收起及顶栏键盘选择正常，pageerror 为 0。报告与 18 张截图见 [test-results/bot-ui-assistant-hidden/](test-results/bot-ui-assistant-hidden/)，已查看 `assistant-hidden.png` 与 `floating-collapsed.png`，构建日志为 `test-results/bot-assistant-hidden-verify.log`。
+
+## 工作区标题下方留白收紧（2026-11-16 追加）
+
+正文移除叠加的顶部外边距，分隔线到内容上缘统一为 12px，宽窗口原为 26px。`npm run build` 通过；隔离 Electron 在经典/悬浮、1544×1018 / 1024×680 的总台、日程、自媒体页共 12 个场景实测间距均为 12px，pageerror 为 0，已查看宽窄窗口截图。证据见 [test-results/bot-workspace-gap/](test-results/bot-workspace-gap/)，构建日志为 `test-results/bot-workspace-gap-build.log`。
+
+## 工作区标题与页面 Tab 同行（2026-11-16 追加）
+
+总台 `home`、日程 `todo` 移除顶部单项页面按钮，其余工作台的页面 Tab 与“工作区”标题同排，收起工作区按钮留在行尾。分隔线归标题行统一管理，Tab 容器在空间不足时独立横向滚动。
+
+`npm run verify` 通过。隔离 Electron 完成 19 项检查：经典、悬浮导航各七个工作台；1024×680 窄窗、对话栏调至 560px 后的 Tab 滚动及三页切换、工作区收起恢复、助手收起。总台和日程无 Tab，其他页面选中态唯一且与标题同行，收起按钮始终在工作区内，pageerror 为 0。已查看总台、自媒体及最窄工作区截图。报告与八张截图见 [test-results/bot-workspace-header/](test-results/bot-workspace-header/)，构建日志为 `test-results/bot-workspace-header-verify.log`。
+
+## AI 按钮恢复原单图标外观（2026-11-16 追加）
+
+按后续截图确认，顶栏 AI 入口恢复原 36×36、12px 圆角、18px 暖色星芒图标，隐藏下拉箭头；点击仍打开并排、浮动、收起助手菜单，沿用当前选择、键盘操作及后台提示。此项覆盖早先“图标加独立小箭头”的外观记录。
+
+`npm run verify` 通过。隔离 Electron 在经典和悬浮导航下确认按钮尺寸、图标居中与颜色一致；鼠标选择浮动/收起、方向键与 Enter 恢复并排、Escape 关闭并返回焦点均通过，pageerror 为 0。报告及实际截图见 [test-results/bot-ai-button/](test-results/bot-ai-button/)，构建日志为 `test-results/bot-ai-button-verify.log`。
+
+## 左下设置按钮对齐（2026-11-16 追加）
+
+设置入口保留既有胶囊材质、路由和悬停反馈，图标与文字作为一组居中，间距 10px。悬浮胶囊展开时维持 48px 外高，内部点击区域使用 40px，修复沿用 64px Bot 联系人行高导致内容下沉和点击范围溢出的问题。手动收起或窄窗自动折叠时隐藏文字、居中显示齿轮；经典导航同步组内对齐。
+
+`npm run verify` 通过。隔离 Electron 实测两种导航各自的展开、收起、1024×680 窄窗，共六个状态；图标与外层垂直中心误差小于 1px，点击区域完全位于容器内。鼠标点击、Enter 打开、Escape 关闭及焦点恢复均通过，未切换当前 Bot，pageerror 为 0。已查看普通、悬停和收起截图；报告与截图见 [test-results/bot-settings-button/](test-results/bot-settings-button/)，构建日志为 `test-results/bot-settings-button-verify.log`。
+
+## Bot 名片锚点定位（2026-11-16 追加）
+
+名片清除通用 Modal 的 `inset: 0 / margin: auto` 居中约束，按联系人信息按钮在右侧展开；沿用约 12px 的窗口边缘留白与内容滚动。侧向弹层同时观察按钮父容器尺寸，跟随侧栏收起动画；名片打开期间保留信息按钮，避免鼠标移入非当前 Bot 的名片后锚点隐藏、弹层跳到左上角。编辑资料继续使用原居中模态框。
+
+验证：`npm run verify` 通过。隔离 Electron 实测 1280×820 / 1024×680，经典、悬浮、打开后缩窗、底部联系人和鼠标移入名片五个场景，名片与信息按钮间距均为 8px，完整位于窗口内；Escape 关闭后焦点恢复，查看其他 Bot 不切换工作区，编辑窗口仍居中，pageerror 为 0。报告及六张截图位于 [test-results/bot-profile-placement/](test-results/bot-profile-placement/)，构建日志为 `test-results/bot-profile-placement-verify.log`。此轮仅修正定位相关样式、尺寸观察及信息按钮展开状态。
+
+## AI 助手顶栏模式下拉（2026-11-16 追加）
+
+按用户截图要求，将并排/浮动切换从对话标题栏移到全局顶栏 AI 助手图标。下拉包含并排、浮动和收起助手，选中项显示勾选；原按钮的 AI 色彩、后台生成提示和配置/完成气泡锚点保留，菜单打开期间避让气泡。面板内不再重复显示模式选择，任务、交付件、完整对话及独立收起行为保留。
+
+验证：`npm run verify` 通过；顶栏避让和 AI 提示气泡 17 项既有测试通过，日志 `test-results/bot-mode-menu-tests.log`。更新原 Electron 验收脚本的真实入口后，13 组流程全部通过，pageerror 为 0；额外核对顶栏选中态、Escape 关闭/焦点恢复、方向键选择、从下拉收起后再展开及草稿内容保留。报告与 17 张截图保存在 `test-results/bot-ui-mode-menu/`，不覆盖上一轮 Bot 实施证据。
+
+已查看 [经典导航下拉](test-results/bot-ui-mode-menu/topbar-mode-menu-classic.png) 和 [悬浮导航下拉](test-results/bot-ui-mode-menu/topbar-mode-menu-floating.png)。保留 18px AI 图标及独立小箭头，避免通用 Select 的箭头样式缩小/旋转 AI 图标；选项具有明确的可访问名称，勾选符号不混入名称。草稿、业务数据和 Host 协议没有更改，测试使用隔离数据。
+
+## Bot 工作台、双模式与独立 Host（2026-11-16）
+
+界面验收通过：实际 Electron / 正式构建 / 隔离数据，13 组操作检查、15 张截图、renderer pageerror 为 0。报告为 [test-results/bot-ui/report.json](test-results/bot-ui/report.json)，使用 `tooling/bot-ui-pilot.mjs`，包含实际本地 Pi 工具循环、确认写入和浏览器资源桥。完整实施及非 UI 检查结果见[实施与验证记录](docs/requirements/shared/ai-assistant/bot-implementation-validation-2026-11-16.md)。
+
+来源：用户确认的经典双长胶囊、悬浮导航、移除 Bot 身份行、任务/交付件放在对话顶部及 [11-16 六状态稿](docs/requirements/shared/ai-assistant/design/bot-state-review-2026-11-16.md)。实际页面使用七个正式种子 Bot 与原生业务组件，不把设计示例正文做成产品假数据。字号按现有字阶而非生成图的大号文案映射；头像使用新本地资产，功能图标保持原 Phosphor。用户既有八主题和三档材质继续由唯一外观控制器管理。
+
+实际截图目录为 `test-results/bot-ui/`（本地验证证据，Git 忽略）：
+
+| 设计状态 | 实际证据 |
+| --- | --- |
+| 经典 / 悬浮并排 | `classic-parallel.png`、`floating-navigation-parallel.png` |
+| 名片 / 编辑 | `profile-popover.png`、`profile-edit.png` |
+| 浮动答复 / 收起胶囊 | `floating-expanded.png`、`floating-collapsed.png` |
+| 窄窗 / 外观与键盘 | `narrow-parallel.png`、`keyboard-and-appearance.png` |
+| 原生确认 / 浮动任务详情 | `task-confirmation.png`、`floating-task-approval.png` |
+| 交付件预览 | `deliverables-preview.png` |
+| 总 Bot 两窗口 | `coordinator-shared-draft.png`、`island-coordinator.png` |
+| 浏览器授权 / 已核验 | `browser-site-approval.png`、`browser-verified.png` |
+
+已打开检查经典、悬浮、名片、浮动任务、成果预览和浏览器授权截图。1544×1018 / 1024×680 CSS 窗口实测：对话与工作区顶边偏差≤1px、并排不重叠、窄窗工作区宽度>420px、输入框底边在窗口内；浮动输入右边小于任务面板左边。切换经典/悬浮、窗影/青瓷、强玻璃/纯色时工作区四维几何偏差≤1px，纯色 backdrop-filter 为 none。UI 输入来自隔离样本，生产代码不注入假稿件或假回执。
+
+交互通过：七 Bot 可达，待办独立；草稿切 Bot、切模式、收起/展开、刷新后恢复；名片查看不切换 Bot，名称保存生效；当前 Bot 的名片键盘 Enter 打开、Escape 关闭并恢复焦点；任务确认写入真实隔离 Todo Store；交付件可打开和关闭；灵动岛固定总 Bot 并完成双向编辑权交接，非拥有者只读。独立 Host 发起浏览器操作时，实际原生站点授权卡出现、activeTasks 变成 0，批准后继续同一任务并取得浏览器核验结果。
+
+实测修正：同一 Bot 的资料弹窗与对话组件曾重复 key，打开/关闭当前名片后留下重复面板；已使用各自命名空间，并回归断言 DOM 中只有一个助手。交付件预览下层模块标签透出、任务详情进入时自动滚到底部、浮动任务抽屉定位和主输入重叠也已修正并重新检查。异步持久化断言使用显式 await 轮询，先确认草稿已保存再刷新。
+
+补充通过：主窗口位于小墨工作台时，灵动岛交付件可切至总 Bot 并打开具体成果；首次用户目录的模型密钥由 Host 保存后，主进程和 Host 都能解密使用；退出 UI/Host 后重开再次执行模型请求也通过。Bot/灵动岛最终关联回归 102/102 通过。
+
+验证边界：13 组 UI 和构建通过；全量测试 1122 通过、2 个既有 Windows 文件 symlink fixture 因 EPERM 失败，不能记作全绿。Python 通用审计脚本因本机无 Python 未执行。真实外部模型 3 组、Windows 系统托管 5 组另有报告；没有人工验收通知中心点击、实际注销登录或完整休眠唤醒往返。未发布/安装，CMO 未开发。
+
 ## 阅读清单与每日签到方案一（2026-11-15）
 
 final result: passed
@@ -1245,7 +1952,7 @@ final result: passed for prompt-dialog interaction and controlled model inputs
 
 使用隔离的 Electron 正式构建和本地 OpenAI 兼容服务验收。Browser plugin not available，使用 Playwright Electron；配置 WORKBENCH_TEST_DATA_DIR 与 WORKBENCH_ISOLATED。页面身份、非空内容、无框架错误层、控制台健康、截图和实际交互均通过。桌面 1490×1040、1280×820，窄窗 1050×800、1024×680；窄窗多标签的宽度挤出已修复，标签条独立滚动，工具栏和大预览保持在内容区内。
 
-完整链路 12 组通过，覆盖并发直出、独立标签与状态保留、原始回复及输入快照、并发断言、真实失败隔离、取消、复跑、Agent 写入和网页操作、JavaScript、发现问题后修复复测、工具及时间上限、导入导出、保存和重启。补验两个独立供应商端点和合成密钥在同名模型下互不串线。示例中的刷新恢复缺陷真实得到 4/5，修复后得到 5/5，未使用预置通过状态。
+完整链路 13 组通过，覆盖并发直出、独立标签与状态保留、原始回复及输入快照、并发断言、真实失败隔离、取消、复跑、Agent 写入和网页操作、JavaScript、发现问题后修复复测、工具及时间上限、导入导出、保存和重启。补验两个独立供应商端点和合成密钥在同名模型下互不串线。示例中的刷新恢复缺陷真实得到 4/5，修复后得到 5/5，未使用预置通过状态。
 
 与设计稿的有意差异：保留当前已发布的共享顶栏与导航；控件使用现有白色选中态，模型使用实际配置名称；不添加未经实现的版本选择或假评分。预览内容来自模型夹具生成的文件，用户代码的布局由产物自身决定。
 
@@ -1681,3 +2388,44 @@ final result: passed
 - 内容区 850px 以下重排紧凑行，历史两个操作始终同高且不换行。请求窗口 1600×1000、1416×828、1280×820、1024×680，实际 CSS 为 1599×1000、1415×828、1279×820、1023×681；既有 AI 覆盖断点和原生窗口最小尺寸保持不变。表格、行与列标题语义在这些宽度下逐一验证；长列表滚动不移动标题操作卡。测试报告与截图为同目录 `ai-test-library-qa.json` 和 `ai-test-library-*.png`。
 - 新增运行摘要的模型名称／供应商快照和失败／停止计数，直接从既有保存的运行计算，无数据库迁移。新增回归覆盖已结束、排队／执行、部分失败、全部停止及排序，既有退出恢复另核对失败计数。AI 产物、隔离、快照与权限共 12 项回归通过；两份 TypeScript、字阶、Vite 和主进程／preload 构建通过。严格审计按文件／规则／消息与前轮比较仍为 13 项既有发现，新增 0。Browser plugin 未提供，使用仓库 Playwright Electron。
 - 新开 PID 79172「OnO Workbench · AI 测试任务与记录 · 本机样例」，1416×828px，独立数据与本机合成模型服务，保留三份任务／记录；主导航折叠以在当前屏幕中展示完整列，用户可自行展开。默认停在测试任务，两页可切换，正常后台绘制节流恢复。证据为 `ai-test-library-preview-session.json`、`ai-test-library-user-preview.png` 和 `ai-test-library-user-preview-history.png`。未关闭或刷新其他窗口，未提交或发布。
+
+## 命理命例下拉遮挡修复（2026-11-17）
+
+- 复现了玻璃顶栏内的命例菜单被命盘盖住，以及窄布局换行后被工作区边界裁切的问题。菜单改用浏览器顶层浮层，按按钮右边缘定位并限制在视口内；保留原有外观、入场动画和命例操作。定位用布局尺寸测量，避免入场位移干扰锚点，也避免短列表出现多余滚动条。源码改动仅限 BaziView.tsx 和 bazi.css。
+- 长列表限定高度并内部滚动；点击外部、Escape、窗口缩放或页面滚动关闭菜单，Escape 恢复按钮焦点。菜单内部滚动继续保留浮层。
+- Browser plugin 未提供，使用仓库 Playwright 驱动隔离原生 Electron，合成命例保存到独立数据目录。23 组检查通过：1280／1024 CSS 窗口宽度 × 三种玻璃强度 × 八字／紫微斗数／占星的所有命例行及新建入口可点击且处于窗口内；新建、编辑、删除确认入口及取消；Escape 焦点、外部点击、窗口缩放、页面滚动关闭；14 个命例的内部滚动和新建入口可达。无渲染器异常。已核对原生截图，菜单与按钮保持 6px 间距，短列表无内部溢出。
+- npm run verify 通过字阶检查、前后端类型检查及生产构建（退出码 0）。证据：C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/bazi-profile-menu/ 下的 before/report.json、before/covered-menu.png、final/report.json、final/visible-menu.png 和 final-verify.log。
+
+## 占星移除分布概览（2026-11-17）
+
+- 按用户要求移除占星顶栏「分布概览」、对应浮层及专用样式，清理组件导出和引用。命理三系统切换、命例选择／新建及原有星盘和详情继续保留；未修改星体、宫位、相位或分布算法。
+- Browser plugin not available；通过现有 Playwright 驱动独立 Electron 和合成命例，在 1280／1024 CSS 宽度、普通／强玻璃／纯色下检查三系统切换、概览入口与浮层缺席、占星盘渲染及命例菜单切换，共 24 组通过，无渲染器异常或 Vite 错误覆盖层。已检查顶栏原生截图。npm run verify 的字阶、两份类型检查和生产构建通过，退出码 0。
+- 证据：C:/Users/henry/.codex/visualizations/2026/11/13/01a1d374-1476-71a3-b6f1-45afb2903318/astro-no-summary/ 的 report.json、astro-header.png、inspect.mjs 与 verify.log。
+
+## 首页看板固定页头（2026-11-19）
+
+- 用户选定的参考布局把看板名、日期、添加卡片和编辑布局纳入工作区页头。两端均使用 56px 固定单行页头与 36px 操作按钮，卡片从页头下方 12px 开始。看板名用 24px 页标题字阶，日期用 14px 正文字阶。标题和按钮沿用主题文字与操作表面，页头和卡片区共享外壳。
+- 隔离 Electron 实窗检查覆盖 1420×830 与 968×592 CSS 视口。125% 缩放下，480px 工作区把操作排到第二行。对话栏调至 560px 时，两端在约 239px 工作区内仍可点击添加和编辑，按钮文字完整。
+- 验证固定页头下的卡片滚动、进入和取消编辑时的位置、卡片目录锚定与 Escape 焦点返回、应用与完成持久化，以及切换其他工作区再返回。无渲染异常。字阶检查、两份类型检查、渲染层与 Electron 构建、本项目 16 项看板回归均通过。
+- 截图使用独立资料名与示例卡片布局，额度保留各自的未连接状态。[选定图与双端实窗对照](C:/Users/henry/.codex/visualizations/2026/11/19/01a1f1c1-8493-74e3-b21a-e636df95ee62/workbench-dashboard-comparison.png) · [125% 缩放实窗](C:/Users/henry/.codex/visualizations/2026/11/19/01a1f1c1-8493-74e3-b21a-e636df95ee62/ono-dashboard-zoom-edit.png) · [验收记录](C:/Users/henry/.codex/visualizations/2026/11/19/01a1f1c1-8493-74e3-b21a-e636df95ee62/ono-dashboard-qa.json)。
+
+final result: passed
+
+## 首页看板卡片调宽（2026-11-19）
+
+- 在 693px 画布使用两个 3 列卡片复现。旧的两列映射把 2 列和 3 列都画成 340.5px，向内拖动后宽度仍是 340.5px。
+- 画布超过 480px 时保留六列网格，拖到 2 列后宽度为 223px。已验证左右拖柄、4／6 列切换、Escape 回退、取消、完成保存和重开。窄卡在编辑时将工具排到标题下方。
+- 原生 Electron 隔离数据中验证 100% 与 125% 缩放。单列铺满画布，横向拖柄只在键盘聚焦时显示，仍可键盘设置宽窗尺寸并拖动高度。字阶、前端类型检查、Vite 构建和看板回归均通过。
+- [修复前](C:/Users/henry/.codex/visualizations/2026/11/19/01a1f1c1-8493-74e3-b21a-e636df95ee62/dashboard-resize/ono-before-ineffective-drag.png) · [拖窄后](C:/Users/henry/.codex/visualizations/2026/11/19/01a1f1c1-8493-74e3-b21a-e636df95ee62/dashboard-resize/ono-after-shrink.png) · [验收记录](C:/Users/henry/.codex/visualizations/2026/11/19/01a1f1c1-8493-74e3-b21a-e636df95ee62/dashboard-resize/ono-after.json)。
+
+## 看板尺寸跟随样式刷新（2026-11-19）
+
+- 用截图对应的 1439×852 CSS 视口、560px 对话栏和已定位的卡片复核。572px 画布选择「AI 额度 → 2 列 → 应用设置 → 完成」，卡片由 280px 缩到 182.66px，预览同步缩小，重开保留尺寸。卡片拖边也能达到同一宽度档。
+- 模拟开发窗口旧两列样式切到六列且画布尺寸不变，复现已定位的 2 列卡片仍显示旧半宽。摆放、拖动吸附和目录预览改用同一份画布计算。样式刷新后，2 列仍保持 181.33px 的实际列宽。
+- 两端构建、前端类型检查和既有看板回归通过。使用隔离示例数据截图。[尺寸对照](C:/Users/henry/.codex/visualizations/2026/11/19/01a1f1c1-8493-74e3-b21a-e636df95ee62/dashboard-resize/exact-width-comparison.png) · [验收记录](C:/Users/henry/.codex/visualizations/2026/11/19/01a1f1c1-8493-74e3-b21a-e636df95ee62/dashboard-resize/ono-exact-resize.json)。
+
+## 看板卡片四边拖动（2026-11-19）
+
+- 隔离实窗复现旧版自动布局中缩小左卡会带动右卡填空。572px 画布中，从右边缩小待办卡片后，左边保持原位，旁边额度卡片距画布左边仍为 292.00px（调整前 292.00px）。
+- 验证四条边的对边固定、12px 碰撞间距、物理方向键、Home／End、Escape 撤销和保存重开。目录使用左上角锚定，空间不足时保留弹层提示。125% 的单列调高后保留纵向空白，恢复宽窗仍读原坐标。滚动到底缩短末张卡片，编辑区松手位置稳定。
+- 两端前端类型、字阶、Vite 构建和看板回归通过。实窗使用隔离数据。[拖边对照](C:/Users/henry/.codex/visualizations/2026/11/19/01a1f1c1-8493-74e3-b21a-e636df95ee62/dashboard-anchors/independent-card-resize.png) · [本端验收](C:/Users/henry/.codex/visualizations/2026/11/19/01a1f1c1-8493-74e3-b21a-e636df95ee62/dashboard-anchors/ono-fixed.json)。

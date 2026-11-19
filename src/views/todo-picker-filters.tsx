@@ -22,7 +22,7 @@ export const TODO_STATUS_LABEL: Record<TodoPickerStatusKey, string> = {
   done: '已完成', overdue: '已逾期', doing: '进行中', todo: '待办',
 };
 
-export function todoPickerStatusKey(task: { status: string; kind?: 'task' | 'meeting'; dueAt: string | null; endAt?: string | null; plannedDate: string }): TodoPickerStatusKey {
+export function todoPickerStatusKey(task: { status: string; kind?: 'task' | 'meeting'; dateAt: string | null; endAt?: string | null }): TodoPickerStatusKey {
   if (task.status === 'done') return 'done';
   if (isOverdue(task)) return 'overdue';
   if (task.status === 'doing') return 'doing';

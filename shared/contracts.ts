@@ -6,7 +6,7 @@
 import { z } from 'zod';
 
 /** 大工作台标识(图标栏一级导航;settings = 设置工作台,2026-09-24 定稿方案 C) */
-export const WorkbenchIdSchema = z.enum(['home', 'media', 'game', 'web', 'life', 'ai-test', 'settings']);
+export const WorkbenchIdSchema = z.enum(['home', 'todo', 'media', 'game', 'web', 'life', 'bazi', 'reading', 'ai-test', 'settings']);
 export type WorkbenchId = z.infer<typeof WorkbenchIdSchema>;
 
 /** 工作台内页面标识(设置工作台分区对应 settings-* view) */
@@ -31,6 +31,10 @@ export const ViewIdSchema = z.enum([
   'settings-appearance',
   'settings-island',
   'settings-ai',
+  'settings-bots',
+  'settings-apps',
+  'settings-agent-quota',
+  'settings-checkin',
   'settings-data',
   'settings-notifications',
   'settings-about',
@@ -48,6 +52,9 @@ export type WindowLight = z.infer<typeof WindowLightSchema>;
 export const AvatarColorSchema = z.enum(['blue', 'teal', 'violet', 'rose', 'amber']);
 export type AvatarColor = z.infer<typeof AvatarColorSchema>;
 
+export const ReminderRangeSchema = z.enum(['all', 'schedule', 'todo', 'off']);
+export type ReminderRange = z.infer<typeof ReminderRangeSchema>;
+
 /**
  * 应用设置(工作台自有,存 userData/app-settings.json;与 To-Do-List 无关)。
  * 新增字段必须给默认值并兼容旧文件(存储层逐字段恢复,旧文件缺字段自动落默认)。
@@ -60,7 +67,8 @@ export const AppSettingsSchema = z.object({
   launchAtLogin: z.boolean(),
   closeAction: z.enum(['minimize', 'exit']),
   language: z.enum(['zh-CN']),
-  remindersEnabled: z.boolean(),
+  remindersEnabled: z.boolean(), // 旧版提醒总开关，用于迁移。
+  reminderRange: ReminderRangeSchema,
   uiTheme: UiThemeSchema,
   navigationStyle: NavigationStyleSchema,
   glassIntensity: GlassIntensitySchema,
@@ -81,11 +89,12 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   closeAction: 'minimize',
   language: 'zh-CN',
   remindersEnabled: true,
+  reminderRange: 'all',
   windowLight: 'afternoon',
   ...DEFAULT_APPEARANCE,
 };
 
-/** 待办共享库状态(设置 → 待办与数据,只读展示) */
+/** 待办共享库状态，供「关于」页只读展示。 */
 export interface TodoDbInfo {
   path: string;
   connected: boolean;

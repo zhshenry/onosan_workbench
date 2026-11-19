@@ -243,13 +243,14 @@ export async function runContextPickerPilot({ application, page, check, screensh
   }
   try {
     await check('Context picker: explicit isolated loopback provider, no external model or credentials', async () => {
-      await navigate(page, 'settings', 'AI 助手');
+      await navigate(page, 'settings', '模型配置');
       // Connection fields are edited inline in the selected supplier detail.
       const supplier = page.getByRole('button', { name: '查看对话模型供应商 本机合成验收', exact: true });
       await supplier.click();
       const detail = page.locator('#ai-provider-details-llm').getByRole('article', { name: '本机合成验收 配置', exact: true });
       await detail.waitFor({ state: 'visible' });
       assert.equal(await supplier.getAttribute('aria-pressed'), 'true', 'Synthetic supplier detail is shown only while that supplier is selected');
+      await detail.getByRole('button', { name: '编辑配置', exact: true }).click();
       const connection = detail.getByRole('form', { name: '本机合成验收连接配置', exact: true });
       await connection.getByRole('textbox', { name: 'Base URL', exact: true }).fill(`http://127.0.0.1:${server.address().port}/v1`);
       await connection.getByRole('button', { name: '保存配置', exact: true }).click();

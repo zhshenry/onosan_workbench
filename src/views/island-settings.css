@@ -1,5 +1,5 @@
-.settings-island-page { width: 100%; max-width: 1080px; margin-inline: auto; container: island-settings / inline-size; }
-.settings-island-page .page-head { gap: 16px; }
+:is(.settings-island-page, .settings-agent-page) { width: 100%; max-width: 1080px; margin-inline: auto; container: island-settings / inline-size; }
+:is(.settings-island-page, .settings-agent-page) .page-head { gap: 16px; }
 .island-settings { display: flex; flex-direction: column; gap: 16px; }
 .island-settings-overview { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border: 1px solid var(--glass-line); border-radius: var(--r-card); background: var(--glass-hi); }
 .island-settings-symbol { display: grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 8px; background: var(--acc-soft); color: var(--acc-deep); }
@@ -9,13 +9,9 @@
 .island-enabled-status { color: var(--ink-3); font-size: var(--type-caption); }
 .island-enabled-status::before { content: ''; display: inline-block; width: 5px; height: 5px; margin-right: 5px; border-radius: 50%; background: currentColor; vertical-align: 2px; }
 .island-enabled-status[data-enabled="true"] { color: var(--acc-deep); }
-.island-settings-tabs { min-width: 0; overflow-x: auto; }
-.island-settings-tabs .segmented { display: flex; gap: 24px; width: max-content; min-width: 100%; padding: 0; border: 0; border-bottom: 1px solid var(--hairline); border-radius: 0; background: transparent; }
-.island-settings-tabs .segmented::before { display: none; }
-.island-settings-tabs .segmented button { min-height: 40px; padding: 6px 0; border: 0; border-bottom: 2px solid transparent; border-radius: 0; color: var(--ink-3); font-size: var(--type-control); }
-.island-settings-tabs .segmented button:hover { color: var(--ink); }
-.island-settings-tabs .segmented button[aria-checked="true"] { border-bottom-color: var(--acc-deep); color: var(--acc-deep); }
+.island-settings-tabs { padding-bottom: 6px; border-bottom: 1px solid var(--hairline); }
 .island-settings-layout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; min-width: 0; scroll-margin-top: 16px; }
+.settings-island-page .island-settings-layout { grid-template-columns: minmax(0, 1fr); }
 .island-setting-card { min-width: 0; overflow: clip; border: 1px solid var(--hairline); border-radius: var(--r-card); background: var(--glass-hi); }
 .island-card-wide { grid-column: 1 / -1; }
 .island-setting-card > header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 14px 16px; border-bottom: 1px solid var(--hairline); }
@@ -38,10 +34,9 @@
 .settings-content .island-settings-tools .set-row { min-height: 52px; padding-block: 8px; }
 .settings-content .island-settings .set-row .txt b { font-size: var(--type-body); }
 .settings-content .island-setting-card h2 { font-size: var(--type-section); }
-.settings-content .island-settings-layout[data-section='display'] { gap: 0; align-items: stretch; overflow: clip; border: 1px solid var(--hairline); border-radius: var(--r-card); background: var(--glass-hi); }
-.settings-content .island-settings-layout[data-section='display'] > .island-setting-card { padding-inline: 20px; border: 0; border-radius: 0; background: transparent; }
-.settings-content .island-settings-layout[data-section='display'] > .island-setting-card > header, .settings-content .island-settings-layout[data-section='display'] .set-row { padding-inline: 0; }
-.settings-content .island-settings-layout[data-section='display'] > .island-setting-card + .island-setting-card { border-left: 1px solid var(--hairline); }
+.settings-content .settings-island-page .island-setting-card { padding-inline: 20px; }
+.settings-content .settings-island-page .island-setting-card > header,
+.settings-content .settings-island-page .island-setting-card .set-row { padding-inline: 0; }
 .island-settings .select-wrap { max-width: 220px; }
 .island-settings .select-trigger { min-height: 32px; font-size: var(--type-control); }
 .island-display-value { max-width: 220px; color: var(--ink-2); font-size: var(--type-control); text-align: right; overflow-wrap: anywhere; }
@@ -62,12 +57,8 @@
 .island-settings-tools .island-setting-period > div { display: flex; align-items: center; gap: 6px; }
 .island-settings-tools .island-setting-period label { margin-bottom: 0; white-space: nowrap; }
 .island-settings-tools .island-setting-period > span { margin-top: 0; }
-.island-page-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 16px; }
-.island-page-option { min-width: 0; display: flex; flex-direction: column; gap: 7px; padding: 12px; border: 1px solid var(--hairline); border-radius: 10px; background: var(--glass-lo); }
-.island-page-option[data-enabled="true"] { border-color: var(--acc-ring); background: var(--acc-soft); }
-.island-page-option > div { display: flex; align-items: center; justify-content: space-between; gap: 6px; color: var(--ink-2); }
-.island-page-option b { font-size: var(--type-control); font-weight: 600; }
-.island-page-option small { color: var(--ink-3); font-size: var(--type-caption); line-height: 1.5; }
+.island-settings .set-row .txt .island-page-setting-title { display: flex; align-items: center; gap: 8px; }
+.island-page-setting-title svg { flex: none; color: var(--ink-2); }
 .island-connection-manager { grid-column: 1 / -1; min-width: 0; }
 .island-connection-manager > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 14px; }
 .island-connection-manager h2 { margin: 0; font-size: var(--type-section); font-weight: 600; }
@@ -139,15 +130,9 @@
 .island-threshold-help { position: relative; display: flex; color: var(--ink-3); }
 .island-threshold-help > span { position: absolute; bottom: calc(100% + 8px); left: -70px; z-index: 2; display: none; width: max-content; max-width: 230px; padding: 8px 10px; border: 1px solid var(--hairline); border-radius: 8px; background: var(--todo-white); box-shadow: var(--shadow-sm); color: var(--ink-2); font-size: var(--type-support); line-height: 1.6; }
 .island-threshold-help:is(:hover, :focus-visible) > span { display: block; }
-@container island-settings (max-width: 760px) { .island-page-options { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @container island-settings (min-width: 641px) and (max-width: 900px) { .settings-content .island-settings [data-setting-key='display'] .ctl { max-width: 55%; } }
-@container island-settings (max-width: 720px) {
-  .settings-dialog .island-settings-layout[data-section='display'] { grid-template-columns: minmax(0, 1fr); }
-  .settings-dialog .island-settings-layout[data-section='display'] > .island-setting-card + .island-setting-card { border-left: 0; border-top: 1px solid var(--hairline); }
-}
 @container island-settings (max-width: 640px) {
   .island-settings-layout, .island-connection-layout { grid-template-columns: minmax(0, 1fr); }
-  .settings-content .island-settings-layout[data-section='display'] > .island-setting-card + .island-setting-card { border-left: 0; border-top: 1px solid var(--hairline); }
   .island-connection-sources { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 8px; border-right: 0; border-bottom: 1px solid var(--hairline); }
   .island-connection-sources > button { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 3px 8px; min-height: 64px; padding: 10px; }
   .island-connection-sources .island-provider-symbol { grid-row: span 2; width: 32px; height: 32px; }
@@ -159,7 +144,7 @@
   .island-provider-content { padding: 18px 0 6px; }
 }
 @container island-settings (max-width: 560px) { .island-settings-overview { padding: 8px 12px; } }
-@container island-settings (max-width: 400px) { .island-page-options { grid-template-columns: repeat(2, minmax(0, 1fr)); } .island-settings .set-row { flex-wrap: wrap; } .island-settings .set-row .ctl { max-width: 100%; margin-left: auto; } .island-settings [data-setting-key="display"]:has(.island-display-value) .txt { flex-basis: 100%; } .island-settings-tabs .segmented { gap: 18px; } }
+@container island-settings (max-width: 400px) { .island-settings .set-row { flex-wrap: wrap; } .island-settings .set-row .ctl { max-width: 100%; margin-left: auto; } .island-settings [data-setting-key="display"]:has(.island-display-value) .txt { flex-basis: 100%; } }
 @container island-settings (max-width: 360px) {
   .island-settings [data-group="sedentary"] .set-row { flex-direction: column; align-items: stretch; }
   .island-settings [data-group="sedentary"] .set-row .txt { flex: none; }

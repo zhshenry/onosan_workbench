@@ -49,12 +49,15 @@ test('peer model sections select suppliers independently; search reveals matches
     await render();
     assert.equal(llm().querySelector('h2')?.parentElement?.className, rlcd().querySelector('h2')?.parentElement?.className);
     assert.equal(dom.window.document.querySelectorAll('section.ai-config-section h2').length, 2);
-    assert.equal(selected(llm()), 'Deepseek', 'Start at the active model supplier, even when it is not the first supplier');
+    assert.equal(selected(llm()), 'OpenRouter', 'The first supplier is displayed independently of prior model settings');
     assert.equal(selected(rlcd()), 'TypeSafe');
+    assert.match(llm().querySelector('article')!.textContent!, /minimax/);
+    assert.doesNotMatch(dom.window.document.querySelector('.settings-ai')!.textContent!, /当前使用|当前模型/);
+    await choose(llm(), 'Deepseek');
     assert.match(llm().querySelector('article')!.textContent!, /deepseek-flash/);
-    assert.doesNotMatch(llm().querySelector('article')!.textContent!, /minimax/);
     await choose(llm(), 'OpenRouter'); await choose(rlcd(), 'Local RLCD');
     assert.equal(selected(llm()), 'OpenRouter'); assert.equal(selected(rlcd()), 'Local RLCD');
+    await act(async () => llm().querySelector<HTMLButtonElement>('.ai-config-provider-name > button[aria-expanded]')!.click());
     assert.equal(llm().querySelector<HTMLInputElement>('.ai-provider-endpoint input')!.value, 'https://openrouter.ai/api');
     for (const button of dom.window.document.querySelectorAll('nav button[aria-controls]')) {
       assert.ok(dom.window.document.getElementById(button.getAttribute('aria-controls')!));

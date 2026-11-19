@@ -1,11 +1,13 @@
 import type { TodoState } from '../shared/workbench-api';
-import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, Notification, powerMonitor, session, shell, Tray, nativeImage } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, Notification, powerMonitor, safeStorage, session, shell, Tray, nativeImage } from 'electron';
+import { waitForMainEncryption } from './bot-encryption';
 import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { autoUpdater } from 'electron-updater';
 import { AppUpdates, updateNotesUrl } from './updater';
 import { Store } from '../modules/todo/store';
+import { MeetingNotesStore } from '../modules/todo/meeting-notes-store';
 import { BaziStore } from '../modules/bazi/store';
 import { MediaCaptureStore } from '../modules/media-capture/store';
 import { ReadingStore } from '../modules/reading/store';
@@ -22,13 +24,15 @@ import { HushHourWorkbench } from './hush-hour-workbench';
 import { registerHushHourIpc } from './hush-hour-ipc';
 import { PersonalWebsite } from './personal-website';
 import { registerPersonalWebsiteIpc } from './personal-website-ipc';
-import { registerAiIpc } from './ai-ipc';
+import { BotGateway } from './bot-gateway';
 import { AiTestService, registerAiTestIpc } from './ai-test-ipc';
 import { guardAiTestPreview, registerAiTestScheme } from './ai-test-browser';
 import { SpeechService } from './speech';
 import { registerSpeechIpc } from './speech-ipc';
 import { registerCheckinIpc } from './checkin-ipc';
 import { DesktopIsland } from './desktop-island';
+import { readIslandReminderSettings } from './island-store';
+import { inReminderQuietHours, taskReminderEnabled } from '../shared/island-contracts';
 
 type FloatFactory = () => DesktopIsland;
 import { registerCopyIpc } from './copy-ipc';
@@ -62,8 +66,10 @@ if (process.env.WORKBENCH_ISOLATED === '1') {
 // 工作台自身的设置、缓存一律存自己的 userData,不写此库的 settings/chats 表。
 const TODO_DB = join(app.getPath('appData'), 'To-Do-List', 'tasks.db');
 let store: Store | null = null;
+let meetingNotesStore: MeetingNotesStore | null = null;
 let floatTodoFactory: FloatFactory | null = null;
 let aiStore: AiStore | null = null;
+let botGateway: BotGateway | null = null;
 let settingsStore: AppSettingsStore | null = null;
 let browserGuests: BrowserGuests | null = null;
 let browserAutomation: BrowserAutomation | null = null;
@@ -156,6 +162,11 @@ if (!app.requestSingleInstanceLock()) {
   };
 
   const registerIpc = (): void => {
+    ipcMain.handle('win:assistantBackdrop', async event => {
+      if (event.sender !== mainWindow?.webContents || event.senderFrame !== event.sender.mainFrame) throw new Error('仅工作台主窗口可读取动效画面');
+      const image = await event.sender.capturePage();
+      return (image.getSize().width > 2048 ? image.resize({ width: 2048 }) : image).toDataURL();
+    });
     ipcMain.on('win:minimize', (event) => {
       BrowserWindow.fromWebContents(event.sender)?.minimize();
     });
@@ -325,6 +336,23 @@ if (!app.requestSingleInstanceLock()) {
     });
     ipcMain.handle('todo:review', () => store!.review());
 
+    const assertNotesSender = (event: Electron.IpcMainInvokeEvent): void => {
+      if (event.sender !== mainWindow?.webContents || event.senderFrame !== event.sender.mainFrame) throw new Error('仅工作台主窗口可读写会议纪要');
+    };
+    const broadcastNote = (note: import('../shared/meeting-notes').MeetingNote): void => {
+      mainWindow?.webContents.send('meeting-notes:changed', note);
+    };
+    ipcMain.handle('meeting-notes:list', event => { assertNotesSender(event); return meetingNotesStore!.all(); });
+    ipcMain.handle('meeting-notes:save', (event, id: string, draft: unknown, revision: number) => {
+      assertNotesSender(event);
+      const note = meetingNotesStore!.save(id, draft, revision); broadcastNote(note); return note;
+    });
+    ipcMain.handle('meeting-notes:createTask', (event, id: string, actionId: string, input: unknown, revision: number) => {
+      assertNotesSender(event);
+      const note = meetingNotesStore!.createTask(id, actionId, input, revision);
+      broadcastNote(note); broadcast(); return { state: todoState(), note };
+    });
+
     // 八字排盘(命例库;校验在 BaziStore 内经 Zod 执行,失败以中文错误抛回渲染层)
     if (!baziStore) return;
     ipcMain.handle('bazi:list', () => baziStore!.all());
@@ -376,6 +404,7 @@ if (!app.requestSingleInstanceLock()) {
     mediaCaptureStore = new MediaCaptureStore(app.getPath('userData'));
     readingStore = new ReadingStore(app.getPath('userData'));
     copyStore = new CopyStore(app.getPath('userData'));
+    meetingNotesStore = new MeetingNotesStore(app.getPath('userData'), store);
     settingsStore = new AppSettingsStore(app.getPath('userData'));
     speechService = new SpeechService(app.isPackaged ? join(process.resourcesPath, 'speech') : join(app.getAppPath(), 'vendor', 'speech'));
     registerSpeechIpc(speechService, () => mainWindow?.webContents, DEV_URL || pathToFileURL(join(__dirname, '../dist/index.html')).href);
@@ -398,7 +427,7 @@ if (!app.requestSingleInstanceLock()) {
     app.on('before-quit', event => {
       if (!gameQuitting && gameWorkbench) {
         event.preventDefault(); gameQuitting = true;
-        void Promise.allSettled([gameWorkbench.dispose(), gameTerminal.dispose(), hushHour.dispose(), hushHourTerminal.dispose(), personalWebsite.dispose(), personalWebsiteTerminal.dispose()]).finally(() => app.quit());
+        void Promise.allSettled([botGateway?.stop(), gameWorkbench.dispose(), gameTerminal.dispose(), hushHour.dispose(), hushHourTerminal.dispose(), personalWebsite.dispose(), personalWebsiteTerminal.dispose()]).finally(() => app.quit());
       }
     });
     officeConverter = new OfficeConverter(OFFICE_CONVERT_OPTIONS);
@@ -444,12 +473,14 @@ if (!app.requestSingleInstanceLock()) {
     app.once('before-quit', () => floatTodo.destroy());
     floatTodoFactory = () => floatTodo;
     floatTodo.register();
-    aiStore = new AiStore(app.getPath('userData'));
+    aiStore = new AiStore(app.getPath('userData'), { recover: false });
     const aiTests = new AiTestService(app.getPath('userData'), aiStore);
     registerAiTestIpc(aiTests, () => mainWindow?.webContents);
     app.once('before-quit', () => aiTests.shutdown());
-    registerAiIpc(store, aiStore, copyStore, baziStore, readingStore, browserAutomation);
     registerCopyIpc(copyStore);
+    botGateway = new BotGateway(app.getPath('userData'), TODO_DB, () => mainWindow?.webContents, () => floatTodo.assistantContents(), browserAutomation);
+    try { if (process.platform === 'win32') { safeStorage.encryptString('ono-bot-encryption-init'); await waitForMainEncryption(app.getPath('userData')); } await botGateway.start(); }
+    catch (error) { dialog.showErrorBox('Bot 后台无法启动', error instanceof Error ? error.message : String(error)); app.quit(); return; }
     createWindow();
     if (floatTodo.isVisible()) floatTodo.show();
     void createTray();
@@ -469,14 +500,24 @@ if (!app.requestSingleInstanceLock()) {
 
   // ---------- 提醒轮询(模式同上游 To-Do-List,认领式去重) ----------
   const tick = (): void => {
-    if (!store || notificationBusy) return;
-    // 设置页「待办提醒」总开关:关闭后跳过弹窗,认领留待重新开启后下一轮处理
-    if (settingsStore && !settingsStore.read().remindersEnabled) return;
-    const tasks = store.claimDue();
+    if (!store || !settingsStore || notificationBusy) return;
+    // 关闭事项提醒时保留到点事项，重新开启后由下一轮处理。
+    const { reminderRange } = settingsStore.read();
+    if (reminderRange === 'off') return;
+    const island = floatTodoFactory?.();
+    const reminderSettings = island && !island.store.loadError
+      ? island.store.readSettings()
+      : readIslandReminderSettings(app.getPath('userData'));
+    const now = new Date();
+    const tasks = store.claimDue(now, task => taskReminderEnabled(reminderRange, task.kind));
     if (!tasks.length) return;
-    if (floatTodoFactory) {
-      try { if (floatTodoFactory().remindTasks(tasks)) return; }
+    if (island) {
+      try { if (island.remindTasks(tasks)) return; }
       catch { /* The existing system notification path remains available if island storage fails. */ }
+    }
+    if (inReminderQuietHours(reminderSettings, now)) {
+      for (const task of tasks) store.unclaim(task);
+      return;
     }
     if (!Notification.isSupported()) {
       store.markNotified(tasks);
@@ -487,13 +528,14 @@ if (!app.requestSingleInstanceLock()) {
       notificationBusy = false;
     };
     const notification = new Notification({
-      title: tasks.length === 1 ? tasks[0].title : `${tasks.length} 条待办需要处理`,
+      title: tasks.length === 1 ? tasks[0].title : `${tasks.length} 条事项需要处理`,
       body:
         tasks.length === 1
-          ? '到提醒时间了,点击打开待办,可完成或稍后提醒。'
+          ? '到提醒时间了，点击打开工作台处理。'
           : `${tasks.slice(0, 3).map((t) => t.title).join('、')}。点击查看。`,
       icon: nativeImage.createFromPath(join(__dirname, '../assets/tray.png')),
       timeoutType: 'default',
+      silent: !reminderSettings.sound,
     });
     notification.once('failed', () => {
       // 认领归还,提醒不丢,下一轮重试
@@ -575,12 +617,16 @@ if (!app.requestSingleInstanceLock()) {
     readingStore?.close();
     readingStore = null;
     store?.close();
+    meetingNotesStore?.close();
+    meetingNotesStore = null;
     store = null;
   });
 
-  app.on('second-instance', () => {
+  app.on('second-instance', (_event, argv) => {
+    botGateway?.navigateTask(argv);
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
       mainWindow.focus();
     }
   });

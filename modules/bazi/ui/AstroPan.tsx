@@ -5,7 +5,7 @@ import type { AstroHouseSystem, BaziProfile } from '../../../shared/bazi-contrac
 import { Select } from '../../../src/ui/controls';
 import { degreeLabel, PLANETS, SIGN_NAMES, type AstroSelection } from './astro-insights';
 import { astroTimeZoneLabel, astroUtcLabel } from '../../../shared/astro-time';
-export { AstroDetails, AstroSummary } from './AstroDetails';
+export { AstroDetails } from './AstroDetails';
 
 const CX = 300;
 const SIGN_GLYPHS = ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓'];

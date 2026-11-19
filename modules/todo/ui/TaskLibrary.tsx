@@ -1,3 +1,4 @@
+import { taskDay } from '../../../shared/todo-date';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, MagnifyingGlass, X } from '@phosphor-icons/react';
 import type { Category, Task } from '../../../shared/todo-contracts';
@@ -33,8 +34,8 @@ export function TaskLibrary({ tasks, categories, api, changed, edit, close }: {
   const needle = query.trim().toLocaleLowerCase();
   const visible = tasks.filter(task => matchesStatus(task, filter)
     && (!category || (category === 'none' ? !task.categoryId : task.categoryId === category))
-    && (!needle || [task.title, task.note, task.plannedDate, task.categoryId ? categoryMap.get(task.categoryId)?.name : '无标签'].join(' ').toLocaleLowerCase().includes(needle)))
-    .sort((a, b) => a.plannedDate.localeCompare(b.plannedDate) || (a.dueAt ?? '').localeCompare(b.dueAt ?? '') || a.createdAt.localeCompare(b.createdAt));
+    && (!needle || [task.title, task.note, taskDay(task), task.categoryId ? categoryMap.get(task.categoryId)?.name : '无标签'].join(' ').toLocaleLowerCase().includes(needle)))
+    .sort((a, b) => (taskDay(a) ?? '9999-12-31').localeCompare(taskDay(b) ?? '9999-12-31') || (a.dateAt ?? '').localeCompare(b.dateAt ?? '') || a.createdAt.localeCompare(b.createdAt));
   const picked = visible.filter(task => selected.includes(task.id));
   async function act(items: Task[]) {
     if (busy || !items.length) return;
@@ -65,7 +66,7 @@ export function TaskLibrary({ tasks, categories, api, changed, edit, close }: {
       {visible.map((task, index) => {
         const label = task.categoryId ? categoryMap.get(task.categoryId) : undefined;
         return <li key={task.id}>
-          {index === 0 || visible[index - 1].plannedDate !== task.plannedDate ? <h3 className="library-date">{task.plannedDate}</h3> : null}
+          {index === 0 || taskDay(visible[index - 1]) !== taskDay(task) ? <h3 className="library-date">{taskDay(task) ?? '未设置日期'}</h3> : null}
           <div className="library-task">
             {selecting ? <input type="checkbox" aria-label={`选择 ${task.title}`} disabled={busy} checked={selected.includes(task.id)} onChange={e => setSelected(ids => e.target.checked ? [...ids, task.id] : ids.filter(id => id !== task.id))} /> : null}
             <button type="button" className="library-task-main" disabled={filter === 'deleted' || busy} aria-label={`编辑 ${task.title}`} onClick={() => edit(task)}><b>{task.title}</b><span><i className="plan-dot" aria-hidden style={{ backgroundColor: label?.color ?? 'var(--todo-muted)' }} />{label?.name ?? '无标签'} · {scheduleTimeRange(task)}{task.status === 'doing' ? ' · 进行中' : ''}</span></button>

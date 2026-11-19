@@ -16,7 +16,7 @@ test('上下文选择器使用真实控件发送所选 ID，并隔离页面、�
   globals.forEach(name => Object.defineProperty(globalThis, name, { configurable: true, value: name === 'window' ? dom.window : dom.window[name] }));
   const previousAct = Object.getOwnPropertyDescriptor(globalThis, 'IS_REACT_ACT_ENVIRONMENT');
   Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', { configurable: true, value: true });
-  const task = (id: string, title: string, kind = 'task', status = 'todo') => ({ id, title, kind, status, deletedAt: null, plannedDate: '2026-01-01', dueAt: '2026-01-01T12:00:00Z', priority: 'medium', note: '已记录备注', progress: 0 });
+  const task = (id: string, title: string, kind = 'task', status = 'todo') => ({ id, title, kind, status, deletedAt: null, dateAt: '2026-01-01T12:00:00Z', priority: 'medium', note: '已记录备注', progress: 0 });
   let tasks = [task('task-a', '季度报告'), task('task-b', '项目会议', 'meeting'), task('task-done', '已完成事项', 'task', 'done'), { ...task('task-deleted', '不可见删除事项'), deletedAt: '2026-01-01' }];
   let books = [{ id: 'book-a', title: '已有书目', author: '作者甲', status: 'reading', tags: [], progressPct: 30 }];
   const drafts = Array.from({ length: 10 }, (_, i) => ({ id: `blog-${i}`, title: `参考博文${i}`, body: `正文${i}` }));
@@ -128,7 +128,7 @@ test('上下文选择器使用真实控件发送所选 ID，并隔离页面、�
     assert.equal(all('.ai-reference-dialog').length, 0, 'Todo selection closes immediately');
     assert.equal(dom.window.document.activeElement, dom.window.document.querySelector('.ai-add-reference'));
     const originalTasks = tasks;
-    tasks = [...tasks, ...Array.from({ length: 40 }, (_, i) => ({ ...task(`many-${i}`, i < 2 ? '同名事项' : `滚动事项${i}`), plannedDate: `2026-02-${i === 0 ? '01' : '02'}`, dueAt: `2026-02-${i === 0 ? '01' : '02'}T12:00:00Z` }))];
+    tasks = [...tasks, ...Array.from({ length: 40 }, (_, i) => ({ ...task(`many-${i}`, i < 2 ? '同名事项' : `滚动事项${i}`), dateAt: `2026-02-${i === 0 ? '01' : '02'}T12:00:00Z` }))];
     await click('.ai-add-reference');
     assert.equal(all('.ai-reference-option').length, 43, 'All eligible records remain available beyond eight/twenty');
     const duplicateRows = all('.ai-reference-option').filter(item => item.textContent?.includes('同名事项'));

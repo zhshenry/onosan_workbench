@@ -1,48 +1,12 @@
-import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { CaretRight } from '@phosphor-icons/react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
+import { BookOpen, Graph, GridFour, Planet } from '@phosphor-icons/react';
 import { ASTRO_ASPECT_POLICY, hasAspectRules, houseOfLongitude, type AstroChart } from '../astro';
 import { Segmented, Select } from '../../../src/ui/controls';
 import {
   ASPECT_MEANINGS, BODY_EXPRESSIONS, BODY_MEANINGS, DEFAULT_ASPECT_FILTER, EXTENDED_BODY_NOTES, HOUSE_TOPICS, PLANETS, SIGN_MEANINGS, SIGN_NAMES, SIGN_STYLES,
-  chartDistribution, degreeLabel, houseRows, matchingAspect,
+  degreeLabel, houseRows, matchingAspect,
   type AstroAspectFilter, type AstroSection, type AstroSelection,
 } from './astro-insights';
-
-export function AstroSummary({ chart }: { chart: AstroChart }) {
-  const id = useId(), panel = useRef<HTMLDivElement>(null), button = useRef<HTMLButtonElement>(null);
-  const [open, setOpen] = useState(false);
-  const distribution = chartDistribution(chart);
-  useLayoutEffect(() => {
-    if (!open || !panel.current || !button.current) return;
-    const popup = panel.current, anchor = button.current.getBoundingClientRect();
-    popup.style.width = `${Math.min(320, window.innerWidth - 24)}px`;
-    popup.style.left = `${Math.max(12, Math.min(anchor.right - popup.offsetWidth, window.innerWidth - popup.offsetWidth - 12))}px`;
-    popup.style.top = `${Math.max(12, Math.min(anchor.bottom + 8, window.innerHeight - popup.offsetHeight - 12))}px`;
-    popup.focus({ preventScroll: true });
-    const dismiss = () => popup.hidePopover();
-    const onScroll = (event: Event) => { if (event.target !== popup) dismiss(); };
-    window.addEventListener('resize', dismiss);
-    window.addEventListener('scroll', onScroll, true);
-    return () => { window.removeEventListener('resize', dismiss); window.removeEventListener('scroll', onScroll, true); };
-  }, [open]);
-  return <div className="bazi-as-summary" aria-label="星盘概览">
-    <button ref={button} className="bazi-as-text-button" popoverTarget={id} aria-expanded={open} aria-haspopup="dialog" aria-controls={id}>
-      分布概览<CaretRight size={14} aria-hidden="true" />
-    </button>
-    <div ref={panel} id={id} className="bazi-as-help bazi-as-distribution" popover="auto" role="dialog" tabIndex={-1}
-      aria-labelledby={`${id}-title`} onToggle={event => setOpen(event.newState === 'open')}>
-      <strong id={`${id}-title`}>元素与模式分布</strong>
-      <p>十颗主要星体的星座分布</p>
-      <div className="bazi-as-distribution-bars" aria-label="元素分布">
-        {['火', '土', '风', '水'].map((label, i) => <div key={label} data-tone={['fire', 'earth', 'air', 'water'][i]}>
-          <span>{label}象</span><span className="bazi-as-meter"><i style={{ width: `${distribution.elements[i] / distribution.total * 100}%` }} /></span><b>{distribution.elements[i]}</b>
-        </div>)}
-      </div>
-      <div className="bazi-as-mode-counts" aria-label="模式分布">{['基本', '固定', '变动'].map((label, i) => <span key={label}>{label}<b>{distribution.modes[i]}</b></span>)}</div>
-      <p className="bazi-as-help-note">每颗主要星体计 1 次，不含小天体、点位与宫头，不做加权。基本、固定、变动是星座的三种模式；数量不代表好坏。</p>
-    </div>
-  </div>;
-}
 
 interface DetailProps {
   chart: AstroChart;
@@ -131,8 +95,8 @@ export function AstroDetails(props: DetailProps) {
   ];
   return <div className="bazi-as-sidebar" data-section={section}>
     <div className="panel glass bazi-as-details">
-    <Segmented value={section} onChange={value => onSectionChange(value as AstroSection)} aria-label="星盘信息" options={[
-      { value: 'positions', label: '星体' }, { value: 'houses', label: '宫位' }, { value: 'aspects', label: '相位' }, { value: 'reading', label: '解读' },
+    <Segmented variant="content" value={section} onChange={value => onSectionChange(value as AstroSection)} aria-label="星盘信息" options={[
+      { value: 'positions', label: '星体', icon: <Planet size={16} aria-hidden="true" /> }, { value: 'houses', label: '宫位', icon: <GridFour size={16} aria-hidden="true" /> }, { value: 'aspects', label: '相位', icon: <Graph size={16} aria-hidden="true" /> }, { value: 'reading', label: '解读', icon: <BookOpen size={16} aria-hidden="true" /> },
     ]} />
     <div ref={bodyRef} className="bazi-as-detail-body">
       {section === 'positions' && <>

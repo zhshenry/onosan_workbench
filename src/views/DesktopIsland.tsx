@@ -1,3 +1,5 @@
+import { hasTaskTime, taskDay } from '../../shared/todo-date';
+import { isOverdue, scheduleStamp } from '../../shared/todo-format';
 import { Activity, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type Dispatch, type SetStateAction } from 'react';
 import { AlignLeft, AlignRight, AlignTop, ArrowSquareOut, CalendarBlank, CaretLeft, CaretRight, CaretUp, Check, Drop, Folder, GearSix, Minus, PersonSimpleWalk, PushPin, Sparkle, SquaresFour, X } from '@phosphor-icons/react';
 import { focusRemaining, inTimeRange, islandPage, islandPages, islandSize, ISLAND_DOCKS, ISLAND_DOCK_LABELS, ISLAND_LABELS, ISLAND_MOTION_MS, ISLAND_QUOTA_LABELS, ISLAND_QUOTA_PROVIDERS, type IslandDock, type IslandMode, type IslandPage, type IslandReminder, type IslandState, type QuotaProvider, type QuotaWindow } from '../../shared/island-contracts';
@@ -139,7 +141,7 @@ export function DesktopIslandApp() {
   }, [state?.pinned, state?.mode, notices]);
   if (!state) return <main className="desktop-island island-loading" role="status">{error || '正在打开灵动岛…'}</main>;
   const tasks = data?.tasks.filter(t => !t.deletedAt) ?? [], open = tasks.filter(t => t.status !== 'done');
-  const schedules = open.filter(t => t.kind === 'meeting' && t.plannedDate === today).sort((a, b) => (a.dueAt ?? 'z').localeCompare(b.dueAt ?? 'z'));
+  const schedules = open.filter(t => t.kind === 'meeting' && taskDay(t) === today).sort((a, b) => (a.dateAt ?? 'z').localeCompare(b.dateAt ?? 'z'));
   const next = schedules.find(t => !t.endAt || Date.parse(t.endAt) > now);
   const Icon = page ? icons[page] : GearSix;
   const expanded = state.mode === 'expanded';
@@ -153,7 +155,7 @@ export function DesktopIslandApp() {
     if (provider) setQuotaSelection(provider);
     await api.patch({ lastPage: 'quota' }); await api.mode('expanded'); await api.dismiss(reminder.id);
   });
-  const scheduleSummary = dataError ? '日程暂不可用' : !data ? '正在读取日程…' : next ? `${next.dueAt ? clockText(Date.parse(next.dueAt)) : '当日安排'} ${next.title}` : '今天暂无日程';
+  const scheduleSummary = dataError ? '日程暂不可用' : !data ? '正在读取日程…' : next ? `${hasTaskTime(next.dateAt) ? clockText(Date.parse(next.dateAt)) : '当日安排'} ${next.title}` : '今天暂无日程';
   const [width, height] = islandSize(state.mode, state.settings.dock);
   const motionStyle = { '--island-width': `${width}px`, '--island-height': `${height}px`, '--island-duration': `${ISLAND_MOTION_MS[state.mode]}ms` } as CSSProperties;
   return <div className="island-viewport"><main ref={root} className={`desktop-island is-${state.mode}${dragging ? ' is-dropping' : ''}`} style={motionStyle} data-page={page ?? 'none'} data-dock={state.settings.dock} data-reduced-motion={state.settings.reducedMotion || state.quiet} onFocusCapture={syncHold} onBlurCapture={() => setTimeout(syncHold, 0)}
@@ -209,8 +211,8 @@ function Schedule({ tasks, now, busy, run, open, selection, setSelection }: { ta
   const today = localDay(new Date(now)), { day, month, armed } = selection;
   const start = new Date(`${month}-01T12:00:00`), first = (start.getDay() + 6) % 7;
   const days = Array.from({ length: 42 }, (_, i) => { const value = new Date(start); value.setDate(i - first + 1); return localDay(value); });
-  const meetings = tasks.filter(t => t.kind === 'meeting' && t.status !== 'done' && t.plannedDate === day).sort((a, b) => (a.dueAt ?? 'z').localeCompare(b.dueAt ?? 'z'));
-  const items = tasks.filter(t => t.kind === 'task' && t.status !== 'done' && t.plannedDate === day).sort((a, b) => Number(b.status === 'doing') - Number(a.status === 'doing') || (a.dueAt ?? 'z').localeCompare(b.dueAt ?? 'z'));
+  const meetings = tasks.filter(t => t.kind === 'meeting' && t.status !== 'done' && taskDay(t) === day).sort((a, b) => (a.dateAt ?? 'z').localeCompare(b.dateAt ?? 'z'));
+  const items = tasks.filter(t => t.kind === 'task' && t.status !== 'done' && taskDay(t) === day).sort((a, b) => Number(b.status === 'doing') - Number(a.status === 'doing') || (a.dateAt ?? 'z').localeCompare(b.dateAt ?? 'z'));
   const shift = (amount: number) => { const next = new Date(start); next.setMonth(next.getMonth() + amount); setSelection({ ...selection, month: localDay(next).slice(0, 7), selectedOn: today }); };
   const selectDay = (value: string) => setSelection({ day: value, month: value.slice(0, 7), selectedOn: today, armed: null });
   return <div className="island-schedule">
@@ -221,17 +223,17 @@ function Schedule({ tasks, now, busy, run, open, selection, setSelection }: { ta
         const offset = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[event.key]; if (!offset) return; event.preventDefault();
         const next = new Date(`${value}T12:00:00`); next.setDate(next.getDate() + offset); const date = localDay(next); selectDay(date);
         setTimeout(() => document.querySelector<HTMLButtonElement>(`.island-days button[aria-label="${date}"]`)?.focus(), 0);
-      }}>{Number(value.slice(-2))}{tasks.some(t => t.status !== 'done' && t.plannedDate === value) && <i />}</button>)}</div>
+      }}>{Number(value.slice(-2))}{tasks.some(t => t.status !== 'done' && taskDay(t) === value) && <i />}</button>)}</div>
     </div>
     <div className="island-agenda">
       <div className="island-panel-title"><b>{day === today ? '今天 · ' : ''}{Number(day.slice(5, 7))}月{Number(day.slice(-2))}日</b><div className="island-agenda-actions"><IconButton label="在工作台中打开" onClick={() => void open()}><ArrowSquareOut size={15} /></IconButton></div></div>
       <div className="island-list">
         <div className="island-panel-title island-list-heading"><span>日程</span><small>{meetings.length} 项</small></div>
-        {meetings.length ? meetings.map(task => <button key={task.id} className="island-agenda-item" onClick={() => void open(task)}><span>{task.dueAt ? clockText(Date.parse(task.dueAt)) : '当日安排'}{task.endAt && <>–{clockText(Date.parse(task.endAt))}</>}</span><strong>{task.title}</strong></button>) : <p className="island-muted">这一天没有日程</p>}
+        {meetings.length ? meetings.map(task => <button key={task.id} className="island-agenda-item" onClick={() => void open(task)}><span>{hasTaskTime(task.dateAt) ? clockText(Date.parse(task.dateAt)) : '当日安排'}{task.endAt && <>–{clockText(Date.parse(task.endAt))}</>}</span><strong>{task.title}</strong></button>) : <p className="island-muted">这一天没有日程</p>}
         <div className="island-panel-title island-list-heading"><span>待办 <small>{items.length} 项</small></span></div>
         {items.length ? items.map(task => <div className="island-task" key={task.id}>
           <IconButton label={armed === task.id ? `确认完成 ${task.title}` : `完成 ${task.title}`} className={armed === task.id ? 'armed' : ''} disabled={busy} onClick={() => { if (armed !== task.id) setSelection({ ...selection, armed: task.id }); else void run(() => window.workbench.todo.update(task.id, { status: 'done' }, task.updatedAt)).then(ok => { if (ok) setSelection(value => ({ ...value, armed: null })); }); }}><Check size={16} /></IconButton>
-          <button className="island-task-title" title={task.title} onClick={() => void open(task)}><b>{task.title}</b><small>{task.status === 'doing' ? '进行中 · ' : ''}{task.dueAt ? `${Date.parse(task.dueAt) < now ? '已超期 · ' : ''}${new Date(task.dueAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : task.plannedDate}{task.priority === 'high' ? ' · 高优先级' : ''}</small></button>
+          <button className="island-task-title" title={task.title} onClick={() => void open(task)}><b>{task.title}</b><small>{task.status === 'doing' ? '进行中 · ' : ''}{isOverdue(task, now) ? '已超期 · ' : ''}{scheduleStamp(task)}{task.priority === 'high' ? ' · 高优先级' : ''}</small></button>
           {armed === task.id && <button className="island-text-button" onClick={() => setSelection({ ...selection, armed: null })}>取消</button>}
         </div>) : <p className="island-muted">没有未完成的待办</p>}
       </div>
@@ -272,7 +274,7 @@ function Quotas({ providers, selected, select, now, run, busy, refresh }: { prov
       </div>
     </div>
     </div>
-    <div className="island-quota-actions"><small className="island-quota-updated">{provider?.updatedAt ? `${stale ? '待更新 · ' : ''}${clockText(provider.updatedAt)} 更新` : '尚未读取额度'}</small><div className="island-inline"><button disabled={busy} onClick={() => void run(refresh)}>刷新</button><button disabled={busy} onClick={() => void run(() => api.navigate({ view: 'settings-island', section: 'quota' }))}>管理连接</button></div></div>
+    <div className="island-quota-actions"><small className="island-quota-updated">{provider?.updatedAt ? `${stale ? '待更新 · ' : ''}${clockText(provider.updatedAt)} 更新` : '尚未读取额度'}</small><div className="island-inline"><button disabled={busy} onClick={() => void run(refresh)}>刷新</button><button disabled={busy} onClick={() => void run(() => api.navigate({ view: 'settings-agent-quota', section: 'quota' }))}>管理连接</button></div></div>
   </div>;
 }
 

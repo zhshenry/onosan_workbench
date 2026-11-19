@@ -70,10 +70,10 @@ test('页面和主对象独立校验：阅读与命理不能混用，通用自�
   }
   for (const mode of ['reading', 'bazi'] as const) {
     const reference = { module: mode, profileId: 'selected' };
-    assert.deepEqual(validateAiReferences([reference], generic(mode), generic('workspace:life')), [reference]);
+    assert.deepEqual(validateAiReferences([reference], generic(mode), generic(`workspace:${mode}`)), [reference]);
     const opposite = mode === 'reading' ? 'bazi' : 'reading';
     assert.throws(() => validateAiReferences([reference], generic(opposite), generic('workspace:life')), /页面/);
-    assert.throws(() => validateAiReferences([reference], generic(mode), { module: opposite, profileId: 'main' }), /类型/);
+    assert.throws(() => validateAiReferences([reference], generic(mode), { module: opposite, profileId: 'main' }), /工作台/);
   }
   assert.throws(() => validateAiReferences([copyReference], generic('media-browser'), generic('workspace:life')), /工作台/);
   for (const view of ['settings-ai', 'game', 'web', 'unknown']) assert.throws(() => validateAiReferences([copyReference], generic(view), generic(view)), /页面/);
@@ -91,19 +91,19 @@ test('事项和书目单选，博客和命例最多八个，不接受重复或�
     assert.throws(() => validateAiReferences([make('duplicate'), make('duplicate')], generic(mode === 'todo' ? 'todo' : mode), primary), /重复|1个/);
     if (mode !== 'todo') assert.throws(() => validateAiReferences([make('main')], generic(mode), primary), /无需重复/);
   }
-  assert.throws(() => validateAiReferences([{ module: 'reading', profileId: 'same' }, { module: 'bazi', profileId: 'same' }], generic('reading'), generic('workspace:life')), /页面/);
+  assert.throws(() => validateAiReferences([{ module: 'reading', profileId: 'same' }, { module: 'bazi', profileId: 'same' }], generic('reading'), generic('workspace:reading')), /页面/);
 });
 
 test('参考从正确来源分派，缺失与软删除拒绝，未选来源不会读取', () => {
   const f = fixtures();
   f.books[0].id = f.profiles[0].id;
-  const result = resolveAiReferences([{ module: 'reading', profileId: f.books[0].id }], generic('reading'), generic('workspace:life'), f.sources, { now });
+  const result = resolveAiReferences([{ module: 'reading', profileId: f.books[0].id }], generic('reading'), generic('workspace:reading'), f.sources, { now });
   assert.match(result[0].content, /书目标题/);
   assert.equal(f.reads.bazi, 0);
   assert.equal(f.reads.todo, 0);
   assert.equal(f.reads.copy, 0);
   f.books.splice(0);
-  assert.throws(() => resolveAiReferences([{ module: 'reading', profileId: f.profiles[0].id }], generic('reading'), generic('workspace:life'), f.sources), /参考书目不存在/);
+  assert.throws(() => resolveAiReferences([{ module: 'reading', profileId: f.profiles[0].id }], generic('reading'), generic('workspace:reading'), f.sources), /参考书目不存在/);
   const missing: AiReference[] = [{ module: 'todo', taskId: 'missing' }, { module: 'copy', draftId: 'missing' }, { module: 'bazi', profileId: 'missing' }];
   for (const reference of missing) assert.throws(() => resolveAiReferences([reference], generic(reference.module === 'todo' ? 'todo' : reference.module), generic(reference.module === 'todo' ? 'todo' : reference.module), f.sources), /不存在或已删除/);
   f.tasks[0].deletedAt = now.toISOString();
@@ -115,11 +115,11 @@ test('书目快照只包含已记录书目信息，绝不读取库路径、附�
   f.books[0] = { ...f.books[0], chapterCurrent: 2, chapterTotal: 8, rating: 4, link: { vault: 'SECRET_VAULT', folder: 'SECRET_FOLDER' } };
   Object.defineProperty(f.books[0], 'attachments', { get: () => { throw new Error('attachments must not be read'); } });
   Object.defineProperty(f.sources.reading, 'vaultPath', { get: () => { throw new Error('vault must not be read'); } });
-  const snapshots = resolveAiReferences([{ module: 'reading', profileId: 'reading-1' }], generic('reading'), generic('workspace:life'), f.sources, { now });
+  const snapshots = resolveAiReferences([{ module: 'reading', profileId: 'reading-1' }], generic('reading'), generic('workspace:reading'), f.sources, { now });
   const text = snapshots[0].content;
   for (const expected of ['书目标题', '作者甲', '书目短评', 'progressPct', 'chapterCurrent', 'rating', '学习']) assert.ok(text.includes(expected), expected);
   for (const forbidden of ['SECRET', 'link', 'vault', 'attachment', 'createdAt', 'updatedAt', 'settings']) assert.ok(!text.includes(forbidden), forbidden);
-  const contribution = withAiReferenceSnapshots(buildWorkbenchContribution('workspace:life'), snapshots);
+  const contribution = withAiReferenceSnapshots(buildWorkbenchContribution('workspace:reading'), snapshots);
   assert.deepEqual(contribution.toolNames, ['read_reference']);
   assert.equal(contribution.buildTools().some(tool => tool.name === 'read_book_note'), false);
   assert.deepEqual((await invoke(contribution, 'read_reference', { id: 'reading:reading-1' })).content, [{ type: 'text', text }]);

@@ -1,11 +1,16 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import type { AppSettings, AppSettingsPatch, AvatarColor, TodoDbInfo, UpdateStatus, ViewId } from '../../shared/contracts';
+import { Activity, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { Plugs, Sparkle } from '@phosphor-icons/react';
+import type { AppSettings, AppSettingsPatch, AvatarColor, ReminderRange, TodoDbInfo, UpdateStatus, ViewId } from '../../shared/contracts';
 import type { AppearanceController } from '../appearance';
 import { AppearanceSettings } from './AppearanceSettings';
-import { resolveView } from '../nav';
-import { errorText, Select as TodoSelect } from '../ui/controls';
+import { navigationView, resolveView } from '../nav';
+import { errorText, Segmented, Select as TodoSelect, TimePicker } from '../ui/controls';
 import { AiSettings } from './AiSettings';
 import { IslandSettingsSection } from './IslandSettings';
+import { useIslandSettingsEditor } from './island-state';
+import { AgentConnectionSettings } from './AgentConnectionSettings';
+import type { CheckinProvider } from '../../shared/checkin-contracts';
+import { CheckinConnectionSettings } from './CheckinView';
 
 const wb = window.workbench;
 
@@ -15,8 +20,10 @@ const SECTION_META: Partial<Record<ViewId, { title: string }>> = {
   'settings-general': { title: '通用' },
   'settings-appearance': { title: '个性化' },
   'settings-island': { title: '桌面灵动岛' },
-  'settings-ai': { title: 'AI 助手' },
-  'settings-data': { title: '待办与数据' },
+  'settings-ai': { title: '模型配置' },
+  'settings-bots': { title: 'Bot 管理' },
+  'settings-apps': { title: 'Agent连接' },
+  'settings-data': { title: '待办与日程' },
   'settings-about': { title: '关于' },
 };
 
@@ -62,15 +69,16 @@ function useAppSettings() {
     void wb.settings.get().then((raw) => setSettings(raw), (e) => setError(errorText(e)));
   }, []);
 
-  const apply = (patch: AppSettingsPatch, sideEffect?: (next: AppSettings) => void): void => {
+  const apply = (patch: AppSettingsPatch, sideEffect?: (next: AppSettings) => void) => {
     if (!settings) return;
     const prev = settings;
+    setError('');
     setSettings({
       ...settings,
       ...patch,
       profile: patch.profile ? { ...settings.profile, ...patch.profile } : settings.profile,
     });
-    void wb.settings.patch(patch).then(
+    return wb.settings.patch(patch).then(
       (next) => sideEffect?.(next),
       (e) => {
         setSettings(prev);
@@ -122,6 +130,7 @@ function GeneralSection({ query }: { query: string }) {
       <Rows rows={rows} query={query} />
       {error && <p className="error" role="alert">{error}</p>}
       {!settings && !error && <p className="help" role="status">正在读取设置…</p>}
+      <NotificationSettingsSection query={query} />
     </>
   );
 }
@@ -207,9 +216,66 @@ function ProfileSection({ query, onAvatarColorChange, onProfileNameChange }: {
   );
 }
 
-// ---------- 待办与数据(提醒、目录入口与共享库只读状态) ----------
-function DataSection({ query }: { query: string }) {
-  const { settings, error: settingsError, apply } = useAppSettings();
+function NotificationSettingsSection({ query }: { query: string }) {
+  const { state, busy, patch, error } = useIslandSettingsEditor();
+  const id = useId();
+  const settings = state?.settings;
+  const rows: RowSpec[] = settings ? [
+    { key: 'sound', title: '提醒声音', desc: '控制灵动岛提示音和系统通知声音',
+      control: <button type="button" className="toggle" role="switch" aria-label="提醒声音" aria-checked={settings.sound} disabled={busy} onClick={() => patch({ sound: !settings.sound })} /> },
+    { key: 'dnd', title: '定时勿扰', desc: '在设定时段静默，提醒留待处理',
+      control: <button type="button" className="toggle" role="switch" aria-label="定时勿扰" aria-checked={settings.dnd} disabled={busy} onClick={() => patch({ dnd: !settings.dnd })} /> },
+  ] : [];
+  if (settings?.dnd) rows.push({ key: 'dndTime', title: '勿扰时段', desc: '',
+    control: <fieldset className="island-setting-period" aria-label="勿扰时段" disabled={busy}>
+      <div><label htmlFor={`${id}-dnd-start`}>开始</label><TimePicker id={`${id}-dnd-start`} value={settings.dndStart} onChange={dndStart => patch({ dndStart })} /></div>
+      <span aria-hidden="true">—</span>
+      <div><label htmlFor={`${id}-dnd-end`}>结束</label><TimePicker id={`${id}-dnd-end`} value={settings.dndEnd} onChange={dndEnd => patch({ dndEnd })} /></div>
+    </fieldset>,
+  });
+  return <section className="settings-group settings-notifications" aria-labelledby={`${id}-notifications`}>
+    <h2 id={`${id}-notifications`}>通知与勿扰</h2>
+    {settings && <Rows rows={rows} query={query} />}
+    {error && <p className="error" role="alert">{error}</p>}
+    {!settings && !error && <p className="help" role="status">正在读取通知设置…</p>}
+  </section>;
+}
+
+// ---------- 事项提醒 ----------
+const REMINDER_RANGE_OPTIONS: { value: ReminderRange; label: string }[] = [
+  { value: 'all', label: '日程和待办' },
+  { value: 'schedule', label: '仅日程' },
+  { value: 'todo', label: '仅待办' },
+  { value: 'off', label: '关闭' },
+];
+
+function ReminderSection({ query }: { query: string }) {
+  const { settings, error, apply } = useAppSettings();
+  const [saving, setSaving] = useState(false);
+  const id = useId();
+  const rows: RowSpec[] = settings ? [{
+    key: 'reminderRange',
+    title: '提醒范围',
+    desc: '',
+    control: <TodoSelect className="reminder-range-select" aria-label="提醒范围" value={settings.reminderRange}
+      options={REMINDER_RANGE_OPTIONS} disabled={saving} onChange={async value => {
+        if (value === settings.reminderRange) return;
+        setSaving(true);
+        await apply({ reminderRange: value as ReminderRange });
+        setSaving(false);
+      }} />,
+  }] : [];
+
+  return <section className="settings-group" aria-labelledby={`${id}-reminders`}>
+    <h2 id={`${id}-reminders`}>事项提醒</h2>
+    {settings && <Rows rows={rows} query={query} />}
+    {error && <p className="error" role="alert">{error}</p>}
+    {!settings && !error && <p className="help" role="status">正在读取提醒设置…</p>}
+  </section>;
+}
+
+// ---------- 数据存储 ----------
+function DataStorageSection({ query }: { query: string }) {
   const [info, setInfo] = useState<TodoDbInfo | null>(null);
   const [error, setError] = useState('');
 
@@ -227,32 +293,23 @@ function DataSection({ query }: { query: string }) {
     {
       key: 'dbPath',
       title: '待办共享库',
-      desc: info?.path ?? '与 To-Do-List 共用的数据目录',
+      desc: info?.path ?? 'OnO 与 CMO 共用的事项数据目录',
       control: <button className="set-btn" aria-label="打开待办共享库目录" onClick={() => void wb.appInfo.openTodoDir().catch(e => setError(`待办共享库：${errorText(e)}`))}>打开目录</button>,
     },
   ];
-  if (settings) rows.unshift({
-    key: 'remindersEnabled',
-    title: '待办提醒',
-    desc: '到提醒时间弹系统通知,点击通知打开工作台处理',
-    control: (
-      <button type="button" className="toggle" role="switch" aria-checked={settings.remindersEnabled} aria-label="待办提醒"
-        onClick={() => apply({ remindersEnabled: !settings.remindersEnabled })} />
-    ),
-  });
   if (info) rows.push(
     {
       key: 'syncState',
       title: '同步状态',
       desc: info.connected
-        ? '已连接,与 To-Do-List 同库互通,两侧增删改实时可见'
-        : '未连接:共享库暂不可用,请检查 To-Do-List 数据目录',
+        ? '已连接，OnO 与 CMO 共用事项数据'
+        : '未连接：共享事项库暂不可用，请检查数据目录',
       control: <span className="set-value">{info.connected ? '已连接' : '未连接'}</span>,
     },
     {
       key: 'schemaVersion',
       title: '库结构版本',
-      desc: '上游 To-Do-List 的库结构版本,上游升级后需按 SYNC.md 清单同步',
+      desc: 'OnO 与 CMO 的共享事项协议版本，两边需同步升级',
       control: <span className="set-value">v{info.schemaVersion}</span>,
     },
     {
@@ -263,13 +320,12 @@ function DataSection({ query }: { query: string }) {
   );
 
   return (
-    <>
+    <section className="settings-storage" aria-labelledby="settings-storage-title">
+      <h2 id="settings-storage-title">数据存储</h2>
       <Rows rows={rows} query={query} />
       {error && <p className="error" role="alert">{error}</p>}
-      {settingsError && <p className="error" role="alert">{settingsError}</p>}
-      {!settings && !settingsError && <p className="help" role="status">正在读取设置…</p>}
       {!info && !error && <p className="help" role="status">正在读取共享库状态…</p>}
-    </>
+    </section>
   );
 }
 
@@ -366,33 +422,56 @@ function AboutSection({ query }: { query: string }) {
       <Rows rows={rows} query={query} />
       {error && <p className="error" role="alert">{error}</p>}
       {!info && !error && <p className="help" role="status">正在读取应用信息…</p>}
+      <DataStorageSection query={query} />
     </>
   );
 }
 
 // ---------- 入口 ----------
-export function SettingsView({ view, appearance, onAvatarColorChange, onProfileNameChange }: {
+const accountTabs = [
+  { value: 'settings-apps', label: 'Agent签到连接', icon: <Plugs size={16} aria-hidden="true" /> },
+  { value: 'settings-agent-quota', label: 'Agent额度连接', icon: <Sparkle size={16} aria-hidden="true" /> },
+];
+
+export function SettingsView({ view, appearance, onAvatarColorChange, botManagement, onProfileNameChange, onNavigate, checkinProvider, checkinBusy, onCheckinConnected, onCheckinSavingChange }: {
   view: ViewId;
   appearance: AppearanceController;
+  botManagement?: ReactNode;
   onAvatarColorChange(color: AvatarColor): void;
   onProfileNameChange(name: string): void;
+  onNavigate?(view: ViewId): void;
+  checkinProvider?: CheckinProvider;
+  checkinBusy?: boolean;
+  onCheckinConnected?(): void;
+  onCheckinSavingChange?(saving: boolean): void;
 }) {
   view = resolveView(view);
-  const meta = SECTION_META[view] ?? { title: '设置' };
+  const section = navigationView(view);
+  const meta = SECTION_META[section] ?? { title: '设置' };
+  const quotaTab = view === 'settings-agent-quota';
 
   return (
-    <div className={view === 'settings-ai' ? 'settings-page settings-ai-page' : view === 'settings-about' ? 'settings-page settings-about-page' : view === 'settings-island' ? 'settings-page settings-island-page' : 'settings-page'}>
+    <div className={view === 'settings-ai' ? 'settings-page settings-ai-page' : view === 'settings-about' ? 'settings-page settings-about-page' : view === 'settings-island' ? 'settings-page settings-island-page' : section === 'settings-apps' ? 'settings-page settings-agent-page' : 'settings-page'}>
       <div className="page-head">
         <div>
           <h1>{meta.title}</h1>
         </div>
       </div>
+      {section === 'settings-apps' && onNavigate && <fieldset className="settings-account-tabs" disabled={checkinBusy}>
+        <Segmented variant="content" aria-label="Agent连接分区" value={quotaTab ? 'settings-agent-quota' : 'settings-apps'} options={accountTabs} onChange={value => onNavigate(value as ViewId)} />
+      </fieldset>}
       {view === 'settings-profile' && <ProfileSection query="" onAvatarColorChange={onAvatarColorChange} onProfileNameChange={onProfileNameChange} />}
       {view === 'settings-general' && <GeneralSection query="" />}
       {view === 'settings-appearance' && <AppearanceSettings controller={appearance} />}
       {view === 'settings-island' && <IslandSettingsSection query="" />}
       {view === 'settings-ai' && <AiSettings query="" />}
-      {view === 'settings-data' && <DataSection query="" />}
+      {view === 'settings-bots' && botManagement}
+      {section === 'settings-apps' && !quotaTab && <CheckinConnectionSettings provider={checkinProvider}
+        focusAutomation={view === 'settings-checkin'} onConnected={onCheckinConnected} onSavingChange={onCheckinSavingChange} />}
+      {section === 'settings-apps' && <Activity mode={quotaTab ? 'visible' : 'hidden'}>
+        <AgentConnectionSettings query="" />
+      </Activity>}
+      {view === 'settings-data' && <ReminderSection query="" />}
       {view === 'settings-about' && <AboutSection query="" />}
     </div>
   );

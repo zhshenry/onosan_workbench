@@ -41,7 +41,7 @@ test('工作台页面的助手卡片主标签和对象行来自导航', () => {
     scope: { module: 'workbench', viewId: 'settings-general' }, label: '设置', object: '通用',
   });
   assert.deepEqual(pageAiContext('settings-ai', none), {
-    scope: { module: 'workbench', viewId: 'settings-ai' }, label: '设置', object: 'AI 助手',
+    scope: { module: 'workbench', viewId: 'settings-ai' }, label: '设置', object: '模型配置',
   });
 });
 
@@ -49,7 +49,7 @@ test('历史设置路径归入对应页面，保留设置归属与助手名称',
   for (const [view, target, name] of [
     ['settings-general', 'settings-general', '通用'],
     ['settings-appearance', 'settings-appearance', '个性化'],
-    ['settings-notifications', 'settings-data', '待办与数据'],
+    ['settings-notifications', 'settings-data', '待办与日程'],
   ] as const) {
     assert.equal(resolveView(view), target);
     assert.equal(ownerOfWorkbench(view), 'settings');
@@ -74,12 +74,12 @@ test('待办、博客、命理和阅读的专用名称不随工作台文案改�
     scope: { module: 'bazi', profileId: 'profile-1' }, label: '命理解读', object: '命例甲', baziSystem: 'ziwei',
   });
   assert.deepEqual(pageAiContext('bazi', none), {
-    scope: { module: 'workbench', viewId: 'bazi' }, label: '小工具', object: '尚未选择命例',
+    scope: { module: 'workbench', viewId: 'bazi' }, label: '命理', object: '尚未选择命例',
   });
   assert.deepEqual(pageAiContext('reading', { ...none, reading: { id: 'book-1', title: '海边的卡夫卡' } }), {
     scope: { module: 'reading', profileId: 'book-1' }, label: '阅读助手', object: '海边的卡夫卡',
   });
   assert.deepEqual(pageAiContext('reading', none), {
-    scope: { module: 'workbench', viewId: 'reading' }, label: '小工具', object: '阅读清单',
+    scope: { module: 'workbench', viewId: 'reading' }, label: '阅读清单', object: '阅读清单',
   });
 });

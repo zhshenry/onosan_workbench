@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import type { Store } from '../modules/todo/store';
 import type { Task } from '../shared/todo-contracts';
-import { inTimeRange, islandBounds, islandAssistantBounds, ISLAND_MOTION_MS, ISLAND_QUOTA_LABELS, ISLAND_QUOTA_PROVIDERS, type IslandMode, type IslandNavigation, type IslandReminder, type IslandState } from '../shared/island-contracts';
+import { inReminderQuietHours, islandBounds, islandAssistantBounds, ISLAND_MOTION_MS, ISLAND_QUOTA_LABELS, ISLAND_QUOTA_PROVIDERS, type IslandMode, type IslandNavigation, type IslandReminder, type IslandState } from '../shared/island-contracts';
 import { IslandStore } from './island-store';
 import { IslandQuotas } from './island-quotas';
 import { watchFullscreen } from './island-fullscreen';
@@ -63,7 +63,7 @@ export class DesktopIsland {
   get window(): BrowserWindow | null { return this.win; }
   isVisible(): boolean { return this.store.read().settings.enabled; }
   private bubbleReminder(reminders: IslandReminder[]): IslandReminder | undefined { return reminders.find(reminder => !this.expiredBubbleIds.has(reminder.id)); }
-  private quiet(): boolean { const s = this.store.read().settings; return this.locked || this.suspended || inTimeRange(new Date(), s.dndStart, s.dndEnd) && s.dnd; }
+  private quiet(settings = this.store.readSettings()): boolean { return this.locked || this.suspended || inReminderQuietHours(settings); }
   state(): IslandState {
     const data = this.store.read(), messages = this.agents.messages.read();
     const enabled = new Set(this.agents.status().filter(connection => connection.connected).map(connection => connection.provider));
@@ -120,6 +120,7 @@ export class DesktopIsland {
     if (this.devUrl) void this.win.loadURL(`${this.devUrl}?window=float`);
     else void this.win.loadFile(join(this.preload, '../../dist/index.html'), { query: { window: 'float' } });
   }
+  assistantContents() { return this.assistantWindow?.webContents; }
   private assistant(action: 'show' | 'hide' | 'pin' | 'state' | 'ready') {
     const status = () => ({ pinned: this.assistantPinned, visible: !!this.assistantWindow?.isVisible() && this.assistantWindow.getOpacity() > 0 });
     if (action === 'show') {
@@ -134,7 +135,7 @@ export class DesktopIsland {
         this.assistantReady = false;
         const win = new BrowserWindow({ ...bounds, minWidth: Math.min(280, bounds.width), minHeight: Math.min(320, bounds.height),
           frame: false, transparent: true, resizable: true, maximizable: false, fullscreenable: false, skipTaskbar: true,
-          show: false, title: '待办助手', webPreferences: { preload: this.preload, contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false } });
+          show: false, title: 'Ono · 总 Bot', webPreferences: { preload: this.preload, contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false } });
         this.assistantWindow = win;
         win.setAlwaysOnTop(this.assistantPinned, 'floating');
         win.on('close', event => { event.preventDefault(); this.assistantOpening = false; this.assistantRequest++; win.hide(); });
@@ -280,16 +281,17 @@ export class DesktopIsland {
   }
   private notify(alerts: IslandReminder[], failed?: () => void): void {
     this.store.enqueue(alerts); this.publish();
-    if (this.quiet() || this.fullscreen && this.store.read().settings.hideFullscreen) return;
+    const settings = this.store.readSettings();
+    if (this.quiet(settings) || this.fullscreen && settings.hideFullscreen) return;
     if (this.win?.isVisible()) {
-      if (this.store.read().settings.sound) shell.beep();
+      if (settings.sound) shell.beep();
       if (this.mode === 'collapsed' && !this.held) { this.setMode(this.store.read().settings.mascotEnabled ? 'speech' : 'reminder'); this.armReminderTimer(); }
       else if (this.mode === 'speech' || this.mode === 'reminder') this.armReminderTimer();
       return;
     }
     const systemAlerts = alerts.filter(alert => alert.kind !== 'water' && alert.kind !== 'sedentary' && alert.kind !== 'agent');
     if (systemAlerts.length && Notification.isSupported()) {
-      const notification = new Notification({ title: systemAlerts.length > 1 ? `${systemAlerts.length} 条提醒` : systemAlerts[0].title, body: '点击在工作台中查看', silent: !this.store.read().settings.sound });
+      const notification = new Notification({ title: systemAlerts.length > 1 ? `${systemAlerts.length} 条提醒` : systemAlerts[0].title, body: '点击在工作台中查看', silent: !settings.sound });
       if (failed) notification.once('failed', failed);
       notification.on('click', () => this.navigate({ view: systemAlerts[0].taskId ? 'todo' : 'home', taskId: systemAlerts[0].taskId })); notification.show();
     }
@@ -312,10 +314,7 @@ export class DesktopIsland {
   }
   remindTasks(tasks: Task[]): boolean {
     if (this.store.loadError) return false;
-    const s = this.store.read().settings;
-    const accepted = tasks.filter(t => t.kind === 'meeting' ? s.scheduleReminders : s.todoReminders);
-    for (const task of tasks) if (!accepted.includes(task)) this.todo.unclaim(task);
-    if (accepted.length) this.notify(accepted.map(task => ({ id: `${task.id}:${task.remindAt}`, kind: task.kind, title: task.title, taskId: task.id, createdAt: Date.now() })), () => { for (const task of accepted) this.todo.unclaim(task); });
+    if (tasks.length) this.notify(tasks.map(task => ({ id: `${task.id}:${task.remindAt}`, kind: task.kind, title: task.title, taskId: task.id, createdAt: Date.now() })), () => { for (const task of tasks) this.todo.unclaim(task); });
     return true;
   }
   navigate(target: IslandNavigation): void {
@@ -362,7 +361,7 @@ export class DesktopIsland {
       if (this.speechHeight === value) return;
       this.speechHeight = value; this.applyShape(this.shapeBounds());
     });
-    handle('island:navigate', target => this.navigate(z.object({ view: z.enum(['home', 'todo', 'settings-island', 'settings-general', 'settings-ai']), taskId: z.string().optional(), section: z.enum(['quota', 'water', 'sedentary', 'agents']).optional() }).parse(target)), true);
+    handle('island:navigate', target => this.navigate(z.object({ view: z.enum(['home', 'todo', 'settings-island', 'settings-agent-quota', 'settings-general', 'settings-ai']), taskId: z.string().optional(), artifactId: z.string().uuid().optional(), botPanel: z.enum(['details', 'library']).optional(), section: z.enum(['quota', 'water', 'sedentary', 'agents']).optional() }).parse(target)), true);
     handle('island:displays', () => screen.getAllDisplays().map((d, i) => ({ id: d.id, label: `${d.label || `显示器 ${i + 1}`} · ${d.size.width}×${d.size.height}${d.id === screen.getPrimaryDisplay().id ? ' · 主屏' : ''}` })));
     const changed = () => {
       this.armReminderTimer();

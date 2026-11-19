@@ -24,7 +24,7 @@ await build({ ...shared, entryPoints: ['electron/preload.ts'], outfile: 'dist-el
 await build({ ...shared, entryPoints: ['electron/speech-worker.ts'], outfile: 'dist-electron/speech-worker.cjs' });
 await build({
   ...shared,
-  entryPoints: ['electron/main.ts'],
+  entryPoints: ['electron/bootstrap.ts'],
   outfile: 'dist-electron/main.cjs',
   banner: { js: 'var import_meta_url = require("url").pathToFileURL(__filename).href;' },
   define: { 'import.meta.url': 'import_meta_url' },

@@ -5,16 +5,64 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { Store } from '../modules/todo/store';
+import { AppSettingsStore } from '../electron/app-settings';
+import { IslandStore, readIslandReminderSettings } from '../electron/island-store';
+import { inReminderQuietHours, taskReminderEnabled } from '../shared/island-contracts';
 import { activeToday, insightTarget, newTask, openToday, taskInputSchema, taskPatchSchema, type Task } from '../shared/todo-contracts';
+
+test('saved reminder range preserves quiet hours and keeps excluded items claimable', () => {
+  const directory = mkdtempSync(path.join(tmpdir(), 'ono-reminder-settings-'));
+  const island = new IslandStore(directory);
+  island.patch({ scheduleReminders: false, todoReminders: true, sound: true, dnd: true, dndStart: '22:30', dndEnd: '07:15' });
+  const quiet = new Date(2026, 10, 20, 23, 0), awake = new Date(2026, 10, 21, 7, 15);
+  const settings = readIslandReminderSettings(directory);
+  const appSettings = new AppSettingsStore(directory);
+  const { reminderRange } = appSettings.read();
+  assert.equal(reminderRange, 'todo');
+  assert.equal(settings.sound, true);
+  assert.equal(inReminderQuietHours(settings, quiet), true);
+  assert.equal(inReminderQuietHours(settings, awake), false);
+  const store = new Store(path.join(directory, 'tasks.db'));
+  try {
+    const remindAt = quiet.toISOString();
+    const task = store.create({ ...newTask('待办'), remindAt });
+    const endAt = new Date(quiet.getTime() + 30 * 60_000).toISOString();
+    const meeting = store.create({ ...newTask('日程'), kind: 'meeting', dateAt: remindAt, endAt, remindAt });
+    assert.deepEqual(store.claimDue(awake, value => taskReminderEnabled(reminderRange, value.kind)).map(value => value.id), [task.id]);
+    assert.equal(store.get(meeting.id).notifiedFor, null);
+    appSettings.patch({ reminderRange: 'schedule' });
+    const { reminderRange: next } = new AppSettingsStore(directory).read();
+    assert.deepEqual(store.claimDue(awake, value => taskReminderEnabled(next, value.kind)).map(value => value.id), [meeting.id]);
+  } finally { store.close(); }
+});
+
+test('ONOSAN omits CMO-managed schedules from lists and reminders without changing shared rows', () => {
+  const store = new Store(path.join(mkdtempSync(path.join(tmpdir(), 'ono-external-schedule-')), 'tasks.db'));
+  try {
+    const dateAt = new Date('2026-11-17T10:00:00').toISOString();
+    const local = store.create({
+      ...newTask('本地日程'), kind: 'meeting', dateAt, endAt: new Date('2026-11-17T11:00:00').toISOString(),
+    });
+    const external = store.put({
+      ...local, id: randomUUID(), title: 'CMO 邮箱日历', source: 'welink',
+      external: { provider: 'calendar' }, remindAt: dateAt,
+    });
+    assert.deepEqual(store.all(true).map(task => task.id), [local.id]);
+    assert.deepEqual(store.due(new Date(external.endAt!)), []);
+    assert.deepEqual(store.get(external.id), external);
+  } finally {
+    store.close();
+  }
+});
 
 test('openToday excludes completed tasks and meetings while activeToday keeps them', () => {
   const day = '2026-09-21';
   const mk = (title: string, extra: Partial<Task> = {}): Task => ({ ...newTask(title), id: title, createdAt: '2026-09-21T00:00:00.000Z', updatedAt: '2026-09-21T00:00:00.000Z', completedAt: null, notifiedFor: null, deletedAt: null, ...extra });
   const items = [
-    mk('没做完', { plannedDate: day, dueAt: `${day}T09:00:00+08:00` }),
-    mk('做完了', { plannedDate: day, dueAt: `${day}T10:00:00+08:00`, status: 'done', completedAt: `${day}T04:00:00.000Z` }),
-    mk('开完的会', { plannedDate: day, kind: 'meeting', dueAt: `${day}T10:00:00+08:00`, status: 'done', completedAt: `${day}T04:30:00.000Z` }),
-    mk('要开的会', { plannedDate: day, kind: 'meeting', dueAt: `${day}T11:00:00+08:00` }),
+    mk('没做完', { dateAt: `${day}T09:00:00+08:00` }),
+    mk('做完了', { dateAt: `${day}T10:00:00+08:00`, status: 'done', completedAt: `${day}T04:00:00.000Z` }),
+    mk('开完的会', { dateAt: `${day}T10:00:00+08:00`, kind: 'meeting', status: 'done', completedAt: `${day}T04:30:00.000Z` }),
+    mk('要开的会', { dateAt: `${day}T11:00:00+08:00`, kind: 'meeting' }),
   ];
   assert.deepEqual(openToday(items, day).map(task => task.id), ['没做完', '要开的会']);
   assert.ok(activeToday(items, day).some(task => task.status === 'done'), 'activeToday 仍含已完成（事项库视图依赖）');
@@ -25,18 +73,18 @@ test('insightTarget picks globally: soonest meeting, then soonest task, then ord
   const now = new Date('2026-09-22T10:00:00+08:00');
   // 最紧急的临近日程优先于更早的临近待办
   const withMeeting = [
-    mk('待办A', { plannedDate: '2026-09-22', dueAt: '2026-09-22T10:30:00+08:00' }),
-    mk('临近的会', { plannedDate: '2026-09-22', kind: 'meeting', dueAt: '2026-09-22T10:40:00+08:00' }),
+    mk('待办A', { dateAt: '2026-09-22T10:30:00+08:00' }),
+    mk('临近的会', { dateAt: '2026-09-22T10:40:00+08:00', kind: 'meeting' }),
   ];
   const meetingPick = insightTarget(withMeeting, now);
   assert.equal(meetingPick?.title, '临近的会');
   assert.match(meetingPick?.context ?? '', /留出会前准备/);
   // 无临近日程时选截止最近的待办；逾期转「重新安排」
-  const taskPick = insightTarget([mk('逾期件', { plannedDate: '2026-09-22', dueAt: '2026-09-22T09:00:00+08:00' }), mk('临期件', { plannedDate: '2026-09-22', dueAt: '2026-09-22T11:00:00+08:00' })], now);
+  const taskPick = insightTarget([mk('逾期件', { dateAt: '2026-09-22T09:00:00+08:00' }), mk('临期件', { dateAt: '2026-09-22T11:00:00+08:00' })], now);
   assert.equal(taskPick?.title, '逾期件');
   assert.match(taskPick?.context ?? '', /重新安排/);
   // 一小时后的会（>60 分钟）不触发日程建议，落到临期待办
-  const laterMeeting = insightTarget([mk('待办B', { plannedDate: '2026-09-22', dueAt: '2026-09-22T11:20:00+08:00' }), mk('稍后的会', { plannedDate: '2026-09-22', kind: 'meeting', dueAt: '2026-09-22T12:00:00+08:00' })], now);
+  const laterMeeting = insightTarget([mk('待办B', { dateAt: '2026-09-22T11:20:00+08:00' }), mk('稍后的会', { dateAt: '2026-09-22T12:00:00+08:00', kind: 'meeting' })], now);
   assert.equal(laterMeeting?.title, '待办B');
   // 无临近目标且 ≥3 项时给排序建议；不足 3 项则不显示
   const many = [mk('甲'), mk('乙'), mk('丙')];
@@ -138,7 +186,7 @@ test('AI remove action soft-deletes with revision guard and rejects stale or mis
     const keep = store.create(newTask('保留的事项'));
     store.applyPlan({ message: '删除', actions: [{ type: 'remove', id: task.id }] }, new Map([[task.id, task.updatedAt], [keep.id, keep.updatedAt]]));
     assert.equal(store.get(task.id).deletedAt !== null, true);
-    assert.equal(activeToday(store.all(), task.plannedDate).some(item => item.id === task.id), false);
+    assert.equal(activeToday(store.all(), task.dateAt).some(item => item.id === task.id), false);
     assert.equal(store.get(keep.id).deletedAt, null);
     assert.throws(() => store.applyPlan({ message: '过期', actions: [{ type: 'remove', id: keep.id }] }, new Map([[keep.id, keep.updatedAt + 'Z']])), /已变化|已更新/);
     assert.throws(() => store.applyPlan({ message: '不存在', actions: [{ type: 'remove', id: randomUUID() }] }, new Map()), /不存在|已变化/);
@@ -163,7 +211,7 @@ test('pending chat proposals can be edited or superseded before confirmation', (
 
 test('task date and title validation rejects invalid input', () => {
   assert.equal(taskInputSchema.safeParse(newTask('   ')).success, false);
-  assert.equal(taskInputSchema.safeParse({ ...newTask('报告'), plannedDate: '2026-02-30' }).success, false);
+  assert.equal(taskInputSchema.safeParse({ ...newTask('报告'), dateAt: '2026-02-30' }).success, false);
   assert.equal(taskInputSchema.safeParse({ ...newTask('报告'), remindAt: 'tomorrow' }).success, false);
   assert.equal(newTask('报告').priority, 'medium');
   assert.equal(taskInputSchema.safeParse({ ...newTask('报告'), priority: 'low' }).success, true);
@@ -200,7 +248,7 @@ test('legacy normal priority loads as medium', () => {
 test('reminders survive restart and are deduplicated by scheduled occurrence', () => {
   const file = path.join(mkdtempSync(path.join(tmpdir(), 'todo-reminder-test-')), 'tasks.db');
   let store = new Store(file);
-  const task = store.create({ ...newTask('开会'), dueAt: '2026-09-14T15:00:00+08:00', remindAt: '2026-09-14T14:50:00+08:00' });
+  const task = store.create({ ...newTask('开会'), dateAt: '2026-09-14T15:00:00+08:00', remindAt: '2026-09-14T14:50:00+08:00' });
   assert.equal(store.due(new Date('2026-09-14T14:49:00+08:00')).length, 0);
   const due = store.due(new Date('2026-09-14T14:51:00+08:00')); assert.equal(due.length, 1); store.markNotified(due); store.close();
   store = new Store(file); assert.equal(store.due(new Date('2026-09-15T00:00:00+08:00')).length, 0);
@@ -209,8 +257,8 @@ test('reminders survive restart and are deduplicated by scheduled occurrence', (
 });
 test('completion/deletion suppress alarms; snooze preserves original deadline', () => {
   const store = new Store(':memory:'); const now = new Date('2026-09-14T15:00:00Z');
-  const task = store.create({ ...newTask('报告'), dueAt: '2026-09-14T14:00:00Z', remindAt: '2026-09-14T13:00:00Z' });
-  const snoozed = store.snooze(task.id, now); assert.equal(snoozed.dueAt, task.dueAt); assert.equal(snoozed.remindAt, '2026-09-14T15:10:00.000Z');
+  const task = store.create({ ...newTask('报告'), dateAt: '2026-09-14T14:00:00Z', remindAt: '2026-09-14T13:00:00Z' });
+  const snoozed = store.snooze(task.id, now); assert.equal(snoozed.dateAt, task.dateAt); assert.equal(snoozed.remindAt, '2026-09-14T15:10:00.000Z');
   assert.equal(store.due(now).length, 0);
   const done = store.update(task.id, { status: 'done' }); assert.equal(store.due(new Date('2026-09-15')).length, 0);
   const reopened = store.update(task.id, { status: 'todo' }, done.updatedAt); store.remove(task.id, reopened.updatedAt);
@@ -268,17 +316,17 @@ test('AI category plan rolls back on stale category revision', () => {
   store.close();
 });
 test('today includes carried-over work without duplicating task IDs or changing deadlines', () => {
-  const store = new Store(':memory:'); const old = store.create({ ...newTask('跨天事项'), plannedDate: '2026-09-10' });
-  const futureTodo = store.create({ ...newTask('未来事项'), plannedDate: '2026-09-20' });
-  store.create({ ...newTask('未来日程'), kind: 'meeting', plannedDate: '2026-09-20', dueAt: '2026-09-20T09:00:00+08:00', endAt: '2026-09-20T10:00:00+08:00' });
+  const store = new Store(':memory:'); const old = store.create({ ...newTask('跨天事项'), dateAt: '2026-09-10' });
+  const futureTodo = store.create({ ...newTask('未来事项'), dateAt: '2026-09-20' });
+  store.create({ ...newTask('未来日程'), kind: 'meeting', dateAt: '2026-09-20T09:00:00+08:00', endAt: '2026-09-20T10:00:00+08:00' });
   assert.deepEqual(new Set(activeToday(store.all(), '2026-09-14').map(t => t.id)), new Set([old.id, futureTodo.id]));
-  assert.equal(store.get(old.id).plannedDate, '2026-09-10'); store.close();
+  assert.equal(store.get(old.id).dateAt, '2026-09-10'); store.close();
 });
 test('open todos stay visible before the deadline; meetings follow the event day', () => {
   const store = new Store(':memory:');
-  const long = store.create({ ...newTask('长任务'), plannedDate: '2026-09-26' });
-  const meeting = store.create({ ...newTask('周会'), kind: 'meeting', plannedDate: '2026-09-26', dueAt: '2026-09-26T10:00:00+08:00', endAt: '2026-09-26T11:00:00+08:00' });
-  const overdue = store.create({ ...newTask('昨天的会'), kind: 'meeting', plannedDate: '2026-09-10', dueAt: '2026-09-10T10:00:00+08:00', endAt: '2026-09-10T11:00:00+08:00' });
+  const long = store.create({ ...newTask('长任务'), dateAt: '2026-09-26' });
+  const meeting = store.create({ ...newTask('周会'), kind: 'meeting', dateAt: '2026-09-26T10:00:00+08:00', endAt: '2026-09-26T11:00:00+08:00' });
+  const overdue = store.create({ ...newTask('昨天的会'), kind: 'meeting', dateAt: '2026-09-10T10:00:00+08:00', endAt: '2026-09-10T11:00:00+08:00' });
   const ids = new Set(activeToday(store.all(), '2026-09-20').map(t => t.id));
   assert.equal(ids.has(long.id), true);
   assert.equal(ids.has(meeting.id), false);

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { randomUUID } from 'node:crypto';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { registerHooks } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -15,7 +15,7 @@ import { ReadingStore } from '../modules/reading/store';
 import type { AiConfig } from '../shared/workbench-api';
 import type { ChatSession } from '../shared/todo-contracts';
 
-test('首次保存对话模型自动启用，后续保留开关选择；仅成功落盘后广播脱敏快照', async t => {
+test('对话模型配置决定可用性，旧开关不拦截，成功落盘后广播脱敏快照', async t => {
   const key = Symbol.for(`ai-config-sync-${randomUUID()}`);
   const handlers = new Map<string, (...args: unknown[]) => unknown>();
   const events: { window: number; channel: string; config: AiConfig }[] = [];
@@ -67,12 +67,20 @@ test('首次保存对话模型自动启用，后续保留开关选择；仅成�
       assert.equal(reopened.readConfig().aiEnabled, true);
       assert.equal(reopened.readConfig().hasConfiguredModel, true);
     } finally { reopened.close(); }
-    await mutate('ai:setEnabled', { aiEnabled: false });
+    const configPath = join(dir, 'ai-config.json');
+    const legacy = { ...ai.readConfig(), aiEnabled: false, aiExplicitlyDisabled: true };
+    writeFileSync(configPath, JSON.stringify(legacy), 'utf8');
+    assert.equal((await invoke('ai:config')).aiEnabled, true, 'An old disabled flag cannot hide a configured model');
+    assert.equal(handlers.has('ai:setEnabled'), false);
+    writeFileSync(configPath, JSON.stringify({ ...legacy, providers: [], aiEnabled: true }), 'utf8');
+    assert.equal((await invoke('ai:config')).aiEnabled, false, 'A model needs a saved supplier');
+    writeFileSync(configPath, JSON.stringify(legacy), 'utf8');
+
     const added = await mutate('ai:model:save', { providerId, name: 'second' });
-    assert.equal(added.aiEnabled, false, 'Adding another model respects a manually disabled assistant');
-    assert.equal((await mutate('ai:model:activate', added.models[1].id)).aiEnabled, false);
-    assert.equal((await mutate('ai:model:save', { id: model.models[0].id, providerId, name: 'renamed' })).aiEnabled, false);
-    assert.equal((await mutate('ai:provider:save', { ...provider, id: providerId, name: 'Renamed supplier' })).aiEnabled, false);
+    assert.equal(added.aiEnabled, true);
+    assert.equal((await mutate('ai:model:activate', added.models[1].id)).aiEnabled, true);
+    assert.equal((await mutate('ai:model:save', { id: model.models[0].id, providerId, name: 'renamed' })).aiEnabled, true);
+    assert.equal((await mutate('ai:provider:save', { ...provider, id: providerId, name: 'Renamed supplier' })).aiEnabled, true);
     const before = events.length;
     await assert.rejects(invoke('ai:model:save', { providerId, name: 'second' }));
     assert.equal(events.length, before, 'Rejected input must not publish a change');
@@ -86,7 +94,7 @@ test('首次保存对话模型自动启用，后续保留开关选择；仅成�
     assert.equal(removed.models.length, 0);
     assert.equal(removed.aiEnabled, false);
     const replacement = await mutate('ai:provider:save', provider);
-    assert.equal((await mutate('ai:model:save', { providerId: replacement.providers[0].id, name: 'replacement' })).aiEnabled, false, 'Deleting all models and configuring again is not the first setup');
+    assert.equal((await mutate('ai:model:save', { providerId: replacement.providers[0].id, name: 'replacement' })).aiEnabled, true, 'Reconfiguring a conversation model makes it available again');
   } finally {
     t.mock.restoreAll();
     ai.close(); todo.close();

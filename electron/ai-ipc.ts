@@ -7,7 +7,7 @@ import type { AiConfig } from '../shared/workbench-api';
 import { applyTodoProposal } from './todo-proposal';
 import { previewTodoActions } from '../shared/todo-proposal';
 import { randomUUID } from 'node:crypto';
-import { ipcMain, safeStorage, BrowserWindow, shell } from 'electron';
+import { ipcMain as electronIpc, safeStorage, BrowserWindow, shell } from 'electron';
 import { z } from 'zod';
 import type { Store } from '../modules/todo/store';
 import type { CopyStore } from '../modules/copywriting/store';
@@ -61,9 +61,8 @@ function activeConnection(ai: AiStore): { provider: StoredProvider; model: Store
   const provider = config.providers.find(item => item.id === model.providerId);
   return provider ? { provider, model } : null;
 }
-function emitChat(chat: ChatSession): void {
-  for (const win of BrowserWindow.getAllWindows()) win.webContents.send('ai:chat', chat);
-}
+let broadcast = (channel: string, value?: unknown): void => { for (const win of BrowserWindow.getAllWindows()) win.webContents.send(channel, value); };
+function emitChat(chat: ChatSession): void { broadcast('ai:chat', chat); }
 function emitChatWithToken(ai: AiStore, token: string): void {
   for (const summary of ai.chats()) {
     const chat = ai.chat(summary.id);
@@ -75,10 +74,14 @@ function assertUniqueName(items: { id: string; name: string }[], name: string, e
   if (items.some(item => item.id !== exceptId && item.name.toLocaleLowerCase('zh-CN') === normalized)) throw new Error(message);
 }
 function todoChanged(): void {
-  for (const win of BrowserWindow.getAllWindows()) win.webContents.send('todo:changed');
+  broadcast('todo:changed');
 }
 
-export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: BaziStore, reading: ReadingStore, browserAutomation?: BrowserAutomation): void {
+export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: BaziStore, reading: ReadingStore, browserAutomation?: BrowserAutomation, transport?: { ipc: Pick<typeof electronIpc, 'handle' | 'on'>; emit(channel: string, value?: unknown): void }): void {
+  const ipcMain = transport?.ipc ?? electronIpc;
+  if (transport) broadcast = transport.emit;
+  const linked = (id: string): boolean => !!ai.db.prepare("SELECT name FROM sqlite_master WHERE name='bot_chat_links'").get() && !!ai.db.prepare('SELECT 1 FROM bot_chat_links WHERE chat_id=?').get(id);
+  const assertLegacyWrite = (id: string): void => { if (linked(id)) throw new Error('DRAFT_PROTOCOL_REQUIRED: Bot 对话请通过工作台的新入口操作；历史记录仅供查阅'); };
   const configSummary = (): AiConfig => {
     const config = ai.readConfig();
     const providers: AIProvider[] = config.providers.map(({ id, kind, name, endpoint, protocol, apiKey }) => ({ id, kind, name, endpoint, protocol, hasKey: Boolean(apiKey) }));
@@ -98,7 +101,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
   const mutateConfig = (change: (config: ReturnType<AiStore['readConfig']>) => ReturnType<AiStore['readConfig']>): void => {
     ai.writeConfig(change(ai.readConfig()));
     const summary = configSummary();
-    for (const win of BrowserWindow.getAllWindows()) win.webContents.send('ai:config-changed', summary);
+    broadcast('ai:config-changed', summary);
   };
 
   ipcMain.handle('ai:config', () => configSummary());
@@ -106,14 +109,6 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     const url = new URL(z.string().url().parse(value));
     if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('仅支持打开网页链接');
     await shell.openExternal(url.href);
-  });
-  ipcMain.handle('ai:setEnabled', (_event, input: unknown) => {
-    const data = z.object({ aiEnabled: z.boolean() }).strict().parse(input);
-    if (data.aiEnabled && !activeConnection(ai)) throw new Error('开启 AI 前,请先添加供应商和模型');
-    mutateConfig(config => ({ ...config, aiEnabled: data.aiEnabled }));
-    cancelRequests();
-    pending.clear();
-    return configSummary();
   });
   ipcMain.handle('ai:provider:save', (_event, input: unknown) => {
     const data = z.object({
@@ -150,7 +145,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     const config = ai.readConfig();
     if (!config.providers.some(provider => provider.id === providerId)) throw new Error('供应商不存在');
     const models = config.models.filter(model => model.providerId !== providerId);
-    mutateConfig(current => ({ ...current, providers: current.providers.filter(p => p.id !== providerId), models, aiEnabled: models.length ? current.aiEnabled : false }));
+    mutateConfig(current => ({ ...current, providers: current.providers.filter(p => p.id !== providerId), models }));
     cancelRequests();
     pending.clear();
     return configSummary();
@@ -179,8 +174,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
       next = { id: randomUUID(), providerId: data.providerId, name: data.name, ...(data.supportsImages === undefined ? {} : { supportsImages: data.supportsImages }) };
       models.push(next);
     }
-    mutateConfig(current => ({ ...current, models: [...models], activeModelId: current.activeModelId || next.id,
-      aiEnabled: current.aiEnabled || !current.hasConfiguredModel, hasConfiguredModel: true }));
+    mutateConfig(current => ({ ...current, models: [...models], activeModelId: current.activeModelId || next.id, hasConfiguredModel: true }));
     return configSummary();
   });
   ipcMain.handle('ai:model:remove', (_event, id: unknown) => {
@@ -190,7 +184,6 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     mutateConfig(current => ({
       ...current,
       models: current.models.filter(m => m.id !== modelId),
-      aiEnabled: current.models.filter(m => m.id !== modelId).length ? current.aiEnabled : false,
       activeModelId: current.activeModelId === modelId ? '' : current.activeModelId,
     }));
     cancelRequests();
@@ -303,6 +296,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     const activeId = ai.setting('activeChatId', '');
     const selected = id ? z.string().uuid().parse(id) : activeId;
     const chat = selected ? ai.chat(selected) : ai.newChat();
+    if (linked(chat.id)) return chat;
     if (!activeRequests.has(chat.id)) {
       for (const entry of chat.entries) if (entry.actionState === 'pending' && !pending.has(entry.proposal?.token ?? entry.copyProposal?.token ?? '')) entry.actionState = 'expired';
     }
@@ -317,26 +311,31 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     z.object({ module: z.literal('workbench'), viewId: z.string().min(1) }).strict(),
   ]);
   ipcMain.handle('ai:chat:new', (_event, tag: unknown) => {
+    if (ai.db.prepare("SELECT name FROM sqlite_master WHERE name='bots'").get()) throw new Error('每个 Bot 已有主对话，请从 Bot 导航继续');
     const scope: AiScope = tag === undefined || tag === null ? { module: 'todo' } : scopeSchema.parse(tag);
     return ai.newChat(scope);
   });
   ipcMain.handle('ai:chat:rename', (_event, id: unknown, title: unknown) => {
+    assertLegacyWrite(z.string().uuid().parse(id));
     const updated = ai.renameChat(z.string().uuid().parse(id), z.string().parse(title));
     emitChat(updated);
     return updated;
   });
   ipcMain.handle('ai:chat:remove', (_event, id: unknown) => {
     const chatId = z.string().uuid().parse(id);
+    assertLegacyWrite(chatId);
     if (activeRequests.has(chatId)) throw new Error('这条对话正在生成，请先停止生成');
     for (const [token, item] of pending) if (item.sessionId === chatId) pending.delete(token);
     return ai.deleteChat(chatId);
   });
   ipcMain.handle('ai:chat:draft', (_event, id: unknown, text: unknown) => {
+    assertLegacyWrite(z.string().uuid().parse(id));
     const chat = ai.chat(z.string().uuid().parse(id));
     chat.draft = z.string().max(10000).parse(text);
     ai.saveChat(chat);
   });
   ipcMain.handle('ai:chat:context', (_event, id: unknown, rawScope: unknown) => {
+    assertLegacyWrite(z.string().uuid().parse(id));
     const chat = ai.chat(z.string().uuid().parse(id));
     const scope = scopeSchema.parse(rawScope) as AiScope;
     if (!sameAiWorkbench(chat, scope)) throw new Error('只能关联同一工作台内的页面');
@@ -350,6 +349,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
   });
 
   const ask = async (sessionId: string, text: string, turnContext: unknown, owner: WebContents, isMainFrame: boolean): Promise<void> => {
+    assertLegacyWrite(sessionId);
     const request = z.object({ sessionId: z.string().uuid(), text: z.string().trim().min(1).max(10000, '输入最多10000字') }).strict().parse({ sessionId, text });
     const context = z.object({
       baziSystem: z.enum(['bazi', 'ziwei', 'astro']).optional(),
@@ -362,7 +362,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     }).strict().parse(turnContext ?? {});
     const selectedSystem = context.baziSystem ?? 'bazi';
     const connection = activeConnection(ai);
-    if (!ai.readConfig().aiEnabled || !connection) throw new Error('请先在 AI 设置中配置并启用');
+    if (!ai.readConfig().aiEnabled || !connection) throw new Error('请先在模型配置中添加对话模型');
     if (activeRequests.has(request.sessionId)) throw new Error('这条对话正在生成，请先停止生成');
     const chat = ai.chat(request.sessionId);
     const priorScope = chatContextScope(chat);
@@ -602,7 +602,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
         entry.copyUndo = { draftId, beforeTitle: before.title, beforeBody: before.body, appliedTitle: saved.title, appliedBody: saved.body, appliedAt: saved.updatedAt };
         ai.saveChat(resolved);
       }
-      for (const win of BrowserWindow.getAllWindows()) win.webContents.send('copy:changed');
+      broadcast('copy:changed');
       emitChatWithToken(ai, tokenText);
       return null;
     }
@@ -635,7 +635,7 @@ export function registerAiIpc(store: Store, ai: AiStore, copy: CopyStore, bazi: 
     found.entry.actionState = 'undone';
     delete found.entry.copyUndo;
     emitChat(ai.saveChat(found.chat));
-    for (const win of BrowserWindow.getAllWindows()) win.webContents.send('copy:changed');
+    broadcast('copy:changed');
     return null;
   });
 }

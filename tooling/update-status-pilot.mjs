@@ -199,7 +199,8 @@ async function inspectGeometry(page, expected) {
       && action.innerText.trim() === expected.action && action.disabled === expected.disabled
       && (action.getAttribute('aria-busy') === 'true') === expected.busy;
   }, { labels: expected.labels, action: expected.action, disabled: expected.disabled, busy: ['checking', 'downloading'].includes(expected.key) });
-  await page.locator('.set-rows').evaluate(async element => {
+  await updaterRow(page).evaluate(async row => {
+    const element = row.closest('.set-rows') ?? row;
     await Promise.all(element.getAnimations({ subtree: true }).filter(animation => animation.effect?.getTiming().iterations !== Infinity).map(animation => animation.finished.catch(() => {})));
   });
   const value = await updaterRow(page).evaluate(element => {

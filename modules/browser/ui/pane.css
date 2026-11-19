@@ -131,12 +131,7 @@
 .browser-record-heading > .browser-record-state { padding: 6px 10px; border-radius: var(--r-ctl); background: var(--hairline); font-size: var(--type-control); }
 .browser-record-heading > .browser-record-state[data-status="passed"] { background: color-mix(in srgb, var(--avatar-teal) 9%, transparent); }
 .browser-record-state[data-status="failed"], .browser-record-state[data-status="interrupted"], .browser-check-state[data-status="failed"], .browser-record-operations [data-status="error"] { color: var(--danger); }
-.browser-record-tabs { border-bottom: 1px solid var(--hairline); }
-.browser-record-tabs .segmented { display: inline-flex; border: 0; padding: 0; border-radius: 0; background: none; }
-.browser-record-tabs .segmented::before { display: none; }
-.browser-record-tabs .segmented button { min-height: 44px; padding: 10px 12px; gap: 8px; border-radius: 0; border-bottom: 2px solid transparent; color: var(--ink-2); font-size: var(--type-section); }
-.browser-record-tabs .segmented button[aria-checked="true"] { color: var(--acc-deep); border-bottom-color: var(--acc-deep); }
-.browser-record-tabs .segmented button:focus-visible { outline: 2px solid var(--acc-deep); outline-offset: -2px; }
+.browser-record-tabs { padding-bottom: 6px; border-bottom: 1px solid var(--hairline); }
 .browser-record-tabs .browser-record-count { order: 1; border-radius: 999px; }
 .browser-record-tabs [aria-checked="true"] .browser-record-count { background: var(--acc-soft); color: var(--acc-deep); }
 .browser-record-content { flex: 1 0 auto; }
@@ -184,7 +179,6 @@
 }
 @media (forced-colors: active) {
   .browser-task-item[aria-current="true"] { outline: 2px solid Highlight; outline-offset: -3px; }
-  .browser-record-tabs .segmented button[aria-checked="true"] { border-bottom-color: Highlight; }
 }
 .browser-history-item { display: flex; flex-direction: column; gap: 4px; text-align: left; width: 100%; padding: 10px; border-radius: var(--r-ctl); cursor: pointer; overflow-wrap: anywhere; }
 .browser-history-item:hover { background: var(--glass-hi); }

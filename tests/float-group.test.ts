@@ -1,8 +1,14 @@
 import test from 'node:test';
+import { registerHooks } from 'node:module';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import { createElement, act } from 'react';
 import { readFileSync } from 'node:fs';
+
+const styles = registerHooks({ load(url, context, next) {
+  return url.endsWith('/calendar-workspace.css') ? { format: 'module', source: '', shortCircuit: true } : next(url, context);
+} });
+test.after(() => styles.deregister());
 
 // Exercise the real React component through the physical event ordering that
 // previously closed the mini picker before its option's click could run.
@@ -20,8 +26,8 @@ test('floating picker survives pointerdown, displays real status and cancels wit
   const { FloatAiChat } = await import('../src/views/FloatTodo');
   const { createRoot } = await import('react-dom/client');
   const root = createRoot(dom.window.document.getElementById('root')!);
-  const task = { id: 'done', title: '已完成但旧截止日期的事项', kind: 'task', status: 'done', dueAt: '2000-01-01T00:00:00Z', plannedDate: '2000-01-01', deletedAt: null };
-  const tasks = [task, { ...task, id: 'overdue', status: 'todo', title: '很长的未完成事项' }, { ...task, id: 'doing', status: 'doing', dueAt: '2099-01-01T23:00:00Z', title: '进行中的事项' }, { ...task, id: 'meeting', kind: 'meeting', status: 'todo', endAt: '2099-01-01T23:00:00Z', title: '日程按结束时间判断' }];
+  const task = { id: 'done', title: '已完成但旧截止日期的事项', kind: 'task', status: 'done', dateAt: '2000-01-01T00:00:00Z', deletedAt: null };
+  const tasks = [task, { ...task, id: 'overdue', status: 'todo', title: '很长的未完成事项' }, { ...task, id: 'doing', status: 'doing', dateAt: '2099-01-01T23:00:00Z', title: '进行中的事项' }, { ...task, id: 'meeting', kind: 'meeting', status: 'todo', endAt: '2099-01-01T23:00:00Z', title: '日程按结束时间判断' }];
   const click = async (el: Element) => { await act(async () => el.dispatchEvent(new dom.window.Event('pointerdown', { bubbles: true }))); assert.equal(el.isConnected, true, 'pointerdown must not unmount the clicked option'); await act(async () => (el as HTMLElement).click()); };
   const find = (selector: string) => dom.window.document.querySelector(selector)!;
   try {
@@ -110,7 +116,7 @@ test('expanded and collapsed modify cards share the built-in suggestion hierarch
   const descriptors = names.map(name => Object.getOwnPropertyDescriptor(globalThis, name));
   names.forEach(name => Object.defineProperty(globalThis, name, { configurable: true, value: name === 'IS_REACT_ACT_ENVIRONMENT' ? true : name === 'window' ? dom.window : dom.window[name] }));
   const token = '11111111-1111-4111-8111-111111111111';
-  const entry = { id: 'e1', role: 'assistant', content: '建议修改截止时间', actionState: 'pending' as const, proposal: { token, message: '建议', actions: [{ type: 'update' as const, id: 'task-1', patch: { dueAt: '2026-10-31T15:59:00.000Z' } }], preview: [{ title: '完成第一篇博客', verb: '修改事项', fields: [{ label: '截止时间', before: '未设置', after: '2026-10-31 23:59' }] }] } };
+  const entry = { id: 'e1', role: 'assistant', content: '建议修改截止时间', actionState: 'pending' as const, proposal: { token, message: '建议', actions: [{ type: 'update' as const, id: 'task-1', patch: { dateAt: '2026-10-31T15:59:00.000Z' } }], preview: [{ title: '完成第一篇博客', verb: '修改事项', fields: [{ label: '截止时间', before: '未设置', after: '2026-10-31 23:59' }] }] } };
   let session = { id: 'chat', entries: [entry] };
   let applied: number[] | null = null;
   let emit: (next: typeof session) => void = () => {};
@@ -137,7 +143,7 @@ test('expanded and collapsed modify cards share the built-in suggestion hierarch
     assert.match(text(), /截止时间/);
     assert.match(text(), /修改前/);
     assert.match(text(), /修改后/);
-    assert.doesNotMatch(text(), /dueAt/);
+    assert.doesNotMatch(text(), /dateAt/);
     assert.ok(dom.window.document.querySelector('textarea[aria-label="AI 对话输入"]'), 'expanded card stays in the thread and keeps the composer');
     await act(async () => button('应用所选')!.click());
     assert.deepEqual(applied, [0]);
@@ -149,7 +155,7 @@ test('expanded and collapsed modify cards share the built-in suggestion hierarch
     assert.match(text(), /修改前/);
     assert.match(text(), /修改后/);
     assert.match(text(), /2026-10-31 23:59/);
-    assert.doesNotMatch(text(), /dueAt/);
+    assert.doesNotMatch(text(), /dateAt/);
     assert.ok(heights.includes(232), 'collapsed suggestion card grows just enough to stay readable');
     assert.ok(!heights.includes(300), 'collapsed suggestion card no longer uses the taller question height');
     await act(async () => button('应用所选')!.click());

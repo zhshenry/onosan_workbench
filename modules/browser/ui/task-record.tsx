@@ -56,9 +56,9 @@ export function BrowserTaskDetails({ task }: { task: BrowserTask }) {
     {task.pendingOrigin && <p>待授权站点：{task.pendingOrigin}</p>}
     {task.status === 'interrupted' && <p>重启只恢复地址和记录，不会自动重放网页操作；检查页面后在右侧 AI 助手重新提出操作要求。</p>}
     {(task.error || task.persistenceError) && <p className="ai-error" role="alert">{task.error || task.persistenceError}</p>}
-    <div className="browser-record-tabs"><Segmented value={view} onChange={setView} aria-label="任务记录内容" options={[
-      { value: 'checks', label: '页面检查', icon: <span className="browser-record-count" aria-hidden="true">{items.length}</span> },
-      { value: 'steps', label: '操作过程', icon: <span className="browser-record-count" aria-hidden="true">{task.steps.length}</span> },
+    <div className="browser-record-tabs"><Segmented variant="content" value={view} onChange={setView} aria-label="任务记录内容" options={[
+      { value: 'checks', label: '页面检查', icon: <><FileMagnifyingGlass size={16} aria-hidden="true" /><span className="browser-record-count" aria-hidden="true">{items.length}</span></> },
+      { value: 'steps', label: '操作过程', icon: <><ListChecks size={16} aria-hidden="true" /><span className="browser-record-count" aria-hidden="true">{task.steps.length}</span></> },
     ]} /></div>
     <div className="browser-record-content">
       <section aria-label="任务核验清单" hidden={view !== 'checks'}>

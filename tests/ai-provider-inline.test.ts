@@ -21,7 +21,7 @@ test('供应商不预置；两类页内连接配置隔离保存，保留草稿�
     const field = surface === 'llm' ? 'providers' : 'rlcdProviders';
     config = { ...config, [field]: config[field].map(provider => provider.id !== input.id ? provider : {
       ...provider, name: String(input.name), endpoint: String(input.endpoint), protocol: input.protocol,
-      hasKey: input.clearKey ? false : input.apiKey ? true : provider.hasKey,
+      hasKey: Boolean(input.apiKey) || provider.hasKey,
     }) };
     return structuredClone(config);
   };
@@ -41,6 +41,10 @@ test('供应商不预置；两类页内连接配置隔离保存，保留草稿�
   };
   const section = (surface: 'llm' | 'rlcd') => dom.window.document.querySelector<HTMLElement>(`section[aria-label="${surface === 'llm' ? '对话模型' : '决策模型（RLCD）'}"]`)!;
   const form = (surface: 'llm' | 'rlcd') => section(surface).querySelector<HTMLFormElement>('.ai-provider-inline')!;
+  const configButton = (surface: 'llm' | 'rlcd') => section(surface).querySelector<HTMLButtonElement>('.ai-config-provider-name > button[aria-expanded]')!;
+  const configPanel = (surface: 'llm' | 'rlcd') => dom.window.document.getElementById(configButton(surface).getAttribute('aria-controls')!)!;
+  const toggleConfig = (surface: 'llm' | 'rlcd') => act(async () => configButton(surface).click());
+  const name = (surface: 'llm' | 'rlcd') => form(surface).querySelector<HTMLInputElement>('input[id$="-name"]')!;
   const endpoint = (surface: 'llm' | 'rlcd') => form(surface).querySelector<HTMLInputElement>('.ai-provider-endpoint input')!;
   const key = (surface: 'llm' | 'rlcd') => form(surface).querySelector<HTMLInputElement>('.ai-config-secret input')!;
   const edit = async (input: HTMLInputElement, value: string) => act(async () => {
@@ -69,7 +73,19 @@ test('供应商不预置；两类页内连接配置隔离保存，保留草稿�
     };
     await remount();
     assert.equal(dom.window.document.querySelectorAll('.ai-config-provider-choice').length, 3);
+    assert.equal(dom.window.document.querySelectorAll('.ai-provider-inline').length, 0);
+    assert.equal(configButton('llm').getAttribute('aria-label'), '编辑配置');
+    assert.ok(configButton('llm').querySelector('svg'));
+    assert.equal(configButton('llm').getAttribute('aria-expanded'), 'false');
+    assert.ok(configPanel('llm').hasAttribute('inert'));
+    assert.equal(section('llm').querySelector('.ai-config-provider-summary')?.textContent, 'OpenAI Chat Completions · 密钥已保存');
+    assert.match(section('llm').querySelector('.ai-config-models')!.textContent!, /chat-model/);
+    await toggleConfig('llm');
+    await toggleConfig('rlcd');
     assert.equal(dom.window.document.querySelectorAll('.ai-provider-inline').length, 2);
+    assert.ok(configPanel('llm').contains(form('llm')));
+    assert.equal(configPanel('llm').hasAttribute('inert'), false);
+    assert.equal(name('llm').value, '我的对话服务');
     const ids = [...dom.window.document.querySelectorAll('[id]')].map(node => node.id);
     assert.equal(new Set(ids).size, ids.length, 'The two forms must not share label, input or error IDs');
     for (const label of dom.window.document.querySelectorAll<HTMLLabelElement>('.ai-provider-inline label')) assert.ok(dom.window.document.getElementById(label.htmlFor));
@@ -85,15 +101,31 @@ test('供应商不预置；两类页内连接配置隔离保存，保留草稿�
     assert.match(form('llm').querySelector('[role="alert"]')!.textContent!, /有效的 HTTP/);
     assert.ok(dom.window.document.getElementById(endpoint('llm').getAttribute('aria-describedby')!));
     await edit(endpoint('llm'), 'https://edited.example/v2');
+    await edit(name('llm'), '  我的对话服务新版  ');
+    await act(async () => form('llm').querySelector<HTMLButtonElement>('[aria-label="显示密钥"]')!.click());
+    assert.equal(key('llm').type, 'text');
+    await toggleConfig('llm');
+    assert.equal(form('llm'), null);
+    assert.ok(configPanel('llm').hasAttribute('inert'));
+    assert.equal(writes.length, 0);
+    await toggleConfig('llm');
+    assert.equal(name('llm').value, '  我的对话服务新版  ');
+    assert.equal(key('llm').type, 'password');
     await choose('另一个对话服务');
+    assert.equal(form('llm'), null);
+    await toggleConfig('llm');
     assert.equal(endpoint('llm').value, 'https://other.example/v1');
     await choose('我的对话服务');
+    await toggleConfig('llm');
     assert.equal(endpoint('llm').value, 'https://edited.example/v2');
     assert.equal(key('llm').value, 'synthetic-inline-key');
     await render('另一个对话服务');
     await render();
     assert.equal(endpoint('llm').value, 'https://edited.example/v2');
     await remount();
+    assert.equal(form('llm'), null);
+    await toggleConfig('llm');
+    assert.equal(name('llm').value, '  我的对话服务新版  ');
     assert.equal(key('llm').value, 'synthetic-inline-key', 'Leaving and returning keeps unsaved keys in renderer memory');
     assert.equal(dom.window.localStorage.length, 0);
     assert.equal(dom.window.sessionStorage.length, 0);
@@ -107,24 +139,29 @@ test('供应商不预置；两类页内连接配置隔离保存，保留草稿�
     await submit('llm');
     assert.equal(writes.at(-1)!.surface, 'llm');
     assert.equal(writes.at(-1)!.input.id, 'a');
+    assert.equal(writes.at(-1)!.input.name, '我的对话服务新版');
+    assert.equal(writes.at(-1)!.input.protocol, 'openai-chat');
     assert.equal(writes.at(-1)!.input.apiKey, 'synthetic-inline-key');
     assert.equal(config.providers[0].endpoint, 'https://edited.example/v2');
+    assert.equal(form('llm'), null);
+    assert.equal(configButton('llm').getAttribute('aria-expanded'), 'false');
+    assert.equal(section('llm').querySelector('.ai-config-provider-title strong')?.textContent, '我的对话服务新版');
+    await toggleConfig('llm');
     assert.equal(key('llm').value, '');
     assert.equal(form('llm').querySelector<HTMLButtonElement>('[type="submit"]')!.disabled, true);
+    await toggleConfig('rlcd');
     await edit(endpoint('rlcd'), 'https://new-decision.example/v3');
     await submit('rlcd');
     assert.equal(writes.at(-1)!.surface, 'rlcd');
     assert.equal(writes.at(-1)!.input.id, 'r');
     assert.equal(config.rlcdProviders[0].endpoint, 'https://new-decision.example/v3');
+    assert.equal(form('rlcd'), null);
     assert.equal(config.providers[0].endpoint, 'https://edited.example/v2');
     await edit(endpoint('llm'), 'https://edited.example/v3');
     await submit('llm');
     assert.equal(writes.at(-1)!.input.apiKey, undefined, 'Blank key input preserves the saved key');
     assert.equal(config.providers[0].hasKey, true);
-    await act(async () => form('llm').querySelector<HTMLButtonElement>('.ai-config-key-help button')!.click());
-    await submit('llm');
-    assert.equal(writes.at(-1)!.input.clearKey, true);
-    assert.equal(config.providers[0].hasKey, false);
+    assert.equal(form('llm'), null);
     assert.equal(config.aiEnabled, true);
     assert.equal(config.models[0].name, 'chat-model');
   } finally {

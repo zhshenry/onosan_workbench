@@ -1,8 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { registerHooks } from 'node:module';
 import { act, createElement, StrictMode } from 'react';
 import { JSDOM } from 'jsdom';
 import type { ChatSession, ChatSummary } from '../shared/todo-contracts';
+
+const styles = registerHooks({ load(url, context, next) {
+  return url.endsWith('/calendar-workspace.css') ? { format: 'module', source: '', shortCircuit: true } : next(url, context);
+} });
+test.after(() => styles.deregister());
 
 function chat(id: string, module?: ChatSession['module']): ChatSession {
   return { id, title: id, updatedAt: '2026-10-17T00:00:00.000Z', entries: [], draft: '', ...(module ? { module } : {}), ...(module === 'copy' ? { draftId: 'synthetic-draft' } : {}) };

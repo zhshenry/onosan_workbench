@@ -8,7 +8,7 @@
 
 /* ---- 左:笔记列表 ---- */
 .copy-list { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--workbench-muted-bg); border-right: 1px solid var(--hairline); }
-.copy-list .phead { flex: none; justify-content: flex-start; flex-wrap: wrap; min-height: 76px; gap: 8px; border-bottom: 1px solid var(--hairline); margin: 0; padding: 18px 16px; }
+.copy-list .phead { flex: none; justify-content: flex-start; flex-wrap: wrap; min-height: var(--project-header-height); gap: 8px; border-bottom: 1px solid var(--hairline); margin: 0; padding: var(--page-header-padding-block) 16px; }
 .copy-list .ptitle { font-size: var(--type-body); }
 .copy-count { font-size: var(--type-support); font-weight: 700; color: var(--ink-3); background: var(--acc-soft); border-radius: 999px; padding: 1px 8px; }
 .copy-new { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; height: 30px; padding-inline: 10px; }
@@ -33,10 +33,9 @@
 
 /* ---- 右:编辑器 ---- */
 .copy-editor { min-width: 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
-.copy-editor-head { flex: none; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; min-height: 76px; gap: 12px 16px; padding: 15px 24px; border-bottom: 1px solid var(--hairline); }
+.copy-editor-head { flex: none; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; min-height: var(--project-header-height); gap: 12px 16px; padding: var(--page-header-padding-block) var(--page-header-padding-inline); border-bottom: 1px solid var(--hairline); }
 .copy-editor-head > div:first-child { min-width: 0; }
-.copy-eyebrow { display: block; color: var(--acc-deep); font-size: var(--type-support); font-weight: 700; }
-.copy-editor-head h1 { font-size: var(--type-lead); line-height: 1.35; font-weight: 800; margin-top: 2px; }
+.copy-editor-head h1 { font-size: var(--type-lead); line-height: 1.35; font-weight: 700; margin: 0; }
 .copy-save-state { flex: none; display: inline-flex; align-items: center; gap: 8px; }
 .copy-saved { flex: none; color: var(--ink-3); font-size: var(--type-support); font-variant-numeric: tabular-nums; }
 .copy-saved.error { color: var(--danger); font-weight: 700; }

@@ -1,0 +1,23 @@
+/* Content navigation shares one treatment; mode selectors keep their segmented surface. */
+:root {
+  --page-header-height: 80px;
+  --page-header-padding-block: 12px;
+  --page-header-padding-inline: 20px;
+  --page-action-height: 36px;
+  --compact-action-height: 32px;
+  --project-header-height: 64px;
+  --project-header-padding-block: 10px;
+  --content-tab-height: 44px;
+}
+.content-tabs { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 0; overflow-x: auto; scrollbar-width: thin; }
+.content-tabs > button { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: var(--content-tab-height); padding: 4px 10px; margin: 0; border: 1px solid transparent; border-radius: var(--r-ctl); background: transparent; box-shadow: none; color: var(--content-tab-text, var(--ink-2)); font-size: var(--type-body); font-weight: 500; white-space: nowrap; cursor: pointer; scroll-margin-inline: 4px; transition: color .16s var(--ease), background .16s var(--ease), border-color .16s var(--ease); }
+.content-tabs > button > svg { flex: none; }
+.content-tabs > button:where(:not(:disabled)):hover { background: var(--content-tab-hover, var(--acc-soft)); color: var(--content-tab-accent, var(--acc-deep)); }
+.content-tabs > button:is([aria-current='page'], [aria-selected='true'], [aria-checked='true']) { border-color: var(--content-tab-accent, var(--acc-deep)); background: var(--content-tab-surface, var(--control-bg)); color: var(--content-tab-accent, var(--acc-deep)); font-weight: 600; }
+.content-tabs > button:focus-visible { outline: 2px solid var(--content-tab-accent, var(--acc-ring)); outline-offset: -3px; }
+.content-tabs > button:disabled { opacity: .45; cursor: default; }
+@media (prefers-reduced-motion: reduce) { .content-tabs > button { transition: none; } }
+@media (forced-colors: active) {
+  .content-tabs > button:is([aria-current='page'], [aria-selected='true'], [aria-checked='true']) { border-color: Highlight; background: Canvas; color: CanvasText; }
+  .content-tabs > button:focus-visible { outline-color: Highlight; }
+}
