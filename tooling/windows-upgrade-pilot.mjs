@@ -79,10 +79,14 @@ try {
   let taskId;
   await check('Create a persisted task and choose exit-on-close through the old UI', async () => {
     assert.equal((await page.evaluate(() => window.workbench.todo.state())).tasks.length, 0);
+    const usesBots = (await page.locator('.bot-shell').count()) > 0;
     const homeCreate = page.locator('#view-home').getByRole('button', { name: '新增', exact: true });
     if (await homeCreate.isVisible()) await homeCreate.click();
     else {
-      await navigateInstalled(page, 'life', '日程和待办', 'todo');
+      if (usesBots) {
+        await navigateInstalled(page, 'todo', null, 'todo');
+        await page.getByRole('radiogroup', { name: '日程待办视图' }).getByRole('radio', { name: '待办', exact: true }).click();
+      } else await navigateInstalled(page, 'life', '日程和待办', 'todo');
       await page.locator('#view-todo').getByRole('button', { name: '新增', exact: true }).click();
     }
     const dialog = page.getByRole('dialog', { name: '新增事项', exact: true });
@@ -90,11 +94,14 @@ try {
     await dialog.getByRole('button', { name: '创建', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });
     taskId = (await page.evaluate(() => window.workbench.todo.state())).tasks.find(task => task.title === title).id;
-    await page.locator('.rail [data-workbench="settings"]').click();
-    if (!await page.getByRole('button', { name: '退出应用', exact: true }).isVisible()) {
-      const settings = page.getByRole('dialog', { name: '设置', exact: true });
-      const categories = await settings.isVisible() ? settings.locator('.settings-sections') : page.locator('.tree');
-      await categories.getByRole('button', { name: /^(?:通用|通用与外观|通用&外观)$/ }).click();
+    if (usesBots) await navigateInstalled(page, 'settings', '通用');
+    else {
+      await page.locator('.rail [data-workbench="settings"]').click();
+      if (!await page.getByRole('button', { name: '退出应用', exact: true }).isVisible()) {
+        const settings = page.getByRole('dialog', { name: '设置', exact: true });
+        const categories = await settings.isVisible() ? settings.locator('.settings-sections') : page.locator('.tree');
+        await categories.getByRole('button', { name: /^(?:通用|通用与外观|通用&外观)$/ }).click();
+      }
     }
     await page.getByRole('button', { name: '退出应用', exact: true }).click();
     await page.waitForFunction(() => window.workbench.settings.get().then(value => value.closeAction === 'exit'));
