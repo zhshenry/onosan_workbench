@@ -2,12 +2,12 @@
 
 ## 当前协议：OnO / CMO 统一事项日期 v4（2026-11-18）
 
-本节优先于下面的历史移植记录。用户已确认不再兼容 To-Do-List，同步升级 OnO 与 CMO，继续共用现有事项库；路径沿用 `%APPDATA%/To-Do-List/tasks.db`，不因此复制出另一套数据。
+本节优先于下面的历史移植记录。OnO 与 CMO 共用 `%APPDATA%/OnoCmoWorkbench/tasks.db`，与 To-Do-List 的数据库分开。新路径首次初始化时从 `%APPDATA%/To-Do-List/tasks.db` 只读导入事项和标签，在同一个事务内完成 v4 初始化。此后两端的主进程和 Bot 后台都使用工作台库。
 
 - 唯一事项日期为 `dateAt`：`null` 不设日期，`YYYY-MM-DD` 仅日期，带时区 ISO 字符串为具体时刻。日期分组、统计和截止判断从它推导，不再写 `plannedDate` / `dueAt`。
 - 普通待办的 `endAt` 可空；日程使用 `dateAt` 开始和 `endAt` 结束。`remindAt` 独立，设置完成期限不自动启用提醒，稍后提醒不改变事项日期。
 - 日期、时刻、格式化和迁移共用 `shared/todo-date.ts`；纯日期不经过 UTC 解析，也不伪造午夜时刻。未设日期不判断逾期，日期期限在本地日结束后才逾期。
-- 首次打开 v3 库时，`modules/todo/date-migration.ts` 在写事务内备份原始 payload 到 `todo_date_backup_v3`。有旧 `dueAt` 时优先保留它，否则保留 `plannedDate`；身份、状态、提醒、标签、备注、完成记录和来源元数据不变。迁移成功才提交 v4，失败整批回滚；并发启动在取得写锁后复核版本。
+- 单独导入旧库时保留原文件。有旧 `dueAt` 时优先保留它，否则保留 `plannedDate`。任务身份、状态、提醒、标签、备注、完成记录和来源元数据保留。直接打开既有的 v3 工作台库时，`modules/todo/date-migration.ts` 在写事务内备份原始 payload 到 `todo_date_backup_v3`。
 - 新旧格式只在读取旧数据及迁移时转换，持久化和新 API 仅使用新版字段。历史会话原文保留，旧日期格式的待确认建议需重新生成。
 - CMO 的 WeLink 映射改为 `event.start -> dateAt`，结束仍用 `endAt`。外部日程身份、账号范围、全天/跨天语义、去重和提醒认领保持；OnO 也按外部只读规则允许完成、禁止改期和删除。
 - 两个应用必须使用支持 v4 的代码共同运行；不启动真实用户库的测试迁移。备份表保留用于人工核对，程序版本回退不等于数据版本回退。
@@ -19,7 +19,7 @@
 工作台的待办内核 = 上游 To-Do-List 的清单化移植。本文件记录"上游文件 ↔ 工作台文件"的映射与基准版本。
 **同步纪律**:To-Do-List 每次发版后,对下表逐文件 diff 上游新 tag,搬运改动并更新基准版本;搬运后必须跑 `npm test` + `npm run verify`。
 
-## ⚠ 跨应用共享数据(用户决策 2026-09-23)
+### 历史约定：与 To-Do-List 共用数据库（已被当前协议替代）
 
 工作台**直接读写 To-Do-List 的数据库文件** `%APPDATA%/To-Do-List/tasks.db`(见 `electron/main.ts` 的 `TODO_DB`),两边同库同表、数据互通。由此产生的硬性约束:
 

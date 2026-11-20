@@ -98,7 +98,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
 export interface TodoDbInfo {
   path: string;
   connected: boolean;
-  /** 上游 To-Do-List 的 PRAGMA user_version */
+  /** 工作台事项库的 PRAGMA user_version */
   schemaVersion: number;
   taskCount: number;
   categoryCount: number;

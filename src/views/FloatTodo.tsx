@@ -380,7 +380,7 @@ export function FloatTodoApp() {
           <div className="form-body">
             <div className="sheet-card">
               <pre className="review-content">{review}</pre>
-              <p className="field-help">以上由本地事项记录生成,与 To-Do-List 同库同源。点击下方按钮,会把相关事项发送到已配置的模型进行总结。</p>
+              <p className="field-help">以上由工作台的本地事项记录生成。点击下方按钮会把相关事项发送到已配置的模型进行总结。</p>
               <button className="btn btn-pri btn-sm" onClick={() => { setReview(null); askAI('请根据今日待办、日程和进展生成简短的中文每日复盘:完成事项、未完成事项、明日建议。只返回总结,不修改任何事项。'); }}>在 AI 助手中总结</button>
             </div>
           </div>

@@ -43,7 +43,7 @@ async function main() {
     ...(prerelease ? ['本版为预发布版，请手动下载测试；不替换正式最新版。'] : []),
     '- 安装版（Setup）支持应用内自动下载更新和重启安装。',
     '- 便携版（Portable）需手动下载完整 ZIP 替换。',
-    '- 应用数据保存在 %APPDATA%/OnoWorkbench；待办使用 %APPDATA%/To-Do-List/tasks.db。',
+    '- 应用数据保存在 %APPDATA%/OnoWorkbench。待办与 CMO 共用 %APPDATA%/OnoCmoWorkbench/tasks.db。',
     '', '## 更新内容', '', changes,
   ].join('\n');
   const createArgs = ['release', 'create', tag, '--repo', repo, '--verify-tag', '--draft', ...(prerelease ? ['--prerelease'] : []), '--title', releaseTitle, '--notes-file', 'release/metadata/release-notes.md'];

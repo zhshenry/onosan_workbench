@@ -35,7 +35,7 @@ export function TodoProposalCard({ entry, busy, apply, discard, variant }: {
         {pending ? failure ? '本次未应用' : '待确认' : stateLabels[state as keyof typeof stateLabels] ?? '未应用'}
       </span>
     </header>
-    {(!pending || !!failure) && <p className="todo-proposal-intro">{pending ? '本次操作未写入，请查看原因。' : state === 'applied' ? '变更结果保留如下。' : '以下建议未写入。'}</p>}
+    {state !== 'applied' && (!pending || !!failure) && <p className="todo-proposal-intro">{pending ? '本次操作未写入，请查看原因。' : '以下建议未写入。'}</p>}
     {proposal.actions.map((action, index) => {
       const preview: ProposalPreview = proposal.preview?.[index] ?? { title: action.type === 'create' ? action.task.title : action.type === 'create_category' ? action.category.name : '原始目标快照不可用', verb: '操作详情', fields: [] };
       const applied = receipt?.appliedIndices.includes(index);

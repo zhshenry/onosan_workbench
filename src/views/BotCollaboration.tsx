@@ -70,7 +70,7 @@ export const isCollaborationTask = (task: BotTask) => !task.parentTaskId && !!(t
 
 export function projectBotCollaboration(task: BotTask, detail: BotCollaboration, entryId?: string) {
   const showActions = !entryId || entryId === task.assistantEntryId;
-  const blocked = showActions ? detail.tasks.filter(item => ['failed', 'interrupted', 'waiting_resource'].includes(item.status)) : [];
+  const blocked = showActions ? detail.tasks.filter(item => item.status === 'waiting_resource' || item.id !== task.id && ['failed', 'interrupted'].includes(item.status)) : [];
   const replyIds = task.assistantEntryIds ?? (task.assistantEntryId ? [task.assistantEntryId] : []);
   const anchor = (message: BotMessage) => message.sourceAssistantEntryId && replyIds.includes(message.sourceAssistantEntryId) ? message.sourceAssistantEntryId : replyIds[0];
   const actions = detail.actions.filter(action => {
@@ -88,10 +88,10 @@ export function projectBotCollaboration(task: BotTask, detail: BotCollaboration,
   return { events, actions, blocked };
 }
 
-export function BotCollaborationCard({ task, entryId, state, groups, cards, copyBusy, onExchange, onAmend, onLayout, onRefresh }: {
+export function BotCollaborationCard({ task, entryId, state, groups, cards, copyBusy, onExchange, onAmend, onLayout, onRefresh, onOpenWork }: {
   task: BotTask; entryId?: string; state?: CollaborationState; groups?: readonly BotChatEventGroup[];
   cards: BotCard[]; copyBusy: boolean; onExchange(message: BotMessageLink): void;
-  onAmend(target: NonNullable<BotSubmit['target']>, label: string): void; onLayout(): void; onRefresh(): void;
+  onAmend(target: NonNullable<BotSubmit['target']>, label: string): void; onLayout(): void; onRefresh(): void; onOpenWork(id: string): void;
 }) {
   const [actionError, setActionError] = useState(''), [busy, setBusy] = useState(false);
   const detail = state?.detail, error = actionError || state?.error;
@@ -107,7 +107,8 @@ export function BotCollaborationCard({ task, entryId, state, groups, cards, copy
     {actions.map(action => {
       const owner = cards.find(bot => bot.id === action.botId);
       const name = owner?.name ?? 'Bot';
-      const content = <ActionCard action={action} refresh={refresh} copyBusy={copyBusy} />;
+      const content = <ActionCard key={action.id} action={action} owner={owner} onOpenWork={() => onOpenWork(action.taskId)} refresh={refresh} copyBusy={copyBusy} />;
+      if (action.status === 'failed') return content;
       if (['applied', 'discarded', 'undone'].includes(action.status)) {
         const status = action.status === 'applied' ? '已处理' : action.status === 'undone' ? '已撤销' : '已保留原内容';
         const label = action.kind === 'question' ? '补充回答' : action.kind === 'todo' ? '待办修改' : action.kind === 'copy' ? '文章修改' : '定时任务';

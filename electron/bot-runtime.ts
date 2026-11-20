@@ -103,9 +103,11 @@ export class BotRuntime implements BotExecutor {
     const notifications = task.kind === 'message' ? [] : this.store.notifications(bot.id);
     const pageScope = task.context.pageScope ?? scope;
     const browserPage = pageScope?.module === 'workbench' && ['browser', 'media-browser'].includes(pageScope.viewId);
+    const timeoutController = new AbortController();
+    const combined = AbortSignal.any([signal, timeoutController.signal]);
     let browser: BotBrowserConnection | undefined;
     if (browserPage) {
-      try { if (!this.options.browser) throw new Error('浏览器工作区尚未连接'); browser = await this.options.browser(task, signal); }
+      try { if (!this.options.browser) throw new Error('浏览器工作区尚未连接'); browser = await this.options.browser(task, combined); }
       catch (error) { this.store.updateTask(task.id, { status: 'waiting_resource', reason: error instanceof Error ? error.message : '浏览器不可用，请打开工作区后继续' }); host.changed({ kind: 'task', botId: task.botId, taskId: task.id }); return { reply: '' }; }
     }
     const selectedTaskIds = task.resources.filter(r => r.kind === 'todo').map(r => r.id);
@@ -132,6 +134,10 @@ export class BotRuntime implements BotExecutor {
       domain = buildReadingContribution(book, this.reading.all().vaultPath);
     }
     const chat = this.store.ai.chat(task.chatId);
+    if (task.runGeneration === 1 && !task.parentTaskId && (task.kind === 'chat' || task.kind === 'work')) {
+      const sent = chat.entries.findIndex(entry => entry.id === task.sourceMessageId && entry.role === 'user');
+      if (sent >= 0 && sent < chat.entries.length - 1) chat.entries.push(...chat.entries.splice(sent, 1));
+    }
     const unfinished = chat.entries.find(entry => entry.id === task.assistantEntryId && entry.streaming);
     const assistantId = randomUUID();
     const assistantEntryIds = [...new Set([...(task.assistantEntryIds ?? []), ...(task.assistantEntryId ? [task.assistantEntryId] : []), assistantId])];
@@ -285,8 +291,18 @@ export class BotRuntime implements BotExecutor {
       const object = owner.context.scope;
       return !!object && ['copy', 'bazi', 'reading'].includes(object.module) && !!scope && aiScopeKey(object) === aiScopeKey(scope) || owner.resources.some(ref => task.resources.some(current => current.kind === ref.kind && current.id === ref.id));
     }).slice(-24).map(e => ({ role: e.role, content: e.content }));
-    const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), browser ? 600000 : 180000);
-    const combined = AbortSignal.any([signal, controller.signal]);
+    const idleMinutes = browser ? 10 : 3, totalMinutes = browser ? 30 : 15;
+    let idleTimer: ReturnType<typeof setTimeout> | undefined;
+    const renewIdleTimeout = () => {
+      if (combined.aborted) return;
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => timeoutController.abort(new Error(`任务超时：连续 ${idleMinutes} 分钟无进展，已自动停止。`)), idleMinutes * 60_000);
+    };
+    const totalTimer = setTimeout(() => timeoutController.abort(new Error(`任务超时：已达到总时限 ${totalMinutes} 分钟，已自动停止。`)), totalMinutes * 60_000);
+    const clearRunTimers = () => { clearTimeout(idleTimer); clearTimeout(totalTimer); };
+    const timeoutReason = (): Error | undefined =>
+      timeoutController.signal.aborted && combined.reason === timeoutController.signal.reason ? timeoutController.signal.reason : undefined;
+    renewIdleTimeout();
     let reply = '';
     const activeTools = new Map<string, string>();
     let thinking = false, replying = false;
@@ -324,8 +340,11 @@ export class BotRuntime implements BotExecutor {
           onSession: path => { this.store.updateTask(task.id, { piSessionPath: path }); if (task.kind === 'chat') this.store.bindMainSession(task.chatId, path); },
           onControl: control => { if (control) this.controls.set(task.id, control); else this.controls.delete(task.id); },
           shouldYield: () => !currentRun() || this.store.task(task.id).status !== 'running', onResponseText: recordResponseText,
+          onProgress: renewIdleTimeout,
           measure: (stage, milliseconds) => host.emit('metric', { stage, milliseconds, taskId: task.id, rootTaskId: task.rootTaskId, runGeneration: task.runGeneration }),
         });
+      if (timeoutReason()) combined.throwIfAborted();
+      clearRunTimers();
       if (!currentRun()) return { reply: '' };
       for (const notification of notifications) this.store.consumeNotification(notification.id);
       reply = result.reply || reply;
@@ -341,9 +360,15 @@ export class BotRuntime implements BotExecutor {
       update(e => { recordThinkingPhase(e, false); e.content = reply || (this.store.task(task.id).status === 'waiting_bot' ? '' : this.store.task(task.id).reason || '等待后续处理'); e.streaming = false; e.thinkingActive = false; delete e.responsePhase; });
       await browser?.finish(); return { reply };
     } catch (error) {
-      update(e => { recordThinkingPhase(e, false); e.streaming = false; e.thinkingActive = false; delete e.responsePhase; e.error = error instanceof Error ? error.message : '执行失败'; for (const tool of e.tools ?? []) if (tool.status === 'running') tool.status = 'interrupted'; });
-      await browser?.finish(error instanceof Error ? error.message : '执行失败').catch(() => {}); throw error;
-    } finally { clearTimeout(timeout); flushEntry(); clearTimeout(entryTimer); }
+      const timeout = timeoutReason();
+      let message = timeout?.message ?? (error instanceof Error ? error.message : '执行失败');
+      if (timeout && this.store.all<BotArtifact>('bot_artifacts').some(artifact => artifact.taskId === task.id)) {
+        message += '已保存的交付件可在 Bot 资料库查看。';
+      }
+      update(e => { recordThinkingPhase(e, false); e.streaming = false; e.thinkingActive = false; delete e.responsePhase; e.error = message; for (const tool of e.tools ?? []) if (tool.status === 'running') tool.status = 'interrupted'; });
+      await browser?.finish(message).catch(() => {});
+      throw timeout ? new Error(message, { cause: timeout }) : error;
+    } finally { clearRunTimers(); flushEntry(); clearTimeout(entryTimer); }
   }
   async apply(action: BotAction, answer: { approved?: boolean; indices?: number[]; text?: string }): Promise<unknown> {
     if (action.kind === 'schedule') {

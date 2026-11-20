@@ -68,6 +68,21 @@ test('纪要草稿：串行保存、IME、失败恢复和冲突选择均保留�
       assert.equal(handle.value.body, '新版内容'); assert.equal(handle.revision(), 3);
       assert.equal(localStorage.getItem('wb.meeting-note.draft.conflict'), null);
     });
+    await t.test('只修改正文时保留本地稿，合入其他操作保存的行动清单', async () => {
+      const id = 'body-conflict';
+      const actionId = 'a3cb9c78-df4d-4ce4-8525-eba1c3e02530';
+      const initial: MeetingNote = { ...emptyMeetingNote(), meetingId: id, actions: [], body: '初稿', revision: 1, updatedAt: '' };
+      saved.set(id, initial);
+      await mount(id);
+      saved.set(id, { ...initial, revision: 2, actions: [{ id: actionId, title: '新增行动', taskId: null }] });
+      failure = '纪要已在其他操作中更新，请载入新版本或保留本地稿';
+      await act(async () => { handle.change({ ...handle.value, body: '新正文' }); assert.equal(await handle.flush(), false); });
+      failure = '';
+      await act(async () => handle.resolve(true));
+      assert.equal(saved.get(id)?.body, '新正文');
+      assert.deepEqual(saved.get(id)?.actions, [{ id: actionId, title: '新增行动', taskId: null }]);
+      assert.equal(saved.get(id)?.revision, 3);
+    });
     await t.test('超过保存上限的本地正文仍可恢复并缩短后保存', async () => {
       const body = '长'.repeat(200001);
       localStorage.setItem('wb.meeting-note.draft.oversized', JSON.stringify({ ...emptyMeetingNote(), body }));

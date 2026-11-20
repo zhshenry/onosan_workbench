@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { isBotAvatar, normalizeBotAvatar } from '../shared/bot-avatar';
-import { botChatViewSchema, draftValueSchema, resourceRefSchema, scheduleSpecSchema, type BotArtifact, type BotMemory, type BotSchedule } from '../shared/bot-contracts';
+import { botChatViewSchema, botQueueChangeSchema, draftValueSchema, isQueuedBotMessage, resourceRefSchema, scheduleSpecSchema, type BotArtifact, type BotMemory, type BotSchedule } from '../shared/bot-contracts';
 import { aiReferencesSchema } from '../shared/ai-reference';
 import { ASTRO_READING_TOPIC_IDS } from '../shared/astro-reading';
 import { BotError } from './bot-store';
@@ -52,11 +52,12 @@ export function botService(host: BotHost, method: string, args: unknown[], rawSu
       const botId = id.parse(args[0]), limit = z.number().int().min(1).max(200).optional().parse(args[1] ?? undefined);
       if (limit !== undefined) return store.tasks(botId, limit).filter(task => task.kind !== 'message');
       return store.tasks(botId, Number.MAX_SAFE_INTEGER).filter(task => task.kind !== 'message')
-        .filter((task, index) => index < 100 || task.status === 'waiting_user');
+        .filter((task, index) => index < 100 || task.status === 'waiting_user' || task.status === 'running' || isQueuedBotMessage(task));
     }
     case 'getTask': { const task = store.task(id.parse(args[0])); return { task, children: store.tasks(undefined, Number.MAX_SAFE_INTEGER).filter(t => t.parentTaskId === task.id), messages: store.all<any>('bot_messages').filter(m => m.taskId === task.id || m.parentTaskId === task.id), actions: store.actions(task.id) }; }
     case 'getCollaboration': return store.collaboration(id.parse(args[0]));
     case 'getBotExchange': return store.exchange(id.parse(args[0]), id.parse(args[1]), z.object({ anchorMessageId: id.optional(), before: id.optional(), after: id.optional(), limit: z.number().int().min(1).max(50).optional() }).strict().parse(args[2] ?? {}), surface.kind === 'island' ? host.coordinator().id : undefined);
+    case 'changeQueuedMessage': return host.changeQueuedMessage(botQueueChangeSchema.parse(args[0]), surface);
     case 'cancelTask': return host.cancelTask(id.parse(args[0]), revision.parse(args[1]));
     case 'retryTask': return host.retryTask(id.parse(args[0]), revision.parse(args[1]));
     case 'answerAction': return host.answerAction(z.string().min(1).max(200).parse(args[0]), revision.parse(args[1]), z.object({ approved: z.boolean().optional(), indices: z.array(z.number().int().nonnegative()).max(20).optional(), text: z.string().max(10000).optional() }).strict().parse(args[2]));

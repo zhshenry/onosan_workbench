@@ -9,7 +9,6 @@ import { BotStore } from '../electron/bot-store';
 import { BotHost } from '../electron/bot-host';
 import { botService } from '../electron/bot-service';
 import type { BotSubmit } from '../shared/bot-contracts';
-import { isBotAmendment } from '../shared/bot-input';
 
 const main = { id: 'test', kind: 'main' as const }, island = { id: 'test-island', kind: 'island' as const };
 function fixture() {
@@ -110,11 +109,6 @@ test('legacy internal replies are hidden in main-chat snapshots without deleting
     assert.ok(f.ai.chat(chat.id).entries.some(entry => entry.id === id), 'storage is preserved');
     assert.ok(f.store.exchange(f.coordinator.id, f.schedule.id).messages.some(message => message.id === id));
   } finally { await f.close(); }
-});
-
-test('follow-up recognition leaves independent requests alone', () => {
-  for (const text of ['明天完成', '还是20号吧', '改到12月20日', '补充一下，优先级高']) assert.equal(isBotAmendment(text), true, text);
-  for (const text of ['另外新增一个同名事项', '你好', '查询 DataFUN', '记录一个事项，明天完成']) assert.equal(isBotAmendment(text), false, text);
 });
 
 test('messages without a business work are durable, deduplicated and notifications do not start reply loops', async () => {

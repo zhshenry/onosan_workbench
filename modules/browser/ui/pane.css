@@ -98,7 +98,8 @@
 .modal.browser-dialog { width: min(760px, calc(100vw - 48px)); max-width: min(760px, calc(100vw - 48px)); max-height: calc(100vh - 48px); padding: 0 18px 18px; overflow-y: auto; background: var(--ai-panel-bg); }
 .browser-dialog > .modal-heading { margin-inline: -18px; padding: 16px 18px 0; background: var(--ai-panel-bg); }
 .browser-records { max-height: 50vh; overflow: auto; margin: 12px 0; }
-.modal.browser-task-dialog[open], .modal.browser-task-single[open] { display: flex; flex-direction: column; height: min(760px, calc(100vh - 48px)); padding: 0; overflow: hidden; }
+/* Tall record dialogs can overlap the frameless window's draggable title bar. */
+.modal.browser-task-dialog[open], .modal.browser-task-single[open] { display: flex; flex-direction: column; height: min(760px, calc(100vh - 48px)); padding: 0; overflow: hidden; -webkit-app-region: no-drag; }
 .modal.browser-task-dialog { width: min(1040px, calc(100vw - 48px)); max-width: min(1040px, calc(100vw - 48px)); }
 .browser-task-dialog > .modal-heading, .browser-task-single > .modal-heading { flex: none; margin: 0; padding: 0 26px; border-bottom: 1px solid var(--hairline); }
 .browser-task-dialog > .modal-heading > .modal-heading-row, .browser-task-single > .modal-heading > .modal-heading-row { min-height: 55px; padding-bottom: 0; }

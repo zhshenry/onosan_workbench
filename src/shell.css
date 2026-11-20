@@ -1467,12 +1467,17 @@ kbd {
 .modal.settings-dialog[open] { animation: settings-dialog-in var(--settings-motion) var(--ease); }
 @keyframes settings-dialog-in { from { opacity: .3; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .settings-dialog::backdrop { background: color-mix(in srgb, var(--ink) 38%, transparent); }
+.settings-dialog > .select-menu { position: absolute; }
 .settings-dialog > .modal-heading { position: absolute; top: 16px; right: 16px; padding: 0; background: transparent; z-index: 3; }
 .settings-dialog > .modal-heading .modal-heading-row { padding: 0; }
 .settings-dialog > .modal-heading .modal-heading-lead { display: none; }
 .settings-dialog > .modal-heading .icon-button { width: 36px; height: 36px; color: var(--ink-3); border-radius: var(--r-ctl); }
 .settings-dialog > .modal-heading .icon-button:hover { color: var(--ink); background: var(--acc-soft); }
 .settings-dialog-layout { display: grid; grid-template-columns: 208px minmax(0, 1fr); height: 100%; min-height: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .settings-dialog-page[data-leaving] { animation: settings-page-out 80ms var(--ease) both; }
+}
+@keyframes settings-page-out { to { opacity: 0; } }
 .settings-content { min-width: 0; min-height: 0; padding: 48px 40px 32px; overflow-y: auto; scrollbar-gutter: stable; container: settings-content / inline-size; background: var(--settings-content-bg); }
 @media (max-width: 1159px) { .settings-dialog-layout { grid-template-columns: 188px minmax(0, 1fr); } .settings-content { padding: 44px 28px 28px; } }
 @media (max-width: 760px) { .modal.settings-dialog { width: calc(100vw - 24px); max-width: calc(100vw - 24px); height: min(680px, calc(100dvh - 24px)); max-height: calc(100dvh - 24px); } .settings-dialog-layout { grid-template-columns: 172px minmax(0, 1fr); } .settings-content { padding: 52px 16px 20px; } }

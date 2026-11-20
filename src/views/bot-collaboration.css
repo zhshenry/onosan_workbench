@@ -10,9 +10,7 @@
 .bot-floating .bot-incoming-event-row{padding-left:0}
 @media(prefers-reduced-motion:reduce){.bot-message-event{transition:none}}
 .bot-projected-owner{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--ink-3);margin:4px 0}
-.bot-amendment-choices{display:grid;gap:6px;margin-bottom:8px}
-.bot-amendment-choices .bot-button{justify-content:flex-start;white-space:normal;text-align:left}
-.bot-projected-action>details{padding-inline:10px;background:color-mix(in srgb,var(--acc-deep) 12%,white)}
+.bot-projected-action>details{padding-inline:10px;background:var(--control-bg)}
 .bot-projected-action>details[open]{padding-block-end:8px}
 .bot-projected-action>details>.todo-proposal-card{margin-block-start:8px}
 .bot-projected-action summary{cursor:pointer;color:var(--ink-3)}

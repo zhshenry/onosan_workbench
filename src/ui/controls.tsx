@@ -35,7 +35,8 @@ export function Select({ id, value, onChange, options, className, menuClassName,
       scrollChild(`${listId}-${active}`, '.select-menu');
       return;
     }
-    const boundary = list.parentElement instanceof HTMLDialogElement ? list.parentElement.getBoundingClientRect() : { top: 8, bottom: window.innerHeight - 8, left: 8, right: window.innerWidth - 8 };
+    const dialog = list.parentElement instanceof HTMLDialogElement ? list.parentElement : null;
+    const boundary = dialog?.getBoundingClientRect() ?? { top: 8, bottom: window.innerHeight - 8, left: 8, right: window.innerWidth - 8 };
     list.style.minWidth = `${rect.width}px`;
     const width = list.offsetWidth;
     const height = list.offsetHeight;
@@ -43,7 +44,11 @@ export function Select({ id, value, onChange, options, className, menuClassName,
     if (top + height > boundary.bottom) top = Math.max(boundary.top, rect.top - height - 4);
     let left = rect.left;
     if (left + width > boundary.right) left = Math.max(boundary.left, boundary.right - width);
-    list.style.top = `${top}px`; list.style.left = `${left}px`;
+    // An absolute menu inside a dialog uses its padding edge as the origin.
+    const localDialog = dialog && window.getComputedStyle(list).position === 'absolute' ? dialog : null;
+    const originTop = localDialog ? boundary.top + localDialog.clientTop - localDialog.scrollTop : 0;
+    const originLeft = localDialog ? boundary.left + localDialog.clientLeft - localDialog.scrollLeft : 0;
+    list.style.top = `${top - originTop}px`; list.style.left = `${left - originLeft}px`;
     list.classList.toggle('is-up', top < rect.bottom);
     scrollChild(`${listId}-${active}`, '.select-menu');
   }, [open, options, value, active, listId]);

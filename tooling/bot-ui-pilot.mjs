@@ -45,8 +45,14 @@ if (process.env.BOT_UI_LEGACY_HOST === '1') {
   await new Promise(resolve => legacyServer.listen(address, resolve));
 }
 let app, page;
+let fixtureRequests = 0;
 const model = createServer(async (req, res) => {
-  if (req.method === 'GET') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end('<!doctype html><html lang="zh-CN"><title>资源桥验收</title><h1>资源桥测试页面</h1><p>仅隔离测试使用。</p></html>'); return; }
+  if (req.method === 'GET') {
+    if (req.url === '/fixture') fixtureRequests++;
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end('<!doctype html><html lang="zh-CN"><title>资源桥验收</title><h1>资源桥测试页面</h1><p>仅隔离测试使用。</p></html>');
+    return;
+  }
   let raw = ''; for await (const chunk of req) raw += chunk;
   if (req.headers.authorization !== 'Bearer isolated-fixture-key') { report.errors.push('fixture authorization mismatch'); res.writeHead(401); res.end('fixture authorization mismatch'); return; }
   const input = JSON.parse(raw), latest = [...input.messages].reverse().find(message => message.role === 'user');
@@ -67,13 +73,19 @@ const model = createServer(async (req, res) => {
     res.end('data: [DONE]\n\n'); return;
   }
   if (JSON.stringify(latest).includes('浏览器资源桥验收')) {
-    const calls = input.messages.flatMap(message => message.tool_calls ?? []), last = calls.at(-1)?.function?.name;
-    const results = input.messages.filter(message => message.role === 'tool');
+    const turnStart = input.messages.lastIndexOf(latest);
+    const turn = input.messages.slice(turnStart);
+    const calls = turn.flatMap(message => message.tool_calls ?? []), last = calls.at(-1)?.function?.name;
+    const results = turn.filter(message => message.role === 'tool');
     const text = results.map(message => typeof message.content === 'string' ? message.content : message.content.map(item => item.text ?? '').join('\n')).join('\n');
     const tabId = /"id"\s*:\s*"([a-f0-9-]{36})"/.exec(text)?.[1];
-    const name = !last ? 'browser_tabs' : last === 'browser_tabs' ? 'browser_observe' : last === 'browser_observe' ? 'browser_check' : undefined;
+    let name;
+    if (!last) name = 'browser_tabs';
+    else if (tabId && last === 'browser_tabs') name = 'browser_observe';
+    else if (tabId && last === 'browser_observe') name = 'browser_check';
+    const content = tabId ? '已经在本次授权内打开并核验资源桥测试页面。' : '未能打开资源桥测试页面。';
     const args = name === 'browser_tabs' ? { operation: 'open', url: `http://127.0.0.1:${model.address().port}/fixture` } : name === 'browser_observe' ? { tabId } : { tabId, condition: { type: 'text', text: '资源桥测试页面' } };
-    const delta = name ? { tool_calls: [{ index: 0, id: `browser-${calls.length}`, type: 'function', function: { name, arguments: JSON.stringify(args) } }] } : { content: '已经在本次授权内打开并核验资源桥测试页面。' };
+    const delta = name ? { tool_calls: [{ index: 0, id: `browser-${turnStart}-${calls.length}`, type: 'function', function: { name, arguments: JSON.stringify(args) } }] } : { content };
     res.writeHead(200, { 'Content-Type': 'text/event-stream' });
     for (const [value, reason] of [[delta, null], [{}, name ? 'tool_calls' : 'stop']]) res.write(`data: ${JSON.stringify({ id: 'browser-fixture', object: 'chat.completion.chunk', choices: [{ index: 0, delta: value, finish_reason: reason }] })}\n\n`);
     res.end('data: [DONE]\n\n'); return;
@@ -479,16 +491,87 @@ try {
     assert.equal(await page.locator('.bot-chat-entry.assistant').count(), await island.locator('.bot-chat-entry.assistant').count());
     await shot('shared-conversation'); await island.getByRole('button', { name: '关闭总 Bot 小窗' }).click();
   });
-  await check('independent Host releases slots for browser site approval and resumes verified native operation', async () => {
-    await page.locator('[data-workbench="web"].ritem').click(); await openWorkspace(); await page.locator('.bot-compose textarea').fill('浏览器资源桥验收'); await page.getByRole('button', { name: '发送', exact: true }).click();
-    const approval = page.getByRole('region', { name: '站点授权', exact: true }); await approval.waitFor();
+  await check('inline browser site approval scrolls with the reply and resumes after a decision', async () => {
+    await page.locator('[data-workbench="web"].ritem').click();
+    await openWorkspace();
+    const chat = page.getByRole('region', { name: '对话内容', exact: true });
+    const composer = page.locator('.bot-compose textarea');
+    const send = page.getByRole('button', { name: '发送', exact: true });
+    const siteCard = chat.getByRole('region', { name: '站点授权', exact: true });
+    const approval = siteCard.filter({ hasText: '待处理' });
+    const approved = siteCard.filter({ hasText: '已授权' });
+    const jump = page.getByRole('button', { name: '回到底部', exact: true });
+    await win.evaluate(win => win.setContentSize(1024, 680));
+    await composer.fill('你好，会话滚动验收\n' + '上一轮对话内容，用于验证滚动。\n'.repeat(24));
+    await send.click();
+    await chat.getByText('你好，我们就在这条对话里继续。', { exact: true }).waitFor();
+    const requestsBeforeApproval = fixtureRequests;
+    await composer.fill('浏览器资源桥验收（拒绝）');
+    await send.click();
+    await approval.waitFor();
+    assert.equal(await chat.locator('.bot-chat-entry.assistant').getByRole('region', { name: '站点授权', exact: true }).count(), 1);
+    const waitingNotice = '.bot-task-notice[data-status="waiting_user"]';
+    assert.equal(await page.locator(`.bot-chat-attention, .ai-site-approval-receipt, ${waitingNotice}`).count(), 0);
+    const noticeObserver = await chat.evaluateHandle((node, selector) => {
+      const probe = { appeared: false, observer: new MutationObserver(() => {
+        probe.appeared ||= node.querySelector(selector) !== null;
+      }) };
+      probe.observer.observe(node, { childList: true, subtree: true });
+      return probe;
+    }, waitingNotice);
+    assert.match(await approval.textContent(), /仅本次任务有效/);
+    await chat.evaluate(node => { node.scrollTop = 0; });
+    await jump.waitFor();
+    assert.equal(await chat.evaluate(node => node.scrollTop), 0);
+    await jump.click();
+    await jump.waitFor({ state: 'hidden' });
+    await shot('browser-site-approval-1024');
+    await approval.getByRole('button', { name: '不允许', exact: true }).click();
+    await approval.waitFor({ state: 'detached' });
+    assert.equal(await approved.count(), 0);
+    await waitForState(async () => (await window.workbench.browserAutomation.state('default')).tasks.some(task => task.siteApprovals?.some(item => item.status === 'denied')));
+    await waitForState(async () => {
+      const bot = (await window.workbench.bot.list()).find(card => card.seedKey === 'web');
+      const task = (await window.workbench.bot.listTasks(bot.id)).find(item => item.input === '浏览器资源桥验收（拒绝）');
+      return ['cancelled', 'failed', 'completed'].includes(task?.status);
+    });
+    assert.equal(await page.locator('.ai-site-approval-receipt').count(), 0);
+
+    assert.equal(fixtureRequests, requestsBeforeApproval);
+    await win.evaluate(win => win.setContentSize(1544, 1018));
+    await composer.fill('浏览器资源桥验收');
+    await send.click();
+    await approval.waitFor();
     await waitForState(async () => { const card = (await window.workbench.bot.list()).find(bot => bot.seedKey === 'web'); return (await window.workbench.bot.listTasks(card.id))[0]?.status === 'waiting_user'; });
     assert.equal((await page.evaluate(() => window.workbench.bot.getHostState())).activeTasks, 0);
-    await shot('browser-site-approval'); await approval.getByRole('button', { name: '允许并继续', exact: true }).click();
+    await shot('browser-site-approval');
+    await approval.getByRole('button', { name: '允许并继续', exact: true }).click();
+    await approval.waitFor({ state: 'detached' });
+    await approved.waitFor();
+    assert.match(await approved.textContent(), /^站点授权已授权$/);
+    assert.equal(await approved.locator('button, .ai-site-approval-body').count(), 0);
     await waitForState(async () => { const card = (await window.workbench.bot.list()).find(bot => bot.seedKey === 'web'); return (await window.workbench.bot.listTasks(card.id))[0]?.status === 'completed'; });
     const state = await page.evaluate(() => window.workbench.browserAutomation.state('default'));
-    assert.ok(state.tasks.some(task => task.status === 'completed' && task.verification?.items.every(item => item.status === 'passed')));
+    assert.ok(state.tasks.some(task => task.status === 'completed' && task.verification?.items.every(item => item.status === 'passed') && task.siteApprovals?.some(item => item.status === 'allowed')));
+    assert.equal(await page.locator('.ai-site-approval-receipt').count(), 0);
+    assert.ok(fixtureRequests > requestsBeforeApproval);
+    await chat.getByText('已经在本次授权内打开并核验资源桥测试页面。', { exact: true }).waitFor();
+    assert.equal(await approved.count(), 1);
+    const noticeAppeared = await noticeObserver.evaluate(probe => {
+      probe.observer.disconnect();
+      return probe.appeared;
+    });
+    await noticeObserver.dispose();
+    assert.equal(noticeAppeared, false, 'the duplicate wait notice must stay hidden through both decisions');
+    const recordButton = chat.getByRole('button', { name: '查看操作记录', exact: true }).last();
+    await recordButton.waitFor();
     await shot('browser-verified');
+    await recordButton.click();
+    const record = page.getByRole('dialog', { name: '浏览器操作记录', exact: true });
+    await record.getByRole('radio', { name: '操作过程', exact: true }).click();
+    await record.getByRole('region', { name: '站点授权记录', exact: true }).getByText(/已允许/).waitFor();
+    await record.getByRole('button', { name: '关闭', exact: true }).click();
+    await record.waitFor({ state: 'hidden' });
   });
   await check('island deliverable opens that artifact in the coordinator workspace', async () => {
     await page.locator('[data-workbench="home"].ritem').click(); await page.locator('.bot-compose textarea').fill('交付件验收'); await page.getByRole('button', { name: '发送', exact: true }).click();

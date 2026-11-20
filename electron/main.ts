@@ -45,7 +45,7 @@ import type { OfficeConvertErrorCode, OfficeConvertResult } from '../shared/offi
 const SMOKE = process.env.WORKBENCH_SMOKE === '1';
 const DEV_URL = process.env.WORKBENCH_DEV_URL ?? '';
 
-// 自动化验收使用完整隔离的数据根目录，避免触碰真实的待办共享库。
+// 自动化验收使用完整隔离的数据根目录，避免打开真实的待办数据。
 if (process.env.WORKBENCH_TEST_DATA_DIR) {
   mkdirSync(process.env.WORKBENCH_TEST_DATA_DIR, { recursive: true });
   app.setPath('appData', process.env.WORKBENCH_TEST_DATA_DIR);
@@ -61,10 +61,9 @@ if (process.env.WORKBENCH_ISOLATED === '1') {
   app.setPath('userData', join(app.getPath('userData'), 'isolated'));
 }
 
-// 跨应用共享(用户决策 2026-09-23):待办数据与 To-Do-List 完全同库同表,
-// 读写同一个 %APPDATA%/To-Do-List/tasks.db(WAL + busy_timeout 支持多进程并发)。
-// 工作台自身的设置、缓存一律存自己的 userData,不写此库的 settings/chats 表。
-const TODO_DB = join(app.getPath('appData'), 'To-Do-List', 'tasks.db');
+// OnO 与 CMO 共用工作台的事项库。首次启动从旧路径只读导入。
+const TODO_DB = join(app.getPath('appData'), 'OnoCmoWorkbench', 'tasks.db');
+const LEGACY_TODO_DB = join(app.getPath('appData'), 'To-Do-List', 'tasks.db');
 let store: Store | null = null;
 let meetingNotesStore: MeetingNotesStore | null = null;
 let floatTodoFactory: FloatFactory | null = null;
@@ -391,12 +390,11 @@ if (!app.requestSingleInstanceLock()) {
   };
 
   void app.whenReady().then(async () => {
-    // 目录兜底:未装 To-Do-List 或首次运行时初始化空库(建表由 Store 构造完成)
-    mkdirSync(dirname(TODO_DB), { recursive: true });
     try {
-      store = new Store(TODO_DB, 'shared-tasks');
+      mkdirSync(dirname(TODO_DB), { recursive: true });
+      store = new Store(TODO_DB, 'shared-tasks', LEGACY_TODO_DB);
     } catch (error) {
-      dialog.showErrorBox('待办共享库无法打开', error instanceof Error ? error.message : String(error));
+      dialog.showErrorBox('工作台待办库无法打开', error instanceof Error ? error.message : String(error));
       app.quit();
       return;
     }
@@ -498,7 +496,7 @@ if (!app.requestSingleInstanceLock()) {
     }
   });
 
-  // ---------- 提醒轮询(模式同上游 To-Do-List,认领式去重) ----------
+  // ---------- 提醒轮询（OnO 与 CMO 认领式去重） ----------
   const tick = (): void => {
     if (!store || !settingsStore || notificationBusy) return;
     // 关闭事项提醒时保留到点事项，重新开启后由下一轮处理。
@@ -560,7 +558,6 @@ if (!app.requestSingleInstanceLock()) {
   };
 
   const startReminders = (): void => {
-    // 与 To-Do-List 的 0 秒对齐轮询错峰 7 秒,进一步压小双弹窗口
     setTimeout(() => tick(), 7000).unref();
     setInterval(tick, 15000);
     powerMonitor.on('resume', () => tick());

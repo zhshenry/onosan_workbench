@@ -15,6 +15,7 @@ const bot: WorkbenchApi['bot'] = {
   getDraft: id => botCall('getDraft', id), saveDraft: (id, revision, value) => botCall('saveDraft', id, revision, value),
   getSubmissionStatus: (input, epoch) => botCall('getSubmissionStatus', input, epoch), getPendingSubmission: id => botCall('getPendingSubmission', id), retainPendingDraft: (id, value) => botCall('retainPendingDraft', id, value), acknowledgeSubmission: (id, requestId) => botCall('acknowledgeSubmission', id, requestId),
   submit: input => botCall('submit', input), listTasks: (id, limit) => botCall('listTasks', id, limit), getTask: id => botCall('getTask', id), cancelTask: (id, revision) => botCall('cancelTask', id, revision), retryTask: (id, revision) => botCall('retryTask', id, revision),
+  changeQueuedMessage: change => botCall('changeQueuedMessage', change),
   getCollaboration: id => botCall('getCollaboration', id), getBotExchange: (a, b, query) => botCall('getBotExchange', a, b, query),
   answerAction: (id, revision, answer) => botCall('answerAction', id, revision, answer), listArtifacts: id => botCall('listArtifacts', id), openArtifact: id => botCall('openArtifact', id),
   reconcileAction: (id, revision, result, note) => botCall('reconcileAction', id, revision, result, note), undoAction: (id, revision) => botCall('undoAction', id, revision),

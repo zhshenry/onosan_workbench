@@ -72,7 +72,7 @@ export function DesktopIslandApp() {
     try { await action(); return true; } catch (e) { setError(errorText(e)); return false; }
     finally { busyRef.current = false; setBusy(false); syncHold(); }
   };
-  const loadTasks = () => window.workbench.todo.state().then(next => { setData(next); setDataError(''); }, () => setDataError('暂时无法读取 To-Do-List'));
+  const loadTasks = () => window.workbench.todo.state().then(next => { setData(next); setDataError(''); }, () => setDataError('暂时无法读取事项'));
   const mode = (next: IslandMode) => { currentMode.current = next; void api.mode(next, window.matchMedia('(prefers-reduced-motion: reduce)').matches).catch(e => setError(errorText(e))); };
   const closeMessages = () => { mode(state?.pinned ? 'expanded' : 'collapsed'); setTimeout(() => mascotButton.current?.focus(), 250); };
   const cancelPreview = () => { if (previewTimer.current) clearTimeout(previewTimer.current); previewTimer.current = null; };

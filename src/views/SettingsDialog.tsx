@@ -35,12 +35,26 @@ export function SettingsDialog({ view, onNavigate, close, checkinProvider, check
   const page = useRef<HTMLDivElement>(null);
   const section = navigationView(view);
   const lastSection = useRef<ViewId | null>(null);
+  const [displayed, setDisplayed] = useState({ view, checkinProvider, checkinReturnLabel });
   const [checkinBusy, setCheckinBusy] = useState(false);
+  const displayedSection = navigationView(displayed.view);
+  const leaving = displayedSection !== section;
+
+  useLayoutEffect(() => {
+    if (displayed.view === view && displayed.checkinProvider === checkinProvider && displayed.checkinReturnLabel === checkinReturnLabel) return;
+    const fade = leaving ? page.current?.getAnimations?.().find(animation =>
+      'animationName' in animation && animation.animationName === 'settings-page-out') : undefined;
+    let current = true;
+    const showSelected = (): void => { if (current) setDisplayed({ view, checkinProvider, checkinReturnLabel }); };
+    if (!fade) { showSelected(); return; }
+    void fade.finished.then(showSelected, showSelected);
+    return () => { current = false; };
+  }, [view, checkinProvider, checkinReturnLabel, displayed, leaving]);
 
   useLayoutEffect(() => {
     const content = page.current?.parentElement;
     if (content) content.scrollTop = 0;
-  }, [view]);
+  }, [displayed.view]);
 
   useLayoutEffect(() => {
     const previous = lastSection.current;
@@ -65,24 +79,13 @@ export function SettingsDialog({ view, onNavigate, close, checkinProvider, check
     else place();
     nav.dataset.selectionReady = 'true';
     if (previous === null) active.focus({ preventScroll: true });
-    let pageMotion: Animation | undefined;
-    if (previous !== null && previous !== section && !motion.matches) {
-      const views = Array.from(nav.querySelectorAll<HTMLButtonElement>('[data-settings-view]')).map(button => button.dataset.settingsView);
-      const direction = Math.sign(views.indexOf(section) - views.indexOf(previous));
-      const style = getComputedStyle(nav), duration = style.getPropertyValue('--settings-motion').trim();
-      pageMotion = page.current?.animate([
-        { opacity: .45, transform: `translateY(${direction * 8}px)` },
-        { opacity: 1, transform: 'translateY(0)' },
-      ], { duration: parseFloat(duration) * (duration.endsWith('ms') ? 1 : 1000), easing: style.getPropertyValue('--ease').trim() });
-    }
     const observer = new ResizeObserver(place);
     observer.observe(nav);
     observer.observe(active);
-    const reduceMotion = (): void => { if (motion.matches) { pageMotion?.cancel(); snap(); } };
+    const reduceMotion = (): void => { if (motion.matches) snap(); };
     motion.addEventListener('change', reduceMotion);
     return () => {
       observer.disconnect();
-      pageMotion?.cancel();
       motion.removeEventListener('change', reduceMotion);
     };
   }, [section]);
@@ -102,10 +105,10 @@ export function SettingsDialog({ view, onNavigate, close, checkinProvider, check
         })}
       </nav>
       <div className="settings-content">
-        <div className="settings-dialog-page" key={section} ref={page}>
-          {checkinReturnLabel && <button type="button" className="set-btn settings-checkin-return" onClick={close} disabled={checkinBusy}><ArrowLeft size={15} />{checkinReturnLabel}</button>}
-          <SettingsView view={view} {...settings} onNavigate={onNavigate} checkinProvider={checkinProvider} checkinBusy={checkinBusy}
-            onCheckinConnected={checkinReturnLabel ? close : undefined} onCheckinSavingChange={setCheckinBusy} />
+        <div className="settings-dialog-page" key={displayedSection} ref={page} data-leaving={leaving || undefined} inert={leaving}>
+          {displayed.checkinReturnLabel && <button type="button" className="set-btn settings-checkin-return" onClick={close} disabled={checkinBusy}><ArrowLeft size={15} />{displayed.checkinReturnLabel}</button>}
+          <SettingsView view={displayed.view} {...settings} onNavigate={onNavigate} checkinProvider={displayed.checkinProvider} checkinBusy={checkinBusy}
+            onCheckinConnected={displayed.checkinReturnLabel ? close : undefined} onCheckinSavingChange={setCheckinBusy} />
         </div>
       </div>
     </div>

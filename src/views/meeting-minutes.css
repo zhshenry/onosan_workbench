@@ -1,7 +1,7 @@
 /* Schedule overview and meeting detail share the existing theme/material owners. */
 .todo-workspace { container-name: todo; }
 :where(.todo-workspace, .schedule-header-reminder) { --meeting-warning: #a05b11; --meeting-warning-soft: color-mix(in srgb, var(--meeting-warning) 9%, transparent); }
-.todo-workspace.view.on > .todo-panel[hidden] { display: none; }
+.todo-workspace.view.on > .todo-panel[hidden], .meeting-workspace[hidden] { display: none; }
 .bot-workspace-title:has(> .schedule-header-reminder) { position: relative; }
 .schedule-header-reminder { flex: none; }
 .schedule-reminder-content { display: none; align-items: center; gap: 10px; }
@@ -67,6 +67,16 @@
 .meeting-rich-editor ul, .meeting-rich-editor ol { padding-left: 24px; margin: 5px 0 16px; }
 .meeting-rich-editor a { color: var(--acc-deep); text-decoration: underline; }
 .meeting-rich-editor blockquote { margin-inline: 0; padding-left: 14px; border-left: 3px solid var(--hairline); color: var(--ink-2); }
+.meeting-rich-editor.meeting-minutes-field {
+  min-height: 190px;
+  padding: 12px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-ctl);
+  background: var(--control-bg);
+  cursor: text;
+}
+.meeting-rich-editor.meeting-minutes-field:focus-visible { border-radius: var(--r-ctl); outline-offset: -2px; }
+.meeting-minutes-field-status { margin-top: 7px; color: var(--ink-3); font-size: var(--type-support); text-align: end; }
 .meeting-template { margin-bottom: 10px; }
 .meeting-actions { margin-top: 24px; }
 .meeting-actions > header { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }

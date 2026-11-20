@@ -64,11 +64,11 @@
   }
 }
 .bot-panel:not(.bot-floating) .bot-chat-entry.user > div,
-.bot-panel:not(.bot-floating) .bot-chat-entry .ai-response,
-.bot-panel:not(.bot-floating) .bot-chat-scroll :is(.bot-chat-actions, .bot-projected-action, .bot-collaboration-blocked, .bot-task-notice) { max-width: min(100%, var(--bot-message-width)); }
+.bot-panel:not(.bot-floating) .bot-chat-entry :is(.ai-response, .ai-site-approval),
+.bot-panel:not(.bot-floating) .bot-chat-scroll :is(.bot-chat-actions, .bot-action-completed, .bot-projected-action, .bot-collaboration-blocked, .bot-task-notice) { max-width: min(100%, var(--bot-message-width)); }
 .bot-panel:not(.bot-floating) .bot-chat-entry .ai-bubble { width: fit-content; }
-.bot-panel:not(.bot-floating) .bot-conversation-column > :is(.bot-config-hint, .bot-compose) { width: min(calc(100% - 20px), 960px); align-self: center; }
-.bot-conversation-column > .bot-compose { anchor-name: --bot-activity-composer; }
+.bot-panel:not(.bot-floating) .bot-conversation-column > :is(.bot-config-hint, .bot-compose-stack) { width: min(calc(100% - 20px), 960px); align-self: center; }
+.bot-conversation-column > .bot-compose-stack { anchor-name: --bot-activity-composer; }
 .bot-compose-toolbar > .ai-voice-trigger { margin-inline-start: auto; }
 .bot-inspector-clip {
   position: absolute;
@@ -282,9 +282,9 @@ textarea.bot-identity-text { resize: none; cursor: text; user-select: text; }
   .bot-identity-bar { z-index: 4; }
   .bot-panel[data-inspector] .bot-identity-pill { visibility: visible; }
   .bot-panel[data-inspector]:not(.bot-island[data-inspector='activity']) :is(.bot-chat-scroll, .bot-config-hint),
-  .bot-panel[data-inspector]:not([data-inspector='activity']) .bot-compose { interactivity: inert; }
+  .bot-panel[data-inspector]:not([data-inspector='activity']) .bot-compose-stack { interactivity: inert; }
   .bot-panel[data-inspector='activity']:not(.bot-island) .bot-chat-scroll { --bot-activity-overlay: 1; }
-  .bot-panel[data-inspector='activity']:not(.bot-island) .bot-compose { visibility: visible; pointer-events: auto; }
+  .bot-panel[data-inspector='activity']:not(.bot-island) .bot-compose-stack { visibility: visible; pointer-events: auto; }
   .bot-inspector-clip > .bot-inspector { inset: 0; width: auto; border-left: 0; border-radius: var(--r-panel); background: var(--overlay-bg); }
   .bot-panel:not(.bot-floating, .bot-island) > .bot-inspector-clip[data-view='activity'] { bottom: anchor(--bot-activity-composer top, 112px); }
   .bot-panel:has(.bot-identity-pill) .bot-inspector-hero { padding-top: 60px; }

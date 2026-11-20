@@ -28,7 +28,7 @@ import { TopbarUpdate } from './views/TopbarUpdate';
 import { AiSetupHint } from './views/AiSetupHint';
 import { AiTopbarHint } from './ui/AiTopbarHint';
 import { BaziView } from '../modules/bazi/ui/BaziView';
-import { TaskEditor, type TaskEditorApi } from '../modules/todo/ui/TaskEditor';
+import { TaskEditor, type TaskEditHandle, type TaskEditorApi } from '../modules/todo/ui/TaskEditor';
 import { MediaBrowserHost } from './views/MediaBrowserHost';
 import { BrowserHost } from './views/BrowserView';
 import { HushHourView } from './views/HushHourView';
@@ -116,6 +116,7 @@ export function App() {
   const topbarRef = useRef<HTMLElement>(null);
   const aiTrigger = useRef<HTMLButtonElement>(null);
   const [homeEditor, setHomeEditor] = useState<Task | 'new' | null>(null);
+  const todoEditHandle = useRef<TaskEditHandle>(null);
   const [topbarEditorKind, setTopbarEditorKind] = useState<TaskInput['kind'] | null>(null);
   const [islandPop, setIslandPop] = useState<null | 'sched' | 'todo'>(null);
   const [floatVisible, setFloatVisible] = useState(false);
@@ -170,7 +171,7 @@ export function App() {
   };
   const [aiWidth, setAiWidth] = useState(() => Math.max(340, Math.min(560, Number(localStorage.getItem('wb.ai.width')) || 380)));
   const navigationStarted = useRef(false);
-  useEffect(() => { if (!bots.length) return; const navigate = () => { void window.workbench.bot.getLaunchTarget().then(async target => { if (!target) return; if (target.kind === 'todo') { switchView('todo'); const state = await window.workbench.todo.state(); const item = state.tasks.find(task => task.id === target.id && !task.deletedAt); if (item) setHomeEditor(item); return; } const id = target.id; const { task } = await window.workbench.bot.getTask(id); const owner = bots.find(card => card.id === task.botId); if (owner) { activate(owner.workspaceId); setAiOpen(true); setBotPage({ value: 'tasks', nonce: Date.now(), taskId: id }); } }).catch(cause => showToast(errorText(cause))); }; if (!navigationStarted.current) { navigationStarted.current = true; navigate(); } return window.workbench.bot.onChanged(event => { if (event.kind === 'navigation') navigate(); }); }, [bots]);
+  useEffect(() => { if (!bots.length) return; const navigate = () => { void window.workbench.bot.getLaunchTarget().then(async target => { if (!target) return; if (target.kind === 'todo') { const state = await window.workbench.todo.state(); const item = state.tasks.find(task => task.id === target.id && !task.deletedAt); if (item) openTaskEditor(item); return; } const id = target.id; const { task } = await window.workbench.bot.getTask(id); const owner = bots.find(card => card.id === task.botId); if (owner) activate(owner.workspaceId, { after: () => { setAiOpen(true); setBotPage({ value: 'tasks', nonce: Date.now(), taskId: id }); } }); }).catch(cause => showToast(errorText(cause))); }; if (!navigationStarted.current) { navigationStarted.current = true; navigate(); } return window.workbench.bot.onChanged(event => { if (event.kind === 'navigation') navigate(); }); }, [bots]);
   const [railMenu, setRailMenu] = useState<WorkbenchId | null>(null);
   const dismissedRailMenu = useRef<WorkbenchId | null>(null);
   const [aiJobs, setAiJobs] = useState<{ chatId: string; scope: AiScope; title: string; status: 'running' | 'done' | 'error' }[]>([]);
@@ -250,16 +251,21 @@ export function App() {
   const toggleIslandPop = (which: 'sched' | 'todo'): void => {
     setIslandPop((p) => (p === which ? null : which));
   };
-  const openTopbarTaskCreator = (kind: TaskInput['kind']): void => {
+  const leaveTodoEdit = (navigate: () => void): void => {
+    const editor = todoEditHandle.current;
+    if (editor) editor.leave(navigate);
+    else navigate();
+  };
+  const openTopbarTaskCreator = (kind: TaskInput['kind']): void => leaveTodoEdit(() => {
     topbarRef.current?.querySelector<HTMLButtonElement>(kind === 'meeting' ? '.smore' : '.todopill')?.focus({ preventScroll: true });
     setIslandPop(null);
     setTopbarEditorKind(kind);
-  };
-  const openTaskEditor = (t: Task): void => {
+  });
+  const openTaskEditor = (t: Task): void => leaveTodoEdit(() => {
     setHomeEditor(t);
     switchView('todo');
     setIslandPop(null);
-  };
+  });
   // 弹出面板:点击外部 / Esc 关闭
   useEffect(() => {
     if (!islandPop) return;
@@ -283,45 +289,56 @@ export function App() {
     };
   }, [islandPop]);
 
-  const activate = (id: WorkbenchId, { keepLayout = false } = {}): void => {
-    const keepWorkspace = keepLayout && !!activeBot && aiOpen && assistantMode === 'parallel';
-    dismissedRailMenu.current = null;
-    setRailMenu(null);
-    setSettingsView(null);
-    setCheckinSettingsEntry(undefined);
-    if (id === 'home') localStorage.setItem('wb.bot.route.home', 'home');
-    if (id !== curWb) {
-      if (!keepWorkspace) setWorkspaceCollapsed(true);
-      setInitialProfileTab(keepLayout ? botPanel.current?.openProfileTab : undefined);
-    }
-    if (id !== curWb || id === 'home' && curView === 'checkin') {
-      setBotPage(undefined);
-      // 内容区渲染跟随 curView:切工作台必须同步落位,否则停留在上一个工作台的页面
-      const remembered = id === 'home' ? 'home' : localStorage.getItem(`wb.bot.route.${id}`);
-      setCurView(workbenchById(id).subs.find(sub => sub.view === remembered)?.view ?? defaultViewOfWorkbench(id));
-      setCurWb(id);
-    }
+  const activate = (id: WorkbenchId, { keepLayout = false, after }: { keepLayout?: boolean; after?: () => void } = {}): void => {
+    const navigate = () => {
+      const keepWorkspace = keepLayout && !!activeBot && aiOpen && assistantMode === 'parallel';
+      dismissedRailMenu.current = null;
+      setRailMenu(null);
+      setSettingsView(null);
+      setCheckinSettingsEntry(undefined);
+      if (id === 'home') localStorage.setItem('wb.bot.route.home', 'home');
+      if (id !== curWb) {
+        if (!keepWorkspace) setWorkspaceCollapsed(true);
+        setInitialProfileTab(keepLayout ? botPanel.current?.openProfileTab : undefined);
+      }
+      if (id !== curWb || id === 'home' && curView === 'checkin') {
+        setBotPage(undefined);
+        // 内容区渲染跟随 curView:切工作台必须同步落位,否则停留在上一个工作台的页面
+        const remembered = id === 'home' ? 'home' : localStorage.getItem(`wb.bot.route.${id}`);
+        setCurView(workbenchById(id).subs.find(sub => sub.view === remembered)?.view ?? defaultViewOfWorkbench(id));
+        setCurWb(id);
+      }
+      after?.();
+    };
+    if (id === 'todo' || id === 'settings') navigate();
+    else leaveTodoEdit(navigate);
   };
 
-  const switchView = (view: ViewId): void => {
+  const switchView = (view: ViewId, after?: () => void): void => {
     view = resolveView(view);
     setRailMenu(null);
     if (view.startsWith('settings')) {
       setIslandPop(null);
       if (view === 'settings-general') setCheckinSettingsEntry(undefined);
       setSettingsView(view);
+      after?.();
       return;
     }
-    setSettingsView(null);
-    setCheckinSettingsEntry(undefined);
-    setWorkspaceCollapsed(false);
-    setCurView(view);
-    const owner = ownerOfWorkbench(view);
-    if (owner) {
-      setInitialProfileTab(undefined);
-      setCurWb(owner);
-      localStorage.setItem(`wb.bot.route.${owner}`, view);
-    }
+    const navigate = () => {
+      setSettingsView(null);
+      setCheckinSettingsEntry(undefined);
+      setWorkspaceCollapsed(false);
+      setCurView(view);
+      const owner = ownerOfWorkbench(view);
+      if (owner) {
+        setInitialProfileTab(undefined);
+        setCurWb(owner);
+        localStorage.setItem(`wb.bot.route.${owner}`, view);
+      }
+      after?.();
+    };
+    if (view === 'todo') navigate();
+    else leaveTodoEdit(navigate);
   };
   const closeSettings = (): void => { setSettingsView(null); setCheckinSettingsEntry(undefined); };
   const openCheckinSettings = (view: 'settings-apps' | 'settings-checkin', provider?: CheckinProvider): void => { setIslandPop(null); setCheckinSettingsEntry({ provider }); setSettingsView(view); };
@@ -331,14 +348,14 @@ export function App() {
       if (resource.kind === 'copy') { if (!(await window.workbench.copy.list()).drafts.some(item => item.id === resource.id)) throw new Error('原稿已删除，交付记录仍保留。'); setRequestedCopyId(resource.id); switchView('copy'); }
       else if (resource.kind === 'bazi') { if (!(await window.workbench.bazi.list()).profiles.some(item => item.id === resource.id)) throw new Error('原命例不存在或不可访问。'); setRequestedProfileId(resource.id); switchView('bazi'); }
       else if (resource.kind === 'reading') { if (!(await window.workbench.reading.list()).books.some(item => item.id === resource.id)) throw new Error('原书目不存在或不可访问。'); switchView('reading'); }
-      else if (resource.kind === 'todo') { const task = (await window.workbench.todo.state()).tasks.find(item => item.id === resource.id && !item.deletedAt); if (!task) throw new Error('原事项已删除，交付记录仍保留。'); switchView('todo'); setHomeEditor(task); }
+      else if (resource.kind === 'todo') { const task = (await window.workbench.todo.state()).tasks.find(item => item.id === resource.id && !item.deletedAt); if (!task) throw new Error('原事项已删除，交付记录仍保留。'); openTaskEditor(task); }
       setArtifactPreview(null); setWorkspaceCollapsed(false);
     })().catch(cause => setArtifactError(errorText(cause)));
   };
   useEffect(() => {
     if (!requestedAiChatId) return;
     const owner = bots.find(bot => bot.mainChatId === requestedAiChatId);
-    if (owner) { activate(owner.workspaceId); setBotPage({ value: 'chat', nonce: Date.now() }); setRequestedAiChatId(null); }
+    if (owner) { activate(owner.workspaceId, { after: () => setBotPage({ value: 'chat', nonce: Date.now() }) }); setRequestedAiChatId(null); }
   }, [requestedAiChatId, bots]);
 
   const returnToAiJob = (): void => {
@@ -350,18 +367,22 @@ export function App() {
 
   useEffect(() => window.workbench.island?.onNavigate(target => {
     const view = target.view === 'settings-island' && (target.section === 'quota' || target.section === 'agents') ? 'settings-agent-quota' : target.view;
-    switchView(target.taskId ? 'todo' : view);
-    if (target.view === 'home') { setAiOpen(true); setBotPage({ value: 'chat', nonce: Date.now() }); }
-    if (target.view === 'home' && target.artifactId) setRequestedArtifactId(target.artifactId);
-    if (target.botPanel && target.view === 'home') { setAiOpen(true); selectAssistantMode('parallel'); setWorkspaceCollapsed(true); setBotPage({ value: target.botPanel === 'details' ? 'profile' : 'artifacts', nonce: Date.now() }); }
-    if (target.taskId) void window.workbench.todo.state().then(data => {
-      const task = data.tasks.find(t => t.id === target.taskId && !t.deletedAt);
-      if (task) setHomeEditor(task);
-    }).catch(error => showToast(errorText(error)));
-    if (target.section) {
-      sessionStorage.setItem('island-settings-section', target.section);
-      window.dispatchEvent(new CustomEvent('island-settings-section', { detail: target.section }));
+    if (target.taskId) {
+      void window.workbench.todo.state().then(data => {
+        const task = data.tasks.find(t => t.id === target.taskId && !t.deletedAt);
+        if (task) openTaskEditor(task);
+      }).catch(error => showToast(errorText(error)));
+      return;
     }
+    switchView(view, () => {
+      if (target.view === 'home') { setAiOpen(true); setBotPage({ value: 'chat', nonce: Date.now() }); }
+      if (target.view === 'home' && target.artifactId) setRequestedArtifactId(target.artifactId);
+      if (target.botPanel && target.view === 'home') { setAiOpen(true); selectAssistantMode('parallel'); setWorkspaceCollapsed(true); setBotPage({ value: target.botPanel === 'details' ? 'profile' : 'artifacts', nonce: Date.now() }); }
+      if (target.section) {
+        sessionStorage.setItem('island-settings-section', target.section);
+        window.dispatchEvent(new CustomEvent('island-settings-section', { detail: target.section }));
+      }
+    });
   }));
 
   const activeWorkbench = workbenchById(curWb);
@@ -596,7 +617,7 @@ export function App() {
     return () => { observer.disconnect(); window.removeEventListener('resize', place); };
   }, [railMenu]);
 
-  // 顶栏胶囊:今日待办统计与今日日程(真数据,与 To-Do-List 同库)
+  // 顶栏胶囊：工作台的今日待办统计与今日日程
   const today = localDay(todo.clock);
   const todayMeetings = (todo.data?.tasks ?? [])
     .filter((t) => !t.deletedAt && t.kind === 'meeting' && t.status !== 'done' && taskDay(t) !== null && taskDay(t)! <= today)
@@ -837,7 +858,7 @@ export function App() {
           ) : curView === 'checkin' ? (
             <CheckinView onOpenSettings={openCheckinSettings} onBack={() => switchView('home')} />
           ) : curView === 'todo' ? (
-            todo.data ? <TodoView data={todo.data} clock={todo.clock} mutate={todo.mutate} editor={homeEditor} setEditor={setHomeEditor} workspaceHeader={artifactPreview ? null : workspaceHeader} /> : <div className="todo-loading" role="status">正在读取本地待办…</div>
+            todo.data ? <TodoView data={todo.data} clock={todo.clock} mutate={todo.mutate} editor={homeEditor} setEditor={setHomeEditor} editHandle={todoEditHandle} workspaceHeader={artifactPreview ? null : workspaceHeader} /> : <div className="todo-loading" role="status">正在读取本地待办…</div>
           ) : (
             <HomeView workspaceHeader={showDashboardHeader ? workspaceHeader : null} data={todo.data} clock={todo.clock} userName={profileName} onNavigate={switchView} onOpenTask={openTaskEditor} onPending={showToast} onOpenCheckinSettings={openCheckinSettings} />
           )}

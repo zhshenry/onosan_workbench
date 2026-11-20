@@ -17,7 +17,15 @@ export function BotTaskCard({ task, cards, open, reply }: { task: BotTask; cards
   return <section className="bot-task-card" data-status={task.status}><CheckSquare size={21} /><div>{open ? <button className="bot-task-title" onClick={open}>{task.title}</button> : <strong className="bot-task-title">{task.title}</strong>}<p>{botStatusLabel[task.status]}{task.reason ? ` · ${task.reason}` : ''}</p><div className="bot-task-links">{owner && <span><BotAvatar avatar={owner.avatar} small />{owner.name}</span>}{open ? <button onClick={open}>{task.dependencyIds.length ? '协作记录' : '查看进度'}<ArrowRight size={14} /></button> : null}{reply && <button onClick={reply}>在对话中继续</button>}</div></div></section>;
 }
 
-export function ActionCard({ action, refresh, copyBusy, questionInReply = false }: { action: BotAction; refresh(): void; copyBusy: boolean; questionInReply?: boolean }) {
+function ActionReceiptSummary({ action, owner, status }: { action: BotAction; owner?: BotCard; status: string }) {
+  const name = owner?.name ?? 'Bot';
+  const title = action.kind === 'question' ? '补充回答' : action.kind === 'todo' ? '待办修改' : action.kind === 'copy' ? '文章修改' : '定时任务';
+  return <summary><span className="bot-action-completed-owner"><BotAvatar avatar={owner?.avatar ?? 'ring:blue'} small /><span title={name}>{name}</span></span>{' '}
+    <span>{title} · {action.status === 'failed' ? <strong className="bot-outcome-error">{status}</strong> : status}</span>
+  </summary>;
+}
+
+export function ActionCard({ action, owner, onOpenWork, refresh, copyBusy, questionInReply = false }: { action: BotAction; owner?: BotCard; onOpenWork?(): void; refresh(): void; copyBusy: boolean; questionInReply?: boolean }) {
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [answer, setAnswer] = useState('');
   const submitting = useRef(false);
   const actions = action.kind === 'copy' ? action.payload.actions as CopyAiAction[] : [];
@@ -25,6 +33,13 @@ export function ActionCard({ action, refresh, copyBusy, questionInReply = false 
   const run = async (operation: () => Promise<unknown>) => { if (submitting.current) return; submitting.current = true; setBusy(true); setError(''); try { const result = await operation(); refresh(); return result; } catch (cause) { setError(errorText(cause)); throw cause; } finally { submitting.current = false; setBusy(false); } };
   const submit = (approved: boolean, chosen?: number[]) => run(() => api.answerAction(action.id, action.revision, { approved, indices: chosen, text: answer }));
   if (action.kind === 'delegate' || action.kind === 'artifact') return null;
+  if (action.status === 'failed' && onOpenWork) return <details className="bot-action-completed" data-action-status="failed">
+    <ActionReceiptSummary action={action} owner={owner} status={action.kind === 'question' ? '提交失败' : '应用失败'} />
+    <div className="bot-action-failure">
+      <p className="bot-outcome-reason">{action.error || '本次操作未完成。'}</p>
+      <button type="button" className="bot-text-button" onClick={onOpenWork}>查看工作详情<ArrowRight size={14} aria-hidden="true" /></button>
+    </div>
+  </details>;
   if (action.status === 'superseded') return <section className="bot-action"><p className="bot-help" role="status">已接收补充，正在更新建议。原版本已停用。</p><details><summary>查看原建议</summary><AiResponse entry={{ id: action.id, role: 'assistant', content: action.kind === 'question' ? String(action.payload.question) : action.kind === 'todo' ? (action.payload.plan as AIPlan).message : String(action.payload.title ?? '') }} /></details></section>;
   if (action.status === 'unknown') return <section className="bot-action"><h3>写入结果待核对</h3><p>{action.error || '后台中断时尚未收到写入回执，不会重复执行。'}</p><p className="bot-help">请在原工作区核对实际内容，再记录结果。{action.payload.undoing ? '本次待核对的是撤销操作。' : ''}</p><label>核对说明<textarea rows={2} value={answer} onChange={event => setAnswer(event.target.value)} /></label><div className="bot-action-buttons"><button disabled={busy || !answer.trim()} onClick={() => void run(() => api.reconcileAction(action.id, action.revision, 'not_applied', answer)).catch(() => {})}>确认未写入</button><button disabled={busy || !answer.trim()} onClick={() => void run(() => api.reconcileAction(action.id, action.revision, 'applied', answer)).catch(() => {})}>确认已写入</button></div>{error && <p role="alert" className="bot-error">{error}</p>}</section>;
   if (action.kind === 'todo') {
@@ -57,7 +72,7 @@ export function ActionCard({ action, refresh, copyBusy, questionInReply = false 
   </section>;
 }
 
-export function BotChatActions({ task, copyBusy, open, onLayout, replyText }: { task: BotTask; copyBusy: boolean; open(): void; onLayout(): void; replyText?: string }) {
+export function BotChatActions({ task, cards, copyBusy, open, onLayout, replyText }: { task: BotTask; cards: BotCard[]; copyBusy: boolean; open(): void; onLayout(): void; replyText?: string }) {
   const [actions, setActions] = useState<BotAction[]>(), [error, setError] = useState(''), [reload, setReload] = useState(0);
   useEffect(() => {
     let live = true;
@@ -68,7 +83,20 @@ export function BotChatActions({ task, copyBusy, open, onLayout, replyText }: { 
   const refresh = () => setReload(value => value + 1);
   const labels = { applied: '已应用', discarded: '已取消', undone: '已撤销' };
   return <div className="bot-chat-actions" role="group" aria-label="对话操作">
-    {actions?.map(action => task.status === 'cancelled' && ['pending', 'executing'].includes(action.status) ? <p key={action.id} className="bot-action-receipt">这项工作已取消。</p> : action.kind !== 'question' && ['applied', 'discarded', 'undone'].includes(action.status) ? <details key={action.id} className="bot-action-completed"><summary>{action.kind === 'todo' ? '待办修改' : action.kind === 'copy' ? '文章修改' : '定时任务'} · {(action.receipt as { supersededBy?: string } | undefined)?.supersededBy ? '已被新建议替代' : labels[action.status as keyof typeof labels]}</summary><ActionCard action={action} refresh={refresh} copyBusy={copyBusy} /></details> : <ActionCard key={action.id} action={action} refresh={refresh} copyBusy={copyBusy} questionInReply={action.kind === 'question' && String(action.payload.question).trim() === replyText?.trim()} />)}
+    {actions?.map(action => {
+      if (task.status === 'cancelled' && ['pending', 'executing'].includes(action.status)) {
+        return <p key={action.id} className="bot-action-receipt">这项工作已取消。</p>;
+      }
+      const owner = cards.find(bot => bot.id === action.botId);
+      if (action.kind !== 'question' && ['applied', 'discarded', 'undone'].includes(action.status)) {
+        const status = (action.receipt as { supersededBy?: string } | undefined)?.supersededBy ? '已被新建议替代' : labels[action.status as keyof typeof labels];
+        return <details key={action.id} className="bot-action-completed">
+          <ActionReceiptSummary action={action} owner={owner} status={status} />
+          <ActionCard action={action} refresh={refresh} copyBusy={copyBusy} />
+        </details>;
+      }
+      return <ActionCard key={action.id} action={action} owner={owner} onOpenWork={open} refresh={refresh} copyBusy={copyBusy} questionInReply={action.kind === 'question' && String(action.payload.question).trim() === replyText?.trim()} />;
+    })}
     {!actions && !error && <p className="bot-help" role="status">正在读取操作…</p>}
     {actions?.length === 0 && <button className="bot-text-button" onClick={open}>查看工作进度<ArrowRight size={14} /></button>}
     {error && <p className="bot-error" role="alert">{error}<button onClick={refresh}>重新读取</button></p>}

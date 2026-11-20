@@ -1,4 +1,4 @@
-import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { CalendarBlank, CaretLeft, CaretRight, CheckSquare, FileText } from '@phosphor-icons/react';
 import { hasTaskTime, localDay, type Task } from '../../../shared/todo-contracts';
@@ -8,14 +8,34 @@ import './calendar-workspace.css';
 
 export type ScheduleTab = 'calendar' | 'todo' | 'records';
 
+export interface ScheduleDetailControls {
+  expanded: boolean;
+  panelId: string;
+  entry: RefObject<HTMLButtonElement | null>;
+  open(): void;
+}
+
 export interface ScheduleNavigation {
   tab: ScheduleTab;
   onTab(tab: ScheduleTab): void;
+  leaveDetails?(navigate: () => void): void;
   workspaceHeader?: HTMLElement | null;
   calendarActions?: ReactNode;
+  editForm?: ReactNode;
   headerActions?: ReactNode;
-  details(task: Task): ReactNode;
+  details(task: Task, selected: boolean, controls: ScheduleDetailControls): ReactNode;
   records?: ReactNode;
+}
+
+
+export function ScheduleInfo({ category, remindAt, note }: { category?: string; remindAt: Task['remindAt']; note?: string }) {
+  return <>
+    {(category || remindAt) && <dl className="calendar-detail-fields">
+      {category && <><dt>标签</dt><dd>{category}</dd></>}
+      {remindAt && <><dt>提醒</dt><dd><time dateTime={remindAt}>{dateTimeText(remindAt)}</time></dd></>}
+    </dl>}
+    {note?.trim() && <section className="calendar-detail-section"><h3>日程说明</h3><p>{note}</p></section>}
+  </>;
 }
 
 const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
@@ -125,7 +145,7 @@ function calendarDay(day: string, meetings: Task[]) {
 
 type MeetingSource = { meetings: Task[]; mergeMeetings?(items: Task[]): Task[] };
 
-export function CalendarWorkspace({ tab, onTab, workspaceHeader, calendarActions, headerActions, details, records, meetings, mergeMeetings, today, todo }: ScheduleNavigation & MeetingSource & {
+export function CalendarWorkspace({ tab, onTab, leaveDetails = navigate => navigate(), workspaceHeader, calendarActions, editForm, headerActions, details, records, meetings, mergeMeetings, today, todo }: ScheduleNavigation & MeetingSource & {
   today: string; todo: ReactNode;
 }) {
   const [view, setView] = useState<CalendarView>('week');
@@ -138,10 +158,11 @@ export function CalendarWorkspace({ tab, onTab, workspaceHeader, calendarActions
   }, [workspaceHeader]);
   const [pickedDay, setPickedDay] = useState<string | null>(null);
   const [selection, setSelection] = useState<{ id: string; day: string } | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const heading = useRef<HTMLHeadingElement>(null), back = useRef<HTMLButtonElement>(null);
-  const dateHeaders = useRef<HTMLDivElement>(null), eventButton = useRef<HTMLButtonElement | null>(null);
+  const [detailMode, setDetailMode] = useState<'calendar' | 'details' | 'reader'>('calendar');
+  const heading = useRef<HTMLHeadingElement>(null), back = useRef<HTMLButtonElement>(null), readerEntry = useRef<HTMLButtonElement>(null);
+  const dateHeaders = useRef<HTMLDivElement>(null);
   const viewport = useRef<HTMLDivElement>(null), returnScroll = useRef(0);
+  const detailPane = useRef<HTMLElement>(null);
   const detailId = useId();
   const periodId = useId();
   const active = tab === 'calendar';
@@ -160,8 +181,11 @@ export function CalendarWorkspace({ tab, onTab, workspaceHeader, calendarActions
   const columns = days.map(value => calendarDay(value, value < start || value > through ? [] : visibleMeetings));
   const visible = columns.flatMap(column => [...column.allDay, ...column.blocks.map(block => block.task)]
     .map(task => ({ day: column.day, task })));
-  const selected = visible.find(entry => entry.task.id === selection?.id && entry.day === selection.day)
-    ?? visible.find(entry => entry.day === day) ?? visible[0];
+  const explicitSelection = visible.find(entry => entry.task.id === selection?.id && entry.day === selection.day);
+  const selected = explicitSelection ?? visible.find(entry => entry.day === day) ?? visible[0];
+  const selectedId = selected?.task.id;
+  useLayoutEffect(() => { if (detailPane.current) detailPane.current.scrollTop = 0; }, [selectedId]);
+  const expanded = detailMode === 'reader' && !!explicitSelection;
   const hasAllDay = columns.some(column => column.allDay.length > 0);
   let firstHour = 7;
   for (const { blocks } of columns) {
@@ -180,24 +204,30 @@ export function CalendarWorkspace({ tab, onTab, workspaceHeader, calendarActions
     : view === 'week' ? shortCalendarDate(week[0]) + '—' + (sameMonth ? Number(end.slice(-2)) : shortCalendarDate(end))
     : shortCalendarDate(day) + ' 周' + weekdays[weekDay];
 
-  function moveTo(value: string) {
-    setPickedDay(value === today ? null : value);
-    setSelection(null);
-    setDetailOpen(false);
-    if (viewport.current) viewport.current.scrollTop = 0;
+  function moveTo(value: string, afterMove?: () => void) {
+    leaveDetails(() => {
+      setPickedDay(value === today ? null : value);
+      setSelection(null);
+      setDetailMode('calendar');
+      if (viewport.current) viewport.current.scrollTop = 0;
+      afterMove?.();
+    });
   }
   function changeView(value: CalendarView) {
-    setView(value);
-    setDetailOpen(false);
-    if (viewport.current) viewport.current.scrollTop = 0;
+    leaveDetails(() => {
+      setView(value);
+      setDetailMode('calendar');
+      if (viewport.current) viewport.current.scrollTop = 0;
+    });
   }
   function movePeriod(direction: number) {
     moveTo(view === 'month' ? shiftMonth(day, direction) : shiftDay(day, direction * (view === 'week' ? 7 : 1)));
   }
   function openDay(value: string) {
-    moveTo(value);
-    changeView('day');
-    requestAnimationFrame(() => dateHeaders.current?.querySelector<HTMLButtonElement>('[data-date="' + value + '"]')?.focus());
+    moveTo(value, () => {
+      setView('day');
+      requestAnimationFrame(() => dateHeaders.current?.querySelector<HTMLButtonElement>('[data-date="' + value + '"]')?.focus());
+    });
   }
   function moveDateByKey(event: KeyboardEvent<HTMLButtonElement>, value: string, index: number) {
     const offsets: Record<string, number | undefined> = { ArrowLeft: -1, ArrowRight: 1, Home: -index, End: 6 - index,
@@ -206,23 +236,34 @@ export function CalendarWorkspace({ tab, onTab, workspaceHeader, calendarActions
     if (offset === undefined) return;
     event.preventDefault();
     const next = shiftDay(value, offset);
-    moveTo(next);
-    requestAnimationFrame(() => dateHeaders.current?.querySelector<HTMLButtonElement>('[data-date="' + next + '"]')?.focus());
+    moveTo(next, () => requestAnimationFrame(() => dateHeaders.current?.querySelector<HTMLButtonElement>('[data-date="' + next + '"]')?.focus()));
   }
-  function openDetail(task: Task, value: string, button: HTMLButtonElement) {
-    eventButton.current = button;
-    returnScroll.current = viewport.current?.scrollTop ?? 0;
-    setSelection({ id: task.id, day: value });
-    setDetailOpen(true);
-    requestAnimationFrame(() => {
-      if (back.current?.getClientRects().length) heading.current?.focus({ preventScroll: true });
+  function openDetail(task: Task, value: string) {
+    leaveDetails(() => {
+      returnScroll.current = viewport.current?.scrollTop ?? 0;
+      setSelection({ id: task.id, day: value });
+      setDetailMode('details');
+      requestAnimationFrame(() => {
+        if (back.current?.getClientRects().length) heading.current?.focus({ preventScroll: true });
+      });
     });
   }
+  function openReader() {
+    if (!selected) return;
+    if (viewport.current?.getClientRects().length) returnScroll.current = viewport.current.scrollTop;
+    setSelection({ id: selected.task.id, day: selected.day });
+    setDetailMode('reader');
+    requestAnimationFrame(() => heading.current?.focus({ preventScroll: true }));
+  }
   function backToCalendar() {
-    setDetailOpen(false);
-    requestAnimationFrame(() => {
-      if (viewport.current) viewport.current.scrollTop = returnScroll.current;
-      if (eventButton.current?.isConnected) eventButton.current.focus({ preventScroll: true });
+    leaveDetails(() => {
+      setDetailMode('calendar');
+      requestAnimationFrame(() => {
+        if (viewport.current) viewport.current.scrollTop = returnScroll.current;
+        const target = expanded && readerEntry.current?.getClientRects().length ? readerEntry.current
+          : viewport.current?.querySelector<HTMLButtonElement>('.calendar-event[aria-pressed="true"]');
+        target?.focus({ preventScroll: true });
+      });
     });
   }
   function event(task: Task, value: string, block?: TimeBlock) {
@@ -239,12 +280,12 @@ export function CalendarWorkspace({ tab, onTab, workspaceHeader, calendarActions
       aria-label={'查看日程 ' + task.title + '，' + scheduleTimeRange(task)}
       aria-pressed={task.id === selected?.task.id && value === selected.day}
       title={task.title + ' · ' + scheduleTimeRange(task)}
-      onClick={e => openDetail(task, value, e.currentTarget)}>
+      onClick={() => openDetail(task, value)}>
       {block && (view === 'month' || block.end - block.start >= 60) && <span className="calendar-event-time">{block.start === 0 ? '00:00' : timeText(task.dateAt)}</span>}
       <span className="calendar-event-title">{task.title}</span>
     </button>;
   }
-  const calendar = <section className="calendar-workspace" aria-label="日程" data-detail-open={detailOpen}>
+  const calendar = <section className="calendar-workspace" aria-label="日程" data-detail-open={detailMode !== 'calendar'} data-detail-expanded={expanded || undefined}>
     <div className="calendar-main">
       <div className="calendar-viewport" ref={viewport} data-view={view} role="region" aria-label={labels.region}
         style={{ '--calendar-days': days.length } as CSSProperties}>
@@ -300,20 +341,21 @@ export function CalendarWorkspace({ tab, onTab, workspaceHeader, calendarActions
         </>}
       </div>
     </div>
-    <aside className="calendar-detail" id={detailId} aria-label="日程详情" onKeyDown={event => {
-      if (event.key === 'Escape' && back.current?.getClientRects().length) { event.stopPropagation(); backToCalendar(); }
+    <aside ref={detailPane} className="calendar-detail" id={detailId} aria-label="日程详情" onKeyDown={event => {
+      if (event.key === 'Escape' && !event.nativeEvent.isComposing && !event.defaultPrevented && (expanded || back.current?.getClientRects().length)) {
+        event.preventDefault(); event.stopPropagation(); backToCalendar();
+      }
     }}>
-      <button ref={back} type="button" className="calendar-back" onClick={backToCalendar}><CaretLeft size={15} />{view === 'week' ? '返回周历' : view === 'month' ? '返回月历' : '返回日历'}</button>
+      <button ref={back} type="button" className="calendar-back" onClick={backToCalendar}><CaretLeft size={15} aria-hidden="true" />{expanded ? '返回日程' : view === 'week' ? '返回周历' : view === 'month' ? '返回月历' : '返回日历'}</button>
       {selected ? <>
         <h2 ref={heading} tabIndex={-1}>{selected.task.title}</h2>
         <p className="calendar-detail-time"><CalendarBlank aria-hidden="true" size={17} />{meetingStamp(selected.task)}</p>
-        {details(selected.task)}
-        {selected.task.note && <p className="calendar-detail-note">{selected.task.note}</p>}
+        {active && details(selected.task, !!explicitSelection, { expanded, panelId: detailId, entry: readerEntry, open: openReader })}
       </> : <p className="calendar-detail-empty">选择一项日程查看详情。</p>}
     </aside>
   </section>;
 
-  const tabs = <Segmented variant="content" aria-label="日程待办视图" value={tab} onChange={value => onTab(value as ScheduleTab)}
+  const tabs = <Segmented variant="content" aria-label="日程待办视图" value={tab} onChange={value => leaveDetails(() => onTab(value as ScheduleTab))}
     options={records ? scheduleTabs : scheduleTabs.slice(0, 2)} />;
   const toolbar = active && <div className="calendar-toolbar" role="group" aria-label="日程工具栏">
     <div className="calendar-toolbar-navigation">
@@ -340,10 +382,11 @@ export function CalendarWorkspace({ tab, onTab, workspaceHeader, calendarActions
       {!workspaceHeader && tabs}
       {!toolbarTarget && toolbar}
     </header>}
-    <div className="calendar-tab-panel calendar-overview" hidden={!active}>
+    <div className="calendar-tab-panel calendar-overview" hidden={!active || !!editForm}>
       {calendar}
     </div>
-    <div className="calendar-tab-panel calendar-todos" hidden={tab !== 'todo'}>{todo}</div>
-    {records && <div className="calendar-tab-panel" hidden={tab !== 'records'}>{records}</div>}
+    <div className="calendar-tab-panel calendar-todos" hidden={tab !== 'todo' || !!editForm}>{todo}</div>
+    {records && <div className="calendar-tab-panel" hidden={tab !== 'records' || !!editForm}>{records}</div>}
+    {editForm && <div className="calendar-tab-panel calendar-edit-panel">{editForm}</div>}
   </div>;
 }

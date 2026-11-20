@@ -6,7 +6,7 @@ Ono Workbench — Windows x64 便携版
 安装版使用 Setup 安装器，支持在“设置 → 关于”检查更新、后台下载及重启安装。
 
 设置、AI 配置和密钥、对话、命例及草稿保存在 %APPDATA%/OnoWorkbench。
-待办使用与 To-Do-List 共享的 %APPDATA%/To-Do-List/tasks.db。
+OnO 与 CMO 共用 %APPDATA%/OnoCmoWorkbench/tasks.db。首次启动从旧库只读导入事项和标签。
 替换程序文件不删除这些数据。对外分发或提交代码时，不要附带上述个人数据目录。
 
 正式版本与安装器：https://github.com/zhshenry/onosan_workbench/releases

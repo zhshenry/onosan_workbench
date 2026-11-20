@@ -1,9 +1,32 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { act, createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { JSDOM } from 'jsdom';
 import type { ChatSession } from '../shared/todo-contracts';
 import type { BrowserTask, BrowserWorkspaceState } from '../shared/browser-automation-contracts';
+
+test('inline site approval shows a single-row receipt for the latest confirmed grant', async () => {
+  const { BrowserSiteApprovalCard } = await import('../modules/browser/ui/site-approval');
+  const origin = 'https://allowed.test', nextOrigin = 'https://next.test';
+  const granted: BrowserTask = { id: 'task', workspace: 'default', tabIds: [], origins: [origin], goal: '打开网站', status: 'completed',
+    siteApprovals: [{ origin, status: 'allowed' }], steps: [], updatedAt: '2026-11-20' };
+  const render = (task: BrowserTask, inline = true) => renderToStaticMarkup(createElement(BrowserSiteApprovalCard, { task, inline, onTask() {} }));
+  const receipt = render(granted);
+  assert.match(receipt, /data-status="allowed"/);
+  assert.match(receipt, /站点授权.*已授权/);
+  assert.doesNotMatch(receipt, /<button\b|ai-site-approval-body|allowed\.test/);
+  assert.equal(render(granted, false), '');
+
+  const pending: BrowserTask = { ...granted, status: 'site-approval', pendingOrigin: nextOrigin,
+    siteApprovals: [...granted.siteApprovals!, { origin: nextOrigin, status: 'pending' }] };
+  assert.match(render(pending), /待处理.*next\.test.*允许并继续/);
+  assert.doesNotMatch(render(pending), /已授权/);
+  const denied: BrowserTask = { ...pending, status: 'cancelled', pendingOrigin: undefined,
+    siteApprovals: [...granted.siteApprovals!, { origin: nextOrigin, status: 'denied' }] };
+  assert.equal(render(denied), '');
+  assert.equal(render({ ...granted, siteApprovals: undefined }), '');
+});
 
 test('docked site cards follow the visible conversation, ignore stale reads, retry errors and keep real decision receipts', async () => {
   const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost', pretendToBeVisual: true });

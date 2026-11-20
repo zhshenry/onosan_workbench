@@ -1,11 +1,12 @@
-import { useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
-import { ArrowUpRight, CalendarBlank, DotsThree, Flag, Plus, Tag } from '@phosphor-icons/react';
+import { useImperativeHandle, useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent, type Ref } from 'react';
+import { ArrowUpRight, CalendarBlank, CaretLeft, DotsThree, Flag, Plus, Tag } from '@phosphor-icons/react';
 import { localDay, newTask, taskInputSchema, type Category, type Task, type TaskInput } from '../../../shared/todo-contracts';
 import type { TodoState } from '../../../shared/workbench-api';
 import { hasTaskTime, taskDateFrom, taskDay } from '../../../shared/todo-date';
 
 /** 工作台注入的待办操作面(上游为 DesktopAPI 的子集,行为一致) */
 export type { TodoState } from '../../../shared/workbench-api';
+export interface TaskEditHandle { leave(next?: () => void): void; }
 export interface TaskEditorApi {
   create(input: unknown): Promise<TodoState>;
   update(id: string, patch: unknown, revision: string): Promise<TodoState>;
@@ -38,7 +39,7 @@ function localInput(iso: string | null): string {
   if (!iso) return '';
   const d = new Date(iso); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 }
-export function TaskEditor({ task, initialTitle, initialKind, lockKind = false, meetingSource, id, categories, api, close, saved, changed }: { task?: Task; initialTitle?: string; initialKind?: TaskInput['kind']; lockKind?: boolean; meetingSource?: { title: string; open(): void }; id?: string; categories: Category[]; api: TaskEditorApi; close(): void; saved(state: TodoState): void; changed(state: TodoState): void }) {
+export function TaskEditor({ task, initialTitle, initialKind, lockKind = false, meetingSource, id, categories, api, close, saved, changed, page }: { task?: Task; initialTitle?: string; initialKind?: TaskInput['kind']; lockKind?: boolean; meetingSource?: { title: string; open(): void }; id?: string; categories: Category[]; api: TaskEditorApi; close(restoreFocus?: boolean): void; saved(state: TodoState): void | Promise<void>; changed(state: TodoState): void; page?: { backLabel: string; handle: Ref<TaskEditHandle> } }) {
   const [draft, setDraft] = useState<TaskInput>(() => {
     if (task) return { title: task.title, kind: task.kind, status: task.status, priority: task.priority, dateAt: task.dateAt, endAt: task.endAt ?? null, remindAt: task.remindAt, categoryId: task.categoryId, progress: task.progress, note: task.note };
     const fresh = newTask(initialTitle);
@@ -59,6 +60,15 @@ export function TaskEditor({ task, initialTitle, initialKind, lockKind = false, 
   const createTools = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => { titleRef.current?.focus({ preventScroll: true }); }, []);
   const dirty = JSON.stringify(draft) !== initial.current;
+  const [discardEdit, setDiscardEdit] = useState<(() => void) | null>(null);
+  function leavePage(next?: () => void) {
+    if (busy || categoryBusy || discardEdit) return;
+    const finish = () => { close(!next); next?.(); };
+    const hasDraft = dirty || remindOn !== Boolean(task?.remindAt) || (addingCategory && Boolean(categoryName.trim()));
+    if (hasDraft) setDiscardEdit(() => finish);
+    else finish();
+  }
+  useImperativeHandle(page?.handle, () => ({ leave: leavePage }));
   function change<K extends keyof TaskInput>(key: K, value: TaskInput[K]) { setDraft(d => ({ ...d, [key]: value })); setError(''); setInvalid(''); setDeleting(false); }
   function changeKind(next: TaskInput['kind']) {
     if (next === draft.kind) return;
@@ -127,14 +137,22 @@ export function TaskEditor({ task, initialTitle, initialKind, lockKind = false, 
       requestAnimationFrame(() => document.getElementById(id)?.focus()); return;
     }
     setBusy(true);
-    try { saved(task ? await api.update(task.id, parsed.data, task.updatedAt) : await api.create(parsed.data)); close(); }
+    try {
+      const savedState = saved(task ? await api.update(task.id, parsed.data, task.updatedAt) : await api.create(parsed.data));
+      if (page) await savedState;
+      close();
+    }
     catch (e) { setError(errorText(e)); } finally { setBusy(false); }
   }
   async function confirmRemove() {
     if (!task || busy) return;
     if (!deleting) { setDeleting(true); return; }
     setBusy(true); setError('');
-    try { saved(await api.remove(task.id, task.updatedAt)); close(); }
+    try {
+      const savedState = saved(await api.remove(task.id, task.updatedAt));
+      if (page) await savedState;
+      close();
+    }
     catch (e) { setError(errorText(e)); setDeleting(false); }
     finally { setBusy(false); }
   }
@@ -150,8 +168,9 @@ export function TaskEditor({ task, initialTitle, initialKind, lockKind = false, 
     } catch (e) { setError(errorText(e)); } finally { setCategoryBusy(false); }
   }
   const isMeeting = draft.kind === 'meeting';
-  const pickerDirection = task ? 'down' : 'auto';
-  const typeSwitch = lockKind ? <span className="task-kind-label">{isMeeting ? '日程' : '待办'}</span> : <Segmented aria-label="类型" value={draft.kind} onChange={value => changeKind(value as TaskInput['kind'])} options={[{ value: 'task', label: '待办' }, { value: 'meeting', label: '日程' }]} />;
+  const pickerDirection = task && !page ? 'down' : 'auto';
+  const showTypeSwitch = !page || task?.kind !== 'meeting';
+  const typeSwitch = showTypeSwitch && (lockKind ? <span className="task-kind-label">{isMeeting ? '日程' : '待办'}</span> : <Segmented aria-label="类型" value={draft.kind} onChange={value => changeKind(value as TaskInput['kind'])} options={[{ value: 'task', label: '待办' }, { value: 'meeting', label: '日程' }]} />);
   const category = draft.categoryId ? categories.find(item => item.id === draft.categoryId) : null;
   const reminderFields = remindOn ? <>
     <div className="form-grid" role="group" aria-label="提醒时间">
@@ -179,7 +198,7 @@ export function TaskEditor({ task, initialTitle, initialKind, lockKind = false, 
     <div className="form-body"><h3>{task.title}</h3><p>{task.external?.isAllDay ? `${taskDay(task)} · 全天` : `${dateTimeText(task.dateAt)} — ${dateTimeText(task.endAt ?? null)}`}</p>
       <p className="field-help">由 CMO 同步的外部日程，请在来源应用修改安排。</p>{task.note ? <p className="pre-wrap">{task.note}</p> : null}
       {error ? <p className="error" role="alert">{error}</p> : null}
-      <div className="form-actions"><button type="button" disabled={busy} onClick={close}>返回</button>{task.status !== 'done' ? <button type="button" className="primary" disabled={busy} onClick={async () => {
+      <div className="form-actions"><button type="button" disabled={busy} onClick={() => close()}>返回</button>{task.status !== 'done' ? <button type="button" className="primary" disabled={busy} onClick={async () => {
         setBusy(true); setError('');
         try { saved(await api.update(task.id, { status: 'done' }, task.updatedAt)); close(); }
         catch (error) { setError(errorText(error)); } finally { setBusy(false); }
@@ -234,8 +253,9 @@ export function TaskEditor({ task, initialTitle, initialKind, lockKind = false, 
     </form>
   </Modal>;
 
-  return <Modal className="task-modal" title="编辑事项" close={close} dirty={dirty && !busy} headingExtra={typeSwitch}>
-    {meetingSource && <div className="task-meeting-source"><span>来源会议</span><button type="button" onClick={meetingSource.open}>{meetingSource.title}<ArrowUpRight size={14} /></button></div>}
+  const headingExtra = typeSwitch;
+  const form = <>
+    {meetingSource && <div className="task-meeting-source"><span>来源会议</span><button type="button" onClick={page ? () => leavePage(meetingSource.open) : meetingSource.open}>{meetingSource.title}<ArrowUpRight size={14} /></button></div>}
     <form noValidate onSubmit={submit} className={`form-body${kindDir ? ` is-${kindDir}` : ''}`}>
       <div className="task-fields">
         <label htmlFor="task-title">{isMeeting ? '日程名称' : '待办名称'}</label>
@@ -277,7 +297,27 @@ export function TaskEditor({ task, initialTitle, initialKind, lockKind = false, 
         {task?.updatedAt ? <p className="field-help">最近更新：{dateTimeText(task.updatedAt)}</p> : null}
       </div>
       {error ? <p className="error" id="task-error" role="alert">{error}</p> : null}
-      <div className="actions sticky-actions">{task ? <button type="button" className={deleting ? 'danger shake' : 'text-danger'} disabled={busy} title={deleting ? '再点一次确认删除' : undefined} onClick={() => void confirmRemove()}>{deleting ? '确认删除' : '删除'}</button> : null}<button className="primary" disabled={busy || categoryBusy} type="submit">{busy ? '保存中…' : isMeeting ? '保存日程' : '保存待办'}</button></div>
+      <div className="actions sticky-actions">{task ? <button type="button" className={deleting ? 'danger shake' : 'text-danger'} disabled={busy} title={deleting ? '再点一次确认删除' : undefined} onClick={() => void confirmRemove()}>{deleting ? '确认删除' : '删除'}</button> : null}<button className={page ? 'btn btn-pri' : 'primary'} disabled={busy || categoryBusy} type="submit">{busy ? '保存中…' : isMeeting ? '保存日程' : '保存待办'}</button></div>
     </form>
-  </Modal>;
+  </>;
+
+  if (!page) return <Modal className="task-modal" title="编辑事项" close={close} dirty={dirty && !busy} headingExtra={headingExtra}>{form}</Modal>;
+
+  const title = isMeeting ? '编辑日程' : '编辑待办';
+  return <section className="calendar-detail task-edit-page" aria-label={title} aria-busy={busy || categoryBusy || undefined} onKeyDown={event => {
+    if (event.key !== 'Escape' || event.defaultPrevented || event.nativeEvent.isComposing || discardEdit) return;
+    event.preventDefault();
+    event.stopPropagation();
+    leavePage();
+  }}>
+    <header className="task-edit-header">
+      <button type="button" className="text-button task-edit-back" disabled={busy || categoryBusy} onClick={() => leavePage()}><CaretLeft size={16} aria-hidden="true" />{page.backLabel}</button>
+      <div className="task-edit-heading"><h2>{title}</h2>{headingExtra}</div>
+    </header>
+    {form}
+    {discardEdit && <Modal className="confirm task-edit-discard" title="放弃未保存的修改？" close={() => setDiscardEdit(null)}>
+      <p>已填写的内容尚未保存。</p>
+      <div className="actions"><button type="button" autoFocus onClick={() => setDiscardEdit(null)}>继续编辑</button><button type="button" className="danger" onClick={discardEdit}>放弃修改</button></div>
+    </Modal>}
+  </section>;
 }

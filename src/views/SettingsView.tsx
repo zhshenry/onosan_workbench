@@ -300,10 +300,10 @@ function DataStorageSection({ query }: { query: string }) {
   if (info) rows.push(
     {
       key: 'syncState',
-      title: '同步状态',
+      title: '存储状态',
       desc: info.connected
-        ? '已连接，OnO 与 CMO 共用事项数据'
-        : '未连接：共享事项库暂不可用，请检查数据目录',
+        ? 'OnO 与 CMO 共用本地事项库'
+        : '共享事项库暂不可用，请检查数据目录',
       control: <span className="set-value">{info.connected ? '已连接' : '未连接'}</span>,
     },
     {

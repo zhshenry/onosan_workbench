@@ -23,7 +23,9 @@ const reportDirectory = path.resolve('test-results/release-validation');
 mkdirSync(reportDirectory, { recursive: true });
 const root = path.join(process.env.RUNNER_TEMP, `ono-upgrade-${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}`);
 assert.equal(existsSync(root), false, 'Refusing to reuse an upgrade installation.');
-assert.equal(existsSync(path.join(process.env.APPDATA, 'To-Do-List/tasks.db')), false, 'The hosted profile must have no existing tasks.');
+for (const db of ['To-Do-List/tasks.db', 'OnoCmoWorkbench/tasks.db']) {
+  assert.equal(existsSync(path.join(process.env.APPDATA, db)), false, 'The hosted profile must have no existing tasks.');
+}
 assert.equal(existsSync(path.join(process.env.LOCALAPPDATA, 'onosan-workbench-updater')), false, 'Updater cache must be fresh.');
 mkdirSync(root, { recursive: true });
 const installDirectory = path.join(root, 'Ono Workbench');

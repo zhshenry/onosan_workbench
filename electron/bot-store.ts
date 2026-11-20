@@ -1,12 +1,12 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { Temporal } from '@js-temporal/polyfill';
-import { botSeeds, terminalTask, type BotCollaboration, type BotExchange, type BotExchangeQuery, type BotAction, type BotArtifact, type BotCard, type BotChatSnapshot, type BotChatView, type BotDraftSurface, type BotDraftValue, type BotMemory, type BotMessage, type BotOpen, type BotProfile, type BotSchedule, type BotSeedKey, type BotSubmit, type BotSubmitReceipt, type BotTask, type DraftSnapshot } from '../shared/bot-contracts';
+import { botSeeds, isQueuedBotMessage, terminalTask, type BotCollaboration, type BotExchange, type BotExchangeQuery, type BotAction, type BotArtifact, type BotCard, type BotChatSnapshot, type BotChatView, type BotDraftSurface, type BotDraftValue, type BotMemory, type BotMessage, type BotOpen, type BotProfile, type BotResourceRef, type BotSchedule, type BotSeedKey, type BotSubmit, type BotSubmitReceipt, type BotTask, type DraftSnapshot } from '../shared/bot-contracts';
 import type { AiScope } from '../shared/ai-scope';
 import type { ChatSession } from '../shared/todo-contracts';
 import type { AiStore } from './ai-store';
 import { normalizeBotAvatar } from '../shared/bot-avatar';
-import type { BotActivity, BotRunActivity } from '../shared/bot-contracts';
+import type { BotActivity, BotQueueChange, BotRunActivity } from '../shared/bot-contracts';
 
 export class BotError extends Error {
   constructor(readonly code: string, message: string, readonly current?: unknown) { super(message); }
@@ -247,12 +247,15 @@ export class BotStore {
     return 'chat' in result ? this.withPageTasks(result) : result;
   }
   private withPageTasks(snapshot: BotChatSnapshot): BotChatSnapshot {
-    const ids = [...snapshot.chat.entries, ...snapshot.liveEntries].filter(entry => entry.role === 'assistant').map(entry => entry.id);
+    const ids = [...snapshot.chat.entries, ...snapshot.liveEntries].map(entry => entry.id);
     if (!ids.length) return snapshot;
-    const rows = this.db.prepare(`SELECT payload FROM bot_tasks WHERE chat_id=? AND json_extract(payload,'$.kind') <> 'message'
-      AND (json_extract(payload,'$.assistantEntryId') IN (SELECT value FROM json_each(?)) OR EXISTS (
-        SELECT 1 FROM json_each(bot_tasks.payload,'$.assistantEntryIds') WHERE value IN (SELECT value FROM json_each(?))))`)
-      .all(snapshot.chat.id, json(ids), json(ids)) as { payload: string }[];
+    const rows = this.db.prepare(`WITH page(id) AS (SELECT value FROM json_each(?))
+      SELECT payload FROM bot_tasks WHERE chat_id=? AND json_extract(payload,'$.kind') <> 'message'
+      AND (json_extract(payload,'$.sourceMessageId') IN page
+        OR json_extract(payload,'$.latestUserMessageId') IN page
+        OR json_extract(payload,'$.assistantEntryId') IN page
+        OR EXISTS (SELECT 1 FROM json_each(bot_tasks.payload,'$.assistantEntryIds') WHERE value IN page))`)
+      .all(json(ids), snapshot.chat.id) as { payload: string }[];
     return { ...snapshot, pageTasks: rows.map(row => JSON.parse(row.payload) as BotTask) };
   }
   conversationEntries(task: BotTask) {
@@ -318,7 +321,15 @@ export class BotStore {
     return { status: 'accepted', dataEpoch: epoch, receipt: this.submit(input, () => { throw new BotError('REQUEST_NOT_FOUND', '发送记录未找到'); }, surface) };
   }
   private amend(input: BotSubmit, surface: BotDraftSurface, hash: string, draft: DraftSnapshot): BotSubmitReceipt {
-    const target = input.target!, root = this.task(target.rootTaskId), task = this.task(target.taskId);
+    const messageId = randomUUID();
+    const task = this.applyAmendment(input, input.target!, messageId);
+    const chat = this.ai.chat(input.chatId); chat.entries.push({ id: messageId, role: 'user', content: input.text }); this.ai.saveChat(chat);
+    this.db.prepare('INSERT INTO bot_submissions VALUES(?,?,?,?,?,?,?)').run(input.clientRequestId, input.chatId, surface, hash, task.id, messageId, 'amended');
+    return { task, messageId, disposition: 'amended', duplicate: false, draft: this.writeDraft(input.chatId, surface, { text: '', replyToTaskId: null, resources: [] }, draft.revision + 1) };
+  }
+
+  private applyAmendment(input: Pick<BotSubmit, 'botId' | 'chatId' | 'text'>, target: NonNullable<BotSubmit['target']>, messageId: string, resources?: BotResourceRef[]): BotTask {
+    const root = this.task(target.rootTaskId), task = this.task(target.taskId);
     if (root.rootTaskId !== root.id || root.chatId !== input.chatId || root.botId !== input.botId || task.rootTaskId !== root.id) throw new BotError('WRONG_TASK', '补充目标不属于发起对话');
     if (terminalTask(root.status) || terminalTask(task.status)) throw new BotError('TASK_FINISHED', '原工作已经结束，请根据真实结果发起新的修改');
     const page = task.context.pageScope ?? task.context.scope;
@@ -331,18 +342,51 @@ export class BotStore {
       this.checkRevision(action, target.expectedActionRevision);
       if (!['pending', 'superseded', 'failed'].includes(action.status)) throw new BotError('ACTION_NOT_PENDING', '原建议已经处理，请读取实际结果');
     }
-    const messageId = randomUUID(), requirementsRevision = (task.requirementsRevision ?? 0) + 1;
+    const requirementsRevision = (task.requirementsRevision ?? 0) + 1;
     for (const action of actions) if (action.status === 'pending') this.updateAction(action.id, { status: 'superseded', error: '已接收补充，正在更新建议；原版本不能再应用' });
     const previous = target.actionId ? this.action(target.actionId) : actions.find(action => ['todo', 'copy'].includes(action.kind) && action.status === 'pending');
-    const updated = this.updateTask(task.id, { status: 'queued', requirementsRevision, amendedActionId: previous?.id, ...(task.id === root.id ? { latestUserMessageId: messageId } : {}),
+    const updated = this.updateTask(task.id, { status: 'queued', requirementsRevision, amendedActionId: previous?.id, ...(resources ? { resources } : {}), ...(task.id === root.id ? { latestUserMessageId: messageId } : {}),
       input: `${task.input}\n\n用户补充：${input.text}`,
       resumeInput: `继续同一项工作，不要另建或重复委派。原目标：${task.input}\n最新补充：${input.text}\n${previous ? `原建议（未执行，必须重新生成完整预览）：${json(previous.payload)}` : ''}`,
       reason: '已接收补充，正在更新建议' });
     if (task.id !== root.id) this.updateTask(root.id, { latestUserMessageId: messageId });
-    const chat = this.ai.chat(input.chatId); chat.entries.push({ id: messageId, role: 'user', content: input.text }); this.ai.saveChat(chat);
-    if (task.botId !== root.botId) this.insertMessage({ id: randomUUID(), fromBotId: root.botId, toBotId: task.botId, taskId: task.id, rootTaskId: root.id, parentTaskId: task.parentTaskId!, sourceUserMessageId: messageId, replyTo: task.sourceMessageId, kind: 'request', content: `原目标：${task.input}\n补充要求：${input.text}`, references: task.resources, createdAt: now(), deliveredAt: now() });
-    this.db.prepare('INSERT INTO bot_submissions VALUES(?,?,?,?,?,?,?)').run(input.clientRequestId, input.chatId, surface, hash, task.id, messageId, 'amended');
-    return { task: updated, messageId, disposition: 'amended', duplicate: false, draft: this.writeDraft(input.chatId, surface, { text: '', replyToTaskId: null, resources: [] }, draft.revision + 1) };
+    if (task.botId !== root.botId) this.insertMessage({ id: randomUUID(), fromBotId: root.botId, toBotId: task.botId, taskId: task.id, rootTaskId: root.id, parentTaskId: task.parentTaskId!, sourceUserMessageId: messageId, replyTo: task.sourceMessageId, kind: 'request', content: `原目标：${task.input}\n补充要求：${input.text}`, references: updated.resources, createdAt: now(), deliveredAt: now() });
+    return updated;
+  }
+
+  changeQueuedMessage(change: BotQueueChange): BotTask {
+    return this.transaction(() => {
+      const source = this.task(change.taskId);
+      if (!isQueuedBotMessage(source)) throw new BotError('QUEUE_CHANGED', '这条消息已离开队列');
+      this.checkRevision(source, change.revision);
+      const chat = this.ai.chat(source.chatId);
+      const index = chat.entries.findIndex(entry => entry.id === source.sourceMessageId && entry.role === 'user');
+      if (index < 0) throw new BotError('NOT_FOUND', '排队消息的原文不可用');
+      const entry = chat.entries[index];
+      if (change.kind === 'edit') {
+        entry.content = change.text;
+        this.ai.saveChat(chat);
+        return this.updateTask(source.id, { input: change.text, title: change.text.slice(0, 60) });
+      }
+      chat.entries.splice(index, 1);
+      if (change.kind === 'steer') {
+        const target = this.task(change.targetTaskId);
+        if (target.rootTaskId !== target.id || target.botId !== source.botId || target.chatId !== source.chatId) {
+          throw new BotError('WRONG_TASK', '请引导当前对话里的任务');
+        }
+        if (target.status !== 'running' || (target.runGeneration ?? 0) !== change.targetRun) {
+          throw new BotError('TASK_BUSY', '当前任务已切换，请重新选择引导时机');
+        }
+        const resources = [...new Map([...target.resources, ...source.resources].map(ref => [ref.kind + ':' + ref.id, ref])).values()];
+        if (resources.length > 8) throw new BotError('INVALID_INPUT', '当前任务和排队消息合计最多引用 8 项');
+        this.applyAmendment({ botId: source.botId, chatId: source.chatId, text: entry.content },
+          { intent: 'amend', rootTaskId: target.id, taskId: target.id }, entry.id, resources);
+        chat.entries.push(entry);
+      }
+      this.ai.saveChat(chat);
+      return this.updateTask(source.id, { status: 'cancelled', queueDisposition: change.kind === 'steer' ? 'steered' : 'deleted',
+        title: '', input: '', resources: [], context: {}, replyToEntryId: undefined });
+    });
   }
   collaboration(rootTaskId: string): BotCollaboration {
     const root = this.task(rootTaskId);
@@ -375,7 +419,7 @@ export class BotStore {
     if (this.task(id).status !== 'running' || this.activities.get(id) === activity) return false;
     this.activities.set(id, activity); return true;
   }
-  tasks(botId?: string, limit = 100): BotTask[] { return this.all<BotTask>('bot_tasks').filter(t => !botId || t.botId === botId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, limit); }
+  tasks(botId?: string, limit = 100): BotTask[] { return this.all<BotTask>('bot_tasks').filter(t => !t.queueDisposition && (!botId || t.botId === botId)).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, limit); }
   updateTask(id: string, patch: Partial<BotTask>): BotTask {
     const current = this.task(id), next = { ...current, ...patch, id, revision: current.revision + 1, updatedAt: now() };
     this.db.prepare('UPDATE bot_tasks SET status=?,payload=? WHERE id=?').run(next.status, json(next), id);

@@ -99,10 +99,16 @@ export function useMeetingDraft(id: string, note: MeetingNote | undefined, onSav
   async function resolve(keepLocal: boolean) {
     try {
       const latest = (await window.workbench.meetingNotes.list()).find(item => item.meetingId === id);
-      revision.current = latest?.revision ?? 0; baseline.current = JSON.stringify(draftOf(latest));
-      if (latest) savedCallback.current(latest);
       const local = recoveryRef.current ?? draft.current;
-      const next = keepLocal ? { ...local, actions: [...local.actions, ...(latest?.actions.filter(item => item.taskId && !local.actions.some(action => action.id === item.id)).map(({ id, title }) => ({ id, title })) ?? [])] } : draftOf(latest);
+      const previous = JSON.parse(baseline.current) as MeetingNoteDraft;
+      const latestDraft = draftOf(latest);
+      const editedActions = recoveryRef.current || JSON.stringify(local.actions) !== JSON.stringify(previous.actions);
+      const actions = editedActions
+        ? [...local.actions, ...(latest?.actions.filter(item => item.taskId && !local.actions.some(action => action.id === item.id)).map(({ id, title }) => ({ id, title })) ?? [])]
+        : latestDraft.actions;
+      const next = keepLocal ? { ...local, actions } : latestDraft;
+      revision.current = latest?.revision ?? 0; baseline.current = JSON.stringify(latestDraft);
+      if (latest) savedCallback.current(latest);
       recoveryRef.current = null; setRecovery(null); conflict.current = false;
       draft.current = next; setValue(next); setReset(current => current + 1); setStatus('idle'); setError('');
       if (keepLocal) { cache(); await flush(); } else clearCache();

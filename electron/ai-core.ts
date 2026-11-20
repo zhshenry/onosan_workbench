@@ -132,6 +132,7 @@ export interface PersistentAgentSession {
   shouldYield?(): boolean;
   onControl?(control: { redirect(): void } | null): void;
   onResponseText?(part: AIResponseTextPart): void;
+  onProgress?(): void;
   measure?(stage: 'prepare' | 'first_text' | 'run', milliseconds: number): void;
 }
 export async function runAgentLoop(config: { endpoint: string; model: string; protocol: AIProtocol; key: string; supportsImages?: boolean }, text: string, history: AIConversationTurn[], signal: AbortSignal, module: AiModuleContribution, onDelta?: (text: string) => void, onTool?: (event: AIToolEvent) => void, onThinking?: (text: string, active: boolean) => void, onPhase?: (phase: AIResponsePhase) => void, persistent?: PersistentAgentSession): Promise<{ reply: string }> {
@@ -187,6 +188,8 @@ export async function runAgentLoop(config: { endpoint: string; model: string; pr
     let assistantTurn = 0;
     const recordedParts = new Map<number, string>();
     const onResponseText = persistent?.onResponseText;
+    const onProgress = persistent?.onProgress;
+    const toolProgress = new Map<string, string>();
     let phase: AIResponsePhase | undefined;
     const emitPhase = (next: AIResponsePhase): void => { if (next !== phase) { phase = next; onPhase?.(next); } };
     const unsubscribe = session.subscribe(event => {
@@ -201,15 +204,32 @@ export async function runAgentLoop(config: { endpoint: string; model: string; pr
         if (event.type === 'tool_execution_end') activeToolCalls.delete(event.toolCallId);
         emitPhase('waiting');
         if (event.type === 'tool_execution_end' && !activeToolCalls.size && (redirectRequested || persistent?.shouldYield?.())) queueMicrotask(abort);
-        if (!module.labels[event.toolName]) return;
+        const label = module.labels[event.toolName];
+        if (!label && !onProgress) return;
         const result = event.type === 'tool_execution_end' ? event.result : event.type === 'tool_execution_update' ? event.partialResult : undefined;
         // Forward visible text only; never expose signatures, request headers, or raw events.
-        const output = Array.isArray(result?.content) ? result.content.filter((part: { type?: string; text?: unknown }) => part.type === 'text' && typeof part.text === 'string').map((part: { text: string }) => part.text).join('\n').slice(0, 20000) : '';
-        onTool?.({ id: event.toolCallId, name: event.toolName, label: module.labels[event.toolName], status: event.type === 'tool_execution_end' ? event.isError ? 'error' : 'complete' : 'running', output });
+        const output = Array.isArray(result?.content) ? result.content.filter((part: { type?: string; text?: unknown }) => part.type === 'text' && typeof part.text === 'string').map((part: { text: string }) => part.text).join('\n') : '';
+        if (onProgress) {
+          if (event.type === 'tool_execution_update') {
+            const progress = output.trim();
+            if (progress && progress !== toolProgress.get(event.toolCallId)) {
+              toolProgress.set(event.toolCallId, progress);
+              onProgress();
+            }
+          } else {
+            toolProgress.delete(event.toolCallId);
+            onProgress();
+          }
+        }
+        if (label) onTool?.({ id: event.toolCallId, name: event.toolName, label, status: event.type === 'tool_execution_end' ? event.isError ? 'error' : 'complete' : 'running', output: output.slice(0, 20000) });
         return;
       }
       if (event.type !== 'message_update' && event.type !== 'message_end') return;
       if (event.message.role !== 'assistant') return;
+      if (onProgress && event.type === 'message_update') {
+        const delta = event.assistantMessageEvent;
+        if ('delta' in delta && delta.delta.trim()) onProgress();
+      }
       const thinking = [completedThinking, assistantThinking(event.message)].filter(Boolean).join('\n\n');
       const thinkingActive = event.type === 'message_update' && (event.assistantMessageEvent.type === 'thinking_start' || event.assistantMessageEvent.type === 'thinking_delta');
       if (thinking !== lastThinking || thinkingActive !== lastThinkingActive) {

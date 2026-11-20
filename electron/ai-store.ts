@@ -1,4 +1,4 @@
-// 工作台 AI 独立存储(用户决策 2026-09-23 修订:AI 不与 To-Do-List 复用,仅待办数据共享):
+// 工作台 AI 独立存储，与 OnO / CMO 共用的事项库分开。
 // - 供应商/模型/Key → userData/ai-config.json(Key 为 safeStorage 密文)
 // - 对话会话 → userData/chats.db(结构同上游 chats 表,逻辑自上游 store.ts 平移)
 import { randomUUID } from 'node:crypto';

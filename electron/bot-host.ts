@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { botSeeds, draftValueSchema, terminalTask, type BotAction, type BotArtifact, type BotChanged, type BotDraftValue, type BotHostState, type BotMessage, type BotProfile, type BotResourceRef, type BotSubmit, type BotTask } from '../shared/bot-contracts';
 import { BotError, BotStore, legacyBotOwner, payloadHash } from './bot-store';
-import type { BotRunActivity } from '../shared/bot-contracts';
+import type { BotQueueChange, BotRunActivity } from '../shared/bot-contracts';
 
 export interface BotExecutor {
   run(task: BotTask, host: BotHost, signal: AbortSignal): Promise<{ reply: string }>;
@@ -78,6 +78,22 @@ export class BotHost extends EventEmitter {
     this.changed({ kind: 'task', botId: input.botId, taskId: receipt.task.id, chatId: input.chatId });
     this.changed({ kind: 'chat', botId: input.botId, chatId: input.chatId });
     this.wake(); return receipt;
+  }
+  changeQueuedMessage(change: BotQueueChange, surface: Surface): BotTask {
+    const source = this.store.task(change.taskId);
+    this.assertSurface(source.chatId, surface);
+    if (change.kind === 'steer' && (!this.active.has(change.targetTaskId) || this.resourceWaits.has(change.targetTaskId))) {
+      throw new BotError('TASK_BUSY', '当前任务已结束或正在等待，请重新选择引导时机');
+    }
+    const task = this.store.changeQueuedMessage(change);
+    if (change.kind === 'steer') {
+      this.executor.redirect?.(change.targetTaskId);
+      this.changed({ kind: 'task', botId: task.botId, taskId: change.targetTaskId, chatId: task.chatId });
+    }
+    this.changed({ kind: 'task', botId: task.botId, taskId: task.id, chatId: task.chatId });
+    this.changed({ kind: 'chat', botId: task.botId, chatId: task.chatId });
+    this.wake();
+    return task;
   }
   submissionStatus(input: BotSubmit, surface: Surface, dataEpoch?: string) {
     this.assertSurface(input.chatId, surface);

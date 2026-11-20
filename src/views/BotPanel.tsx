@@ -4,7 +4,8 @@ import { groupBotChatEvents, type BotChatEventGroup, type BotChatEventSlot } fro
 import { Fragment, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type Ref } from 'react';
 import { ArrowDown, ArrowLeft, ArrowRight, CaretRight, DotsThree, ListBullets, MinusSquare, Paperclip, PaperPlaneRight, Plus, Power, SidebarSimple, Sparkle, Square, StarFour, X } from '@phosphor-icons/react';
 import type { BotArtifact, BotCard, BotMessage, BotOpen, BotResourceRef, BotSubmit, BotTask } from '../../shared/bot-contracts';
-import { isBotAmendment } from '../../shared/bot-input';
+import { isQueuedBotMessage } from '../../shared/bot-contracts';
+import { BotMessageQueue } from './BotMessageQueue';
 import type { AiTurnContext, AiReference } from '../../shared/ai-reference';
 import type { ChatEntry, CopySource } from '../../shared/todo-contracts';
 import type { AiConfig } from '../../shared/workbench-api';
@@ -13,7 +14,8 @@ import { groupBotProgress } from '../bot-progress';
 import { playBotMarquee, playBotOpening } from '../bot-floating-motion';
 import { errorText, IconButton } from '../ui/controls';
 import type { AiPanelContext, AiSeed } from './AiPanel';
-import { AiResponse } from './AiResponse';
+import { AiResponse, ResponseProcess } from './AiResponse';
+import { botEntryOutcome, projectBotTurnOutcomes } from '../bot-turn-outcomes';
 import { AiReferencePicker, loadReferenceOptions, type ReferenceMode, type ReferenceOption } from './AiReferencePicker';
 import { SpeechInput } from './SpeechInput';
 import { BotAvatar } from './BotAvatar';
@@ -23,7 +25,7 @@ import { BotSchedules } from './BotSchedules';
 import { BotArtifactsView } from './BotWorkViews';
 import { BotActivity } from './BotActivity';
 import { BotCollaborationCard, BotExchangeView, BotIncomingMessage, BotMessageEvent, isCollaborationTask, projectBotCollaboration, useChatCollaborations } from './BotCollaboration';
-import { BrowserSiteApprovalCard, useBrowserApprovalTasks } from '../../modules/browser/ui/site-approval';
+import { BrowserSiteApprovalCard, browserSiteApprovalForCard, useBrowserApprovalTasks } from '../../modules/browser/ui/site-approval';
 
 export type BotAssistantMode = 'parallel' | 'floating';
 export type BotPanelPage = 'chat' | 'tasks' | 'artifacts' | 'history' | 'schedules' | 'exchange' | 'profile';
@@ -78,15 +80,14 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
   const exchangeBack = useRef<HTMLButtonElement>(null);
   const [artifactId, setArtifactId] = useState<string>();
   const [exchange, setExchange] = useState<Pick<BotMessage, 'id' | 'fromBotId' | 'toBotId'>>();
-  const [separateInput, setSeparateInput] = useState(false);
-  const [amendmentTarget, setAmendmentTarget] = useState<AmendmentChoice>(), [amendmentChoices, setAmendmentChoices] = useState<AmendmentChoice[]>([]);
-  useEffect(() => { setAmendmentTarget(undefined); setAmendmentChoices([]); setSeparateInput(false); }, [bot.id]);
+  const [amendmentTarget, setAmendmentTarget] = useState<AmendmentChoice>();
+  useEffect(() => { setAmendmentTarget(undefined); }, [bot.id]);
   const artifactTaskReturn = useRef<HTMLElement | null>(null);
   const [collapsed, setCollapsed] = useState(true), [replyVisible, setReplyVisible] = useState(false), [menu, setMenu] = useState(false);
   const [motionPhase, setMotionPhase] = useState('closed');
   const [referencesOpen, setReferencesOpen] = useState(false), [referenceMode, setReferenceMode] = useState<ReferenceMode | null>(bot.seedKey === 'schedule' ? 'todo' : bot.seedKey === 'media' ? 'copy' : bot.seedKey === 'utilities' ? 'reading' : bot.seedKey === 'coordinator' ? 'todo' : null);
   const [referenceOptions, setReferenceOptions] = useState<ReferenceOption[]>([]), [referenceLoading, setReferenceLoading] = useState(false), [referenceError, setReferenceError] = useState(''), [referenceReload, setReferenceReload] = useState(0), [speechBusy, setSpeechBusy] = useState(false);
-  const composer = useRef<HTMLDivElement>(null), editor = useRef<HTMLTextAreaElement>(null), referenceTrigger = useRef<HTMLButtonElement>(null), approval = useRef<HTMLElement>(null), menuRef = useRef<HTMLDivElement>(null);
+  const composer = useRef<HTMLDivElement>(null), editor = useRef<HTMLTextAreaElement>(null), referenceTrigger = useRef<HTMLButtonElement>(null), menuRef = useRef<HTMLDivElement>(null);
   const usedSeed = useRef<number | undefined>(undefined), submitBusy = useRef(false);
   const inputSurface = useRef<HTMLDivElement>(null), pill = useRef<HTMLButtonElement>(null), openingSnapshot = useRef(Promise.resolve(''));
   const glint = useRef<HTMLSpanElement>(null);
@@ -310,18 +311,8 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
       }
       const pageContext: AiTurnContext = { scope, pageScope: scope, baziSystem: override?.baziSystem ?? context.baziSystem, copySource: override?.copySource, astroReadingTopic: override?.astroReadingTopic };
       if (scope.module === 'workbench' && ['browser', 'media-browser'].includes(scope.viewId)) pageContext.browserTabId = (await wb.browserAutomation.tabs(scope.viewId === 'media-browser' ? 'xhs-creator' : 'default')).find(tab => tab.active && tab.ready)?.id ?? null;
-      let target: BotSubmit['target'] = !separateInput && !override ? amendmentTarget?.target : undefined;
-      if (!target && !separateInput && !override && !draft.value.replyToTaskId && isBotAmendment(draft.value.text)) {
-        const roots = tasks.filter(task => !task.parentTaskId && ['waiting_user', 'waiting_bot', 'queued', 'running'].includes(task.status));
-        const chains = await Promise.all(roots.map(root => wb.bot.getCollaboration(root.id)));
-        const choices: AmendmentChoice[] = chains.flatMap(chain => chain.tasks.filter(task => !task.dependencyIds.length && task.kind !== 'message' && ['waiting_user', 'queued', 'running'].includes(task.status)).map(task => {
-          const action = chain.actions.find(action => action.taskId === task.id && ['pending', 'superseded'].includes(action.status));
-          return { label: `${cards.find(card => card.id === task.botId)?.name ?? 'Bot'} · ${task.title}`, target: { intent: 'amend' as const, rootTaskId: task.rootTaskId, taskId: task.id, ...(action ? { actionId: action.id, expectedActionRevision: action.revision } : {}) } };
-        }));
-        if (choices.length > 1) { setAmendmentChoices(choices); return; }
-        target = choices[0]?.target;
-      }
-      await draft.submit(bot.id, pageContext, target); setSeparateInput(false); setAmendmentTarget(undefined); setAmendmentChoices([]); void history.latest(); setPage('chat'); setCollapsed(false); setReplyVisible(true);
+      const target = override ? undefined : amendmentTarget?.target;
+      await draft.submit(bot.id, pageContext, target); setAmendmentTarget(undefined); void history.latest(); setPage('chat'); setCollapsed(false); setReplyVisible(true);
     } catch (cause) { setError(errorText(cause)); } finally { submitBusy.current = false; }
   };
   useEffect(() => {
@@ -378,26 +369,54 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
     changePage('chat', { keepInspector: true });
     if (id) requestAnimationFrame(() => panel.current?.querySelector<HTMLButtonElement>(`[data-bot-event-id="${CSS.escape(id)}"]`)?.focus({ preventScroll: true }));
   };
-  const chooseAmendment = (choice: AmendmentChoice) => { setAmendmentTarget(choice); setAmendmentChoices([]); setSeparateInput(false); draft.edit({ replyToTaskId: null }); changePage('chat'); };
+  const chooseAmendment = (choice: AmendmentChoice) => { setAmendmentTarget(choice); draft.edit({ replyToTaskId: null }); changePage('chat'); };
   const chatActions = (task: BotTask, replyText?: string, entryId?: string, groups?: readonly BotChatEventGroup[]) => isCollaborationTask(task)
-    ? <BotCollaborationCard key={entryId ?? task.id} task={task} entryId={entryId} state={collaborations.records.get(task.rootTaskId)} groups={groups} cards={cards} copyBusy={copyBusy} onExchange={showExchange} onAmend={(target, label) => chooseAmendment({ target, label })} onLayout={followChat} onRefresh={() => collaborations.refresh(task.rootTaskId)} />
-    : <BotChatActions key={task.id} task={task} copyBusy={copyBusy} open={() => openActivity(task.id)} onLayout={followChat} replyText={replyText} />;
+    ? <BotCollaborationCard key={entryId ?? task.id} task={task} entryId={entryId} state={collaborations.records.get(task.rootTaskId)} groups={groups} cards={cards} copyBusy={copyBusy} onExchange={showExchange} onAmend={(target, label) => chooseAmendment({ target, label })} onLayout={followChat} onRefresh={() => collaborations.refresh(task.rootTaskId)} onOpenWork={openActivity} />
+    : <BotChatActions key={task.id} task={task} cards={cards} copyBusy={copyBusy} open={() => openActivity(task.id)} onLayout={followChat} replyText={replyText} />;
   const reply = (task: BotTask) => { if (task.botId !== bot.id) { onSelectBot?.(task.botId); return; } draft.edit({ replyToTaskId: task.id }); changePage('chat'); editor.current?.focus(); };
   const approvalChat = useMemo(() => chat && { ...chat, entries: [...chat.entries, ...(snapshot?.liveEntries ?? [])] }, [chat, snapshot?.liveEntries]);
-  const browserApprovals = useBrowserApprovalTasks(approvalChat ?? null), pendingBrowser = Object.values(browserApprovals.tasks).find(item => item.status === 'site-approval');
+  const browserApprovals = useBrowserApprovalTasks(approvalChat ?? null);
+  const siteApprovalEntries = useMemo(() => new Map(approvalChat?.entries.flatMap(entry => {
+    const task = entry.role === 'assistant' && entry.browserTask ? browserApprovals.tasks[entry.browserTask.id] : undefined;
+    const approval = browserSiteApprovalForCard(task);
+    return task && approval ? [[task.id, { ...approval, entryId: entry.id }] as const] : [];
+  })), [approvalChat, browserApprovals.tasks]);
+  const pendingSiteEntries = useMemo(() => new Map([...siteApprovalEntries].flatMap(([id, approval]) =>
+    approval.status === 'pending' ? [[id, approval.entryId] as const] : [])), [siteApprovalEntries]);
+  const pendingSiteForTask = (task: BotTask) => [...pendingSiteEntries].find(([, entryId]) =>
+    entryId === task.assistantEntryId || task.assistantEntryIds?.includes(entryId))?.[0];
   const hasEditor = page !== 'exchange' && (floating || page === 'chat');
   const chooseReferenceMode = (value: string) => { setReferenceMode(value as ReferenceMode); setReferenceOptions([]); };
   const copyBusy = copySaveState?.status !== undefined && copySaveState.status !== 'saved';
   const progress = useMemo(() => groupBotProgress(tasks, [], artifacts, snapshot?.toolReplyIds), [tasks, snapshot?.toolReplyIds, artifacts]);
-  const pageTasks = useMemo(() => [...new Map([...(snapshot?.pageTasks ?? []), ...tasks].map(task => [task.id, task])).values()], [snapshot?.pageTasks, tasks]);
+  const pageTasks = useMemo(() => {
+    const latest = new Map(tasks.map(task => [task.id, task]));
+    for (const task of snapshot?.pageTasks ?? []) {
+      if ((latest.get(task.id)?.revision ?? -1) < task.revision) latest.set(task.id, task);
+    }
+    return [...latest.values()];
+  }, [snapshot?.pageTasks, tasks]);
+  const queuedMessages = pageTasks.filter(task => task.chatId === bot.mainChatId && isQueuedBotMessage(task))
+    .sort((first, second) => first.createdAt.localeCompare(second.createdAt));
+  const queuedMessageIds = new Set(queuedMessages.map(task => task.sourceMessageId));
+  const steerTarget = pageTasks.find(task => task.chatId === bot.mainChatId && task.rootTaskId === task.id && task.status === 'running');
+  const { outcomes, hiddenReplies } = useMemo(() => projectBotTurnOutcomes(
+    approvalChat?.entries ?? [], pageTasks.filter(task => task.botId === bot.id && task.chatId === approvalChat?.id),
+  ), [approvalChat, pageTasks, bot.id]);
+  const renderPromptOutcome = (entryId: string) => {
+    const outcome = outcomes.get(entryId);
+    if (!outcome) return null;
+    const taskId = outcome.taskId;
+    return <div className="bot-prompt-outcome"><ResponseProcess outcome={outcome} onOpenWork={taskId ? () => openActivity(taskId) : undefined} /></div>;
+  };
   const actionTasks = useMemo(() => pageTasks.filter(task => task.botId === bot.id && task.chatId === bot.mainChatId && (task.operationIds.length || task.dependencyIds.length || task.messageIds?.length)), [pageTasks, bot.id, bot.mainChatId]);
   const locateRecord = async (task: BotTask, conversation: boolean, keyboard: boolean, signal: AbortSignal) => {
     if (task.chatId !== bot.mainChatId) return false;
     let target: Pick<RecordLocation, 'kind' | 'id'> | undefined;
     if (!conversation && task.status === 'waiting_user') {
-      if (pendingBrowser && [...(chat?.entries ?? []), ...(snapshot?.liveEntries ?? [])].some(entry =>
-        (entry.id === task.assistantEntryId || task.assistantEntryIds?.includes(entry.id)) && entry.browserTask?.id === pendingBrowser.id)) {
-        target = { kind: 'action', id: pendingBrowser.id };
+      const siteTaskId = pendingSiteForTask(task);
+      if (siteTaskId) {
+        target = { kind: 'action', id: siteTaskId };
       } else if (actionTasks.some(item => item.id === task.id)) {
         target = { kind: 'action', id: task.id };
       }
@@ -406,7 +425,10 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
       const ids = conversation ? [task.sourceMessageId] : new Set([task.assistantEntryId, task.latestUserMessageId, task.sourceMessageId]);
       for (const id of ids) {
         if (signal.aborted) return false;
-        if (id && await history.findEntry(id, signal)) { target = { kind: 'entry', id }; break; }
+        if (id && await history.findEntry(id, signal, page => id !== task.assistantEntryId
+          || !projectBotTurnOutcomes([...page.chat.entries, ...page.liveEntries], [task]).hiddenReplies.has(id))) {
+          target = { kind: 'entry', id }; break;
+        }
       }
     }
     if (!target || signal.aborted) return false;
@@ -437,44 +459,45 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
   };
   const visibleAction = (entry: ChatEntry) => {
     const task = taskForEntry.get(entry.id);
-    return page === 'chat' && entry.role === 'assistant' && task && !pinnedActionIds.has(task.id) ? task : undefined;
+    return page === 'chat' && entry.role === 'assistant' && task && !waitingActionIds.has(task.id) ? task : undefined;
   };
   const entryActions = (entry: ChatEntry, before: boolean, groups?: readonly BotChatEventGroup[]) => {
     const task = visibleAction(entry);
     return task && before === collaborationBeforeReply(task) ? chatActions(task, entry.content, entry.id, groups) : null;
   };
   const activeTasks = tasks.filter(task => (!task.parentTaskId || task.status === 'waiting_user') && (
-    ['waiting_user', 'waiting_resource', 'interrupted', 'failed'].includes(task.status) ||
+    ['waiting_user', 'waiting_resource'].includes(task.status) ||
     ['queued', 'running', 'waiting_bot'].includes(task.status) && (['delegated', 'routine'].includes(task.kind) || task.operationIds.length > 0 || task.dependencyIds.length > 0)
   )).slice(0, 8).reverse();
-  const replying = tasks.some(task => !task.parentTaskId && ['chat', 'work'].includes(task.kind) && ['queued', 'running'].includes(task.status) && !task.operationIds.length && !task.dependencyIds.length && !task.messageIds?.length);
+  const replying = tasks.some(task => !task.parentTaskId && ['chat', 'work'].includes(task.kind) && task.status === 'running' && !task.operationIds.length && !task.dependencyIds.length && !task.messageIds?.length);
   const quickPrompts = bot.seedKey === 'media' ? ['整理当前文章', '帮我起几个标题'] : bot.seedKey === 'schedule' ? ['看看今天有哪些待办', '整理本周日程'] : ['帮我梳理今天的工作', '看看有哪些负责人'];
-  const latestUser = snapshot?.collapsedAt ? chat?.entries.slice().reverse().find(entry => entry.role === 'user') : snapshot?.latestUser;
+  const latestUser = snapshot?.collapsedAt || queuedMessageIds.has(snapshot?.latestUser?.id ?? '')
+    ? chat?.entries.slice().reverse().find(entry => entry.role === 'user' && !queuedMessageIds.has(entry.id)) : snapshot?.latestUser;
   const currentTask = tasks.find(task => !task.parentTaskId && task.chatId === bot.mainChatId && ['running', 'waiting_bot'].includes(task.status)) ?? tasks.find(task => (task.latestUserMessageId ?? task.sourceMessageId) === latestUser?.id);
-  const floatingQuestion = chat?.entries.find(entry => entry.id === (currentTask?.latestUserMessageId ?? currentTask?.sourceMessageId))?.content ?? latestUser?.content;
+  const floatingPrompt = chat?.entries.find(entry => entry.id === (currentTask?.latestUserMessageId ?? currentTask?.sourceMessageId)) ?? latestUser;
+  const floatingQuestion = floatingPrompt?.content;
   const compactReply = floating && page === 'chat';
   const workPage = page === 'schedules';
   const turnEntries = currentTask?.assistantEntryId ? chat?.entries.filter(entry => (currentTask.assistantEntryIds ?? [currentTask.assistantEntryId]).includes(entry.id)) : chat?.entries.slice(latestUser ? chat.entries.findIndex(entry => entry.id === latestUser.id) + 1 : 0).filter(entry => entry.role === 'assistant');
-  const renderedEntries = (compactReply ? turnEntries : chat?.entries) ?? [];
-  const visibleIds = new Set(renderedEntries.map(entry => entry.id));
-  const pinnedLive = (snapshot?.liveEntries ?? []).filter(entry => !visibleIds.has(entry.id) || !compactReply && aboveBottom);
-  const pinnedLiveIds = new Set(pinnedLive.map(entry => entry.id));
-  const pinnedActions = actionTasks.filter(task => task.status === 'waiting_user' && (aboveBottom || !task.assistantEntryId || !visibleIds.has(task.assistantEntryId) || recordLocation?.kind === 'action' && recordLocation.id === task.id));
-  const pinnedActionIds = new Set(pinnedActions.map(task => task.id));
-  const detachedActions = actionTasks.filter(task => !task.assistantEntryId && !pinnedActionIds.has(task.id) && (!compactReply || task.id === currentTask?.id));
-  const mountedEntries = renderedEntries.filter(entry => !pinnedLiveIds.has(entry.id));
-  const mountedIds = new Set(mountedEntries.map(entry => entry.id));
+  const renderedEntries = ((compactReply ? turnEntries : chat?.entries) ?? []).filter(entry => !hiddenReplies.has(entry.id) && !queuedMessageIds.has(entry.id));
+  const renderedIds = new Set(renderedEntries.map(entry => entry.id));
+  const extraLiveEntries = (snapshot?.liveEntries ?? []).filter(entry => !renderedIds.has(entry.id) && !hiddenReplies.has(entry.id));
+  const visibleIds = new Set([...renderedIds, ...extraLiveEntries.map(entry => entry.id)]);
+  const waitingActions = actionTasks.filter(task => task.status === 'waiting_user' && (!task.assistantEntryId || !visibleIds.has(task.assistantEntryId) || recordLocation?.kind === 'action' && recordLocation.id === task.id));
+  const waitingActionIds = new Set(waitingActions.map(task => task.id));
+  const detachedActions = actionTasks.filter(task => !task.assistantEntryId && !waitingActionIds.has(task.id) && (!compactReply || task.id === currentTask?.id));
   const roots = new Set<string>();
   if (open) {
-    for (const entry of [...renderedEntries, ...pinnedLive]) {
+    for (const entry of [...renderedEntries, ...extraLiveEntries]) {
       const task = taskForEntry.get(entry.id), incoming = incomingForEntry.get(entry.id);
       if (task && isCollaborationTask(task)) roots.add(task.rootTaskId);
       if (incoming && !entry.receivedBotMessages?.some(message => message.id === incoming.sourceMessageId)) roots.add(incoming.rootTaskId);
     }
-    for (const task of [...pinnedActions, ...detachedActions]) if (isCollaborationTask(task)) roots.add(task.rootTaskId);
+    for (const task of [...waitingActions, ...detachedActions]) if (isCollaborationTask(task)) roots.add(task.rootTaskId);
   }
   const collaborations = useChatCollaborations(roots);
-  useLayoutEffect(() => followChat(), [collaborations.records, followChat]);
+  const siteApprovalKey = JSON.stringify([...siteApprovalEntries.values()]);
+  useLayoutEffect(() => followChat(), [collaborations.records, siteApprovalKey, browserApprovals.error, queuedMessages.length, followChat]);
   const incomingEvents = (entry: ChatEntry, readOnly = false) => {
     const links = entry.receivedBotMessages ?? [];
     const task = readOnly ? undefined : incomingForEntry.get(entry.id);
@@ -487,7 +510,7 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
   const timeline: (BotChatEventSlot | null)[] = [];
   const eventOnlyEntries = new Map<string, number>();
   for (const entry of chat?.entries ?? []) {
-    if (!mountedIds.has(entry.id)) { timeline.push(null); continue; }
+    if (!renderedIds.has(entry.id)) { timeline.push(null); continue; }
     const incoming = incomingEvents(entry), task = visibleAction(entry);
     const before = task && collaborationBeforeReply(task);
     const state = task && isCollaborationTask(task) ? collaborations.records.get(task.rootTaskId) : undefined;
@@ -499,7 +522,7 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
     timeline.push({ id: `received:${entry.id}`, events: incoming.events });
     if (incoming.unresolved) timeline.push(null);
     if (before) timeline.push(...card);
-    const hasReply = entry.role === 'user' || entry.content.trim() || entry.streaming || entry.error || entry.browserTask || entry.copySource || entry.actionState === 'pending';
+    const hasReply = entry.role === 'user' || entry.content.trim() || entry.streaming || entry.error || outcomes.has(entry.id) || entry.browserTask || entry.copySource || entry.actionState === 'pending';
     if (hasReply) timeline.push(null);
     if (!before) timeline.push(...card);
     const eventCount = incoming.events.length + (projected?.events.length ?? 0);
@@ -508,8 +531,14 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
     }
   }
   const eventGroups = groupBotChatEvents(timeline);
-  const pinnedNotices = tasks.filter(task => task.status === 'waiting_user' && task.chatId === bot.mainChatId && !actionTasks.includes(task));
-  const hasFloatingReply = !!(floatingQuestion || turnEntries?.length || activeTasks.length || pinnedLive.length || pendingBrowser || snapshot?.collapsedAt);
+  const waitingNotices = tasks.filter(task => {
+    if (task.status !== 'waiting_user' || task.chatId !== bot.mainChatId || actionTasks.includes(task)) return false;
+    // The browser can settle an approval before the Bot task leaves waiting_user.
+    return !approvalChat?.entries.some(entry => entry.browserTask
+      && (entry.id === task.assistantEntryId || task.assistantEntryIds?.includes(entry.id))
+      && browserApprovals.tasks[entry.browserTask.id]?.status !== 'paused');
+  });
+  const hasFloatingReply = !!(floatingQuestion || turnEntries?.length || activeTasks.length || extraLiveEntries.length || pendingSiteEntries.size || snapshot?.collapsedAt);
   const replyHidden = floating && (inspector === 'activity' || collapsed || !replyVisible || !hasFloatingReply && page === 'chat');
   const collapseHistoryDisabled = history.loading || !snapshot?.lastEntryId || snapshot.collapsedAt === snapshot.lastEntryId;
   const collapseItem = <button disabled={collapseHistoryDisabled} onClick={() => {
@@ -530,9 +559,10 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
       {needsModelSelection ? '选择模型' : '前往模型配置'}<ArrowRight size={15} aria-hidden="true" />
     </button>
   </div>;
+  const messageQueue = <BotMessageQueue key={bot.id} items={queuedMessages} active={steerTarget} onChange={wb.bot.changeQueuedMessage}
+    focusComposer={() => editor.current?.focus({ preventScroll: true })} />;
   const compose = <div className="bot-compose" ref={composer}>
-        {(isBotAmendment(draft.value.text) || amendmentTarget) && <div className="bot-reply-target"><span>{separateInput ? '新工作' : amendmentTarget ? `补充：${amendmentTarget.label}` : '补充当前工作'}</span><button onClick={() => { setSeparateInput(!separateInput); setAmendmentTarget(undefined); setAmendmentChoices([]); }}>{separateInput ? '作为补充发送' : '作为新工作发送'}</button></div>}
-        {!!amendmentChoices.length && <div className="bot-amendment-choices" role="group" aria-label="选择补充的工作"><span>要补充哪一项？</span>{amendmentChoices.map(choice => <button key={choice.target.taskId} type="button" className="bot-button" onClick={() => chooseAmendment(choice)}>{choice.label}</button>)}</div>}
+        {amendmentTarget && <div className="bot-reply-target"><span>{`补充：${amendmentTarget.label}`}</span><button type="button" onClick={() => setAmendmentTarget(undefined)}>作为新工作发送</button></div>}
         {floating && <div className="bot-floating-tools" role="group" aria-label="悬浮对话操作">
           {draft.value.replyToTaskId && <span>回复：{tasks.find(task => task.id === draft.value.replyToTaskId)?.title ?? '当前任务'}</span>}
           <IconButton label="固定对话面板" onClick={() => {
@@ -565,6 +595,10 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
         {draft.error && <div className="bot-error" role="alert">{draft.error}<div className="bot-action-buttons"><button onClick={() => void run(() => navigator.clipboard.writeText(draft.value.text))}>复制本地输入</button><button disabled={draft.hasPendingSubmit || draft.sending} onClick={() => void run(() => draft.retrySave())}>重试保存当前输入</button></div></div>}
       </div>;
   const renderEntry = (entry: ChatEntry, readOnly = false, grouped = false) => {
+    const outcome = (!readOnly ? outcomes.get(entry.id) : undefined) ?? botEntryOutcome(entry);
+    const outcomeTaskId = outcome?.taskId;
+    const browserTask = entry.browserTask ? browserApprovals.tasks[entry.browserTask.id] : undefined;
+    const siteApproval = !readOnly && browserTask ? siteApprovalEntries.get(browserTask.id) : undefined;
     const incoming = incomingEvents(entry, readOnly);
     const received = grouped ? eventGroups.get(`received:${entry.id}`) ?? [] : incoming.events.map(event => ({ ...event, count: 1 }));
     const groups = grouped ? eventGroups.get(`task:${entry.id}`) ?? [] : undefined;
@@ -579,7 +613,13 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
     return <Fragment key={entry.id}>
       {incomingNotices}
       {incoming.fallback && <BotIncomingMessage task={incoming.fallback} cards={cards} onExchange={showExchange} onLayout={followChat} />}
-      <article className={`bot-chat-entry ${entry.role}`}>{entry.role === 'assistant' && <BotAvatar avatar={bot.avatar} small />}<div>{entry.role === 'assistant' && <header className="bot-message-meta"><strong className="bot-message-name">{bot.name}</strong>{replyTime(entry)}</header>}{!readOnly && entryActions(entry, true, groups)}{entry.role === 'user' ? <p className="bot-user-bubble">{entry.content}</p> : <AiResponse entry={entry} showTimeline browserTask={entry.browserTask ? browserApprovals.tasks[entry.browserTask.id] : undefined} approvalCardId="bot-site-approval" onLocateApproval={() => approval.current?.focus()} />}{entry.copySource && onLocateCopySource && <button className="ai-source-chip" title={entry.copySource.text} onClick={() => onLocateCopySource(entry.copySource!)}>引用原文 · 定位</button>}{entry.role === 'assistant' && entry.baziSystem === 'bazi' && entry.content.includes('日主') && entry.contextScope?.module === 'bazi' && onLocateBaziDay && <button className="ai-source-chip" onClick={() => { if (entry.contextScope?.module === 'bazi') onLocateBaziDay(entry.contextScope.profileId); }}>在盘面中定位日主</button>}{entry.error && <p className="bot-error">{entry.error}</p>}{!readOnly && entryActions(entry, false, groups)}</div></article>
+      <article className={`bot-chat-entry ${entry.role}`}>{entry.role === 'assistant' && <BotAvatar avatar={bot.avatar} small />}<div>{entry.role === 'assistant' && <header className="bot-message-meta"><strong className="bot-message-name">{bot.name}</strong>{replyTime(entry)}</header>}{!readOnly && entryActions(entry, true, groups)}{entry.role === 'user' ? <><p className="bot-user-bubble">{entry.content}</p>{!readOnly && renderPromptOutcome(entry.id)}</> : <>
+        <AiResponse entry={entry} showTimeline browserTask={browserTask} outcome={outcome}
+          onOpenWork={outcomeTaskId && !readOnly ? () => openActivity(outcomeTaskId) : undefined} />
+        {browserTask && siteApproval?.entryId === entry.id && <BrowserSiteApprovalCard key={`${browserTask.id}:${siteApproval.origin}`} task={browserTask} inline
+          located={recordLocation?.kind === 'action' && recordLocation.id === browserTask.id}
+          onTask={task => browserApprovals.update(task, siteApproval.origin)} />}
+      </>}{entry.copySource && onLocateCopySource && <button className="ai-source-chip" title={entry.copySource.text} onClick={() => onLocateCopySource(entry.copySource!)}>引用原文 · 定位</button>}{entry.role === 'assistant' && entry.baziSystem === 'bazi' && entry.content.includes('日主') && entry.contextScope?.module === 'bazi' && onLocateBaziDay && <button className="ai-source-chip" onClick={() => { if (entry.contextScope?.module === 'bazi') onLocateBaziDay(entry.contextScope.profileId); }}>在盘面中定位日主</button>}{!readOnly && entryActions(entry, false, groups)}</div></article>
     </Fragment>;
   };
   const library = <>
@@ -606,7 +646,7 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
   return <section ref={panel} id="workbench-ai-panel" className={`bot-panel${floating ? ' bot-floating' : ''}${island ? ' bot-island' : ''}`} data-inspector={inspector || undefined} data-task-visible={floating && workPage || undefined} data-work-page={workPage || undefined} data-exchange={page === 'exchange' || undefined} data-collapsed={floating && collapsed} data-reply-visible={replyVisible} data-phase={floating ? motionPhase : undefined} onKeyDown={event => { if (floating && !collapsed && event.key === 'Escape' && !event.defaultPrevented && !menu && !referencesOpen) { event.preventDefault(); collapseInput(); } }} aria-label={`${bot.name}的对话`}>
     {!floating && !island && <div className="bot-resizer" role="separator" aria-label="调整对话宽度" aria-orientation="vertical" tabIndex={0} aria-valuemin={340} aria-valuemax={560} aria-valuenow={width} onKeyDown={event => { if (['ArrowLeft', 'ArrowRight'].includes(event.key)) { event.preventDefault(); onWidthChange?.(Math.max(340, Math.min(560, width + (event.key === 'ArrowRight' ? 20 : -20)))); } }} onPointerDown={event => { const start = event.clientX; event.currentTarget.setPointerCapture(event.pointerId); const move = (moveEvent: PointerEvent) => onWidthChange?.(Math.max(340, Math.min(560, width + moveEvent.clientX - start))); const stop = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', stop); }; window.addEventListener('pointermove', move); window.addEventListener('pointerup', stop, { once: true }); }} />}
     <div className="bot-conversation-column">
-      <div id="bot-reply-surface" className="bot-reply-surface" data-compact={compactReply || undefined} data-attention={compactReply && (actionTasks.some(task => task.status === 'waiting_user') || !!pendingBrowser) || undefined} hidden={replyHidden} inert={replyHidden}>
+      <div id="bot-reply-surface" className="bot-reply-surface" data-compact={compactReply || undefined} data-attention={compactReply && (actionTasks.some(task => task.status === 'waiting_user') || pendingSiteEntries.size > 0) || undefined} hidden={replyHidden} inert={replyHidden}>
         {page === 'exchange' && exchange ? <header className="bot-panel-header bot-exchange-header"><button ref={exchangeBack} className="bot-text-button" onClick={backFromExchange}><ArrowLeft size={16} />返回对话</button><strong><BotAvatar avatar={cards.find(card => card.id === exchange.fromBotId)?.avatar ?? bot.avatar} small />{cards.find(card => card.id === exchange.fromBotId)?.name} ⇄ <BotAvatar avatar={cards.find(card => card.id === exchange.toBotId)?.avatar ?? bot.avatar} small />{cards.find(card => card.id === exchange.toBotId)?.name}</strong></header> : workPage ? <header className="bot-panel-header bot-work-header"><button className="bot-text-button bot-work-chat-back" aria-label="返回对话" title="返回对话" onClick={() => changePage('chat')}><ArrowLeft size={16} /><span>返回对话</span></button><strong>定时任务</strong><div className="bot-work-header-context">{floating && <IconButton label="收起答复" onClick={() => { setReplyVisible(false); editor.current?.focus(); }}><X size={16} /></IconButton>}</div></header> : (!floating || currentTask?.status === 'running') && <header className="bot-identity-bar">
           {!floating && <button className="bot-identity-pill" type="button" ref={badge} title={inspector ? '收起 Bot 侧栏' : '展开 Bot 侧栏'} aria-label={`${bot.name}的 Bot 资料`} aria-controls="bot-inspector" aria-expanded={!!inspector} onClick={() => inspector ? closeInspector() : openInspector('details')}><BotAvatar avatar={bot.avatar} small /><strong>{bot.name}</strong><CaretRight size={14} weight="bold" aria-hidden="true" /></button>}
           <div className="bot-header-actions">
@@ -636,33 +676,33 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
           {page === 'exchange' && exchange ? <BotExchangeView botA={exchange.fromBotId} botB={exchange.toBotId} anchorMessageId={exchange.id} cards={cards} /> : page === 'schedules' ? <><button className="bot-text-button" onClick={() => changePage('tasks')}><ArrowLeft size={15} />返回工作列表</button><BotSchedules key={bot.id} botId={bot.id} botName={bot.name} /></> : <>
             {snapshot?.collapsedAt && <div className="bot-history-line">已收起之前的消息 <span aria-hidden="true">·</span> <button className="bot-text-button" aria-label="查看已收起的消息" disabled={history.loading} onClick={() => void history.revealHistory()}>查看</button></div>}
             {!compactReply && snapshot?.hasEarlier && <button className="bot-text-button bot-history-page" disabled={history.loading} onClick={() => void history.turnPage('older', true)}>查看更早消息</button>}
-            {compactReply && floatingQuestion && <p className="bot-floating-question" title={floatingQuestion}>{floatingQuestion}</p>}{!chat && <p className="bot-empty" role="status">正在读取对话…</p>}{!floating && chat && !snapshot?.lastEntryId && <div className="bot-chat-empty"><BotAvatar avatar={bot.avatar} /><h3>和{bot.name}开始工作</h3><p>{bot.description}。把想做的事告诉我，我们从这里继续。</p><div>{quickPrompts.map(text => <button key={text} disabled={!draft.ready} onClick={() => { draft.edit({ text }); editor.current?.focus(); }}>{text}</button>)}</div></div>}
-            {mountedEntries.map(entry => <div data-chat-entry-id={entry.id} data-located={recordLocation?.kind === 'entry' && recordLocation.id === entry.id || undefined} key={entry.id} tabIndex={-1}>{renderEntry(entry, false, true)}</div>)}
+            {compactReply && floatingQuestion && <p className="bot-floating-question" title={floatingQuestion}>{floatingQuestion}</p>}{compactReply && floatingPrompt && renderPromptOutcome(floatingPrompt.id)}{!chat && <p className="bot-empty" role="status">正在读取对话…</p>}{!floating && chat && !snapshot?.lastEntryId && <div className="bot-chat-empty"><BotAvatar avatar={bot.avatar} /><h3>和{bot.name}开始工作</h3><p>{bot.description}。把想做的事告诉我，我们从这里继续。</p><div>{quickPrompts.map(text => <button key={text} disabled={!draft.ready} onClick={() => { draft.edit({ text }); editor.current?.focus(); }}>{text}</button>)}</div></div>}
+            {renderedEntries.map(entry => <div data-chat-entry-id={entry.id} data-located={recordLocation?.kind === 'entry' && recordLocation.id === entry.id || undefined} key={entry.id} tabIndex={-1}>{renderEntry(entry, false, true)}</div>)}
             {!compactReply && snapshot?.hasLater && <button className="bot-text-button bot-history-page" disabled={history.loading} onClick={() => void history.turnPage('newer', true)}>查看较新消息</button>}
-            {replying && !renderedEntries.some(entry => entry.streaming) && !pinnedLive.some(entry => entry.streaming) && <p className="bot-chat-progress" role="status">正在回复…</p>}
+            {extraLiveEntries.map(entry => <div key={entry.id} data-chat-entry-id={entry.id} data-located={recordLocation?.kind === 'entry' && recordLocation.id === entry.id || undefined} tabIndex={-1}>{renderEntry(entry)}</div>)}
+            {replying && !renderedEntries.some(entry => entry.streaming) && !extraLiveEntries.some(entry => entry.streaming) && <p className="bot-chat-progress" role="status">正在回复…</p>}
             {detachedActions.map(task => chatActions(task))}
             {activeTasks.filter(task => task.status !== 'waiting_user' && !task.dependencyIds.length && !task.messageIds?.length).map(taskNotice)}
+            {waitingActions.map(task => <div key={task.id} data-chat-action-id={task.id} data-located={recordLocation?.kind === 'action' && recordLocation.id === task.id || undefined} tabIndex={-1}>{chatActions(task)}</div>)}
+            {waitingNotices.map(taskNotice)}
+            {browserApprovals.error && <p className="bot-error" role="alert">{browserApprovals.error}<button onClick={browserApprovals.retry}>重试</button></p>}
           </>}
         </div>
         {aboveBottom && !compactReply && page === 'chat' && <button className="bot-jump-latest" disabled={history.loading} onClick={() => { setRecordLocation(undefined); scroll.current?.focus({ preventScroll: true }); void history.latest(); }}><ArrowDown size={15} />回到底部</button>}
-        {page === 'chat' && (pinnedLive.length > 0 || pinnedActions.length > 0 || pinnedNotices.length > 0 || pendingBrowser || browserApprovals.error) && <div className="bot-chat-attention" role="region" aria-label="进行中的回复和待确认事项">
-          {pinnedLive.map(entry => <div key={entry.id} data-chat-entry-id={entry.id} data-located={recordLocation?.kind === 'entry' && recordLocation.id === entry.id || undefined} tabIndex={-1}>{renderEntry(entry)}</div>)}
-          {pinnedActions.map(task => <div key={task.id} data-chat-action-id={task.id} data-located={recordLocation?.kind === 'action' && recordLocation.id === task.id || undefined} tabIndex={-1}>{chatActions(task)}</div>)}
-          {pinnedNotices.map(taskNotice)}
-          {pendingBrowser && <div data-chat-action-id={pendingBrowser.id} data-located={recordLocation?.kind === 'action' && recordLocation.id === pendingBrowser.id || undefined} tabIndex={-1}><BrowserSiteApprovalCard task={pendingBrowser} id="bot-site-approval" elementRef={approval} onTask={task => browserApprovals.update(task, pendingBrowser.pendingOrigin!)} /></div>}
-          {browserApprovals.error && <p className="bot-error" role="alert">{browserApprovals.error}<button onClick={browserApprovals.retry}>重试</button></p>}
-        </div>}
       </div>
 
       {floating && inspector !== 'activity' && !collapsed && !hasFloatingReply && <div className="bot-floating-suggestions">{quickPrompts.map(text => <button key={text} disabled={!draft.ready} onClick={() => { draft.edit({ text }); editor.current?.focus(); }}>{text}</button>)}</div>}
       {floating && page !== 'exchange' && <>
         {!collapsed && motionPhase !== 'opening' && motionPhase !== 'closing' && modelNotice}
-        <div className="bot-floating-input-surface" ref={inputSurface}>
-          {collapsed ? <button className="bot-floating-pill" ref={pill} aria-label={`展开与${bot.name}的对话`} aria-expanded="false" onClick={expandInput}><Sparkle size={19} /><span>{draft.value.text.trim() || `问问${bot.name}…`}</span>{tasks.some(task => task.status === 'waiting_user') ? <span className="bot-pill-count">待确认 {tasks.filter(task => task.status === 'waiting_user').length}</span> : <span className="bot-pill-hint">AI</span>}</button> : compose}
-          <span className="bot-metal-edge" aria-hidden="true" /><span ref={glint} className="bot-glint" aria-hidden="true"><StarFour size={12} weight="fill" /></span>
+        <div className="bot-compose-stack">
+          {!collapsed && messageQueue}
+          <div className="bot-floating-input-surface" ref={inputSurface}>
+            {collapsed ? <button className="bot-floating-pill" ref={pill} aria-label={`展开与${bot.name}的对话`} aria-expanded="false" onClick={expandInput}><Sparkle size={19} /><span>{draft.value.text.trim() || `问问${bot.name}…`}</span>{tasks.some(task => task.status === 'waiting_user') ? <span className="bot-pill-count">待确认 {tasks.filter(task => task.status === 'waiting_user').length}</span> : <span className="bot-pill-hint">AI</span>}</button> : compose}
+            <span className="bot-metal-edge" aria-hidden="true" /><span ref={glint} className="bot-glint" aria-hidden="true"><StarFour size={12} weight="fill" /></span>
+          </div>
         </div>
       </>}
-      {!floating && hasEditor && <>{modelNotice}{compose}</>}
+      {!floating && hasEditor && <>{modelNotice}<div className="bot-compose-stack">{messageQueue}{compose}</div></>}
     </div>
     {inspectorView && (!floating || inspectorView.tab === 'activity' && !collapsed) && <div className="bot-inspector-clip" data-view={inspectorView.tab} data-retained={inspectorView.retained || undefined} data-workspace-exit={inspectorView.workspaceExitWidth !== undefined || undefined}
       style={{ width: inspectorView.workspaceExitWidth }} inert={!inspectorView.open}>

@@ -138,8 +138,9 @@ export function useBotChatHistory(chatId: string, island: boolean, floating: boo
     else { following.current = previous; focusAfterLoad.current = undefined; }
   };
 
-  const findEntry = (entryId: string, signal: AbortSignal) => {
-    const contains = (value: BotChatSnapshot) => !signal.aborted && value.chat.entries.some(entry => entry.id === entryId);
+  const findEntry = (entryId: string, signal: AbortSignal, isVisible?: (page: BotChatSnapshot) => boolean) => {
+    const contains = (value: BotChatSnapshot) => !signal.aborted && value.chat.entries.some(entry => entry.id === entryId)
+      && (isVisible?.(value) ?? true);
     if (snapshot && contains(snapshot)) return Promise.resolve(true);
     // Index navigation can visit a folded message without changing the saved cutoff.
     return load({ range: { kind: 'older', entryId } }, contains);

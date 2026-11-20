@@ -78,7 +78,7 @@ test('思考和工具默认折叠，开合不跟随流式阶段；字数按 Unic
   }
 });
 
-test('Bot 过程完成后显示轻量入口，按顺序展开可独立操作的思考与工具折叠栏', async () => {
+test('Bot 思考与工具流式输出时默认折叠，过程结束后仍能独立展开', async () => {
   const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost', pretendToBeVisual: true });
   const names = ['window', 'document', 'HTMLElement', 'Node', 'navigator', 'IS_REACT_ACT_ENVIRONMENT'] as const;
   const previous = names.map(name => Object.getOwnPropertyDescriptor(globalThis, name));
@@ -101,14 +101,29 @@ test('Bot 过程完成后显示轻量入口，按顺序展开可独立操作的�
     ],
   };
   const click = (control: Element) => act(async () => { (control as HTMLElement).click(); });
+  const render = (reply: ChatEntry) => act(async () => root.render(createElement(AiResponse, { entry: reply, showTimeline: true })));
   try {
-    await act(async () => root.render(createElement(AiResponse, { entry, showTimeline: true })));
+    const streaming: ChatEntry = {
+      ...entry, content: '', streaming: true, responseFinishedAt: undefined, responseParts: entry.responseParts!.slice(0, -1),
+    };
+    await render(streaming);
     const process = dom.window.document.querySelector<HTMLDetailsElement>('details.ai-process')!;
     const summary = process.querySelector(':scope > summary')!;
+    const steps = () => [...process.querySelectorAll<HTMLDetailsElement>('.ai-process-steps > details')];
+    assert.equal(process.open, true);
+    const [streamingTools, streamingThought] = steps();
+    assert.equal(streamingTools.open, false);
+    assert.equal(streamingThought.open, false);
+    await click(streamingThought.querySelector('summary')!);
+    await render({ ...streaming, thinkingActive: true });
+    assert.equal(streamingThought.open, true);
+    assert.equal(streamingTools.open, false);
+
+    await render(entry);
     assert.equal(summary.textContent, '已完成 15s');
     assert.equal(process.open, false);
     await click(summary);
-    const [tools, thought] = [...process.querySelectorAll<HTMLDetailsElement>('.ai-process-steps > details')];
+    const [tools, thought] = steps();
     assert.ok(tools && thought);
     assert.equal(thought.classList.contains('ai-thinking'), true);
     assert.ok(tools.querySelector('summary')!.textContent!.startsWith('工具执行'));

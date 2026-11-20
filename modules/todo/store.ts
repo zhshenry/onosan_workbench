@@ -1,5 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
+import { statSync } from 'node:fs';
 import type { ChatSession, ChatSummary } from '../../shared/todo-contracts';
 import { aiPlanSchema, categoryInputSchema, localDay, taskInputSchema, taskPatchSchema, type AIPlan, type Category, type Task, type TaskInput } from '../../shared/todo-contracts';
 import { meetingEndAt, scheduleStamp } from '../../shared/todo-format';
@@ -8,21 +9,30 @@ import { migrateTaskDates } from './date-migration';
 
 export class Store {
   readonly db: DatabaseSync;
-  constructor(file: string, mode: 'standalone' | 'shared-tasks' = 'standalone') {
+  constructor(file: string, mode: 'standalone' | 'shared-tasks' = 'standalone', legacyFile?: string) {
     this.db = new DatabaseSync(file);
     if (mode === 'shared-tasks') {
-      const version = (this.db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version;
-      const tables = (this.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all() as { name: string }[]).map(row => row.name);
-      if (version === 0 && tables.length === 0) {
-        this.db.exec(`CREATE TABLE tasks (id TEXT PRIMARY KEY, payload TEXT NOT NULL);
-          CREATE TABLE categories (id TEXT PRIMARY KEY, payload TEXT NOT NULL);
-          PRAGMA user_version=4;`);
-      } else if (![3, 4].includes(version) || !tables.includes('tasks') || !tables.includes('categories')) {
+      try {
+        this.db.exec('PRAGMA busy_timeout=5000;');
+        // 两端首次启动也只初始化一次，共享库通过版本号记录提交结果。
+        this.transaction(() => {
+          const version = this.db.prepare('PRAGMA user_version').get()?.user_version;
+          const tables = this.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all().map(row => row.name);
+          if (version === 0 && tables.length === 0) {
+            this.db.exec(`CREATE TABLE tasks (id TEXT PRIMARY KEY, payload TEXT NOT NULL);
+              CREATE TABLE categories (id TEXT PRIMARY KEY, payload TEXT NOT NULL);`);
+            if (legacyFile && statSync(legacyFile, { throwIfNoEntry: false })) this.importLegacyTasks(legacyFile);
+            this.db.exec('PRAGMA user_version=4;');
+          } else if ((version !== 3 && version !== 4) || !tables.includes('tasks') || !tables.includes('categories')) {
+            throw new Error(`待办共享库结构不兼容(版本 ${version}),请同步升级 OnO 和 CMO`);
+          }
+        });
+        this.db.exec('PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;');
+        migrateTaskDates(this.db);
+      } catch (error) {
         this.db.close();
-        throw new Error(`待办共享库结构不兼容(版本 ${version}),请同步 OnO 和 CMO 的日期版本`);
+        throw error;
       }
-      this.db.exec('PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000;');
-      migrateTaskDates(this.db);
       return;
     }
     this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000;
@@ -35,6 +45,23 @@ export class Store {
     if (version === 0) this.db.exec('PRAGMA user_version=4;');
     else migrateTaskDates(this.db);
     this.recoverChats();
+  }
+  private importLegacyTasks(file: string): void {
+    const source = new DatabaseSync(file, { readOnly: true, timeout: 5000 });
+    try {
+      source.exec('BEGIN');
+      const version = source.prepare('PRAGMA user_version').get()?.user_version;
+      if (version !== 3 && version !== 4) throw new Error(`无法导入原待办库(版本 ${version})`);
+      for (const table of ['tasks', 'categories']) {
+        const insert = this.db.prepare(`INSERT INTO ${table}(id,payload) VALUES (?,?)`);
+        const rows = source.prepare(`SELECT id,payload FROM ${table}`).iterate() as Iterable<{ id: string; payload: string }>;
+        for (const { id, payload } of rows) {
+          const value = version === 3 && table === 'tasks' ? JSON.stringify(migrateTaskDate(JSON.parse(payload))) : payload;
+          insert.run(id, value);
+        }
+      }
+      source.exec('COMMIT');
+    } finally { source.close(); }
   }
   chats(): ChatSummary[] {
     return (this.db.prepare('SELECT payload FROM chats').all() as { payload: string }[])
@@ -227,7 +254,7 @@ export class Store {
   }
   // 工作台新增(上游无):跨应用共享库的提醒原子认领。
   // BEGIN IMMEDIATE 事务内重读并抢先写入 notifiedFor,多进程同时轮询时只有认领成功的一方弹通知;
-  // 通知发送失败时用 unclaim 归还,保证提醒不丢。建议上游 To-Do-List 吸收同款以彻底消除双弹。
+  // 通知发送失败时用 unclaim 归还,保证 OnO 与 CMO 共用的提醒不丢。
   claimDue(now = new Date(), eligible?: (task: Task) => boolean): Task[] {
     const claimed: Task[] = [];
     this.transaction(() => {

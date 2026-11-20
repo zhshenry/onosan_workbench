@@ -1,7 +1,8 @@
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react';
-import { CaretDown, CaretRight, Brain, Wrench } from '@phosphor-icons/react';
+import { ArrowRight, CaretDown, CaretRight, Brain, Wrench } from '@phosphor-icons/react';
 import type { AIToolEvent, ChatEntry } from '../../shared/todo-contracts';
 import { renderAiMarkdown } from '../ai-markdown';
+import { botTurnOutcomeLabel, type BotTurnOutcome } from '../bot-turn-outcomes';
 import { errorText } from '../ui/controls';
 import { BrowserTaskRecord } from '../../modules/browser/ui/task-record';
 import type { BrowserTask } from '../../shared/browser-automation-contracts';
@@ -80,10 +81,10 @@ function thinkingDuration(entry: ChatEntry, active: boolean, now: number) {
   return `${Math.floor(elapsed / 1000)} 秒`;
 }
 
-function ThinkingDetails({ text, duration, active = false, defaultOpen = false }: {
-  text: string; duration?: string; active?: boolean; defaultOpen?: boolean;
+function ThinkingDetails({ text, duration, active = false }: {
+  text: string; duration?: string; active?: boolean;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpen] = useState(false);
   const { details, showContent } = useDisclosureContent(open);
   const characters = useMemo(() => Array.from(text.replace(/\s/g, '')).length, [text]);
   const metrics = `${characters.toLocaleString('zh-CN')} 字${duration ? ` · ${duration}` : ''}`;
@@ -97,8 +98,8 @@ function ThinkingDetails({ text, duration, active = false, defaultOpen = false }
   </details>;
 }
 
-function ToolsDetails({ tools, waitingForSite, defaultOpen = false }: { tools: AIToolEvent[]; waitingForSite: boolean; defaultOpen?: boolean }) {
-  const [open, setOpen] = useState(defaultOpen);
+function ToolsDetails({ tools, waitingForSite }: { tools: AIToolEvent[]; waitingForSite: boolean }) {
+  const [open, setOpen] = useState(false);
   const { details, showContent } = useDisclosureContent(open);
   const running = tools.some(tool => tool.status === 'running');
   const failed = tools.filter(tool => tool.status === 'error').length;
@@ -121,7 +122,7 @@ function ReplyBubble({ text, streaming, record }: { text: string; streaming?: bo
 type ProcessStep = { kind: 'thinking'; text: string } | { kind: 'tools'; tools: AIToolEvent[] };
 type ProcessGroup = { kind: 'process'; steps: ProcessStep[]; startedAt?: number; endedAt?: number };
 type ReplyGroup = ProcessGroup | { kind: 'text'; text: string };
-type ReplyContentProps = { entry: ChatEntry; tools: AIToolEvent[]; waitingForSite: boolean; showTyping: boolean; record?: ReactNode };
+type ReplyContentProps = { entry: ChatEntry; tools: AIToolEvent[]; waitingForSite: boolean; showTyping: boolean; record?: ReactNode; outcome?: BotTurnOutcome; onOpenWork?(): void };
 
 function replyGroups({ entry, tools, showTyping }: ReplyContentProps) {
   const groups: ReplyGroup[] = [];
@@ -171,46 +172,61 @@ function replyGroups({ entry, tools, showTyping }: ReplyContentProps) {
   return groups;
 }
 
-function ResponseProcess({ group, entry, active, waitingForSite }: { group: ProcessGroup; entry: ChatEntry; active: boolean; waitingForSite: boolean }) {
+export function ResponseProcess({ group, entry, active = false, waitingForSite = false, outcome, onOpenWork }: {
+  group?: ProcessGroup; entry?: ChatEntry; active?: boolean; waitingForSite?: boolean; outcome?: BotTurnOutcome; onOpenWork?(): void;
+}) {
   const [override, setOverride] = useState<{ active: boolean; open: boolean }>();
   const open = override?.active === active ? override.open : active;
   const { details, showContent } = useDisclosureContent(open);
   const now = useClock(active);
-  const end = active ? now : group.endedAt ?? entry.responseFinishedAt;
-  const tools = group.steps.flatMap(step => step.kind === 'tools' ? step.tools : []);
-  const duration = group.startedAt !== undefined && end !== undefined ? Math.max(0, end - group.startedAt)
-    : !entry.responseParts && !tools.length && entry.thinkingMs !== undefined ? thinkingElapsedMs(active ? entry : { thinkingMs: entry.thinkingMs }, now) : undefined;
-  const interrupted = tools.some(tool => tool.status === 'interrupted') || Boolean(entry.responseParts && end === undefined);
-  const status = active ? '正在思考' : interrupted ? '已中断' : !group.endedAt && entry.error ? '执行失败' : '已完成';
-  const label = duration === undefined ? status : `${status} ${Math.floor(duration / 1000)}s`;
-  if (!group.steps.length) return <div className="ai-process-pending" role="status" aria-live="off">{label}</div>;
-  return <details ref={details} className="ai-process" data-completed={status === '已完成' || undefined} open={open}>
+  const steps = group?.steps ?? [];
+  const end = active ? now : group?.endedAt ?? entry?.responseFinishedAt;
+  const tools = steps.flatMap(step => step.kind === 'tools' ? step.tools : []);
+  const duration = group?.startedAt !== undefined && end !== undefined ? Math.max(0, end - group.startedAt)
+    : !entry?.responseParts && !tools.length && entry?.thinkingMs !== undefined ? thinkingElapsedMs(active ? entry : { thinkingMs: entry.thinkingMs }, now) : undefined;
+  const interrupted = tools.some(tool => tool.status === 'interrupted') || Boolean(entry?.responseParts && end === undefined);
+  const status = outcome ? botTurnOutcomeLabel[outcome.kind]
+    : active ? '正在思考' : interrupted ? '已中断' : !group?.endedAt && entry?.error ? '执行失败' : '已完成';
+  const replyStart = Date.parse(entry?.createdAt ?? '');
+  const replyEnd = entry?.responseFinishedAt;
+  const displayDuration = outcome ? outcome.kind === 'stopped' && replyEnd !== undefined && Number.isFinite(replyStart)
+    ? Math.max(0, replyEnd - replyStart) : undefined : duration;
+  const label = displayDuration === undefined ? status : `${status} ${Math.floor(displayDuration / 1000)}s`;
+  const openWork = outcome?.kind === 'failed' || outcome?.kind === 'interrupted' ? onOpenWork : undefined;
+  const reason = outcome?.kind === 'timeout' ? outcome.reason?.replace(/^任务超时(?:[：:]|$)\s*/, '') : outcome?.reason;
+  if (!steps.length && !reason && !openWork) return <div className="ai-process-pending" data-outcome={outcome?.kind} role="status" aria-live="off">{label}</div>;
+  return <details ref={details} className="ai-process" data-outcome={outcome?.kind} data-completed={status === '已完成' || undefined} open={open}>
     <summary onClick={event => { event.preventDefault(); setOverride({ active, open: !open }); }}>
-      <span>{label}</span><CaretRight size={13} className="ai-activity-caret" />
+      <span>{label}</span><CaretRight size={13} className="ai-activity-caret" aria-hidden="true" />
       {waitingForSite && active && <small>等待授权</small>}
     </summary>
     {showContent && <div className="ai-process-steps" inert={!open}>
-      {group.steps.map((step, index) => {
+      {reason && <p className="bot-outcome-reason">{reason}</p>}
+      {openWork && <button type="button" className="bot-text-button" onClick={openWork}>查看工作详情<ArrowRight size={14} aria-hidden="true" /></button>}
+      {steps.map((step, index) => {
         if (step.kind === 'tools') {
           const waiting = active && waitingForSite && step.tools.some(tool => tool.status === 'running');
-          return <ToolsDetails key={index} tools={step.tools} waitingForSite={waiting} defaultOpen={active} />;
+          return <ToolsDetails key={index} tools={step.tools} waitingForSite={waiting} />;
         }
-        const thinkingActive = active && index === group.steps.length - 1 && Boolean(entry.thinkingActive);
-        const duration = step.text === entry.thinking ? thinkingDuration(entry, thinkingActive, now) : undefined;
-        return <ThinkingDetails key={index} text={step.text} duration={duration} active={thinkingActive} defaultOpen={active} />;
+        const thinkingActive = active && index === steps.length - 1 && Boolean(entry?.thinkingActive);
+        const duration = entry && step.text === entry.thinking ? thinkingDuration(entry, thinkingActive, now) : undefined;
+        return <ThinkingDetails key={index} text={step.text} duration={duration} active={thinkingActive} />;
       })}
     </div>}
   </details>;
 }
 
 function OrderedReply(props: ReplyContentProps) {
-  const { entry, record, waitingForSite } = props;
+  const { entry, record, waitingForSite, outcome, onOpenWork } = props;
   const groups = replyGroups(props);
+  const finalProcess = outcome ? groups.reduce((last, group, index) => group.kind === 'process' ? index : last, -1) : -1;
   const lastText = groups.reduce((last, group, index) => group.kind === 'text' ? index : last, -1);
   return <>
+    {outcome && finalProcess < 0 && <ResponseProcess entry={entry} outcome={outcome} onOpenWork={onOpenWork} />}
     {groups.map((group, index) => {
-      const active = Boolean(entry.streaming && index === groups.length - 1);
-      return group.kind === 'process' ? <ResponseProcess key={index} group={group} entry={entry} active={active} waitingForSite={waitingForSite} />
+      const active = Boolean(!outcome && entry.streaming && index === groups.length - 1);
+      return group.kind === 'process' ? <ResponseProcess key={index} group={group} entry={entry} active={active} waitingForSite={waitingForSite}
+        outcome={index === finalProcess ? outcome : undefined} onOpenWork={onOpenWork} />
         : <ReplyBubble key={index} text={group.text} streaming={active && entry.responsePhase !== 'waiting'} record={index === lastText ? record : undefined} />;
     })}
     {lastText < 0 && record}
@@ -230,15 +246,16 @@ function ClassicReply({ entry, tools, waitingForSite, showTyping, record }: Repl
   </>;
 }
 
-export function AiResponse({ entry, browserTask, showTyping = true, showTools = true, showTimeline = false, approvalCardId = '', onLocateApproval = () => {} }: {
+export function AiResponse({ entry, browserTask, showTyping = true, showTools = true, showTimeline = false, approvalCardId, onLocateApproval, outcome, onOpenWork }: {
   entry: ChatEntry; browserTask?: BrowserTask; showTyping?: boolean; showTools?: boolean; showTimeline?: boolean; approvalCardId?: string; onLocateApproval?(): void;
+  outcome?: BotTurnOutcome; onOpenWork?(): void;
 }) {
   const [recordOpen, setRecordOpen] = useState(false);
   const record = entry.browserTask && !entry.streaming && <button type="button" className="ai-browser-record" onClick={() => setRecordOpen(true)}>查看操作记录<CaretRight size={13} /></button>;
   const Body = showTimeline ? OrderedReply : ClassicReply;
   return <div className="ai-response">
-    <Body entry={entry} tools={showTools ? entry.tools ?? [] : []} waitingForSite={browserTask?.status === 'site-approval'} showTyping={showTyping} record={record} />
-    {browserTask && <BrowserSiteApprovalReceipts task={browserTask} onLocate={onLocateApproval} cardId={approvalCardId} />}
+    <Body entry={entry} tools={showTools ? entry.tools ?? [] : []} waitingForSite={browserTask?.status === 'site-approval'} showTyping={showTyping} record={record} outcome={outcome} onOpenWork={onOpenWork} />
+    {browserTask && approvalCardId && onLocateApproval && <BrowserSiteApprovalReceipts task={browserTask} onLocate={onLocateApproval} cardId={approvalCardId} />}
     {recordOpen && entry.browserTask && <BrowserTaskRecord reference={entry.browserTask} close={() => setRecordOpen(false)} />}
   </div>;
 }

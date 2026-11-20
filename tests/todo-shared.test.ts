@@ -111,3 +111,60 @@ test('workbench can create a fresh tasks-only shared database', () => {
     assert.equal((workbench.db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version, 4);
   } finally { workbench.close(); }
 });
+
+for (const version of [3, 4]) {
+  test(`the workbenches import v${version} data once and keep subsequent writes separate from To-Do-List`, () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'todo-workbench-import-'));
+    const legacyFile = path.join(dir, 'legacy.db');
+    const workbenchFile = path.join(dir, 'workbench.db');
+    const legacy = new Store(legacyFile);
+    let ono: Store | undefined, cmo: Store | undefined;
+    try {
+      const label = legacy.createCategory({ name: '标签', color: '#224488' });
+      const dateAt = '2026-11-20T10:00:00+08:00';
+      const task = legacy.create({ ...newTask('已有事项'), categoryId: label.id, dateAt, remindAt: dateAt });
+      legacy.newChat();
+      const legacyPayload = version === 3
+        ? JSON.stringify({ ...task, dateAt: undefined, plannedDate: '2026-11-19', dueAt: dateAt })
+        : JSON.stringify(task);
+      legacy.db.prepare('UPDATE tasks SET payload=? WHERE id=?').run(legacyPayload, task.id);
+      legacy.db.exec(`PRAGMA user_version=${version};`);
+
+      ono = new Store(workbenchFile, 'shared-tasks', legacyFile);
+      assert.deepEqual(ono.get(task.id), task);
+      assert.deepEqual(ono.getCategory(label.id), label);
+      assert.equal(ono.db.prepare("SELECT 1 FROM sqlite_master WHERE name IN ('settings', 'chats')").get(), undefined);
+      assert.equal(legacy.db.prepare('PRAGMA user_version').get()?.user_version, version);
+      assert.equal(legacy.db.prepare('SELECT payload FROM tasks WHERE id=?').get(task.id)?.payload, legacyPayload);
+
+      ono.update(task.id, { title: '工作台改名' }, task.updatedAt);
+      const upstream = legacy.create(newTask('拆分后创建'));
+      legacy.db.exec('PRAGMA user_version=99;');
+      cmo = new Store(workbenchFile, 'shared-tasks', legacyFile);
+      assert.equal(cmo.get(task.id).title, '工作台改名');
+      assert.equal(cmo.all(true).some(item => item.id === upstream.id), false);
+      assert.equal(legacy.get(task.id).title, '已有事项');
+    } finally {
+      ono?.close();
+      cmo?.close();
+      legacy.close();
+    }
+  });
+}
+
+test('a failed legacy import rolls back so it can be retried', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'todo-workbench-retry-'));
+  const legacyFile = path.join(dir, 'legacy.db');
+  const workbenchFile = path.join(dir, 'workbench.db');
+  const legacy = new Store(legacyFile);
+  try {
+    const task = legacy.create(newTask('可恢复事项'));
+    legacy.db.prepare('UPDATE tasks SET payload=? WHERE id=?').run('{', task.id);
+    legacy.db.exec('PRAGMA user_version=3;');
+    assert.throws(() => new Store(workbenchFile, 'shared-tasks', legacyFile), SyntaxError);
+    legacy.db.prepare('UPDATE tasks SET payload=? WHERE id=?').run(JSON.stringify(task), task.id);
+    const reopened = new Store(workbenchFile, 'shared-tasks', legacyFile);
+    try { assert.deepEqual(reopened.get(task.id), task); }
+    finally { reopened.close(); }
+  } finally { legacy.close(); }
+});
