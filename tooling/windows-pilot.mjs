@@ -203,13 +203,14 @@ try {
   });
   await screenshot('created.png');
   await check('Edit synthetic task title and note through the UI', async () => {
-    await page.locator('#view-todo').getByRole('button', { name: `编辑 ${title}`, exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: '编辑事项', exact: true });
-    await dialog.getByRole('textbox', { name: '待办名称', exact: true }).fill(editedTitle);
-    await dialog.getByRole('textbox', { name: '备注 / 进展', exact: true }).fill(note);
+    const workspace = page.locator('#view-todo');
+    await workspace.getByRole('button', { name: `编辑 ${title}`, exact: true }).click();
+    const editor = workspace.locator('.task-edit-page').or(page.getByRole('dialog', { name: '编辑事项', exact: true }));
+    await editor.getByRole('textbox', { name: '待办名称', exact: true }).fill(editedTitle);
+    await editor.getByRole('textbox', { name: '备注 / 进展', exact: true }).fill(note);
     await verifyUnboundedDatePicker(page);
-    await dialog.getByRole('button', { name: '保存待办', exact: true }).click();
-    await dialog.waitFor({ state: 'hidden' });
+    await editor.getByRole('button', { name: '保存待办', exact: true }).click();
+    await editor.waitFor({ state: 'hidden' });
     const task = await waitTask(editedTitle, 'todo');
     assert.equal(task.id, taskId); assert.equal(task.note, note);
   });
