@@ -207,7 +207,9 @@ try {
     await workspace.getByRole('button', { name: `编辑 ${title}`, exact: true }).click();
     const editor = workspace.locator('.task-edit-page').or(page.getByRole('dialog', { name: /^(?:编辑事项|编辑日程|编辑待办|日程详情)$/ }));
     await editor.getByRole('textbox', { name: '待办名称', exact: true }).fill(editedTitle);
-    await editor.getByRole('textbox', { name: '备注 / 进展', exact: true }).fill(note);
+    const addDescription = editor.getByRole('button', { name: '添加说明', exact: true });
+    if (await addDescription.isVisible()) await addDescription.click();
+    await editor.getByRole('textbox', { name: /^(?:说明|备注 \/ 进展)$/ }).fill(note);
     await verifyUnboundedDatePicker(page);
     await editor.getByRole('button', { name: '保存待办', exact: true }).click();
     await editor.waitFor({ state: 'hidden' });
