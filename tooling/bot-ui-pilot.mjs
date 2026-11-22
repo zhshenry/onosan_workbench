@@ -90,11 +90,23 @@ const model = createServer(async (req, res) => {
     for (const [value, reason] of [[delta, null], [{}, name ? 'tool_calls' : 'stop']]) res.write(`data: ${JSON.stringify({ id: 'browser-fixture', object: 'chat.completion.chunk', choices: [{ index: 0, delta: value, finish_reason: reason }] })}\n\n`);
     res.end('data: [DONE]\n\n'); return;
   }
-  const questionCase = ['行内选择验收', '行内其他回答验收', '行内自由回答验收', '行内跳过验收', '行内取消验收'].find(value => JSON.stringify(latest).includes(value));
+  const memoryQuote = '隔离验收：以后周报先列风险';
+  if (JSON.stringify(latest).includes(memoryQuote)) {
+    const saved = input.messages.slice(input.messages.lastIndexOf(latest) + 1).some(message => message.role === 'tool' && /"saved"\s*:\s*true/.test(message.content));
+    const delta = saved ? { content: '已保存周报约定。' } : { tool_calls: [{ index: 0, id: 'memory-ui-' + randomBytes(6).toString('hex'), type: 'function', function: {
+      name: 'remember', arguments: JSON.stringify({ text: '周报先列风险。', title: '周报顺序', topic: '写作', scope: 'private', quote: memoryQuote }),
+    } }] };
+    res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+    for (const [value, reason] of [[delta, null], [{}, saved ? 'stop' : 'tool_calls']]) {
+      res.write('data: ' + JSON.stringify({ id: 'memory-ui', object: 'chat.completion.chunk', choices: [{ index: 0, delta: value, finish_reason: reason }] }) + '\n\n');
+    }
+    res.end('data: [DONE]\n\n'); return;
+  }
+  const questionCase = ['行内选择验收', '行内其他回答验收', '行内自由回答验收', '行内跳过验收'].find(value => JSON.stringify(latest).includes(value));
   if (questionCase) {
     const resumed = JSON.stringify(latest).includes('用户对'), proposed = input.messages.some(message => (message.tool_calls ?? []).some(call => call.function?.name === 'propose_create' && call.function.arguments.includes('行内选择验收事项')));
     const name = !resumed ? 'ask_user' : questionCase === '行内选择验收' && !proposed ? 'propose_create' : undefined;
-    const args = name === 'ask_user' ? { question: questionCase + '：这条工作归到哪个方向？', ...(questionCase === '行内自由回答验收' ? {} : { options: [{ label: '学习', description: '整理课程、学习资料和汇报材料' }, { label: '工作', description: '归到当前工作安排' }] }) } : { title: '行内选择验收事项', categoryId: null, note: '已回答方向：学习' };
+    const args = name === 'ask_user' ? { question: questionCase + '：这条工作归到哪个方向？', ...(questionCase === '行内自由回答验收' ? {} : { options: [{ label: '学习', description: '整理课程、学习资料和汇报材料' }, { label: '工作', description: '归到当前工作安排' }] }) } : { title: '行内选择验收事项', categoryId: null, note: '已回答方向：学习', dateAt: '2026-11-26' };
     const delta = name ? { tool_calls: [{ index: 0, id: 'ui-inline-' + randomBytes(6).toString('hex'), type: 'function', function: { name, arguments: JSON.stringify(args) } }] } : { content: questionCase === '行内选择验收' ? '待办建议已准备，请在当前对话确认。' : '已收到你的回答，我们在当前对话继续。' };
     res.writeHead(200, { 'Content-Type': 'text/event-stream' });
     for (const [value, reason] of [[delta, null], [{}, name ? 'tool_calls' : 'stop']]) res.write(`data: ${JSON.stringify({ id: 'inline-fixture', object: 'chat.completion.chunk', choices: [{ index: 0, delta: value, finish_reason: reason }] })}\n\n`);
@@ -195,31 +207,6 @@ try {
     assert.equal(await page.locator('.bot-shell').getAttribute('data-workbench'), 'todo');
     await sidebar.getByRole('button', { name: '关闭 Bot 侧栏' }).click();
   });
-  await check('memory save respects strict IPC fields and deletion still requires confirmation', async () => {
-    const dialog = await openBotDetails();
-    await dialog.getByRole('button', { name: '记忆', exact: true }).click();
-    await dialog.getByRole('button', { name: '＋ 添加记忆', exact: true }).click();
-    assert.equal(await dialog.getByRole('button', { name: '保存记忆', exact: true }).isDisabled(), true);
-    assert.equal(await dialog.getByRole('button', { name: '确认删除', exact: true }).count(), 0);
-    await dialog.getByRole('textbox', { name: '记忆内容', exact: true }).fill('隔离验收：记忆保存');
-    await dialog.getByRole('button', { name: '保存记忆', exact: true }).click();
-    await dialog.locator('.bot-memory-item').waitFor();
-    await dialog.getByRole('button', { name: '编辑记忆', exact: true }).click();
-    await dialog.getByRole('textbox', { name: '记忆内容', exact: true }).fill('隔离验收：记忆更新');
-    await dialog.getByRole('button', { name: '保存记忆', exact: true }).click();
-    await dialog.locator('.bot-memory-item p').filter({ hasText: '记忆更新' }).waitFor();
-    await shot('memory-save-edit');
-    await dialog.getByRole('button', { name: '删除', exact: true }).click();
-    await dialog.getByRole('button', { name: '确认删除', exact: true }).waitFor();
-    await dialog.getByRole('button', { name: '取消', exact: true }).click();
-    assert.equal(await dialog.locator('.bot-memory-item').count(), 1);
-    await dialog.getByRole('button', { name: '删除', exact: true }).click();
-    await dialog.getByRole('button', { name: '确认删除', exact: true }).click();
-    await dialog.locator('.bot-memory-item').waitFor({ state: 'hidden' });
-    assert.equal(await page.evaluate(async () => { const bot = (await window.workbench.bot.list()).find(bot => bot.seedKey === 'schedule'); return (await window.workbench.bot.listMemories(bot.id)).length; }), 0);
-    await dialog.getByRole('button', { name: '关闭 Bot 侧栏', exact: true }).click();
-    assert.equal(await page.locator('.bot-shell').getAttribute('data-workbench'), 'todo');
-  });
   await check('profile schedule rows open focused editors and preserve the chat', async () => {
     const sidebar = await openBotDetails(), panel = await sidebar.boundingBox();
     await sidebar.getByRole('button', { name: '新建定时任务' }).click();
@@ -267,6 +254,13 @@ try {
     assert.equal(await page.locator('.bot-workspace').getAttribute('aria-hidden'), 'true');
     assert.equal(await page.locator('.bot-panel-header').getByRole('button', { name: '收起助手', exact: true }).count(), 0);
     await page.locator('.bot-identity-pill').waitFor();
+    const memorySidebar = await openBotDetails();
+    await memorySidebar.getByRole('button', { name: '记忆', exact: true }).click();
+    await memorySidebar.getByRole('button', { name: '＋ 添加记忆', exact: true }).click();
+    await page.getByRole('textbox', { name: '想记住的内容' }).waitFor();
+    assert.equal(await memorySidebar.count(), 0, 'the sidebar is removed when the memory composer opens');
+    await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === '想记住的内容');
+    await page.getByRole('button', { name: '退出添加记忆', exact: true }).click();
     await openWorkspace();
     assert.equal(await page.locator('.bot-panel-header').getByRole('button', { name: '收起助手', exact: true }).count(), 0);
     await aiMenu.click(); await page.getByRole('option', { name: '收起助手', exact: true }).click();
@@ -289,8 +283,36 @@ try {
     const directory = await app.evaluate(({ app }) => app.getPath('userData'));
     const config = JSON.parse(await readFile(path.join(directory, 'ai-config.json'), 'utf8'));
     assert.equal(await app.evaluate(({ safeStorage }, encrypted) => safeStorage.decryptString(Buffer.from(encrypted, 'base64')), config.providers[0].apiKey), 'isolated-fixture-key', 'fresh profile credentials work in Host and main process');
+    await check('memory addition uses the Agent, preserves the draft and opens the committed entry', async () => {
+      await page.locator('[data-workbench="todo"].ritem').click();
+      const editor = page.locator('.bot-compose textarea');
+      await editor.fill('记忆验收的普通草稿');
+      const dialog = await openBotDetails();
+      await dialog.getByRole('button', { name: '记忆', exact: true }).click();
+      await dialog.getByRole('button', { name: '＋ 添加记忆', exact: true }).click();
+      assert.equal(await page.getByRole('button', { name: '发送记忆请求', exact: true }).isDisabled(), true);
+      assert.equal(await editor.inputValue(), '');
+      await editor.fill('隔离验收：以后周报先列风险');
+      await page.getByRole('button', { name: '发送记忆请求', exact: true }).click();
+      const receipt = page.locator('.bot-memory-receipt').filter({ hasText: '已保存当前 Bot 的「周报顺序」' });
+      await receipt.getByRole('button', { name: '查看记忆', exact: true }).click();
+      assert.equal(await editor.inputValue(), '记忆验收的普通草稿');
+      await dialog.locator('.bot-memory-text').filter({ hasText: '周报先列风险。' }).waitFor();
+      await dialog.getByRole('button', { name: '编辑', exact: true }).click();
+      await dialog.getByRole('textbox', { name: '记忆内容', exact: true }).fill('隔离验收：记忆更新');
+      await dialog.getByRole('button', { name: '保存记忆', exact: true }).click();
+      await dialog.locator('.bot-memory-text').filter({ hasText: '记忆更新' }).waitFor();
+      await shot('memory-save-edit');
+      await dialog.getByRole('button', { name: '删除', exact: true }).click();
+      await dialog.getByRole('button', { name: '取消', exact: true }).click();
+      assert.equal(await dialog.locator('.bot-memory-text').count(), 1);
+      await dialog.getByRole('button', { name: '删除', exact: true }).click();
+      await dialog.getByRole('button', { name: '确认删除', exact: true }).click();
+      await dialog.getByText('还没有保存记忆。可以记录你的习惯或偏好。', { exact: true }).waitFor();
+      await dialog.getByRole('button', { name: '关闭 Bot 侧栏', exact: true }).click();
+    });
     await page.locator('[data-workbench="todo"].ritem').click(); await page.locator('.bot-compose textarea').fill('界面确认验收'); await page.getByRole('button', { name: '发送', exact: true }).click();
-    const confirmation = page.locator('.bot-chat-actions').getByRole('button', { name: '应用所选', exact: true });
+    const confirmation = page.locator('.bot-chat-actions').getByRole('button', { name: '确认创建', exact: true });
     await confirmation.waitFor(); assert.equal(await page.locator('.bot-task-card, .bot-task-notice').count(), 0); await shot('chat-pending-confirmation');
     await openWorkspace();
     const workspaceBeforeProgress = await page.locator('#bot-workspace').boundingBox();
@@ -299,19 +321,19 @@ try {
     await attention.getByRole('button', { name: /^界面确认验收/ }).waitFor(); await shot('progress-pending-confirmation');
     assert.equal(await page.locator('#bot-workspace').getAttribute('aria-hidden'), null);
     assert.deepEqual(await page.locator('#bot-workspace').boundingBox(), workspaceBeforeProgress);
-    await attention.getByRole('button', { name: /^界面确认验收/ }).click(); await activity.getByRole('button', { name: '应用所选', exact: true }).waitFor(); await shot('task-confirmation');
+    await attention.getByRole('button', { name: /^界面确认验收/ }).click(); await activity.getByRole('button', { name: '确认创建', exact: true }).waitFor(); await shot('task-confirmation');
     assert.deepEqual(await page.locator('#bot-workspace').boundingBox(), workspaceBeforeProgress);
     await closeActivity();
     await openFloatingActivity();
     await attention.getByRole('button', { name: /^界面确认验收/ }).click();
-    await activity.getByRole('button', { name: '应用所选', exact: true }).waitFor();
+    await activity.getByRole('button', { name: '确认创建', exact: true }).waitFor();
     await page.locator('.bot-compose textarea').click();
     await shot('floating-task-approval');
     await closeActivity();
     await page.getByRole('combobox', { name: 'AI 助手', exact: true }).click(); await page.getByRole('option', { name: '固定', exact: true }).click();
-    await page.locator('.bot-chat-actions').getByRole('button', { name: '应用所选', exact: true }).click();
+    await page.locator('.bot-chat-actions').getByRole('button', { name: '确认创建', exact: true }).click();
     await waitForState(async () => (await window.workbench.todo.state()).tasks.some(task => task.title === '界面确认验收'));
-    await page.locator('.bot-action-completed').getByText('待办修改 · 已应用', { exact: true }).waitFor();
+    await page.locator('.bot-chat-actions .bot-operation-card').getByText('已创建', { exact: true }).waitFor();
     await page.locator('[data-workbench="media"].ritem').click(); await page.locator('.bot-compose textarea').fill('交付件验收'); await page.getByRole('button', { name: '发送', exact: true }).click();
     await waitForState(async () => { const media = (await window.workbench.bot.list()).find(b => b.seedKey === 'media'); return (await window.workbench.bot.listArtifacts(media.id)).length > 0; });
     await openWorkspace();
@@ -329,11 +351,38 @@ try {
     await page.locator('[data-workbench="todo"].ritem').click();
     await page.locator('.bot-compose textarea').fill('行内选择验收'); await page.getByRole('button', { name: '发送', exact: true }).click();
     await page.locator('.bot-question').getByRole('button', { name: '学习', exact: true }).waitFor();
-    const question = page.locator('.bot-question'), other = question.getByRole('textbox', { name: '其他', exact: true });
-    await other.waitFor(); assert.equal(await other.evaluate(node => node.tagName), 'INPUT'); assert.equal(await question.locator('details').count(), 0);
+    const question = page.locator('.bot-question');
+    const otherAnswer = question.getByRole('textbox', { name: '其他回答', exact: true });
+    assert.equal(await otherAnswer.isVisible(), true);
+    assert.equal(await otherAnswer.getAttribute('placeholder'), '输入其他回答');
+    assert.equal(await question.locator('.bot-question-input').count(), 0);
+    assert.equal(await question.locator('.bot-operation-trace code:visible').count(), 0);
+    assert.deepEqual(await question.locator('.bot-action-buttons button').allTextContents(), ['跳过', '提交']);
     assert.equal(await question.getByRole('button', { name: '提交回答', exact: true }).isDisabled(), true);
-    const compact = await question.evaluate(node => ({ width: node.clientWidth, scroll: node.scrollWidth, height: node.getBoundingClientRect().height, rows: [...node.querySelectorAll('.bot-question-options > button')].map(button => button.getBoundingClientRect().height) }));
-    assert.ok(compact.scroll <= compact.width); assert.ok(compact.height < 290, JSON.stringify(compact)); assert.ok(compact.rows.every(height => height < 60), JSON.stringify(compact));
+    const compact = await question.evaluate(node => ({
+      width: node.clientWidth, scroll: node.scrollWidth, height: node.getBoundingClientRect().height,
+      letters: [...node.querySelectorAll('.bot-question-letter')].map(letter => letter.textContent),
+      optionGroupWidth: node.querySelector('.bot-question-options').getBoundingClientRect().width,
+      options: [...node.querySelectorAll('.bot-question-options > *')].map(row => {
+        const { width, height, left, top } = row.getBoundingClientRect();
+        const letter = row.firstElementChild.getBoundingClientRect();
+        const copy = row.lastElementChild.getBoundingClientRect();
+        return { width, height, left, top, inline: copy.left > letter.right };
+      }),
+      header: getComputedStyle(node.querySelector('.bot-operation-header')).backgroundColor,
+      surface: getComputedStyle(node).backgroundColor,
+    }));
+    assert.deepEqual(compact.letters, ['A', 'B', 'C']);
+    assert.ok(compact.scroll <= compact.width && compact.height < 290, JSON.stringify(compact));
+    assert.ok(compact.options.every((option, index) => Math.abs(option.width - compact.optionGroupWidth) < 1
+      && option.height === compact.options[0].height && option.left === compact.options[0].left && option.inline
+      && (!index || option.top > compact.options[index - 1].top + compact.options[index - 1].height)), JSON.stringify(compact));
+    assert.notEqual(compact.header, compact.surface);
+    assert.match(compact.surface, /^rgba?\(255, 255, 255/);
+    const questionButtonSize = await question.locator('.bot-action-buttons button').first().evaluate(button => {
+      const style = getComputedStyle(button);
+      return [style.height, style.paddingInline, style.borderRadius, style.fontSize];
+    });
     assert.equal(await page.locator('.bot-task-detail, .bot-task-notice').count(), 0);
     await page.locator('.bot-compose textarea').fill('这段草稿不要因选择选项而清空'); await waitDraft(page, '这段草稿不要因选择选项而清空');
     await waitForState(async () => { const bot = (await window.workbench.bot.list()).find(bot => bot.seedKey === 'schedule'); return (await window.workbench.bot.getDraft(bot.mainChatId)).text === '这段草稿不要因选择选项而清空'; });
@@ -343,26 +392,110 @@ try {
     await page.reload();
     const choice = page.locator('.bot-question').getByRole('button', { name: '学习', exact: true }); await choice.waitFor();
     await choice.focus(); await page.keyboard.press('Enter');
-    await page.locator('.bot-question').getByText('已回答：学习', { exact: true }).waitFor();
-    const apply = page.locator('.bot-chat-actions').getByRole('button', { name: '应用所选', exact: true }); await apply.waitFor();
+    assert.equal(await choice.getAttribute('aria-pressed'), 'true');
+    assert.equal(await question.locator('.bot-operation-status').textContent(), '待回答');
+    assert.equal(await page.evaluate(async taskId => (await window.workbench.bot.getTask(taskId)).actions.find(action => action.kind === 'question').status, original.id), 'pending');
+    const alternate = question.getByRole('button', { name: '工作', exact: true });
+    await alternate.click();
+    assert.equal(await choice.getAttribute('aria-pressed'), 'false');
+    assert.equal(await alternate.getAttribute('aria-pressed'), 'true');
+    await choice.click();
+    await question.getByRole('button', { name: '提交回答', exact: true }).click();
+    await question.locator('.bot-question-answer').getByText('学习', { exact: true }).waitFor();
+    assert.equal(await question.locator('.bot-operation-header button[aria-expanded]').count(), 0);
+    const confirmationCard = page.locator('.bot-chat-actions .bot-operation-card').filter({ has: page.getByRole('button', { name: '确认创建', exact: true }) });
+    const apply = confirmationCard.getByRole('button', { name: '确认创建', exact: true }); await apply.waitFor();
+    await confirmationCard.locator('.todo-proposal-after').getByText('2026-11-26', { exact: true }).waitFor();
+    assert.equal(await confirmationCard.locator('.bot-operation-copy > strong').textContent(), '新建待办');
+    assert.equal(await confirmationCard.locator('.bot-operation-status').textContent(), '待确认');
+    assert.equal(await confirmationCard.locator('.bot-operation-header .bot-operation-actions button').count(), 0);
+    assert.equal(await confirmationCard.locator('.todo-proposal-target strong').textContent(), '行内选择验收事项');
+    assert.deepEqual(await confirmationCard.locator('.todo-proposal-footer button').allTextContents(), ['保留原内容', '确认创建']);
+    const confirmationLayout = await confirmationCard.evaluate(node => {
+      const footer = node.querySelector('.todo-proposal-footer');
+      const buttons = footer.querySelector('.bot-action-buttons');
+      return {
+        rightAligned: Math.abs(buttons.getBoundingClientRect().right - footer.getBoundingClientRect().right) < 1,
+        sizes: [...buttons.querySelectorAll('button')].map(button => {
+          const style = getComputedStyle(button);
+          return [style.height, style.paddingInline, style.borderRadius, style.fontSize];
+        }),
+        fields: [...node.querySelectorAll('.todo-proposal-after')].map(field => getComputedStyle(field).backgroundColor),
+      };
+    });
+    assert.equal(confirmationLayout.rightAligned, true);
+    assert.deepEqual(confirmationLayout.sizes, [questionButtonSize, questionButtonSize]);
+    assert.ok(confirmationLayout.fields.length && confirmationLayout.fields.every(color => /^rgba?\(255, 255, 255/.test(color)));
     assert.equal(await page.locator('.bot-task-detail').count(), 0); await waitDraft(page, '这段草稿不要因选择选项而清空');
     await shot('inline-answer-and-confirm'); await apply.evaluate(node => { node.click(); node.click(); });
     await waitForState(async () => (await window.workbench.todo.state()).tasks.filter(task => task.title === '行内选择验收事项').length === 1);
     const saved = await page.evaluate(async () => { const bot = (await window.workbench.bot.list()).find(bot => bot.seedKey === 'schedule'); return (await window.workbench.bot.listTasks(bot.id)).filter(task => task.input === '行内选择验收'); });
     assert.equal(saved.length, 1); assert.equal(saved[0].id, original.id); assert.equal(saved[0].chatId, original.chatId);
-    await page.locator('.bot-action-completed').last().waitFor(); await waitDraft(page, '这段草稿不要因选择选项而清空');
-    await page.reload(); await page.locator('.bot-question').getByText('已回答：学习', { exact: true }).waitFor(); await shot('inline-receipt-after-reload');
+    const todoReceiptCard = page.locator('.bot-chat-actions').getByRole('region', { name: '行内选择验收事项', exact: true });
+    await todoReceiptCard.locator('.bot-operation-status').getByText('已创建', { exact: true }).waitFor();
+    assert.equal(await todoReceiptCard.locator('.bot-todo-receipt-target').innerText(), '行内选择验收事项');
+    await todoReceiptCard.locator('.bot-todo-receipt').getByText('已创建，完成期限为 2026-11-26。', { exact: true }).waitFor();
+    assert.equal(await todoReceiptCard.locator('.bot-operation-header button[aria-expanded]').count(), 0);
+    await waitDraft(page, '这段草稿不要因选择选项而清空');
+    await page.reload(); await question.locator('.bot-question-answer').getByText('学习', { exact: true }).waitFor();
+    await todoReceiptCard.locator('.bot-todo-receipt').getByText('已创建，完成期限为 2026-11-26。', { exact: true }).waitFor();
+    assert.equal(await todoReceiptCard.locator('.bot-operation-header button[aria-expanded]').count(), 0);
+    assert.equal(await question.locator('.bot-operation-header button[aria-expanded]').count(), 0);
+    await shot('inline-receipt-after-reload');
     await win.evaluate(win => win.setContentSize(1544, 1018));
   });
-  await check('inline custom answers skip and cancel work in floating and parallel modes', async () => {
-    for (const [text, mode] of [['行内其他回答验收', '固定'], ['行内自由回答验收', '悬浮'], ['行内跳过验收', '固定'], ['行内取消验收', '悬浮']]) {
+  await check('inline custom answers and skip work in floating and parallel modes', async () => {
+    const measureAnswerRow = locator => locator.evaluate(node => {
+      const style = getComputedStyle(node);
+      const row = node.getBoundingClientRect();
+      const form = node.closest('.bot-question-form').getBoundingClientRect();
+      return {
+        fullWidth: Math.abs(row.width - form.width) < 1 && Math.abs(row.left - form.left) < 1,
+        appearance: [Math.round(row.height), style.border, style.borderRadius, style.backgroundColor],
+      };
+    });
+    let optionRow;
+    for (const [text, mode] of [['行内其他回答验收', '固定'], ['行内自由回答验收', '悬浮'], ['行内跳过验收', '固定']]) {
       await page.getByRole('combobox', { name: 'AI 助手', exact: true }).click(); await page.getByRole('option', { name: mode, exact: true }).click(); if (await page.locator('.bot-floating-pill').isVisible()) await page.locator('.bot-floating-pill').click();
       await page.locator('.bot-compose textarea').fill(text); await page.getByRole('button', { name: '发送', exact: true }).click();
       const card = page.getByRole('region', { name: text + '：这条工作归到哪个方向？', exact: true }); await card.waitFor();
-      if (text === '行内其他回答验收') { const other = card.getByRole('textbox', { name: '其他', exact: true }); await other.fill('我的其他分类'); assert.equal(await other.evaluate(node => node.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true, cancelable: true }))), false); assert.equal(await other.inputValue(), '我的其他分类'); await shot('inline-other-answer-narrow'); await other.press('Enter'); await card.getByText('已回答：我的其他分类', { exact: true }).waitFor(); }
-      else if (text === '行内自由回答验收') { await card.getByRole('textbox', { name: '你的回答', exact: true }).fill('按我自己的方向整理'); await shot('inline-custom-answer-floating'); await card.getByRole('button', { name: '提交回答', exact: true }).click(); await card.getByText('已回答：按我自己的方向整理', { exact: true }).waitFor(); }
-      else if (text === '行内跳过验收') { await card.getByRole('button', { name: '跳过问题', exact: true }).click(); await card.getByText('已跳过', { exact: true }).waitFor(); }
-      else { await card.getByRole('button', { name: '取消本次工作', exact: true }).click(); await card.getByText('已取消', { exact: true }).waitFor(); }
+      await card.getByRole('button', { name: '跳过', exact: true }).waitFor();
+      assert.deepEqual(await card.locator('.bot-action-buttons button').allTextContents(), ['跳过', '提交']);
+      if (text === '行内其他回答验收') {
+        const other = card.getByRole('textbox', { name: '其他回答', exact: true });
+        const otherRow = card.locator('.bot-question-other');
+        assert.equal(await other.isVisible(), true);
+        assert.equal(await other.evaluate(node => {
+          const hint = getComputedStyle(node, '::placeholder').color;
+          const secondary = node.closest('.bot-question-options').querySelector('small');
+          return hint === getComputedStyle(secondary).color && hint !== getComputedStyle(node).color;
+        }), true);
+        optionRow = await measureAnswerRow(card.getByRole('button', { name: '学习', exact: true }));
+        assert.equal(optionRow.fullWidth, true);
+        assert.deepEqual(await measureAnswerRow(otherRow), optionRow);
+        await otherRow.locator('.bot-question-letter').click();
+        assert.equal(await other.evaluate(node => document.activeElement === node), true);
+        assert.equal(await card.getByRole('textbox').count(), 1);
+        await other.fill('我的其他分类');
+        assert.equal(await other.evaluate(node => node.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true, cancelable: true }))), false);
+        assert.equal(await other.inputValue(), '我的其他分类');
+        await shot('inline-other-answer-narrow');
+        await other.press('Enter');
+        await card.locator('.bot-question-answer').getByText('我的其他分类', { exact: true }).waitFor();
+        assert.equal(await card.locator('.bot-operation-header button[aria-expanded]').count(), 0);
+      } else if (text === '行内自由回答验收') {
+        assert.equal(await card.getByText('你的回答', { exact: true }).count(), 0);
+        const answer = card.getByRole('textbox', { name: '回答', exact: true });
+        assert.deepEqual(await measureAnswerRow(answer), optionRow);
+        await answer.fill('按我自己的方向整理');
+        await shot('inline-custom-answer-floating');
+        await card.getByRole('button', { name: '提交回答', exact: true }).click();
+        await card.locator('.bot-question-answer').getByText('按我自己的方向整理', { exact: true }).waitFor();
+        assert.equal(await card.locator('.bot-operation-header button[aria-expanded]').count(), 0);
+      } else {
+        await card.getByRole('button', { name: '跳过', exact: true }).click();
+        await card.locator('.bot-operation-status').getByText('已跳过', { exact: true }).waitFor();
+      }
       assert.equal(await page.locator('.bot-task-detail').count(), 0);
     }
     await page.getByRole('combobox', { name: 'AI 助手', exact: true }).click(); await page.getByRole('option', { name: '固定', exact: true }).click();
@@ -406,9 +539,12 @@ try {
   });
   await check('failed chat keeps an actionable notice without a second conversation', async () => {
     await page.locator('.bot-compose textarea').fill('请求失败验收'); await page.getByRole('button', { name: '发送', exact: true }).click();
-    const failure = page.getByRole('button', { name: '执行失败：请求失败验收，查看详情', exact: true }); await failure.waitFor();
+    const failure = page.locator('.bot-operation-card[data-outcome="failed"]').last(); await failure.waitFor();
+    assert.equal(await failure.locator('.bot-operation-actions').textContent(), '执行失败');
+    assert.equal(await failure.locator('.bot-operation-details').isVisible(), false);
     assert.equal(await page.locator('.bot-task-card').count(), 0); await shot('chat-failure-notice');
-    await failure.click();
+    await failure.getByRole('button', { name: '查看 处理请求', exact: true }).click();
+    await failure.locator('.bot-action-buttons').getByRole('button', { name: '查看工作详情', exact: true }).click();
     await activityPanel().getByRole('button', { name: '继续任务', exact: true }).waitFor();
     await shot('progress-failed-chat-visible');
     await closeActivity();
@@ -498,17 +634,21 @@ try {
     const composer = page.locator('.bot-compose textarea');
     const send = page.getByRole('button', { name: '发送', exact: true });
     const siteCard = chat.getByRole('region', { name: '站点授权', exact: true });
-    const approval = siteCard.filter({ hasText: '待处理' });
+    const approval = siteCard.filter({ hasText: '待授权' });
     const approved = siteCard.filter({ hasText: '已授权' });
     const jump = page.getByRole('button', { name: '回到底部', exact: true });
     await win.evaluate(win => win.setContentSize(1024, 680));
     await composer.fill('你好，会话滚动验收\n' + '上一轮对话内容，用于验证滚动。\n'.repeat(24));
     await send.click();
     await chat.getByText('你好，我们就在这条对话里继续。', { exact: true }).waitFor();
+    await waitForState(async () => (await window.workbench.browserAutomation.state('default')).tasks.some(task =>
+      task.goal.startsWith('你好，会话滚动验收') && task.status === 'unverified' && !task.steps.length));
+    assert.equal(await chat.getByRole('region', { name: '网页操作', exact: true }).count(), 0);
     const requestsBeforeApproval = fixtureRequests;
     await composer.fill('浏览器资源桥验收（拒绝）');
     await send.click();
     await approval.waitFor();
+    await waitForState(async () => { const card = (await window.workbench.bot.list()).find(bot => bot.seedKey === 'web'); return (await window.workbench.bot.listTasks(card.id))[0]?.status === 'waiting_user'; });
     assert.equal(await chat.locator('.bot-chat-entry.assistant').getByRole('region', { name: '站点授权', exact: true }).count(), 1);
     const waitingNotice = '.bot-task-notice[data-status="waiting_user"]';
     assert.equal(await page.locator(`.bot-chat-attention, .ai-site-approval-receipt, ${waitingNotice}`).count(), 0);
@@ -519,8 +659,9 @@ try {
       probe.observer.observe(node, { childList: true, subtree: true });
       return probe;
     }, waitingNotice);
-    assert.match(await approval.textContent(), /仅本次任务有效/);
-    await chat.evaluate(node => { node.scrollTop = 0; });
+    assert.match(await approval.textContent(), /仅本次任务/);
+    await chat.hover();
+    await page.mouse.wheel(0, -2400);
     await jump.waitFor();
     assert.equal(await chat.evaluate(node => node.scrollTop), 0);
     await jump.click();
@@ -528,6 +669,7 @@ try {
     await shot('browser-site-approval-1024');
     await approval.getByRole('button', { name: '不允许', exact: true }).click();
     await approval.waitFor({ state: 'detached' });
+    await siteCard.filter({ hasText: '已拒绝' }).waitFor();
     assert.equal(await approved.count(), 0);
     await waitForState(async () => (await window.workbench.browserAutomation.state('default')).tasks.some(task => task.siteApprovals?.some(item => item.status === 'denied')));
     await waitForState(async () => {
@@ -548,8 +690,8 @@ try {
     await approval.getByRole('button', { name: '允许并继续', exact: true }).click();
     await approval.waitFor({ state: 'detached' });
     await approved.waitFor();
-    assert.match(await approved.textContent(), /^站点授权已授权$/);
-    assert.equal(await approved.locator('button, .ai-site-approval-body').count(), 0);
+    assert.match(await approved.locator('.bot-operation-header').textContent(), /站点授权.*已授权$/);
+    assert.equal(await approved.getByRole('button', { name: '允许并继续', exact: true }).count(), 0);
     await waitForState(async () => { const card = (await window.workbench.bot.list()).find(bot => bot.seedKey === 'web'); return (await window.workbench.bot.listTasks(card.id))[0]?.status === 'completed'; });
     const state = await page.evaluate(() => window.workbench.browserAutomation.state('default'));
     assert.ok(state.tasks.some(task => task.status === 'completed' && task.verification?.items.every(item => item.status === 'passed') && task.siteApprovals?.some(item => item.status === 'allowed')));
@@ -563,15 +705,28 @@ try {
     });
     await noticeObserver.dispose();
     assert.equal(noticeAppeared, false, 'the duplicate wait notice must stay hidden through both decisions');
-    const recordButton = chat.getByRole('button', { name: '查看操作记录', exact: true }).last();
-    await recordButton.waitFor();
+    const browserResult = chat.getByRole('region', { name: '网页操作', exact: true }).filter({ hasText: '已完成' });
+    await browserResult.getByText('已查看网页，找到「资源桥测试页面」。', { exact: true }).waitFor();
+    assert.doesNotMatch(await browserResult.textContent(), /查看回执|查看网页操作记录|browser_observe|对象 ·/);
+    assert.equal(await approved.getByText('操作记录', { exact: true }).count(), 0);
+    await browserResult.screenshot({ path: path.join(output, 'browser-action-summary.png'), animations: 'disabled' });
+    report.screenshots.push('browser-action-summary.png');
     await shot('browser-verified');
+    const activity = await openActivity();
+    const backToList = activity.getByRole('button', { name: '返回列表', exact: true });
+    if (await backToList.isVisible()) await backToList.click();
+    await activity.getByRole('button', { name: '查看工作详情：浏览器资源桥验收', exact: true }).click();
+    const browserHistory = activity.locator('.bot-work-history .bot-operation-card').filter({ hasText: '网页操作' });
+    await browserHistory.getByRole('button', { name: '查看 网页操作', exact: true }).click();
+    const recordButton = browserHistory.getByRole('button', { name: '查看网页操作记录', exact: true });
+    await recordButton.waitFor();
     await recordButton.click();
     const record = page.getByRole('dialog', { name: '浏览器操作记录', exact: true });
     await record.getByRole('radio', { name: '操作过程', exact: true }).click();
     await record.getByRole('region', { name: '站点授权记录', exact: true }).getByText(/已允许/).waitFor();
     await record.getByRole('button', { name: '关闭', exact: true }).click();
     await record.waitFor({ state: 'hidden' });
+    await closeActivity();
   });
   await check('island deliverable opens that artifact in the coordinator workspace', async () => {
     await page.locator('[data-workbench="home"].ritem').click(); await page.locator('.bot-compose textarea').fill('交付件验收'); await page.getByRole('button', { name: '发送', exact: true }).click();
@@ -625,7 +780,10 @@ try {
     await page.locator('.bot-opening-effect').waitFor({ state: 'detached' }); await page.waitForTimeout(200); assert.ok((await page.locator('.bot-compose').boundingBox()).height <= 130);
     await page.locator('.bot-compose textarea').fill('浮动流式验收'); await page.getByRole('button', { name: '发送', exact: true }).click();
     await waitForState(async () => { const bot = (await window.workbench.bot.list()).find(bot => bot.seedKey === 'coordinator'); return (await window.workbench.bot.open(bot.id)).chat.entries.some(entry => entry.streaming && entry.content.length > 400); });
-    assert.equal(await page.locator('.bot-chat-entry.user').count(), 0); assert.equal(await page.locator('.bot-chat-entry.assistant').count(), 1);
+    assert.equal(await page.locator('.bot-chat-entry.user').count(), 1);
+    assert.equal(await page.locator('.bot-floating-question').textContent(), '浮动流式验收');
+    await page.locator('.bot-chat-entry.user > div > time').waitFor();
+    assert.equal(await page.locator('.bot-chat-entry.assistant').count(), 1);
     assert.ok((await page.locator('.bot-reply-surface').boundingBox()).height <= 241); await shot('floating-real-stream');
     await page.locator('.bot-chat-scroll').evaluate(node => { node.scrollTop = 0; }); await page.waitForTimeout(220);
     assert.equal(await page.locator('.bot-chat-scroll').evaluate(node => node.scrollTop), 0); await page.getByRole('button', { name: '回到底部', exact: true }).waitFor();
@@ -634,6 +792,9 @@ try {
     await page.locator('.bot-compose textarea').fill('浮动停止验收'); await page.getByRole('button', { name: '发送', exact: true }).click(); await page.getByRole('button', { name: '停止回复', exact: true }).waitFor(); await page.waitForTimeout(300);
     await page.getByRole('button', { name: '停止回复', exact: true }).click();
     await waitForState(async () => { const bot = (await window.workbench.bot.list()).find(bot => bot.seedKey === 'coordinator'); return (await window.workbench.bot.listTasks(bot.id)).find(task => task.input === '浮动停止验收')?.status === 'cancelled'; });
+    const stopped = page.locator('.bot-reply-surface .bot-operation-card[data-outcome="stopped"]'); await stopped.waitFor();
+    assert.equal(await stopped.locator('.bot-operation-actions').textContent(), '已停止');
+    assert.equal(await stopped.locator('.bot-operation-details').isVisible(), false);
     await page.locator('.bot-compose textarea').fill('浮动未发送草稿'); await page.getByRole('button', { name: '收起输入框', exact: true }).click(); await page.locator('.bot-floating-pill').waitFor();
     await page.locator('.bot-floating-pill').click(); await page.getByRole('combobox', { name: 'AI 助手', exact: true }).click(); await page.getByRole('option', { name: '收起助手', exact: true }).click();
     await page.waitForTimeout(1300); assert.equal(await page.locator('.bot-opening-effect').count(), 0); assert.equal(await page.locator('.bot-floating-pill').count(), 0);

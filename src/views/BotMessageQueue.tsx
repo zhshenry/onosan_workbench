@@ -58,11 +58,11 @@ export function BotMessageQueue({ items, active, onChange, focusComposer }: {
         </div> : <div className="bot-queue-row">
           <p className="bot-queue-text" title={task.input}>{task.input}</p>
           <div className="bot-queue-actions">
-            <button type="button" className="bot-queue-steer" disabled={!!pending || !!editing || !active}
-              title={active ? '引导「' + active.title + '」' : '当前没有可引导的任务'}
+            {!task.memoryRequest && <button type="button" className="bot-queue-steer" disabled={!!pending || !!editing || !active || !!active.memoryRequest}
+              title={active && !active.memoryRequest ? '引导「' + active.title + '」' : '当前没有可引导的任务'}
               onClick={() => { if (active) void submit({ kind: 'steer', taskId: task.id, revision: task.revision, targetTaskId: active.id, targetRun: active.runGeneration ?? 0 }); }}>
               <ArrowBendDownRight size={16} aria-hidden="true" />引导
-            </button>
+            </button>}
             <IconButton label="编辑" data-queue-edit disabled={!!pending || !!editing}
               onClick={() => { setError(''); setEditing({ task, text: task.input }); }}><PencilSimple size={17} aria-hidden="true" /></IconButton>
             <IconButton label="删除" className="bot-queue-delete" disabled={!!pending || !!editing}

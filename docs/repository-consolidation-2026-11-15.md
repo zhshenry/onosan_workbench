@@ -29,7 +29,7 @@
 | 2 / `74eed4a`、3 / `fd946da` | AI 过程反馈已存在，当前另有滚动定位参数；版本记录已有后续发布历史。两份快照的基线不同，不是丢失验收门禁实现 |
 | 4 / `19ab549` | 浮窗会话定向取消、浏览器授权样式、测试桩与断言均已存在；旧类型断言和交互文案由当前实现替代 |
 | 5 / `9ecdb95`、6 / `fd1ead3` | AI Escape 处理、浏览器记录入口、阅读导入规则已存在；授权入口后来完善为固定授权卡 |
-| 7 / `5195924` | 多标签 guest 参数及浏览器测试入口已存在；QA 已迁入 `docs/requirements/web/browser-automation/qa-2026-10-15.md`，pilot 已适配后续控件与授权流程 |
+| 7 / `5195924` | 多标签 guest 参数及浏览器测试入口已存在；QA 已迁入 `docs/requirements/web/rel027-embedded-browser-ai-actions-and-handoff/qa-2026-10-15.md`，pilot 已适配后续控件与授权流程 |
 
 8 份 stash 全部保留在活动仓库，并纳入完整备份；未执行 pop、apply 或 clear。stash 是恢复记录，不是仍在使用的本地分支。
 

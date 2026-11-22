@@ -33,15 +33,15 @@ web(Electron 桌面壳,Windows 为主;渲染层为 Web 技术)
 ## Capabilities and Constraints
 
 已确认:
-- **AI 测试工作台（2026-10-21）**：本地比较相同提示词在多个模型上的回复、代码与产物。模型直出和 Agent 执行分开，复用现有模型设置；保存配置和运行快照，提供独立产物标签、大预览、代码、分屏、只读导出与独立断言。当前执行环境为 HTML / 浏览器 JavaScript，其余源码可查看导出。功能及边界见 [实施说明](docs/requirements/ai-test/workbench/README.md)。
+- **AI 测试工作台（2026-10-21）**：本地比较相同提示词在多个模型上的回复、代码与产物。模型直出和 Agent 执行分开，复用现有模型设置；保存配置和运行快照，提供独立产物标签、大预览、代码、分屏、只读导出与独立断言。当前执行环境为 HTML / 浏览器 JavaScript，其余源码可查看导出。功能及边界见 [实施说明](docs/requirements/ai-test/rel051-model-agent-comparison-and-test-outputs/proposal.md)。
 - 内嵌 To-Do-List 全部功能且保持一致、同步更新(待办/日程双类型、优先级、标签、提醒、事项库、软删除、AI 建议等)。
 - 内置 Office 预览/编辑;内置浏览器;为未来 CLI 工具挂载预留。
 - 导航分两层;早期规划包含自媒体制作、个人网页设计、个人游戏设计、八字等占位入口，后续状态以各模块实施记录为准。
-- **游戏工作台（2026-10-16）**:以轨迹侦探为当前项目，采用已选定的双区联调布局与全宽底部项目终端（终端方案 2）。代码继续在现有开发工具中修改，Ono 负责本地服务、真实网页试玩、五项快速检查、独立 Edge 完整通关、截图与问题报告；项目终端支持手工 PowerShell 命令并跨切页保留会话。实现边界及验收见 `docs/requirements/game/trail-detective/spec.md`。
+- **游戏工作台（2026-10-16）**:以轨迹侦探为当前项目，采用已选定的双区联调布局与全宽底部项目终端（终端方案 2）。代码继续在现有开发工具中修改，Ono 负责本地服务、真实网页试玩、五项快速检查、独立 Edge 完整通关、截图与问题报告；项目终端支持手工 PowerShell 命令并跨切页保留会话。实现边界及验收见 `docs/requirements/game/rel041-trail-detective-launch-preview-and-tests/spec.md`。
 - 视觉候选方向两套(磨砂玻璃质感 / 沿用 To-Do-List 纸感风格),由用户评审设计稿后选定。
 - **AI 能力(2026-09-23 已定,当日修订)**:与 To-Do-List 同源的 Pi Agent Loop(`@earendil-works/pi-coding-agent`),主进程「AI 内核 + 模块工具注册」:各模块按 `AiModuleContribution` 注册工具与上下文;写入一律走「建议-确认卡」事务应用。**AI 与 To-Do-List 完全独立(用户明确要求)**:供应商/模型/Key/启用开关/对话会话均为工作台自有存储(userData 的 ai-config.json 与 chats.db),不读写共享库的 settings/chats 表;仅待办数据(tasks/categories)同库共享。
-- **待办同步策略(2026-09-23 已定,当日修订)**:以 To-Do-List 为上游,清单化移植(固定文件清单:contracts/store/任务 UI/编辑器/事项库/提醒/AI 任务工具)+ 移植其测试作为一致性安全网 + 上游 drift 检查脚本 + 「To-Do-List 每次发版触发一次同步」流程;工作台侧不为待办做上游没有的功能,有新功能想法先进上游再同步回来,防分叉。OnO 与 CMO 共用 `%APPDATA%/OnoCmoWorkbench/tasks.db`。首次启动从原 To-Do-List 库只读导入事项和标签，随后工作台使用新库。详见 [同步台账](modules/todo/SYNC.md)。长期方案见 docs/requirements/home/todo-shared-kit/proposal.md(共享包 ono-todo-kit)。
-- **设置模块(2026-09-24 已定)**:三形态高保真比选后用户选定 **方案 C——设置作为第六个大工作台**,复用「图标栏 + 二级目录」两级导航(设计稿 `docs/requirements/settings/preferences/prototype/settings-form-c-workbench.html`)。**M1 已上线**:通用(开机自启/关闭行为/语言/二级导航默认收起)+ AI 助手(自 AiPanel 弹窗整体迁入,面板齿轮变跳转,单一来源)+ 关于(版本/数据目录/应用更新,2026-10-01 接入);**M2 已上线(同日)**:待办与数据(共享库路径/连接状态/结构版本/数据规模,只读,IPC `todo:info`)+ 通知(待办提醒总开关,主进程轮询读取 `remindersEnabled`);**外观已上线(M3,同日更新)**:界面主题三选——mist 雾灰轻雾(默认)/ cool 冷灰凝霜 / warm 暖砂柔雾,渲染层写 `<html data-theme>` 驱动 shell.css 三主题;**个人资料已上线(M3 收官,同日)**:个人资料 = 两形态比选后用户选定方案 A 设置分区(设计稿 `docs/requirements/settings/profile/prototype/profile-form-a-section.html`,popover 方案 B 落选备查),`profile.name` 驱动头像首字与首页问候,头像点击跳该分区。应用设置存 `userData/app-settings.json`(与 ai-config.json 平级,与 To-Do-List 无关),契约见 `shared/contracts.ts` 的 AppSettingsSchema,存储与测试见 `electron/app-settings.ts`、`tests/app-settings.test.ts`。
+- **待办同步策略(2026-09-23 已定,当日修订)**:以 To-Do-List 为上游,清单化移植(固定文件清单:contracts/store/任务 UI/编辑器/事项库/提醒/AI 任务工具)+ 移植其测试作为一致性安全网 + 上游 drift 检查脚本 + 「To-Do-List 每次发版触发一次同步」流程;工作台侧不为待办做上游没有的功能,有新功能想法先进上游再同步回来,防分叉。OnO 与 CMO 共用 `%APPDATA%/OnoCmoWorkbench/tasks.db`。首次启动从原 To-Do-List 库只读导入事项和标签，随后工作台使用新库。详见 [同步台账](modules/todo/SYNC.md)。长期方案见 docs/requirements/home/rel023-cross-product-todo-kit-and-workflows/proposal.md(共享包 ono-todo-kit)。
+- **设置模块(2026-09-24 已定)**:三形态高保真比选后用户选定 **方案 C——设置作为第六个大工作台**,复用「图标栏 + 二级目录」两级导航(设计稿 `docs/requirements/settings/rel052-workbench-preferences-and-save-feedback/prototype/settings-form-c-workbench.html`)。**M1 已上线**:通用(开机自启/关闭行为/语言/二级导航默认收起)+ AI 助手(自 AiPanel 弹窗整体迁入,面板齿轮变跳转,单一来源)+ 关于(版本/数据目录/应用更新,2026-10-01 接入);**M2 已上线(同日)**:待办与数据(共享库路径/连接状态/结构版本/数据规模,只读,IPC `todo:info`)+ 通知(待办提醒总开关,主进程轮询读取 `remindersEnabled`);**外观已上线(M3,同日更新)**:界面主题三选——mist 雾灰轻雾(默认)/ cool 冷灰凝霜 / warm 暖砂柔雾,渲染层写 `<html data-theme>` 驱动 shell.css 三主题;**个人资料已上线(M3 收官,同日)**:个人资料 = 两形态比选后用户选定方案 A 设置分区(设计稿 `docs/requirements/settings/rel053-workbench-profile-editing/prototype/profile-form-a-section.html`,popover 方案 B 落选备查),`profile.name` 驱动头像首字与首页问候,头像点击跳该分区。应用设置存 `userData/app-settings.json`(与 ai-config.json 平级,与 To-Do-List 无关),契约见 `shared/contracts.ts` 的 AppSettingsSchema,存储与测试见 `electron/app-settings.ts`、`tests/app-settings.test.ts`。
 
 2026-11-12 设置入口修订：按用户最新弹窗参考，侧栏设置按钮改为打开居中模态面板，六个原设置分类纵向排列在左侧；原设置工作台形态作为历史记录。头像、AI 配置及灵动岛设置入口定位到同一弹窗，背景工作台和 AI 会话保持，关闭后回到原工作台。设置内容及存储契约沿用现有实现，当前视觉与行为分别以 `DESIGN.md`、`UX-CONTRACT.md` 为准。
 
@@ -53,7 +53,7 @@ web(Electron 桌面壳,Windows 为主;渲染层为 Web 技术)
 
 - **视觉方向(2026-09-24 修订,三主题)**:磨砂玻璃材质不变,用户从三张高保真稿中选定 mist「雾灰·轻雾」为默认,以 cool「冷灰·凝霜」与 warm「暖砂·柔雾」作为换肤;原「晴蓝 A+」由 cool 替代,已有 sunny 设置值读入时映射为 cool。三款保留近黑激活/主行动、雾蓝数据色、红色仅逾期/警示,用色场与玻璃透明度区分氛围。切换入口:设置 → 外观(`uiTheme` 字段,存 app-settings.json,默认 mist);token 权威:`src/shell.css` + `DESIGN.md`。顶部日程条胶囊造型、圆角体系 18/14/10、Bahnschrift 数字字体延续不变。
 - **导航模型**:左侧图标栏 = 一级「大工作台」切换(首页/文档中心/内置浏览器/终端/创作工坊/生活,可扩展);图标栏右侧列表 = 当前工作台的二级目录,随一级联动。权威文件:`design/README.md` 与 `design/mockups/design-a-glass.html`。
-- To-Do-List 设计 token 保留为落选备查方向(`docs/requirements/shared/workbench-shell/prototype/design-b-paper.html`),不再作为默认。
+- To-Do-List 设计 token 保留为落选备查方向(`docs/requirements/shared/rel011-main-window-shell-and-workbench-layout/prototype/design-b-paper.html`),不再作为默认。
 - 用户提供的四张参考图(日程条顶栏、双列双层导航、浅色数据面板、米黄 inventory 风格)是整体布局与气质参考。
 
 ## Evidence on Hand

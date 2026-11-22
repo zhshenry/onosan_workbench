@@ -7,4 +7,4 @@
 - 用户确认“保留当前并刷新规范”。本次仅更新文档，未调整界面或窗口行为。
 - AI 标题行仅保留收起按钮；下方协助对象卡的主行显示模块/盘型、对象、固定与范围说明，下行放工作区标签、历史对话选择器与新建入口。待办与日程不重复显示对象名，固定按钮仅用于博客和命例。以 `src/views/AiPanel.tsx` 当前结构为准。
 - 浮窗创建目标高 860px，展开后按内容及 `max(700, round(screen.availHeight - 112))` 基准调整；请求高度限制为 330–1200px，实际展开高度仍受当前屏幕工作区高度减 24px 约束。440/330px 宽窄切换及 176px 迷你态保持现有规则；此前实测 440×740px 是单机结果，不是固定尺寸。源码依据为 `electron/float-window.ts` 与 `src/views/FloatTodo.tsx`。
-- 已同步 [DESIGN](../../../DESIGN.md)、[UX-CONTRACT](../../../UX-CONTRACT.md)、[AI 方案](../../requirements/shared/ai-assistant/spec.md) 和上述清理报告；旧高保真原型仍作历史对照。本次通过源码对照、旧描述检索与文档差异检查复核，未重复运行此前的实机验收。
+- 已同步 [DESIGN](../../../DESIGN.md)、[UX-CONTRACT](../../../UX-CONTRACT.md)、[AI 方案](../../requirements/shared/ai-assistant/rel001-resident-ai-assistant-and-workbench-chat/spec.md) 和上述清理报告；旧高保真原型仍作历史对照。本次通过源码对照、旧描述检索与文档差异检查复核，未重复运行此前的实机验收。

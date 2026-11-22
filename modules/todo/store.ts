@@ -4,7 +4,7 @@ import { statSync } from 'node:fs';
 import type { ChatSession, ChatSummary } from '../../shared/todo-contracts';
 import { aiPlanSchema, categoryInputSchema, localDay, taskInputSchema, taskPatchSchema, type AIPlan, type Category, type Task, type TaskInput } from '../../shared/todo-contracts';
 import { meetingEndAt, scheduleStamp } from '../../shared/todo-format';
-import { hasTaskTime, migrateTaskDate, taskDay } from '../../shared/todo-date';
+import { migrateTaskDate, taskDay } from '../../shared/todo-date';
 import { migrateTaskDates } from './date-migration';
 
 export class Store {
@@ -138,10 +138,14 @@ export class Store {
     return (this.db.prepare('SELECT payload FROM tasks').all() as { payload: string }[])
       .map(row => this.normalizeTask(JSON.parse(row.payload) as Task)).filter(t => includeDeleted || !t.deletedAt);
   }
-  get(id: string): Task {
+  find(id: string): Task | undefined {
     const row = this.db.prepare('SELECT payload FROM tasks WHERE id=?').get(id) as { payload: string } | undefined;
-    if (!row) throw new Error('事项不存在，请刷新后重试');
-    return this.normalizeTask(JSON.parse(row.payload));
+    return row && this.normalizeTask(JSON.parse(row.payload));
+  }
+  get(id: string): Task {
+    const task = this.find(id);
+    if (!task) throw new Error('事项不存在，请刷新后重试');
+    return task;
   }
   normalizeTask(task: Task): Task {
     task = migrateTaskDate(task);
@@ -154,7 +158,7 @@ export class Store {
   }
   create(input: unknown): Task {
     const data = taskInputSchema.parse(input);
-    if (data.kind === 'meeting' && (!hasTaskTime(data.dateAt) || !data.endAt)) throw new Error('日程需要设置开始和结束时间');
+    if (data.kind === 'meeting' && !data.dateAt) throw new Error('请设置日程时间');
     this.assertCategory(data.categoryId);
     const now = new Date().toISOString();
     return this.put({ ...data, id: randomUUID(), createdAt: now, updatedAt: now,
@@ -171,7 +175,7 @@ export class Store {
       return this.put({ ...old, status: 'done', completedAt: old.completedAt ?? now, updatedAt: now });
     }
     const next = taskInputSchema.parse({ ...this.fields(old), ...taskPatchSchema.parse(patch) });
-    if (next.kind === 'meeting' && old.kind !== 'meeting' && (!hasTaskTime(next.dateAt) || !next.endAt)) throw new Error('日程需要设置开始和结束时间');
+    if (next.kind === 'meeting' && old.kind !== 'meeting' && !next.dateAt) throw new Error('请设置日程时间');
     this.assertCategory(next.categoryId);
     const now = new Date(Math.max(Date.now(), Date.parse(old.updatedAt) + 1)).toISOString();
     return this.put({ ...old, ...next, updatedAt: now,
@@ -179,8 +183,8 @@ export class Store {
       notifiedFor: next.remindAt !== old.remindAt || (old.status === 'done' && next.status !== 'done') ? null : old.notifiedFor });
   }
   fields(task: Task): TaskInput {
-    const { title, kind, status, priority, dateAt, endAt, remindAt, categoryId, progress, note } = task;
-    return { title, kind, status, priority, dateAt, endAt: endAt ?? null, remindAt, categoryId, progress, note };
+    const { title, kind, status, priority, dateAt, endAt, scheduledTime, remindAt, categoryId, progress, note, attendees, location, meetingUrl } = task;
+    return { title, kind, status, priority, dateAt, endAt: endAt ?? null, scheduledTime, remindAt, categoryId, progress, note, attendees, location, meetingUrl };
   }
   categories(): Category[] {
     return (this.db.prepare('SELECT payload FROM categories').all() as { payload: string }[])
@@ -290,9 +294,9 @@ export class Store {
     try { const value = run(); this.db.exec('COMMIT'); return value; }
     catch (error) { this.db.exec('ROLLBACK'); throw error; }
   }
-  applyPlan(input: AIPlan, revisions: Map<string, string>, proposalToken?: string): void {
+  applyPlan(input: AIPlan, revisions: Map<string, string>, proposalToken?: string) {
     const plan = aiPlanSchema.parse(input);
-    this.transaction(() => {
+    return this.transaction(() => {
       const removing = new Set(plan.actions.filter(action => action.type === 'remove_category').map(action => action.id));
       for (const action of plan.actions) {
         if ((action.type === 'update' || action.type === 'remove') && this.get(action.id).updatedAt !== revisions.get(action.id)) throw new Error('AI 建议中的事项已变化，请重新生成建议');
@@ -323,19 +327,21 @@ export class Store {
         const updatedAt = new Date(Math.max(Date.now(), Date.parse(old.updatedAt) + 1)).toISOString();
         this.putCategory({ ...old, ...data, updatedAt });
       }
+      const createdIds: string[] = [], updatedIds = new Set<string>();
       for (const action of plan.actions) {
-        if (action.type === 'create') this.create(action.task);
-        else if (action.type === 'update') this.update(action.id, action.patch);
+        if (action.type === 'create') createdIds.push(this.create(action.task).id);
+        else if (action.type === 'update') { this.update(action.id, action.patch); updatedIds.add(action.id); }
         else if (action.type === 'remove') {
           const revision = revisions.get(action.id);
           if (revision === undefined) throw new Error('AI 建议缺少版本信息，请重新生成');
-          this.remove(action.id, revision);
+          this.remove(action.id, revision); updatedIds.delete(action.id);
         }
       }
       for (const action of plan.actions) {
         if (action.type === 'remove_category') this.dropCategory(action.id);
       }
       if (proposalToken) this.resolveChatProposal(proposalToken, 'applied');
+      return { created: createdIds.map(id => this.get(id)), updated: [...updatedIds].map(id => this.get(id)) };
     });
   }
   review(today = localDay()): string {

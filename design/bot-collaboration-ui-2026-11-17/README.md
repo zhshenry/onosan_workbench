@@ -1,6 +1,6 @@
 # 对话内协作与交付件高保真
 
-日期：2026-11-17。状态：v4 布局与交互已确认，核心布局已通过隔离Electron验证，完整方案仍在分阶段实施；图内数据为示例。用户已认可此前的主对话内容，并已确认“按双方持续对话、工作作为可选关联、点击交接定位、工作进度独立、确认回到发起主对话”的方案语义。本次进一步确认 v4 的整窗布局：左侧原对话区临时阅读双方往来，右侧工作区完整保留，沿用图中比例，不增加第三列；返回后继续原主对话。已写入完整方案第 3.7、5.4、11.7、12、14 节，CMO 按自己的领域与资源适配，实际范围与剩余限制见[首批实施记录](../../docs/requirements/shared/ai-assistant/bot-collaboration-implementation-2026-11-17.md)，不将图稿确认等同于全部运行能力验收。
+日期：2026-11-17。状态：v4 布局与交互已确认，核心布局已通过隔离Electron验证，完整方案仍在分阶段实施；图内数据为示例。用户已认可此前的主对话内容，并已确认“按双方持续对话、工作作为可选关联、点击交接定位、工作进度独立、确认回到发起主对话”的方案语义。本次进一步确认 v4 的整窗布局：左侧原对话区临时阅读双方往来，右侧工作区完整保留，沿用图中比例，不增加第三列；返回后继续原主对话。已写入完整方案第 3.7、5.4、11.7、12、14 节，CMO 按自己的领域与资源适配，实际范围与剩余限制见[首批实施记录](../../docs/requirements/shared/ai-assistant/rel004-bot-conversation-delegation-and-sync/qa.md)，不将图稿确认等同于全部运行能力验收。
 
 [查看整窗高保真 v4](pair-conversation-full-window-v4.png) · 保留版本：[v3](conversation-and-deliverables-v3.png)、[v2](conversation-and-deliverables-v2.png)、[v1](conversation-and-deliverables-v1.png)
 
@@ -24,4 +24,4 @@ v4 使用内置 imagegen，提示为完整窗口、在原对话区查看持续�
 
 DS-Bot 对照版本为 v0.3.8（5e9b7da8882da3b68d8a0624342708c2150a9156）：[交流界面](https://github.com/Fei2411/DS-Bot/blob/5e9b7da8882da3b68d8a0624342708c2150a9156/ds-bot/src/client/exchange.js)按双方身份展示消息正文，[投递记录](https://github.com/Fei2411/DS-Bot/blob/5e9b7da8882da3b68d8a0624342708c2150a9156/ds-bot/src/host/delivery.js)按 Bot 对查询已投递内容，后台仍保留工作交接。v4 采用持续的双方消息记录，取消此前人为加入的“仅当前工作”固定范围；原地确认与消息查看位置仍按本项目工作区布局适配。
 
-相关方案：[会话、协作与通信完整改造方案](../../docs/requirements/shared/ai-assistant/bot-collaboration-and-sync-plan-2026-11-17.md)。
+相关方案：[会话、协作与通信完整改造方案](../../docs/requirements/shared/ai-assistant/rel004-bot-conversation-delegation-and-sync/plan.md)。

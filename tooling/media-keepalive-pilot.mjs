@@ -182,7 +182,7 @@ async function subview(page, workbench, label) {
 export async function closeUnchangedMediaTaskEditor(page) {
   const dialog = page.locator('.task-modal:visible');
   const title = await dialog.getAttribute('aria-label');
-  assert.ok(title === '新增事项' || title === '编辑事项', `Unexpected current-page task editor: ${title}`);
+  assert.ok(['新增事项', '新建日程', '新建待办', '编辑事项', '编辑待办', '编辑日程'].includes(title), `Unexpected current-page task editor: ${title}`);
   // Anchored creation and existing-item editing expose the accessible close
   // icon; unanchored creation retains its return control. Never submit a form.
   await dialog.getByRole('button', { name:/^(?:返回|关闭)$/ }).click();

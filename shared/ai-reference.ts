@@ -77,6 +77,7 @@ export const aiReferenceSnapshotSchema = z.object({
 export type AiReferenceSnapshot = z.infer<typeof aiReferenceSnapshotSchema>;
 
 export interface AiTurnContext {
+  dashboardDraftOpen?: boolean;
   scope?: AiScope;
   pageScope?: AiScope;
   browserTabId?: string | null;

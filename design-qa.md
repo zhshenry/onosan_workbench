@@ -1,5 +1,41 @@
 # 设计验收索引
 
+## 2026-11-22 · 只看对话时添加记忆
+
+`final result: passed`（侧栏关闭和输入焦点的定向验收）。
+
+隔离 Electron 实窗中，从 Bot 名片或右键「编辑 Bot」打开记忆页。工作台收起时，点击「添加记忆」后侧栏立即关闭，焦点移到记忆输入框，退出添加后恢复原聊天草稿。覆盖 1440×760、1024×760、减少动态效果及 1280×760 的并排布局。两边均通过 `npm run verify`。
+
+[OnoSan 实窗](C:/Users/henry/.codex/visualizations/2026/11/19/01a1f168-47a8-78c0-aed4-de1f531e662e/memory-inspector-dismissal/onosan.png) · [CMO 实窗](C:/Users/henry/.codex/visualizations/2026/11/19/01a1f168-47a8-78c0-aed4-de1f531e662e/memory-inspector-dismissal/cmo.png)
+
+## 2026-11-22 · 用户消息的记忆范围
+
+`final result: passed`（记忆范围标签的定向验收）。
+
+两边用本机模拟模型和隔离会话验收。通过「添加记忆」发送后，消息上方显示提交时的「当前 Bot」或「全局」。普通消息无范围标签。仅回复的用例显示原选择，保存成功的用例另外显示保存回执。两种范围在会话重开后均可见。
+
+1280×780 和 1024×720 视口下，范围标签与用户气泡右沿对齐，上下间距为 4px，文字完整。两边通过 `npm run verify` 和各 31 项相关回归。
+
+[实窗预览](C:/Users/henry/.codex/visualizations/2026/11/19/01a1f168-47a8-78c0-aed4-de1f531e662e/memory-message-scope/preview.png)
+
+## 2026-11-22 · 添加记忆范围选择（方案 2）
+
+`final result: passed`（范围选择的定向验收）。
+
+选定稿与两边实窗均显示无描边的浅灰圆角范围选择，添加记忆栏的细线和右侧关闭按钮可见。隔离 Electron 在 1280×780 和 1024×760 视口下测得选择框为 76×32 CSS px，文字完整。悬停和展开时底色加深，键盘可切换至「全局」，按 Escape 关闭下拉并保留焦点，点关闭后恢复普通聊天草稿。验收期间无渲染异常。
+
+[选定稿与实窗对照](C:/Users/henry/.codex/visualizations/2026/11/19/01a1f168-47a8-78c0-aed4-de1f531e662e/memory-scope-variant-2/comparison.png)
+
+## 2026-11-22 · ONOSAN 与 CMO 对话卡片
+
+`final result: passed`（本轮落地场景的定向验收）。
+
+对照确认稿和最终构建的实窗截图，核对相同状态的卡头、状态色、答案行、业务回执及右下角操作。截图保留原始像素，确认稿的卡片位宽约 514px，实窗使用各应用的 400px 卡片上限。待核对卡的标题显示实际网页任务，只有一个关联站点时在正文列出站点。
+
+两仓各通过七组隔离 Electron 流程。覆盖手动提交选项、行内「其他」、自由回答常显、待办和定时任务确认、原卡更新后仅写入最新日期、只读网页简化、原网页标签和原事项跳转、窄窗及悬浮。ONOSAN 核对文章改稿预览及保存，CMO 核对 WeLink 内容及保留草稿。实窗采用模拟模型和测试数据，WeLink 发送结果由模拟业务回归覆盖。
+
+两仓 `npm run verify` 通过。ONOSAN 28 项、CMO 43 项定向回归通过。设计稿的多选和分步为扩展示例。 [确认稿](C:/Users/henry/.codex/visualizations/2026/11/19/01a1f485-2c3a-7342-8145-43b66f62777f/bot-card-redesign/图册.html) · [实窗对照](C:/Users/henry/.codex/visualizations/2026/11/19/01a1f485-2c3a-7342-8145-43b66f62777f/bot-card-implementation/实窗对照.png) · [ONOSAN 实窗记录](C:/Users/henry/.codex/visualizations/2026/11/19/01a1f485-2c3a-7342-8145-43b66f62777f/bot-card-implementation/ono/report.json) · [CMO 实窗记录](C:/Users/henry/.codex/visualizations/2026/11/19/01a1f485-2c3a-7342-8145-43b66f62777f/bot-card-implementation/cmo/report.json)
+
 ## 2026-11-19 · 日程页签、新增事项与通用控件
 
 独立资料目录中的 Windows Electron 窗口实测。日程、待办和会议记录三项页签点击高度均为 44px，选中线为 36×3px。方向键切换后焦点留在新选项。页头新增按钮为 36px，新增弹框初始为 408×174px。「返回」为 44×32px，表单工具为 32×32px，「创建」切换到「创建中…」时保持 84×32px 和标题输入框宽度。
@@ -18,7 +54,7 @@ OnO 构建、68 项 Bot 回归和 23 组原有 Electron 界面流程通过。本
 
 final result: passed（六项隔离Electron核心流程），partial（完整P0–P5方案）。主对话原地澄清/确认、同卡补充、单次真实待办写入、原区域双方记录与草稿保留、浮动布局和1060px窄窗通过；宽窗约1586px。工作区矩形前后完全一致，双方记录无横向溢出，页面异常与Vite覆盖层为0。已人工查看浮动及窄窗截图。未改头像或侧栏外框。
 
-Browser plugin not available，采用项目Playwright Electron、独立临时数据、loopback模型夹具。81项相关检查、类型检查、构建通过；扩大检查另有4项旧阅读引用夹具失败，详见[首批实施记录](docs/requirements/shared/ai-assistant/bot-collaboration-implementation-2026-11-17.md)。完整主题/缩放、灵动岛操作、真实模型负载及悬停延迟矩阵仍待验收。截图与report.json位于实施记录列出的bot-implementation目录。
+Browser plugin not available，采用项目Playwright Electron、独立临时数据、loopback模型夹具。81项相关检查、类型检查、构建通过；扩大检查另有4项旧阅读引用夹具失败，详见[首批实施记录](docs/requirements/shared/ai-assistant/rel004-bot-conversation-delegation-and-sync/qa.md)。完整主题/缩放、灵动岛操作、真实模型负载及悬停延迟矩阵仍待验收。截图与report.json位于实施记录列出的bot-implementation目录。
 
 ## Bot 动效聚焦执行状态（2026-11-17）
 
@@ -680,7 +716,7 @@ SQLite v3→v4 在备份后事务新增 `bot_drafts`，以 chat_id + surface 存
 
 ## Bot 工作台、双模式与独立 Host（2026-11-16）
 
-界面验收通过：实际 Electron / 正式构建 / 隔离数据，13 组操作检查、15 张截图、renderer pageerror 为 0。报告为 [test-results/bot-ui/report.json](test-results/bot-ui/report.json)，使用 `tooling/bot-ui-pilot.mjs`，包含实际本地 Pi 工具循环、确认写入和浏览器资源桥。完整实施及非 UI 检查结果见[实施与验证记录](docs/requirements/shared/ai-assistant/bot-implementation-validation-2026-11-16.md)。
+界面验收通过：实际 Electron / 正式构建 / 隔离数据，13 组操作检查、15 张截图、renderer pageerror 为 0。报告为 [test-results/bot-ui/report.json](test-results/bot-ui/report.json)，使用 `tooling/bot-ui-pilot.mjs`，包含实际本地 Pi 工具循环、确认写入和浏览器资源桥。完整实施及非 UI 检查结果见[实施与验证记录](docs/requirements/shared/ai-assistant/rel002-bot-runtime-architecture-and-workspace-isolation/qa.md)。
 
 来源：用户确认的经典双长胶囊、悬浮导航、移除 Bot 身份行、任务/交付件放在对话顶部及 [11-16 六状态稿](docs/requirements/shared/ai-assistant/design/bot-state-review-2026-11-16.md)。实际页面使用七个正式种子 Bot 与原生业务组件，不把设计示例正文做成产品假数据。字号按现有字阶而非生成图的大号文案映射；头像使用新本地资产，功能图标保持原 Phosphor。用户既有八主题和三档材质继续由唯一外观控制器管理。
 
@@ -1564,7 +1600,7 @@ final result: passed。按后续反馈将输入文字、模型选择和发送／
 
 final result: passed。按用户选定稿完成吉祥物打开独立待办助手、连续对话、现有模型选择、澄清提问、停止、独立置顶、关闭重开保留及 Agent 消息页。复用真实前后对照与确认执行链路，生成建议不写入待办；并发变化阻止旧建议覆盖，重启恢复聊天／已保存草稿并使待确认建议过期。
 
-45 项相关回归、22 条真实 Electron 流程／布局检查及 `npm run verify` 通过。已同屏查看等比归一的选定稿与实际窗、修改卡，并复验三停靠、小尺寸及 150%／200% 缩放。全量 990/992 通过，另外两项仍因 Windows symlink 权限 EPERM 失败。严格静态审计原有 13 项及新增 1 项共享 Select 误报已如实记录。使用隔离待办及本机合成模型，没有调用真实供应商；未打包、安装或发布。详细对照、修复、证据和边界见[待办助手验收](docs/requirements/shared/desktop-island/qa-ai-assistant-2026-11-08.md)。
+45 项相关回归、22 条真实 Electron 流程／布局检查及 `npm run verify` 通过。已同屏查看等比归一的选定稿与实际窗、修改卡，并复验三停靠、小尺寸及 150%／200% 缩放。全量 990/992 通过，另外两项仍因 Windows symlink 权限 EPERM 失败。严格静态审计原有 13 项及新增 1 项共享 Select 误报已如实记录。使用隔离待办及本机合成模型，没有调用真实供应商；未打包、安装或发布。详细对照、修复、证据和边界见[待办助手验收](docs/requirements/shared/rel019-desktop-island-bot-activity-and-ai-quota/qa-ai-assistant-2026-11-08.md)。
 
 ## 灵动岛 · 顶部展开的吉祥物移至左下 · 2026-11-08
 
@@ -1576,19 +1612,19 @@ final result: passed。仅调整 `DesktopIsland.tsx` 的顶部停靠 footer 顺�
 
 final result: passed。按最后确认稿实施八主题、问题示例、可编辑问题与完整本命盘联动，所有生成与续聊回到右侧助手；同命例复用占星会话，跨命例隔离，处理去重、复制、原主题重试、取消及配置导航。主题和问题在本次 renderer 运行内按命例保留，历史主题与命例名称持久保存。
 
-48 项相关回归、23 条真实 Electron 流程／布局检查及生产构建通过；三主题、三尺寸，运行错误和警告均为 0。全量 971/973 通过，另外两项因 Windows 创建符号链接权限 EPERM 失败；严格 UI 审计保留原有 13 项。真实供应商未调用，未打包发布。完整同屏对照、修复记录、截图和测试边界见 [主题解读验收](docs/requirements/life/mingli/qa-astro-reading-2026-11-08.md)。
+48 项相关回归、23 条真实 Electron 流程／布局检查及生产构建通过；三主题、三尺寸，运行错误和警告均为 0。全量 971/973 通过，另外两项因 Windows 创建符号链接权限 EPERM 失败；严格 UI 审计保留原有 13 项。真实供应商未调用，未打包发布。完整同屏对照、修复记录、截图和测试边界见 [主题解读验收](docs/requirements/life/rel034-mingli-profile-charts-and-ai-reading/qa-astro-reading-2026-11-08.md)。
 
 ## Agent 对话提醒 · 吉祥物入口 · 2026-11-08
 
 final result: passed。按确认稿去掉独立铃铛，完成伙伴角标、未读／全部列表、8 秒气泡、独立已读／待授权状态，以及 Codex／Cursor 本机 Hook 接入。70 项测试和生产构建通过；实际 Electron 12 条流程、14 组布局通过。真实用户的客户端对话与授权未操作，Cursor 目前按项目与会话编号定位；未打包发布。
 
-详细范围、视觉对照、测试分层与证据见 [Agent 消息验收](docs/requirements/shared/desktop-island/qa-agent-messages-2026-11-08.md)。
+详细范围、视觉对照、测试分层与证据见 [Agent 消息验收](docs/requirements/shared/rel019-desktop-island-bot-activity-and-ai-quota/qa-agent-messages-2026-11-08.md)。
 
 ## 占星 · 星体详情四项释义 · 2026-11-07
 
 按要求将下方详情改为星体／点位、星座、宫位与结合解读，移除该卡的相关相位和查看全部。组合随所选对象、星座及宫位更新；缺宫位时说明原因并保留星体＋星座解释。沿用独立卡片、事实信息、选择／取消、盘表联动及完整相位页，清理移除内容造成的无用样式。
 
-15 项占星回归及字阶、类型、生产构建通过；五组隔离 Electron 验证覆盖真实切换、三主题、三窗口尺寸、200%、助手展开、取消及相位页，运行错误与警告为 0。正常太阳卡四项同屏可见；已同屏检查用户原图与实际新卡片。严格静态审计维持原 13 项，无新增；DESIGN lint 无错误，保留原有 YAML 提示。详见[释义验收](docs/requirements/life/mingli/qa-astro-meanings-2026-11-07.md)。当前安装版未更新，之前的列宽候选包需在安装前重建以包含此次改动。
+15 项占星回归及字阶、类型、生产构建通过；五组隔离 Electron 验证覆盖真实切换、三主题、三窗口尺寸、200%、助手展开、取消及相位页，运行错误与警告为 0。正常太阳卡四项同屏可见；已同屏检查用户原图与实际新卡片。严格静态审计维持原 13 项，无新增；DESIGN lint 无错误，保留原有 YAML 提示。详见[释义验收](docs/requirements/life/rel034-mingli-profile-charts-and-ai-reading/qa-astro-meanings-2026-11-07.md)。当前安装版未更新，之前的列宽候选包需在安装前重建以包含此次改动。
 
 final result: passed
 
@@ -1596,7 +1632,7 @@ final result: passed
 
 确认当前正式版 2.1.1 未包含项目已有的固定列宽修复。隔离运行原安装资源，复现开关常用点位／小天体时 5.16–18.61px 的列偏移，包括没有滚动条的状态；不再重复修改已经稳定的布局代码。
 
-对项目构建和真实打包程序分别完成七组窗口／助手状态、每组八次显示切换。相对列位置、绝对列位置、整表 X／Y／宽度变化均为 0px；另检查三主题、页签、选择、键盘和 200% 放大，运行错误与警告为 0。独立本地修复安装包已生成并校验；未发布，当前正式版未修改，更新等待用户确认退出程序。完整结果与安装包信息见[运行版本验收](docs/requirements/life/mingli/qa-astro-layout-runtime-2026-11-07.md)。
+对项目构建和真实打包程序分别完成七组窗口／助手状态、每组八次显示切换。相对列位置、绝对列位置、整表 X／Y／宽度变化均为 0px；另检查三主题、页签、选择、键盘和 200% 放大，运行错误与警告为 0。独立本地修复安装包已生成并校验；未发布，当前正式版未修改，更新等待用户确认退出程序。完整结果与安装包信息见[运行版本验收](docs/requirements/life/rel034-mingli-profile-charts-and-ai-reading/qa-astro-layout-runtime-2026-11-07.md)。
 
 final result: passed
 
@@ -1604,7 +1640,7 @@ final result: passed
 
 按用户截图收紧额度页布局：顶部环 96px、侧边环 112px，减少内距与行距，保留原字号和状态色。修改前侧边仅 1px 溢出也触发整条滚动条；现在常规双周期与错误提示、侧边三周期可同屏。更多周期／放大时保留内容滚动，底部操作固定；极窄时来源文字省略但保留可访问名称，重置时间独占一行，避免数据被裁掉。
 
-字阶、类型、生产构建通过；19 组隔离 Electron 布局与来源切换／键盘／刷新／管理连接验证通过，运行错误和警告为 0。已同屏检查用户原图和实际修改前后，常规内容严格无纵向溢出；200% 时无横向溢出，操作及完整周期可达。严格静态审计维持原 13 项，无新增；DESIGN lint 无错误，保留原有 YAML 警告。完整边界及证据见[额度页布局验收](docs/requirements/shared/desktop-island/qa-quota-no-scroll-2026-11-07.md)。未更新正式安装版。
+字阶、类型、生产构建通过；19 组隔离 Electron 布局与来源切换／键盘／刷新／管理连接验证通过，运行错误和警告为 0。已同屏检查用户原图和实际修改前后，常规内容严格无纵向溢出；200% 时无横向溢出，操作及完整周期可达。严格静态审计维持原 13 项，无新增；DESIGN lint 无错误，保留原有 YAML 警告。完整边界及证据见[额度页布局验收](docs/requirements/shared/rel019-desktop-island-bot-activity-and-ai-quota/qa-quota-no-scroll-2026-11-07.md)。未更新正式安装版。
 
 final result: passed
 
@@ -1614,7 +1650,7 @@ final result: passed
 
 55 项相关回归、字阶、类型与生产构建通过。七组隔离 Electron 检查覆盖三种停靠的真实到点气泡、操作、设置导航／校验／重新加载，以及九组停靠／缩放和原生截图；运行错误与警告为 0。补充检查覆盖确认稿相同状态、设置三主题、1024×760＋AI 侧栏＋150% 放大。按钮最小宽度、侧边 200% 溢出、极窄设置单字竖排，以及清理提醒后残留空气泡已局部修复；最终已同屏比较整体及局部。严格静态审计与此前 13 项完全一致，无新增；DESIGN lint 无错误，保留原有 YAML 提示。
 
-源稿、尺寸归一、修复过程、截图和时钟测试边界见[设计与运行验收](docs/requirements/shared/desktop-island/qa-sedentary-2026-11-07.md)。源码和本地构建完成，未更新正式安装版或发布。
+源稿、尺寸归一、修复过程、截图和时钟测试边界见[设计与运行验收](docs/requirements/shared/rel019-desktop-island-bot-activity-and-ai-quota/qa-sedentary-2026-11-07.md)。源码和本地构建完成，未更新正式安装版或发布。
 
 final result: passed
 
@@ -1644,7 +1680,7 @@ final result: passed
 
 按已确认稿在顶栏 AI 入口下增加一次性配置气泡：无对话模型时延迟显示，关闭后本机不再自动弹出；直达 AI 设置并沿用首次模型自动启用。读取失败不误报、RLCD 不算对话模型；已有模型但关闭助手不提醒，自动出现不抢焦点，并避让原生弹层／模态框。
 
-14 项相关回归、字阶、类型与生产构建通过；8 组隔离 Electron 检查通过，包含真实配置路径、关闭后重新加载、三主题／三尺寸和焦点。首轮修正指针边框偏移，最终中心偏差 0px；已将确认稿与实际窗口整体、局部归一化同屏检查。严格静态审计保留其他组件既有 12 项发现。详见[设计、行为与验收证据](docs/requirements/shared/ai-assistant/qa-setup-hint-2026-11-05.md)。
+14 项相关回归、字阶、类型与生产构建通过；8 组隔离 Electron 检查通过，包含真实配置路径、关闭后重新加载、三主题／三尺寸和焦点。首轮修正指针边框偏移，最终中心偏差 0px；已将确认稿与实际窗口整体、局部归一化同屏检查。严格静态审计保留其他组件既有 12 项发现。详见[设计、行为与验收证据](docs/requirements/shared/ai-assistant/rel001-resident-ai-assistant-and-workbench-chat/qa-setup-hint-2026-11-05.md)。
 
 final result: passed
 
@@ -1654,7 +1690,7 @@ final result: passed
 
 20 项相关回归、字阶、类型与生产构建通过。8 组隔离 Electron 验收通过，覆盖连接状态、密钥编辑、菜单、异步请求、搜索、阈值、三主题与窄窗。首轮发现 150%／助手打开时来源列表挤压，已用极窄单列及换行修复，并以原生窗口截图确认动作及阈值可见。已同屏检查所选稿与实际渲染的整页和局部；无未解决的 P0／P1／P2。运行中的工作台已刷新，配置保持并恢复原分区。严格静态审计维持既有 12 项报告；DESIGN lint 无错误，保留既有 YAML 警告。
 
-详见[所选设计、修复与证据](docs/requirements/shared/desktop-island/qa-quota-master-detail-2026-11-05.md)。
+详见[所选设计、修复与证据](docs/requirements/shared/rel019-desktop-island-bot-activity-and-ai-quota/qa-quota-master-detail-2026-11-05.md)。
 
 final result: passed
 
@@ -1662,7 +1698,7 @@ final result: passed
 
 采用用户选择的方案 1：左侧只显示手动添加的供应商，对话模型和决策模型共用相同的连接表单与连续模型列表。连接字段页内保存，草稿在本次渲染器运行中保留；密钥不回填，保存后清空输入。沿用原测试连接、模型编辑、图片输入与删除确认，保留紧凑启用栏和问号说明。
 
-8 项相关回归、字阶、类型与生产构建通过；9 组隔离 Electron 检查通过，覆盖空配置无预置、真实添加与独立保存、草稿保留、重新加载、菜单和连接失败重试，以及三主题／三窗口尺寸。已检查设计稿与实际组件对比。严格静态审计保留其他组件既有 12 项发现，DESIGN lint 因离线缓存未命中未执行。详见[范围、证据与验收边界](docs/requirements/shared/ai-assistant/qa-inline-provider-2026-11-05.md)。
+8 项相关回归、字阶、类型与生产构建通过；9 组隔离 Electron 检查通过，覆盖空配置无预置、真实添加与独立保存、草稿保留、重新加载、菜单和连接失败重试，以及三主题／三窗口尺寸。已检查设计稿与实际组件对比。严格静态审计保留其他组件既有 12 项发现，DESIGN lint 因离线缓存未命中未执行。详见[范围、证据与验收边界](docs/requirements/shared/ai-assistant/rel001-resident-ai-assistant-and-workbench-chat/qa-inline-provider-2026-11-05.md)。
 
 final result: passed
 
@@ -1800,55 +1836,55 @@ final result: passed
 
 ## 桌面灵动岛 · 额度同心环 · 2026-11-05
 
-收起与展开统一同心环；展开按来源切换，左环右侧周期／剩余比例／重置时间，真实单周期显示单环。构建、类型、字阶、28 项回归、10 组额度专项通过；完整桌面脚本 20 组通过并补完 3 组恢复检查，全屏检查因测试窗口未获得前台焦点未通过。严格静态审计保留 11 项其它组件既有发现。试用顶栏已更新，账户连接及原页面／固定状态保留。[视觉对照与验收边界](docs/requirements/shared/desktop-island/qa-rings-2026-11-05.md)。
+收起与展开统一同心环；展开按来源切换，左环右侧周期／剩余比例／重置时间，真实单周期显示单环。构建、类型、字阶、28 项回归、10 组额度专项通过；完整桌面脚本 20 组通过并补完 3 组恢复检查，全屏检查因测试窗口未获得前台焦点未通过。严格静态审计保留 11 项其它组件既有发现。试用顶栏已更新，账户连接及原页面／固定状态保留。[视觉对照与验收边界](docs/requirements/shared/rel019-desktop-island-bot-activity-and-ai-quota/qa-rings-2026-11-05.md)。
 
 final result: passed
 
 ## 桌面灵动岛 · 580×270 紧凑展开 · 2026-11-05
 
-展开尺寸由 640×300 缩至 580×270，收紧标题／底栏、月历、文件区和专注环，沿用原有字阶，长内容内部滚动。构建、类型、字阶、27 项回归和 9 组隔离 Electron 检查通过，覆盖四页、月历与实际新增／完成、原生文件图标及重定位、额度、小工具、真实 360px 和 150% 缩放、移出／移入，0 个渲染／控制台错误。原试用目录已重启为新尺寸并恢复草稿、日期与文件引用；静态审计保留 11 项既有非本次文件发现。[验收与截图](docs/requirements/shared/desktop-island/qa-2026-11-04.md)。
+展开尺寸由 640×300 缩至 580×270，收紧标题／底栏、月历、文件区和专注环，沿用原有字阶，长内容内部滚动。构建、类型、字阶、27 项回归和 9 组隔离 Electron 检查通过，覆盖四页、月历与实际新增／完成、原生文件图标及重定位、额度、小工具、真实 360px 和 150% 缩放、移出／移入，0 个渲染／控制台错误。原试用目录已重启为新尺寸并恢复草稿、日期与文件引用；静态审计保留 11 项既有非本次文件发现。[验收与截图](docs/requirements/shared/rel019-desktop-island-bot-activity-and-ai-quota/qa-2026-11-04.md)。
 
 ## 桌面灵动岛 · 紧凑底部导航 · 2026-11-05
 
-四个按钮高 34→28px、字阶 14→13px、图标 18→16px，收紧内距与间距，底栏占高 44px。字阶和生产构建通过，5 组隔离 Electron 检查通过，含四页／键盘切换、选中态、真实 360px 窄窗和 150% 缩放，0 个渲染／控制台错误。原试用窗口已替换样式并核对实际尺寸，保留草稿与页面状态。[验收与截图](docs/requirements/shared/desktop-island/qa-2026-11-04.md)。
+四个按钮高 34→28px、字阶 14→13px、图标 18→16px，收紧内距与间距，底栏占高 44px。字阶和生产构建通过，5 组隔离 Electron 检查通过，含四页／键盘切换、选中态、真实 360px 窄窗和 150% 缩放，0 个渲染／控制台错误。原试用窗口已替换样式并核对实际尺寸，保留草稿与页面状态。[验收与截图](docs/requirements/shared/rel019-desktop-island-bot-activity-and-ai-quota/qa-2026-11-04.md)。
 
 ## 桌面灵动岛 · 未固定移出即收起 · 2026-11-05
 
-取消草稿、输入焦点、菜单、处理中请求和拖入阻止收起的例外；仅固定时在鼠标移出后保持展开，草稿及日期仍保留。已先复现未固定、鼠标在外仍展开的基线，再通过构建、类型、字阶、27 项回归和 10 组隔离 Electron 检查，覆盖菜单、请求、拖离、快速移回、提醒与减少动态效果，0 个渲染／控制台错误。原试用窗口已加载并验证移出收起。静态审计保留 11 项既有非本次文件发现。[验收记录](docs/requirements/shared/desktop-island/qa-2026-11-04.md)。
+取消草稿、输入焦点、菜单、处理中请求和拖入阻止收起的例外；仅固定时在鼠标移出后保持展开，草稿及日期仍保留。已先复现未固定、鼠标在外仍展开的基线，再通过构建、类型、字阶、27 项回归和 10 组隔离 Electron 检查，覆盖菜单、请求、拖离、快速移回、提醒与减少动态效果，0 个渲染／控制台错误。原试用窗口已加载并验证移出收起。静态审计保留 11 项既有非本次文件发现。[验收记录](docs/requirements/shared/rel019-desktop-island-bot-activity-and-ai-quota/qa-2026-11-04.md)。
 
 ## 桌面灵动岛 · 原生文件样式 · 2026-11-05
 
-文件页改为横向桌面图标项，保留 Windows 实际 Shell 图标、原名和大小；快捷方式显示目标应用及链接标记，文件夹恢复原生样式，角标只移除引用。图标批量读取并复用到拖出，失败保留文件和操作。构建、类型、字阶、27 项回归和 12 组隔离 Electron 检查通过，覆盖真实文件拖入、打开路径、拖出图标、横滚、失效重定位、清空、360px 与 150% 缩放，0 个渲染／控制台错误。试用窗口已更新；静态审计保留 11 项既有发现，未打包发布。[验收与截图](docs/requirements/shared/desktop-island/qa-2026-11-04.md)。
+文件页改为横向桌面图标项，保留 Windows 实际 Shell 图标、原名和大小；快捷方式显示目标应用及链接标记，文件夹恢复原生样式，角标只移除引用。图标批量读取并复用到拖出，失败保留文件和操作。构建、类型、字阶、27 项回归和 12 组隔离 Electron 检查通过，覆盖真实文件拖入、打开路径、拖出图标、横滚、失效重定位、清空、360px 与 150% 缩放，0 个渲染／控制台错误。试用窗口已更新；静态审计保留 11 项既有发现，未打包发布。[验收与截图](docs/requirements/shared/rel019-desktop-island-bot-activity-and-ai-quota/qa-2026-11-04.md)。
 
 ## 桌面灵动岛 · 日程待办合并 · 2026-11-05
 
-日程与待办合为一个入口和设置开关，按所选日期查看和新增，保留切页／收起后的草稿及日期，兼容旧开关与停留页。紧凑列表让普通日程与待办同时可见，继续使用 640×300 外框。构建、类型、字阶通过；24 项相关测试和 15 组隔离 Electron 实机检查通过，含 360px、150% 缩放实际新增与失败恢复，0 个渲染／控制台错误。原试用目录已打开新版。静态审计保留 10 项既有发现及 2 项共享 Select 误报，未打包发布。[验收记录](docs/requirements/shared/desktop-island/qa-2026-11-04.md)。
+日程与待办合为一个入口和设置开关，按所选日期查看和新增，保留切页／收起后的草稿及日期，兼容旧开关与停留页。紧凑列表让普通日程与待办同时可见，继续使用 640×300 外框。构建、类型、字阶通过；24 项相关测试和 15 组隔离 Electron 实机检查通过，含 360px、150% 缩放实际新增与失败恢复，0 个渲染／控制台错误。原试用目录已打开新版。静态审计保留 10 项既有发现及 2 项共享 Select 误报，未打包发布。[验收记录](docs/requirements/shared/rel019-desktop-island-bot-activity-and-ai-quota/qa-2026-11-04.md)。
 
 ## 桌面灵动岛 · 设置页重设计 · 2026-11-04
 
-将连续大行改为顶部总开关与五个分区，采用紧凑卡片、页面图标选项和独立账户连接区，搜索覆盖全部分区；窄窗改单列并避开 AI 助手。构建、类型、字阶及 19 项设置回归通过，18 组隔离 Electron 检查通过，含三主题、宽窄窗口、150% 缩放、键盘、搜索和失败恢复，0 个渲染错误。真实账户未连接；Python 不可执行，premium 严格静态审计未完成。[验收与原生截图](docs/requirements/shared/desktop-island/qa-2026-11-04.md)。
+将连续大行改为顶部总开关与五个分区，采用紧凑卡片、页面图标选项和独立账户连接区，搜索覆盖全部分区；窄窗改单列并避开 AI 助手。构建、类型、字阶及 19 项设置回归通过，18 组隔离 Electron 检查通过，含三主题、宽窄窗口、150% 缩放、键盘、搜索和失败恢复，0 个渲染错误。真实账户未连接；Python 不可执行，premium 严格静态审计未完成。[验收与原生截图](docs/requirements/shared/rel019-desktop-island-bot-activity-and-ai-quota/qa-2026-11-04.md)。
 
 ## 桌面灵动岛 · 扁平展开体量 · 2026-11-04
 
-展开外框由 640×360 改为 640×300，收紧标题／底栏与内容留白；月历「今天」收进标题行，小工具相应压缩，主计时字阶保持。构建、类型、字阶、17 项相关测试与 10 组隔离 Electron 布局检查通过，五页、工具全开、窄窗与 150% 缩放无操作覆盖，0 个渲染错误。[验收与原生截图](docs/requirements/shared/desktop-island/qa-2026-11-04.md)。
+展开外框由 640×360 改为 640×300，收紧标题／底栏与内容留白；月历「今天」收进标题行，小工具相应压缩，主计时字阶保持。构建、类型、字阶、17 项相关测试与 10 组隔离 Electron 布局检查通过，五页、工具全开、窄窗与 150% 缩放无操作覆盖，0 个渲染错误。[验收与原生截图](docs/requirements/shared/rel019-desktop-island-bot-activity-and-ai-quota/qa-2026-11-04.md)。
 
 ## 桌面灵动岛 · 悬停直接完整展开 · 2026-11-04
 
-按最新反馈移除中间两行预览，悬停 350ms 直接打开 640×360 完整面板，移出后延时收起，固定／输入／菜单期间保持。构建、类型、字阶、17 项相关测试及 20 组核心 Electron 检查通过；三组恢复检查另行通过。全屏复测受实际前台窗口不符影响未通过，保留具体边界与历史结果。[完整记录](docs/requirements/shared/desktop-island/qa-2026-11-04.md)。
+按最新反馈移除中间两行预览，悬停 350ms 直接打开 640×360 完整面板，移出后延时收起，固定／输入／菜单期间保持。构建、类型、字阶、17 项相关测试及 20 组核心 Electron 检查通过；三组恢复检查另行通过。全屏复测受实际前台窗口不符影响未通过，保留具体边界与历史结果。[完整记录](docs/requirements/shared/rel019-desktop-island-bot-activity-and-ai-quota/qa-2026-11-04.md)。
 
 ## 桌面灵动岛 · 悬停与短预览修正 · 2026-11-04
 
-按用户实机截图反馈将摘要图标与文字整体居中，移除悬停浅色底框；收起 312×40 与短预览 312×72 保持相同宽度和顶部位置，只向下伸展。构建、类型、字阶、17 项相关测试及 22 组 Electron 检查通过；0 个渲染错误，已核对实际收起／预览截图。[验收与截图](docs/requirements/shared/desktop-island/qa-2026-11-04.md)。
+按用户实机截图反馈将摘要图标与文字整体居中，移除悬停浅色底框；收起 312×40 与短预览 312×72 保持相同宽度和顶部位置，只向下伸展。构建、类型、字阶、17 项相关测试及 22 组 Electron 检查通过；0 个渲染错误，已核对实际收起／预览截图。[验收与截图](docs/requirements/shared/rel019-desktop-island-bot-activity-and-ai-quota/qa-2026-11-04.md)。
 
 ## 桌面灵动岛 · 2026-11-04
 
-按原会话最后确认的 V2 方案替换顶栏／托盘悬浮待办入口，新增共享设置页并接入日程、待办、文件、额度和小工具。构建、类型、字阶及 23 项专用测试通过；22 组隔离 Electron 验收通过，包含三层展开、五页尺寸稳定、待办回写、文件引用、专注／喝水、360px 窄窗、150% 缩放、Windows 全屏恢复和重启，0 个渲染错误。全量 873 项中 871 通过，2 项原有 Windows symlink EPERM；Python 不可执行，premium 静态审计未完成。真实额度账户与跨应用拖放等边界、五项视觉复核和原生截图证据见[完整验收](docs/requirements/shared/desktop-island/qa-2026-11-04.md)。未打包发布。
+按原会话最后确认的 V2 方案替换顶栏／托盘悬浮待办入口，新增共享设置页并接入日程、待办、文件、额度和小工具。构建、类型、字阶及 23 项专用测试通过；22 组隔离 Electron 验收通过，包含三层展开、五页尺寸稳定、待办回写、文件引用、专注／喝水、360px 窄窗、150% 缩放、Windows 全屏恢复和重启，0 个渲染错误。全量 873 项中 871 通过，2 项原有 Windows symlink EPERM；Python 不可执行，premium 静态审计未完成。真实额度账户与跨应用拖放等边界、五项视觉复核和原生截图证据见[完整验收](docs/requirements/shared/rel019-desktop-island-bot-activity-and-ai-quota/qa-2026-11-04.md)。未打包发布。
 
 final result: passed with the recorded environment and integration limitations
 
 ## 个人网站 · 内容目录细化 · 2026-11-04
 
-按确认的局部高保真稿将目录标题和新建加号合并一行，简化分组图标／数量，减少缩进并使用 32px、8px 圆角的浅蓝选中行。构建、既有编辑组件回归和 5 组隔离 Electron 检查通过，覆盖三主题、三尺寸、新建、键盘折叠、草稿放弃保护及焦点恢复，无渲染错误。源图 `exec-a97d2289-815e-4002-a59b-b990034bfb9f.png` 为 1024×1536 放大局部，实机为 1600×1000、1x；原生目录截图与等宽同屏对照保存在本机 `personal-sidebar-qa/`。五项视觉复核、具体绝对路径与边界见[验收记录](docs/requirements/web/personal-website/qa-layout-2026-11-04.md)。严格静态审计保持 10 项既有发现，本轮目录修改文件中 0 项。未打包发布。
+按确认的局部高保真稿将目录标题和新建加号合并一行，简化分组图标／数量，减少缩进并使用 32px、8px 圆角的浅蓝选中行。构建、既有编辑组件回归和 5 组隔离 Electron 检查通过，覆盖三主题、三尺寸、新建、键盘折叠、草稿放弃保护及焦点恢复，无渲染错误。源图 `exec-a97d2289-815e-4002-a59b-b990034bfb9f.png` 为 1024×1536 放大局部，实机为 1600×1000、1x；原生目录截图与等宽同屏对照保存在本机 `personal-sidebar-qa/`。五项视觉复核、具体绝对路径与边界见[验收记录](docs/requirements/web/rel033-personal-website-editor-preview-and-build/qa-layout-2026-11-04.md)。严格静态审计保持 10 项既有发现，本轮目录修改文件中 0 项。未打包发布。
 
 final result: passed
 
@@ -1856,37 +1892,37 @@ final result: passed
 
 按确认稿取消工作区页签，项目栏压薄，正式网页与设备、展开／收起保持一行。收起与展开保留正文、选择、滚动及同一网页会话；检查移入更多菜单的右侧抽屉。实测项目栏 48px、正文框至少 200px，默认编辑／预览约 6:4。`npm run verify`、8 项定向回归和 7 组隔离 Electron 实机检查通过，覆盖三主题、1600×1000／1280×820／1024×680、保存、失败重试、键盘和正式／开发会话切换。
 
-源图为 `C:/Users/henry/.codex/generated_images/01a1a1fd-4b70-7da2-8d0b-e6d4d4aacadb/exec-f56fa615-6d5b-40b5-a6c1-d2bc6905c241.png`（1774×887 画板）；实现为 `C:/Users/henry/.codex/visualizations/2026/11/03/01a1a1fd-4b70-7da2-8d0b-e6d4d4aacadb/personal-site-qa/desktop-split.png`（1600×1000，1x）。同目录保留内容区、工具栏与收起状态的等宽、等比例对照；没有像素级一致性声明。五项视觉复核、修正历史、完整证据和测试边界见[验收记录](docs/requirements/web/personal-website/qa-layout-2026-11-04.md)。严格静态审计仍有 10 项既有发现，修改文件中 0 项；DESIGN 格式 CLI 因离线缺包未运行成功。未打包发布。
+源图为 `C:/Users/henry/.codex/generated_images/01a1a1fd-4b70-7da2-8d0b-e6d4d4aacadb/exec-f56fa615-6d5b-40b5-a6c1-d2bc6905c241.png`（1774×887 画板）；实现为 `C:/Users/henry/.codex/visualizations/2026/11/03/01a1a1fd-4b70-7da2-8d0b-e6d4d4aacadb/personal-site-qa/desktop-split.png`（1600×1000，1x）。同目录保留内容区、工具栏与收起状态的等宽、等比例对照；没有像素级一致性声明。五项视觉复核、修正历史、完整证据和测试边界见[验收记录](docs/requirements/web/rel033-personal-website-editor-preview-and-build/qa-layout-2026-11-04.md)。严格静态审计仍有 10 项既有发现，修改文件中 0 项；DESIGN 格式 CLI 因离线缺包未运行成功。未打包发布。
 
 final result: passed
 
 ## 个人网站内容工作室 · 2026-11-03
 
-按用户选择的方案 2 接入作品、博客、文库编辑与真实 Astro 预览。完成三主题、宽窗与 1024×680 窄短窗口、只读差异、草稿保护、真实构建和五页 HTTP 检查；修正预览视口、未保存博客地址、空栏目首次新增监听、弹框间距、正式地址保存切换和运行状态颜色。[完整验收记录](docs/requirements/web/personal-website/qa.md)。全量 850 项测试中 848 项通过，2 项既有 Windows 符号链接权限失败；定向回归 40/40 通过。实际网站源码副本的首次保存与后续热更新通过；最终 v2.0.0 发行载荷预览和中文终端通过，10 个编译文件与构建哈希一致，五项本地资产检查通过。
+按用户选择的方案 2 接入作品、博客、文库编辑与真实 Astro 预览。完成三主题、宽窗与 1024×680 窄短窗口、只读差异、草稿保护、真实构建和五页 HTTP 检查；修正预览视口、未保存博客地址、空栏目首次新增监听、弹框间距、正式地址保存切换和运行状态颜色。[完整验收记录](docs/requirements/web/rel033-personal-website-editor-preview-and-build/qa.md)。全量 850 项测试中 848 项通过，2 项既有 Windows 符号链接权限失败；定向回归 40/40 通过。实际网站源码副本的首次保存与后续热更新通过；最终 v2.0.0 发行载荷预览和中文终端通过，10 个编译文件与构建哈希一致，五项本地资产检查通过。
 
 final result: passed with the recorded Windows test-environment limitations
 
 ## 占星扩展星体与点位 · 2026-11-02
 
-新增四个点位与五个小天体,两组原生复选框统一控制盘面、表格和相位,保留原独立详情卡片与十星统计。[完整验收记录](docs/requirements/life/mingli/qa-astro-extended-2026-11-02.md)。490 项独立 JPL 参考校验、7 组平均点位基准、78 项回归和 `npm run verify` 通过;隔离 Electron 离线实测三主题、双尺寸、200% 缩放、键盘、显示切换及缺少地点,15 张原生截图,没有名称重叠或横向溢出。Python 入口不可运行,premium 静态审计未执行。未发布安装器。
+新增四个点位与五个小天体,两组原生复选框统一控制盘面、表格和相位,保留原独立详情卡片与十星统计。[完整验收记录](docs/requirements/life/rel034-mingli-profile-charts-and-ai-reading/qa-astro-extended-2026-11-02.md)。490 项独立 JPL 参考校验、7 组平均点位基准、78 项回归和 `npm run verify` 通过;隔离 Electron 离线实测三主题、双尺寸、200% 缩放、键盘、显示切换及缺少地点,15 张原生截图,没有名称重叠或横向溢出。Python 入口不可运行,premium 静态审计未执行。未发布安装器。
 
 ## 占星星体详情 · 独立胶囊卡片 · 2026-11-02
 
 按用户明确范围将行星表格下的选中星体详情拆成独立玻璃卡片,两卡等宽、间隔 12px、详情圆角 36px。既有选择、取消、盘表联动及相位入口保留。
 
-[完整验收记录](docs/requirements/life/mingli/qa-astro-detail-capsule-2026-11-02.md)。13 项既有界面回归、`npm run verify` 与最终构建通过;隔离 Electron 检查三主题、双尺寸、200% 缩放、AI 侧栏、键盘选择与取消,无页面错误。已查看实际截图并核对卡片边界和相位颜色。Python 缺失,premium 静态审计未执行。未打包安装器。
+[完整验收记录](docs/requirements/life/rel034-mingli-profile-charts-and-ai-reading/qa-astro-detail-capsule-2026-11-02.md)。13 项既有界面回归、`npm run verify` 与最终构建通过;隔离 Electron 检查三主题、双尺寸、200% 缩放、AI 侧栏、键盘选择与取消,无页面错误。已查看实际截图并核对卡片边界和相位颜色。Python 缺失,premium 静态审计未执行。未打包安装器。
 
 ## 占星时间基础 · 第二批第一部分 · 2026-11-02
 
 命例编辑加入地区时区、历史夏令时自动换算、重复时刻选择和不存在时刻校验。旧命例保持固定 UTC+8，八字与紫微继续原口径。共享 Select 与原生单选沿用主题字阶，命例弹框在窄窗内固定标题、独立滚动表单。
 
-[完整验收记录](docs/requirements/life/mingli/qa-astro-time-2026-11-02.md)。59 项命理/时区回归和 8 项 AI 范围回归通过；`npm run verify` 通过，滚动修正后再次构建及原生 QA 通过。隔离 Electron 实测三主题、1488×1056、1024×680、200% 缩放、菜单对齐与 Escape、重复时段键盘选择和重开、前后端空档拒绝。截图检查发现并修复了原透明标题与滚动表单重叠。Python 缺失，premium 静态审计未执行，不计作通过。未发布安装器。
+[完整验收记录](docs/requirements/life/rel034-mingli-profile-charts-and-ai-reading/qa-astro-time-2026-11-02.md)。59 项命理/时区回归和 8 项 AI 范围回归通过；`npm run verify` 通过，滚动修正后再次构建及原生 QA 通过。隔离 Electron 实测三主题、1488×1056、1024×680、200% 缩放、菜单对齐与 Escape、重复时段键盘选择和重开、前后端空档拒绝。截图检查发现并修复了原透明标题与滚动表单重叠。Python 缺失，premium 静态审计未执行，不计作通过。未发布安装器。
 
 ## 星盘探索 · 第一批 · 2026-11-02
 
 按确认高保真实现日月升概览、分布浮层、盘表联动、十二宫与现代守护、组合相位筛选及中文术语说明。右侧四页签共用卡片,桌面与左盘等高,选择不撑高布局。
 
-[完整验收记录](docs/requirements/life/mingli/qa-astro-phase1-2026-11-02.md)。`npm run verify` 与 46 项相关回归通过;真实隔离 Electron 检查三主题、1488×1056/1024×680、200% 缩放、AI 侧栏、键盘操作、分布浮层与焦点恢复、筛选空态、四宫/五宫同步及选中相位语义色,无渲染或控制台错误。源图与同尺寸实机图已同屏复核。未发布或更新安装版。
+[完整验收记录](docs/requirements/life/rel034-mingli-profile-charts-and-ai-reading/qa-astro-phase1-2026-11-02.md)。`npm run verify` 与 46 项相关回归通过;真实隔离 Electron 检查三主题、1488×1056/1024×680、200% 缩放、AI 侧栏、键盘操作、分布浮层与焦点恢复、筛选空态、四宫/五宫同步及选中相位语义色,无渲染或控制台错误。源图与同尺寸实机图已同屏复核。未发布或更新安装版。
 
 final result: passed for astrology phase 1
 
@@ -1894,7 +1930,7 @@ final result: passed for astrology phase 1
 
 按用户选定的方案实现浅色玻璃外壳与深色分层星盘,保留真实黄经、整宫制、ASC/MC 和逆行;右侧复用共享 Segmented 切换行星落座与完整相位列表。文字标签防重叠仅调整显示位置,数据及计算不变。
 
-[完整视觉与交互验收](docs/requirements/life/mingli/qa-astro-dark-2026-10-31.md)记录源图、同尺寸桌面截图、局部对照和修正历史。27 项命理回归、类型检查与构建通过;真实隔离 Electron 核对三主题、三视口、方向键焦点、相位滚动、缺少出生地、逆行、AI 侧栏及历史数据保留,无页面错误。全仓 premium 审计因未安装 Python 未能执行,未计作通过。
+[完整视觉与交互验收](docs/requirements/life/rel034-mingli-profile-charts-and-ai-reading/qa-astro-dark-2026-10-31.md)记录源图、同尺寸桌面截图、局部对照和修正历史。27 项命理回归、类型检查与构建通过;真实隔离 Electron 核对三主题、三视口、方向键焦点、相位滚动、缺少出生地、逆行、AI 侧栏及历史数据保留,无页面错误。全仓 premium 审计因未安装 Python 未能执行,未计作通过。
 
 final result: passed
 
@@ -1912,7 +1948,7 @@ final result: passed for Hush-Hour project actions
 
 按用户确认稿将待构建、构建中、已同步和失败集中到项目名旁；失败同行查看日志，主按钮可重新构建。旧启动错误在构建中收起、恢复后清除，独立红色提示行移除。自动检测更新、手动构建及本地／正式预览行为保留。
 
-[完整四态视觉与行为验收](docs/requirements/web/hush-hour/qa-build-status.md)。受控 bridge 下的真实 Electron 组件渲染通过 9 项验收，另有 17 项组件及隔离主进程回归与完整构建通过。已打开并对照确认稿和实际四态合并图；徽标对比度问题修复后重新验收，三主题与窄窗无未解决的 P0/P1/P2 发现。本轮未重新发布安装包。
+[完整四态视觉与行为验收](docs/requirements/web/rel032-hush-hour-entry-and-local-preview/qa-build-status.md)。受控 bridge 下的真实 Electron 组件渲染通过 9 项验收，另有 17 项组件及隔离主进程回归与完整构建通过。已打开并对照确认稿和实际四态合并图；徽标对比度问题修复后重新验收，三主题与窄窗无未解决的 P0/P1/P2 发现。本轮未重新发布安装包。
 
 final result: passed
 
@@ -1948,7 +1984,7 @@ final result: passed for prompt-dialog interaction and controlled model inputs
 
 ## AI 测试工作台 · 方案 1 与最终大预览 · 2026-10-21
 
-[行为边界与已选高保真](docs/requirements/ai-test/workbench/README.md)。保留现有共享导航、三主题和 authored 控件；详情默认大预览，代码及校验过程按需展开。实际模型名称和状态取代设计稿中的示意内容。
+[行为边界与已选高保真](docs/requirements/ai-test/rel051-model-agent-comparison-and-test-outputs/proposal.md)。保留现有共享导航、三主题和 authored 控件；详情默认大预览，代码及校验过程按需展开。实际模型名称和状态取代设计稿中的示意内容。
 
 使用隔离的 Electron 正式构建和本地 OpenAI 兼容服务验收。Browser plugin not available，使用 Playwright Electron；配置 WORKBENCH_TEST_DATA_DIR 与 WORKBENCH_ISOLATED。页面身份、非空内容、无框架错误层、控制台健康、截图和实际交互均通过。桌面 1490×1040、1280×820，窄窗 1050×800、1024×680；窄窗多标签的宽度挤出已修复，标签条独立滚动，工具栏和大预览保持在内容区内。
 
@@ -1962,23 +1998,23 @@ final result: passed for local implementation and controlled fixtures
 
 ## 窗口内展开试玩 · 顶部细栏 · 2026-10-20
 
-[查看高保真对照、实际截图与交互验收](docs/requirements/game/preview-expand/qa.md)
+[查看高保真对照、实际截图与交互验收](docs/requirements/game/rel048-game-preview-expand-and-restore-layout/qa.md)
 
 final result: passed
 
 ## 游戏终端工具栏 · 方案 3 · 2026-10-19
 
-[查看高保真对照、实机截图与交互验收](docs/requirements/game/terminal/qa.md)
+[查看高保真对照、实机截图与交互验收](docs/requirements/game/rel042-game-project-terminal-and-command-execution/qa.md)
 
 final result: passed
 
 ## 游戏测试检查 · 方案三下拉选择 · 2026-10-19
 
-[查看高保真对照、实机截图与交互验收](docs/requirements/game/test-selector/qa.md)
+[查看高保真对照、实机截图与交互验收](docs/requirements/game/rel044-game-test-selector-and-stale-results/qa.md)
 
 ## 内置离线语音听写 · 方案 2 扁平细化稿 · 2026-10-19
 
-[查看设计、实际截图与功能验收](docs/requirements/shared/voice-input/qa.md)
+[查看设计、实际截图与功能验收](docs/requirements/shared/rel016-offline-voice-dictation-and-text-insertion/qa.md)
 
 2026-10-17：完整验收正文已按模块和需求迁入 docs/requirements；本页保留原标题作为历史链接入口。当前效果以 DESIGN / UX-CONTRACT 及对应日期的验收记录为准。此次目录整理未重跑历史实机流程。
 
@@ -1990,107 +2026,107 @@ final result: passed
 
 # 试玩保留档重置 · 方案 1 · 2026-10-17
 
-[查看完整记录](docs/requirements/game/trial-reset/qa.md)
+[查看完整记录](docs/requirements/game/rel050-game-playtest-reset-and-save-retention/qa.md)
 
 # AI 收起时的其他工作台悬浮目录 · 2026-10-17
 
-[查看完整记录](docs/requirements/shared/navigation/qa.md)
+[查看完整记录](docs/requirements/shared/rel012-workbench-navigation-and-floating-menu/qa.md)
 
 # 游戏工作台二级目录恢复 · 2026-10-17
 
-[查看完整记录](docs/requirements/game/trail-detective/qa.md)
+[查看完整记录](docs/requirements/game/rel041-trail-detective-launch-preview-and-tests/qa.md)
 
 # AI 悬浮胶囊 · 2026-10-17 · 内嵌按钮修订
 
-[查看完整记录](docs/requirements/shared/ai-activity/qa.md)
+[查看完整记录](docs/requirements/shared/rel015-ai-task-progress-and-run-controls/qa.md)
 
 # 浏览器任务记录 · 2026-10-17 · 已选方案 2
 
-[查看完整记录](docs/requirements/web/browser-task-record/qa.md)
+[查看完整记录](docs/requirements/web/rel028-browser-task-history-and-page-location/qa.md)
 
 # 顶栏日程/待办共享面板 · 2026-10-17 · 已选方案 2
 
-[查看完整记录](docs/requirements/shared/topbar/qa.md)
+[查看完整记录](docs/requirements/shared/rel017-topbar-calendar-and-todo-quick-actions/qa.md)
 
 # 应用更新改为主动安装 · 2026-10-17
 
-[查看完整记录](docs/requirements/shared/app-update/qa.md)
+[查看完整记录](docs/requirements/shared/rel018-app-update-check-and-installation/qa.md)
 
 # AI 合并悬浮胶囊 · 2026-10-17 · 已选方案 3（历史阶段，已被内嵌按钮修订替代）
 
-[查看完整记录](docs/requirements/shared/ai-activity/qa.md)
+[查看完整记录](docs/requirements/shared/rel015-ai-task-progress-and-run-controls/qa.md)
 
 # 顶栏更新气泡紧凑调整 · 2026-10-17
 
-[查看完整记录](docs/requirements/shared/app-update/qa.md)
+[查看完整记录](docs/requirements/shared/rel018-app-update-check-and-installation/qa.md)
 
 # 顶栏应用更新验收 · 2026-10-17 · 已选方案 1（初版）
 
-[查看完整记录](docs/requirements/shared/app-update/qa.md)
+[查看完整记录](docs/requirements/shared/rel018-app-update-check-and-installation/qa.md)
 
 # AI 连续任务状态验收 · 2026-10-17（历史阶段，44px 固定状态行已被替代）
 
-[查看完整记录](docs/requirements/shared/ai-activity/qa.md)
+[查看完整记录](docs/requirements/shared/rel015-ai-task-progress-and-run-controls/qa.md)
 
 # 三主题还原验收 · 2026-09-24
 
-[查看完整记录](docs/requirements/shared/themes/qa.md)
+[查看完整记录](docs/requirements/shared/rel013-appearance-themes-and-glass-materials/qa.md)
 
 ## 浏览器确认组合 · 2026-10-16
 
-[查看完整记录](docs/requirements/web/browser-automation/qa.md)
+[查看完整记录](docs/requirements/web/rel027-embedded-browser-ai-actions-and-handoff/qa.md)
 
 ## 浏览器网页缩放 · 2026-10-16
 
-[查看完整记录](docs/requirements/web/page-zoom/qa.md)
+[查看完整记录](docs/requirements/web/rel030-browser-page-zoom-and-task-resume/qa.md)
 
 ## 阅读库路径入口修复 · 2026-10-16
 
-[查看完整记录](docs/requirements/life/reading-import-51/qa.md)
+[查看完整记录](docs/requirements/life/rel037-reading-library-setup-import-and-delete/qa.md)
 
 ## 浏览器运行胶囊动效 · 2026-10-16
 
-[查看完整记录](docs/requirements/web/browser-activity/qa.md)
+[查看完整记录](docs/requirements/web/rel031-browser-ai-activity-state-indicators/qa.md)
 
 ## 浏览器 AI 状态框持续动效 · 2026-10-16
 
-[查看完整记录](docs/requirements/web/browser-activity/qa.md)
+[查看完整记录](docs/requirements/web/rel031-browser-ai-activity-state-indicators/qa.md)
 
 ## 轨迹侦探双区联调 · 2026-10-16
 
-[查看完整记录](docs/requirements/game/trail-detective/qa.md)
+[查看完整记录](docs/requirements/game/rel041-trail-detective-launch-preview-and-tests/qa.md)
 
 ## 游戏项目终端 · 方案 2 · 2026-10-16
 
-[查看完整记录](docs/requirements/game/terminal/qa.md)
+[查看完整记录](docs/requirements/game/rel042-game-project-terminal-and-command-execution/qa.md)
 
 ## 浏览器站点授权 · 方案 3 · 2026-10-17
 
-[查看完整记录](docs/requirements/web/site-authorization/qa.md)
+[查看完整记录](docs/requirements/web/rel029-browser-site-permission-and-resume/qa.md)
 
 ## 游戏项目栏 · 方案 1 · 2026-10-17
 
-[查看完整记录](docs/requirements/game/project-bar/qa.md)
+[查看完整记录](docs/requirements/game/rel043-game-project-switcher-and-preview-entry/qa.md)
 
 ## 双环境试玩与线上侧栏 · 方案 1 细化稿 · 2026-10-17
 
-[查看完整记录](docs/requirements/game/online-preview/qa.md)
+[查看完整记录](docs/requirements/game/rel045-game-local-and-online-preview-sidebar/qa.md)
 
 ## 游戏项目说明 · 内置只读 Markdown 弹窗 · 2026-10-17
 
-[查看完整记录](docs/requirements/game/run-instructions/qa.md)
+[查看完整记录](docs/requirements/game/rel046-game-run-instructions-and-resource-links/qa.md)
 
 ## 试玩更新提示 · 方案 3 · 2026-10-17
 
-[查看完整记录](docs/requirements/game/preview-refresh/qa.md)
+[查看完整记录](docs/requirements/game/rel047-game-preview-code-change-and-reload/qa.md)
 
 ## 2026-10-17 问题反馈方案 2：记录入口、持久保存与 ZIP
 
-[查看完整记录](docs/requirements/game/issue-feedback/qa.md)
+[查看完整记录](docs/requirements/game/rel049-game-playtest-feedback-and-zip-export/qa.md)
 
 ## 伙伴气泡提醒 · 2026-11-05
 
-选定视觉为 `docs/requirements/shared/desktop-island/design/mascot-speech-approved-2026-11-05.png`（1881×836，含桌面留白和方案标题）。实现截图位于 `C:/Users/henry/.codex/visualizations/2026/11/04/01a1a746-c52f-7451-8935-d81fa6f8fde7/island-speech-reminders/`：`water.png`、`schedule.png`、`quota.png`、`left.png`、`right.png`、`failure.png`、`narrow.png`、`zoom-150.png`、`long-title.png`、`water-actual.png`；运行证据为 `report.json` 与 `responsive-report.json`。截图使用隔离任务库与合成提醒，额度连接均为真实未连接状态，没有调用真实供应商或改动用户提醒计划；浅色桌面底仅为隔离截图背景。
+选定视觉为 `docs/requirements/shared/rel019-desktop-island-bot-activity-and-ai-quota/design/mascot-speech-approved-2026-11-05.png`（1881×836，含桌面留白和方案标题）。实现截图位于 `C:/Users/henry/.codex/visualizations/2026/11/04/01a1a746-c52f-7451-8935-d81fa6f8fde7/island-speech-reminders/`：`water.png`、`schedule.png`、`quota.png`、`left.png`、`right.png`、`failure.png`、`narrow.png`、`zoom-150.png`、`long-title.png`、`water-actual.png`；运行证据为 `report.json` 与 `responsive-report.json`。截图使用隔离任务库与合成提醒，额度连接均为真实未连接状态，没有调用真实供应商或改动用户提醒计划；浅色桌面底仅为隔离截图背景。
 
 ### 对照口径与结果
 
@@ -2135,7 +2171,7 @@ final result: passed
 
 ## 置物架方案 1 · 2026-11-05
 
-视觉目标为用户最新选择的附件，已保存到 docs/requirements/shared/desktop-island/design/shelf-split-approved-2026-11-05.png（948×1659）。没有将此前未选中的方案当作目标，也没有创建独立演示页面。实际组件为 IslandShelf.tsx，接入现有 DesktopIsland、受限 IPC 与本机原子存储。
+视觉目标为用户最新选择的附件，已保存到 docs/requirements/shared/rel019-desktop-island-bot-activity-and-ai-quota/design/shelf-split-approved-2026-11-05.png（948×1659）。没有将此前未选中的方案当作目标，也没有创建独立演示页面。实际组件为 IslandShelf.tsx，接入现有 DesktopIsland、受限 IPC 与本机原子存储。
 
 ### 对照口径
 
@@ -2220,7 +2256,7 @@ final result: passed
 
 ## 灵动岛吉祥物统一左上角（2026-11-10）
 
-- 用户最终要求为左侧、右侧及顶端下拉统一左上角，视觉参考为 `docs/requirements/shared/desktop-island/design/mascot-top-left-approved-2026-11-10.png`。实际复用原顶栏、伙伴、字号和单面板；不保留额外竖栏，底栏仅保留四项导航。与参考图中的 18% 样例不同，隔离实例未连接账户，截图如实显示灰色环和未连接状态。
+- 用户最终要求为左侧、右侧及顶端下拉统一左上角，视觉参考为 `docs/requirements/shared/rel019-desktop-island-bot-activity-and-ai-quota/design/mascot-top-left-approved-2026-11-10.png`。实际复用原顶栏、伙伴、字号和单面板；不保留额外竖栏，底栏仅保留四项导航。与参考图中的 18% 样例不同，隔离实例未连接账户，截图如实显示灰色环和未连接状态。
 - 64 项相关回归通过：`desktop-island`、`island-state`、`island-store`。`npm run verify` 通过字阶检查、两份 TypeScript 工程及 Vite／Electron 构建。首次沙箱运行受临时文件原子重命名 EPERM 影响，使用正常本机临时目录的隔离测试重跑后全部通过。
 - Browser plugin not available；使用已安装的 Playwright 驱动隔离原生 Electron。13 组检查通过：三种停靠各四页的顶栏头像与底栏无重复、留白／头像悬停不展开、收起态单击直达独立助手、摘要快速经过取消预览／停留展开／移出收起、关闭悬停后点击仍可展开、150%／200% 缩放、两侧 280px 窄窗、伙伴开关和键盘 Enter。未发现按钮重叠或裁切、渲染异常或相关控制台错误。
 - 静态 premium 审计仍为 14 项既有发现，新增 0；未将全仓旧问题记作本次通过。正常展开尺寸保留顶部 580×270、侧边 320×560；未改动真实额度、消息、模型或任务数据。测试实例已关闭，未打包、发布或替换正式安装版。
@@ -2228,7 +2264,7 @@ final result: passed
 
 ## 每日签到（2026-11-10）
 
-已完成实现、隔离桌面检查、20 项签到专项和 31 项相关回归；真实登录与领奖按用户选择稍后验证。完整记录见 [每日签到验收](docs/requirements/shared/checkin/qa-2026-11-10.md)。
+已完成实现、隔离桌面检查、20 项签到专项和 31 项相关回归；真实登录与领奖按用户选择稍后验证。完整记录见 [每日签到验收](docs/requirements/shared/rel020-daily-check-in-accounts-and-results/qa-2026-11-10.md)。
 
 ## 首页每日签到「并排速览」（2026-11-11）
 
@@ -2296,7 +2332,7 @@ final result: passed
 
 final result: passed
 
-- 视觉依据：用户本轮选定的「清晰的交互边界」稿，原图 1536×1024；仓库副本为 `docs/requirements/shared/desktop-island/design/mascot-interaction-boundary-selected-2026-11-11.png`，SHA256 为 `0A44F25D1E6B4B74667584E82AC3FB705E4A47F87ECB3502079C08D9DD629BF5`。
+- 视觉依据：用户本轮选定的「清晰的交互边界」稿，原图 1536×1024；仓库副本为 `docs/requirements/shared/rel019-desktop-island-bot-activity-and-ai-quota/design/mascot-interaction-boundary-selected-2026-11-11.png`，SHA256 为 `0A44F25D1E6B4B74667584E82AC3FB705E4A47F87ECB3502079C08D9DD629BF5`。
 - 渲染实现：使用正常 Windows Electron、独立 `boundary-native-data-*`，三种停靠均为真实未连接状态。顶部原生视口 580×270 CSS px，侧边 320×560 CSS px；收起区域仍为 580×40／64×360，系统密度 2，实际区域截图为 1160×80／128×720 像素。Browser plugin 不可用，因此使用已安装的 Playwright Electron；附加 Edge 实际组件夹具覆盖小高度与消息角标，不把合成数据当作真实登录验收。
 - 证据目录：`C:/Users/henry/.codex/visualizations/2026/11/10/01a1c510-4514-7b22-91cf-c582289e0c7b/`。原生截图为 `island-boundary-native-{left,right,top}-hover.png`；完整与局部同屏对照为 `island-boundary-comparison.png`，生成页面为 `island-boundary-comparison.html`。
 - 归一方式：从原图取侧条 `(82,202,144,770)`，保持比例缩至与实际侧条相同的 720px 高；顶部取 `(482,202,1010,80)`，与原生 1160×80 截图按相同像素尺度显示，明确保留已有 580×40 产品宽度。局部对照单独展示伙伴、短线和日历，避免从整个画布判断细节。画布标题、引线与说明不进入产品。

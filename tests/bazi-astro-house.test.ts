@@ -518,7 +518,8 @@ describe('占星行星落座宫位列', { concurrency: false }, () => {
     const moonOption = [...harness.doc.querySelectorAll<HTMLElement>('.select-option')].find(option => option.textContent === '月亮')!;
     await act(async () => moonOption.click());
     await act(async () => harness.doc.querySelector<HTMLButtonElement>('.bazi-psel-btn')!.click());
-    const another = [...harness.doc.querySelectorAll<HTMLButtonElement>('.bazi-psel-menu [role="option"]')].find(button => button.textContent?.includes('另一命例'))!;
+    const another = [...harness.doc.querySelectorAll<HTMLButtonElement>('[role="dialog"][aria-label="命例列表"] .bazi-psel-item')].find(button => button.textContent?.includes('另一命例'));
+    assert.ok(another);
     await act(async () => another.click());
     assert.equal(panel.querySelector('.bazi-as-selection'), null);
     assert.equal(panel.querySelector('[role="radio"][aria-checked="true"]')!.textContent, '星体');

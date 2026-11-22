@@ -1,4 +1,4 @@
-.content:has(> .ai-test-host:not([hidden])) { display: flex; flex-direction: column; padding-inline: 12px; overflow: hidden; min-height: 0; }
+.content:has(> .ai-test-host:not([hidden])) { display: flex; flex-direction: column; padding-inline: 12px; overflow: hidden; scrollbar-gutter: auto; min-height: 0; }
 .ai-test-host { min-height: 0; min-width: 0; flex: 1; display: flex; }
 .ai-test-host[hidden], .ai-test [hidden] { display: none !important; }
 .ai-test { min-width: 0; min-height: 0; flex: 1; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; color: var(--ink); container: ai-test / inline-size; }
@@ -32,7 +32,7 @@
 .at-library-title h2 { font-size: var(--type-lead); }
 .at-library-title > span { padding: 3px 10px; border-radius: 999px; background: var(--workbench-muted-bg); color: var(--ink-3); font-size: var(--type-support); }
 .at-library-content > .at-empty { flex: 1; }
-.at-library-scroll { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: 0 22px 20px; scrollbar-width: thin; }
+.at-library-scroll { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: 0 22px 20px; }
 .at-library-table { width: 100%; table-layout: fixed; border-collapse: collapse; text-align: left; font-size: var(--type-control); }
 .at-library-table th { position: sticky; top: 0; z-index: 1; background: var(--workbench-card-bg); border-bottom: 1px solid var(--hairline); color: var(--ink-3); font-weight: 500; padding: 16px 8px; }
 .at-library-table td { min-width: 0; vertical-align: middle; padding: 20px 8px; overflow-wrap: anywhere; }
@@ -106,7 +106,7 @@
 .at-results { flex: 1; min-height: 0; min-width: 0; display: flex; flex-direction: column; }
 .at-results-heading { flex: none; display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 16px; }
 .at-results-heading > div:first-child { display: flex; flex-direction: column; gap: 4px; }
-.at-lanes { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(var(--lanes), minmax(260px, 1fr)); gap: 10px; overflow: auto; scrollbar-width: thin; padding: 0 16px 16px; }
+.at-lanes { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(var(--lanes), minmax(260px, 1fr)); gap: 10px; overflow: auto; padding: 0 16px 16px; }
 .at-lane { display: flex; flex-direction: column; min-width: 0; min-height: 400px; border: 1px solid var(--hairline); border-radius: 12px; padding: 12px; background: var(--workbench-card-bg); }
 .at-lane > header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-width: 0; margin-bottom: 12px; }
 .at-lane .at-model-title { min-width: 100px; flex: 1; }

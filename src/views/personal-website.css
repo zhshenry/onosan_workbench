@@ -8,7 +8,7 @@
 .personal-project .game-service { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .personal-project .game-project-actions { max-width: 100%; flex-wrap: wrap; gap: 6px; margin-left: auto; }
 .personal-project .game-project-actions button { min-height: 32px; padding: 5px 10px; background: var(--workbench-card-bg); }
-.personal-project .game-project-actions .game-primary { background: var(--action); }
+.personal-project .game-project-actions .game-primary { background: var(--acc-deep); }
 .personal-workspace .personal-check-status { padding: 4px 6px; color: var(--avatar-amber); font-size: var(--type-support); }
 .personal-workspace .personal-check-status[data-failed="true"] { color: var(--danger); }
 .personal-workspace .game-service[data-phase="error"] { color: var(--danger); }
@@ -72,7 +72,7 @@
 .personal-editor-footer { flex: none; padding: 10px 16px; border-top: 1px solid var(--hairline); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
 .personal-editor-footer > span { color: var(--ink-3); font-size: var(--type-support); line-height: 1.5; }
 .personal-editor-footer > div { display: flex; gap: 8px; margin-left: auto; }
-.personal-workspace .personal-primary, .personal-new-form .personal-primary { background: var(--action); border-color: var(--action); color: var(--nav-on-fg); min-width: 112px; }
+.personal-workspace .personal-primary, .personal-new-form .personal-primary { background: var(--acc-deep); border-color: var(--acc-deep); color: var(--nav-on-fg); min-width: 112px; }
 .personal-preview { min-height: 0; min-width: 0; overflow: hidden; display: flex; flex-direction: column; border-left: 1px solid var(--hairline); }
 .personal-preview-heading { min-height: 52px; display: flex; align-items: center; flex-wrap: nowrap; gap: 4px; padding: 10px 12px; }
 .personal-preview-heading strong { margin-right: auto; flex-shrink: 0; white-space: nowrap; font-size: var(--type-body); }

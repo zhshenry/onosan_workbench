@@ -15,6 +15,30 @@ function fixture(executor: BotExecutor = { run: async () => ({ reply: '已处理
   const dir = mkdtempSync(join(tmpdir(), 'ono-bot-test-')), ai = new AiStore(dir, { recover: false }), store = new BotStore(ai, dir), host = new BotHost(store, executor);
   return { dir, ai, store, host, close: async () => { await host.stop(); ai.close(); assert.equal(dirname(resolve(dir)), resolve(tmpdir())); assert.ok(dir.includes('ono-bot-')); rmSync(dir, { recursive: true, force: true }); } };
 }
+test('unifies the built-in agenda description once and preserves custom wording', async () => {
+  const f = fixture();
+  try {
+    const card = f.store.cards().find(bot => bot.seedKey === 'schedule')!;
+    const original = f.store.profile(card.id);
+    assert.equal(original.description, '日程待办');
+    const setDescription = f.ai.db.prepare("UPDATE bots SET payload=json_set(payload, '$.description', ?) WHERE id=?");
+    const resetMigration = () => f.ai.db.prepare('DELETE FROM settings WHERE key=?').run('bot.scheduleDescription.2026-11-22');
+    resetMigration();
+    setDescription.run('待办与日程', card.id);
+    const migrated = new BotStore(f.ai, f.dir).profile(card.id);
+    assert.equal(migrated.description, '日程待办');
+    assert.equal(migrated.mainChatId, original.mainChatId);
+    assert.equal(migrated.revision, original.revision + 1);
+    resetMigration();
+    setDescription.run('自定义提醒工作区', card.id);
+    const customized = new BotStore(f.ai, f.dir).profile(card.id);
+    assert.equal(customized.description, '自定义提醒工作区');
+    assert.equal(customized.revision, migrated.revision);
+    setDescription.run('待办与日程', card.id);
+    assert.equal(new BotStore(f.ai, f.dir).profile(card.id).description, '待办与日程');
+  } finally { await f.close(); }
+});
+
 function submission(f: ReturnType<typeof fixture>, text = '整理文章', key = 'coordinator'): BotSubmit {
   const bot = f.store.cards().find(b => b.seedKey === key)!;
   const state = f.host.getDraft(bot.mainChatId, main);
@@ -328,7 +352,9 @@ test('island may inspect coordinator descendants but cannot inspect another root
     const other = f.store.submit(submission(f, '其他私人工作', 'media'), () => {}).task;
     assert.throws(() => botService(f.host, 'getTask', [other.id], island), /原负责人/);
     assert.throws(() => botService(f.host, 'listTasks', [media.id], island), /总 Bot/);
-    assert.throws(() => botService(f.host, 'updateMemory', [{ id: randomUUID(), botId: media.id, scope: 'shared', text: '测试', source: '', revision: 0 }], main), /不绑定/);
+    const memory = { id: randomUUID(), botId: null, scope: 'shared' as const, text: '测试', source: '', revision: 0 };
+    const saved = f.store.saveMemory(memory);
+    assert.throws(() => botService(f.host, 'updateMemory', [{ ...memory, botId: media.id, revision: saved.revision }], main), { code: 'INVALID_SCOPE' });
   } finally { await f.close(); }
 });
 

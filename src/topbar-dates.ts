@@ -34,7 +34,7 @@ export function topbarTodoDate(task: TopbarTaskDate, now = new Date()): string {
 }
 
 export function topbarScheduleDate(task: TopbarTaskDate, now = new Date()): string {
-  if (task.external?.isAllDay) return withoutTime(task, now, '全天');
+  if (task.external?.isAllDay || calendarDate(task.dateAt)) return withoutTime(task, now, '全天');
   const start = instant(task.dateAt);
   if (!start) return withoutTime(task, now, '时间待定');
   const startText = `${dayText(start, now)} ${time(start)}`;

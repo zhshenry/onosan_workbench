@@ -36,7 +36,7 @@ export function Select({ id, value, onChange, options, className, menuClassName,
       return;
     }
     const dialog = list.parentElement instanceof HTMLDialogElement ? list.parentElement : null;
-    const boundary = dialog?.getBoundingClientRect() ?? { top: 8, bottom: window.innerHeight - 8, left: 8, right: window.innerWidth - 8 };
+    const boundary = dialog && !dialog.hasAttribute('popover') ? dialog.getBoundingClientRect() : { top: 8, bottom: window.innerHeight - 8, left: 8, right: window.innerWidth - 8 };
     list.style.minWidth = `${rect.width}px`;
     const width = list.offsetWidth;
     const height = list.offsetHeight;
@@ -131,7 +131,7 @@ export function Segmented({ value, onChange, options, variant = 'mode', 'aria-la
 function placePopover(list: HTMLElement, button: HTMLElement, direction: 'auto' | 'down' = 'auto', boundaryElement?: HTMLElement | null, heightLimit = Infinity) {
   const rect = button.getBoundingClientRect();
   const parent = boundaryElement ?? list.parentElement;
-  const boundary = parent instanceof HTMLDialogElement ? parent.getBoundingClientRect() : { top: 8, bottom: window.innerHeight - 8, left: 8, right: window.innerWidth - 8 };
+  const boundary = parent instanceof HTMLDialogElement && !parent.hasAttribute('popover') ? parent.getBoundingClientRect() : { top: 8, bottom: window.innerHeight - 8, left: 8, right: window.innerWidth - 8 };
   const gap = 4;
   const below = Math.max(0, boundary.bottom - rect.bottom - gap);
   const above = Math.max(0, rect.top - boundary.top - gap);
@@ -165,6 +165,7 @@ function scrollChild(id: string, parentSelector: string) {
   else if (elRect.bottom > box.bottom) scroller.scrollTop += elRect.bottom - box.bottom;
 }
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日'];
+const CALENDAR_ARROW_DAYS: Partial<Record<string, number>> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
 function padDay(n: number) { return String(n).padStart(2, '0'); }
 function toIso(y: number, m: number, d: number) { return `${y}-${padDay(m)}-${padDay(d)}`; }
 function parseIso(value: string) {
@@ -201,14 +202,15 @@ function monthCells(y: number, m: number) {
   }
   return items;
 }
-export function DatePicker({ id, value, onChange, yearRange, clearable = true, direction = 'down', triggerContent, 'aria-label': ariaLabel, 'aria-invalid': invalid, 'aria-describedby': describedBy }: {
-  id?: string; value: string; onChange(value: string): void; yearRange?: { min: number; max: number }; clearable?: boolean; direction?: 'auto' | 'down'; triggerContent?: ReactNode; 'aria-label'?: string; 'aria-invalid'?: boolean | 'true' | 'false'; 'aria-describedby'?: string;
+export function DatePicker({ id, value, onChange, yearRange, clearable = true, direction = 'down', inline = false, triggerContent, 'aria-label': ariaLabel, 'aria-labelledby': labelledBy, 'aria-invalid': invalid, 'aria-describedby': describedBy }: {
+  id?: string; value: string; onChange(value: string): void; yearRange?: { min: number; max: number }; clearable?: boolean; direction?: 'auto' | 'down'; inline?: boolean; triggerContent?: ReactNode; 'aria-label'?: string; 'aria-labelledby'?: string; 'aria-invalid'?: boolean | 'true' | 'false'; 'aria-describedby'?: string;
 }) {
   const gridId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const root = useRef<HTMLDivElement>(null);
   const needsReveal = useRef(true);
+  const focusDay = useRef(false);
   const selected = parseIso(value);
   const today = localDay();
   const [open, setOpen] = useState(false);
@@ -242,7 +244,12 @@ export function DatePicker({ id, value, onChange, yearRange, clearable = true, d
     });
   }
   function close() { setOpen(false); trigger.current?.focus(); }
-  function pick(next: string) { onChange(next); close(); }
+  function pick(next: string) {
+    onChange(next);
+    if (!inline) { close(); return; }
+    const date = parseIso(next);
+    if (date) { setView({ y: date.y, m: date.m }); setCursor(next); }
+  }
   function show(next = !open) {
     if (next) {
       const parsed = parseIso(value);
@@ -254,6 +261,11 @@ export function DatePicker({ id, value, onChange, yearRange, clearable = true, d
   }
   useLayoutEffect(() => {
     const list = menu.current; const button = trigger.current;
+    if (inline) {
+      if (focusDay.current) document.getElementById(`${gridId}-${cursor}`)?.focus({ preventScroll: true });
+      focusDay.current = false;
+      return;
+    }
     if (!open) { needsReveal.current = true; return; }
     if (!list || !button) return;
     if (needsReveal.current) {
@@ -277,28 +289,32 @@ export function DatePicker({ id, value, onChange, yearRange, clearable = true, d
     }
     placePopover(list, button, direction, direction === 'auto' ? document.body : undefined);
     document.getElementById(`${gridId}-${cursor}`)?.focus();
-  }, [open, view, cursor, gridId, direction]);
+  }, [open, inline, view, cursor, gridId, direction]);
+  function onCalendarKeyDown(event: globalThis.KeyboardEvent) {
+    if (browseMenuIsOpen() || (yearRange || inline) && (event.isComposing || event.keyCode === 229)) return;
+    if (event.key === 'Escape' && !inline) { event.preventDefault(); event.stopPropagation(); close(); return; }
+    const target = event.target;
+    if (inline && (!(target instanceof HTMLElement) || !target.closest('.date-grid'))) return;
+    if (target instanceof HTMLElement && menu.current?.contains(target) && target.closest('.date-head, .date-menu-actions')) return;
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); pick(cursor); return; }
+    const offset = CALENDAR_ARROW_DAYS[event.key] ?? 0;
+    const monthOffset = event.key === 'PageUp' ? -1 : event.key === 'PageDown' ? 1 : 0;
+    if (!offset && !monthOffset) return;
+    event.preventDefault();
+    const activeDay = parseIso(cursor) ?? parseIso(today)!;
+    const month = monthOffset ? shiftMonth(activeDay.y, activeDay.m, monthOffset) : null;
+    const next = month ? toIso(month.y, month.m, Math.min(activeDay.d, new Date(month.y, month.m, 0).getDate())) : shiftIso(cursor, offset);
+    const { y, m } = parseIso(next)!;
+    focusDay.current = inline;
+    setCursor(next);
+    setView({ y, m });
+  }
   useEffect(() => {
     if (!open) return;
     function onPointerDown(event: PointerEvent) {
       const node = event.target as Node;
       if (root.current?.contains(node) || menu.current?.contains(node)) return;
       setOpen(false);
-    }
-    function onKeyDown(event: globalThis.KeyboardEvent) {
-      // Nested year/month Selects handle their own keys and the first Escape.
-      if (browseMenuIsOpen()) return;
-      if (yearRange && (event.isComposing || event.keyCode === 229)) return;
-      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); return; }
-      const target = event.target;
-      if (target instanceof HTMLElement && menu.current?.contains(target) && target.closest('.date-head, .date-menu-actions')) return;
-      if (event.key === 'ArrowLeft') { event.preventDefault(); setCursor(current => { const next = shiftIso(current, -1); const parsed = parseIso(next)!; setView({ y: parsed.y, m: parsed.m }); return next; }); }
-      else if (event.key === 'ArrowRight') { event.preventDefault(); setCursor(current => { const next = shiftIso(current, 1); const parsed = parseIso(next)!; setView({ y: parsed.y, m: parsed.m }); return next; }); }
-      else if (event.key === 'ArrowUp') { event.preventDefault(); setCursor(current => { const next = shiftIso(current, -7); const parsed = parseIso(next)!; setView({ y: parsed.y, m: parsed.m }); return next; }); }
-      else if (event.key === 'ArrowDown') { event.preventDefault(); setCursor(current => { const next = shiftIso(current, 7); const parsed = parseIso(next)!; setView({ y: parsed.y, m: parsed.m }); return next; }); }
-      else if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); pick(cursor); }
-      else if (event.key === 'PageUp') { event.preventDefault(); setCursor(current => { const parsed = parseIso(current) ?? parseIso(today)!; const next = shiftMonth(parsed.y, parsed.m, -1); const last = new Date(next.y, next.m, 0).getDate(); const iso = toIso(next.y, next.m, Math.min(parsed.d, last)); setView({ y: next.y, m: next.m }); return iso; }); }
-      else if (event.key === 'PageDown') { event.preventDefault(); setCursor(current => { const parsed = parseIso(current) ?? parseIso(today)!; const next = shiftMonth(parsed.y, parsed.m, 1); const last = new Date(next.y, next.m, 0).getDate(); const iso = toIso(next.y, next.m, Math.min(parsed.d, last)); setView({ y: next.y, m: next.m }); return iso; }); }
     }
     function dismiss() { setOpen(false); }
     const openedAt = trigger.current?.getBoundingClientRect();
@@ -310,12 +326,12 @@ export function DatePicker({ id, value, onChange, yearRange, clearable = true, d
       setOpen(false);
     }
     document.addEventListener('pointerdown', onPointerDown);
-    window.addEventListener('keydown', onKeyDown, true);
+    window.addEventListener('keydown', onCalendarKeyDown, true);
     window.addEventListener('resize', dismiss);
     window.addEventListener('scroll', onScroll, true);
     return () => {
       document.removeEventListener('pointerdown', onPointerDown);
-      window.removeEventListener('keydown', onKeyDown, true);
+      window.removeEventListener('keydown', onCalendarKeyDown, true);
       window.removeEventListener('resize', dismiss);
       window.removeEventListener('scroll', onScroll, true);
     };
@@ -325,12 +341,9 @@ export function DatePicker({ id, value, onChange, yearRange, clearable = true, d
       event.preventDefault(); show(true);
     }
   }
-  const parsed = selected;
-  return <div ref={root} className="date-picker">
-    <button type="button" ref={trigger} id={id} className="select-trigger" aria-label={ariaLabel} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? gridId : undefined} aria-invalid={invalid} aria-describedby={describedBy} onClick={() => show()} onKeyDown={onTriggerKeyDown}>
-      {triggerContent ?? <span>{parsed ? `${parsed.y}年${parsed.m}月${parsed.d}日` : '选择日期'}</span>}<CalendarBlank size={14} />
-    </button>
-    {open ? createPortal(<div ref={menu} className={`date-menu${yearRange ? ' date-menu-with-years' : ''}`} role="dialog" aria-label="选择日期">
+  const calendar = (open || inline) && <div ref={menu} id={inline ? id : undefined} className={`date-menu${yearRange ? ' date-menu-with-years' : ''}${inline ? ' date-menu-inline' : ''}`}
+    role={inline ? 'group' : 'dialog'} aria-label={inline ? ariaLabel ?? '选择日期' : '选择日期'} data-scrollable={!inline && !yearRange && direction === 'auto' || undefined}
+    onKeyDown={inline ? event => onCalendarKeyDown(event.nativeEvent) : undefined}>
       <div className="date-head">
         <button type="button" aria-label="上个月" onClick={() => setView(current => { const next = shiftMonth(current.y, current.m, -1); setCursor(iso => { const parsed = parseIso(iso) ?? parseIso(today)!; return toIso(next.y, next.m, Math.min(parsed.d, new Date(next.y, next.m, 0).getDate())); }); return next; })}><CaretLeft size={14} weight="bold" /></button>
         {yearRange ? <div className="date-month-label">
@@ -341,13 +354,22 @@ export function DatePicker({ id, value, onChange, yearRange, clearable = true, d
       </div>
       <div className="date-weekdays">{WEEKDAYS.map(day => <span key={day}>{day}</span>)}</div>
       <div id={gridId} className="date-grid" role="grid">
-        {monthCells(view.y, view.m).map(cell => <button key={cell.iso} type="button" id={`${gridId}-${cell.iso}`} role="gridcell" aria-label={cell.iso} aria-selected={cell.iso === value} className={[cell.outside && 'is-outside', cell.iso === today && 'is-today', cell.iso === value && 'is-selected', cell.iso === cursor && 'is-active'].filter(Boolean).join(' ')} onMouseEnter={() => { if (!yearRange) setCursor(cell.iso); }} onMouseMove={() => { if (yearRange && !browseMenuIsOpen()) setCursor(cell.iso); }} onClick={() => pick(cell.iso)}>{cell.day}</button>)}
+        {monthCells(view.y, view.m).map(cell => <button key={cell.iso} type="button" id={`${gridId}-${cell.iso}`} role="gridcell" aria-label={cell.iso} aria-selected={cell.iso === value}
+          tabIndex={inline ? (cell.iso === cursor ? 0 : -1) : undefined}
+          className={[cell.outside && 'is-outside', cell.iso === today && 'is-today', cell.iso === value && 'is-selected', cell.iso === cursor && 'is-active'].filter(Boolean).join(' ')}
+          onMouseEnter={() => { if (!inline && !yearRange) setCursor(cell.iso); }} onMouseMove={() => { if (!inline && yearRange && !browseMenuIsOpen()) setCursor(cell.iso); }} onClick={() => pick(cell.iso)}>{cell.day}</button>)}
       </div>
       <div className="date-menu-actions">
         {clearable && <button type="button" onClick={() => pick('')}>清除</button>}
         <button type="button" onClick={() => pick(today)}>今天</button>
       </div>
-    </div>, trigger.current?.closest('dialog') ?? document.body) : null}
+    </div>;
+  if (inline) return calendar;
+  return <div ref={root} className="date-picker">
+    <button type="button" ref={trigger} id={id} className="select-trigger" aria-label={ariaLabel} aria-labelledby={labelledBy} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? gridId : undefined} aria-invalid={invalid} aria-describedby={describedBy} onClick={() => show()} onKeyDown={onTriggerKeyDown}>
+      {triggerContent ?? <span>{selected ? `${selected.y}年${selected.m}月${selected.d}日` : '选择日期'}</span>}<CalendarBlank size={14} />
+    </button>
+    {open ? createPortal(calendar, trigger.current?.closest('dialog') ?? document.body) : null}
   </div>;
 }
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
@@ -361,8 +383,8 @@ function parseTime(value: string) {
 }
 function formatTime(h: number, m: number) { return `${padDay(h)}:${padDay(m)}`; }
 function nowTime() { const d = new Date(); return formatTime(d.getHours(), d.getMinutes()); }
-export function TimePicker({ id, value, onChange, direction = 'auto', commitOnClose = false, 'aria-invalid': invalid, 'aria-describedby': describedBy }: {
-  id?: string; value: string; onChange(value: string): void; direction?: 'auto' | 'down'; commitOnClose?: boolean; 'aria-invalid'?: boolean | 'true' | 'false'; 'aria-describedby'?: string;
+export function TimePicker({ id, value, onChange, direction = 'auto', commitOnClose = false, clearable = true, initiallyOpen = false, placeholder = '选择时间', 'aria-label': ariaLabel, 'aria-labelledby': labelledBy, 'aria-invalid': invalid, 'aria-describedby': describedBy }: {
+  id?: string; value: string; onChange(value: string): void; direction?: 'auto' | 'down'; commitOnClose?: boolean; clearable?: boolean; initiallyOpen?: boolean; placeholder?: string; 'aria-label'?: string; 'aria-labelledby'?: string; 'aria-invalid'?: boolean | 'true' | 'false'; 'aria-describedby'?: string;
 }) {
   const listId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
@@ -371,7 +393,7 @@ export function TimePicker({ id, value, onChange, direction = 'auto', commitOnCl
   const needsReveal = useRef(true);
   const [stagedTime, setStagedTime] = useState<string>();
   const selected = parseTime(stagedTime ?? value);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initiallyOpen);
   const [cursorH, setCursorH] = useState(selected?.h ?? new Date().getHours());
   const [cursorM, setCursorM] = useState(selected?.m ?? new Date().getMinutes());
   const [focusCol, setFocusCol] = useState<'h' | 'm'>('h');
@@ -478,8 +500,8 @@ export function TimePicker({ id, value, onChange, direction = 'auto', commitOnCl
     }
   }
   return <div ref={root} className="time-picker">
-    <button type="button" ref={trigger} id={id} className="select-trigger" aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? listId : undefined} aria-invalid={invalid} aria-describedby={describedBy} onClick={() => show()} onKeyDown={onTriggerKeyDown}>
-      <span>{selected ? formatTime(selected.h, selected.m) : '选择时间'}</span><Clock size={14} />
+    <button type="button" ref={trigger} id={id} className="select-trigger" aria-label={ariaLabel} aria-labelledby={labelledBy} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? listId : undefined} aria-invalid={invalid} aria-describedby={describedBy} onClick={() => show()} onKeyDown={onTriggerKeyDown}>
+      <span>{selected ? formatTime(selected.h, selected.m) : placeholder}</span><Clock size={14} />
     </button>
     {open ? createPortal(<div ref={menu} id={listId} className={`time-menu${direction === 'down' ? ' is-down' : ''}`} role="dialog" aria-label="选择时间">
       <div className="time-cols">
@@ -497,7 +519,7 @@ export function TimePicker({ id, value, onChange, direction = 'auto', commitOnCl
         </div>
       </div>
       <div className="date-menu-actions">
-        <button type="button" onClick={() => { onChange(''); close(); }}>清除</button>
+        {clearable && <button type="button" onClick={() => { onChange(''); close(); }}>清除</button>}
         <button type="button" onClick={() => { onChange(nowTime()); close(); }}>现在</button>
       </div>
     </div>, trigger.current?.closest('dialog') ?? document.body) : null}
@@ -506,7 +528,7 @@ export function TimePicker({ id, value, onChange, direction = 'auto', commitOnCl
 export function IconButton({ label, children, onClick, className, ...props }: ComponentPropsWithRef<'button'> & { label: string }) {
   return <button type="button" className={`icon-button${className ? ` ${className}` : ''}`} aria-label={label} title={label} onClick={onClick} {...props}>{children}</button>;
 }
-export function Modal({ id, anchor, placement = 'vertical', title, children, close, dirty = false, busy = false, subhead, headingExtra, titleIcon, closeText, className, onEscape }: { id?: string; anchor?: HTMLElement | null; placement?: 'vertical' | 'side'; title: string; children: ReactNode; close(): void; dirty?: boolean; busy?: boolean; subhead?: ReactNode; headingExtra?: ReactNode; titleIcon?: ReactNode; closeText?: string; className?: string; onEscape?(): boolean }) {
+export function Modal({ id, anchor, placement = 'vertical', title, children, close, dirty = false, busy = false, subhead, headingExtra, titleIcon, closeText, hideClose = false, 'aria-describedby': describedBy, className, onEscape }: { id?: string; anchor?: HTMLElement | null; placement?: 'vertical' | 'vertical-start' | 'side'; title: string; children: ReactNode; close(): void; dirty?: boolean; busy?: boolean; subhead?: ReactNode; headingExtra?: ReactNode; titleIcon?: ReactNode; closeText?: string; hideClose?: boolean; 'aria-describedby'?: string; className?: string; onEscape?(): boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
   const discard = useRef<HTMLDialogElement>(null);
   function requestClose() { if (busy) return; if (dirty) { if (!discard.current?.open) discard.current?.showModal(); } else close(); }
@@ -533,18 +555,20 @@ export function Modal({ id, anchor, placement = 'vertical', title, children, clo
       element.style.maxHeight = '';
       const up = element.offsetHeight > below && above > below;
       element.style.maxHeight = `${Math.max(0, Math.min(520, up ? above : below))}px`;
-      element.style.left = `${Math.max(edge, Math.min(rect.right - element.offsetWidth, window.innerWidth - element.offsetWidth - edge))}px`;
+      const left = placement === 'vertical-start' ? rect.left : rect.right - element.offsetWidth;
+      element.style.left = `${Math.max(edge, Math.min(left, window.innerWidth - element.offsetWidth - edge))}px`;
       element.style.top = `${Math.max(edge, up ? rect.top - element.offsetHeight - gap : rect.bottom + gap)}px`;
     }
     place();
     (element.querySelector<HTMLElement>('[autofocus], input:not([disabled]), textarea:not([disabled])') ?? element).focus({ preventScroll: true });
+    const coveredByDialog = () => [...document.querySelectorAll('dialog[open]')].some(dialog => !dialog.contains(element));
     function outside(event: PointerEvent) {
       const target = event.target as Node;
-      if (element.contains(target) || anchor!.contains(target) || discard.current?.open) return;
+      if (element.contains(target) || anchor!.contains(target) || discard.current?.open || coveredByDialog()) return;
       closeRequest.current();
     }
     function escape(event: globalThis.KeyboardEvent) {
-      if (event.key !== 'Escape' || event.defaultPrevented || discard.current?.open) return;
+      if (event.key !== 'Escape' || event.defaultPrevented || event.isComposing || discard.current?.open || coveredByDialog()) return;
       event.preventDefault(); closeRequest.current();
     }
     function scroll(event: Event) { if (!(event.target instanceof Node) || !element.contains(event.target)) place(); }
@@ -567,7 +591,7 @@ export function Modal({ id, anchor, placement = 'vertical', title, children, clo
     };
   }, [anchor, placement]);
   return <>
-    <dialog ref={ref} id={id} popover={anchor ? 'manual' : undefined} className={`modal${className ? ` ${className}` : ''}`} aria-label={title} aria-busy={busy || undefined}
+    <dialog ref={ref} id={id} popover={anchor ? 'manual' : undefined} className={`modal${className ? ` ${className}` : ''}`} aria-label={title} aria-describedby={describedBy} aria-busy={busy || undefined}
       onKeyDown={onEscape && !anchor ? event => {
         if (event.key !== 'Escape' || event.defaultPrevented || event.nativeEvent.isComposing) return;
         // Handle nested disclosure before the browser closes the outer dialog.
@@ -576,12 +600,16 @@ export function Modal({ id, anchor, placement = 'vertical', title, children, clo
       } : undefined}
       onCancel={event => { if (event.target !== event.currentTarget) return; event.preventDefault(); requestEscape(); }}>
       <header className="modal-heading">
-        <div className="modal-heading-row"><div className="modal-heading-lead"><h2>{titleIcon ? <span className="modal-title-icon" aria-hidden="true">{titleIcon}</span> : null}{title}</h2>{headingExtra}</div>{closeText ? <button type="button" className="modal-text-close" disabled={busy} onClick={requestClose}>{closeText}</button> : <IconButton label="关闭" disabled={busy} onClick={requestClose}><X size={20} /></IconButton>}</div>
+        <div className="modal-heading-row">
+          <div className="modal-heading-lead"><h2>{titleIcon ? <span className="modal-title-icon" aria-hidden="true">{titleIcon}</span> : null}{title}</h2>{headingExtra}</div>
+          {!hideClose && (closeText ? <button type="button" className="modal-text-close" disabled={busy} onClick={requestClose}>{closeText}</button>
+            : <IconButton label="关闭" disabled={busy} onClick={requestClose}><X size={20} /></IconButton>)}
+        </div>
         {subhead}
       </header>
       {children}
     </dialog>
-    <dialog ref={discard} className="modal confirm" aria-label="放弃未保存的修改" onCancel={() => discard.current?.close()}>
+    <dialog ref={discard} className="modal confirm discard-confirm" aria-label="放弃未保存的修改" onCancel={() => discard.current?.close()}>
       <h2>放弃未保存的修改？</h2><p>已填写的内容尚未保存。</p>
       <div className="actions"><button autoFocus onClick={() => discard.current?.close()}>继续编辑</button><button className="danger" onClick={close}>放弃修改</button></div>
     </dialog>

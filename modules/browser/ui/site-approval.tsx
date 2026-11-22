@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { CaretRight, CheckCircle, Globe, ShieldCheck } from '@phosphor-icons/react';
 import type { ChatSession } from '../../../shared/todo-contracts';
 import type { BrowserSiteApproval, BrowserTask } from '../../../shared/browser-automation-contracts';
+import { BotOperationCard, BotOperationSubject } from '../../../src/views/BotOperationCard';
 import { errorText } from '../../../src/ui/controls';
 
 export function useBrowserApprovalTasks(chat: ChatSession | null) {
@@ -42,7 +43,7 @@ export function useBrowserApprovalTasks(chat: ChatSession | null) {
 export function browserSiteApprovalForCard(task?: BrowserTask): BrowserSiteApproval | undefined {
   if (task?.status === 'site-approval' && task.pendingOrigin) return { origin: task.pendingOrigin, status: 'pending' };
   const latest = task?.siteApprovals?.at(-1);
-  return latest?.status === 'allowed' ? latest : undefined;
+  return latest?.status !== 'pending' ? latest : undefined;
 }
 
 export function BrowserSiteApprovalCard({ task, id, elementRef, inline, located, onTask }: {
@@ -61,6 +62,28 @@ export function BrowserSiteApprovalCard({ task, id, elementRef, inline, located,
     catch (cause) { setError(errorText(cause)); }
     finally { inFlight.current = false; setWorking(null); }
   };
+  if (inline && approval) {
+    const status = approval.status === 'pending' ? '待授权' : approval.status === 'allowed' ? '已授权' : approval.status === 'denied' ? '已拒绝' : '已失效';
+    return <BotOperationCard id={id} ref={elementRef} className="bot-site-approval" data-status={approval.status}
+      data-chat-action-id={task.id} data-located={located || undefined} aria-label="站点授权" aria-busy={working !== null}
+      tabIndex={-1} label="站点授权" summary={origin ? approval.origin + ' · 仅本次任务' : approval.origin}
+      icon={<ShieldCheck size={18} />} status={status} tone={origin ? 'pending' : allowed ? 'success' : 'neutral'}
+      initialOpen={!!origin}>
+      {origin && <>
+        <BotOperationSubject title={origin} />
+        <dl className="bot-operation-fields">
+          <dt>用途</dt><dd>{task.goal || '访问并操作此站点'}</dd>
+          <dt>范围</dt><dd>仅本次任务</dd>
+        </dl>
+        {error && <p className="bot-error" role="alert">{error}</p>}
+        <div className="bot-action-buttons">
+          <button type="button" disabled={working !== null} onClick={() => void decide('cancel')}>{working === 'cancel' ? '正在停止…' : '不允许'}</button>
+          <button type="button" className="primary" disabled={working !== null}
+            onClick={() => void decide('approve-site')}>{working === 'approve-site' ? '正在授权…' : '允许并继续'}</button>
+        </div>
+      </>}
+    </BotOperationCard>;
+  }
   if (!origin && !allowed) return null;
   return <section id={id} ref={elementRef} className="ai-site-approval" data-status={allowed ? 'allowed' : 'pending'}
     data-chat-action-id={inline && origin ? task.id : undefined} data-located={located && !!origin || undefined}

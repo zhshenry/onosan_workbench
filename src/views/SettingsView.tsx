@@ -22,8 +22,9 @@ const SECTION_META: Partial<Record<ViewId, { title: string }>> = {
   'settings-island': { title: '桌面灵动岛' },
   'settings-ai': { title: '模型配置' },
   'settings-bots': { title: 'Bot 管理' },
+  'settings-memory': { title: '记忆管理' },
   'settings-apps': { title: 'Agent连接' },
-  'settings-data': { title: '待办与日程' },
+  'settings-data': { title: '日程待办' },
   'settings-about': { title: '关于' },
 };
 
@@ -88,6 +89,31 @@ function useAppSettings() {
   };
 
   return { settings, error, apply };
+}
+
+function AutomaticMemorySettings() {
+  const [enabled, setEnabled] = useState<boolean>();
+  const [busy, setBusy] = useState(true);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    let current = true;
+    void wb.bot.getAutomaticMemory().then(value => { if (current) setEnabled(value); }, cause => { if (current) setError(errorText(cause)); })
+      .finally(() => { if (current) setBusy(false); });
+    return () => { current = false; };
+  }, []);
+  const toggle = async () => {
+    setBusy(true); setError('');
+    try { setEnabled(await (enabled === undefined ? wb.bot.getAutomaticMemory() : wb.bot.setAutomaticMemory(!enabled))); }
+    catch (cause) { setError(errorText(cause)); }
+    finally { setBusy(false); }
+  };
+  const label = '是否开启自动记忆';
+  return <Rows query="" rows={[{
+    key: 'automaticMemory', title: label, desc: busy ? (enabled === undefined ? '正在读取…' : '正在保存…') : '开启后，从新对话中记下长期偏好。',
+    content: error ? <span role="alert">{error}</span> : undefined,
+    control: <button type="button" className="toggle" role="switch" aria-label={label} aria-checked={enabled ?? false}
+      aria-busy={busy} disabled={busy} onClick={() => void toggle()} />,
+  }]} />;
 }
 
 // ---------- 通用 ----------
@@ -466,6 +492,7 @@ export function SettingsView({ view, appearance, onAvatarColorChange, botManagem
       {view === 'settings-island' && <IslandSettingsSection query="" />}
       {view === 'settings-ai' && <AiSettings query="" />}
       {view === 'settings-bots' && botManagement}
+      {view === 'settings-memory' && <AutomaticMemorySettings />}
       {section === 'settings-apps' && !quotaTab && <CheckinConnectionSettings provider={checkinProvider}
         focusAutomation={view === 'settings-checkin'} onConnected={onCheckinConnected} onSavingChange={onCheckinSavingChange} />}
       {section === 'settings-apps' && <Activity mode={quotaTab ? 'visible' : 'hidden'}>

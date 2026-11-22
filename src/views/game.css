@@ -1,4 +1,4 @@
-.win[data-game='true'] .content { padding-inline: 12px; display: flex; flex-direction: column; overflow: hidden; }
+.win[data-game='true'] .content { padding-inline: 12px; display: flex; flex-direction: column; overflow: hidden; scrollbar-gutter: auto; }
 .game-host[hidden] { display: none !important; }
 .game-host { flex: 1; min-height: 0; min-width: 0; display: flex; }
 .game-workspace { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 12px; container: game / inline-size; }
@@ -8,8 +8,8 @@
 .game-workspace button:disabled { opacity: .45; cursor: not-allowed; }
 .game-workspace button:focus-visible, .game-workspace summary:focus-visible { outline: 2px solid var(--acc-deep); outline-offset: 2px; }
 .game-workspace button svg { width: 17px; height: 17px; flex-shrink: 0; }
-.game-workspace button.game-primary { background: var(--action); color: var(--nav-on-fg); border-color: var(--action); }
-.game-workspace button.game-primary:hover:not(:disabled) { background: var(--action-deep); }
+.game-workspace button.game-primary { background: var(--acc-deep); color: var(--nav-on-fg); border-color: var(--acc-deep); }
+.game-workspace button.game-primary:hover:not(:disabled) { background: var(--acc-hover); }
 .body:has(> .content > .game-host:not([hidden]) .game-workspace[data-expanded='true']) { grid-template-columns: 0px minmax(0, 1fr); }
 .game-workspace[data-expanded='true'] { gap: 0; border: 1px solid var(--glass-line); border-radius: var(--r-panel); overflow: hidden; background: var(--glass-surface); box-shadow: var(--shadow); }
 .game-expanded-bar { flex: 0 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px; min-height: 58px; padding: 8px 14px; box-sizing: border-box; border-bottom: 1px solid var(--hairline); }
@@ -248,8 +248,8 @@
 .game-settings input { box-sizing: border-box; }
 .game-settings p { color: var(--ink-3); font-size: var(--type-support); line-height: 1.6; }
 .game-settings p.game-error { color: var(--danger); }
-.game-settings button.primary { background: var(--action); color: var(--nav-on-fg); border-color: var(--action); }
-.game-settings button.primary:hover:not(:disabled) { background: var(--action-deep); border-color: var(--action-deep); }
+.game-settings button.primary { background: var(--acc-deep); color: var(--nav-on-fg); border-color: var(--acc-deep); }
+.game-settings button.primary:hover:not(:disabled) { background: var(--acc-hover); border-color: var(--acc-hover); }
 .game-path-input { display: flex; gap: 8px; }
 .game-path-input input { flex: 1; min-width: 0; }
 .game-path-input button { flex-shrink: 0; }

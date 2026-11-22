@@ -37,7 +37,8 @@ const viewWorkbenches: Record<ViewId, WorkbenchId> = {
   'ai-test': 'ai-test', 'ai-test-tasks': 'ai-test', 'ai-test-history': 'ai-test',
   home: 'home', todo: 'todo', bazi: 'bazi', reading: 'reading', checkin: 'home', copy: 'media', 'copy-publish': 'media', 'media-browser': 'media',
   'settings-profile': 'settings', 'settings-general': 'settings', 'settings-appearance': 'settings', 'settings-island': 'settings',
-  'settings-ai': 'settings', 'settings-bots': 'settings', 'settings-apps': 'settings', 'settings-agent-quota': 'settings', 'settings-checkin': 'settings', 'settings-data': 'settings', 'settings-notifications': 'settings', 'settings-about': 'settings',
+  'settings-ai': 'settings', 'settings-bots': 'settings',
+  'settings-memory': 'settings', 'settings-apps': 'settings', 'settings-agent-quota': 'settings', 'settings-checkin': 'settings', 'settings-data': 'settings', 'settings-notifications': 'settings', 'settings-about': 'settings',
 };
 
 export function defaultAiScopeForWorkbench(workbench: WorkbenchId): AiScope | null {

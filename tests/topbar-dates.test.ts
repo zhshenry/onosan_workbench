@@ -17,11 +17,11 @@ test('topbar schedule same-day, cross-day and cross-year ranges preserve both en
   assert.equal(topbarScheduleDate({ dateAt: at(2026, 12, 31, 23, 30), endAt: at(2027, 1, 1, 0, 30) }, now), '2026-12-31 23:30–\n2027-01-01 00:30');
   assert.equal(topbarScheduleDate({ dateAt: at(2025, 10, 12, 14, 0), endAt: at(2025, 10, 12, 15, 0) }, now), '2025-10-12 14:00–15:00');
 });
-test('planned date with no time never invents midnight or an all-day event', () => {
+test('date-only deadlines omit a time and date-only events show as all-day', () => {
   assert.equal(topbarTodoDate({ dateAt: '2026-10-12' }, now), '10-12 · 不限时');
-  assert.equal(topbarScheduleDate({ dateAt: '2026-10-12' }, now), '10-12 · 时间待定');
+  assert.equal(topbarScheduleDate({ dateAt: '2026-10-12' }, now), '10-12 · 全天');
   assert.equal(topbarTodoDate({ dateAt: '2025-01-02' }, now), '2025-01-02 · 不限时');
-  assert.equal(topbarScheduleDate({ dateAt: '2025-01-02' }, now), '2025-01-02 · 时间待定');
+  assert.equal(topbarScheduleDate({ dateAt: '2025-01-02' }, now), '2025-01-02 · 全天');
 });
 test('missing and invalid values fail safely without rolled-over dates or Invalid Date', () => {
   for (const plannedDate of [undefined, null, '', 'no-date', '2026-02-30', '2026-13-12', '2026-1-2']) {

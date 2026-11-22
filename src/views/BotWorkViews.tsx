@@ -52,23 +52,35 @@ function ArtifactRow({ artifact, image, selected, onOpen, onTask, onOpenResource
       {Number.isFinite(created) && <time dateTime={artifact.createdAt} title={workTime(artifact.createdAt)}>{shortArtifactDate.format(created)}</time>}
     </button>
     <button ref={trigger} type="button" className="bot-delivery-more" aria-label={`${artifact.title}的更多操作`} title="更多操作"
-      aria-haspopup="dialog" aria-expanded={actionsOpen} popoverTarget={menuId}><DotsThree size={18} weight="bold" aria-hidden="true" /></button>
-    <div ref={menu} id={menuId} popover="auto" role="dialog" aria-label="资料操作" className="bot-delivery-menu"
+      aria-haspopup="menu" aria-expanded={actionsOpen} aria-controls={menuId} popoverTarget={menuId}
+      onKeyDown={event => { if (event.key === 'ArrowDown') { event.preventDefault(); menu.current?.showPopover(); } }}>
+      <DotsThree size={18} weight="bold" aria-hidden="true" />
+    </button>
+    <div ref={menu} id={menuId} popover="auto" role="menu" aria-label="资料操作" className="bot-delivery-menu"
       onBeforeToggle={event => setActionsOpen(event.newState === 'open')}
       onToggle={event => {
         if (event.newState !== 'open' || !trigger.current) return;
         const popup = event.currentTarget, anchor = trigger.current.getBoundingClientRect();
         const bounds = trigger.current.closest('.bot-inspector')?.getBoundingClientRect();
         popup.toggleAttribute('data-above', !!bounds && bounds.bottom - anchor.bottom < popup.offsetHeight + 4 && anchor.top - bounds.top > bounds.bottom - anchor.bottom);
-        popup.querySelector('button')?.focus({ preventScroll: true });
+        popup.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus({ preventScroll: true });
       }}
       onBlur={event => { if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget) && event.relatedTarget !== trigger.current) menu.current?.hidePopover(); }}
-      onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeActions(); } }}>
+      onKeyDown={event => {
+        if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeActions(); return; }
+        if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const items = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)'));
+        const index = items.findIndex(item => item === document.activeElement);
+        const next = (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+        items[event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : next]?.focus({ preventScroll: true });
+      }}>
       {actionsOpen && <>
         {linked && onOpenResource
-          ? <button type="button" onClick={() => { closeActions(); onOpenResource(artifact.resource); }}><ArrowSquareOut size={16} />打开原件</button>
-          : <button type="button" onClick={() => { closeActions(); onOpen(artifact); }}><FileText size={16} />查看内容</button>}
-        <button type="button" onClick={() => { closeActions(); onTask(artifact.taskId); }}><CheckSquare size={16} />查看来源任务</button>
+          ? <button type="button" role="menuitem" tabIndex={-1} onClick={() => { closeActions(); onOpenResource(artifact.resource); }}><ArrowSquareOut size={16} />打开原件</button>
+          : <button type="button" role="menuitem" tabIndex={-1} onClick={() => { closeActions(); onOpen(artifact); }}><FileText size={16} />查看内容</button>}
+        <button type="button" role="menuitem" tabIndex={-1} onClick={() => { closeActions(); onTask(artifact.taskId); }}><CheckSquare size={16} />查看来源任务</button>
       </>}
     </div>
   </li>;

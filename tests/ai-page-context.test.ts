@@ -23,7 +23,7 @@ test('工作台页面的助手卡片主标签和对象行来自导航', () => {
       assert.equal(labels.label, workbench.title, sub.view);
       assert.equal(labels.object, sub.label, sub.view);
       const page = pageAiContext(sub.view, none);
-      assert.equal(page.label, sub.view === 'todo' ? '待办与日程' : workbench.title, sub.view);
+      assert.equal(page.label, sub.view === 'todo' ? '日程待办' : workbench.title, sub.view);
       assert.equal(forbidden.includes(page.label), false, page.label);
       assert.equal(forbidden.includes(page.object), false, page.object);
     }
@@ -49,7 +49,7 @@ test('历史设置路径归入对应页面，保留设置归属与助手名称',
   for (const [view, target, name] of [
     ['settings-general', 'settings-general', '通用'],
     ['settings-appearance', 'settings-appearance', '个性化'],
-    ['settings-notifications', 'settings-data', '待办与日程'],
+    ['settings-notifications', 'settings-data', '日程待办'],
   ] as const) {
     assert.equal(resolveView(view), target);
     assert.equal(ownerOfWorkbench(view), 'settings');
@@ -59,7 +59,7 @@ test('历史设置路径归入对应页面，保留设置归属与助手名称',
 
 test('待办、博客、命理和阅读的专用名称不随工作台文案改动', () => {
   assert.deepEqual(pageAiContext('todo', none), {
-    scope: { module: 'todo' }, label: '待办与日程', object: 'To-Do-List',
+    scope: { module: 'todo' }, label: '日程待办', object: 'To-Do-List',
   });
   assert.deepEqual(pageAiContext('copy', { ...none, copy: { id: 'draft-1', title: '周记' } }), {
     scope: { module: 'copy', draftId: 'draft-1' }, label: '博客编辑', object: '周记',

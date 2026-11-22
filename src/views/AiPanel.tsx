@@ -569,7 +569,7 @@ export function AiPanel({ open, onClose, seed, onSeedFinished, requestedChatId, 
   const activeObjectName = activeContext.scope.module === 'todo' ? TODO_AI_WORKBENCH_NAME : activeContext.object;
   const contextForScope = (scope: AiScope): AiPanelContext => {
     const key = aiScopeKey(scope);
-    if (scope.module === 'todo') return { scope, label: '待办与日程', object: TODO_AI_WORKBENCH_NAME };
+    if (scope.module === 'todo') return { scope, label: '日程待办', object: TODO_AI_WORKBENCH_NAME };
     if (key === aiScopeKey(pageContextRef.current.scope)) return pageContextRef.current;
     if (key === activeScopeKey) return { ...activeContext, object: objectNames[key] ?? activeContext.object };
     const recent = chats.find(chat => aiScopeKey(chatContextScope(chat)) === key);

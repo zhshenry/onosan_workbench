@@ -1,11 +1,13 @@
 # 文档入口
 
-更新：2026-10-17。按用途分层、需求按工作台归类。先找工作台，再进入对应功能/需求目录；方案、原型、设计图和验收资料在同一需求下。
+先按工作来源找入口。本地开发的产品需求从 `requirements/` 进入，走 GitHub 自动化流程的工单从 `issues/` 进入。目录内的 README 负责本目录的写法、放置规则或查询入口。
 
 | 分类 | 入口 | 内容 |
 |---|---|---|
 | 规范 | [standards/](standards/README.md) | 产品、视觉、交互与共享数据的唯一规范入口 |
-| 需求 | [requirements/](requirements/README.md) | 首页、自媒体、游戏、网页、小工具、设置及跨工作台能力 |
+| 本地需求 | [双仓本地需求总表](requirements/README.md) | 需求编号、命名与放置规范、业务正文、各仓进度及任务 |
+| GitHub 工单 | [issues/](issues/README.md) | 自动化工单清单、实时查询及本地验收账本入口 |
+| 专题设计 | [design/](design/) | 已有跨功能设计和实施资料，按各需求正文的链接定位 |
 | 流程与操作 | [operations/](operations/README.md) | 发布、CI、Issue 协作、模板与接受门 |
 | 历史记录 | [archive/](archive/README.md) | 交接、审计和已退役试点 |
 | 资料逐项映射 | [RESOURCE-INDEX.md](RESOURCE-INDEX.md) | 文档—原型—设计图—截图—原位置及保存方式 |

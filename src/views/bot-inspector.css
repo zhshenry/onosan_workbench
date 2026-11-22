@@ -28,7 +28,7 @@
   padding: 12px;
   pointer-events: none;
 }
-.bot-identity-pill {
+.bot-identity-pill, .bot-exchange-pair {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -42,8 +42,8 @@
   box-shadow: var(--shadow-sm);
   pointer-events: auto;
 }
-.bot-identity-pill > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--type-control); }
-.bot-identity-pill > svg { flex: none; color: var(--ink-3); }
+:is(.bot-identity-pill, .bot-exchange-pair) > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--type-control); }
+:is(.bot-identity-pill, .bot-exchange-pair) > svg { flex: none; color: var(--ink-3); }
 .bot-identity-pill[aria-expanded='true'] > svg { transform: rotate(180deg); }
 .bot-identity-pill[aria-expanded='true'] { border-color: var(--acc-ring); }
 .bot-identity-bar .bot-header-actions { position: absolute; right: 10px; pointer-events: auto; }
@@ -53,20 +53,14 @@
 .bot-chat-tools > span { width: 16px; height: 1px; background: var(--hairline); }
 .bot-reply-surface:has(> .bot-identity-bar) > .bot-chat-scroll { padding-top: 64px; scroll-padding-top: 64px; }
 .bot-panel:not(.bot-floating) .bot-chat-scroll:not(.bot-work-scroll) { padding-inline: max(14px, calc((100% - 920px) / 2)); }
-.bot-panel:not(.bot-floating) .bot-reply-surface:has(> .bot-identity-bar) > .bot-chat-scroll { padding-inline: max(14px, 3%, calc((100% - 960px) / 2)); }
-.bot-panel:not(.bot-floating) .bot-reply-surface:has(> .bot-identity-bar .bot-chat-tools) > .bot-chat-scroll {
-  &:has(> .bot-chat-empty:only-child) {
-    display: grid;
-    align-content: safe center;
-  }
-  &:not(:has(> .bot-chat-empty:only-child)) {
-    padding-inline-end: max(52px, 3%, calc((100% - 960px) / 2));
-  }
+.bot-panel:not(.bot-floating) .bot-reply-surface:has(> .bot-identity-bar) > .bot-chat-scroll { padding-inline: max(14px, 3cqi, calc((100cqi - 960px) / 2)); }
+.bot-panel:not(.bot-floating) .bot-reply-surface:has(> .bot-identity-bar .bot-chat-tools) > .bot-chat-scroll:has(> .bot-chat-empty:only-child) {
+  display: grid;
+  align-content: safe center;
 }
 .bot-panel:not(.bot-floating) .bot-chat-entry.user > div,
 .bot-panel:not(.bot-floating) .bot-chat-entry :is(.ai-response, .ai-site-approval),
-.bot-panel:not(.bot-floating) .bot-chat-scroll :is(.bot-chat-actions, .bot-action-completed, .bot-projected-action, .bot-collaboration-blocked, .bot-task-notice) { max-width: min(100%, var(--bot-message-width)); }
-.bot-panel:not(.bot-floating) .bot-chat-entry .ai-bubble { width: fit-content; }
+.bot-panel:not(.bot-floating) .bot-chat-scroll :is(.bot-chat-actions, .bot-projected-action) { max-width: min(100%, var(--bot-message-width)); }
 .bot-panel:not(.bot-floating) .bot-conversation-column > :is(.bot-config-hint, .bot-compose-stack) { width: min(calc(100% - 20px), 960px); align-self: center; }
 .bot-conversation-column > .bot-compose-stack { anchor-name: --bot-activity-composer; }
 .bot-compose-toolbar > .ai-voice-trigger { margin-inline-start: auto; }
@@ -210,7 +204,6 @@ textarea.bot-identity-text { resize: none; cursor: text; user-select: text; }
   padding: 3px 0 0;
   overflow: auto;
   overscroll-behavior: contain;
-  scrollbar-width: thin;
   border: 1px solid var(--hairline);
   border-radius: 10px;
   background: var(--overlay-bg);
@@ -308,6 +301,9 @@ textarea.bot-identity-text { resize: none; cursor: text; user-select: text; }
 .bot-activity-rows h3 { margin: 8px 6px 3px; font-size: var(--type-support); font-weight: 500; color: var(--ink-3); }
 .bot-activity-rows h3 span { margin-left: 3px; font-variant-numeric: tabular-nums; }
 .bot-activity-rows .bot-work-row { min-height: 44px; padding: 5px 6px; gap: 10px; }
+.bot-work-row-with-detail { display: grid; grid-template-columns: minmax(0, 1fr) 32px; gap: 4px; align-items: center; }
+.bot-work-row-with-detail > .icon-button { width: 32px; height: 32px; color: var(--ink-2); }
+.bot-work-row-with-detail > .icon-button:hover { background: var(--acc-soft); color: var(--acc-deep); }
 .bot-activity-rows .bot-work-row[aria-current='location'] { background: var(--acc-soft); }
 .bot-activity-rows .bot-work-row :is(strong, small) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bot-activity-rows .bot-work-row strong { font-size: var(--type-control); font-weight: 600; }

@@ -99,7 +99,7 @@ try {
     assert.equal(await page.locator('.greet:visible').count(), 0);
     assert.equal(await page.locator('.meeting-directory').getByRole('button', { name: '返回首页', exact: true }).count(), 1);
     await page.getByRole('button', { name: '编辑安排', exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: '编辑事项', exact: true }); await dialog.waitFor();
+    const dialog = page.getByRole('dialog', { name: /^(?:编辑事项|编辑日程|编辑待办|日程详情)$/ }); await dialog.waitFor();
     await dialog.getByRole('button', { name: '关闭', exact: true }).click(); await noteEditor().waitFor();
   });
   await check('rich text paste is sanitized, autosaved and not limited by the original 5000-character note', async () => {
@@ -149,7 +149,7 @@ try {
     await page.getByRole('button', { name: '添加后续行动', exact: true }).click();
     await page.getByRole('textbox', { name: '行动项1', exact: true }).fill('跟进 · 输出评审修订稿');
     await page.getByRole('button', { name: '转为待办', exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: '新增事项', exact: true }); await dialog.waitFor();
+    const dialog = page.getByRole('dialog', { name: /^(?:新增事项|新建日程|新建待办)$/ }); await dialog.waitFor();
     await dialog.evaluate(node => Promise.all(node.getAnimations().map(animation => animation.finished.catch(() => {}))));
     const bounds = await dialog.boundingBox(), viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
     assert.ok(Math.abs(bounds.x + bounds.width / 2 - viewport.width / 2) < 2); assert.ok(Math.abs(bounds.y + bounds.height / 2 - viewport.height / 2) < 2);
@@ -159,7 +159,7 @@ try {
     linkedId = (await persisted()).actions[0].taskId; assert.ok(linkedId);
     assert.equal((await page.evaluate(() => window.workbench.todo.state())).tasks.filter(task => task.title === '跟进 · 输出评审修订稿').length, 1);
     await page.getByRole('button', { name: '查看待办', exact: true }).click();
-    const edit = page.getByRole('dialog', { name: '编辑事项', exact: true });
+    const edit = page.getByRole('dialog', { name: /^(?:编辑事项|编辑日程|编辑待办|日程详情)$/ });
     await edit.locator('.task-meeting-source button').click(); await noteEditor().waitFor(); assert.equal(await edit.count(), 0);
   });
   await check('completion uses existing confirmation and synchronizes the linked action status', async () => {
@@ -173,9 +173,9 @@ try {
   });
   await check('return restores the browsed date and global schedule entry opens the same minutes detail', async () => {
     await back(); await page.getByRole('button', { name: '下一天', exact: true }).click();
-    const label = await page.getByRole('button', { name: '选择日程日期', exact: true }).innerText();
+    const label = await page.getByRole('button', { name: /^(?:选择日程日期|选择日历日期)$/ }).innerText();
     await page.locator('.schip[title="产品设计评审"]').click(); await noteEditor().waitFor();
-    await back(); assert.equal(await page.getByRole('button', { name: '选择日程日期', exact: true }).innerText(), label);
+    await back(); assert.equal(await page.getByRole('button', { name: /^(?:选择日程日期|选择日历日期)$/ }).innerText(), label);
     await page.getByRole('button', { name: '今天', exact: true }).click(); await openMeeting();
   });
   await check('three materials keep the same detail geometry and narrow workspaces expose schedule navigation', async () => {

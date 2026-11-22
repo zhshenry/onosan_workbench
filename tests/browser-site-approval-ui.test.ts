@@ -15,16 +15,18 @@ test('inline site approval shows a single-row receipt for the latest confirmed g
   const receipt = render(granted);
   assert.match(receipt, /data-status="allowed"/);
   assert.match(receipt, /站点授权.*已授权/);
-  assert.doesNotMatch(receipt, /<button\b|ai-site-approval-body|allowed\.test/);
+  assert.match(receipt, /bot-operation-card.*allowed\.test.*已授权/);
+  assert.doesNotMatch(receipt, /<button\b|ai-site-approval-body/);
   assert.equal(render(granted, false), '');
 
   const pending: BrowserTask = { ...granted, status: 'site-approval', pendingOrigin: nextOrigin,
     siteApprovals: [...granted.siteApprovals!, { origin: nextOrigin, status: 'pending' }] };
-  assert.match(render(pending), /待处理.*next\.test.*允许并继续/);
+  assert.match(render(pending), /bot-operation-card.*next\.test.*仅本次任务.*待授权.*允许并继续/);
   assert.doesNotMatch(render(pending), /已授权/);
   const denied: BrowserTask = { ...pending, status: 'cancelled', pendingOrigin: undefined,
     siteApprovals: [...granted.siteApprovals!, { origin: nextOrigin, status: 'denied' }] };
-  assert.equal(render(denied), '');
+  assert.match(render(denied), /bot-operation-card.*next\.test.*已拒绝/);
+  assert.doesNotMatch(render(denied), /允许并继续/);
   assert.equal(render({ ...granted, siteApprovals: undefined }), '');
 });
 

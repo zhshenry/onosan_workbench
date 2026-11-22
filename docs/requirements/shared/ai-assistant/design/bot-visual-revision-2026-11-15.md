@@ -13,7 +13,7 @@
 | [原浮动收起稿](bot-floating-collapsed-reference-2026-11-13.png) | 已目视检查，作为浮动收起修订的实际图片输入，保留工作区与按需任务详情 |
 | 本轮并排及浮动收起修订图 | 并排修订作为收起图的外观参考；收起修订作为展开图的编辑目标，保持同一产品与任务场景 |
 
-浮动输入和答复的交互仍沿用 [OnO 接入方案](../bot-architecture-proposal-2026-11-13.md)中此前对 metadata-analysis 的参考，本轮没有重新把其页面作为生成图片输入。
+浮动输入和答复的交互仍沿用 [OnO 接入方案](../rel002-bot-runtime-architecture-and-workspace-isolation/plan.md)中此前对 metadata-analysis 的参考，本轮没有重新把其页面作为生成图片输入。
 
 ## 首轮稿件 · v1
 
@@ -89,7 +89,7 @@ v2 项目图片：[并排 v2](bot-parallel-windowlight-afternoon-2026-11-15-v2.p
 
 ## 2026-11-16 实施规则与状态覆盖
 
-实施时按职责读取规范：[通用 Bot 方案](../bot-workbench-architecture.md)第 10.7 节决定草稿、编辑权、交接与发送，第 10.8 节决定名片和交付件等状态；[OnO 接入](../bot-architecture-proposal-2026-11-13.md)及 [CMO 实施方案](../../../../design/cmo-bot-workbench-implementation-2026-11-15.md)决定领域和页面映射；产品最新外观方案决定容器、材质与几何。图片只补充视觉参照，不能覆盖这些较新的规则。
+实施时按职责读取规范：[通用 Bot 方案](../rel002-bot-runtime-architecture-and-workspace-isolation/spec.md)第 10.7 节决定草稿、编辑权、交接与发送，第 10.8 节决定名片和交付件等状态；[OnO 接入](../rel002-bot-runtime-architecture-and-workspace-isolation/plan.md)及 [CMO 实施方案](../../../../design/cmo-bot-workbench-implementation-2026-11-15.md)决定领域和页面映射；产品最新外观方案决定容器、材质与几何。图片只补充视觉参照，不能覆盖这些较新的规则。
 
 | 界面范围 | 现有视觉证据 | 本轮补齐的行为／剩余工作 |
 | --- | --- | --- |

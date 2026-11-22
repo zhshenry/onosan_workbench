@@ -41,6 +41,34 @@ test('an outbox survives renderer/process loss, recovers the original receipt an
     reopened.acknowledge(draft.chatId, 'main', input.clientRequestId); assert.equal(reopened.pending(draft.chatId, 'main'), null);
   } finally { f.ai.close(); }
 });
+test('memory and ordinary sends recover independently from the same conversation outbox', async () => {
+  const f = fixture();
+  try {
+    const chatId = f.bot.mainChatId;
+    const draft = f.store.saveDraft(chatId, 0, { text: '写着的普通草稿', replyToTaskId: null, resources: [] });
+    const normal: BotSubmit = { botId: f.bot.id, chatId, expectedDraftRevision: draft.revision, clientRequestId: randomUUID(), text: draft.text, replyToTaskId: null, resources: [] };
+    const memory: BotSubmit = { ...normal, clientRequestId: randomUUID(), text: '以后汇报先写结论', memoryRequest: { scope: 'private' } };
+    const transport = async (method: string, args: unknown[]) => {
+      if (method === 'getSubmissionStatus') return f.store.submissionStatus(args[0] as BotSubmit, 'main', args[1] as string);
+      if ((args[0] as BotSubmit).memoryRequest) f.store.submit(args[0] as BotSubmit, () => {});
+      throw new BotError('HOST_TIMEOUT', '模拟接收回执丢失');
+    };
+    const outbox = new BotOutbox(f.directory);
+    await assert.rejects(outbox.send(normal, 'main', transport), /回执丢失/);
+    await assert.rejects(outbox.send(memory, 'main', transport), /回执丢失/);
+    const reopened = new BotOutbox(f.directory);
+    assert.equal(reopened.pending(chatId, 'main')?.input.clientRequestId, normal.clientRequestId);
+    const retry = reopened.pending(chatId, 'main', true)!;
+    assert.equal(retry.input.clientRequestId, memory.clientRequestId);
+    assert.equal((await reopened.send(retry.input, 'main', transport)).duplicate, true);
+    reopened.acknowledge(chatId, 'main', memory.clientRequestId);
+    assert.equal(reopened.pending(chatId, 'main', true), null);
+    assert.equal(reopened.pending(chatId, 'main')?.input.clientRequestId, normal.clientRequestId);
+    assert.equal(f.store.draft(chatId).text, draft.text);
+    assert.equal(f.store.tasks().length, 1);
+  } finally { f.ai.close(); }
+});
+
 test('changing database identity never silently resends an outbox record', async () => {
   const f = fixture();
   try {

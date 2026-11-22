@@ -1,12 +1,17 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { Temporal } from '@js-temporal/polyfill';
-import { botSeeds, isQueuedBotMessage, terminalTask, type BotCollaboration, type BotExchange, type BotExchangeQuery, type BotAction, type BotArtifact, type BotCard, type BotChatSnapshot, type BotChatView, type BotDraftSurface, type BotDraftValue, type BotMemory, type BotMessage, type BotOpen, type BotProfile, type BotResourceRef, type BotSchedule, type BotSeedKey, type BotSubmit, type BotSubmitReceipt, type BotTask, type DraftSnapshot } from '../shared/bot-contracts';
+import { BOT_MEMORY_TEXT_LIMIT, botSeeds, isQueuedBotMessage, terminalTask, type BotCollaboration, type BotExchange, type BotExchangeQuery, type BotAction, type BotArtifact, type BotCard, type BotChatSnapshot, type BotChatView, type BotDraftSurface, type BotDraftValue, type BotMemory, type BotMessage, type BotOpen, type BotProfile, type BotResourceRef, type BotSchedule, type BotSeedKey, type BotSubmit, type BotSubmitReceipt, type BotTask, type DraftSnapshot } from '../shared/bot-contracts';
 import type { AiScope } from '../shared/ai-scope';
 import type { ChatSession } from '../shared/todo-contracts';
 import type { AiStore } from './ai-store';
 import { normalizeBotAvatar } from '../shared/bot-avatar';
-import type { BotActivity, BotQueueChange, BotRunActivity } from '../shared/bot-contracts';
+import type { BotActivity, BotMemoryEdit, BotMemoryReceipt, BotMemorySource, BotQueueChange, BotRunActivity } from '../shared/bot-contracts';
+import { switchedWork } from './bot-input-route';
+import { authoredMemoryText, matchMemories, memoryBudget, memoryEvidence, memoryLabels, memoryTextKey, type MemoryChange, type MemoryInput } from './bot-memory';
+
+interface MemoryInputRow { message_id: string; chat_id: string; bot_id: string; task_id: string; generated: string; }
+export interface MemoryReviewBatch { epoch: string; botId: string; ids: string[]; inputs: MemoryInput[]; existing: BotMemory[]; }
 
 export class BotError extends Error {
   constructor(readonly code: string, message: string, readonly current?: unknown) { super(message); }
@@ -70,6 +75,23 @@ export class BotStore {
   constructor(readonly ai: AiStore, readonly directory: string) {
     this.db = ai.db; this.migrate(); this.migrateModelSelections(); this.splitUtilities(); this.migrateCommunication();
     this.db.exec('CREATE TABLE IF NOT EXISTS bot_message_requests(id TEXT PRIMARY KEY, input_hash TEXT NOT NULL, message_id TEXT NOT NULL); PRAGMA user_version=6');
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS bot_memory_inputs(message_id TEXT PRIMARY KEY, chat_id TEXT NOT NULL, bot_id TEXT NOT NULL,
+        task_id TEXT NOT NULL, epoch TEXT NOT NULL, generated TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'accepted');
+      CREATE INDEX IF NOT EXISTS bot_memory_input_task ON bot_memory_inputs(task_id);
+      CREATE INDEX IF NOT EXISTS bot_memory_input_pending ON bot_memory_inputs(epoch, bot_id) WHERE state='pending';
+      CREATE INDEX IF NOT EXISTS bot_memories_by_bot ON bot_memories(bot_id);
+    `);
+    this.migrateMemories();
+    this.transaction(() => {
+      const agendaDescription = this.db.prepare('INSERT INTO settings(key,value) VALUES (?,?) ON CONFLICT(key) DO NOTHING')
+        .run('bot.scheduleDescription.2026-11-22', 'true');
+      if (agendaDescription.changes) {
+        this.db.prepare(`UPDATE bots SET payload=json_set(payload, '$.description', ?, '$.revision', json_extract(payload, '$.revision') + 1, '$.updatedAt', ?)
+          WHERE seed_key='schedule' AND json_extract(payload, '$.description') IN (?, ?)`)
+          .run(botSeeds.find(seed => seed.seedKey === 'schedule')!.description, now(), '日程和待办', '待办与日程');
+      }
+    });
     // A missing receipt across Host restarts may be a restored database. Never silently replay it.
     this.ai.setSetting('bot.dataEpoch', randomUUID());
   }
@@ -220,7 +242,7 @@ export class BotStore {
   }
   capabilities(key: BotSeedKey): string[] {
     const common = ['Bot 协作', '交付件', '例行工作'];
-    return [...({ schedule: ['待办查询与确认写入'], media: ['文章读取与修改建议', '浏览器（需工作区在线）'], utilities: ['命例解读'], reading: ['阅读分析'], web: ['浏览器（需工作区在线）'] } as Partial<Record<BotSeedKey, string[]>>)[key] ?? [], ...common];
+    return [...({ coordinator: ['总台看板'], schedule: ['待办查询与确认写入'], media: ['文章读取与修改建议', '浏览器（需工作区在线）'], utilities: ['命例解读'], reading: ['阅读分析'], web: ['浏览器（需工作区在线）'] } as Partial<Record<BotSeedKey, string[]>>)[key] ?? [], ...common];
   }
   open(botId: string, view?: BotChatView): BotOpen {
     const bot = this.profile(botId);
@@ -254,12 +276,19 @@ export class BotStore {
       AND (json_extract(payload,'$.sourceMessageId') IN page
         OR json_extract(payload,'$.latestUserMessageId') IN page
         OR json_extract(payload,'$.assistantEntryId') IN page
-        OR EXISTS (SELECT 1 FROM json_each(bot_tasks.payload,'$.assistantEntryIds') WHERE value IN page))`)
+        OR EXISTS (SELECT 1 FROM json_each(bot_tasks.payload,'$.assistantEntryIds') WHERE value IN page)
+        OR EXISTS (SELECT 1 FROM json_each(bot_tasks.payload,'$.todoActionEntryIds') WHERE value IN page))`)
       .all(json(ids), snapshot.chat.id) as { payload: string }[];
     return { ...snapshot, pageTasks: rows.map(row => JSON.parse(row.payload) as BotTask) };
   }
   conversationEntries(task: BotTask) {
     const ids = new Set([task.sourceMessageId, task.latestUserMessageId, task.assistantEntryId, ...(task.assistantEntryIds ?? [])]);
+    for (const row of this.db.prepare("SELECT message_id FROM bot_submissions WHERE task_id=? OR task_id IN (SELECT id FROM bot_tasks WHERE json_extract(payload,'$.rootTaskId')=?)").all(task.id, task.id) as { message_id: string }[]) ids.add(row.message_id);
+    const related = this.db.prepare("SELECT payload FROM bot_tasks WHERE json_extract(payload,'$.relatedWorkId')=?").all(task.id) as { payload: string }[];
+    for (const row of related) {
+      const item = JSON.parse(row.payload) as BotTask;
+      ids.add(item.sourceMessageId); ids.add(item.assistantEntryId);
+    }
     return this.chatForDisplay(this.ai.chat(task.chatId)).entries.filter(entry => ids.has(entry.id));
   }
   updateProfile(id: string, revision: number, patch: Pick<BotProfile, 'name' | 'avatar' | 'description' | 'instructions' | 'modelId'>): BotProfile {
@@ -279,9 +308,9 @@ export class BotStore {
   saveDraft(chatId: string, expectedRevision: number, value: BotDraftValue, surface: BotDraftSurface = 'main'): DraftSnapshot {
     return this.transaction(() => { const current = this.draft(chatId, surface); if (current.revision !== expectedRevision) throw new BotError('DRAFT_CONFLICT', '这处草稿已更新，当前输入仍保留。请核对后重试保存。', current); return this.writeDraft(chatId, surface, value, current.revision + 1); });
   }
-  submit(input: BotSubmit, validate: () => void, surface: BotDraftSurface = 'main'): BotSubmitReceipt {
+  submit(input: BotSubmit, validate: () => void, surface: BotDraftSurface = 'main', plan?: () => BotTask['inputRoute'], captureDashboard?: () => BotTask['dashboardHandoff']): BotSubmitReceipt {
     return this.transaction(() => {
-      const hash = payloadHash({ botId: input.botId, chatId: input.chatId, surface, text: input.text, replyToTaskId: input.replyToTaskId, resources: input.resources, pageContext: input.pageContext ?? {}, ...(input.target ? { target: input.target } : {}) });
+      const hash = payloadHash({ botId: input.botId, chatId: input.chatId, surface, text: input.text, replyToTaskId: input.replyToTaskId, resources: input.resources, ...(input.generatedPrompts?.length ? { generatedPrompts: input.generatedPrompts } : {}), pageContext: input.pageContext ?? {}, ...(input.target ? { target: input.target } : {}), ...(input.memoryRequest ? { memoryRequest: input.memoryRequest } : {}) });
       const accepted = this.db.prepare('SELECT * FROM bot_submissions WHERE id=?').get(input.clientRequestId) as { input_hash: string; task_id: string; message_id: string; disposition: 'created' | 'amended' } | undefined;
       if (accepted) {
         if (accepted.input_hash !== hash) throw new BotError('REQUEST_ID_CONFLICT', '同一个发送标识不能提交不同内容');
@@ -297,18 +326,37 @@ export class BotStore {
       if (!bot.enabled || bot.mainChatId !== input.chatId) throw new BotError('WRONG_BOT', '对话不属于当前 Bot');
       validate();
       const draft = this.draft(input.chatId, surface);
-      if (draft.revision !== input.expectedDraftRevision) throw new BotError('DRAFT_CONFLICT', '草稿已更新，请核对后发送', draft);
-      if (payloadHash({ text: input.text, replyToTaskId: input.replyToTaskId, resources: input.resources }) !== payloadHash({ text: draft.text, replyToTaskId: draft.replyToTaskId, resources: draft.resources })) throw new BotError('DRAFT_CONFLICT', '发送内容尚未保存，请重试', draft);
-      if (input.replyToTaskId && this.task(input.replyToTaskId).chatId !== input.chatId) throw new BotError('WRONG_TASK', '回复目标不属于当前对话');
-      if (input.target) return this.amend(input, surface, hash, draft);
+      const request = input.memoryRequest;
+      if (request) {
+        if (surface !== 'main' || input.target || input.replyToTaskId || input.pageContext || input.resources.length || input.generatedPrompts?.length) {
+          throw new BotError('INVALID_MEMORY_REQUEST', '请在该 Bot 的主对话中独立发送记忆');
+        }
+        if (request.clarifies) {
+          const prior = this.task(request.clarifies);
+          if (!prior.memoryRequest || prior.botId !== bot.id || prior.chatId !== input.chatId || prior.status !== 'completed' || prior.memoryReceipts?.length) {
+            throw new BotError('INVALID_MEMORY_REQUEST', '原记忆请求已结束或不属于当前对话');
+          }
+        }
+      } else {
+        if (draft.revision !== input.expectedDraftRevision) throw new BotError('DRAFT_CONFLICT', '草稿已更新，请核对后发送', draft);
+        if (payloadHash({ generatedPrompts: input.generatedPrompts ?? [], text: input.text, replyToTaskId: input.replyToTaskId, resources: input.resources }) !== payloadHash({ generatedPrompts: draft.generatedPrompts ?? [], text: draft.text, replyToTaskId: draft.replyToTaskId, resources: draft.resources })) throw new BotError('DRAFT_CONFLICT', '发送内容尚未保存，请重试', draft);
+        if (input.replyToTaskId && this.task(input.replyToTaskId).chatId !== input.chatId) throw new BotError('WRONG_TASK', '回复目标不属于当前对话');
+      }
+      const inputRoute = request ? undefined : plan?.();
+      const dashboardHandoff = request ? undefined : captureDashboard?.();
+      if (input.target && !inputRoute) return this.amend(input, surface, hash, draft, dashboardHandoff);
       const id = randomUUID(), messageId = randomUUID();
       const task: BotTask = { id, botId: bot.id, chatId: input.chatId, rootTaskId: id, sourceMessageId: messageId, kind: input.resources.length > 0 || !!input.replyToTaskId || input.pageContext?.scope && ['copy', 'bazi', 'reading'].includes(input.pageContext.scope.module) || input.pageContext?.scope?.module === 'workbench' && ['browser', 'media-browser'].includes(input.pageContext.scope.viewId) ? 'work' : 'chat', status: 'queued', title: input.text.slice(0, 60), input: input.text, resources: input.resources, context: input.pageContext ?? {}, operationIds: [], dependencyIds: [], revision: 0, createdAt: now(), updatedAt: now(), ...(input.replyToTaskId ? { replyToEntryId: this.task(input.replyToTaskId).assistantEntryId } : {}) };
       const chat = this.ai.chat(input.chatId);
-      chat.entries.push({ id: messageId, role: 'user', content: input.text, contextScope: input.pageContext?.scope ?? seedScope(bot.seedKey), pageScope: input.pageContext?.pageScope, references: input.pageContext?.references, copySource: input.pageContext?.copySource, baziSystem: input.pageContext?.baziSystem });
+      chat.entries.push({ id: messageId, clientRequestId: input.clientRequestId, role: 'user', content: input.text, createdAt: task.createdAt, contextScope: input.pageContext?.scope ?? seedScope(bot.seedKey), pageScope: input.pageContext?.pageScope, references: input.pageContext?.references, copySource: input.pageContext?.copySource, baziSystem: input.pageContext?.baziSystem });
       this.ai.saveChat(chat);
+      if (request) task.memoryRequest = request;
+      if (inputRoute) task.inputRoute = inputRoute;
+      if (dashboardHandoff) task.dashboardHandoff = dashboardHandoff;
       this.insertTask(task, input.clientRequestId, hash);
       this.db.prepare('INSERT INTO bot_submissions VALUES(?,?,?,?,?,?,?)').run(input.clientRequestId, input.chatId, surface, hash, id, messageId, 'created');
-      const cleared = this.writeDraft(input.chatId, surface, { text: '', replyToTaskId: null, resources: [] }, draft.revision + 1);
+      this.addMemoryInput(input, id, messageId);
+      const cleared = request ? draft : this.writeDraft(input.chatId, surface, { text: '', replyToTaskId: null, resources: [] }, draft.revision + 1);
       return { task, messageId, draft: cleared, duplicate: false };
     });
   }
@@ -320,38 +368,74 @@ export class BotStore {
     // submit's duplicate path checks the immutable fingerprint before returning a receipt.
     return { status: 'accepted', dataEpoch: epoch, receipt: this.submit(input, () => { throw new BotError('REQUEST_NOT_FOUND', '发送记录未找到'); }, surface) };
   }
-  private amend(input: BotSubmit, surface: BotDraftSurface, hash: string, draft: DraftSnapshot): BotSubmitReceipt {
+  private amend(input: BotSubmit, surface: BotDraftSurface, hash: string, draft: DraftSnapshot, dashboardHandoff?: BotTask['dashboardHandoff']): BotSubmitReceipt {
     const messageId = randomUUID();
-    const task = this.applyAmendment(input, input.target!, messageId);
-    const chat = this.ai.chat(input.chatId); chat.entries.push({ id: messageId, role: 'user', content: input.text }); this.ai.saveChat(chat);
+    const task = this.applyAmendment(input, input.target!, messageId, undefined, false, dashboardHandoff);
+    const chat = this.ai.chat(input.chatId); chat.entries.push({ id: messageId, clientRequestId: input.clientRequestId, role: 'user', content: input.text, createdAt: now() }); this.ai.saveChat(chat);
     this.db.prepare('INSERT INTO bot_submissions VALUES(?,?,?,?,?,?,?)').run(input.clientRequestId, input.chatId, surface, hash, task.id, messageId, 'amended');
+    this.addMemoryInput(input, task.id, messageId);
     return { task, messageId, disposition: 'amended', duplicate: false, draft: this.writeDraft(input.chatId, surface, { text: '', replyToTaskId: null, resources: [] }, draft.revision + 1) };
   }
 
-  private applyAmendment(input: Pick<BotSubmit, 'botId' | 'chatId' | 'text'>, target: NonNullable<BotSubmit['target']>, messageId: string, resources?: BotResourceRef[]): BotTask {
+  private applyAmendment(input: Pick<BotSubmit, 'botId' | 'chatId' | 'text'>, target: NonNullable<BotSubmit['target']>, messageId: string, resources?: BotResourceRef[], atBrowserBoundary = false, dashboardHandoff?: BotTask['dashboardHandoff']): BotTask {
     const root = this.task(target.rootTaskId), task = this.task(target.taskId);
     if (root.rootTaskId !== root.id || root.chatId !== input.chatId || root.botId !== input.botId || task.rootTaskId !== root.id) throw new BotError('WRONG_TASK', '补充目标不属于发起对话');
-    if (terminalTask(root.status) || terminalTask(task.status)) throw new BotError('TASK_FINISHED', '原工作已经结束，请根据真实结果发起新的修改');
-    const page = task.context.pageScope ?? task.context.scope;
-    if (task.status === 'running' && page?.module === 'workbench' && ['browser', 'media-browser'].includes(page.viewId)) throw new BotError('TASK_BUSY', '浏览器步骤正在执行，请等实际结果返回后补充');
     const actions = this.actions(task.id);
+    const confirmedNoWrite = task.status === 'cancelled' && actions.some(action => (action.receipt as { result?: string } | undefined)?.result === 'not_applied');
+    const afterReceipt = atBrowserBoundary && (task.status === 'completed' || confirmedNoWrite) && (root.id === task.id || !terminalTask(root.status));
+    if ((terminalTask(root.status) || terminalTask(task.status)) && !afterReceipt) throw new BotError('TASK_FINISHED', '原工作已经结束，请根据真实结果发起新的修改');
+    const page = task.context.pageScope ?? task.context.scope;
+    if (!atBrowserBoundary && task.status === 'running' && page?.module === 'workbench' && ['browser', 'media-browser'].includes(page.viewId)) throw new BotError('TASK_BUSY', '浏览器步骤正在执行，请等实际结果返回后补充');
     if (actions.some(action => ['executing', 'unknown'].includes(action.status))) throw new BotError('RECONCILIATION_REQUIRED', '原操作正在写入或结果待核对，请先等待真实回执');
     if (target.actionId) {
       const action = this.action(target.actionId);
       if (action.taskId !== task.id || target.expectedActionRevision === undefined) throw new BotError('WRONG_ACTION', '补充操作与工作不一致');
-      this.checkRevision(action, target.expectedActionRevision);
-      if (!['pending', 'superseded', 'failed'].includes(action.status)) throw new BotError('ACTION_NOT_PENDING', '原建议已经处理，请读取实际结果');
+      if (!(afterReceipt && ['applied', 'discarded'].includes(action.status))) {
+        this.checkRevision(action, target.expectedActionRevision);
+        if (!['pending', 'superseded', 'failed'].includes(action.status)) throw new BotError('ACTION_NOT_PENDING', '原建议已经处理，请读取实际结果');
+      }
     }
     const requirementsRevision = (task.requirementsRevision ?? 0) + 1;
     for (const action of actions) if (action.status === 'pending') this.updateAction(action.id, { status: 'superseded', error: '已接收补充，正在更新建议；原版本不能再应用' });
-    const previous = target.actionId ? this.action(target.actionId) : actions.find(action => ['todo', 'copy'].includes(action.kind) && action.status === 'pending');
-    const updated = this.updateTask(task.id, { status: 'queued', requirementsRevision, amendedActionId: previous?.id, ...(resources ? { resources } : {}), ...(task.id === root.id ? { latestUserMessageId: messageId } : {}),
+    const previous = target.actionId && !afterReceipt ? this.action(target.actionId) : actions.find(action => ['todo', 'copy'].includes(action.kind) && action.status === 'pending');
+    const receipts = actions.filter(action => action.receipt && ['applied', 'undone'].includes(action.status)).map(action => ({ id: action.id, status: action.status, receipt: action.receipt }));
+    const updated = this.updateTask(task.id, { status: 'queued', requirementsRevision, result: undefined, amendedActionId: previous?.id ?? (afterReceipt ? undefined : task.amendedActionId), ...(resources ? { resources } : {}), ...(task.id === root.id ? { latestUserMessageId: messageId, ...(dashboardHandoff ? { dashboardHandoff } : {}) } : {}),
       input: `${task.input}\n\n用户补充：${input.text}`,
-      resumeInput: `继续同一项工作，不要另建或重复委派。原目标：${task.input}\n最新补充：${input.text}\n${previous ? `原建议（未执行，必须重新生成完整预览）：${json(previous.payload)}` : ''}`,
+      resumeInput: `继续同一项工作，不要另建或重复委派。原目标：${task.input}\n最新补充：${input.text}\n${previous ? `原建议（未执行，必须重新生成完整预览）：${json(previous.payload)}` : ''}\n${receipts.length ? `实际操作回执（数据）：${json(receipts)}。请按返回 ID 核对并修改同一对象，不能重复创建。` : ''}`,
       reason: '已接收补充，正在更新建议' });
     if (task.id !== root.id) this.updateTask(root.id, { latestUserMessageId: messageId });
     if (task.botId !== root.botId) this.insertMessage({ id: randomUUID(), fromBotId: root.botId, toBotId: task.botId, taskId: task.id, rootTaskId: root.id, parentTaskId: task.parentTaskId!, sourceUserMessageId: messageId, replyTo: task.sourceMessageId, kind: 'request', content: `原目标：${task.input}\n补充要求：${input.text}`, references: updated.resources, createdAt: now(), deliveredAt: now() });
     return updated;
+  }
+
+  pendingInputs(): BotTask[] {
+    const rows = this.db.prepare("SELECT payload FROM bot_tasks WHERE status='queued' AND json_type(payload,'$.inputRoute')='object' ORDER BY rowid").all() as { payload: string }[];
+    return rows.map(row => JSON.parse(row.payload) as BotTask);
+  }
+  absorbMessage(source: BotTask, target: BotTask): BotTask {
+    return this.transaction(() => {
+      const route = this.task(source.id).inputRoute;
+      if (!route || source.chatId !== this.task(target.rootTaskId).chatId) throw new BotError('WRONG_TASK', '这项工作不属于当前对话');
+      const resources = [...new Map([...target.resources, ...source.resources].map(ref => [ref.kind + ':' + ref.id, ref])).values()];
+      if (resources.length > 8) throw new BotError('INVALID_INPUT', '工作合计最多引用 8 项资料');
+      const amended = this.applyAmendment({ botId: source.botId, chatId: source.chatId, text: source.input },
+        route.explicit ?? { intent: 'amend', taskId: target.id, rootTaskId: target.rootTaskId }, source.sourceMessageId, resources, true, source.dashboardHandoff);
+      this.db.prepare("UPDATE bot_submissions SET task_id=?,disposition='amended' WHERE message_id=?").run(target.id, source.sourceMessageId);
+      this.db.prepare('UPDATE bot_memory_inputs SET task_id=? WHERE message_id=?').run(target.id, source.sourceMessageId);
+      this.updateTask(source.id, { status: 'cancelled', inputRoute: undefined, queueDisposition: 'steered', title: '', input: '', resources: [], context: {} });
+      return amended;
+    });
+  }
+
+  finishInput(source: BotTask, result: string): void {
+    this.transaction(() => {
+      const chat = this.ai.chat(source.chatId), id = randomUUID();
+      chat.entries.push({ id, role: 'assistant', content: result, createdAt: now() });
+      this.ai.saveChat(chat);
+      const targets = source.inputRoute?.candidates;
+      const relatedWorkId = targets?.length === 1 ? this.task(targets[0]).rootTaskId : undefined;
+      this.updateTask(source.id, { inputRoute: undefined, status: 'completed', relatedWorkId, result, assistantEntryId: id });
+    });
   }
 
   changeQueuedMessage(change: BotQueueChange): BotTask {
@@ -371,6 +455,7 @@ export class BotStore {
       chat.entries.splice(index, 1);
       if (change.kind === 'steer') {
         const target = this.task(change.targetTaskId);
+        if (source.memoryRequest || target.memoryRequest) throw new BotError('INVALID_MEMORY_REQUEST', '记忆请求会在对话中独立处理');
         if (target.rootTaskId !== target.id || target.botId !== source.botId || target.chatId !== source.chatId) {
           throw new BotError('WRONG_TASK', '请引导当前对话里的任务');
         }
@@ -382,7 +467,8 @@ export class BotStore {
         this.applyAmendment({ botId: source.botId, chatId: source.chatId, text: entry.content },
           { intent: 'amend', rootTaskId: target.id, taskId: target.id }, entry.id, resources);
         chat.entries.push(entry);
-      }
+        this.db.prepare('UPDATE bot_memory_inputs SET task_id=? WHERE message_id=?').run(target.id, entry.id);
+      } else this.db.prepare('DELETE FROM bot_memory_inputs WHERE message_id=?').run(entry.id);
       this.ai.saveChat(chat);
       return this.updateTask(source.id, { status: 'cancelled', queueDisposition: change.kind === 'steer' ? 'steered' : 'deleted',
         title: '', input: '', resources: [], context: {}, replyToEntryId: undefined });
@@ -439,11 +525,226 @@ export class BotStore {
     if (existing) return JSON.parse(existing.payload) as BotArtifact;
     this.db.prepare('INSERT INTO bot_artifacts VALUES(?,?,?,?)').run(value.id, value.taskId, key, json(value)); return value;
   }
-  memories(botId: string): BotMemory[] { return this.all<BotMemory>('bot_memories').filter(m => m.scope === 'shared' || m.botId === botId); }
-  saveMemory(input: Omit<BotMemory, 'updatedAt'>): BotMemory {
-    return this.transaction(() => { const existing = this.all<BotMemory>('bot_memories').find(m => m.id === input.id); if (existing) this.checkRevision(existing, input.revision); const next = { ...input, revision: input.revision + 1, updatedAt: now() }; this.db.prepare('INSERT INTO bot_memories VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET bot_id=excluded.bot_id,payload=excluded.payload').run(next.id, next.botId, json(next)); return next; });
+  memoryEpoch(): string { return this.ai.setting('bot.memoryEpoch', ''); }
+  setMemoryEnabled(enabled: boolean): boolean {
+    const epoch = this.memoryEpoch();
+    if (enabled !== !!epoch) this.ai.setSetting('bot.memoryEpoch', enabled ? randomUUID() : '');
+    return enabled;
   }
-  removeMemory(id: string, revision: number): void { this.transaction(() => { this.checkRevision(this.get<BotMemory>('bot_memories', id), revision); this.db.prepare('DELETE FROM bot_memories WHERE id=?').run(id); }); }
+
+  private addMemoryInput(input: BotSubmit, taskId: string, messageId: string): void {
+    const generated = input.generatedPrompts ?? [];
+    if (!authoredMemoryText(input.text, generated)) return;
+    this.db.prepare('INSERT INTO bot_memory_inputs(message_id,chat_id,bot_id,task_id,epoch,generated) VALUES(?,?,?,?,?,?)')
+      .run(messageId, input.chatId, input.botId, taskId, this.memoryEpoch(), json(generated));
+  }
+  private readMemoryInput(row: MemoryInputRow): MemoryInput[] {
+    const link = this.link(row.chat_id);
+    if (!link || link.bot_id !== row.bot_id) return [];
+    const entry = this.ai.chat(row.chat_id).entries.find(item => item.id === row.message_id && item.role === 'user');
+    if (!entry) return [];
+    // Switching work marks the new task as priority and forwards only the new request in its first message.
+    const switched = this.db.prepare(`SELECT 1 FROM bot_tasks WHERE id=?
+      AND json_extract(payload,'$.priority')=1 AND json_extract(payload,'$.sourceMessageId')=?`).get(row.task_id, row.message_id);
+    const content = switched ? switchedWork(entry.content) : entry.content;
+    const startAt = content === entry.content ? 0 : entry.content.trimEnd().length - content.length;
+    const authored = authoredMemoryText(entry.content, JSON.parse(row.generated), startAt);
+    return authored ? [{ messageId: row.message_id, chatId: row.chat_id, botId: row.bot_id, content, authored }] : [];
+  }
+  memoryInputs(taskId: string): MemoryInput[] {
+    const rows = this.db.prepare('SELECT * FROM bot_memory_inputs WHERE task_id=? ORDER BY rowid').all(taskId) as unknown as MemoryInputRow[];
+    return rows.flatMap(row => this.readMemoryInput(row));
+  }
+  memoryClarifications(task: BotTask): MemoryInput[] {
+    const inputs: MemoryInput[] = [];
+    let previous = task.memoryRequest?.clarifies;
+    for (let count = 0; previous && count < 5; count++) {
+      const prior = this.task(previous);
+      if (!prior.memoryRequest || prior.botId !== task.botId || prior.chatId !== task.chatId) break;
+      inputs.unshift(...this.memoryInputs(prior.id));
+      previous = prior.memoryRequest.clarifies;
+    }
+    return inputs;
+  }
+  queueMemoryReview(messageIds: string[]): void {
+    const epoch = this.memoryEpoch();
+    if (!epoch || !messageIds.length) return;
+    this.transaction(() => {
+      const queue = this.db.prepare("UPDATE bot_memory_inputs SET state='pending' WHERE message_id=? AND epoch=? AND state='accepted'");
+      for (const id of messageIds) queue.run(id, epoch);
+    });
+  }
+  nextMemoryReview(busyBots: Set<string>): MemoryReviewBatch | undefined {
+    const epoch = this.memoryEpoch();
+    if (!epoch) return;
+    const bots = this.db.prepare("SELECT bot_id FROM bot_memory_inputs WHERE epoch=? AND state='pending' GROUP BY bot_id ORDER BY MIN(rowid)").all(epoch) as { bot_id: string }[];
+    const owner = bots.find(row => !busyBots.has(row.bot_id));
+    if (!owner) return;
+    const rows = this.db.prepare("SELECT * FROM bot_memory_inputs WHERE epoch=? AND state='pending' AND bot_id=? ORDER BY rowid LIMIT 6")
+      .all(epoch, owner.bot_id) as unknown as MemoryInputRow[];
+    const inputs = rows.flatMap(row => this.readMemoryInput(row));
+    const privateMemories = this.memories(owner.bot_id).filter(memory => memory.scope === 'private');
+    const matches = new Map<string, BotMemory>();
+    for (const input of inputs) {
+      for (const { memory } of matchMemories(privateMemories, input.authored).slice(0, 8)) matches.set(memory.id, memory);
+    }
+    for (const memory of privateMemories.slice(0, 12)) matches.set(memory.id, memory);
+    return { epoch, botId: owner.bot_id, ids: rows.map(row => row.message_id), inputs, existing: [...matches.values()] };
+  }
+  commitMemoryReview(batch: MemoryReviewBatch, changes: MemoryChange[]): boolean {
+    return this.transaction(() => {
+      if (batch.epoch !== this.memoryEpoch()) return false;
+      const pending = this.db.prepare("SELECT * FROM bot_memory_inputs WHERE message_id=? AND epoch=? AND state='pending'");
+      const rows = batch.ids.flatMap(id => {
+        const row = pending.get(id, batch.epoch) as MemoryInputRow | undefined;
+        return row ? [row] : [];
+      });
+      const inputs = rows.flatMap(row => this.readMemoryInput(row)).filter(input =>
+        batch.inputs.some(original => original.messageId === input.messageId && original.authored === input.authored));
+      let changed = false;
+      for (const change of changes) {
+        const sources = memoryEvidence(inputs, change.evidence);
+        if (!sources.length) continue;
+        const existing = this.memories(batch.botId).filter(memory => memory.scope === 'private');
+        if (change.action === 'add') {
+          const key = memoryTextKey(change.text);
+          const same = existing.find(memory => memoryTextKey(memory.text) === key);
+          if (!key || same) {
+            if (same?.origin === 'automatic') changed = this.addMemorySources(same, sources) || changed;
+            continue;
+          }
+          this.writeMemory({ id: randomUUID(), botId: batch.botId, scope: 'private', ...memoryLabels(change), text: change.text, source: '自动记忆',
+            origin: 'automatic', retention: 'on-demand', revision: 1, updatedAt: now(), sources });
+          changed = true;
+        } else {
+          const prior = batch.existing.find(memory => memory.id === change.id);
+          const current = existing.find(memory => memory.id === change.id);
+          if (!current || current.origin !== 'automatic' || current.revision !== prior?.revision) continue;
+          if (change.action === 'support' || memoryTextKey(change.text) === memoryTextKey(current.text)) {
+            changed = this.addMemorySources(current, sources) || changed;
+          } else if (!existing.some(memory => memory.id !== current.id && memoryTextKey(memory.text) === memoryTextKey(change.text))) {
+            const labels = memoryLabels({ text: change.text, title: change.title ?? current.title, topic: change.topic ?? current.topic });
+            this.writeMemory({ ...current, ...labels, text: change.text, sources, revision: current.revision + 1, updatedAt: now() });
+            changed = true;
+          }
+        }
+      }
+      const done = this.db.prepare("UPDATE bot_memory_inputs SET state='reviewed' WHERE message_id=? AND epoch=?");
+      for (const row of rows) done.run(row.message_id, batch.epoch);
+      return changed;
+    });
+  }
+  private addMemorySources(memory: BotMemory, sources: BotMemorySource[]): boolean {
+    const existing = memory.sources ?? [];
+    const added = sources.filter(source => !existing.some(item => item.messageId === source.messageId));
+    if (!added.length) return false;
+    this.writeMemory({ ...memory, sources: [...existing, ...added], revision: memory.revision + 1 });
+    return true;
+  }
+  memories(botId: string, allowPrivate = true): BotMemory[] {
+    const stmt = allowPrivate
+      ? this.db.prepare('SELECT payload FROM bot_memories WHERE bot_id IS NULL OR bot_id=?')
+      : this.db.prepare('SELECT payload FROM bot_memories WHERE bot_id IS NULL');
+    const rows = (allowPrivate ? stmt.all(botId) : stmt.all()) as { payload: string }[];
+    return rows.map(row => JSON.parse(row.payload) as BotMemory)
+      .filter(memory => memory.scope === 'shared' && memory.botId === null || allowPrivate && memory.scope === 'private' && memory.botId === botId)
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id));
+  }
+  memorySources(botId: string, id: string): BotMemorySource[] {
+    const memory = this.memories(botId).find(item => item.id === id);
+    if (!memory) throw new BotError('NOT_FOUND', '这条记忆已不存在或不可查看');
+    return (memory.sources ?? []).filter(source => {
+      const row = this.db.prepare('SELECT * FROM bot_memory_inputs WHERE message_id=? AND chat_id=?')
+        .get(source.messageId, source.chatId) as MemoryInputRow | undefined;
+      if (!row || memory.scope === 'private' && row.bot_id !== botId) return false;
+      return memoryEvidence(this.readMemoryInput(row), [source]).length > 0;
+    });
+  }
+  private writeMemory(memory: BotMemory): void {
+    this.db.prepare('INSERT INTO bot_memories VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET bot_id=excluded.bot_id,payload=excluded.payload')
+      .run(memory.id, memory.botId, json(memory));
+  }
+  private fitResidentMemories(botId: string | null, preferredId?: string): void {
+    const scope = botId ? 'private' : 'shared';
+    const rows = this.memories(botId ?? '', !!botId).filter(memory => memory.scope === scope && memory.retention === 'resident');
+    if (preferredId) {
+      const preferred = rows.findIndex(memory => memory.id === preferredId);
+      if (preferred > 0) rows.unshift(rows.splice(preferred, 1)[0]);
+    }
+    const budget = memoryBudget[scope];
+    let characters = rows.reduce((sum, memory) => sum + memory.text.length, 0);
+    while (rows.length > budget.rows || characters > budget.characters) {
+      const oldest = rows.pop()!;
+      characters -= oldest.text.length;
+      this.writeMemory({ ...oldest, retention: 'on-demand' });
+    }
+  }
+  private migrateMemories(): void {
+    const old = this.all<BotMemory>('bot_memories').filter(memory => !memory.retention);
+    if (!old.length) return;
+    this.transaction(() => {
+      for (const memory of old) this.writeMemory({ ...memory, retention: memory.text.length <= BOT_MEMORY_TEXT_LIMIT ? 'resident' : 'on-demand' });
+      for (const botId of new Set(old.map(memory => memory.botId))) this.fitResidentMemories(botId);
+    });
+  }
+  saveMemory(input: BotMemoryEdit, sources?: BotMemorySource[]): BotMemory {
+    return this.transaction(() => this.saveMemoryRow(input, sources));
+  }
+  private saveMemoryRow(input: BotMemoryEdit, sources?: BotMemorySource[]): BotMemory {
+    const text = input.text.trim();
+    if (!text || text.length > BOT_MEMORY_TEXT_LIMIT) throw new BotError('MEMORY_LENGTH', '每条记忆最多 300 字，请缩短或拆开保存');
+    const row = this.db.prepare('SELECT payload FROM bot_memories WHERE id=?').get(input.id) as { payload: string } | undefined;
+    const existing = row ? JSON.parse(row.payload) as BotMemory : undefined;
+    if (existing) this.checkRevision(existing, input.revision);
+    else if (input.revision) throw new BotError('NOT_FOUND', '这条记忆已不存在');
+    const linkedSources = sources ?? (existing?.text === text ? existing.sources : undefined);
+    const labels = memoryLabels({ text, title: input.title ?? existing?.title, topic: input.topic ?? existing?.topic });
+    const next: BotMemory = {
+      ...input, ...labels, text, revision: input.revision + 1, updatedAt: now(), retention: 'resident',
+      origin: sources ? 'explicit' : 'manual', ...(linkedSources ? { sources: linkedSources } : {}),
+    };
+    this.writeMemory(next);
+    this.fitResidentMemories(next.botId, next.id);
+    return next;
+  }
+  commitRemember(taskId: string, entryId: string, messageId: string, input: Pick<BotMemory, 'scope' | 'text' | 'title' | 'topic'>,
+    evidence: BotMemorySource[], target?: Pick<BotMemory, 'id' | 'revision'> & { reuse: boolean }): BotMemoryReceipt {
+    return this.transaction(() => {
+      const task = this.task(taskId), requestText = memoryTextKey(input.text), receipts = task.memoryReceipts ?? [];
+      const prior = receipts.find(item => item.messageId === messageId && item.scope === input.scope && item.requestText === requestText);
+      if (prior) return prior;
+      const owner = input.scope === 'private' ? task.botId : null;
+      const existing = target ? this.get<BotMemory>('bot_memories', target.id)
+        : this.memories(task.botId).find(memory => memory.scope === input.scope && memoryTextKey(memory.text) === requestText);
+      if (target) {
+        if (existing?.botId !== owner || existing.scope !== input.scope) throw new BotError('MEMORY_SCOPE', '这条记忆不属于可修改的范围');
+        this.checkRevision(existing, target.revision);
+      }
+      const reuse = existing && (!target || target.reuse);
+      const sources = existing?.text === input.text.trim()
+        ? [...new Map([...(existing.sources ?? []), ...evidence].map(source => [source.messageId, source])).values()] : evidence;
+      const memory = reuse ? existing : this.saveMemoryRow({ ...input, id: existing?.id ?? randomUUID(), botId: owner,
+        source: '聊天中记住', revision: existing?.revision ?? 0 }, sources);
+      if (reuse) this.addMemorySources(memory, evidence);
+      const receipt: BotMemoryReceipt = { id: memory.id, entryId, messageId, title: memoryLabels(memory).title, scope: memory.scope,
+        text: memory.text, operation: reuse ? 'reused' : existing ? 'updated' : 'added', requestText };
+      this.updateTask(task.id, { memoryReceipts: [...receipts, receipt] });
+      const reviewed = this.db.prepare("UPDATE bot_memory_inputs SET state='reviewed' WHERE message_id=? AND state IN ('accepted','pending')");
+      for (const source of evidence) reviewed.run(source.messageId);
+      return receipt;
+    });
+  }
+  removeMemory(id: string, revision: number): void {
+    this.transaction(() => {
+      const memory = this.get<BotMemory>('bot_memories', id);
+      this.checkRevision(memory, revision);
+      this.db.prepare('DELETE FROM bot_memories WHERE id=?').run(id);
+      if (memory.scope === 'private' && memory.botId) {
+        // User deletion wins over automatic candidates from messages already accepted for this Bot.
+        this.db.prepare("UPDATE bot_memory_inputs SET state='discarded' WHERE bot_id=? AND state IN ('accepted','pending')").run(memory.botId);
+      }
+    });
+  }
   saveSchedule(input: Omit<BotSchedule, 'nextRunAt' | 'updatedAt'>): BotSchedule {
     return this.transaction(() => {
       this.profile(input.botId);

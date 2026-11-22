@@ -38,6 +38,7 @@ type FloatFactory = () => DesktopIsland;
 import { registerCopyIpc } from './copy-ipc';
 import { AiStore } from './ai-store';
 import { AppSettingsStore } from './app-settings';
+import { registerDashboardIpc } from './dashboard-ipc';
 import { OfficeConverter, OFFICE_CONVERT_OPTIONS } from './office-convert';
 import { registerPdfAssetHandler, registerPdfAssetScheme } from './pdf-assets';
 import type { OfficeConvertErrorCode, OfficeConvertResult } from '../shared/office-contracts';
@@ -443,6 +444,8 @@ if (!app.requestSingleInstanceLock()) {
       }
     });
     registerIpc();
+    const closeDashboard = registerDashboardIpc(app.getPath('userData'), () => mainWindow?.webContents);
+    app.once('will-quit', closeDashboard);
     browserGuests.setImageSaver(async ({ owner, partition, mediaUrl, pageUrl }) => {
       if (!mediaCaptureStore) return;
       try {

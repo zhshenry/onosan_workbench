@@ -4,7 +4,13 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties
 import { createPortal } from 'react-dom';
 import { ArrowRight, CalendarBlank, ChartBar, CheckCircle, CheckSquare, DotsSixVertical, Gift, LinkSimple, Pause, PencilSimple, Play, Plus, Sparkle, Timer, VideoCamera, X } from '@phosphor-icons/react';
 import type { ViewId } from '../../shared/contracts';
-import { DASHBOARD_KEY, WIDGET_IDS, WIDGET_ROWS, WIDGET_STYLES, WIDGET_WIDTHS, dashboardPlacements, defaultDashboard, defaultWidget, findDashboardSlot, moveDashboardWidget, readDashboard, resizeDashboardPlacement, updateDashboardPlacement, type DashboardLayout, type DashboardWidget, type WidgetId, type WidgetPlacement, type WidgetRows, type WidgetStyle, type WidgetWidth } from '../../shared/dashboard-layout';
+import { WIDGET_ROWS, WIDGET_WIDTHS, dashboardPlacements, defaultDashboard, defaultWidget, moveDashboardWidget, type DashboardLayout, type DashboardWidget, type WidgetId, type WidgetPlacement, type WidgetRows, type WidgetStyle, type WidgetWidth } from '../../shared/dashboard-layout';
+import {
+  DASHBOARD_CATALOG as CATALOG_IDS, dashboardTitles as widgetNames, dashboardStyleNames as styleNames,
+  dashboardStyles as availableStyles, dashboardStyleTarget, dashboardDropPlacement,
+  placeDashboardWidget, putDashboardWidget, removeDashboardWidget, setDashboardStyle, sizeDashboardWidget, type DashboardSave,
+} from '../../shared/dashboard-operations';
+import { useHomeDashboardDraft, useSavedHomeDashboard } from '../home-dashboard-state';
 import { dashboardSummary } from '../../shared/dashboard-summary';
 import { ISLAND_QUOTA_LABELS, focusRemaining, type QuotaProvider } from '../../shared/island-contracts';
 import { localDay, type Task } from '../../shared/todo-contracts';
@@ -16,12 +22,8 @@ import { useIslandState } from './island-state';
 import './home-dashboard.css';
 
 const api = window.workbench;
-const widgetNames: Record<WidgetId, string> = { today: '待办摘要', 'schedule-stats': '日程待办统计', focus: '专注计时', checkin: '每日签到', quota: 'AI 额度' };
 const widgetIcons = { today: CalendarBlank, 'schedule-stats': ChartBar, focus: Timer, checkin: Gift, quota: Sparkle };
-const CATALOG_IDS = WIDGET_IDS.filter(id => id !== 'focus');
 type CatalogWidgetId = typeof CATALOG_IDS[number];
-const styleNames: Record<WidgetStyle, string> = { history: '完成与待办堆叠图', counts: '日程与待办对比图', agenda: '今日安排', activity: '最近完成记录', digits: '数字倒计时', ring: '环形计时', bar: '横向进度', parallel: '应用并排', list: '列表', tiles: '应用卡片', progress: '领取进度', bars: '额度进度条', rings: '额度圆环' };
-const availableStyles = { ...WIDGET_STYLES, today: ['history', 'counts'], 'schedule-stats': ['history', 'counts'], checkin: ['list', 'tiles'] } as const;
 const widthOptions = WIDGET_WIDTHS.map((width, index) => ({ value: String(width), label: `${width} 列 · ${['1/3', '1/2', '2/3', '整行'][index]}` }));
 const rowOptions = WIDGET_ROWS.map(rows => ({ value: String(rows), label: `${rows} 行` }));
 const resizeEdges = { left: '左', right: '右', top: '上', bottom: '下' } as const;
@@ -55,8 +57,8 @@ function TodayContent({ data, clock, style, rows = 2, navigate, openTask }: { da
   }
   return <div className={`dashboard-today dashboard-${style}`}>
     {!data ? <p className="dashboard-muted">正在读取日程待办…</p> : style === 'history' ? <>
-      <div className="dashboard-summary-heading"><strong>近7天 · 按事项日期</strong><div className="dashboard-chart-legend"><span data-series="completed">已完成 {summary.plannedCompleted}</span><span data-series="pending">待办 {summary.plannedPending}</span></div></div>
-      <div className="dashboard-history-bars" role="img" aria-label={`按事项日期，${summary.days.map(day => `${day.date} 已完成 ${day.completed} 项、待办 ${day.pending} 项`).join('；')}`}>
+      <div className="dashboard-summary-heading"><strong>近 7 天待办</strong><div className="dashboard-chart-legend"><span data-series="completed">已完成 {summary.plannedCompleted}</span><span data-series="pending">待办 {summary.plannedPending}</span></div></div>
+      <div className="dashboard-history-bars" role="img" aria-label={`近 7 天待办，${summary.days.map(day => `${day.date} 已完成 ${day.completed} 项、待办 ${day.pending} 项`).join('；')}`}>
         {summary.days.map(day => <div className="dashboard-history-day" key={day.date} data-date={day.date} data-today={day.date === summary.today} title={`${day.date} · 已完成 ${day.completed} 项 · 待办 ${day.pending} 项`}><span>{day.completed + day.pending}</span><div className="dashboard-history-stack" data-empty={!day.completed && !day.pending} style={{ '--bar-share': (day.completed + day.pending) / maximum } as CSSProperties}>{day.pending ? <i data-series="pending" style={{ flex: day.pending }} /> : null}{day.completed ? <i data-series="completed" style={{ flex: day.completed }} /> : null}</div><small>{day.date === summary.today ? '今' : ['日', '一', '二', '三', '四', '五', '六'][day.weekday]}</small></div>)}
       </div>
     </> : <><strong className="dashboard-section-title">{style === 'agenda' ? '今天要做什么' : '最近做了什么'}</strong><div className="dashboard-task-list">
@@ -258,7 +260,12 @@ export function HomeView({ data, clock, userName, workspaceHeader, onNavigate, o
   data: TodoState | null; clock: Date; userName: string; workspaceHeader: HTMLDivElement | null; onNavigate(view: ViewId): void; onOpenTask(task: Task): void; onPending(message: string): void;
   onOpenCheckinSettings?: OpenCheckinSettings;
 }) {
-  const [saved, setSaved] = useState(() => { try { return readDashboard(localStorage.getItem(DASHBOARD_KEY)); } catch { return defaultDashboard(); } });
+  const { snapshot: saved, loadError, reload, accept } = useSavedHomeDashboard();
+  const [fallback] = useState(defaultDashboard);
+  const [saving, setSaving] = useState(false);
+  const draftRevision = useRef(0);
+  const movedIds = useRef(new Set<WidgetId>());
+  const pendingSave = useRef<DashboardSave | null>(null);
   const [draft, setDraft] = useState<DashboardLayout | null>(null), [catalog, setCatalog] = useState<{ initial: CatalogWidgetId; trigger: HTMLButtonElement } | null>(null);
   const catalogId = useId();
   const addButton = useRef<HTMLButtonElement>(null);
@@ -291,10 +298,17 @@ export function HomeView({ data, clock, userName, workspaceHeader, onNavigate, o
     window.addEventListener('keydown', cancel, true);
     return () => window.removeEventListener('keydown', cancel, true);
   }, [activeResize]);
-  const layout = draft ?? saved, editing = draft !== null;
+  const layout = draft ?? saved?.layout ?? fallback, editing = draft !== null;
+  useHomeDashboardDraft(editing);
   const singleColumn = canvas?.columns === 1;
   const positioned = layout.widgets.some(widget => widget.position || (singleColumn && widget.singleColumnTop !== undefined)), placements = canvas ? dashboardPlacements(layout.widgets, canvas.columns, canvas.step, canvas.base, canvas.gap) : [];
-  const beginEdit = () => setDraft(current => current ?? structuredClone(saved));
+  const beginEdit = () => {
+    if (editing || !saved) return;
+    draftRevision.current = saved.revision;
+    movedIds.current.clear();
+    pendingSave.current = null;
+    setDraft(structuredClone(saved.layout));
+  };
   const gridMinHeight = Math.max(editing ? resizeCanvasHeight : 0, ...(positioned ? placements.map(item => item.top + item.height) : []));
   function keepResizeCanvasHeight() {
     const height = grid.current?.clientHeight ?? 0;
@@ -311,16 +325,11 @@ export function HomeView({ data, clock, userName, workspaceHeader, onNavigate, o
     });
   }
   function atSize(widget: DashboardWidget, edge: ResizeEdge, origin: WidgetPlacement, occupied: WidgetPlacement[], frame: ReturnType<typeof measureDashboardCanvas>) {
-    const slot = resizeDashboardPlacement(origin, widget, edge, occupied, frame);
-    if (!slot) return null;
-    if (frame.columns === 1 && Math.abs(slot.height - origin.height) < 0.02) {
-      return { ...layout, widgets: layout.widgets.map(item => item.id === widget.id ? widget : item) };
-    }
-    return updateDashboardPlacement(layout, widget, slot, occupied, frame);
+    return sizeDashboardWidget(layout, widget, edge, origin, occupied, frame);
   }
   function applyCatalogWidget(widget: DashboardWidget) {
     const existing = layout.widgets.find(item => item.id === widget.id);
-    let next = { ...layout, widgets: existing ? layout.widgets.map(item => item.id === widget.id ? widget : item) : [...layout.widgets, widget] };
+    let next = putDashboardWidget(layout, widget);
     if (existing && (existing.width !== widget.width || existing.rows !== widget.rows) && canvas && grid.current) {
       const occupied = readPlacements(grid.current, canvas);
       const resized = atSize(widget, 'right', occupied.find(item => item.id === widget.id)!, occupied, canvas);
@@ -334,26 +343,46 @@ export function HomeView({ data, clock, userName, workspaceHeader, onNavigate, o
     requestAnimationFrame(() => addButton.current?.focus({ preventScroll: true }));
   }
   function openCatalog(trigger: HTMLButtonElement) { if (resizing.current) return; if (catalog?.trigger === trigger) { setCatalog(null); return; } beginEdit(); setCatalog({ initial: CATALOG_IDS.find(key => !layout.widgets.some(widget => widget.id === key)) ?? 'today', trigger }); }
-  function finish() {
-    if (!draft) return;
+  async function finish() {
+    if (!draft || saving) return;
     endResize();
-    try { localStorage.setItem(DASHBOARD_KEY, JSON.stringify(draft)); setSaved(draft); setDraft(null); setResizeCanvasHeight(0); setAnnouncement('看板布局已保存'); } catch { onPending('看板布局保存失败，请重试'); }
+    const request = pendingSave.current?.layout === draft ? pendingSave.current : {
+      operationId: crypto.randomUUID(), layout: draft, expectedRevision: draftRevision.current, movedIds: [...movedIds.current],
+    };
+    pendingSave.current = request;
+    setSaving(true);
+    try {
+      const receipt = await window.workbench.dashboard.save(request);
+      accept(receipt.snapshot);
+      pendingSave.current = null;
+      setDraft(null); setResizeCanvasHeight(0); setAnnouncement('看板布局已保存');
+    } catch (error) {
+      await reload();
+      onPending(errorText(error));
+    } finally { setSaving(false); }
   }
-  function move(id: WidgetId, target: WidgetId) { setDraft(current => current ? moveDashboardWidget(current, id, target) : current); setAnnouncement(`${widgetNames[id]}已移动`); }
+  function move(id: WidgetId, target: WidgetId) {
+    if (!draft) return;
+    const next = moveDashboardWidget(draft, id, target);
+    if (next === draft) return;
+    movedIds.current.add(id);
+    setDraft(next);
+    setAnnouncement(widgetNames[id] + '已移动');
+  }
   function placeInCanvas(id: WidgetId, column: number, top: number, commit: boolean) {
     if (!canvas || !grid.current) return;
     const unit = (canvas.width + canvas.gap) / canvas.columns;
     const occupied = readPlacements(grid.current, canvas);
     const source = occupied.find(item => item.id === id)!;
-    // 拖动已吸附网格；碰撞后保留卡片间距，避免再次跳过可用行。
-    const slot = findDashboardSlot(Math.max(0, Math.min(canvas.columns - source.span, column)), Math.max(0, top), source.span, source.height, occupied.filter(item => item.id !== id), canvas.gap);
+    const slot = dashboardDropPlacement(id, column, top, occupied, canvas);
     if (commit) {
       const widget = layout.widgets.find(item => item.id === id)!;
-      const next = updateDashboardPlacement(layout, widget, { ...source, ...slot }, occupied, canvas);
-      const widgets = next.widgets.sort((a, b) => singleColumn
-        ? a.singleColumnTop! - b.singleColumnTop!
-        : a.position!.top - b.position!.top || a.position!.column - b.position!.column);
-      setDraft(current => current ? { ...next, widgets } : current); setAnnouncement(`${widgetNames[id]}已放置，点击完成保存布局`); setDragged(null); setDropTarget(null); setGapTarget(null);
+      if (slot.column !== source.column || Math.abs(slot.top - source.top) >= 0.02) {
+        movedIds.current.add(id);
+        setDraft(current => current ? placeDashboardWidget(current, widget, slot, occupied, canvas) : current);
+      }
+      setAnnouncement(widgetNames[id] + '已放置，点击完成保存布局');
+      setDragged(null); setDropTarget(null); setGapTarget(null);
     } else {
       const width = unit * source.span - canvas.gap;
       setDropTarget(null); setGapTarget({ left: slot.column * unit + width / 2, top: slot.top + source.height / 2, width, height: source.height });
@@ -464,16 +493,19 @@ export function HomeView({ data, clock, userName, workspaceHeader, onNavigate, o
           <span className="dashboard-heading-date">{dateLabel}</span>
         </div>
         <div className="dashboard-heading-actions">
-          <button ref={addButton} className={`btn dashboard-heading-command ${editing ? 'btn-sec' : 'btn-pri'}`} aria-haspopup="dialog" aria-expanded={catalog !== null} aria-controls={catalog ? catalogId : undefined} onClick={event => openCatalog(event.currentTarget)}><Plus size={16} aria-hidden="true" />添加卡片</button>
+          <button ref={addButton} disabled={!saved || saving} className={`btn dashboard-heading-command ${editing ? 'btn-sec' : 'btn-pri'}`} aria-haspopup="dialog" aria-expanded={catalog !== null} aria-controls={catalog ? catalogId : undefined} onClick={event => openCatalog(event.currentTarget)}><Plus size={16} aria-hidden="true" />添加卡片</button>
           {editing ? <>
-            <button className="btn btn-sec" onClick={() => { endResize(true); setDraft(null); setResizeCanvasHeight(0); setDragged(null); setDropTarget(null); }}>取消</button>
-            <button className="btn btn-pri" onClick={finish}>完成</button>
-          </> : <button className="btn btn-sec dashboard-heading-command" onClick={beginEdit}><PencilSimple size={16} aria-hidden="true" />编辑布局</button>}
+            <button className="btn btn-sec" disabled={saving} onClick={() => { endResize(true); setDraft(null); setResizeCanvasHeight(0); setDragged(null); setDropTarget(null); }}>取消</button>
+            <button className="btn btn-pri" disabled={saving} aria-busy={saving} onClick={() => void finish()}>{saving ? '保存中' : '完成'}</button>
+          </> : <button className="btn btn-sec dashboard-heading-command" disabled={!saved} onClick={beginEdit}><PencilSimple size={16} aria-hidden="true" />编辑布局</button>}
         </div>
       </div>,
       workspaceHeader,
     )}
-    <div ref={grid} className="dashboard-grid" data-positioned={positioned} style={gridMinHeight ? { minHeight: gridMinHeight } : undefined} onDragOver={event => dropInGap(event)} onDrop={event => dropInGap(event, true)} onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setGapTarget(null); }}>{layout.widgets.map(widget => {
+    {loadError && <p className="dashboard-error" role="alert">{loadError} <button className="btn btn-sec btn-sm" type="button" onClick={() => void reload(true)}>重新读取</button></p>}
+    {editing && saved && saved.revision !== draftRevision.current &&
+      <p className="dashboard-error" role="status">已保存的看板有新改动。点击「取消」可查看最新布局。</p>}
+    <div ref={grid} inert={saving} className="dashboard-grid" data-positioned={positioned} style={gridMinHeight ? { minHeight: gridMinHeight } : undefined} onDragOver={event => dropInGap(event)} onDrop={event => dropInGap(event, true)} onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setGapTarget(null); }}>{layout.widgets.map(widget => {
       const { id, width, rows, style } = widget;
       const place = positioned ? placements.find(item => item.id === id) : undefined;
       return <DashboardCard key={id} widget={widget} data-dragging={dragged === id} data-drop-target={dropTarget === id} data-resizing={activeResize?.id === id}
@@ -482,14 +514,14 @@ export function HomeView({ data, clock, userName, workspaceHeader, onNavigate, o
         drag={editing ? <button className="dashboard-drag" draggable aria-label={`移动${widgetNames[id]}卡片`} title="拖动放置；方向键排序；Alt＋方向键移到空白网格" onKeyDown={event => moveByKey(event, id)} onDragStart={event => { const rect = event.currentTarget.closest('.dashboard-widget')!.getBoundingClientRect(); dragOrigin.current = { x: event.clientX - rect.left, y: event.clientY - rect.top }; event.dataTransfer.setData('text/plain', id); event.dataTransfer.effectAllowed = 'move'; setDragged(id); }} onDragEnd={() => { setDragged(null); setDropTarget(null); setGapTarget(null); }}><DotsSixVertical size={19} /></button> : undefined}
         tools={<><span className="dashboard-style-control" aria-hidden={!editing}><GameOptionsMenu kind="dashboard" active={editing} context={style} label={`更换${widgetNames[id]}卡片样式`} disabled={!editing || !availableStyles[id].some(option => option !== style)}>{close => <>
           <div className="dashboard-style-menu-title">更换样式</div><div className="dashboard-style-options" style={{ '--style-count': availableStyles[id].length } as CSSProperties} role="group" aria-label="展示样式">{availableStyles[id].map(option => {
-            const optionId = option === 'counts' ? 'schedule-stats' : option === 'history' ? 'today' : id, preview = { ...widget, id: optionId, style: option };
+            const optionId = dashboardStyleTarget(id, option), preview = { ...widget, id: optionId, style: option };
             const exists = optionId !== id && layout.widgets.some(item => item.id === optionId);
             return <div className="dashboard-style-option" key={option}>
               <DashboardPreview widget={preview} grid={grid.current!}>{body(preview)}</DashboardPreview>
-              <button className="dashboard-style-choice" type="button" role="menuitemradio" aria-label={`${widgetNames[id]}，${styleNames[option]}样式${exists ? '，已在看板中' : ''}`} aria-checked={option === style} disabled={exists} title={exists ? `${widgetNames[optionId]}已在看板中，移除后可切换` : undefined} onClick={() => { setDraft(current => current ? { ...current, widgets: current.widgets.map(item => item.id === id ? { ...item, id: optionId, style: option } : item) } : current); setAnnouncement(`${widgetNames[id]}已切换为${styleNames[option]}，点击完成保存布局`); close(); if (optionId !== id) requestAnimationFrame(() => grid.current?.querySelector<HTMLButtonElement>(`[data-widget="${optionId}"] .dashboard-style-trigger`)?.focus({ preventScroll: true })); }}><span>{styleNames[option]}</span>{exists ? <small>已在看板中</small> : <CheckCircle size={15} weight="fill" aria-hidden="true" />}</button>
+              <button className="dashboard-style-choice" type="button" role="menuitemradio" aria-label={`${widgetNames[id]}，${styleNames[option]}样式${exists ? '，已在看板中' : ''}`} aria-checked={option === style} disabled={exists} title={exists ? `${widgetNames[optionId]}已在看板中，移除后可切换` : undefined} onClick={() => { setDraft(current => current ? setDashboardStyle(current, id, option) : current); setAnnouncement(`${widgetNames[id]}已切换为${styleNames[option]}，点击完成保存布局`); close(); if (optionId !== id) requestAnimationFrame(() => grid.current?.querySelector<HTMLButtonElement>(`[data-widget="${optionId}"] .dashboard-style-trigger`)?.focus({ preventScroll: true })); }}><span>{styleNames[option]}</span>{exists ? <small>已在看板中</small> : <CheckCircle size={15} weight="fill" aria-hidden="true" />}</button>
             </div>;
           })}</div>
-        </>}</GameOptionsMenu></span><button className="ibtn dashboard-remove" disabled={!editing} aria-hidden={!editing} aria-label={`移除${widgetNames[id]}卡片`} title="从看板移除" onClick={() => setDraft(current => current ? { ...current, widgets: current.widgets.filter(item => item.id !== id) } : current)}><X size={16} /></button></>}
+        </>}</GameOptionsMenu></span><button className="ibtn dashboard-remove" disabled={!editing} aria-hidden={!editing} aria-label={`移除${widgetNames[id]}卡片`} title="从看板移除" onClick={() => setDraft(current => current ? removeDashboardWidget(current, id) : current)}><X size={16} /></button></>}
         resize={editing ? <>{(Object.entries(resizeEdges) as [ResizeEdge, string][]).map(([edge, label]) => {
           const horizontal = edge === 'left' || edge === 'right';
           const size = horizontal ? width : rows;

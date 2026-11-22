@@ -53,7 +53,7 @@ test('Topbar screenshots have exact bounded names and retain the one aggregate r
 test('Renderer fixtures have independent exact expectations for current, old-year, same/cross-day/year and absent values', () => {
   const fixtures = topbarReadFixtures('2026-10-12');
   assert.deepEqual(fixtures.todo.map(entry => entry.expected), ['10-12 09:00', '2025-12-31 08:30', '10-12 · 不限时', '未设置']);
-  assert.deepEqual(fixtures.schedule.map(entry => entry.expected), ['10-12 14:00–15:00', '01-01 23:30–\n01-02 00:30', '2025-12-31 23:30–\n2026-01-01 00:30', '10-12 · 时间待定']);
+  assert.deepEqual(fixtures.schedule.map(entry => entry.expected), ['10-12 14:00–15:00', '01-01 23:30–\n01-02 00:30', '2025-12-31 23:30–\n2026-01-01 00:30', '10-12 · 全天']);
   assert.deepEqual(fixtures.edges.map(entry => entry.expected), ['未设置', '未设置', '未设置', '未设置', '10-12 14:00–时间待定']);
   const all = [...fixtures.todo, ...fixtures.schedule, ...fixtures.edges];
   assert.equal(new Set(all.map(entry => entry.task.id)).size, all.length);

@@ -145,21 +145,24 @@
   animation: bazi-pop 0.18s var(--ease);
 }
 @keyframes bazi-pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.bazi-psel-row {
+  display: flex; align-items: center; gap: 2px; padding-right: 4px; border-radius: var(--r-ctl);
+  transition: background 0.13s var(--ease);
+}
+.bazi-psel-row:hover { background: rgba(30, 34, 44, 0.06); }
+.bazi-psel-row.on { background: var(--acc-soft); }
+.bazi-psel-row.on .bazi-pname { color: var(--acc-deep); }
 .bazi-psel-item {
-  display: flex; align-items: center; gap: 9px; width: 100%; padding: 7px 10px 7px 7px; border-radius: 10px;
-  text-align: left; transition: background 0.13s var(--ease);
+  display: flex; align-items: center; flex: 1; gap: 9px; min-width: 0; padding: 7px;
+  border-radius: var(--r-ctl); text-align: left;
 }
-.bazi-psel-item:hover { background: rgba(30, 34, 44, 0.06); }
-.bazi-psel-item.on { background: var(--acc-soft); }
-.bazi-psel-item.on .bazi-pname { color: var(--acc-deep); }
+.bazi-psel-item :is(.bazi-pname, .bazi-pbirth) { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.bazi-psel-item:focus-visible { outline-offset: -2px; }
 .bazi-psel-act {
-  width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-3);
-  opacity: 0.45; flex: none;
-  transition: opacity 0.13s var(--ease), background 0.13s var(--ease), color 0.13s var(--ease);
+  width: var(--compact-action-height); height: var(--compact-action-height); padding: 0;
+  border-radius: var(--r-ctl); display: grid; place-items: center; color: var(--ink-3); flex: none;
+  transition: background 0.13s var(--ease), color 0.13s var(--ease);
 }
-.bazi-psel-act.edit { margin-left: auto; }
-.bazi-psel-act.del { opacity: 0.8; }
-.bazi-psel-item:hover .bazi-psel-act, .bazi-psel-act:focus-visible { opacity: 1; }
 .bazi-psel-act.edit:hover { background: var(--acc-soft); color: var(--acc-deep); }
 .bazi-psel-act.del:hover { background: var(--danger-soft); color: var(--danger); }
 .bazi-psel-new {
@@ -649,7 +652,8 @@
 .bazi-form-field { display: flex; flex-direction: column; gap: 6px; }
 .bazi-form-label { font-size: var(--type-support); font-weight: 700; color: var(--ink-2); }
 .bazi-form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
-.bazi-form-actions .btn-pri { min-width: 100px; }
+.bazi-form-actions > .btn { height: var(--compact-action-height); padding: 0 12px; font-size: var(--type-control); }
+.bazi-form-actions :is(.btn-pri, .btn.danger) { min-width: 100px; justify-content: center; }
 
 @media (max-width: 1180px) {
   .bazi-cols { grid-template-columns: 1fr; }

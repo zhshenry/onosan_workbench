@@ -89,7 +89,7 @@ try {
       } else await navigateInstalled(page, 'life', '日程和待办', 'todo');
       await page.locator('#view-todo').getByRole('button', { name: '新增', exact: true }).click();
     }
-    const dialog = page.getByRole('dialog', { name: '新增事项', exact: true });
+    const dialog = page.getByRole('dialog', { name: /^(?:新增事项|新建日程|新建待办)$/ });
     await dialog.getByRole('textbox', { name: '待办名称', exact: true }).fill(title);
     await dialog.getByRole('button', { name: '创建', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });

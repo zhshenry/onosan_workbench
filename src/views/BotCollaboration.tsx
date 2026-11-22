@@ -1,9 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ArrowRight, CaretRight } from '@phosphor-icons/react';
+import { ArrowRight, WarningCircle } from '@phosphor-icons/react';
 import type { BotCard, BotCollaboration, BotExchange, BotExchangeQuery, BotMessage, BotSubmit, BotTask } from '../../shared/bot-contracts';
 import { chatEventPeer, type BotChatEventGroup, type BotMessageLink } from '../bot-chat-events';
 import { errorText } from '../ui/controls';
-import { ActionCard, botStatusLabel } from './BotTasks';
+import { BotMessageTime, ReplyBubble } from './AiResponse';
+import { BotOperationCard, BotOperationSubject } from './BotOperationCard';
+import { ActionCard, actionForConversation, botStatusLabel } from './BotTasks';
 import { BotAvatar } from './BotAvatar';
 import './bot-collaboration.css';
 
@@ -68,15 +70,21 @@ export function useChatCollaborations(rootIds: ReadonlySet<string>) {
 
 export const isCollaborationTask = (task: BotTask) => !task.parentTaskId && !!(task.dependencyIds.length || task.messageIds?.length);
 
-export function projectBotCollaboration(task: BotTask, detail: BotCollaboration, entryId?: string) {
+export function projectBotCollaboration(task: BotTask, detail: BotCollaboration, entryId?: string, visibleEntryIds?: ReadonlySet<string>) {
   const showActions = !entryId || entryId === task.assistantEntryId;
   const blocked = showActions ? detail.tasks.filter(item => item.status === 'waiting_resource' || item.id !== task.id && ['failed', 'interrupted'].includes(item.status)) : [];
   const replyIds = task.assistantEntryIds ?? (task.assistantEntryId ? [task.assistantEntryId] : []);
   const anchor = (message: BotMessage) => message.sourceAssistantEntryId && replyIds.includes(message.sourceAssistantEntryId) ? message.sourceAssistantEntryId : replyIds[0];
-  const actions = detail.actions.filter(action => {
-    if (['delegate', 'artifact'].includes(action.kind)) return false;
+  const actions = detail.actions.flatMap(action => {
+    if (['delegate', 'artifact'].includes(action.kind)) return [];
     const request = detail.messages.find(message => message.kind === 'request' && message.taskId === action.taskId && message.fromBotId === task.botId);
-    return request ? !entryId || anchor(request) === entryId : showActions;
+    const ownEntry = task.todoActionEntryIds?.[action.id];
+    const show = request ? !entryId || anchor(request) === entryId
+      : ownEntry && visibleEntryIds?.has(ownEntry) ? !entryId || ownEntry === entryId : showActions;
+    if (!show) return [];
+    const owner = action.taskId === task.id ? task : detail.tasks.find(item => item.id === action.taskId);
+    const current = actionForConversation(action, owner);
+    return current ? [current] : [];
   });
   const events = detail.messages.filter(message => {
     if (['request', 'question', 'notification'].includes(message.kind)) return message.fromBotId === task.botId && (!entryId || anchor(message) === entryId);
@@ -88,10 +96,10 @@ export function projectBotCollaboration(task: BotTask, detail: BotCollaboration,
   return { events, actions, blocked };
 }
 
-export function BotCollaborationCard({ task, entryId, state, groups, cards, copyBusy, onExchange, onAmend, onLayout, onRefresh, onOpenWork }: {
-  task: BotTask; entryId?: string; state?: CollaborationState; groups?: readonly BotChatEventGroup[];
+export function BotCollaborationCard({ task, entryId, visibleEntryIds, state, groups, cards, copyBusy, onExchange, onAmend, onLayout, onRefresh, onOpenWork, onOpenTodo }: {
+  task: BotTask; entryId?: string; visibleEntryIds?: ReadonlySet<string>; state?: CollaborationState; groups?: readonly BotChatEventGroup[];
   cards: BotCard[]; copyBusy: boolean; onExchange(message: BotMessageLink): void;
-  onAmend(target: NonNullable<BotSubmit['target']>, label: string): void; onLayout(): void; onRefresh(): void; onOpenWork(id: string): void;
+  onAmend(target: NonNullable<BotSubmit['target']>, label: string): void; onLayout(): void; onRefresh(): void; onOpenWork(id: string): void; onOpenTodo(id?: string): void;
 }) {
   const [actionError, setActionError] = useState(''), [busy, setBusy] = useState(false);
   const detail = state?.detail, error = actionError || state?.error;
@@ -99,39 +107,26 @@ export function BotCollaborationCard({ task, entryId, state, groups, cards, copy
   const refresh = () => { setActionError(''); onRefresh(); };
   const run = async (job: () => Promise<unknown>) => { if (busy) return; setBusy(true); try { await job(); refresh(); } catch (cause) { setActionError(errorText(cause)); } finally { setBusy(false); } };
   if (!detail) return error ? <p className="bot-error" role="alert">{error}<button onClick={refresh}>重试</button></p> : <p className="bot-help" role="status">正在读取协作…</p>;
-  const { events, actions, blocked } = projectBotCollaboration(task, detail, entryId);
+  const { events, actions, blocked } = projectBotCollaboration(task, detail, entryId, visibleEntryIds);
   const rows = groups ?? events.map(event => ({ ...event, count: 1 }));
   if (!rows.length && !actions.length && !blocked.length && !error) return null;
   return <section className="bot-collaboration-inline" aria-label="协作与确认">
     {rows.map(event => <BotMessageEvent key={event.message.id} event={event} cards={cards} onExchange={onExchange} />)}
     {actions.map(action => {
       const owner = cards.find(bot => bot.id === action.botId);
-      const name = owner?.name ?? 'Bot';
-      const content = <ActionCard key={action.id} action={action} owner={owner} onOpenWork={() => onOpenWork(action.taskId)} refresh={refresh} copyBusy={copyBusy} />;
-      if (action.status === 'failed') return content;
-      if (['applied', 'discarded', 'undone'].includes(action.status)) {
-        const status = action.status === 'applied' ? '已处理' : action.status === 'undone' ? '已撤销' : '已保留原内容';
-        const label = action.kind === 'question' ? '补充回答' : action.kind === 'todo' ? '待办修改' : action.kind === 'copy' ? '文章修改' : '定时任务';
-        return <div key={action.id} className="bot-projected-action"><details>
-          <summary>
-            <BotAvatar avatar={owner?.avatar ?? 'ring:blue'} small />
-            <span className="bot-projected-receipt-name" title={name}>{name}</span>{' '}
-            <span className="bot-projected-receipt-status">{status} · {label}</span>
-            <CaretRight size={13} className="ai-activity-caret" aria-hidden="true" />
-          </summary>
-          {content}
-        </details></div>;
-      }
-      return <div key={action.id} className="bot-projected-action">
-        <div className="bot-projected-owner"><small>{name}</small>
-          {action.status === 'pending' && <button type="button" className="bot-text-button" onClick={() => onAmend({
-            intent: 'amend', rootTaskId: task.rootTaskId, taskId: action.taskId, actionId: action.id, expectedActionRevision: action.revision,
-          }, detail.tasks.find(item => item.id === action.taskId)?.title ?? task.title)}>补充此项</button>}
-        </div>
-        {content}
-      </div>;
+      const amend = action.status === 'pending' && <button type="button" className="bot-text-button" onClick={() => onAmend({
+        intent: 'amend', rootTaskId: task.rootTaskId, taskId: action.taskId, actionId: action.id, expectedActionRevision: action.revision,
+      }, detail.tasks.find(item => item.id === action.taskId)?.title ?? task.title)}>补充此项</button>;
+      return <div key={action.id} className="bot-projected-action"><ActionCard action={action} owner={owner}
+        onOpenWork={() => onOpenWork(action.taskId)} onOpenTodo={onOpenTodo} refresh={refresh} copyBusy={copyBusy} amend={amend} conversation /></div>;
     })}
-    {blocked.map(item => <div className="bot-collaboration-blocked" key={item.id}><p>{cards.find(bot => bot.id === item.botId)?.name} · {item.reason || botStatusLabel[item.status]}</p><button disabled={busy} onClick={() => void run(() => api.retryTask(item.id, item.revision))}>继续处理</button><button disabled={busy} onClick={() => void run(() => api.cancelTask(item.id, item.revision))}>取消</button></div>)}
+    {blocked.map(item => <BotOperationCard key={item.id} className="bot-collaboration-blocked"
+      label={item.title} summary={cards.find(bot => bot.id === item.botId)?.name} icon={<WarningCircle size={18} />}
+      status={botStatusLabel[item.status]} tone={item.status === 'waiting_resource' ? 'pending' : 'error'} initialOpen>
+      <BotOperationSubject title={cards.find(bot => bot.id === item.botId)?.name || item.title}>{item.reason}</BotOperationSubject>
+      <div className="bot-action-buttons"><button type="button" disabled={busy} onClick={() => void run(() => api.cancelTask(item.id, item.revision))}>取消这项</button>
+        <button type="button" className="primary" disabled={busy} onClick={() => void run(() => api.retryTask(item.id, item.revision))}>继续</button></div>
+    </BotOperationCard>)}
     {error && <p className="bot-error" role="alert">{error}<button onClick={refresh}>重新读取</button></p>}
   </section>;
 }
@@ -149,13 +144,18 @@ export function BotExchangeView({ botA, botB, anchorMessageId, cards }: { botA: 
   }, [botA, botB, query]);
   useLayoutEffect(() => { if (!data || !locate.current) return; locate.current = false; const target = query.anchorMessageId && container.current?.querySelector<HTMLElement>(`[data-message-id="${query.anchorMessageId}"]`); if (target) target.scrollIntoView({ block: 'center' }); else container.current?.scrollIntoView({ block: 'start' }); }, [data]);
   return <div className="bot-exchange" ref={container} aria-label="双方消息记录" aria-busy={busy}>
-    <p className="bot-exchange-hint">双方的连续往来 · 只读</p>
-    {data?.hasEarlier && <button className="bot-text-button" disabled={busy} onClick={() => setQuery({ before: data.messages[0].id })}>更早的消息</button>}
+    {!data && !error && <p className="bot-empty" role="status">正在读取消息往来</p>}
+    {data?.hasEarlier && <button className="bot-text-button bot-history-page" disabled={busy} onClick={() => setQuery({ before: data.messages[0].id })}>更早的消息</button>}
     {data?.messages.map(message => {
       const from = cards.find(bot => bot.id === message.fromBotId);
-      return <article key={message.id} data-message-id={message.id} data-anchor={message.id === anchorMessageId || undefined} className="bot-exchange-message"><BotAvatar avatar={from?.avatar ?? 'ring:blue'} small /><div><header><strong>{from?.name ?? 'Bot'}</strong><time dateTime={message.createdAt}>{new Date(message.createdAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</time></header><p>{message.content}</p><small>{message.deliveredAt ? '已投递' : '待投递'}</small></div></article>;
+      return <article key={message.id} data-message-id={message.id} data-anchor={message.id === anchorMessageId || undefined} className="bot-exchange-message">
+        <strong className="bot-exchange-speaker">{from?.name ?? 'Bot'}</strong>
+        <BotAvatar avatar={from?.avatar ?? 'ring:blue'} small />
+        <div className="ai-response"><ReplyBubble text={message.content} /></div>
+        <div className="bot-exchange-meta"><BotMessageTime value={message.createdAt} />{!message.deliveredAt && <span>待投递</span>}</div>
+      </article>;
     })}
-    {data?.hasLater && <button className="bot-text-button" disabled={busy} onClick={() => setQuery({ after: data.messages.at(-1)!.id })}>后续消息</button>}
+    {data?.hasLater && <button className="bot-text-button bot-history-page" disabled={busy} onClick={() => setQuery({ after: data.messages.at(-1)!.id })}>后续消息</button>}
     {data && !data.messages.length && <p className="bot-empty">还没有双方往来</p>}
     {error && <p className="bot-error" role="alert">{error}<button onClick={() => setQuery({ ...query })}>重试</button></p>}
   </div>;

@@ -7,6 +7,7 @@ import { localDay, openToday, taskTime, type Task } from '../../../shared/todo-c
 import { isOverdue, scheduleStamp, stampLabel } from './ui';
 import { CalendarWorkspace, type ScheduleNavigation } from './CalendarWorkspace';
 import type { TaskEditorApi, TodoState } from './TaskEditor';
+import { TodoCards } from './TodoCards';
 
 // 紧凑布局沿用上游 TodayBoard/PlanRow；工作台周导航为本地宿主变体。
 // 上游 api: DesktopAPI 在此参数化为工作台注入的 TaskEditorApi。
@@ -25,12 +26,12 @@ function meetingItems(tasks: Task[], from: string, through: string | null) {
   }).sort((a, b) => taskDay(a)!.localeCompare(taskDay(b)!) || taskTime(a) - taskTime(b) || a.createdAt.localeCompare(b.createdAt));
 }
 
-export function TodayBoard({ tasks, today, categoryById, planView, mutating, api, mutate, setEditor, toolbar, emptyText, workspace, todoContent, onOpenMeeting, meetingNotes = [] }: {
+export function TodayBoard({ tasks, today, categoryById, planView, mutating, api, mutate, setEditor, toolbar, emptyText, workspace, todoContent, onOpenMeeting, meetingNotes = [], onCardSaved }: {
   tasks: Task[]; today: string; categoryById: Map<string, { id: string; name: string; color: string }>;
   planView: 'rows' | 'tiles'; mutating: boolean;
   api: TaskEditorApi; mutate: Mutate;
   setEditor: (task: Task) => void; toolbar: ReactNode; emptyText?: string; workspace?: ScheduleNavigation; todoContent?: ReactNode;
-  onOpenMeeting?(task: Task): void; meetingNotes?: MeetingNote[];
+  onOpenMeeting?(task: Task): void; meetingNotes?: MeetingNote[]; onCardSaved?(state: TodoState): void | Promise<void>;
 }) {
   const [openFolder, setOpenFolder] = useState<string | null>(null);
   const [armedId, setArmedId] = useState<string | null>(null);
@@ -64,24 +65,45 @@ export function TodayBoard({ tasks, today, categoryById, planView, mutating, api
     if (meeting) for (const action of note.actions) if (action.taskId) sourceMeetings.set(action.taskId, meeting);
   }
   const tiles = planView === 'tiles';
-  const columns = Boolean(workspace) && !tiles;
   const todoSection = <section className={`plan-card plan-today${todos.length ? '' : ' is-empty'}`} aria-label="待办">
       <header className="plan-card-heading">
         {!workspace && <h2>待办</h2>}
         {toolbar}
       </header>
-      {todoContent ?? (todos.length ? <ul className={tiles ? 'plan-tiles' : columns ? 'plan-list plan-column-list' : 'plan-list'}>
-        {columns && <li className="plan-column-heading" aria-hidden="true">
-          <span>事项</span><span>分类</span><span>截止时间</span><span>操作</span>
-        </li>}
-        {todos.map(task => <PlanRow key={task.id} task={task} tiles={tiles} columns={columns} category={task.categoryId ? categoryById.get(task.categoryId) : undefined} current={task.id === currentId} mutating={mutating} setEditor={setEditor} allowReschedule={Boolean(workspace)} armed={armedId === task.id} onCheck={() => onRowCheck(task)} onConfirm={() => confirmRow(task)} onDisarm={disarmArm} sourceMeeting={sourceMeetings.get(task.id)} onOpenMeeting={onOpenMeeting} />)}
+      {todoContent ?? (todos.length ? workspace ? <TodoCards tasks={todos} today={today} categories={categoryById}
+        currentId={currentId} armedId={armedId} mutating={mutating} editHandle={workspace.taskEditHandle} openEditor={setEditor}
+        onCheck={onRowCheck} onConfirm={confirmRow} onDisarm={disarmArm}
+        source={task => {
+          const meeting = sourceMeetings.get(task.id);
+          return meeting && onOpenMeeting && <button type="button" className="plan-meeting-source" onClick={() => onOpenMeeting(meeting)}><FileText size={12} />{meeting.title}</button>;
+        }}
+        save={async (task, patch) => {
+          const state = await api.update(task.id, patch, task.updatedAt);
+          if (onCardSaved) await onCardSaved(state);
+          else await mutate(async () => state);
+        }} /> : <ul className={tiles ? 'plan-tiles' : 'plan-list'}>
+        {todos.map(task => <PlanRow key={task.id} task={task} tiles={tiles} category={task.categoryId ? categoryById.get(task.categoryId) : undefined} current={task.id === currentId} mutating={mutating} setEditor={setEditor} armed={armedId === task.id} onCheck={() => onRowCheck(task)} onConfirm={() => confirmRow(task)} onDisarm={disarmArm} sourceMeeting={sourceMeetings.get(task.id)} onOpenMeeting={onOpenMeeting} />)}
       </ul> : <div className="plan-empty">{emptyText ?? '点击 + 添加,或让 AI 帮你安排。'}</div>)}
     </section>;
 
   if (workspace) {
     const meetings = tasks.filter(task => task.kind === 'meeting' && !task.deletedAt);
-    return <CalendarWorkspace {...workspace} meetings={meetings} today={today} todo={todoSection} />;
+    return <CalendarWorkspace {...workspace} meetings={meetings} today={today} todo={todoSection}
+      calendarTodos={{
+        items: tasks.filter(task => task.kind === 'task' && !task.deletedAt),
+        save: async (task, time) => {
+          const state = await api.update(task.id, { scheduledTime: time }, task.updatedAt);
+          await mutate(async () => state);
+        },
+        completion: task => armedId === task.id ? <span className="confirm-bar">
+          <button type="button" className="confirm-btn" disabled={mutating} onClick={() => confirmRow(task)}>确认完成</button>
+          <button type="button" className="confirm-cancel" onClick={disarmArm}>取消</button>
+        </span> : <button type="button" className="btn btn-sec btn-sm" disabled={mutating} onClick={() => onRowCheck(task)}>
+          {task.status === 'done' ? '恢复待办' : '标记完成'}
+        </button>,
+      }} />;
   }
+
 
   const tomorrow = shiftDay(today, 1);
   const dayAfter = shiftDay(today, 2);
@@ -115,10 +137,9 @@ export function TodayBoard({ tasks, today, categoryById, planView, mutating, api
   </div>;
 }
 
-function PlanRow({ task, tiles, columns, category, current, mutating, setEditor, allowReschedule, armed, onCheck, onConfirm, onDisarm, sourceMeeting, onOpenMeeting }: {
+function PlanRow({ task, tiles, category, current, mutating, setEditor, armed, onCheck, onConfirm, onDisarm, sourceMeeting, onOpenMeeting }: {
   task: Task; tiles: boolean; category?: { name: string; color: string }; current: boolean; mutating: boolean;
   setEditor: (task: Task) => void; armed: boolean; onCheck: () => void; onConfirm: () => void; onDisarm: () => void;
-  allowReschedule?: boolean; columns?: boolean;
   sourceMeeting?: Task; onOpenMeeting?(task: Task): void;
 }) {
   const overdue = isOverdue(task);
@@ -126,8 +147,6 @@ function PlanRow({ task, tiles, columns, category, current, mutating, setEditor,
   const checkActive = task.status === 'done' || armed;
   const checkSize = tiles ? 11 : 12;
   const showProgress = task.progress !== null;
-  const reschedule = allowReschedule && checkable && overdue && task.source !== 'welink' &&
-    <button type="button" className="text-button plan-reschedule" aria-label={`重新安排 ${task.title}`} disabled={mutating} onClick={() => setEditor(task)}>重新安排</button>;
   const confirmation = <span className="confirm-bar"><button type="button" className="confirm-btn" disabled={mutating} onClick={onConfirm}>确认完成</button><button type="button" className="confirm-cancel" onClick={onDisarm}>取消</button></span>;
   if (tiles) return <li className={`plan-item is-tile${task.status === 'done' ? ' is-done' : ''}${current ? ' is-current' : ''}${armed ? ' is-armed' : ''}`}>
     <span className="tile-top">
@@ -143,7 +162,6 @@ function PlanRow({ task, tiles, columns, category, current, mutating, setEditor,
       : <span className="tile-foot">
           <span className="plan-category"><i className="plan-dot" aria-hidden="true" style={{ backgroundColor: category?.color ?? 'var(--todo-muted)' }} />{category?.name ?? '无标签'}</span>
           {showProgress ? <span className="plan-progress-num">{task.progress}%</span> : null}
-          {reschedule}
         </span>}
   </li>;
   const categoryName = category?.name ?? '无标签';
@@ -157,17 +175,11 @@ function PlanRow({ task, tiles, columns, category, current, mutating, setEditor,
     <button type="button" className="plan-title" onClick={() => setEditor(task)} aria-label={`编辑 ${task.title}`}><b title={task.title}>{task.title}</b></button>
     {armed
       ? confirmation
-      : columns ? <>
-        <span className="plan-category">{categoryDot}<span title={category?.name}>{categoryName}</span></span>
-        <span className="plan-deadline">{deadline}{overdueBadge}{progress}</span>
-        {reschedule}
-        {meetingSource}
-      </> : <span className="plan-meta">
+      : <span className="plan-meta">
           {meetingSource}
           <span className="plan-category">{overdueBadge}{categoryDot}{categoryName}</span>
           {progress}
           {deadline}
-          {reschedule}
         </span>}
   </li>;
 }
