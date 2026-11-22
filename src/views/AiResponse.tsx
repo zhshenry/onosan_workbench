@@ -1,10 +1,13 @@
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react';
-import { ArrowRight, CaretDown, CaretRight, Brain, Wrench } from '@phosphor-icons/react';
+import { CaretDown, CaretRight, Brain, Wrench } from '@phosphor-icons/react';
 import type { AIToolEvent, ChatEntry } from '../../shared/todo-contracts';
 import { renderAiMarkdown } from '../ai-markdown';
-import { botTurnOutcomeLabel, type BotTurnOutcome } from '../bot-turn-outcomes';
+import type { BotTurnOutcome } from '../bot-turn-outcomes';
 import { errorText } from '../ui/controls';
 import { BrowserTaskRecord } from '../../modules/browser/ui/task-record';
+import { BotExecutionCard, BotExecutionDetails } from './BotExecutionCard';
+import { BotAvatar } from './BotAvatar';
+import { botReplyActivity } from '../../shared/bot-activity';
 import type { BrowserTask } from '../../shared/browser-automation-contracts';
 import { BrowserSiteApprovalReceipts } from '../../modules/browser/ui/site-approval';
 import { thinkingElapsedMs } from '../../shared/ai-thinking';
@@ -115,14 +118,21 @@ function ToolsDetails({ tools, waitingForSite }: { tools: AIToolEvent[]; waiting
   </details>;
 }
 
-function ReplyBubble({ text, streaming, record }: { text: string; streaming?: boolean; record?: ReactNode }) {
+export function ReplyBubble({ text, streaming, record }: { text: string; streaming?: boolean; record?: ReactNode }) {
   return <div className="ai-bubble"><AiMarkdown text={text} />{streaming && <span className="ai-caret" aria-hidden="true" />}{record}</div>;
+}
+
+const messageDateFormat = new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+
+export function BotMessageTime({ value, title }: { value?: string; title?: string }) {
+  if (!value || !Number.isFinite(Date.parse(value))) return <span className="bot-message-time">时间未记录</span>;
+  return <time className="bot-message-time" dateTime={value} title={title}>{messageDateFormat.format(new Date(value))}</time>;
 }
 
 type ProcessStep = { kind: 'thinking'; text: string } | { kind: 'tools'; tools: AIToolEvent[] };
 type ProcessGroup = { kind: 'process'; steps: ProcessStep[]; startedAt?: number; endedAt?: number };
 type ReplyGroup = ProcessGroup | { kind: 'text'; text: string };
-type ReplyContentProps = { entry: ChatEntry; tools: AIToolEvent[]; waitingForSite: boolean; showTyping: boolean; record?: ReactNode; outcome?: BotTurnOutcome; onOpenWork?(): void };
+type ReplyContentProps = { entry: ChatEntry; tools: AIToolEvent[]; waitingForSite: boolean; showTyping: boolean; record?: ReactNode; timestamp?: ReactNode; outcome?: BotTurnOutcome; browserTask?: BrowserTask; operationOwned?: boolean; onOpenWork?(): void; onOpenBrowser?(task: BrowserTask): void; onOpenDashboard?(): void };
 
 function replyGroups({ entry, tools, showTyping }: ReplyContentProps) {
   const groups: ReplyGroup[] = [];
@@ -172,8 +182,8 @@ function replyGroups({ entry, tools, showTyping }: ReplyContentProps) {
   return groups;
 }
 
-export function ResponseProcess({ group, entry, active = false, waitingForSite = false, outcome, onOpenWork }: {
-  group?: ProcessGroup; entry?: ChatEntry; active?: boolean; waitingForSite?: boolean; outcome?: BotTurnOutcome; onOpenWork?(): void;
+function ResponseProcess({ group, entry, active = false, waitingForSite = false }: {
+  group?: ProcessGroup; entry?: ChatEntry; active?: boolean; waitingForSite?: boolean;
 }) {
   const [override, setOverride] = useState<{ active: boolean; open: boolean }>();
   const open = override?.active === active ? override.open : active;
@@ -185,24 +195,15 @@ export function ResponseProcess({ group, entry, active = false, waitingForSite =
   const duration = group?.startedAt !== undefined && end !== undefined ? Math.max(0, end - group.startedAt)
     : !entry?.responseParts && !tools.length && entry?.thinkingMs !== undefined ? thinkingElapsedMs(active ? entry : { thinkingMs: entry.thinkingMs }, now) : undefined;
   const interrupted = tools.some(tool => tool.status === 'interrupted') || Boolean(entry?.responseParts && end === undefined);
-  const status = outcome ? botTurnOutcomeLabel[outcome.kind]
-    : active ? '正在思考' : interrupted ? '已中断' : !group?.endedAt && entry?.error ? '执行失败' : '已完成';
-  const replyStart = Date.parse(entry?.createdAt ?? '');
-  const replyEnd = entry?.responseFinishedAt;
-  const displayDuration = outcome ? outcome.kind === 'stopped' && replyEnd !== undefined && Number.isFinite(replyStart)
-    ? Math.max(0, replyEnd - replyStart) : undefined : duration;
-  const label = displayDuration === undefined ? status : `${status} ${Math.floor(displayDuration / 1000)}s`;
-  const openWork = outcome?.kind === 'failed' || outcome?.kind === 'interrupted' ? onOpenWork : undefined;
-  const reason = outcome?.kind === 'timeout' ? outcome.reason?.replace(/^任务超时(?:[：:]|$)\s*/, '') : outcome?.reason;
-  if (!steps.length && !reason && !openWork) return <div className="ai-process-pending" data-outcome={outcome?.kind} role="status" aria-live="off">{label}</div>;
-  return <details ref={details} className="ai-process" data-outcome={outcome?.kind} data-completed={status === '已完成' || undefined} open={open}>
+  const status = active ? '正在思考' : interrupted ? '已中断' : !group?.endedAt && entry?.error ? '执行失败' : '已完成';
+  const label = duration === undefined ? status : `${status} ${Math.floor(duration / 1000)}s`;
+  if (!steps.length) return <div className="ai-process-pending" role="status" aria-live="off">{label}</div>;
+  return <details ref={details} className="ai-process" data-completed={status === '已完成' || undefined} open={open}>
     <summary onClick={event => { event.preventDefault(); setOverride({ active, open: !open }); }}>
       <span>{label}</span><CaretRight size={13} className="ai-activity-caret" aria-hidden="true" />
       {waitingForSite && active && <small>等待授权</small>}
     </summary>
     {showContent && <div className="ai-process-steps" inert={!open}>
-      {reason && <p className="bot-outcome-reason">{reason}</p>}
-      {openWork && <button type="button" className="bot-text-button" onClick={openWork}>查看工作详情<ArrowRight size={14} aria-hidden="true" /></button>}
       {steps.map((step, index) => {
         if (step.kind === 'tools') {
           const waiting = active && waitingForSite && step.tools.some(tool => tool.status === 'running');
@@ -217,16 +218,18 @@ export function ResponseProcess({ group, entry, active = false, waitingForSite =
 }
 
 function OrderedReply(props: ReplyContentProps) {
-  const { entry, record, waitingForSite, outcome, onOpenWork } = props;
+  const { entry, browserTask, record, waitingForSite, outcome, onOpenWork } = props;
   const groups = replyGroups(props);
   const finalProcess = outcome ? groups.reduce((last, group, index) => group.kind === 'process' ? index : last, -1) : -1;
   const lastText = groups.reduce((last, group, index) => group.kind === 'text' ? index : last, -1);
+  const outcomeCard = outcome && <BotExecutionCard key="outcome" entry={entry} browserTask={browserTask}
+    outcome={outcome} onOpenWork={onOpenWork} conversation />;
   return <>
-    {outcome && finalProcess < 0 && <ResponseProcess entry={entry} outcome={outcome} onOpenWork={onOpenWork} />}
+    {finalProcess < 0 && outcomeCard}
     {groups.map((group, index) => {
+      if (index === finalProcess) return outcomeCard;
       const active = Boolean(!outcome && entry.streaming && index === groups.length - 1);
-      return group.kind === 'process' ? <ResponseProcess key={index} group={group} entry={entry} active={active} waitingForSite={waitingForSite}
-        outcome={index === finalProcess ? outcome : undefined} onOpenWork={onOpenWork} />
+      return group.kind === 'process' ? <ResponseProcess key={index} group={group} entry={entry} active={active} waitingForSite={waitingForSite} />
         : <ReplyBubble key={index} text={group.text} streaming={active && entry.responsePhase !== 'waiting'} record={index === lastText ? record : undefined} />;
     })}
     {lastText < 0 && record}
@@ -246,16 +249,49 @@ function ClassicReply({ entry, tools, waitingForSite, showTyping, record }: Repl
   </>;
 }
 
-export function AiResponse({ entry, browserTask, showTyping = true, showTools = true, showTimeline = false, approvalCardId, onLocateApproval, outcome, onOpenWork }: {
-  entry: ChatEntry; browserTask?: BrowserTask; showTyping?: boolean; showTools?: boolean; showTimeline?: boolean; approvalCardId?: string; onLocateApproval?(): void;
-  outcome?: BotTurnOutcome; onOpenWork?(): void;
+export function BotReplyProgress({ avatar, entry, onLayout }: { avatar: string; entry?: ChatEntry; onLayout?(): void }) {
+  const [open, setOpen] = useState(false);
+  const { details, showContent } = useDisclosureContent(open);
+  useLayoutEffect(() => {
+    const node = details.current;
+    if (!node || !showContent || !onLayout) return;
+    const resize = new ResizeObserver(onLayout);
+    resize.observe(node);
+    return () => resize.disconnect();
+  }, [details, showContent, onLayout]);
+  const { phase, label } = botReplyActivity(entry);
+  const thinking = entry?.thinking?.trim();
+  return <details ref={details} className="ai-process bot-reply-progress" open={open} onToggle={onLayout}>
+    <summary title="查看思考过程和工具调用" onClick={event => { event.preventDefault(); setOpen(value => !value); }}>
+      <BotAvatar avatar={avatar} small activity={phase} />
+      <span role="status">{label}</span>
+    </summary>
+    {showContent && <div className="bot-reply-progress-details" inert={!open}>
+      {thinking && <div className="ai-thinking-body"><AiMarkdown text={thinking} /></div>}
+      {entry && <BotExecutionDetails entry={entry} />}
+      {!thinking && !entry?.tools?.length && <span>等待过程记录…</span>}
+    </div>}
+  </details>;
+}
+
+function ChatReply({ entry, browserTask, outcome, operationOwned, onOpenWork, onOpenBrowser, onOpenDashboard, timestamp }: ReplyContentProps) {
+  return <>
+    {entry.content.trim() && <><ReplyBubble text={entry.content} streaming={entry.streaming} />{timestamp}</>}
+    {(!operationOwned || outcome) && <BotExecutionCard entry={entry} browserTask={browserTask} outcome={outcome}
+      onOpenWork={onOpenWork} onOpenBrowser={onOpenBrowser} onOpenDashboard={onOpenDashboard} conversation />}
+  </>;
+}
+
+export function AiResponse({ entry, browserTask, businessChat = false, operationOwned, showTyping = true, showTools = true, showTimeline = false, approvalCardId, onLocateApproval, outcome, onOpenWork, onOpenBrowser, onOpenDashboard, timestamp }: {
+  entry: ChatEntry; browserTask?: BrowserTask; businessChat?: boolean; operationOwned?: boolean; showTyping?: boolean; showTools?: boolean; showTimeline?: boolean; approvalCardId?: string; onLocateApproval?(): void;
+  outcome?: BotTurnOutcome; onOpenWork?(): void; onOpenBrowser?(task: BrowserTask): void; onOpenDashboard?(): void; timestamp?: ReactNode;
 }) {
   const [recordOpen, setRecordOpen] = useState(false);
-  const record = entry.browserTask && !entry.streaming && <button type="button" className="ai-browser-record" onClick={() => setRecordOpen(true)}>查看操作记录<CaretRight size={13} /></button>;
-  const Body = showTimeline ? OrderedReply : ClassicReply;
+  const record = !businessChat && entry.browserTask && !entry.streaming && <button type="button" className="ai-browser-record" onClick={() => setRecordOpen(true)}>查看操作记录<CaretRight size={13} /></button>;
+  const Body = businessChat ? ChatReply : showTimeline ? OrderedReply : ClassicReply;
   return <div className="ai-response">
-    <Body entry={entry} tools={showTools ? entry.tools ?? [] : []} waitingForSite={browserTask?.status === 'site-approval'} showTyping={showTyping} record={record} outcome={outcome} onOpenWork={onOpenWork} />
-    {browserTask && approvalCardId && onLocateApproval && <BrowserSiteApprovalReceipts task={browserTask} onLocate={onLocateApproval} cardId={approvalCardId} />}
+    <Body entry={entry} tools={showTools ? entry.tools ?? [] : []} waitingForSite={browserTask?.status === 'site-approval'} showTyping={showTyping} record={record} outcome={outcome} browserTask={browserTask} operationOwned={operationOwned} onOpenWork={onOpenWork} onOpenBrowser={onOpenBrowser} onOpenDashboard={onOpenDashboard} timestamp={timestamp} />
+    {!businessChat && browserTask && approvalCardId && onLocateApproval && <BrowserSiteApprovalReceipts task={browserTask} onLocate={onLocateApproval} cardId={approvalCardId} />}
     {recordOpen && entry.browserTask && <BrowserTaskRecord reference={entry.browserTask} close={() => setRecordOpen(false)} />}
   </div>;
 }

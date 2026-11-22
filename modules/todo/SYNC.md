@@ -4,7 +4,8 @@
 
 本节优先于下面的历史移植记录。OnO 与 CMO 共用 `%APPDATA%/OnoCmoWorkbench/tasks.db`，与 To-Do-List 的数据库分开。新路径首次初始化时从 `%APPDATA%/To-Do-List/tasks.db` 只读导入事项和标签，在同一个事务内完成 v4 初始化。此后两端的主进程和 Bot 后台都使用工作台库。
 
-- 唯一事项日期为 `dateAt`：`null` 不设日期，`YYYY-MM-DD` 仅日期，带时区 ISO 字符串为具体时刻。日期分组、统计和截止判断从它推导，不再写 `plannedDate` / `dueAt`。
+- 原有日期字段为 `dateAt`：`null` 不设日期，`YYYY-MM-DD` 仅日期，带时区 ISO 字符串为具体时刻。日期分组、统计和截止判断从它推导，不再写 `plannedDate` / `dueAt`。
+- 待办的可选 `scheduledTime` 记录日历上的安排起止，`dateAt` 表示完成期限。设置或移除安排时只更新 `scheduledTime`。本地日程可保存 `location` 与 `meetingUrl`。三个字段均保存在原有的 SQLite JSON 记录内，缺省字段的 v4 旧记录可直接读取。
 - 普通待办的 `endAt` 可空；日程使用 `dateAt` 开始和 `endAt` 结束。`remindAt` 独立，设置完成期限不自动启用提醒，稍后提醒不改变事项日期。
 - 日期、时刻、格式化和迁移共用 `shared/todo-date.ts`；纯日期不经过 UTC 解析，也不伪造午夜时刻。未设日期不判断逾期，日期期限在本地日结束后才逾期。
 - 单独导入旧库时保留原文件。有旧 `dueAt` 时优先保留它，否则保留 `plannedDate`。任务身份、状态、提醒、标签、备注、完成记录和来源元数据保留。直接打开既有的 v3 工作台库时，`modules/todo/date-migration.ts` 在写事务内备份原始 payload 到 `todo_date_backup_v3`。

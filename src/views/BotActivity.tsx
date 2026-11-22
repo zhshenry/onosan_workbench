@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react';
-import { ArrowLeft, ChatCircle, CheckCircle, CheckSquare, ClockCounterClockwise, X } from '@phosphor-icons/react';
+import { ArrowLeft, ChatCircle, CheckCircle, CheckSquare, ClockCounterClockwise, ListBullets, X } from '@phosphor-icons/react';
 import type { BotCard, BotOpen, BotTask } from '../../shared/bot-contracts';
 import type { ChatEntry, ChatSession } from '../../shared/todo-contracts';
 import type { groupBotProgress } from '../bot-progress';
@@ -56,7 +56,7 @@ export function BotActivity({ ref, embedded = false, active, progress, history, 
     const Icon = kind === 'archive' ? ClockCounterClockwise : kind === 'conversation' ? ChatCircle : status === 'completed' ? CheckCircle : CheckSquare;
     const canLocate = task && onLocate;
     const disabled = locating || !!canLocate && chatLoading;
-    return <button type="button" key={id} className="bot-work-row" data-status={status} title={title} aria-current={locatedTaskId === id ? 'location' : undefined} aria-disabled={disabled || undefined} onClick={event => {
+    const entry = <button type="button" key={id} className="bot-work-row" data-status={status} title={title} aria-current={locatedTaskId === id ? 'location' : undefined} aria-disabled={disabled || undefined} onClick={event => {
       if (disabled || navigation.current) return;
       trigger.current = event.currentTarget;
       if (!task || !onLocate) { setSelected({ kind, id }); return; }
@@ -69,6 +69,13 @@ export function BotActivity({ ref, embedded = false, active, progress, history, 
     }}>
       <Icon size={17} aria-hidden="true" /><span><strong>{title}</strong><small>{caption}</small></span>
     </button>;
+    if (kind !== 'task' || !canLocate) return entry;
+    return <div className="bot-work-row-with-detail" key={id}>{entry}
+      <IconButton label={'查看工作详情：' + title} disabled={disabled} onClick={event => {
+        trigger.current = event.currentTarget;
+        setSelected({ kind, id });
+      }}><ListBullets size={16} aria-hidden="true" /></IconButton>
+    </div>;
   };
   const group = (label: string, rows: ReactNode[]) => rows.length > 0 && <section aria-label={label}><h3>{label} <span>{rows.length}</span></h3>{rows}</section>;
   const workGroup = (label: string, items: BotTask[]) => group(label, items.map(task => row('task', task.id, task.title, botStatusLabel[task.status] + ' · ' + dateLabel(task.updatedAt), task)));

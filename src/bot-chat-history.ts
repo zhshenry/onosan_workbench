@@ -24,6 +24,18 @@ export function useBotChatHistory(chatId: string, island: boolean, floating: boo
   const following = useRef(floating || (positions.get(key)?.follow ?? true));
   const lastScrollTop = useRef(0);
   const lastFloating = useRef(floating);
+  const positioned = useRef<HTMLDivElement | null>(null);
+  const followFrame = useRef<number | undefined>(undefined);
+
+  const stopFollowMotion = useCallback(() => {
+    if (followFrame.current !== undefined) cancelAnimationFrame(followFrame.current);
+    followFrame.current = undefined;
+  }, []);
+
+  useLayoutEffect(() => () => {
+    stopFollowMotion();
+    positioned.current = null;
+  }, [key, floating, visible, stopFollowMotion]);
 
   const initialView = (compact: boolean): BotChatView => {
     const saved = positions.get(key);
@@ -33,6 +45,7 @@ export function useBotChatHistory(chatId: string, island: boolean, floating: boo
     };
   };
   const restoreScroll = useCallback(() => {
+    stopFollowMotion();
     const node = scroll.current;
     if (!node || !node.clientHeight || !visible) return;
     if (following.current) node.scrollTop = node.scrollHeight;
@@ -41,7 +54,31 @@ export function useBotChatHistory(chatId: string, island: boolean, floating: boo
       if (row) node.scrollTop += readingOffset(node, node.getBoundingClientRect(), row) - anchor.current.offset;
     }
     lastScrollTop.current = node.scrollTop;
-  }, [visible]);
+  }, [visible, stopFollowMotion]);
+  const followContent = useCallback(() => {
+    const node = scroll.current;
+    if (!visible || !node?.clientHeight) return;
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (!following.current || motion.matches) { restoreScroll(); return; }
+    if (followFrame.current !== undefined) return;
+    if (node.scrollHeight - node.clientHeight - node.scrollTop <= 1) { restoreScroll(); return; }
+
+    let frameTime = performance.now();
+    const follow = (now: number) => {
+      followFrame.current = undefined;
+      if (node !== scroll.current || !node.clientHeight || !following.current) return;
+      const top = node.scrollTop, distance = node.scrollHeight - node.clientHeight - top;
+      if (distance <= 1 || motion.matches) { restoreScroll(); return; }
+      // Let the user's scroll event take over if they moved up before this frame.
+      if (top < lastScrollTop.current) return;
+      const elapsed = Math.min(32, now - frameTime);
+      node.scrollTop = top + Math.min(distance, Math.max(1, distance * (1 - Math.exp(-elapsed / 48))));
+      frameTime = now;
+      lastScrollTop.current = node.scrollTop;
+      followFrame.current = requestAnimationFrame(follow);
+    };
+    followFrame.current = requestAnimationFrame(follow);
+  }, [restoreScroll, visible]);
   const remember = () => {
     const node = scroll.current;
     if (floating || !node?.clientHeight || !snapshot) return;
@@ -59,18 +96,19 @@ export function useBotChatHistory(chatId: string, island: boolean, floating: boo
     positions.set(key, { follow: false, firstId: snapshot.chat.entries[0]?.id, anchor: anchor.current });
   };
   useLayoutEffect(() => {
-    if (!snapshot || !visible || lastFloating.current !== floating) return;
-    restoreScroll();
+    const node = scroll.current;
+    if (!snapshot || !visible || lastFloating.current !== floating || !node?.clientHeight) return;
+    if (positioned.current === node && !loadingRef.current && !focusAfterLoad.current) followContent();
+    else restoreScroll();
+    positioned.current = node;
     if (focusAfterLoad.current) {
-      const node = scroll.current;
-      const row = node?.querySelector<HTMLElement>(`[data-chat-entry-id="${CSS.escape(focusAfterLoad.current)}"]`);
-      (row ?? node)?.focus({ preventScroll: true });
+      const row = node.querySelector<HTMLElement>(`[data-chat-entry-id="${CSS.escape(focusAfterLoad.current)}"]`);
+      (row ?? node).focus({ preventScroll: true });
       focusAfterLoad.current = undefined;
     }
-    const node = scroll.current;
-    setAboveBottom(!!snapshot.hasLater || !!node && node.scrollHeight - node.scrollTop - node.clientHeight > 64);
+    setAboveBottom(!!snapshot.hasLater || !following.current && node.scrollHeight - node.scrollTop - node.clientHeight > 1);
     remember();
-  }, [snapshot, restoreScroll, visible, floating, layout]);
+  }, [snapshot, restoreScroll, followContent, visible, floating, layout]);
 
   const load = async (view: BotChatView, accept?: (value: BotChatSnapshot) => boolean): Promise<boolean> => {
     if (loadingRef.current || !sync.current) return false;
@@ -104,8 +142,9 @@ export function useBotChatHistory(chatId: string, island: boolean, floating: boo
     const top = node.scrollTop, previous = lastScrollTop.current;
     lastScrollTop.current = top;
     if (top === previous) return;
+    stopFollowMotion();
     const bottom = node.scrollHeight - top - node.clientHeight;
-    following.current = !snapshot.hasLater && bottom <= 64;
+    following.current = !snapshot.hasLater && (bottom <= 1 || top > previous && bottom <= 64);
     setAboveBottom(!following.current);
     remember();
     if (top < previous && top < 80) void turnPage('older');
@@ -157,5 +196,5 @@ export function useBotChatHistory(chatId: string, island: boolean, floating: boo
     return row;
   };
 
-  return { snapshot, setSnapshot, sync, scroll, following, aboveBottom, loading, initialView, restoreScroll, rememberScroll: remember, onScroll, turnPage, latest, collapseHistory, revealHistory, findEntry, scrollToEntry };
+  return { snapshot, setSnapshot, sync, scroll, following, aboveBottom, loading, initialView, restoreScroll, followContent, rememberScroll: remember, onScroll, turnPage, latest, collapseHistory, revealHistory, findEntry, scrollToEntry };
 }

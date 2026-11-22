@@ -2,7 +2,7 @@
    视觉权威:design/reading-list-selected-2026-11-15.png(书单与详情同卡)。
    消费外壳 shell.css token;阅读状态四色为信息编码语义(同命理五行先例)。 */
 
-.content:has(> .view-fade > .reading-view) { display: flex; flex-direction: column; padding-inline: 12px; overflow: hidden; }
+.content:has(> .view-fade > .reading-view) { display: flex; flex-direction: column; padding-inline: 12px; overflow: hidden; scrollbar-gutter: auto; }
 .view-fade:has(> .reading-view) { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .reading-view.view.on { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: 16px; container: reading / inline-size; }
 .reading-view .rd-heading, .rd-workspace { background: var(--workbench-card-bg); border: 1px solid var(--hairline); border-radius: var(--r-panel); box-shadow: var(--shadow-sm); }

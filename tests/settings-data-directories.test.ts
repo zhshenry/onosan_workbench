@@ -55,7 +55,7 @@ test('关于页集中展示数据存储，待办提醒独立保存，读取和�
   });
   await render('settings-data');
   assert.equal(dom.window.document.querySelector('.set-search'), null);
-  assert.equal(dom.window.document.querySelector('h1')!.textContent, '待办与日程');
+  assert.equal(dom.window.document.querySelector('h1')!.textContent, '日程待办');
   assert.equal(infoReads, 0);
   assert.equal(row('userData'), null); assert.equal(row('dbPath'), null);
   assert.deepEqual([...dom.window.document.querySelectorAll<HTMLElement>('[data-setting-key]')].map(row => row.dataset.settingKey), ['reminderRange']);
@@ -98,7 +98,7 @@ test('关于页集中展示数据存储，待办提醒独立保存，读取和�
   assert.deepEqual([userDataCalls, todoCalls], [3, 3]);
   assert.ok(row('update'));
   await render('settings-notifications');
-  assert.equal(dom.window.document.querySelector('h1')!.textContent, '待办与日程');
+  assert.equal(dom.window.document.querySelector('h1')!.textContent, '日程待办');
   assert.equal(row('userData'), null); assert.equal(row('dbPath'), null);
   assert.equal(reminder().textContent, '仅日程', '重新进入仍显示已保存的提醒范围');
   failSettings = true;

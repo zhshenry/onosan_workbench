@@ -74,4 +74,4 @@ SHA-256：
 - `bot-floating-expanded-classic-2026-11-16-v1.png`：`6AA98BD08CFFAC0D32268C918A539DECC3955701638B50ECFBF4F7DA880B4757`
 - `bot-island-coordinator-classic-2026-11-16-v1.png`：`8D5EE3680D8E4DB8EE58AF8668FFCE6131CFFF021E05AA43619715449F711057`
 
-PNG 仍遵循当前仓库忽略规则，本轮未改忽略规则或执行暂存/提交。跨项目交接时需显式携带这些图片和生成记录。相关规范：[通用方案](../bot-workbench-architecture.md)、[OnO 接入](../bot-architecture-proposal-2026-11-13.md)、[CMO 实施方案](../../../../design/cmo-bot-workbench-implementation-2026-11-15.md)、[视觉版本记录](bot-visual-revision-2026-11-15.md)。
+PNG 仍遵循当前仓库忽略规则，本轮未改忽略规则或执行暂存/提交。跨项目交接时需显式携带这些图片和生成记录。相关规范：[通用方案](../rel002-bot-runtime-architecture-and-workspace-isolation/spec.md)、[OnO 接入](../rel002-bot-runtime-architecture-and-workspace-isolation/plan.md)、[CMO 实施方案](../../../../design/cmo-bot-workbench-implementation-2026-11-15.md)、[视觉版本记录](bot-visual-revision-2026-11-15.md)。

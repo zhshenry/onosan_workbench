@@ -1,14 +1,21 @@
+import { dashboardRequest, isDashboardScope } from '../shared/dashboard-operations';
+import { planInput, switchedWork, type RouteCandidate, type RouteChoice } from './bot-input-route';
+import type { BotInputRoute } from '../shared/bot-contracts';
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { botSeeds, draftValueSchema, terminalTask, type BotAction, type BotArtifact, type BotChanged, type BotDraftValue, type BotHostState, type BotMessage, type BotProfile, type BotResourceRef, type BotSubmit, type BotTask } from '../shared/bot-contracts';
-import { BotError, BotStore, legacyBotOwner, payloadHash } from './bot-store';
+import { BotError, BotStore, legacyBotOwner, payloadHash, type MemoryReviewBatch } from './bot-store';
+import type { MemoryChange } from './bot-memory';
 import type { BotQueueChange, BotRunActivity } from '../shared/bot-contracts';
 
 export interface BotExecutor {
-  run(task: BotTask, host: BotHost, signal: AbortSignal): Promise<{ reply: string }>;
+  run(task: BotTask, host: BotHost, signal: AbortSignal): Promise<{ reply: string; memoryMessageIds?: string[] }>;
+  reviewMemories?(batch: MemoryReviewBatch, signal: AbortSignal): Promise<MemoryChange[]>;
   apply(action: BotAction, answer: { approved?: boolean; indices?: number[]; text?: string }): Promise<unknown>;
   undo?(action: BotAction): Promise<unknown>;
   validateSubmission?(input: BotSubmit): void;
+  captureDashboardHandoff?(input: BotSubmit): BotTask['dashboardHandoff'];
+  classifyInput?(botId: string, text: string, candidates: RouteCandidate[], signal: AbortSignal): Promise<RouteChoice>;
   redirect?(taskId: string): void;
 }
 const stamp = () => new Date().toISOString();
@@ -16,6 +23,7 @@ type Surface = { id: string; kind: 'main' | 'island' };
 /** One host owns execution; each UI surface keeps its own versioned draft. */
 export class BotHost extends EventEmitter {
   private readonly active = new Map<string, AbortController>();
+  private readonly interpreting = new Map<string, AbortController>();
   private readonly resourceWaits = new Set<string>();
   private runningIds(): string[] { return [...this.active.keys()].filter(id => !this.resourceWaits.has(id)); }
   waitForResourceApproval(id: string): void {
@@ -35,6 +43,8 @@ export class BotHost extends EventEmitter {
   private timer?: ReturnType<typeof setInterval>;
   private pumping = false;
   private stopping = false;
+  private memoryReview?: AbortController;
+  private readonly memoryRetryAt = new Map<string, number>();
   private suspended = false;
   readonly workerId = randomUUID();
   readonly startedAt = stamp();
@@ -70,15 +80,141 @@ export class BotHost extends EventEmitter {
     const started = performance.now();
     this.assertSurface(input.chatId, surface);
     this.validateContext(input.botId, input.pageContext, input.resources);
-    if (input.target && this.resourceWaits.has(input.target.taskId)) throw new BotError('TASK_BUSY', '浏览器步骤仍在等待授权，请先完成或取消该步骤后补充');
-    const receipt = this.store.submit(input, () => this.executor.validateSubmission?.(input), surface.kind);
-    if (receipt.disposition === 'amended' && !receipt.duplicate) this.executor.redirect?.(receipt.task.id);
+    const receipt = this.store.submit(input, () => this.executor.validateSubmission?.(input), surface.kind, () => {
+      if (input.target) {
+        const task = this.store.task(input.target.taskId), root = this.store.task(input.target.rootTaskId);
+        if (task.rootTaskId !== root.id || root.chatId !== input.chatId || root.botId !== input.botId) throw new BotError('WRONG_TASK', '补充目标不属于发起对话');
+        if (input.target.actionId) {
+          const action = this.store.action(input.target.actionId);
+          if (action.taskId !== task.id || action.revision !== input.target.expectedActionRevision && !['executing', 'unknown', 'applied'].includes(action.status)) throw new BotError('VERSION_CONFLICT', '建议已经更新，请核对最新版本');
+        }
+        if (task.memoryRequest) throw new BotError('INVALID_MEMORY_REQUEST', '请在记忆对话中继续说明要记的内容');
+        if (!this.isBusyBoundary(task) && !terminalTask(task.status)) return;
+      }
+      const tasks = this.store.tasks(input.botId, Number.MAX_SAFE_INTEGER).filter(task => !task.memoryRequest);
+      const boardRequest = !input.target && !input.replyToTaskId && isDashboardScope(input.pageContext)
+        && this.store.profile(input.botId).seedKey === 'coordinator' && dashboardRequest(input.text);
+      const candidates = boardRequest ? tasks.filter(task => !terminalTask(task.status) && isDashboardScope(task.context) && dashboardRequest(task.input)) : tasks;
+      return planInput(input, candidates, !!this.executor.classifyInput);
+    }, () => this.executor.captureDashboardHandoff?.(input));
+    if (!receipt.duplicate && receipt.task.inputRoute) {
+      this.dispatchInputs();
+      const accepted = this.store.submissionStatus(input, surface.kind);
+      if (accepted.status === 'accepted') { receipt.task = accepted.receipt.task; receipt.disposition = accepted.receipt.disposition; }
+    } else if (receipt.disposition === 'amended' && !receipt.duplicate) this.executor.redirect?.(receipt.task.id);
     this.emit('metric', { stage: 'accept', milliseconds: performance.now() - started, requestId: input.clientRequestId, taskId: receipt.task.id, rootTaskId: receipt.task.rootTaskId });
-    this.changed({ kind: 'draft', chatId: input.chatId, draftSurface: surface.kind, revision: receipt.draft.revision });
+    if (!input.memoryRequest) this.changed({ kind: 'draft', chatId: input.chatId, draftSurface: surface.kind, revision: receipt.draft.revision });
     this.changed({ kind: 'task', botId: input.botId, taskId: receipt.task.id, chatId: input.chatId });
     this.changed({ kind: 'chat', botId: input.botId, chatId: input.chatId });
     this.wake(); return receipt;
   }
+  private browserTask(task: BotTask): boolean {
+    const page = task.context.pageScope ?? task.context.scope;
+    return page?.module === 'workbench' && ['browser', 'media-browser'].includes(page.viewId);
+  }
+  private isBusyBoundary(task: BotTask): boolean {
+    return (this.active.has(task.id) && this.browserTask(task)) || this.store.actions(task.id).some(a => a.status === 'executing' || a.status === 'unknown');
+  }
+  private awaitingBrowserRedirect(task: BotTask): boolean {
+    return this.browserTask(task) && this.store.pendingInputs().some(s => s.inputRoute && ['amend', 'pause', 'switch', 'cancel'].includes(s.inputRoute.intent) && s.inputRoute.candidates.some(id => id === task.id || id === task.rootTaskId));
+  }
+  private awaitingInterpretation(task: BotTask): boolean {
+    return [...this.interpreting.keys()].some(id => this.store.task(id).inputRoute?.candidates.some(candidate => candidate === task.id || candidate === task.rootTaskId));
+  }
+  async waitForInput(task: BotTask, signal: AbortSignal): Promise<void> {
+    while (this.awaitingInterpretation(task)) { signal.throwIfAborted(); await new Promise(resolve => setTimeout(resolve, 30)); }
+  }
+
+  private dispatchInputs(): void {
+    const pending = this.store.pendingInputs();
+    const blocked = new Set<string>();
+    for (const source of pending) {
+      if (blocked.has(source.chatId) && source.inputRoute?.intent !== 'status') continue;
+      try {
+        if (!this.dispatchInput(source, source.inputRoute!)) { blocked.add(source.chatId); continue; }
+      } catch (cause) {
+        this.store.finishInput(source, cause instanceof Error ? cause.message : '这条消息的目标已变化，请重新选择');
+      }
+      this.changed({ kind: 'task', botId: source.botId, chatId: source.chatId, taskId: source.id });
+    }
+  }
+  private dispatchInput(source: BotTask, route: BotInputRoute): boolean {
+    const targets = route.candidates.map(id => this.store.task(id)).filter(task => {
+      const root = this.store.task(task.rootTaskId);
+      return root.botId === source.botId && root.chatId === source.chatId;
+    });
+    if (!targets.length) { this.store.finishInput(source, '原工作已不可用，请重新选择'); return true; }
+    if (route.intent === 'interpret' && this.executor.classifyInput) {
+      if (this.interpreting.has(source.id)) return false;
+      const controller = new AbortController(); this.interpreting.set(source.id, controller);
+      const candidates = targets.map(({ id, title, status }) => ({ id, title, status }));
+      const accept = (choice: RouteChoice) => {
+        if (controller.signal.aborted) return;
+        const current = this.store.task(source.id);
+        if (current.status !== 'queued' || current.inputRoute?.intent !== 'interpret') return;
+        const chosen = targets.find(t => t.id === choice.taskId);
+        const inputRoute: BotInputRoute | undefined = choice.intent === 'new' ? undefined : choice.intent === 'clarify' || !chosen
+          ? { intent: 'clarify', candidates: route.candidates } : { intent: choice.intent, candidates: [chosen.id] };
+        this.store.updateTask(source.id, { inputRoute });
+      };
+      void this.executor.classifyInput(source.botId, source.input, candidates, controller.signal).then(accept, () => accept({ intent: 'clarify' })).finally(() => {
+        this.interpreting.delete(source.id);
+        if (!controller.signal.aborted) { this.dispatchInputs(); this.changed({ kind: 'task', taskId: source.id, botId: source.botId, chatId: source.chatId }); this.wake(); }
+      });
+      return false;
+    }
+    if (route.intent === 'clarify' || route.intent === 'interpret' || targets.length !== 1) {
+      const options = targets.map((t, i) => ({ label: (i + 1) + ' · ' + t.title, taskId: t.id }));
+      this.store.updateTask(source.id, { inputRoute: { ...route, intent: 'clarify', clarifyIntent: route.intent === 'interpret' || route.intent === 'clarify' ? route.clarifyIntent : route.intent } });
+      this.waitForAction(source.id, source.id + ':route', 'question', { question: route.intent === 'clarify' || route.intent === 'interpret' ? '要把这句补充到哪项工作，还是单独处理？' : '这条消息指哪项工作？', options: [...options, { label: '作为新工作发送' }] });
+      return true;
+    }
+    let task = targets[0];
+    if (route.intent === 'amend' && !route.explicit && task.status === 'waiting_bot') {
+      const children = this.store.collaboration(task.rootTaskId).tasks.filter(t => t.parentTaskId === task.id && !terminalTask(t.status));
+      if (children.length > 1) { this.store.updateTask(source.id, { inputRoute: { intent: 'amend', candidates: children.map(t => t.id) } }); this.wake(); return false; }
+      if (children.length === 1) task = children[0];
+    }
+    if (route.intent === 'status') {
+      const labels: Record<BotTask['status'], string> = { queued: '等待执行', running: '执行中', waiting_user: '等你处理', waiting_bot: '等待协作', waiting_resource: '等待资源', interrupted: '已暂停', completed: '已完成', failed: '执行失败', cancelled: '已取消' };
+      this.store.finishInput(source, '「' + task.title + '」' + labels[task.status] + (task.reason ? '。' + task.reason : '。'));
+      return true;
+    }
+    const affected = task.id === task.rootTaskId && ['pause', 'resume', 'switch', 'cancel'].includes(route.intent)
+      ? this.store.collaboration(task.id).tasks : [task];
+    const busy = affected.filter(item => this.isBusyBoundary(item));
+    if (busy.length) {
+      for (const item of busy) if (this.browserTask(item)) this.executor.redirect?.(item.id);
+      if (!source.reason) this.store.updateTask(source.id, { reason: '已收到，等待原操作返回实际结果' });
+      return false;
+    }
+    if (route.intent === 'amend') {
+      const updated = this.store.absorbMessage(source, task);
+      this.executor.redirect?.(updated.id);
+      this.changed({ kind: 'task', botId: updated.botId, taskId: updated.id, chatId: updated.chatId });
+      return true;
+    }
+    if (route.intent === 'cancel') { this.cancelTask(task.id, task.revision); this.store.finishInput(source, '已取消「' + task.title + '」。'); return true; }
+    if (route.intent === 'resume') {
+      const paused = affected.filter(item => item.status === 'interrupted');
+      for (const item of paused) {
+        if (!item.pausedStatus) { this.retryTask(item.id, item.revision); continue; }
+        this.store.updateTask(item.id, { status: item.pausedStatus === 'running' ? 'queued' : item.pausedStatus, pausedStatus: undefined, reason: undefined });
+        this.changed({ kind: 'task', taskId: item.id, botId: item.botId });
+      }
+      this.store.finishInput(source, paused.length ? '「' + task.title + '」已按当前进度继续。' : '「' + task.title + '」当前没有暂停。'); return true;
+    }
+    for (const item of affected) {
+      if (terminalTask(item.status) || item.status === 'interrupted') continue;
+      this.store.updateTask(item.id, { pausedStatus: item.status, status: 'interrupted', reason: '用户暂停了工作', runGeneration: (item.runGeneration ?? 0) + 1 });
+      this.active.get(item.id)?.abort();
+      this.changed({ kind: 'task', taskId: item.id, botId: item.botId });
+    }
+    if (route.intent === 'switch') this.store.updateTask(source.id, { inputRoute: undefined, priority: true, resumeInput: switchedWork(source.input) });
+    else this.store.finishInput(source, '已暂停「' + task.title + '」。');
+    return true;
+  }
+
   changeQueuedMessage(change: BotQueueChange, surface: Surface): BotTask {
     const source = this.store.task(change.taskId);
     this.assertSurface(source.chatId, surface);
@@ -121,9 +257,10 @@ export class BotHost extends EventEmitter {
       this.changed({ kind: 'schedule', botId: task.botId });
       this.changed({ kind: 'task', botId: task.botId, taskId: task.id });
     }
+    this.dispatchInputs();
     this.deliverResults();
     const busyBots = new Set(this.runningIds().map(id => this.store.task(id).botId));
-    const queued = this.store.tasks(undefined, Number.MAX_SAFE_INTEGER).filter(t => t.status === 'queued').sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    const queued = this.store.tasks(undefined, Number.MAX_SAFE_INTEGER).filter(t => t.status === 'queued' && !t.inputRoute).sort((a, b) => Number(!!b.priority) - Number(!!a.priority) || a.createdAt.localeCompare(b.createdAt));
     for (const task of queued) {
       if (this.runningIds().length >= 2) break;
       if (busyBots.has(task.botId)) continue;
@@ -131,14 +268,46 @@ export class BotHost extends EventEmitter {
       this.store.updateTask(task.id, { status: 'running', workerId: this.workerId, reason: undefined, runGeneration: (task.runGeneration ?? 0) + 1 });
       this.emit('metric', { stage: 'queue', milliseconds: Date.now() - Date.parse(task.updatedAt), taskId: task.id, rootTaskId: task.rootTaskId });
       this.changed({ kind: 'task', taskId: task.id, botId: task.botId });
-      void this.executor.run(this.store.task(task.id), this, controller.signal).then(result => {
+      const run = this.store.task(task.id);
+      void this.executor.run(run, this, controller.signal).then(result => {
         const current = this.store.task(task.id);
-        if (current.status === 'running') this.finish(task.id, 'completed', result.reply);
+        if (!controller.signal.aborted && current.runGeneration === run.runGeneration && current.requirementsRevision === run.requirementsRevision &&
+            ['running', 'waiting_user', 'waiting_bot', 'waiting_resource'].includes(current.status) && result.memoryMessageIds?.length) {
+          this.store.queueMemoryReview(result.memoryMessageIds);
+        }
+        if (current.status === 'running' && current.runGeneration === run.runGeneration && current.requirementsRevision === run.requirementsRevision && !this.awaitingBrowserRedirect(current)) this.finish(task.id, 'completed', result.reply);
       }, error => {
         const current = this.store.task(task.id);
-        if (current.status === 'running') this.finish(task.id, this.stopping || this.suspended ? 'interrupted' : 'failed', error instanceof Error ? error.message : '执行失败');
+        if (current.status === 'running' && current.runGeneration === run.runGeneration && current.requirementsRevision === run.requirementsRevision && !this.awaitingBrowserRedirect(current)) this.finish(task.id, this.stopping || this.suspended ? 'interrupted' : 'failed', error instanceof Error ? error.message : '执行失败');
       }).finally(() => { this.active.delete(task.id); this.resourceWaits.delete(task.id); this.wake(); });
     }
+    this.reviewPendingMemory(busyBots);
+  }
+
+  setAutomaticMemory(enabled: boolean): boolean {
+    this.store.setMemoryEnabled(enabled);
+    if (!enabled) this.memoryReview?.abort();
+    this.memoryRetryAt.clear();
+    this.wake();
+    return enabled;
+  }
+  private reviewPendingMemory(busyBots: Set<string>): void {
+    if (this.memoryReview || !this.executor.reviewMemories) return;
+    for (const [id, retryAt] of this.memoryRetryAt) {
+      if (retryAt > this.clock()) busyBots.add(id); else this.memoryRetryAt.delete(id);
+    }
+    const batch = this.store.nextMemoryReview(busyBots);
+    if (!batch) return;
+    const controller = new AbortController();
+    this.memoryReview = controller;
+    void (batch.inputs.length ? this.executor.reviewMemories(batch, controller.signal) : Promise.resolve([])).then(changes => {
+      if (!controller.signal.aborted && this.store.commitMemoryReview(batch, changes)) this.changed({ kind: 'memory', botId: batch.botId });
+    }).catch(() => {
+      if (!controller.signal.aborted) this.memoryRetryAt.set(batch.botId, this.clock() + 60_000);
+    }).finally(() => {
+      this.memoryReview = undefined;
+      this.wake();
+    });
   }
   finish(taskId: string, status: BotTask['status'], result: string): BotTask {
     const next = this.store.transaction(() => {
@@ -255,6 +424,19 @@ export class BotHost extends EventEmitter {
     this.store.checkRevision(action, revision);
     if (action.status !== 'pending') throw new BotError('ACTION_NOT_PENDING', '操作已执行或结果待核对，不能重复提交');
     const task = this.store.task(action.taskId);
+    if (task.inputRoute?.intent === 'clarify' && action.kind === 'question' && answer.approved !== false) {
+      const options = action.payload.options as { label: string; taskId?: string }[];
+      const choice = options.find(item => item.label === answer.text?.trim());
+      if (!choice) throw new BotError('INVALID_INPUT', '请选择一项工作或作为新工作发送');
+      const selected = this.store.transaction(() => {
+        const result = this.store.updateAction(id, { status: 'applied', receipt: { answer: choice.label } });
+        this.store.updateTask(task.id, { status: 'queued', reason: undefined, inputRoute: choice.taskId ? { intent: task.inputRoute!.clarifyIntent ?? 'amend', candidates: [choice.taskId] } : undefined });
+        return result;
+      });
+      this.changed({ kind: 'task', botId: task.botId, taskId: task.id, chatId: task.chatId }); this.wake(); return selected;
+    }
+    if (task.pausedStatus && task.status === 'interrupted') throw new BotError('WORK_PAUSED', '这项工作已暂停，请先继续工作');
+    if (this.awaitingInterpretation(task)) throw new BotError('ROUTE_PENDING', '正在处理刚收到的消息，请确认最新建议');
     if ((action.requirementsRevision ?? 0) !== (task.requirementsRevision ?? 0)) throw new BotError('VERSION_CONFLICT', '工作要求已经更新，请等待最新建议');
     if (terminalTask(task.status)) throw new BotError('TASK_FINISHED', '任务已结束');
     if (['todo', 'copy'].includes(action.kind) && task.status !== 'waiting_user') throw new BotError('PREVIEW_NOT_READY', '建议仍在生成，请等待完整预览后确认');
@@ -311,11 +493,17 @@ export class BotHost extends EventEmitter {
   retryTask(id: string, revision: number): BotTask {
     const task = this.store.task(id); this.store.checkRevision(task, revision);
     if (!['failed', 'interrupted', 'waiting_resource'].includes(task.status)) throw new BotError('NOT_RETRYABLE', '当前任务不能重试');
+    if (task.memoryRequest && task.memoryReceipts?.length) return this.finish(id, 'completed', '已保存本次记忆');
     if (this.store.actions(id).some(a => ['executing', 'unknown'].includes(a.status))) throw new BotError('RECONCILIATION_REQUIRED', '请先核对已有业务操作，不能重复执行');
+    if (task.pausedStatus) {
+      const next = this.store.updateTask(id, { status: task.pausedStatus === 'running' ? 'queued' : task.pausedStatus, pausedStatus: undefined, reason: undefined });
+      this.changed({ kind: 'task', taskId: id, botId: next.botId }); this.wake(); return next;
+    }
     const next = this.store.updateTask(id, { status: 'queued', reason: undefined, resumeInput: task.piSessionPath ? '继续原任务。先核对已有工具记录和业务回执，不重复已成功操作。' : undefined }); this.changed({ kind: 'task', taskId: id, botId: next.botId }); this.wake(); return next;
   }
   suspend(): void {
     this.suspended = true;
+    this.memoryReview?.abort();
     for (const [id, controller] of this.active) {
       if (this.resourceWaits.has(id)) this.store.updateTask(id, { status: 'waiting_resource', reason: '系统暂停了浏览器资源，请打开工作区后继续' });
       else if (this.store.task(id).status === 'running') this.finish(id, 'interrupted', '执行已暂停，请核对记录后继续');
@@ -325,7 +513,8 @@ export class BotHost extends EventEmitter {
   resume(): void { this.suspended = false; this.wake(); }
   state(): BotHostState { return { connected: true, running: !this.stopping, independent: true, pid: process.pid, activeTasks: this.runningIds().length, queuedTasks: this.store.tasks(undefined, Number.MAX_SAFE_INTEGER).filter(t => t.status === 'queued').length, startedAt: this.startedAt, supervised: false }; }
   async stop(): Promise<void> {
-    this.stopping = true; if (this.timer) clearInterval(this.timer);
+    this.stopping = true; for (const control of this.interpreting.values()) control.abort(); if (this.timer) clearInterval(this.timer);
+    this.memoryReview?.abort();
     for (const id of this.resourceWaits) this.store.updateTask(id, { status: 'waiting_resource', reason: '浏览器资源已断开，请打开工作区后继续' });
     for (const controller of this.active.values()) controller.abort();
     const deadline = this.clock() + 10000;

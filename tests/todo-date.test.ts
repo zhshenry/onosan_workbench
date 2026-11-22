@@ -48,8 +48,9 @@ test('a calendar-only deadline lasts through the local day and does not invent m
 test('meeting ranges still require endpoints; reminders and snooze do not change the item date', () => {
   const store = new Store(':memory:');
   try {
-    assert.throws(() => store.create({ ...newTask('会议'), kind: 'meeting' }), /开始和结束/);
-    assert.throws(() => store.create({ ...newTask('会议'), kind: 'meeting', dateAt: '2026-12-15' }), /开始时间/);
+    assert.throws(() => store.create({ ...newTask('会议'), kind: 'meeting' }), /请设置日程时间/);
+    const allDay = store.create({ ...newTask('全天日程'), kind: 'meeting', dateAt: '2026-12-15' });
+    assert.equal(allDay.endAt, null);
     const meeting = store.create({ ...newTask('会议'), kind: 'meeting', dateAt: '2026-12-15T10:00:00+08:00', endAt: '2026-12-15T11:00:00+08:00' });
     assert.equal(isOverdue(meeting, Date.parse(meeting.dateAt!) + 30 * 60000), false);
     const task = store.create({ ...newTask('提醒'), dateAt: '2026-12-15', remindAt: '2026-12-14T09:00:00+08:00' });

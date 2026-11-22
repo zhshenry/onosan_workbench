@@ -776,7 +776,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
         {conversation.length === 0 && !ask && (
           <div className="ai-empty">
             <span className="ai-empty-avatar"><Sparkle size={24} weight="fill" /></span>
-            <b>待办与日程</b>
+            <b>日程待办</b>
             <p>查询待办、整理日程，修改会先让你确认。</p>
           </div>
         )}

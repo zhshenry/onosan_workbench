@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { ArrowLeft, Desktop, GearSix, Info, ListChecks, Palette, Robot, PlugsConnected, Sparkle, UserCircle } from '@phosphor-icons/react';
+import { ArrowLeft, Desktop, GearSix, Info, ListChecks, Palette, Robot, PlugsConnected, Sparkle, UserCircle, Notebook } from '@phosphor-icons/react';
 import type { AvatarColor, ViewId } from '../../shared/contracts';
 import type { CheckinProvider } from '../../shared/checkin-contracts';
 import type { AppearanceController } from '../appearance';
@@ -14,6 +14,7 @@ const SECTION_ICONS: Partial<Record<ViewId, typeof GearSix>> = {
   'settings-island': Desktop,
   'settings-ai': Sparkle,
   'settings-bots': Robot,
+  'settings-memory': Notebook,
   'settings-apps': PlugsConnected,
   'settings-data': ListChecks,
   'settings-about': Info,

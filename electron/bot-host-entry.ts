@@ -8,6 +8,7 @@ import { AiStore } from './ai-store';
 import { BotStore, BotError } from './bot-store';
 import { BotHost } from './bot-host';
 import { BotRuntime } from './bot-runtime';
+import { DashboardStore } from './dashboard-store';
 import { BotPeer, hostAddress, hostSecret } from './bot-transport';
 import { botService } from './bot-service';
 import { registerAiIpc } from './ai-ipc';
@@ -35,11 +36,13 @@ prepareHostEncryption(directory);
 void app.whenReady().then(async () => {
   mkdirSync(dirname(todoPath), { recursive: true });
   const ai = new AiStore(directory, { recover: false }), store = new BotStore(ai, directory);
+  const dashboard = new DashboardStore(directory);
   const todo = new Store(todoPath, 'shared-tasks'), copy = new CopyStore(directory), bazi = new BaziStore(directory), reading = new ReadingStore(directory);
   const peers = new Set<BotPeer>();
   let resourcePeer: BotPeer | undefined;
   const broadcast = (channel: string, value?: unknown) => { for (const peer of peers) if (peer.authorized) peer.notify(channel, value); };
   const runtime = new BotRuntime(store, todo, copy, bazi, reading, {
+    dashboard,
     connection: modelId => {
       const config = ai.readConfig(); if (!config.aiEnabled) return null;
       const model = config.models.find(item => item.id === modelId);
@@ -127,7 +130,7 @@ void app.whenReady().then(async () => {
   let stopping = false;
   const shutdown = async () => {
     if (stopping) return; stopping = true;
-    clearInterval(reminderTimer); await host.stop(); for (const peer of peers) peer.close(); server.close(); ai.close(); todo.close(); copy.close(); bazi.close(); reading.close(); app.exit(0);
+    clearInterval(reminderTimer); await host.stop(); for (const peer of peers) peer.close(); server.close(); dashboard.close(); ai.close(); todo.close(); copy.close(); bazi.close(); reading.close(); app.exit(0);
   };
   const server = createServer(socket => {
     const peer = new BotPeer(socket, hostSecret(directory), true); peers.add(peer);

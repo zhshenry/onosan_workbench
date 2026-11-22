@@ -13,12 +13,14 @@ const bot: WorkbenchApi['bot'] = {
   list: () => botCall('list'), open: (id, view) => botCall('open', id, view), updateProfile: (id, revision, patch) => botCall('updateProfile', id, revision, patch),
   markRead: id => botCall('markRead', id), getLaunchTarget: () => botCall('getLaunchTarget'),
   getDraft: id => botCall('getDraft', id), saveDraft: (id, revision, value) => botCall('saveDraft', id, revision, value),
-  getSubmissionStatus: (input, epoch) => botCall('getSubmissionStatus', input, epoch), getPendingSubmission: id => botCall('getPendingSubmission', id), retainPendingDraft: (id, value) => botCall('retainPendingDraft', id, value), acknowledgeSubmission: (id, requestId) => botCall('acknowledgeSubmission', id, requestId),
+  getSubmissionStatus: (input, epoch) => botCall('getSubmissionStatus', input, epoch), getPendingSubmission: (id, memory) => botCall('getPendingSubmission', id, memory), retainPendingDraft: (id, value) => botCall('retainPendingDraft', id, value), acknowledgeSubmission: (id, requestId) => botCall('acknowledgeSubmission', id, requestId),
   submit: input => botCall('submit', input), listTasks: (id, limit) => botCall('listTasks', id, limit), getTask: id => botCall('getTask', id), cancelTask: (id, revision) => botCall('cancelTask', id, revision), retryTask: (id, revision) => botCall('retryTask', id, revision),
   changeQueuedMessage: change => botCall('changeQueuedMessage', change),
   getCollaboration: id => botCall('getCollaboration', id), getBotExchange: (a, b, query) => botCall('getBotExchange', a, b, query),
   answerAction: (id, revision, answer) => botCall('answerAction', id, revision, answer), listArtifacts: id => botCall('listArtifacts', id), openArtifact: id => botCall('openArtifact', id),
   reconcileAction: (id, revision, result, note) => botCall('reconcileAction', id, revision, result, note), undoAction: (id, revision) => botCall('undoAction', id, revision),
+  memorySources: (botId, id) => botCall('memorySources', botId, id),
+  getAutomaticMemory: () => botCall('getAutomaticMemory'), setAutomaticMemory: enabled => botCall('setAutomaticMemory', enabled),
   listMemories: id => botCall('listMemories', id), updateMemory: input => botCall('updateMemory', input), removeMemory: (id, revision) => botCall('removeMemory', id, revision),
   listSchedules: id => botCall('listSchedules', id), saveSchedule: input => botCall('saveSchedule', input), setScheduleEnabled: (id, revision, enabled) => botCall('setScheduleEnabled', id, revision, enabled),
   removeSchedule: (id, revision) => botCall('removeSchedule', id, revision),
@@ -415,6 +417,15 @@ const hushHour: WorkbenchApi['hushHour'] = {
 
 const api: WorkbenchApi = {
   bot,
+  dashboard: {
+    load: legacy => ipcRenderer.invoke('dashboard:load', legacy),
+    save: input => ipcRenderer.invoke('dashboard:save', input),
+    onChanged: callback => {
+      const listener = () => callback();
+      ipcRenderer.on('dashboard:changed', listener);
+      return () => ipcRenderer.off('dashboard:changed', listener);
+    },
+  },
   checkin: {
     state: () => ipcRenderer.invoke('checkin:state'),
     run: providers => ipcRenderer.invoke('checkin:run', providers),

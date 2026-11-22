@@ -22,14 +22,17 @@ export class BotOutbox {
     try { writeFileSync(fd, JSON.stringify(this.records)); fsyncSync(fd); } finally { closeSync(fd); }
     renameSync(temporary, this.file);
   }
-  pending(chatId: string, surface: BotDraftSurface): Record | null { return structuredClone(this.records.find(record => record.input.chatId === chatId && record.surface === surface) ?? null); }
+  pending(chatId: string, surface: BotDraftSurface, memory = false): Record | null {
+    return structuredClone(this.records.find(record => record.input.chatId === chatId && record.surface === surface && !!record.input.memoryRequest === memory) ?? null);
+  }
   retainDraft(chatId: string, surface: BotDraftSurface, value: BotDraftValue): void {
-    const record = this.records.find(row => row.input.chatId === chatId && row.surface === surface);
+    const record = this.records.find(row => row.input.chatId === chatId && row.surface === surface && !row.input.memoryRequest);
     if (record) { record.localDraft = structuredClone(value); this.save(); }
   }
   send(input: BotSubmit, surface: BotDraftSurface, transport: Transport): Promise<BotSubmitReceipt> {
-    const key = `${surface}:${input.chatId}`, running = this.active.get(key);
-    const record = this.records.find(row => row.input.chatId === input.chatId && row.surface === surface);
+    const memory = !!input.memoryRequest;
+    const key = `${surface}:${input.chatId}:${memory ? 'memory' : 'chat'}`, running = this.active.get(key);
+    const record = this.records.find(row => row.input.chatId === input.chatId && row.surface === surface && !!row.input.memoryRequest === memory);
     if (record && payloadHash(record.input) !== payloadHash(input)) return Promise.reject(new BotError('SEND_PENDING', '上一条消息仍在核对接收状态，当前输入已保留'));
     if (running) return payloadHash(running.input) === payloadHash(input) ? running.promise : Promise.reject(new BotError('SEND_PENDING', '上一条消息仍在核对，请保留当前输入'));
     const request = this.deliver(structuredClone(input), surface, transport).finally(() => this.active.delete(key));

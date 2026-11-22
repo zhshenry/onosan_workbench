@@ -26,6 +26,8 @@ export interface AiModuleContribution {
   toolNames: string[];
   /** 工具名 → 用户可见标签(工具事件展示) */
   labels: Record<string, string>;
+  /** 根据已开始执行的工具生成简短状态。原始参数仅在内核内读取。 */
+  describeToolProgress?(name: string, input: unknown): string | undefined;
   /** 系统提示词(注入当前时间与模块上下文) */
   systemPrompt(now: Date): string;
 }
@@ -221,7 +223,11 @@ export async function runAgentLoop(config: { endpoint: string; model: string; pr
             onProgress();
           }
         }
-        if (label) onTool?.({ id: event.toolCallId, name: event.toolName, label, status: event.type === 'tool_execution_end' ? event.isError ? 'error' : 'complete' : 'running', output: output.slice(0, 20000) });
+        if (label && onTool) {
+          const status = event.type === 'tool_execution_end' ? event.isError ? 'error' : 'complete' : 'running';
+          const progressLabel = event.type === 'tool_execution_end' ? undefined : module.describeToolProgress?.(event.toolName, event.args);
+          onTool({ id: event.toolCallId, name: event.toolName, label, status, output: output.slice(0, 20000), ...(progressLabel ? { progressLabel } : {}) });
+        }
         return;
       }
       if (event.type !== 'message_update' && event.type !== 'message_end') return;

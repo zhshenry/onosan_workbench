@@ -118,6 +118,23 @@ export function findDashboardSlot(column: number, top: number, span: number, hei
 }
 
 export function dashboardPlacements(widgets: DashboardWidget[], columns: number, step: number, base: number, gap: number): WidgetPlacement[] {
+  if (!widgets.some(widget => widget.position || (columns === 1 && widget.singleColumnTop !== undefined))) {
+    // Match the canvas' normal grid placement until the first explicit position is saved.
+    let column = 0, rowTop = 0, rowHeight = 0;
+    return widgets.map(widget => {
+      const span = columnSpan(widget.width, columns), height = base + widget.rows * step;
+      const offset = (widget.topOffset ?? 0) * step;
+      if (column + span > columns) {
+        rowTop += rowHeight + gap;
+        column = 0;
+        rowHeight = 0;
+      }
+      const placement = { id: widget.id, column, span, top: rowTop + offset, height };
+      column += span;
+      rowHeight = Math.max(rowHeight, height + offset);
+      return placement;
+    });
+  }
   const placed: WidgetPlacement[] = [];
   for (const widget of widgets) {
     const span = columnSpan(widget.width, columns), height = base + widget.rows * step;

@@ -186,14 +186,14 @@ try {
   await check('Cancel empty new-task editor without creating a task', async () => {
     await openTodoWorkspace();
     await page.locator('#view-todo').getByRole('button', { name: '新增', exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: '新增事项', exact: true });
+    const dialog = page.getByRole('dialog', { name: /^(?:新增事项|新建日程|新建待办)$/ });
     await dialog.getByRole('button', { name: usesBots ? '返回' : '关闭', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });
     assert.equal((await state()).tasks.length, 0);
   });
   await check('Create one synthetic task through the UI', async () => {
     await page.locator('#view-todo').getByRole('button', { name: '新增', exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: '新增事项', exact: true });
+    const dialog = page.getByRole('dialog', { name: /^(?:新增事项|新建日程|新建待办)$/ });
     await dialog.getByRole('textbox', { name: '待办名称', exact: true }).fill(title);
     await dialog.getByRole('button', { name: '创建', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });
@@ -205,7 +205,7 @@ try {
   await check('Edit synthetic task title and note through the UI', async () => {
     const workspace = page.locator('#view-todo');
     await workspace.getByRole('button', { name: `编辑 ${title}`, exact: true }).click();
-    const editor = workspace.locator('.task-edit-page').or(page.getByRole('dialog', { name: '编辑事项', exact: true }));
+    const editor = workspace.locator('.task-edit-page').or(page.getByRole('dialog', { name: /^(?:编辑事项|编辑日程|编辑待办|日程详情)$/ }));
     await editor.getByRole('textbox', { name: '待办名称', exact: true }).fill(editedTitle);
     await editor.getByRole('textbox', { name: '备注 / 进展', exact: true }).fill(note);
     await verifyUnboundedDatePicker(page);

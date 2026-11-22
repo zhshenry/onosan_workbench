@@ -17,6 +17,7 @@ export interface AiConfig {
 export interface WorkbenchApi {
   meetingNotes: import('./meeting-notes').MeetingNotesBridge;
   bot: import('./bot-contracts').BotBridge;
+  dashboard: import('./dashboard-operations').DashboardBridge;
   checkin: import('./checkin-contracts').CheckinBridge;
   island: import('./island-contracts').IslandBridge;
   aiTest: import('./ai-test-contracts').AiTestBridge;

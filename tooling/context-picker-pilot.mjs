@@ -267,7 +267,7 @@ export async function runContextPickerPilot({ application, page, check, screensh
     await check('Context picker: real UI creates long todo fixture and keyboard/change/remove/cancel stay read-only', async () => {
       await navigate(page, 'life', '日程和待办', 'todo');
       await page.locator('#view-todo').getByRole('button', { name: '新增', exact: true }).click();
-      const editor = page.getByRole('dialog', { name: '新增事项', exact: true });
+      const editor = page.getByRole('dialog', { name: /^(?:新增事项|新建日程|新建待办)$/ });
       await editor.getByRole('textbox', { name: '待办名称', exact: true }).fill(longTitle);
       await editor.getByRole('button', { name: '更多设置：未设置', exact: true }).click();
       await editor.getByRole('textbox', { name: '备注 / 进展', exact: true }).fill(originalNote);
@@ -275,7 +275,7 @@ export async function runContextPickerPilot({ application, page, check, screensh
       todo = (await eventually(() => taskState(page), state => state.tasks.some(task => task.title === longTitle), 'Todo fixture did not save')).tasks.find(task => task.title === longTitle);
       for (let i = 0; i < 21; i++) {
         await page.locator('#view-todo').getByRole('button', { name: '新增', exact: true }).click();
-        const extra = page.getByRole('dialog', { name: '新增事项', exact: true });
+        const extra = page.getByRole('dialog', { name: /^(?:新增事项|新建日程|新建待办)$/ });
         await extra.getByRole('textbox', { name: '待办名称', exact: true }).fill(`CI参考滚动${marker}-${i}`);
         await extra.getByRole('button', { name: '创建', exact: true }).click(); await extra.waitFor({ state: 'hidden' });
       }
@@ -328,7 +328,7 @@ export async function runContextPickerPilot({ application, page, check, screensh
       assert.deepEqual(turn.contextScope, { module: 'todo' });
       await closePanel(page);
       await page.locator('#view-todo').getByRole('button', { name: `编辑 ${longTitle}`, exact: true }).click();
-      const editor = page.getByRole('dialog', { name: '编辑事项', exact: true });
+      const editor = page.getByRole('dialog', { name: /^(?:编辑事项|编辑日程|编辑待办|日程详情)$/ });
       await editor.getByRole('textbox', { name: '备注 / 进展', exact: true }).fill(editedNote);
       await editor.getByRole('button', { name: '保存待办', exact: true }).click(); await editor.waitFor({ state: 'hidden' });
       await eventually(() => taskState(page), state => state.tasks.find(task => task.id === todo.id)?.note === editedNote, 'Todo source edit did not save');

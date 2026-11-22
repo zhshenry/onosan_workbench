@@ -5,7 +5,7 @@
 .hush-hour-workspace .game-project-name { min-width: 0; }
 .hush-hour-workspace .game-project-actions { max-width: 100%; flex-wrap: wrap; gap: 6px; }
 .hush-hour-workspace .game-project-actions button { min-height: 32px; padding: 5px 10px; background: var(--workbench-card-bg); }
-.hush-hour-workspace .game-project-actions .game-primary { background: var(--action); }
+.hush-hour-workspace .game-project-actions .game-primary { background: var(--acc-deep); }
 .hush-hour-workspace .game-project-actions > .game-options-trigger { padding-inline: 6px; }
 .hush-hour-workspace .game-project-panels { gap: 6px; margin: 0; padding: 0; border: 0; }
 .hush-hour-workspace .game-panels { gap: 0; }

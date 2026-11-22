@@ -178,7 +178,7 @@ export class AiStore {
         hasEarlier: start > cutoff, hasLater: end < entries.length,
         lastEntryId: entries.at(-1)?.id, collapsedAt: cutoff ? entries[cutoff - 1].id : undefined,
         liveEntries: entries.filter(entry => entry.streaming || entry.actionState === 'pending'),
-        latestUser: user ? { id: user.id, content: user.content } : undefined,
+        latestUser: user ? { id: user.id, content: user.content, createdAt: user.createdAt } : undefined,
         toolReplyIds: entries.filter(entry => entry.tools?.length || entry.browserTask || entry.proposal || ('copyProposal' in entry && entry.copyProposal)).map(entry => entry.id),
       };
     } finally { this.db.exec('RELEASE read_bot_chat'); }

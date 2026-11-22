@@ -2,10 +2,10 @@ import { z } from 'zod';
 import type { AiTurnContext } from './ai-reference';
 import type { ChatEntry, ChatSession } from './todo-contracts';
 
-export const BOT_CONTRACT_VERSION = 'bot-workbench/v13';
+export const BOT_CONTRACT_VERSION = 'bot-workbench/v19';
 export const botSeeds = [
   { seedKey: 'coordinator', workspaceId: 'home', name: 'Ono', avatar: 'ring:blue', description: '总 Bot · 总台', instructions: '协调各领域负责人，跟进任务与交付。依据真实结果汇报，不把已委派当成已完成。', views: ['home', 'checkin'] },
-  { seedKey: 'schedule', workspaceId: 'todo', name: '小历', avatar: 'square:violet', description: '待办与日程', instructions: '管理待办与日程。写入前展示具体建议并等待用户确认。', views: ['todo'] },
+  { seedKey: 'schedule', workspaceId: 'todo', name: '小历', avatar: 'square:violet', description: '日程待办', instructions: '管理待办与日程。写入前展示具体建议并等待用户确认。', views: ['todo'] },
   { seedKey: 'media', workspaceId: 'media', name: '小墨', avatar: 'drop:graphite', description: '自媒体', instructions: '协助文章写作、整理和发布准备。修改原稿需用户确认，发布结果以实际回执为准。', views: ['copy', 'copy-publish', 'media-browser'] },
   { seedKey: 'game', workspaceId: 'game', name: '游伴', avatar: 'ghost:green', description: '游戏', instructions: '协助当前游戏工作区，明确区分建议与已执行操作。', views: ['game'] },
   { seedKey: 'web', workspaceId: 'web', name: '小舟', avatar: 'sail:orange', description: '网页与网站', instructions: '协助网页及网站工作区。浏览器操作遵守现有站点授权，缺少窗口或登录时等待资源。', views: ['browser', 'hush-hour', 'personal-website'] },
@@ -24,7 +24,7 @@ export type BotActivity = BotRunActivity | 'idle' | 'queued' | 'waiting_bot' | '
 export type BotCard = Omit<BotProfile, 'instructions'> & { capabilities: string[]; unreadCount?: number; waitingCount?: number; runningCount?: number; activity?: BotActivity; completion?: string };
 export const resourceRefSchema = z.object({ kind: z.enum(['todo', 'copy', 'bazi', 'reading', 'artifact', 'chat']), id: z.string().min(1).max(200), version: z.string().max(100).optional(), label: z.string().max(200).optional() }).strict();
 export type BotResourceRef = z.infer<typeof resourceRefSchema>;
-export const draftValueSchema = z.object({ text: z.string().max(10000), replyToTaskId: z.string().uuid().nullable(), resources: z.array(resourceRefSchema).max(8) }).strict();
+export const draftValueSchema = z.object({ generatedPrompts: z.array(z.string().min(1).max(10000)).max(16).optional(), text: z.string().max(10000), replyToTaskId: z.string().uuid().nullable(), resources: z.array(resourceRefSchema).max(8) }).strict();
 export type BotDraftValue = z.infer<typeof draftValueSchema>;
 export type BotDraftSurface = 'main' | 'island';
 export const draftSnapshotSchema = draftValueSchema.extend({ chatId: z.string().uuid(), surface: z.enum(['main', 'island']), revision: z.number().int().nonnegative() }).strict();
@@ -32,7 +32,19 @@ export interface DraftSnapshot extends BotDraftValue { chatId: string; surface: 
 export const taskStatuses = ['queued', 'running', 'waiting_user', 'waiting_bot', 'waiting_resource', 'interrupted', 'completed', 'failed', 'cancelled'] as const;
 export type BotTaskStatus = typeof taskStatuses[number];
 export const terminalTask = (status: BotTaskStatus): boolean => ['completed', 'failed', 'cancelled'].includes(status);
+export type BotRouteIntent = 'amend' | 'status' | 'pause' | 'switch' | 'resume' | 'cancel';
+export interface BotInputRoute {
+  intent: BotRouteIntent | 'interpret' | 'clarify'; candidates: string[];
+  explicit?: BotSubmit['target']; clarifyIntent?: BotRouteIntent;
+}
 export interface BotTask {
+  memoryRequest?: BotMemoryRequest;
+  memoryReceipts?: BotMemoryReceipt[];
+  dashboardHandoff?: import('./dashboard-operations').DashboardHandoff;
+  inputRoute?: BotInputRoute;
+  relatedWorkId?: string;
+  pausedStatus?: BotTaskStatus;
+  priority?: boolean;
   id: string; botId: string; chatId: string; rootTaskId: string; parentTaskId?: string;
   sourceMessageId: string; latestUserMessageId?: string; replyToEntryId?: string; kind: 'chat' | 'work' | 'delegated' | 'routine' | 'message';
   status: BotTaskStatus; title: string; input: string; context: AiTurnContext; resources: BotResourceRef[];
@@ -42,6 +54,8 @@ export interface BotTask {
   /** Delivered replies awaiting a new, durable assistant segment. */
   pendingReplyMessageIds?: string[];
   operationIds: string[]; dependencyIds: string[];
+  /** The reply where each to-do card first appeared. Revisions keep that reply. */
+  todoActionEntryIds?: Record<string, string>;
   requirementsRevision?: number; runGeneration?: number;
   amendedActionId?: string;
   queueDisposition?: 'deleted' | 'steered';
@@ -67,7 +81,23 @@ export interface BotArtifact {
   id: string; producerBotId: string; taskId: string; rootTaskId: string; chatId: string; title: string;
   mediaType: string; resource: BotResourceRef; content?: string; createdAt: string;
 }
-export interface BotMemory { id: string; botId: string | null; scope: 'private' | 'shared'; text: string; source: string; revision: number; updatedAt: string; }
+export const BOT_MEMORY_TEXT_LIMIT = 300;
+export const BOT_MEMORY_TITLE_LIMIT = 32;
+export const BOT_MEMORY_TOPIC_LIMIT = 16;
+export const botMemoryRequestSchema = z.object({ scope: z.enum(['private', 'shared']), clarifies: z.string().uuid().optional() }).strict();
+export type BotMemoryRequest = z.infer<typeof botMemoryRequestSchema>;
+export interface BotMemoryReceipt {
+  id: string; entryId: string; messageId: string; title: string; text: string; scope: BotMemory['scope'];
+  operation: 'added' | 'updated' | 'reused'; requestText: string;
+}
+export interface BotMemorySource { chatId: string; messageId: string; quote: string; }
+export interface BotMemory {
+  id: string; botId: string | null; scope: 'private' | 'shared'; text: string; source: string; revision: number; updatedAt: string;
+  title?: string; topic?: string;
+  retention?: 'resident' | 'on-demand'; origin?: 'manual' | 'explicit' | 'automatic'; sources?: BotMemorySource[];
+}
+export type BotMemoryView = Omit<BotMemory, 'sources'> & { title: string; topic: string; sourceCount?: number };
+export type BotMemoryEdit = Pick<BotMemory, 'id' | 'botId' | 'scope' | 'title' | 'topic' | 'text' | 'source' | 'revision'>;
 export const scheduleSpecSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('once'), at: z.iso.datetime() }).strict(),
   z.object({ kind: z.literal('interval'), minutes: z.number().int().min(1).max(525600) }).strict(),
@@ -89,6 +119,8 @@ export const botQueueChangeSchema = z.discriminatedUnion('kind', [
 export type BotQueueChange = z.infer<typeof botQueueChangeSchema>;
 
 export interface BotSubmit {
+  memoryRequest?: BotMemoryRequest;
+  generatedPrompts?: BotDraftValue['generatedPrompts'];
   botId: string; chatId: string; expectedDraftRevision: number; clientRequestId: string;
   text: string; replyToTaskId: string | null; resources: BotResourceRef[]; pageContext?: AiTurnContext;
   target?: { intent: 'amend'; rootTaskId: string; taskId: string; actionId?: string; expectedActionRevision?: number };
@@ -110,7 +142,7 @@ export type BotChatView = z.infer<typeof botChatViewSchema>;
 export interface BotChatSnapshot {
   epoch: string; sequence: number; chat: ChatSession; hasEarlier: boolean; hasLater: boolean;
   lastEntryId?: string; collapsedAt?: string; pageTasks?: BotTask[];
-  liveEntries: ChatEntry[]; latestUser?: Pick<ChatEntry, 'id' | 'content'>; toolReplyIds: string[];
+  liveEntries: ChatEntry[]; latestUser?: Pick<ChatEntry, 'id' | 'content' | 'createdAt'>; toolReplyIds: string[];
 }
 export type BotChatSync = BotChatSnapshot | { epoch: string; sequence: number; updates: BotChatUpdate[] };
 export interface BotOpen extends BotChatSnapshot { bot: BotProfile; history: { chatId: string; title: string; updatedAt: string; reason?: string; canReference: boolean }[]; }
@@ -127,14 +159,14 @@ export interface BotBridge {
   saveDraft(chatId: string, expectedRevision: number, value: BotDraftValue): Promise<DraftSnapshot>;
   submit(input: BotSubmit): Promise<BotSubmitReceipt>;
   getSubmissionStatus(input: BotSubmit, dataEpoch?: string): Promise<BotSubmissionStatus>;
-  getPendingSubmission(chatId: string): Promise<BotPendingSubmission | null>;
+  getPendingSubmission(chatId: string, memory?: boolean): Promise<BotPendingSubmission | null>;
   retainPendingDraft(chatId: string, value: BotDraftValue): Promise<void>;
   acknowledgeSubmission(chatId: string, requestId: string): Promise<void>;
   syncChat(chatId: string, after?: number, epoch?: string, view?: BotChatView): Promise<BotChatSync>;
   getConversationEntries(taskId: string): Promise<ChatEntry[]>;
   onChatUpdate(callback: (update: BotChatUpdate) => void): () => void;
   listTasks(botId: string, limit?: number): Promise<BotTask[]>;
-  getTask(taskId: string): Promise<{ task: BotTask; children: BotTask[]; messages: BotMessage[]; actions: BotAction[] }>;
+  getTask(taskId: string): Promise<{ task: BotTask; entries?: ChatEntry[]; children: BotTask[]; messages: BotMessage[]; actions: BotAction[] }>;
   getCollaboration(rootTaskId: string): Promise<BotCollaboration>;
   getBotExchange(botAId: string, botBId: string, query?: BotExchangeQuery): Promise<BotExchange>;
   changeQueuedMessage(change: BotQueueChange): Promise<BotTask>;
@@ -145,8 +177,11 @@ export interface BotBridge {
   undoAction(operationId: string, revision: number): Promise<BotAction>;
   listArtifacts(botId: string): Promise<BotArtifact[]>;
   openArtifact(id: string): Promise<BotArtifact>;
-  listMemories(botId: string): Promise<BotMemory[]>;
-  updateMemory(input: Omit<BotMemory, 'updatedAt'>): Promise<BotMemory>;
+  listMemories(botId: string): Promise<BotMemoryView[]>;
+  memorySources(botId: string, id: string): Promise<BotMemorySource[]>;
+  getAutomaticMemory(): Promise<boolean>;
+  setAutomaticMemory(enabled: boolean): Promise<boolean>;
+  updateMemory(input: BotMemoryEdit): Promise<BotMemoryView>;
   removeMemory(id: string, revision: number): Promise<void>;
   listSchedules(botId: string): Promise<BotSchedule[]>;
   saveSchedule(input: Omit<BotSchedule, 'nextRunAt' | 'updatedAt'>): Promise<BotSchedule>;

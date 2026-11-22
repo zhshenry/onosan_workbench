@@ -73,7 +73,7 @@ export function topbarReadFixtures(today) {
       entry(make(`${longTitle}同日`, 'meeting', today, stamp(today, '14:00'), stamp(today, '15:00')), `${today.slice(5)} 14:00–15:00`),
       entry(make('CI renderer-only 跨日日程', 'meeting', startOfYear, stamp(startOfYear, '23:30'), stamp(secondDay, '00:30')), '01-01 23:30–\n01-02 00:30'),
       entry(make('CI renderer-only 跨年日程', 'meeting', previous, stamp(previous, '23:30'), stamp(startOfYear, '00:30')), `${previous} 23:30–\n${startOfYear} 00:30`),
-      entry(make('CI renderer-only 日程时间待定', 'meeting', today, null), `${today.slice(5)} · 时间待定`),
+      entry(make('CI renderer-only 全天日程', 'meeting', today, null), `${today.slice(5)} · 全天`),
     ],
     edges: [
       entry(make('CI renderer-only 无效待办时间', 'task', today, 'invalid-timestamp'), '未设置'),
@@ -261,7 +261,7 @@ export function topbarCalendarMonthStep(displayedMonth, targetDay) {
 async function createFixture(page, input) {
   await openMenu(page, input.kind === 'meeting' ? 'schedule' : 'todo');
   await menu(page, input.kind === 'meeting' ? 'schedule' : 'todo').getByRole('button', { name: input.kind === 'meeting' ? '+ 新增日程' : '+ 新增待办', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: '新增事项', exact: true });
+  const dialog = page.getByRole('dialog', { name: /^(?:新增事项|新建日程|新建待办)$/ });
   assert.ok(await dialog.evaluate(node => node.matches(':modal') && node.offsetHeight < 200), 'New item starts in a compact modal');
   assert.deepEqual(await dialog.getByRole('button', { name: '创建', exact: true }).evaluate(node => [node.offsetWidth, node.offsetHeight]), [84, 32]);
   await dialog.getByRole('textbox', { name: input.kind === 'meeting' ? '日程名称' : '待办名称', exact: true }).fill(input.title);
@@ -365,7 +365,7 @@ export async function runTopbarDatesPilot({ application, page, check, screenshot
     await screenshot('topbar-dates-persisted.png');
     // Edit opens from the original title button; cancel does not modify data.
     await menu(page, 'todo').getByRole('button', { name: persisted[0].title, exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: '编辑事项', exact: true });
+    const dialog = page.getByRole('dialog', { name: /^(?:编辑事项|编辑日程|编辑待办|日程详情)$/ });
     await dialog.waitFor({ state: 'visible' });
     await dialog.getByRole('button', { name: '关闭', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });

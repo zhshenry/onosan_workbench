@@ -1,9 +1,10 @@
 // Use the installed app's current settings dialog and integrated rail navigation.
 export async function navigateInstalled(page, workbench, label, view) {
   const settings = page.getByRole('dialog', { name: '设置', exact: true });
+  const name = ['日程待办', '日程和待办', '待办与日程'].includes(label) ? /^(?:日程待办|日程和待办|待办与日程)$/ : label;
   if (workbench === 'settings') {
     if (!await settings.isVisible()) await page.getByRole('button', { name: '设置', exact: true }).click();
-    if (label) await settings.locator('.settings-sections').getByRole('button', { name: label, exact: true }).click();
+    if (label) await settings.locator('.settings-sections').getByRole('button', { name, exact: true }).click();
   } else {
     if (await settings.isVisible()) {
       await settings.getByRole('button', { name: '关闭', exact: true }).click();
@@ -14,7 +15,7 @@ export async function navigateInstalled(page, workbench, label, view) {
     if (label) {
       await page.locator('.topbar .avatar').hover();
       await trigger.hover();
-      await page.locator('.rail').getByRole('button', { name: label, exact: true }).click();
+      await page.locator('.rail').getByRole('button', { name, exact: true }).click();
     }
   }
   if (view) await page.locator(`#view-${view}`).waitFor({ state: 'visible' });

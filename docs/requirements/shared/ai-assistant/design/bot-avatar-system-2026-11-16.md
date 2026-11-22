@@ -226,4 +226,4 @@
 - 已检查：角色图形在浏览器中按 27、30、42、54、58、72px 渲染，并在浅色玻璃和深色灵动岛背景上核对，据此放大眼睛、修正石墨圆环；画布在 Cursor 中实际渲染，核对了编辑弹窗、角色与图形对比和混排导航。
 - 未检查：真实应用中的渲染、窗口缩放、高对比度模式、键盘操作和性能，需要在实施后验收。本轮没有导出 PNG 评审图。
 
-相关规范：[通用方案](../bot-workbench-architecture.md) · [OnO 接入](../bot-architecture-proposal-2026-11-13.md) · [六个主要状态稿](bot-state-review-2026-11-16.md) · [视觉版本记录](bot-visual-revision-2026-11-15.md)。
+相关规范：[通用方案](../rel002-bot-runtime-architecture-and-workspace-isolation/spec.md) · [OnO 接入](../rel002-bot-runtime-architecture-and-workspace-isolation/plan.md) · [六个主要状态稿](bot-state-review-2026-11-16.md) · [视觉版本记录](bot-visual-revision-2026-11-15.md)。

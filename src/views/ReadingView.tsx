@@ -491,11 +491,10 @@ export function ReadingView({ onPending, onAskAI, onCurrentBook }: {
                   <div className="d-label">标签</div>
                   <div className="tagrow">
                     {book.tags.map((tag) => (
-                      <span key={tag} className="b-tag on" role="button" tabIndex={0}
+                      <button key={tag} type="button" className="b-tag on" aria-label={`删除标签 ${tag}`}
                         title="移除标签"
                         onClick={() => save({ tags: book.tags.filter((t) => t !== tag) })}
-                        onKeyDown={(e) => { if (e.key === 'Enter') save({ tags: book.tags.filter((t) => t !== tag) }); }}
-                      >{tag}<X size={11} aria-hidden="true" /></span>
+                      >{tag}<X size={11} aria-hidden="true" /></button>
                     ))}
                     <input
                       className="rd-tagadd" aria-label="添加标签" placeholder="+ 添加"

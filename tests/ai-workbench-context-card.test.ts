@@ -73,8 +73,8 @@ test('助手卡片显示导航中的工作台名和子页名，专用模块名�
   };
 
   try {
-    await render({ scope: { module: 'todo' }, label: '待办与日程', object: 'To-Do-List' });
-    assert.equal(modname(), '待办与日程');
+    await render({ scope: { module: 'todo' }, label: '日程待办', object: 'To-Do-List' });
+    assert.equal(modname(), '日程待办');
     assert.equal(dom.window.document.querySelector('.ai-ctx-name'), null);
 
     await openNamed('游戏对话');
@@ -119,7 +119,7 @@ test('助手卡片显示导航中的工作台名和子页名，专用模块名�
     assert.equal(objectText(), '海边的卡夫卡');
 
     await render(pageAiContext('todo', none));
-    assert.equal(modname(), '待办与日程');
+    assert.equal(modname(), '日程待办');
   } finally {
     await act(async () => root.unmount());
     dom.window.close();

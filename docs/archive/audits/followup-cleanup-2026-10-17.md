@@ -20,11 +20,11 @@
 
 | 删除的备份 | 保留的需求原件 |
 |---|---|
-| a.png | [workbench-shell/evidence/a.png](../../requirements/shared/workbench-shell/evidence/a.png) |
-| b.png | [workbench-shell/evidence/b.png](../../requirements/shared/workbench-shell/evidence/b.png) |
-| bazi.png | [mingli/evidence/bazi.png](../../requirements/life/mingli/evidence/bazi.png) |
-| profile-form-a-section.png | [profile/evidence/profile-form-a-section.png](../../requirements/settings/profile/evidence/profile-form-a-section.png) |
-| settings-form-c-workbench.png | [preferences/evidence/settings-form-c-workbench.png](../../requirements/settings/preferences/evidence/settings-form-c-workbench.png) |
+| a.png | [workbench-shell/evidence/a.png](../../requirements/shared/rel011-main-window-shell-and-workbench-layout/evidence/a.png) |
+| b.png | [workbench-shell/evidence/b.png](../../requirements/shared/rel011-main-window-shell-and-workbench-layout/evidence/b.png) |
+| bazi.png | [mingli/evidence/bazi.png](../../requirements/life/rel034-mingli-profile-charts-and-ai-reading/evidence/bazi.png) |
+| profile-form-a-section.png | [profile/evidence/profile-form-a-section.png](../../requirements/settings/rel053-workbench-profile-editing/evidence/profile-form-a-section.png) |
+| settings-form-c-workbench.png | [preferences/evidence/settings-form-c-workbench.png](../../requirements/settings/rel052-workbench-preferences-and-save-feedback/evidence/settings-form-c-workbench.png) |
 
 旧 release-scope.json 等历史清单保留原始快照，baseline-images/README.md 和本页提供当前保留位置，不改写历史记录。
 

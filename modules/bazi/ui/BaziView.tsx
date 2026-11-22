@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { CaretDown, Pencil, Plus, TrashSimple, CalendarDots, Compass, StarFour } from '@phosphor-icons/react';
 import { buildChart } from '../compute';
 import { buildZiwei, type ZiweiChart } from '../ziwei';
@@ -89,7 +89,9 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
   const [fPlace, setFPlace] = useState('');
   const [fLat, setFLat] = useState('');
   const [fLon, setFLon] = useState('');
+  const profilePickerId = useId(), birthdayId = useId(), birthTimeId = useId();
   const pselRef = useRef<HTMLDivElement>(null);
+  const pselTriggerRef = useRef<HTMLButtonElement>(null);
   const pselMenuRef = useRef<HTMLDivElement>(null);
   const loadedOnce = useRef(false);
   const handledRequest = useRef<string | null>(null);
@@ -210,7 +212,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
   };
 
   useLayoutEffect(() => {
-    const menu = pselMenuRef.current, trigger = pselRef.current?.querySelector<HTMLButtonElement>('.bazi-psel-btn');
+    const menu = pselMenuRef.current, trigger = pselTriggerRef.current;
     if (!pselOpen || !menu || !trigger) return;
     menu.showPopover();
     const rect = trigger.getBoundingClientRect(), gap = 6, edge = 8;
@@ -220,6 +222,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
     menu.style.maxHeight = `${Math.min(360, openUp ? above : below)}px`;
     menu.style.top = `${openUp ? rect.top - menu.offsetHeight - gap : rect.bottom + gap}px`;
     menu.style.left = `${Math.max(edge, Math.min(rect.right - menu.offsetWidth, window.innerWidth - menu.offsetWidth - edge))}px`;
+    menu.querySelector<HTMLButtonElement>('.bazi-psel-item')?.focus({ preventScroll: true });
     return () => { if (menu.matches(':popover-open')) menu.hidePopover(); };
   }, [pselOpen]);
 
@@ -229,18 +232,13 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
     const onPointerDown = (e: PointerEvent): void => {
       if (pselRef.current && !pselRef.current.contains(e.target as Node)) setPselOpen(false);
     };
-    const onKey = (e: globalThis.KeyboardEvent): void => {
-      if (e.key === 'Escape') { setPselOpen(false); pselRef.current?.querySelector<HTMLButtonElement>('.bazi-psel-btn')?.focus(); }
-    };
     const dismiss = () => setPselOpen(false);
     const onScroll = (e: Event) => { if (!(e.target instanceof Node) || !pselMenuRef.current?.contains(e.target)) dismiss(); };
     document.addEventListener('pointerdown', onPointerDown);
-    window.addEventListener('keydown', onKey);
     window.addEventListener('resize', dismiss);
     window.addEventListener('scroll', onScroll, true);
     return () => {
       document.removeEventListener('pointerdown', onPointerDown);
-      window.removeEventListener('keydown', onKey);
       window.removeEventListener('resize', dismiss);
       window.removeEventListener('scroll', onScroll, true);
     };
@@ -270,6 +268,10 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
   const switchProfile = (id: string): void => {
     setCurId(id);
     localStorage.setItem(CUR_KEY, id);
+  };
+  const closeProfilePicker = (): void => {
+    pselTriggerRef.current?.focus({ preventScroll: true });
+    setPselOpen(false);
   };
   const removeProfile = (target: BaziProfile): void => {
     run(wb.bazi.removeProfile(target.id), `已删除「${target.name}」`);
@@ -454,11 +456,22 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
         <div className="bazi-top-side">
           {hasProfiles && (
             <div className="bazi-pbar">
-              <div className={`bazi-psel${pselOpen ? ' open' : ''}`} ref={pselRef}>
+              <div className={`bazi-psel${pselOpen ? ' open' : ''}`} ref={pselRef}
+                onKeyDown={event => {
+                  if (!pselOpen || event.key !== 'Escape') return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  closeProfilePicker();
+                }}
+                onBlur={event => { if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) setPselOpen(false); }}
+              >
                 <button
+                  type="button"
+                  ref={pselTriggerRef}
                   className="bazi-psel-btn"
-                  aria-haspopup="listbox"
+                  aria-haspopup="dialog"
                   aria-expanded={pselOpen}
+                  aria-controls={pselOpen ? profilePickerId : undefined}
                   title="切换命例"
                   onClick={() => setPselOpen((v) => !v)}
                 >
@@ -473,42 +486,38 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
                   )}
                 </button>
                 {pselOpen && (
-                  <div className="bazi-psel-menu" ref={pselMenuRef} popover="manual" role="listbox" aria-label="命例列表">
+                  <div id={profilePickerId} className="bazi-psel-menu" ref={pselMenuRef} popover="manual" role="dialog" aria-label="命例列表">
                     {profiles.map((p) => (
-                      <button
-                        key={p.id}
-                        role="option"
-                        aria-selected={p.id === profile?.id}
-                        className={p.id === profile?.id ? 'bazi-psel-item on' : 'bazi-psel-item'}
-                        onClick={() => { switchProfile(p.id); setPselOpen(false); }}
-                      >
-                        <span className="bazi-pav" aria-hidden="true">{p.name.slice(0, 1)}</span>
-                        <span className="bazi-pname">{p.name}</span>
-                        {p.tag && <span className="bazi-ptag">{p.tag}</span>}
-                        <span className="bazi-pbirth">{p.date} · {p.gender === 1 ? '男' : '女'}</span>
-                        <span
+                      <div key={p.id} className={p.id === profile?.id ? 'bazi-psel-row on' : 'bazi-psel-row'}>
+                        <button type="button" className="bazi-psel-item" aria-current={p.id === profile?.id || undefined}
+                          onClick={() => { switchProfile(p.id); closeProfilePicker(); }}
+                        >
+                          <span className="bazi-pav" aria-hidden="true">{p.name.slice(0, 1)}</span>
+                          <span className="bazi-pname">{p.name}</span>
+                          {p.tag && <span className="bazi-ptag">{p.tag}</span>}
+                          <span className="bazi-pbirth">{p.date} · {p.gender === 1 ? '男' : '女'}</span>
+                        </button>
+                        <button
+                          type="button"
                           className="bazi-psel-act edit"
-                          role="button"
                           aria-label={`编辑 ${p.name}`}
                           title="编辑命例"
-                          onClick={(e) => { e.stopPropagation(); setPselOpen(false); startEdit(p); }}
+                          onClick={() => { closeProfilePicker(); startEdit(p); }}
                         >
-                          <Pencil size={11} />
-                        </span>
-                        <span
+                          <Pencil size={14} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
                           className="bazi-psel-act del"
-                          role="button"
-                          tabIndex={0}
                           aria-label={`删除 ${p.name}`}
                           title="删除命例"
-                          onClick={(e) => { e.stopPropagation(); setPselOpen(false); setDeleteTarget(p); }}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setPselOpen(false); setDeleteTarget(p); } }}
+                          onClick={() => { closeProfilePicker(); setDeleteTarget(p); }}
                         >
-                          <TrashSimple size={14} />
-                        </span>
-                      </button>
+                          <TrashSimple size={14} aria-hidden="true" />
+                        </button>
+                      </div>
                     ))}
-                    <button className="bazi-psel-new" onClick={() => { setPselOpen(false); startEdit(null); }}>
+                    <button type="button" className="bazi-psel-new" onClick={() => { closeProfilePicker(); startEdit(null); }}>
                       <Plus size={14} />新建命例
                     </button>
                   </div>
@@ -650,13 +659,13 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
                 />
               </div>
               <div className="bazi-form-field">
-                <span className="bazi-form-label">公历生日</span>
-                <DatePicker value={fDate} onChange={value => { setFDate(value); setFTimeChoice(undefined); setSaveError(''); }} yearRange={{ min: BAZI_MIN_YEAR, max: BAZI_MAX_YEAR }} />
+                <label id={`${birthdayId}-label`} htmlFor={birthdayId} className="bazi-form-label">公历生日</label>
+                <DatePicker id={birthdayId} aria-labelledby={`${birthdayId}-label ${birthdayId}`} value={fDate} onChange={value => { setFDate(value); setFTimeChoice(undefined); setSaveError(''); }} yearRange={{ min: BAZI_MIN_YEAR, max: BAZI_MAX_YEAR }} />
               </div>
               <div className="bazi-form-field">
-                <span className="bazi-form-label">出生时间</span>
-                <TimePicker value={fTime} onChange={value => { setFTime(value); setFTimeChoice(undefined); setSaveError(''); }} />
-                <span className="field-help">按出生记录上的当地钟表时间填写。</span>
+                <label id={`${birthTimeId}-label`} htmlFor={birthTimeId} className="bazi-form-label">出生时间</label>
+                <TimePicker id={birthTimeId} aria-labelledby={`${birthTimeId}-label ${birthTimeId}`} aria-describedby={`${birthTimeId}-help`} value={fTime} onChange={value => { setFTime(value); setFTimeChoice(undefined); setSaveError(''); }} />
+                <span id={`${birthTimeId}-help`} className="field-help">按出生记录上的当地钟表时间填写。</span>
               </div>
               <div className="bazi-form-field">
                 <span className="bazi-form-label">标签(可选)</span>
@@ -754,7 +763,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
             {saveError && <div ref={saveErrorRef} className="bazi-save-error" role="alert" tabIndex={-1}>{saveError}</div>}
             <div className="bazi-form-actions">
               <button className="btn btn-sec" disabled={profileSaving} onClick={() => setModalOpen(false)}>取消</button>
-              <button className="btn btn-pri" disabled={profileSaving} onClick={() => void saveModal()}>{profileSaving ? '正在保存…' : editingId ? '保存' : '保存并排盘'}</button>
+              <button className="btn btn-pri" disabled={profileSaving} aria-busy={profileSaving || undefined} onClick={() => void saveModal()}>{profileSaving ? '正在保存…' : editingId ? '保存' : '保存并排盘'}</button>
             </div>
           </div>
         </Modal>
@@ -766,7 +775,7 @@ export function BaziView({ onPending, onAskAI, onCurrentProfile, requestedProfil
             <p>删除「{deleteTarget.name}」？此操作无法恢复。{storeData.notes[deleteTarget.id] ? '该命例的历史笔记也会一并删除。' : ''}</p>
             <div className="bazi-form-actions">
               <button className="btn btn-sec" onClick={() => setDeleteTarget(null)}>取消</button>
-              <button className="btn btn-pri" onClick={() => removeProfile(deleteTarget)}>确认删除</button>
+              <button type="button" className="btn danger" onClick={() => removeProfile(deleteTarget)}>确认删除</button>
             </div>
           </div>
         </Modal>

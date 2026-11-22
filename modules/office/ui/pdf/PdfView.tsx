@@ -6,18 +6,27 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { getDocument, PDFWorker, TextLayer, type PDFDocumentProxy } from 'pdfjs-dist';
 import PdfWorkerImpl from 'pdfjs-dist/build/pdf.worker.min.mjs?worker';
+import { Select } from '../../../../src/ui/controls';
 
-type ZoomChoice = 'fit' | 0.5 | 0.75 | 1 | 1.5 | 2;
+const ZOOM_OPTIONS = [
+  { value: 'fit', label: '适应宽度' },
+  { value: '0.5', label: '50%' },
+  { value: '0.75', label: '75%' },
+  { value: '1', label: '100%' },
+  { value: '1.5', label: '150%' },
+  { value: '2', label: '200%' },
+];
 
-const scroll: CSSProperties = { position: 'absolute', inset: 0, overflow: 'auto', background: '#525659', padding: '12px 0' };
+const scroll: CSSProperties = { position: 'relative', flex: 1, minHeight: 0, overflow: 'auto', background: '#525659', padding: '12px 0' };
 const toolbar: CSSProperties = {
-  display: 'flex', gap: 8, alignItems: 'center', padding: '6px 10px',
+  display: 'flex', flex: 'none', gap: 8, alignItems: 'center', padding: '6px 10px',
   background: '#3c4043', color: '#e8eaed', fontSize: 12,
 };
-const select: CSSProperties = { background: '#525659', color: '#e8eaed', border: '1px solid #5f6368', borderRadius: 6, padding: '3px 6px', fontSize: 12 };
 
 // 官方 textLayer 样式要点(选中/透明文字/光标),类名前缀 wb-pdf- 避免与宿主冲突
-const TEXT_LAYER_CSS = `
+const PDF_VIEW_CSS = `
+.wb-pdf-zoom { flex: 0 0 112px; }
+.wb-pdf-zoom .select-trigger { min-height: var(--compact-action-height); padding-block: 4px; font-size: var(--type-control); }
 .wb-pdf-textLayer{position:absolute;text-align:initial;inset:0;overflow:clip;opacity:1;line-height:1;text-size-adjust:none;forced-color-adjust:none;transform-origin:0 0;caret-color:CanvasText;z-index:2}
 .wb-pdf-textLayer :is(span,br){color:transparent;position:absolute;white-space:pre;cursor:text;transform-origin:0 0}
 .wb-pdf-textLayer span.markedContent{top:0;height:0}
@@ -33,7 +42,7 @@ interface PageDims {
 export function PdfView({ bytes }: { bytes: Uint8Array<ArrayBuffer> }): ReactNode {
   const [doc, setDoc] = useState<PDFDocumentProxy | undefined>(undefined);
   const [error, setError] = useState<string | undefined>(undefined);
-  const [zoom, setZoom] = useState<ZoomChoice>('fit');
+  const [zoom, setZoom] = useState('fit');
   const [fitScale, setFitScale] = useState(1);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -95,24 +104,13 @@ export function PdfView({ bytes }: { bytes: Uint8Array<ArrayBuffer> }): ReactNod
     return () => observer.disconnect();
   }, [doc]);
 
-  const scale = zoom === 'fit' ? fitScale : zoom;
+  const scale = zoom === 'fit' ? fitScale : Number(zoom);
 
   return (
     <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' }}>
-      <style>{TEXT_LAYER_CSS}</style>
+      <style>{PDF_VIEW_CSS}</style>
       <div style={toolbar}>
-        <select
-          style={select}
-          value={String(zoom)}
-          onChange={(e) => setZoom(e.target.value === 'fit' ? 'fit' : (Number(e.target.value) as ZoomChoice))}
-        >
-          <option value="fit">适应宽度</option>
-          <option value="0.5">50%</option>
-          <option value="0.75">75%</option>
-          <option value="1">100%</option>
-          <option value="1.5">150%</option>
-          <option value="2">200%</option>
-        </select>
+        <Select className="wb-pdf-zoom" aria-label="PDF 缩放" value={zoom} onChange={setZoom} options={ZOOM_OPTIONS} />
         <span>{doc ? `${doc.numPages} 页` : ''}</span>
         {error && <span style={{ color: '#f28b82' }}>PDF 打开失败:{error}</span>}
       </div>

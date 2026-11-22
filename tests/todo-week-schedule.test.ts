@@ -41,7 +41,7 @@ test('the week grid keeps selection, navigation, task confirmation and the compa
     const [tab, setTab] = useState<ScheduleTab>('calendar');
     return createElement(TodayBoard, { ...input, workspace: {
       tab, onTab: setTab,
-      details: task => createElement('button', { type: 'button' }, '会议纪要 ' + task.title),
+      details: (task, controls) => createElement('span', { 'data-detail-tab': controls.tab }, task.title),
       records: createElement('section', { 'aria-label': '会议记录' }, '纪要目录'),
     } });
   }
@@ -54,7 +54,7 @@ test('the week grid keeps selection, navigation, task confirmation and the compa
   };
   const click = async (target: HTMLButtonElement | string) => act(async () => (typeof target === 'string' ? button(target) : target).click());
   const chooseView = async (label: string) => {
-    await click('日程显示方式');
+    await click('日历显示方式');
     const option = doc.querySelector<HTMLElement>(`[role="option"][aria-label="${label}"]`);
     assert.ok(option);
     await act(async () => option.click());
@@ -71,12 +71,15 @@ test('the week grid keeps selection, navigation, task confirmation and the compa
 
   try {
     await render();
-    assert.equal(button('日程显示方式').textContent, '周视图');
+    const pane = doc.querySelector<HTMLElement>('.calendar-detail')!;
+    assert.equal(pane.hidden, true);
+    assert.equal(heading(), undefined);
+    assert.equal(button('日历显示方式').textContent, '周视图');
     const tabs = doc.querySelector('.content-tabs[aria-label="日程待办视图"]');
     assert.ok(tabs);
-    assert.deepEqual([...tabs.querySelectorAll('[role="radio"]')].map(tab => tab.textContent), ['日程', '待办', '会议记录']);
-    assert.equal(button('日程').getAttribute('aria-checked'), 'true');
-    assert.deepEqual([...doc.querySelectorAll('.calendar-pager button')].map(control => control.getAttribute('aria-label')), ['上一周', '选择日程日期', '下一周']);
+    assert.deepEqual([...tabs.querySelectorAll('[role="radio"]')].map(tab => tab.textContent), ['日历', '待办', '会议记录']);
+    assert.equal(button('日历').getAttribute('aria-checked'), 'true');
+    assert.deepEqual([...doc.querySelectorAll('.calendar-pager button')].map(control => control.getAttribute('aria-label')), ['上一周', '选择日历日期', '下一周']);
     assert.deepEqual(dates(), ['2026-11-09', '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13', '2026-11-14', '2026-11-15']);
     assert.equal(doc.querySelector('[aria-current="date"]')?.getAttribute('data-date'), props.today);
     assert.equal(compressedHours(), '00:00–07:00');
@@ -93,30 +96,33 @@ test('the week grid keeps selection, navigation, task confirmation and the compa
     assert.equal(heading(), review.title);
     assert.equal(doc.querySelector('.calendar-workspace')?.getAttribute('data-detail-open'), 'true');
     const week = dates();
-    await click('返回周历');
+    assert.ok(pane.querySelector('[data-detail-tab="info"]'));
+    await click('返回日历');
+    assert.equal(pane.hidden, true);
     assert.deepEqual(dates(), week);
     assert.equal(block(review.id)?.getAttribute('aria-pressed'), 'true');
 
     await click('待办');
     assert.equal(button('待办').getAttribute('aria-checked'), 'true');
     assert.equal(doc.querySelector('.calendar-todos .plan-card-heading')?.textContent, '');
-    assert.deepEqual([...doc.querySelectorAll('.plan-column-heading > span')].map(label => label.textContent), ['事项', '分类', '截止时间', '操作']);
-    assert.equal(doc.querySelector('.plan-column-list .plan-deadline .plan-overdue')?.textContent, '已超期');
-    assert.ok(button('重新安排 待回复'));
+    assert.equal(doc.querySelectorAll('.calendar-todos .todo-card').length, 1);
+    assert.match(button('编辑截止时间 待回复').textContent ?? '', /已超期/);
+    assert.ok(button('编辑优先级 待回复'));
+    assert.ok(button('编辑名称 待回复'));
     await click('完成 待回复');
     assert.deepEqual(writes, []);
     await click('确认完成');
     assert.deepEqual(writes, [[todos[0].id, { status: 'done' }, todos[0].updatedAt]]);
-    await click('日程');
+    await click('日历');
     assert.equal(block(review.id)?.getAttribute('aria-pressed'), 'true');
     await act(async () => {
-      button('日程').focus();
-      button('日程').dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      button('日历').focus();
+      button('日历').dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
     });
     assert.equal(button('会议记录').getAttribute('aria-checked'), 'true');
     assert.equal(doc.activeElement, button('会议记录'));
     assert.equal(doc.querySelector('[aria-label="会议记录"]')?.textContent, '纪要目录');
-    await click('日程');
+    await click('日历');
     assert.equal(block(review.id)?.getAttribute('aria-pressed'), 'true');
 
     await pressDateKey('2026-11-15', 'ArrowRight');
@@ -127,35 +133,36 @@ test('the week grid keeps selection, navigation, task confirmation and the compa
     assert.deepEqual(dates(), ['2026-11-16']);
     await click('下一天');
     assert.deepEqual(dates(), ['2026-11-17']);
-    assert.match(doc.querySelector('.calendar-empty')!.textContent!, /当天没有日程/);
+    assert.equal(doc.querySelector('.calendar-empty'), null);
+    assert.equal(doc.querySelectorAll('.calendar-viewport[data-view="day"] .calendar-event').length, 0);
+    assert.ok(doc.querySelector('.calendar-viewport[data-view="day"] .calendar-day-column'));
     await chooseView('周视图');
     await click('上一周');
     assert.equal(dates()[0], '2026-11-09');
-    await click('选择日程日期');
+    await click('选择日历日期');
     await click(doc.querySelector<HTMLButtonElement>(`.date-grid [aria-label="${props.today}"]`)!);
     await chooseView('月视图');
-    assert.equal(button('日程显示方式').textContent, '月视图');
+    assert.equal(button('日历显示方式').textContent, '月视图');
     assert.equal(doc.querySelectorAll('.calendar-month-date').length, 42);
     assert.equal(doc.querySelector('.calendar-month-date[aria-current="date"]')?.getAttribute('data-date'), props.today);
     await click(block(next.id)!);
     assert.equal(heading(), next.title);
     await click('下个月');
-    assert.match(button('选择日程日期').textContent!, /2026年12月/);
-    await click('选择日程日期');
+    assert.match(button('选择日历日期').textContent!, /2026年12月/);
+    await click('选择日历日期');
     await click('今天');
     await click('2026-11-30');
-    assert.equal(button('日程显示方式').textContent, '日视图');
+    assert.equal(button('日历显示方式').textContent, '日视图');
     assert.deepEqual(dates(), ['2026-11-30']);
-    await click('选择日程日期');
+    await click('选择日历日期');
     await click('今天');
     assert.deepEqual(dates(), [props.today]);
     await chooseView('周视图');
     props = { ...props, today: '2026-12-31' };
     await render();
     assert.deepEqual(dates().slice(0, 1).concat(dates().slice(-1)), ['2026-12-28', '2027-01-03']);
-    assert.match(button('选择日程日期').textContent!, /12月28日.*2027年1月3日/);
+    assert.match(button('选择日历日期').textContent!, /12月28日.*2027年1月3日/);
     assert.equal(doc.querySelectorAll('.calendar-event').length, 0);
-    assert.equal(doc.querySelector('.calendar-empty'), null);
     const todayHeader = doc.querySelector('.calendar-date-headers [aria-current="date"]');
     assert.equal(todayHeader?.querySelector('strong')?.textContent, '31');
     assert.equal(todayHeader?.querySelector('.calendar-today-badge')?.textContent, '31');
@@ -184,7 +191,7 @@ test('the week grid keeps selection, navigation, task confirmation and the compa
     await act(async () => root.render(createElement(TodayBoard, { ...props, today: '2026-11-14' })));
     assert.deepEqual([...doc.querySelectorAll('.today-board > section')].map(node => node.getAttribute('aria-label')), ['待办', '日程']);
     assert.equal(doc.querySelector('.today-board .plan-today h2')?.textContent, '待办');
-    assert.equal(doc.querySelector('.today-board .plan-column-list'), null);
+    assert.equal(doc.querySelector('.today-board .todo-card-list'), null);
     assert.equal(doc.querySelector('.calendar-board'), null);
     assert.ok(doc.querySelector('.plan-folder-tab'));
   } finally {

@@ -1,4 +1,4 @@
-/* Content navigation shares one treatment; mode selectors keep their segmented surface. */
+/* Content navigation and shared control sizes. */
 :root {
   --page-header-height: 80px;
   --page-header-padding-block: 12px;
@@ -9,15 +9,34 @@
   --project-header-padding-block: 10px;
   --content-tab-height: 44px;
 }
-.content-tabs { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 0; overflow-x: auto; scrollbar-width: thin; }
+.content-tabs { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 0; overflow-x: auto; }
 .content-tabs > button { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: var(--content-tab-height); padding: 4px 10px; margin: 0; border: 1px solid transparent; border-radius: var(--r-ctl); background: transparent; box-shadow: none; color: var(--content-tab-text, var(--ink-2)); font-size: var(--type-body); font-weight: 500; white-space: nowrap; cursor: pointer; scroll-margin-inline: 4px; transition: color .16s var(--ease), background .16s var(--ease), border-color .16s var(--ease); }
 .content-tabs > button > svg { flex: none; }
 .content-tabs > button:where(:not(:disabled)):hover { background: var(--content-tab-hover, var(--acc-soft)); color: var(--content-tab-accent, var(--acc-deep)); }
 .content-tabs > button:is([aria-current='page'], [aria-selected='true'], [aria-checked='true']) { border-color: var(--content-tab-accent, var(--acc-deep)); background: var(--content-tab-surface, var(--control-bg)); color: var(--content-tab-accent, var(--acc-deep)); font-weight: 600; }
 .content-tabs > button:focus-visible { outline: 2px solid var(--content-tab-accent, var(--acc-ring)); outline-offset: -3px; }
 .content-tabs > button:disabled { opacity: .45; cursor: default; }
+
+.bot-workspace-title > .content-tabs { gap: 5px; scrollbar-width: none; }
+.bot-workspace-title > .content-tabs > button { position: relative; border: 0; border-radius: 7px; font-size: var(--type-control); }
+.bot-workspace-title > .content-tabs > button:is([aria-current='page'], [aria-selected='true'], [aria-checked='true']) { background: transparent; }
+.bot-workspace-title > .content-tabs > button:enabled:hover { background: color-mix(in srgb, var(--content-tab-accent, var(--acc-deep)) 8%, transparent); }
+.bot-workspace-title > .content-tabs > button:is([aria-current='page'], [aria-selected='true'], [aria-checked='true'])::after {
+  content: '';
+  position: absolute;
+  inset-inline: 10px;
+  inset-block-end: calc((var(--content-tab-height) - var(--bot-header-height) + 1px) / 2);
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--content-tab-accent, var(--acc-deep));
+  pointer-events: none;
+}
+.bot-workspace-title > .content-tabs > button:focus-visible { outline-color: var(--content-tab-accent, var(--acc-deep)); outline-offset: -2px; }
+
 @media (prefers-reduced-motion: reduce) { .content-tabs > button { transition: none; } }
 @media (forced-colors: active) {
   .content-tabs > button:is([aria-current='page'], [aria-selected='true'], [aria-checked='true']) { border-color: Highlight; background: Canvas; color: CanvasText; }
   .content-tabs > button:focus-visible { outline-color: Highlight; }
+  .bot-workspace-title > .content-tabs { --content-tab-accent: Highlight; }
+  .bot-workspace-title > .content-tabs > button::after { forced-color-adjust: none; }
 }

@@ -22,15 +22,18 @@ export function meetingEndAt(task: ScheduleTask): string | null {
   if (task.endAt) return task.endAt;
   return task.kind === 'meeting' && hasTaskTime(task.dateAt) ? new Date(Date.parse(task.dateAt) + 60 * 60 * 1000).toISOString() : null;
 }
+export function isAllDayMeeting(task: ScheduleTask): boolean {
+  return !!task.external?.isAllDay || task.kind === 'meeting' && !!task.dateAt && !hasTaskTime(task.dateAt);
+}
 export function scheduleTimeRange(task: ScheduleTask): string {
-  if (task.external?.isAllDay) return '全天';
+  if (isAllDayMeeting(task)) return '全天';
   if (task.kind !== 'meeting') return timeText(task.dateAt);
   const end = meetingEndAt(task);
   return hasTaskTime(task.dateAt) && end ? `${timeText(task.dateAt)}–${timeText(end)}` : '待定';
 }
 export function scheduleStamp(task: ScheduleTask): string {
   if (!task.dateAt) return '未设置日期';
-  if (task.external?.isAllDay) return `${dateText(taskDay(task)!)} · 全天`;
+  if (isAllDayMeeting(task)) return `${dateText(taskDay(task)!)} · 全天`;
   if (!hasTaskTime(task.dateAt)) return dateText(task.dateAt);
   return task.kind === 'meeting' ? `${dateTimeText(task.dateAt)}–${timeText(meetingEndAt(task))}` : dateTimeText(task.dateAt);
 }
