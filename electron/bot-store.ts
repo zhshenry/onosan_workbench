@@ -92,8 +92,25 @@ export class BotStore {
           .run(botSeeds.find(seed => seed.seedKey === 'schedule')!.description, now(), '日程和待办', '待办与日程');
       }
     });
+    this.restoreMessageReferences();
     // A missing receipt across Host restarts may be a restored database. Never silently replay it.
     this.ai.setSetting('bot.dataEpoch', randomUUID());
+  }
+  private restoreMessageReferences(): void {
+    const rows = this.db.prepare("SELECT payload FROM bot_tasks WHERE json_extract(payload,'$.kind') IN ('chat','work') AND parent_id IS NULL AND json_array_length(payload,'$.resources') > 0 AND COALESCE(json_extract(payload,'$.requirementsRevision'),0)=0 AND json_extract(payload,'$.latestUserMessageId') IS NULL").all() as { payload: string }[];
+    this.transaction(() => {
+      const chats = new Map<string, ChatSession>();
+      for (const row of rows) {
+        const task = JSON.parse(row.payload) as BotTask, link = this.link(task.chatId);
+        if (link?.role !== 'main' || link.bot_id !== task.botId) continue;
+        const chat = chats.get(task.chatId) ?? this.ai.chat(task.chatId);
+        chats.set(task.chatId, chat);
+        const entry = chat.entries.find(entry => entry.id === task.sourceMessageId && entry.role === 'user');
+        if (!entry || entry.resourceRefs !== undefined || entry.content !== task.input) continue;
+        entry.resourceRefs = structuredClone(task.resources);
+        this.ai.saveBotEntry(chat.id, entry);
+      }
+    });
   }
   transaction<T>(fn: () => T): T {
     this.db.exec('BEGIN IMMEDIATE');
@@ -227,6 +244,15 @@ export class BotStore {
   }
   private put(table: Table, id: string, value: unknown): void { this.db.prepare(`UPDATE ${table} SET payload=? WHERE id=?`).run(json(value), id); }
   link(chatId: string): Link | undefined { return this.db.prepare('SELECT * FROM bot_chat_links WHERE chat_id=?').get(chatId) as Link | undefined; }
+  hasSharedResource(task: Pick<BotTask, 'botId' | 'resources'> & Partial<BotTask>, ref: BotResourceRef): boolean {
+    if (task.resources.some(item => item.kind === ref.kind && item.id === ref.id)) return true;
+    if (!task.id || !task.chatId || task.rootTaskId !== task.id || !['chat', 'work'].includes(task.kind ?? '')
+      || task.chatId !== this.profile(task.botId).mainChatId) return false;
+    const entries = this.ai.chat(task.chatId).entries;
+    const current = entries.findIndex(entry => entry.id === (task.latestUserMessageId ?? task.sourceMessageId));
+    return current >= 0 && entries.slice(0, current + 1).some(entry => entry.role === 'user'
+      && entry.resourceRefs?.some(item => item.kind === ref.kind && item.id === ref.id));
+  }
   bindMainSession(chatId: string, path: string): void { this.db.prepare("UPDATE bot_chat_links SET pi_session_path=?,pi_imported_at=COALESCE(pi_imported_at,?) WHERE chat_id=? AND role='main'").run(path, now(), chatId); }
   profile(id: string): BotProfile { const bot = this.get<BotProfile>('bots', id); return { ...bot, avatar: normalizeBotAvatar(bot.avatar) }; }
   cards(): BotCard[] {
@@ -336,7 +362,11 @@ export class BotStore {
           if (!prior.memoryRequest || prior.botId !== bot.id || prior.chatId !== input.chatId || prior.status !== 'completed' || prior.memoryReceipts?.length) {
             throw new BotError('INVALID_MEMORY_REQUEST', '原记忆请求已结束或不属于当前对话');
           }
+          if (prior.memoryRequest.edit?.id !== request.edit?.id || prior.memoryRequest.edit?.revision !== request.edit?.revision) {
+            throw new BotError('INVALID_MEMORY_REQUEST', '请继续编辑原来选中的记忆');
+          }
         }
+        if (request.edit) this.memoryForEdit(bot.id, request.scope, request.edit);
       } else {
         if (draft.revision !== input.expectedDraftRevision) throw new BotError('DRAFT_CONFLICT', '草稿已更新，请核对后发送', draft);
         if (payloadHash({ generatedPrompts: input.generatedPrompts ?? [], text: input.text, replyToTaskId: input.replyToTaskId, resources: input.resources }) !== payloadHash({ generatedPrompts: draft.generatedPrompts ?? [], text: draft.text, replyToTaskId: draft.replyToTaskId, resources: draft.resources })) throw new BotError('DRAFT_CONFLICT', '发送内容尚未保存，请重试', draft);
@@ -346,9 +376,9 @@ export class BotStore {
       const dashboardHandoff = request ? undefined : captureDashboard?.();
       if (input.target && !inputRoute) return this.amend(input, surface, hash, draft, dashboardHandoff);
       const id = randomUUID(), messageId = randomUUID();
-      const task: BotTask = { id, botId: bot.id, chatId: input.chatId, rootTaskId: id, sourceMessageId: messageId, kind: input.resources.length > 0 || !!input.replyToTaskId || input.pageContext?.scope && ['copy', 'bazi', 'reading'].includes(input.pageContext.scope.module) || input.pageContext?.scope?.module === 'workbench' && ['browser', 'media-browser'].includes(input.pageContext.scope.viewId) ? 'work' : 'chat', status: 'queued', title: input.text.slice(0, 60), input: input.text, resources: input.resources, context: input.pageContext ?? {}, operationIds: [], dependencyIds: [], revision: 0, createdAt: now(), updatedAt: now(), ...(input.replyToTaskId ? { replyToEntryId: this.task(input.replyToTaskId).assistantEntryId } : {}) };
+      const task: BotTask = { id, botId: bot.id, chatId: input.chatId, rootTaskId: id, sourceMessageId: messageId, kind: 'chat', status: 'queued', title: input.text.slice(0, 60), input: input.text, resources: input.resources, context: input.pageContext ?? {}, operationIds: [], dependencyIds: [], revision: 0, createdAt: now(), updatedAt: now(), ...(input.replyToTaskId ? { replyToEntryId: this.task(input.replyToTaskId).assistantEntryId } : {}) };
       const chat = this.ai.chat(input.chatId);
-      chat.entries.push({ id: messageId, clientRequestId: input.clientRequestId, role: 'user', content: input.text, createdAt: task.createdAt, contextScope: input.pageContext?.scope ?? seedScope(bot.seedKey), pageScope: input.pageContext?.pageScope, references: input.pageContext?.references, copySource: input.pageContext?.copySource, baziSystem: input.pageContext?.baziSystem });
+      chat.entries.push({ id: messageId, clientRequestId: input.clientRequestId, role: 'user', content: input.text, createdAt: task.createdAt, resourceRefs: input.resources.length ? input.resources : undefined, contextScope: input.pageContext?.scope ?? seedScope(bot.seedKey), pageScope: input.pageContext?.pageScope, references: input.pageContext?.references, copySource: input.pageContext?.copySource, baziSystem: input.pageContext?.baziSystem });
       this.ai.saveChat(chat);
       if (request) task.memoryRequest = request;
       if (inputRoute) task.inputRoute = inputRoute;
@@ -371,7 +401,9 @@ export class BotStore {
   private amend(input: BotSubmit, surface: BotDraftSurface, hash: string, draft: DraftSnapshot, dashboardHandoff?: BotTask['dashboardHandoff']): BotSubmitReceipt {
     const messageId = randomUUID();
     const task = this.applyAmendment(input, input.target!, messageId, undefined, false, dashboardHandoff);
-    const chat = this.ai.chat(input.chatId); chat.entries.push({ id: messageId, clientRequestId: input.clientRequestId, role: 'user', content: input.text, createdAt: now() }); this.ai.saveChat(chat);
+    const chat = this.ai.chat(input.chatId);
+    chat.entries.push({ id: messageId, clientRequestId: input.clientRequestId, role: 'user', content: input.text, createdAt: now(), resourceRefs: input.resources.length ? input.resources : undefined });
+    this.ai.saveChat(chat);
     this.db.prepare('INSERT INTO bot_submissions VALUES(?,?,?,?,?,?,?)').run(input.clientRequestId, input.chatId, surface, hash, task.id, messageId, 'amended');
     this.addMemoryInput(input, task.id, messageId);
     return { task, messageId, disposition: 'amended', duplicate: false, draft: this.writeDraft(input.chatId, surface, { text: '', replyToTaskId: null, resources: [] }, draft.revision + 1) };
@@ -525,6 +557,12 @@ export class BotStore {
     if (existing) return JSON.parse(existing.payload) as BotArtifact;
     this.db.prepare('INSERT INTO bot_artifacts VALUES(?,?,?,?)').run(value.id, value.taskId, key, json(value)); return value;
   }
+  removeArtifactFromLibrary(id: string): boolean {
+    const artifact = this.get<BotArtifact>('bot_artifacts', id);
+    if (artifact.libraryRemovedAt) return false;
+    this.put('bot_artifacts', id, { ...artifact, libraryRemovedAt: now() });
+    return true;
+  }
   memoryEpoch(): string { return this.ai.setting('bot.memoryEpoch', ''); }
   setMemoryEnabled(enabled: boolean): boolean {
     const epoch = this.memoryEpoch();
@@ -649,6 +687,14 @@ export class BotStore {
     return rows.map(row => JSON.parse(row.payload) as BotMemory)
       .filter(memory => memory.scope === 'shared' && memory.botId === null || allowPrivate && memory.scope === 'private' && memory.botId === botId)
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id));
+  }
+  memoryForEdit(botId: string, scope: BotMemory['scope'], edit: { id: string; revision: number }): BotMemory {
+    const memory = this.get<BotMemory>('bot_memories', edit.id);
+    if (!memory || memory.scope !== scope || memory.botId !== (scope === 'private' ? botId : null)) {
+      throw new BotError('NOT_FOUND', '这条记忆已删除或不可编辑');
+    }
+    if (memory.revision !== edit.revision) throw new BotError('VERSION_CONFLICT', '这条记忆已更新，请重新打开详情后编辑');
+    return memory;
   }
   memorySources(botId: string, id: string): BotMemorySource[] {
     const memory = this.memories(botId).find(item => item.id === id);

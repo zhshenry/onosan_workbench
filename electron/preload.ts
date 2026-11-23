@@ -18,6 +18,7 @@ const bot: WorkbenchApi['bot'] = {
   changeQueuedMessage: change => botCall('changeQueuedMessage', change),
   getCollaboration: id => botCall('getCollaboration', id), getBotExchange: (a, b, query) => botCall('getBotExchange', a, b, query),
   answerAction: (id, revision, answer) => botCall('answerAction', id, revision, answer), listArtifacts: id => botCall('listArtifacts', id), openArtifact: id => botCall('openArtifact', id),
+  removeArtifactFromLibrary: id => botCall('removeArtifactFromLibrary', id),
   reconcileAction: (id, revision, result, note) => botCall('reconcileAction', id, revision, result, note), undoAction: (id, revision) => botCall('undoAction', id, revision),
   memorySources: (botId, id) => botCall('memorySources', botId, id),
   getAutomaticMemory: () => botCall('getAutomaticMemory'), setAutomaticMemory: enabled => botCall('setAutomaticMemory', enabled),

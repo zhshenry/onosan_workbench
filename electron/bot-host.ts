@@ -350,7 +350,7 @@ export class BotHost extends EventEmitter {
     const source = this.store.profile(fromBotId), target = this.store.profile(toBotId), origin = originTaskId ? this.store.task(originTaskId) : undefined;
     if (!source.enabled || !target.enabled || source.id === target.id) throw new BotError('INVALID_PEER', '请选择可用的另一位 Bot');
     if (origin && (origin.botId !== source.id || origin.kind === 'message')) throw new BotError('MESSAGE_FORBIDDEN', '只读询问不能继续转发或扩散');
-    for (const reference of references) if (!origin?.resources.some(item => item.kind === reference.kind && item.id === reference.id) && !(origin && reference.kind === 'artifact' && this.store.get<BotArtifact>('bot_artifacts', reference.id).taskId === origin.id)) throw new BotError('RESOURCE_FORBIDDEN', '只能传递当前明确共享的引用');
+    for (const reference of references) if (!(origin && this.store.hasSharedResource(origin, reference)) && !(origin && reference.kind === 'artifact' && this.store.get<BotArtifact>('bot_artifacts', reference.id).taskId === origin.id)) throw new BotError('RESOURCE_FORBIDDEN', '只能传递当前明确共享的引用');
     const hash = payloadHash({ fromBotId, toBotId, content, purpose, references, originTaskId });
     const existing = this.store.db.prepare('SELECT input_hash,message_id FROM bot_message_requests WHERE id=?').get(operationId) as { input_hash: string; message_id: string } | undefined;
     if (existing) { if (existing.input_hash !== hash) throw new BotError('REQUEST_ID_CONFLICT', '消息标识不能改变用途、内容或接收方'); return this.store.get<BotMessage>('bot_messages', existing.message_id); }
@@ -377,7 +377,7 @@ export class BotHost extends EventEmitter {
     const ancestry = [parent]; while (ancestry.at(-1)?.parentTaskId) ancestry.push(this.store.task(ancestry.at(-1)!.parentTaskId!));
     if (ancestry.length >= 4 || ancestry.some(t => t.botId === toBotId) || this.store.tasks(undefined, Number.MAX_SAFE_INTEGER).filter(t => t.rootTaskId === parent.rootTaskId).length >= 20) throw new BotError('DELEGATION_LIMIT', '协作链达到上限或出现循环，请直接返回已有结果');
     for (const ref of references) {
-      const supplied = parent.resources.some(r => r.kind === ref.kind && r.id === ref.id);
+      const supplied = this.store.hasSharedResource(parent, ref);
       const produced = ref.kind === 'artifact' && this.store.get<BotArtifact>('bot_artifacts', ref.id).taskId === taskId;
       if (!supplied && !produced) throw new BotError('RESOURCE_FORBIDDEN', '只能转交本任务明确选择或产出的资料');
     }

@@ -129,7 +129,9 @@
 .rail-nav-shell::before { border-radius: inherit; transform-origin: 0 0; }
 :root[data-navigation='floating'] :is(.tb-brand, .tb-tools, .wbtns, .tb-middle, .rbot, .rail-nav-shell)::before { opacity: 1; }
 :root[data-navigation='floating'] :is(.topbar, .rail)::before { opacity: 0; }
-:root[data-navigation='floating'] .tb-middle :is(.sched, .todopill) { background: transparent; border-color: transparent; box-shadow: none; }
+:root[data-navigation='floating'] .tb-middle :is(.sched, .todopill) { border-color: transparent; }
+:root[data-navigation='floating'] .tb-middle :is(.sched, .todopill):not(:hover, :active, [aria-expanded='true']) { background: transparent; }
+:root[data-navigation='floating'] .tb-middle :is(.sched, .todopill):not([aria-expanded='true']) { box-shadow: none; }
 :root[data-navigation='floating'] .rail { padding: 64px 0 0; gap: 16px; }
 :root[data-navigation='floating'] .rail-selection { display: none; }
 .rail[data-style-moving] .rail-selection { visibility: hidden; }

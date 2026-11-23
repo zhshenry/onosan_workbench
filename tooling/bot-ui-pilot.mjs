@@ -91,10 +91,13 @@ const model = createServer(async (req, res) => {
     res.end('data: [DONE]\n\n'); return;
   }
   const memoryQuote = '隔离验收：以后周报先列风险';
-  if (JSON.stringify(latest).includes(memoryQuote)) {
+  const editingMemory = JSON.stringify(latest).includes('隔离验收：周报每项风险注明负责人');
+  if (JSON.stringify(latest).includes(memoryQuote) || editingMemory) {
     const saved = input.messages.slice(input.messages.lastIndexOf(latest) + 1).some(message => message.role === 'tool' && /"saved"\s*:\s*true/.test(message.content));
-    const delta = saved ? { content: '已保存周报约定。' } : { tool_calls: [{ index: 0, id: 'memory-ui-' + randomBytes(6).toString('hex'), type: 'function', function: {
-      name: 'remember', arguments: JSON.stringify({ text: '周报先列风险。', title: '周报顺序', topic: '写作', scope: 'private', quote: memoryQuote }),
+    const delta = saved ? { content: editingMemory ? '已更新周报约定。' : '已保存周报约定。' } : { tool_calls: [{ index: 0, id: 'memory-ui-' + randomBytes(6).toString('hex'), type: 'function', function: {
+      name: 'remember', arguments: JSON.stringify(editingMemory
+        ? { text: '周报先列风险。每项风险注明负责人。', scope: 'private' }
+        : { text: '周报先列风险。', title: '周报顺序', topic: '写作', scope: 'private' }),
     } }] };
     res.writeHead(200, { 'Content-Type': 'text/event-stream' });
     for (const [value, reason] of [[delta, null], [{}, saved ? 'stop' : 'tool_calls']]) {
@@ -132,28 +135,21 @@ async function openBotDetails(target = page) {
   return sidebar;
 }
 const activityPanel = () => page.locator('.bot-activity');
-async function openActivity() {
-  const sidebar = await openBotDetails();
-  await sidebar.getByRole('button', { name: '工作与对话', exact: true }).click();
+async function openActivity(trigger) {
+  await trigger.click();
   const activity = activityPanel();
-  await activity.getByRole('heading', { name: '工作与对话', exact: true }).waitFor();
+  await activity.getByRole('heading', { name: '工作详情', exact: true }).waitFor();
   return activity;
 }
 async function closeActivity() {
-  await page.locator('#bot-inspector').getByRole('button', { name: '关闭 Bot 侧栏', exact: true }).click();
-  await activityPanel().waitFor({ state: 'hidden' });
-}
-async function openFloatingActivity() {
-  await openActivity();
-  await page.getByRole('combobox', { name: 'AI 助手', exact: true }).click();
-  await page.getByRole('option', { name: '悬浮', exact: true }).click();
-  const pill = page.locator('.bot-floating-pill');
-  if (await pill.isVisible()) await pill.click();
-  await activityPanel().waitFor();
+  const activity = activityPanel();
+  await activity.getByRole('button', { name: '返回对话', exact: true }).click();
+  await activity.waitFor({ state: 'hidden' });
 }
 async function openLibrary(target = page) {
   const sidebar = await openBotDetails(target);
   await sidebar.getByRole('radio', { name: '资料库', exact: true }).click();
+  return sidebar;
 }
 async function openWorkspace() {
   if (await page.locator('#bot-workspace').getAttribute('aria-hidden') !== 'true') return;
@@ -283,7 +279,7 @@ try {
     const directory = await app.evaluate(({ app }) => app.getPath('userData'));
     const config = JSON.parse(await readFile(path.join(directory, 'ai-config.json'), 'utf8'));
     assert.equal(await app.evaluate(({ safeStorage }, encrypted) => safeStorage.decryptString(Buffer.from(encrypted, 'base64')), config.providers[0].apiKey), 'isolated-fixture-key', 'fresh profile credentials work in Host and main process');
-    await check('memory addition uses the Agent, preserves the draft and opens the committed entry', async () => {
+    await check('memory detail keeps the source control at the right and edits the selected entry in chat', async () => {
       await page.locator('[data-workbench="todo"].ritem').click();
       const editor = page.locator('.bot-compose textarea');
       await editor.fill('记忆验收的普通草稿');
@@ -294,20 +290,66 @@ try {
       assert.equal(await editor.inputValue(), '');
       await editor.fill('隔离验收：以后周报先列风险');
       await page.getByRole('button', { name: '发送记忆请求', exact: true }).click();
-      const receipt = page.locator('.bot-memory-receipt').filter({ hasText: '已保存当前 Bot 的「周报顺序」' });
-      await receipt.getByRole('button', { name: '查看记忆', exact: true }).click();
+      const memoryCards = page.getByRole('region', { name: '记忆改动 · 周报顺序', exact: true });
+      const receipt = memoryCards.filter({ has: page.getByText('已保存', { exact: true }) });
+      await receipt.waitFor();
+      assert.equal(await receipt.locator('.bot-operation-subject').innerText(), '周报顺序');
+      assert.equal(await receipt.getByText('当前 Bot', { exact: true }).isVisible(), true);
+      assert.equal(await receipt.locator('.bot-operation-target[aria-expanded]').count(), 0);
+      await receipt.getByRole('button', { name: '查看记忆', exact: true }).press('Enter');
       assert.equal(await editor.inputValue(), '记忆验收的普通草稿');
-      await dialog.locator('.bot-memory-text').filter({ hasText: '周报先列风险。' }).waitFor();
+      const detail = dialog.locator('.bot-memory-detail');
+      await detail.locator('.bot-memory-text').filter({ hasText: '周报先列风险。' }).waitFor();
+      assert.equal(await detail.getByText('当前 Bot · 聊天中记住', { exact: true }).count(), 0);
+      const source = detail.getByRole('button', { name: '查看原话（1）', exact: true });
+      const back = detail.getByRole('button', { name: '返回列表', exact: true });
+      const title = detail.getByRole('heading', { name: '周报顺序', exact: true });
+      assert.equal(await detail.locator('.bot-memory-detail-heading .bot-memory-tag').innerText(), '写作');
+      const [sourceBox, backBox, titleBox, bodyBox] = await Promise.all([
+        source.boundingBox(), back.boundingBox(), title.boundingBox(), detail.locator('.bot-memory-text').boundingBox(),
+      ]);
+      assert.ok(backBox.y + backBox.height <= titleBox.y);
+      assert.ok(sourceBox.x >= titleBox.x + titleBox.width && sourceBox.y < titleBox.y + titleBox.height && titleBox.y < sourceBox.y + sourceBox.height);
+      assert.ok(bodyBox.y >= sourceBox.y + sourceBox.height && bodyBox.y >= titleBox.y + titleBox.height);
+      await source.press('Enter');
+      const quote = detail.locator('.bot-memory-source-panel').getByText('隔离验收：以后周报先列风险', { exact: true });
+      await quote.waitFor();
+      assert.ok(await quote.evaluate(node => {
+        const panel = node.closest('.bot-memory-source-panel');
+        const bounds = panel.getBoundingClientRect(), text = node.getBoundingClientRect();
+        return parseFloat(getComputedStyle(panel).borderTopWidth) > 0
+          && text.left > bounds.left && text.top > bounds.top && text.right < bounds.right && text.bottom < bounds.bottom;
+      }));
+      await quote.click();
+      await shot('memory-detail-sources');
+      await source.press('Enter');
+      await detail.locator('.bot-memory-text').click();
+      await shot('memory-detail');
+      const before = await page.evaluate(async () => { const card = (await window.workbench.bot.list()).find(bot => bot.seedKey === 'schedule'); return (await window.workbench.bot.listMemories(card.id))[0]; });
       await dialog.getByRole('button', { name: '编辑', exact: true }).click();
-      await dialog.getByRole('textbox', { name: '记忆内容', exact: true }).fill('隔离验收：记忆更新');
-      await dialog.getByRole('button', { name: '保存记忆', exact: true }).click();
-      await dialog.locator('.bot-memory-text').filter({ hasText: '记忆更新' }).waitFor();
-      await shot('memory-save-edit');
+      const edit = page.getByRole('textbox', { name: '想修改的内容' });
+      await edit.waitFor();
+      await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === '想修改的内容');
+      assert.equal(await page.getByRole('combobox', { name: '记忆保存范围' }).count(), 0);
+      await shot('memory-edit-compose');
+      await edit.fill('隔离验收：周报每项风险注明负责人');
+      await page.getByRole('button', { name: '发送记忆请求', exact: true }).click();
+      await memoryCards.filter({ has: page.getByText('已更新', { exact: true }) })
+        .getByRole('button', { name: '查看记忆', exact: true }).click();
+      await detail.locator('.bot-memory-text').filter({ hasText: '周报先列风险。每项风险注明负责人。' }).waitFor();
+      assert.equal(await editor.inputValue(), '记忆验收的普通草稿');
+      const after = await page.evaluate(async () => { const card = (await window.workbench.bot.list()).find(bot => bot.seedKey === 'schedule'); return window.workbench.bot.listMemories(card.id); });
+      assert.deepEqual(after.map(memory => memory.id), [before.id]);
       await dialog.getByRole('button', { name: '删除', exact: true }).click();
-      await dialog.getByRole('button', { name: '取消', exact: true }).click();
+      const confirmation = page.getByRole('dialog', { name: '删除记忆', exact: true });
+      await confirmation.waitFor();
+      await page.keyboard.press('Escape');
+      await confirmation.waitFor({ state: 'hidden' });
+      await dialog.getByRole('button', { name: '删除', exact: true }).click();
+      await confirmation.getByRole('button', { name: '取消', exact: true }).click();
       assert.equal(await dialog.locator('.bot-memory-text').count(), 1);
       await dialog.getByRole('button', { name: '删除', exact: true }).click();
-      await dialog.getByRole('button', { name: '确认删除', exact: true }).click();
+      await confirmation.getByRole('button', { name: '确认删除', exact: true }).click();
       await dialog.getByText('还没有保存记忆。可以记录你的习惯或偏好。', { exact: true }).waitFor();
       await dialog.getByRole('button', { name: '关闭 Bot 侧栏', exact: true }).click();
     });
@@ -316,24 +358,15 @@ try {
     await confirmation.waitFor(); assert.equal(await page.locator('.bot-task-card, .bot-task-notice').count(), 0); await shot('chat-pending-confirmation');
     await openWorkspace();
     const workspaceBeforeProgress = await page.locator('#bot-workspace').boundingBox();
-    const activity = await openActivity();
-    const attention = activity.getByRole('region', { name: '需要关注', exact: true });
-    await attention.getByRole('button', { name: /^界面确认验收/ }).waitFor(); await shot('progress-pending-confirmation');
-    assert.equal(await page.locator('#bot-workspace').getAttribute('aria-hidden'), null);
-    assert.deepEqual(await page.locator('#bot-workspace').boundingBox(), workspaceBeforeProgress);
-    await attention.getByRole('button', { name: /^界面确认验收/ }).click(); await activity.getByRole('button', { name: '确认创建', exact: true }).waitFor(); await shot('task-confirmation');
-    assert.deepEqual(await page.locator('#bot-workspace').boundingBox(), workspaceBeforeProgress);
-    await closeActivity();
-    await openFloatingActivity();
-    await attention.getByRole('button', { name: /^界面确认验收/ }).click();
-    await activity.getByRole('button', { name: '确认创建', exact: true }).waitFor();
-    await page.locator('.bot-compose textarea').click();
-    await shot('floating-task-approval');
-    await closeActivity();
-    await page.getByRole('combobox', { name: 'AI 助手', exact: true }).click(); await page.getByRole('option', { name: '固定', exact: true }).click();
-    await page.locator('.bot-chat-actions').getByRole('button', { name: '确认创建', exact: true }).click();
+    await confirmation.click();
     await waitForState(async () => (await window.workbench.todo.state()).tasks.some(task => task.title === '界面确认验收'));
     await page.locator('.bot-chat-actions .bot-operation-card').getByText('已创建', { exact: true }).waitFor();
+    const card = page.locator('.bot-chat-actions .bot-operation-card').filter({ hasText: '界面确认验收' });
+    const activity = await openActivity(card.getByRole('button', { name: '查看工作详情', exact: true }));
+    await activity.getByText('界面确认验收', { exact: true }).first().waitFor();
+    assert.deepEqual(await page.locator('#bot-workspace').boundingBox(), workspaceBeforeProgress);
+    await shot('task-confirmation');
+    await closeActivity();
     await page.locator('[data-workbench="media"].ritem').click(); await page.locator('.bot-compose textarea').fill('交付件验收'); await page.getByRole('button', { name: '发送', exact: true }).click();
     await waitForState(async () => { const media = (await window.workbench.bot.list()).find(b => b.seedKey === 'media'); return (await window.workbench.bot.listArtifacts(media.id)).length > 0; });
     await openWorkspace();
@@ -501,7 +534,7 @@ try {
     await page.getByRole('combobox', { name: 'AI 助手', exact: true }).click(); await page.getByRole('option', { name: '固定', exact: true }).click();
     await page.locator('[data-workbench="media"].ritem').click();
   });
-  await check('ordinary records locate the original turn and keep the profile header and list visible', async () => {
+  await check('ordinary messages stay in one main chat and have no duplicate record list', async () => {
     await page.locator('[data-workbench="home"].ritem').click();
     const closeWorkspace = page.getByRole('button', { name: '收起工作台', exact: true });
     if (await closeWorkspace.isVisible()) await closeWorkspace.click();
@@ -514,26 +547,10 @@ try {
     }
     assert.equal(await page.locator('.bot-chat-entry.user').count(), 2); assert.equal(await page.locator('.bot-chat-entry.assistant').count(), 2);
     assert.equal(await page.locator('.bot-task-card, .bot-task-notice').count(), 0); await shot('single-main-chat');
-    await openBotDetails();
-    const hero = page.locator('#bot-inspector .bot-inspector-hero');
-    const before = await hero.boundingBox();
-    const activity = await openActivity();
-    assert.deepEqual(await hero.boundingBox(), before, 'activity keeps the Bot identity and tabs in place');
-    await activity.getByRole('radio', { name: '对话', exact: true }).click();
-    const conversations = activity.getByRole('region', { name: '普通对话', exact: true });
-    await conversations.waitFor();
-    assert.equal(await conversations.getByRole('button').count(), 2);
-    const greeting = conversations.getByRole('button', { name: /^你好/ });
-    await greeting.press('Enter');
-    const located = page.locator('.bot-chat-scroll [data-located]');
-    await located.getByText('你好', { exact: true }).waitFor();
-    assert.equal(await located.evaluate(node => node === document.activeElement), true);
-    assert.equal(await greeting.getAttribute('aria-current'), 'location');
-    await page.locator('.bot-chat-scroll').getByText('你好，我们就在这条对话里继续。', { exact: true }).waitFor();
-    await shot('chat-execution-records');
-    await activity.getByRole('button', { name: '返回详情', exact: true }).click();
-    await page.locator('#bot-inspector [data-open-activity]:focus').waitFor();
-    await page.locator('#bot-inspector').getByRole('button', { name: '关闭 Bot 侧栏', exact: true }).click();
+    const sidebar = await openBotDetails();
+    assert.equal(await sidebar.getByRole('button', { name: '工作与对话', exact: true }).count(), 0);
+    assert.equal(await sidebar.getByRole('button', { name: '新建对话', exact: true }).count(), 0);
+    await sidebar.getByRole('button', { name: '关闭 Bot 侧栏', exact: true }).click();
     assert.equal(await page.evaluate(async () => (await window.workbench.bot.list()).find(bot => bot.seedKey === 'coordinator').mainChatId), chatId);
     assert.equal(await page.locator('.bot-compose textarea').count(), 1); assert.equal(await page.locator('.bot-reply-target').count(), 0);
   });
@@ -550,36 +567,15 @@ try {
     await closeActivity();
     await page.locator('.bot-compose textarea').waitFor(); await page.locator('[data-workbench="media"].ritem').click();
   });
-  await check('activity keeps delivered work and leaves the composer usable in floating and minimum-width panels', async () => {
-    await waitForState(async () => { const bot = (await window.workbench.bot.list()).find(bot => bot.seedKey === 'media'); return (await window.workbench.bot.listTasks(bot.id)).some(task => task.input === '交付件验收' && task.status === 'completed'); });
-    const activity = await openActivity();
-    const ended = activity.getByRole('region', { name: '已结束', exact: true });
-    await ended.getByRole('button', { name: /^交付件验收/ }).waitFor(); await shot('progress-ended-work');
-    await closeActivity();
-    await openFloatingActivity();
-    await ended.getByRole('button', { name: /^交付件验收/ }).waitFor(); await shot('progress-floating');
-    const input = page.locator('.bot-compose textarea');
-    await input.click();
-    await closeActivity();
-    await page.getByRole('combobox', { name: 'AI 助手', exact: true }).click(); await page.getByRole('option', { name: '固定', exact: true }).click();
-    const win = await app.browserWindow(page); await win.evaluate(win => win.setContentSize(1024, 680));
-    await openWorkspace();
-    const separator = page.getByRole('separator', { name: '调整对话宽度', exact: true }); await separator.focus(); for (let i = 0; i < 12; i++) await separator.press('ArrowLeft');
-    assert.equal(await separator.getAttribute('aria-valuenow'), '340');
-    await openActivity();
-    await input.click();
-    const records = await page.locator('#bot-inspector').boundingBox(), editor = await input.boundingBox();
-    assert.ok(records.y + records.height <= editor.y, 'activity overlay ends above the composer');
-    await shot('progress-minimum-width');
-    await ended.getByRole('button', { name: /^交付件验收/ }).click();
-    await activity.waitFor({ state: 'hidden' });
-    await page.locator('.bot-chat-scroll [data-located]').waitFor();
-    await win.evaluate(win => win.setContentSize(1544, 1018));
-    await page.waitForFunction(() => window.innerWidth === 1544 && window.innerHeight === 1018);
-    await page.evaluate(() => Promise.all(
-      Array.from(document.querySelectorAll('.rail, #bot-workspace')).flatMap(node => node.getAnimations())
-        .map(animation => animation.finished.catch(() => {})),
-    ));
+  await check('delivery keeps its source work accessible in the original library', async () => {
+    const library = await openLibrary();
+    await page.locator('.bot-delivery-row > .bot-work-row').first().click();
+    const preview = page.getByRole('region', { name: '交付件预览' });
+    await preview.getByRole('button', { name: '查看来源任务', exact: true }).click();
+    await page.locator('.bot-work-source-task').getByText('交付件验收', { exact: true }).first().waitFor();
+    await page.getByRole('button', { name: '返回资料库', exact: true }).click();
+    await preview.waitFor();
+    await library.getByRole('button', { name: '关闭 Bot 侧栏', exact: true }).click();
   });
   await check('appearance, reduced motion and keyboard profile preserve workspace geometry', async () => {
     const before = await page.locator('.bot-workspace').boundingBox();
@@ -594,8 +590,7 @@ try {
     await appearance({ uiTheme: '窗影', glassIntensity: '强玻璃' }); await shot('keyboard-and-appearance');
   });
   await check('reload restores the selected Bot and persisted unsent draft', async () => {
-    await openActivity();
-    await closeActivity(); await page.locator('.bot-compose textarea').fill('重启后保留的草稿');
+    await page.locator('.bot-compose textarea').fill('重启后保留的草稿');
     await waitForState(async () => { const card = (await window.workbench.bot.list()).find(bot => bot.seedKey === 'media'); return (await window.workbench.bot.getDraft(card.mainChatId)).text === '重启后保留的草稿'; });
     await page.reload(); await page.locator('.bot-contact').last().waitFor(); assert.equal(await page.locator('.bot-shell').getAttribute('data-workbench'), 'media'); await waitDraft(page, '重启后保留的草稿');
   });
@@ -712,10 +707,7 @@ try {
     await browserResult.screenshot({ path: path.join(output, 'browser-action-summary.png'), animations: 'disabled' });
     report.screenshots.push('browser-action-summary.png');
     await shot('browser-verified');
-    const activity = await openActivity();
-    const backToList = activity.getByRole('button', { name: '返回列表', exact: true });
-    if (await backToList.isVisible()) await backToList.click();
-    await activity.getByRole('button', { name: '查看工作详情：浏览器资源桥验收', exact: true }).click();
+    const activity = await openActivity(chat.getByRole('button', { name: '查看工作详情', exact: true }).last());
     const browserHistory = activity.locator('.bot-work-history .bot-operation-card').filter({ hasText: '网页操作' });
     await browserHistory.getByRole('button', { name: '查看 网页操作', exact: true }).click();
     const recordButton = browserHistory.getByRole('button', { name: '查看网页操作记录', exact: true });
@@ -738,9 +730,9 @@ try {
     await page.getByRole('region', { name: '交付件预览' }).waitFor(); assert.equal(await page.locator('.bot-shell').getAttribute('data-workbench'), 'home');
     assert.equal(await page.getByRole('region', { name: '交付件预览' }).getByRole('heading', { level: 3 }).textContent(), '文章整理建议');
     await island.getByRole('button', { name: '关闭总 Bot 小窗' }).click();
-    await openActivity();
+    const sidebar = await openBotDetails();
     assert.ok(await page.locator('#bot-workspace .bot-artifact-preview').isVisible());
-    await closeActivity(); await openLibrary();
+    await sidebar.getByRole('button', { name: '关闭 Bot 侧栏', exact: true }).click(); await openLibrary();
     assert.ok(await page.locator('#bot-workspace .bot-artifact-preview').isVisible());
     await page.locator('#bot-inspector').getByRole('button', { name: '关闭 Bot 侧栏' }).click();
   });

@@ -1,29 +1,29 @@
 import { BotChatSynchronizer } from '../bot-chat-sync';
+import { BOT_SPLIT_BASE_MAX_WIDTH, BOT_SPLIT_MIN_WIDTH } from '../bot-split-layout';
 import { useBotChatHistory } from '../bot-chat-history';
 import { isHomeDashboardDraftOpen } from '../home-dashboard-state';
 import { groupBotChatEvents, type BotChatEventGroup, type BotChatEventSlot } from '../bot-chat-events';
 import { Fragment, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type Ref } from 'react';
-import { ClockCounterClockwise, ArrowDown, ArrowLeft, ArrowRight, ArrowsLeftRight, CaretRight, DotsThree, ListBullets, MinusSquare, Paperclip, PaperPlaneRight, Plus, Power, SidebarSimple, Sparkle, Square, StarFour, X } from '@phosphor-icons/react';
-import type { BotArtifact, BotCard, BotMessage, BotOpen, BotResourceRef, BotSubmit, BotTask } from '../../shared/bot-contracts';
+import { ClockCounterClockwise, ArrowDown, ArrowLeft, ArrowRight, ArrowsLeftRight, BookOpen, CaretRight, DotsThree, ListBullets, MinusSquare, Paperclip, PaperPlaneRight, Plus, Power, SidebarSimple, Sparkle, Square, StarFour, X } from '@phosphor-icons/react';
+import type { BotArtifact, BotCard, BotMemoryRequest, BotMemoryView, BotMessage, BotOpen, BotResourceRef, BotSubmit, BotTask } from '../../shared/bot-contracts';
 import type { AiTurnContext, AiReference } from '../../shared/ai-reference';
 import type { ChatEntry, CopySource } from '../../shared/todo-contracts';
 import type { AiConfig } from '../../shared/workbench-api';
 import { BotDraftController } from '../bot-draft';
-import { groupBotProgress } from '../bot-progress';
 import { playBotMarquee, playBotOpening } from '../bot-floating-motion';
 import { errorText, IconButton, Select } from '../ui/controls';
 import type { AiPanelContext, AiSeed } from './AiPanel';
 import { AiResponse, BotMessageTime, BotReplyProgress } from './AiResponse';
 import { botAvatarChoice, botAvatarColors } from '../../shared/bot-avatar';
-import { BotExecutionCard } from './BotExecutionCard';
+import { BotExecutionCard, hasBotExecutionDetails } from './BotExecutionCard';
 import type { BrowserTask } from '../../shared/browser-automation-contracts';
-import { BotOperationCard } from './BotOperationCard';
+import { BotOperationCard, BotOperationReceipt, BotOperationSubject } from './BotOperationCard';
 import { botEntryOutcome, projectBotTurnOutcomes } from '../bot-turn-outcomes';
 import { AiReferencePicker, loadReferenceOptions, type ReferenceMode, type ReferenceOption } from './AiReferencePicker';
 import { SpeechInput } from './SpeechInput';
 import { BotAvatar } from './BotAvatar';
 import { BotProfile, type InspectorTab } from './BotProfile';
-import { botStatusLabel, BotChatActions, BotTaskDetail } from './BotTasks';
+import { botStatusLabel, BotChatActions } from './BotTasks';
 import { BotSchedules } from './BotSchedules';
 import { BotArtifactsView } from './BotWorkViews';
 import { BotActivity } from './BotActivity';
@@ -31,14 +31,13 @@ import { BotCollaborationCard, BotExchangeView, BotIncomingMessage, BotMessageEv
 import { BrowserSiteApprovalCard, browserSiteApprovalForCard, useBrowserApprovalTasks } from '../../modules/browser/ui/site-approval';
 
 export type BotAssistantMode = 'parallel' | 'floating';
-export type BotPanelPage = 'chat' | 'tasks' | 'artifacts' | 'history' | 'schedules' | 'exchange' | 'profile';
+export type BotPanelPage = 'chat' | 'tasks' | 'artifacts' | 'schedules' | 'exchange' | 'profile';
 export type BotPanelHandle = {
   openProfileTab?: InspectorTab;
   prepareModeSwitch(mode: BotAssistantMode): void;
   prepareWorkspaceResize(): void;
 };
 type AmendmentChoice = { label: string; target: NonNullable<BotSubmit['target']> };
-type RecordLocation = { kind: 'entry' | 'action'; id: string; taskId: string; focus: boolean };
 type ChatActionPlacement = { task: BotTask; actionIds?: readonly string[] };
 const collaborationBeforeReply = (task: BotTask) => isCollaborationTask(task) && !task.assistantEntryIds?.length;
 const wb = window.workbench;
@@ -47,6 +46,7 @@ const memoryOperations = { added: '已保存', updated: '已更新', reused: '�
 
 type MemoryComposer = {
   botId: string; scope: 'private' | 'shared'; text: string; sent?: BotTask; pending?: BotSubmit; sending?: boolean; error?: string;
+  edit?: BotMemoryRequest['edit']; title?: string;
 };
 const controllers = new Map<string, BotDraftController>();
 const selections = new Map<string, { start: number; end: number }>();
@@ -54,14 +54,14 @@ export function botDraft(chatId: string): BotDraftController { let controller = 
 const asRef = (value: AiReference): BotResourceRef => ({ kind: value.module, id: value.module === 'todo' ? value.taskId : value.module === 'copy' ? value.draftId : value.profileId });
 const asAiRef = (value: BotResourceRef): AiReference | null => value.kind === 'todo' ? { module: 'todo', taskId: value.id } : value.kind === 'copy' ? { module: 'copy', draftId: value.id } : value.kind === 'bazi' || value.kind === 'reading' ? { module: value.kind, profileId: value.id } : null;
 
-export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, context, seed, onSeedFinished, onOpenSettings, onActiveChatChange, onOpenResource, onOpenTodo, onOpenBrowser, onOpenDashboard, workspaceHidden = false, navExpanded, onOpenWorkspace, onSelectBot, onLocateCopySource, onLocateBaziDay, initialPage, initialProfileTab, width = 400, onWidthChange, copySaveState, island = false }: {
+export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, context, seed, onSeedFinished, onOpenSettings, onActiveChatChange, onOpenResource, onOpenTodo, onOpenBrowser, onOpenDashboard, workspaceHidden = false, navExpanded, onOpenWorkspace, onSelectBot, onLocateCopySource, onLocateBaziDay, initialPage, initialProfileTab, width = 400, widthLimit = BOT_SPLIT_BASE_MAX_WIDTH, onWidthChange, copySaveState, island = false }: {
   ref?: Ref<BotPanelHandle>; bot: BotCard; cards: BotCard[]; open: boolean; mode?: BotAssistantMode; onMode?(mode: BotAssistantMode): void; onClose(): void;
   context: AiPanelContext; seed?: AiSeed | null; onSeedFinished?(nonce: number): void; onOpenSettings(): void; onActiveChatChange?(id: string): void;
   onOpenResource?(ref: BotResourceRef): void; workspaceHidden?: boolean; navExpanded?: boolean; onOpenWorkspace?(): void; onSelectBot?(id: string): void;
   onOpenTodo(id?: string): void;
   onOpenBrowser?(task: BrowserTask): void; onOpenDashboard?(): void;
   onLocateCopySource?(source: CopySource): void; onLocateBaziDay?(profileId: string): void;
-  initialPage?: { value: BotPanelPage; nonce: number; taskId?: string }; initialProfileTab?: InspectorTab; width?: number; onWidthChange?(width: number): void;
+  initialPage?: { value: BotPanelPage; nonce: number; taskId?: string }; initialProfileTab?: InspectorTab; width?: number; widthLimit?: number; onWidthChange?(width: number): void;
   copySaveState?: { id: string | null; status: 'saved' | 'saving' | 'error' }; island?: boolean;
 }) {
   const draft = useMemo(() => botDraft(bot.mainChatId), [bot.mainChatId]);
@@ -79,8 +79,8 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
   const [inspectorView, setInspectorView] = useState<{ tab: InspectorTab | 'activity'; open: boolean; retained?: boolean; workspaceExitWidth?: number } | undefined>(
     () => initialProfileTab ? { tab: initialProfileTab, open: true, retained: true } : undefined,
   );
-  const [activityStart, setActivityStart] = useState<{ key: number; taskId?: string; historyFirst?: boolean }>({ key: 0 });
-  const [recordLocation, setRecordLocation] = useState<RecordLocation>();
+  const [activityStart, setActivityStart] = useState<{ key: number; taskId?: string }>({ key: 0 });
+  const activityOpener = useRef<HTMLElement | null>(null);
   const inspector = inspectorView?.open ? inspectorView.tab : undefined;
   const inspectorPanel = useRef<HTMLElement>(null);
   const setInspector = useCallback((tab?: InspectorTab | 'activity') => {
@@ -90,18 +90,29 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
       return { tab, open: true, retained: tab !== 'activity' && view?.open && view.retained };
     });
   }, []);
-  const openActivity = useCallback((taskId?: string, historyFirst = false) => {
-    setActivityStart(last => ({ key: last.key + 1, taskId, historyFirst }));
+  const openActivity = useCallback((taskId?: string) => {
+    const focused = document.activeElement;
+    activityOpener.current = taskId && focused instanceof HTMLElement && focused !== document.body ? focused : null;
+    setActivityStart(last => ({ key: last.key + 1, taskId }));
     setInspector('activity'); setPage('chat'); setMenu(false); setCollapsed(false);
   }, [setInspector]);
-  const [sourceTaskId, setSourceTaskId] = useState<string>();
   const badge = useRef<HTMLButtonElement>(null);
   const exchangeBack = useRef<HTMLButtonElement>(null);
   const [artifactId, setArtifactId] = useState<string>();
+  const artifactReads = useRef(0);
+  const refreshArtifacts = useCallback(async () => {
+    const read = ++artifactReads.current;
+    const next = await wb.bot.listArtifacts(bot.id);
+    if (read === artifactReads.current) setArtifacts(next);
+  }, [bot.id]);
+  const removeArtifact = async (id: string) => {
+    await wb.bot.removeArtifactFromLibrary(id);
+    setArtifacts(items => items.filter(item => item.id !== id));
+    void refreshArtifacts().catch(cause => setError(errorText(cause)));
+  };
   const [exchange, setExchange] = useState<Pick<BotMessage, 'id' | 'fromBotId' | 'toBotId'>>();
   const [amendmentTarget, setAmendmentTarget] = useState<AmendmentChoice>();
   useEffect(() => { setAmendmentTarget(undefined); }, [bot.id]);
-  const artifactTaskReturn = useRef<HTMLElement | null>(null);
   const [collapsed, setCollapsed] = useState(true), [replyVisible, setReplyVisible] = useState(false), [menu, setMenu] = useState(false);
   const [motionPhase, setMotionPhase] = useState('closed');
   const [referencesOpen, setReferencesOpen] = useState(false), [referenceMode, setReferenceMode] = useState<ReferenceMode | null>(bot.seedKey === 'schedule' ? 'todo' : bot.seedKey === 'media' ? 'copy' : bot.seedKey === 'utilities' ? 'reading' : bot.seedKey === 'coordinator' ? 'todo' : null);
@@ -112,6 +123,7 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
   const glint = useRef<HTMLSpanElement>(null);
   const motion = useRef<Animation | null>(null), wave = useRef(() => {}), motionTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const panel = useRef<HTMLElement>(null), wasParallel = useRef(open && mode === 'parallel' && !island);
+  const resizeDrag = useRef<{ pointerId: number; x: number; width: number } | null>(null);
   const modeOrigin = useRef<{ mode: BotAssistantMode; rect: DOMRect } | null>(null);
   const floating = mode === 'floating' && !island;
   const embeddedActivity = !floating && !island;
@@ -275,7 +287,7 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
     void wb.bot.getPendingSubmission(bot.mainChatId, true).then(record => {
       const input = record?.input;
       if (live && input?.memoryRequest && input.botId === bot.id) {
-        const next: MemoryComposer = { botId: bot.id, scope: input.memoryRequest.scope, text: input.text, pending: input };
+        const next: MemoryComposer = { botId: bot.id, scope: input.memoryRequest.scope, edit: input.memoryRequest.edit, text: input.text, pending: input };
         setMemoryDraft(current => current?.botId === bot.id ? current : next);
       }
     }).catch(() => {});
@@ -298,9 +310,9 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
     return () => resize?.disconnect();
   }, [inspectorView, restoreScroll, scroll]);
   useEffect(() => { if (initialPage) {
-    if (initialPage.value === 'tasks' || initialPage.value === 'history') { openActivity(initialPage.taskId, initialPage.value === 'history'); return; }
+    if (initialPage.value === 'tasks' && initialPage.taskId) { openActivity(initialPage.taskId); return; }
     const tab = initialPage.value === 'profile' ? 'details' : initialPage.value === 'artifacts' ? 'library' : undefined;
-    setInspector(tab); setPage(tab ? 'chat' : initialPage.value); setCollapsed(false); setReplyVisible(true); } }, [initialPage, openActivity, setInspector]);
+    setInspector(tab); setPage(tab || initialPage.value === 'tasks' ? 'chat' : initialPage.value); setCollapsed(false); setReplyVisible(true); } }, [initialPage, openActivity, setInspector]);
   useEffect(() => {
     let live = true, configUpdated = false, taskTimer: ReturnType<typeof setTimeout> | undefined;
     const sync = new BotChatSynchronizer(bot.mainChatId, wb.bot, value => { if (live) { history.setSnapshot(value); setError(''); } }, cause => { if (live) setError(errorText(cause)); }, () => history.following.current);
@@ -311,16 +323,16 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
     void opened.then(({ bot: profile, history: archived }) => {
       if (live) { setData({ bot: profile, history: archived }); onActiveChatChange?.(profile.mainChatId); }
     }, () => { /* The synchronizer reports the same failure. */ });
-    const loadTasks = () => { clearTimeout(taskTimer); taskTimer = setTimeout(() => { void Promise.all([wb.bot.listTasks(bot.id), wb.bot.listArtifacts(bot.id)]).then(([nextTasks, nextArtifacts]) => { if (live) { setTasks(nextTasks); setArtifacts(nextArtifacts); } }, cause => { if (live) setError(errorText(cause)); }); }, 80); };
-    void Promise.all([wb.ai.config(), wb.bot.listTasks(bot.id), wb.bot.listArtifacts(bot.id)]).then(([cfg, nextTasks, nextArtifacts]) => { if (!live) return; if (!configUpdated) setConfig(cfg); setTasks(nextTasks); setArtifacts(nextArtifacts); }, cause => { if (live) setError(errorText(cause)); });
+    const loadTasks = () => { clearTimeout(taskTimer); taskTimer = setTimeout(() => { void Promise.all([wb.bot.listTasks(bot.id), refreshArtifacts()]).then(([nextTasks]) => { if (live) setTasks(nextTasks); }, cause => { if (live) setError(errorText(cause)); }); }, 80); };
+    void Promise.all([wb.ai.config(), wb.bot.listTasks(bot.id), refreshArtifacts()]).then(([cfg, nextTasks]) => { if (!live) return; if (!configUpdated) setConfig(cfg); setTasks(nextTasks); }, cause => { if (live) setError(errorText(cause)); });
     const offChat = wb.ai.onChat(value => { if (value.id === bot.mainChatId && live) void sync.refresh(); });
     const offConfig = wb.ai.onConfigChanged(value => { if (live) { configUpdated = true; setConfig(value); } });
     const off = wb.bot.onChanged(event => { if (event.kind === 'host') { void sync.refresh(); loadTasks(); return; } if (event.kind === 'chat' && event.chatId && event.chatId !== bot.mainChatId) return; if ((!event.botId || event.botId === bot.id) && ['task', 'artifact', 'chat'].includes(event.kind)) { void sync.refresh(); if (event.kind !== 'chat') loadTasks(); } });
-    return () => { live = false; clearTimeout(taskTimer); sync.stop(); history.sync.current = null; offUpdates(); off(); offChat(); offConfig(); };
-  }, [bot.id, bot.mainChatId, reload]);
+    return () => { live = false; artifactReads.current++; clearTimeout(taskTimer); sync.stop(); history.sync.current = null; offUpdates(); off(); offChat(); offConfig(); };
+  }, [bot.id, bot.mainChatId, reload, refreshArtifacts]);
   useEffect(() => { if (!referencesOpen || !referenceMode) return; let live = true; setReferenceLoading(true); setReferenceError(''); void loadReferenceOptions(referenceMode).then(value => { if (live) setReferenceOptions(value); }, cause => { if (live) setReferenceError(errorText(cause)); }).finally(() => { if (live) setReferenceLoading(false); }); return () => { live = false; }; }, [referenceMode, referencesOpen, referenceReload]);
   useLayoutEffect(() => { if (page !== 'chat') scroll.current?.scrollTo({ top: 0 }); }, [page]);
-  useLayoutEffect(() => { const saved = selections.get(bot.mainChatId); if (saved && editor.current) editor.current.setSelectionRange(saved.start, saved.end); }, [bot.mainChatId, open, collapsed, mode]);
+  useLayoutEffect(() => { const saved = selections.get(bot.mainChatId); if (saved && editor.current) editor.current.setSelectionRange(saved.start, saved.end); }, [bot.mainChatId, open, collapsed, mode, inspector]);
   useEffect(() => {
     if (!menu) return;
     const dismiss = (event: PointerEvent) => { if (!menuRef.current?.contains(event.target as Node)) setMenu(false); };
@@ -328,15 +340,18 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
     window.addEventListener('pointerdown', dismiss); window.addEventListener('keydown', key);
     return () => { window.removeEventListener('pointerdown', dismiss); window.removeEventListener('keydown', key); };
   }, [menu]);
-  useLayoutEffect(() => { if (!floating || collapsed || !editor.current) return; editor.current.style.height = '0px'; editor.current.style.height = `${Math.min(98, Math.max(40, editor.current.scrollHeight))}px`; }, [floating, collapsed, open, draft.value.text]);
+  useLayoutEffect(() => { if (!floating || collapsed || !editor.current) return; editor.current.style.height = '0px'; editor.current.style.height = `${Math.min(98, Math.max(40, editor.current.scrollHeight))}px`; }, [floating, collapsed, open, draft.value.text, inspector]);
   useEffect(() => { if (open && !(floating && collapsed) && (!floating || replyVisible) && page === 'chat') void wb.bot.markRead(bot.id).catch(() => {}); }, [bot.id, open, floating, collapsed, replyVisible, page, tasks]);
   const run = async (job: () => Promise<unknown>) => { if (busy) return; setBusy(true); setError(''); try { await job(); } catch (cause) { setError(errorText(cause)); } finally { setBusy(false); } };
   const hasModel = config?.models.some(model => model.id === bot.modelId && config.providers.some(provider => provider.id === model.providerId));
   const modelReady = !!(config?.aiEnabled && hasModel);
   const canSubmit = modelReady || draft.hasPendingSubmit;
   const canSendMemory = !!memory && !busy && !speechBusy && !memory.sending && !memoryWaiting && (modelReady || !!memory.pending) && !!memory.text.trim();
-  const startMemory = () => {
-    if (!memory) setMemoryDraft({ botId: bot.id, text: '', scope: 'private' });
+  const startMemory = (item?: BotMemoryView) => {
+    if (!memory) setMemoryDraft({
+      botId: bot.id, text: '', scope: item?.scope ?? 'private',
+      ...(item && { edit: { id: item.id, revision: item.revision }, title: item.title }),
+    });
     if (workspaceHidden) setInspectorView(undefined);
     else setInspector(undefined);
     setPage('chat'); setMenu(false); setReferencesOpen(false); setCollapsed(false); setReplyVisible(true);
@@ -368,7 +383,7 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
     const request: BotSubmit = memory.pending ?? {
       botId: bot.id, chatId: bot.mainChatId, clientRequestId: crypto.randomUUID(), expectedDraftRevision: 0,
       text: memory.text, replyToTaskId: null, resources: [],
-      memoryRequest: { scope: memory.scope, ...(memoryTask?.status === 'completed' && { clarifies: memoryTask.id }) },
+      memoryRequest: { scope: memory.scope, ...(memory.edit && { edit: memory.edit }), ...(memoryTask?.status === 'completed' && { clarifies: memoryTask.id }) },
     };
     submitBusy.current = true;
     setMemoryDraft({ ...memory, pending: request, sending: true, error: undefined });
@@ -418,16 +433,22 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
     onSeedFinished?.(seed.nonce);
   }, [seed, draft.ready, config, modelReady]);
   const closeInspector = () => {
+    const opener = inspector === 'activity' ? activityOpener.current : null;
+    activityOpener.current = null;
     setInspector(undefined);
     if (page === 'exchange') {
       requestAnimationFrame(() => exchangeBack.current?.focus({ preventScroll: true }));
       return;
     }
-    (floating ? menuRef.current?.querySelector('button') : badge.current)?.focus({ preventScroll: true });
+    const trigger = floating || island ? menuRef.current?.querySelector('button') : badge.current;
+    const focusTarget = opener?.isConnected ? opener : trigger;
+    if (opener || island) requestAnimationFrame(() => focusTarget?.focus({ preventScroll: true }));
+    else focusTarget?.focus({ preventScroll: true });
   };
   const returnFromActivity = () => {
+    if (activityStart.taskId) { closeInspector(); return; }
     setInspector('details');
-    requestAnimationFrame(() => inspectorPanel.current?.querySelector<HTMLElement>('[data-open-activity]')?.focus({ preventScroll: true }));
+    requestAnimationFrame(() => inspectorPanel.current?.querySelector<HTMLElement>('[data-open-history]')?.focus({ preventScroll: true }));
   };
   const openWorkspace = () => {
     if (workspaceHidden && onOpenWorkspace) prepareWorkspaceResize();
@@ -449,7 +470,7 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
     setInspector(tab);
   };
   const changePage = (next: BotPanelPage, { keepInspector = false }: { keepInspector?: boolean } = {}) => {
-    if (next === 'tasks' || next === 'history') { openActivity(undefined, next === 'history'); return; }
+    if (next === 'tasks') next = 'chat';
     if (next === 'artifacts' || next === 'profile') { openInspector(next === 'artifacts' ? 'library' : 'details'); return; }
     if (!keepInspector) setInspector(undefined);
     setPage(next); setMenu(false); setCollapsed(false); setReplyVisible(true);
@@ -478,12 +499,9 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
   })), [approvalChat, browserApprovals.tasks]);
   const pendingSiteEntries = useMemo(() => new Map([...siteApprovalEntries].flatMap(([id, approval]) =>
     approval.status === 'pending' ? [[id, approval.entryId] as const] : [])), [siteApprovalEntries]);
-  const pendingSiteForTask = (task: BotTask) => [...pendingSiteEntries].find(([, entryId]) =>
-    entryId === task.assistantEntryId || task.assistantEntryIds?.includes(entryId))?.[0];
-  const hasEditor = page !== 'exchange' && (floating || page === 'chat');
+  const hasEditor = inspector !== 'activity' && page !== 'exchange' && (floating || page === 'chat');
   const chooseReferenceMode = (value: string) => { setReferenceMode(value as ReferenceMode); setReferenceOptions([]); };
   const copyBusy = copySaveState?.status !== undefined && copySaveState.status !== 'saved';
-  const progress = useMemo(() => groupBotProgress(tasks, [], artifacts, snapshot?.toolReplyIds), [tasks, snapshot?.toolReplyIds, artifacts]);
   const pageTasks = useMemo(() => {
     const latest = new Map(tasks.map(task => [task.id, task]));
     for (const task of snapshot?.pageTasks ?? []) {
@@ -501,42 +519,6 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
     return <div className="bot-prompt-outcome"><BotExecutionCard entry={{ id: entryId, role: 'assistant', content: '' }} outcome={outcome} onOpenWork={taskId ? () => openActivity(taskId) : undefined} /></div>;
   };
   const actionTasks = useMemo(() => pageTasks.filter(task => task.botId === bot.id && task.chatId === bot.mainChatId && (task.operationIds.length || task.dependencyIds.length || task.messageIds?.length)), [pageTasks, bot.id, bot.mainChatId]);
-  const locateRecord = async (task: BotTask, conversation: boolean, keyboard: boolean, signal: AbortSignal) => {
-    if (task.chatId !== bot.mainChatId) return false;
-    let target: Pick<RecordLocation, 'kind' | 'id'> | undefined;
-    if (!conversation && task.status === 'waiting_user') {
-      const siteTaskId = pendingSiteForTask(task);
-      if (siteTaskId) {
-        target = { kind: 'action', id: siteTaskId };
-      } else if (actionTasks.some(item => item.id === task.id)) {
-        target = { kind: 'action', id: task.id };
-      }
-    }
-    if (!target) {
-      const ids = conversation ? [task.sourceMessageId] : new Set([task.assistantEntryId, task.latestUserMessageId, task.sourceMessageId]);
-      for (const id of ids) {
-        if (signal.aborted) return false;
-        if (id && await history.findEntry(id, signal, page => id !== task.assistantEntryId
-          || !projectBotTurnOutcomes([...page.chat.entries, ...page.liveEntries], [task]).hiddenReplies.has(id))) {
-          target = { kind: 'entry', id }; break;
-        }
-      }
-    }
-    if (!target || signal.aborted) return false;
-    const narrow = !!scroll.current && getComputedStyle(scroll.current).getPropertyValue('--bot-activity-overlay').trim() === '1';
-    setRecordLocation({ ...target, taskId: task.id, focus: keyboard || narrow });
-    if (narrow) setInspector(undefined);
-    return true;
-  };
-  useLayoutEffect(() => {
-    if (!recordLocation || !open || page !== 'chat' || floating) return;
-    const { id, kind, focus } = recordLocation;
-    const selector = kind === 'entry' ? 'data-chat-entry-id' : 'data-chat-action-id';
-    const row = kind === 'entry' ? history.scrollToEntry(id) : undefined;
-    const target = row ?? panel.current?.querySelector<HTMLElement>(`[${selector}="${CSS.escape(id)}"]`);
-    if (!row) target?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-    if (focus) target?.focus({ preventScroll: true });
-  }, [recordLocation, open, page, floating]);
   const incomingForEntry = useMemo(() => new Map(pageTasks.filter(task => task.parentTaskId && task.botId === bot.id && task.chatId === bot.mainChatId && task.assistantEntryId).map(task => [task.assistantEntryIds?.[0] ?? task.assistantEntryId!, task])), [pageTasks, bot.id, bot.mainChatId]);
   const legacyMessageTimes = useMemo(() => {
     const dates = new Map<string, string>();
@@ -551,15 +533,15 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
     const value = entry.createdAt ?? legacyMessageTimes.get(entry.id);
     return <BotMessageTime value={value} title={entry.createdAt ? undefined : '旧消息未单独记录时间，显示关联请求的时间'} />;
   };
-  const { memoryScopesByMessage, memoryReceipts, unsavedMemoryReplies } = useMemo(() => {
-    const scopes = new Map<string, string>();
+  const { memoryLabelsByMessage, memoryReceipts, unsavedMemoryReplies } = useMemo(() => {
+    const labels = new Map<string, string>();
     const unsaved = new Set<string>();
     const receipts = new Map<string, NonNullable<BotTask['memoryReceipts']>>();
     for (const task of pageTasks) {
       if (task.botId !== bot.id || task.chatId !== bot.mainChatId) continue;
       const scope = memoryScopes.find(option => option.value === task.memoryRequest?.scope);
       if (scope) {
-        scopes.set(task.sourceMessageId, scope.label);
+        labels.set(task.sourceMessageId, `${task.memoryRequest?.edit ? '编辑记忆' : '添加记忆'} · ${scope.label}`);
         if (task.status === 'completed' && task.assistantEntryId && !task.memoryReceipts?.length) unsaved.add(task.assistantEntryId);
       }
       for (const receipt of task.memoryReceipts ?? []) {
@@ -568,7 +550,7 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
         receipts.set(receipt.entryId, entries);
       }
     }
-    return { memoryScopesByMessage: scopes, memoryReceipts: receipts, unsavedMemoryReplies: unsaved };
+    return { memoryLabelsByMessage: labels, memoryReceipts: receipts, unsavedMemoryReplies: unsaved };
   }, [pageTasks, bot.id, bot.mainChatId]);
   const activeTasks = pageTasks.filter(task => task.botId === bot.id && (!task.parentTaskId || task.status === 'waiting_user') && (
     ['waiting_user', 'waiting_resource'].includes(task.status) ||
@@ -583,7 +565,7 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
   const latestUser = snapshot?.collapsedAt ? chat?.entries.slice().reverse().find(entry => entry.role === 'user') : snapshot?.latestUser;
   const currentTask = pageTasks.find(task => task.chatId === bot.mainChatId && (task.latestUserMessageId ?? task.sourceMessageId) === latestUser?.id);
   const outgoingPrompt = outgoing.at(-1);
-  const floatingPrompt = outgoingPrompt ? { id: outgoingPrompt.id, content: outgoingPrompt.text, createdAt: outgoingPrompt.createdAt } : latestUser;
+  const floatingPrompt = outgoingPrompt ? { id: outgoingPrompt.id, content: outgoingPrompt.text, createdAt: outgoingPrompt.createdAt, resourceRefs: outgoingPrompt.resources } : latestUser;
   const floatingQuestion = floatingPrompt?.content;
   const compactReply = floating && page === 'chat';
   const workPage = page === 'schedules';
@@ -627,7 +609,6 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
     const location = anchor && visibleIds.has(anchor) ? anchor : task.assistantEntryId;
     const locatable = actionIds ? actionIds.includes(latestActionId) : location === entry.id;
     return <div key={task.id} data-chat-action-id={locatable ? task.id : undefined}
-      data-located={locatable && recordLocation?.kind === 'action' && recordLocation.id === task.id || undefined}
       tabIndex={locatable ? -1 : undefined}>{chatActions(placement, entry.content, entry.id, groups)}</div>;
   });
   const roots = new Set<string>();
@@ -707,12 +688,16 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
     </button>
   </div>;
   const editComposer = (text: string) => memory ? setMemoryDraft({ ...memory, text }) : draft.edit({ text });
+  const memoryAction = memory?.edit ? '编辑记忆' : '添加记忆';
   const compose = <div className="bot-compose" ref={composer}>
         {memory && <div className="bot-memory-compose">
-          <span>添加记忆</span>
-          <Select aria-label="记忆保存范围" options={memoryScopes} value={memory.scope} disabled={!!memory.pending || memoryWaiting || busy}
-            onChange={scope => setMemoryDraft({ ...memory, scope: scope as MemoryComposer['scope'] })} />
-          <IconButton label="退出添加记忆" disabled={memory.sending || busy} onClick={endMemory}><X size={14} /></IconButton>
+          <span>{memoryAction}</span>
+          {memory.edit ? <>
+            {memory.scope === 'shared' && <span className="bot-memory-tag">全局</span>}
+            {memory.title && <span className="bot-memory-compose-title" title={memory.title}>{memory.title}</span>}
+          </> : <Select aria-label="记忆保存范围" options={memoryScopes} value={memory.scope} disabled={!!memory.pending || memoryWaiting || busy}
+            onChange={scope => setMemoryDraft({ ...memory, scope: scope as MemoryComposer['scope'] })} />}
+          <IconButton label={`退出${memoryAction}`} disabled={memory.sending || busy} onClick={endMemory}><X size={14} /></IconButton>
         </div>}
         {!memory && amendmentTarget && <div className="bot-reply-target"><span>{`回复：${amendmentTarget.label}`}</span><button type="button" onClick={() => setAmendmentTarget(undefined)}>取消引用</button></div>}
         {floating && <div className="bot-floating-tools" role="group" aria-label="悬浮对话操作">
@@ -739,10 +724,10 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
         {!memory && !!draft.value.resources.length && <div className="bot-reference-chips">{draft.value.resources.map(ref => <span key={`${ref.kind}:${ref.id}`}><Paperclip size={12} /><span title={ref.label || ref.id}>{ref.label || `${ref.kind} · ${ref.id.slice(0, 8)}`}</span><IconButton label={`移除引用 ${ref.label || ref.id}`} disabled={!draft.ready} onClick={() => draft.edit({ resources: draft.value.resources.filter(item => item !== ref) })}><X size={12} /></IconButton></span>)}</div>}
         {!memory && draft.value.replyToTaskId && !floating && <div className="bot-reply-target"><span>回复：{tasks.find(task => task.id === draft.value.replyToTaskId)?.title ?? '当前任务'}</span><IconButton label="取消回复任务" onClick={() => draft.edit({ replyToTaskId: null })}><X size={13} /></IconButton></div>}
         <textarea ref={editor} rows={floating ? 2 : 3} maxLength={10000}
-          aria-label={memory ? '想记住的内容' : `给${bot.name}发送消息`} value={memory?.text ?? draft.value.text}
+          aria-label={memory?.edit ? '想修改的内容' : memory ? '想记住的内容' : `给${bot.name}发送消息`} value={memory?.text ?? draft.value.text}
           readOnly={!!memory && (!!memory.pending || memoryWaiting || busy)}
           onSelect={event => { if (memory) return; const node = event.currentTarget; selections.set(bot.mainChatId, { start: node.selectionStart, end: node.selectionEnd }); }}
-          placeholder={memory ? '想让这位 Bot 记住什么？' : `给${bot.name}发送消息…`}
+          placeholder={memory?.edit ? '想怎么修改这条记忆？' : memory ? '想让这位 Bot 记住什么？' : `给${bot.name}发送消息…`}
           onChange={event => editComposer(event.target.value)}
           onCompositionStart={() => { if (!memory) draft.composition(true); }} onCompositionEnd={() => { if (!memory) draft.composition(false); }}
           onKeyDown={event => {
@@ -758,7 +743,7 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
             disabled={!canSendMemory || busy} onClick={() => void sendMemory()}><PaperPlaneRight size={18} weight="fill" /></button> : <button className="bot-send" aria-label={draft.hasPendingSubmit ? '核对发送结果' : '发送'} title={draft.hasPendingSubmit ? '使用原请求标识核对，不会重复提交' : '发送'} disabled={!canSubmit || draft.sending || speechBusy || !draft.hasPendingSubmit && !draft.value.text.trim()} onClick={() => void send()}><PaperPlaneRight size={18} weight="fill" /></button>}
         </div>
         {memory && (memory.sending || memoryWaiting || memoryTask?.status === 'completed') && <p className="bot-memory-compose-status" role="status">
-          {memory.sending ? '正在发送…' : memoryTask?.status === 'queued' ? '记忆请求已排队' : memoryWaiting ? 'Bot 正在处理记忆…' : '可以继续补充要记住的内容'}
+          {memory.sending ? '正在发送…' : memoryTask?.status === 'queued' ? '记忆请求已排队' : memoryWaiting ? 'Bot 正在处理记忆…' : memory.edit ? '可以继续说明要怎么改' : '可以继续补充要记住的内容'}
         </p>}
         {memory?.error && <div className="bot-error" role="alert">{memory.error}</div>}
         {memory && memoryRetry && <div className="bot-error" role="alert">{memoryTask?.reason || '记忆请求处理失败'}
@@ -769,11 +754,13 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
         {!memory && draft.error && <div className="bot-error" role="alert">{draft.error}<div className="bot-action-buttons"><button onClick={() => void run(() => navigator.clipboard.writeText(draft.value.text))}>复制本地输入</button><button disabled={draft.hasPendingSubmit || draft.sending} onClick={() => void run(() => draft.retrySave())}>重试保存当前输入</button></div></div>}
       </div>;
   const renderEntry = (entry: ChatEntry, readOnly = false, grouped = false) => {
-    const memoryScope = memoryScopesByMessage.get(entry.id);
+    const memoryLabel = memoryLabelsByMessage.get(entry.id);
     const outcome = (!readOnly ? outcomes.get(entry.id) : undefined) ?? botEntryOutcome(entry);
     const outcomeTaskId = outcome?.taskId;
     const browserTask = entry.browserTask ? browserApprovals.tasks[entry.browserTask.id] : undefined;
-    const workId = outcomeTaskId ?? (browserTask && tasks.find(task => task.assistantEntryId === entry.id)?.id);
+    const workId = outcomeTaskId ?? (entry.role === 'assistant' && hasBotExecutionDetails(entry)
+      ? pageTasks.find(task => task.assistantEntryId === entry.id || task.assistantEntryIds?.includes(entry.id))?.id
+      : undefined);
     const siteApproval = !readOnly && browserTask ? siteApprovalEntries.get(browserTask.id) : undefined;
     const showsApproval = !!siteApproval && siteApproval.entryId === entry.id && (!readOnly || siteApproval.status !== 'pending');
     const showsAction = !readOnly && visibleActions(entry).some(({ task, actionIds }) => {
@@ -799,7 +786,13 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
       <article className={`bot-chat-entry ${entry.role}`}><div>
         {!readOnly && entryActions(entry, true, groups)}
         {entry.role === 'user' ? <>
-          {memoryScope && <p className="bot-user-memory-scope">添加记忆 · {memoryScope}</p>}
+          {memoryLabel && <p className="bot-user-memory-scope">{memoryLabel}</p>}
+          {entry.resourceRefs?.filter(ref => ref.kind === 'todo').map(ref => (
+            <p className="bot-user-resource-ref" key={ref.id} title={ref.label || ref.id}>
+              <Paperclip size={12} aria-hidden="true" />
+              <span>{ref.label || `事项 · ${ref.id.slice(0, 8)}`}</span>
+            </p>
+          ))}
           <p className={floating ? 'bot-user-bubble bot-floating-question' : 'bot-user-bubble'} title={floating ? entry.content : undefined}>{entry.content}</p>
           {messageTime(entry)}
           {!readOnly && renderPromptOutcome(entry.id)}
@@ -809,32 +802,31 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
             timestamp={!entry.streaming && entry.content.trim() ? messageTime(entry) : undefined}
             onOpenWork={workId && !readOnly ? () => openActivity(workId) : undefined}
             onOpenBrowser={readOnly ? undefined : onOpenBrowser} onOpenDashboard={readOnly ? undefined : onOpenDashboard} />
-          {!readOnly && unsavedMemoryReplies.has(entry.id) && <div className="bot-memory-receipt" role="status">本次未保存到长期记忆</div>}
-          {!readOnly && memoryReceipts.get(entry.id)?.map(receipt => <div key={receipt.messageId + ':' + receipt.requestText} className="bot-memory-receipt" role="status">
-            <span>{memoryOperations[receipt.operation]}{receipt.scope === 'shared' ? '全局的' : '当前 Bot 的'}「{receipt.title}」</span>
-            {!island && <button type="button" className="bot-text-button" onClick={() => showMemory(receipt.id)}>查看记忆</button>}
-          </div>)}
+          {!readOnly && unsavedMemoryReplies.has(entry.id) && <BotOperationCard aria-label="记忆改动" label="记忆改动"
+            icon={<BookOpen size={18} />} status="未保存" collapsible={false}>
+            <BotOperationReceipt neutral>本次未保存到长期记忆</BotOperationReceipt>
+          </BotOperationCard>}
+          {!readOnly && memoryReceipts.get(entry.id)?.map(receipt => <BotOperationCard key={`${receipt.messageId}:${receipt.scope}:${receipt.requestText}`}
+            aria-label={`记忆改动 · ${receipt.title}`} label="记忆改动" summary={receipt.scope === 'shared' ? '全局' : '当前 Bot'}
+            icon={<BookOpen size={18} />} status={memoryOperations[receipt.operation]} tone="success" collapsible={false}>
+            <BotOperationSubject title={receipt.title} />
+            {!island && <div className="bot-action-buttons"><button type="button" onClick={() => showMemory(receipt.id)}>
+              查看记忆<ArrowRight size={14} aria-hidden="true" />
+            </button></div>}
+          </BotOperationCard>)}
           {browserTask && showsApproval && <BrowserSiteApprovalCard key={`${browserTask.id}:${siteApproval.origin}`} task={browserTask} inline
-            located={recordLocation?.kind === 'action' && recordLocation.id === browserTask.id}
             onTask={task => browserApprovals.update(task, siteApproval.origin)} />}
         </>}{entry.copySource && onLocateCopySource && <button className="ai-source-chip" title={entry.copySource.text} onClick={() => onLocateCopySource(entry.copySource!)}>引用原文 · 定位</button>}{entry.role === 'assistant' && entry.baziSystem === 'bazi' && entry.content.includes('日主') && entry.contextScope?.module === 'bazi' && onLocateBaziDay && <button className="ai-source-chip" onClick={() => { if (entry.contextScope?.module === 'bazi') onLocateBaziDay(entry.contextScope.profileId); }}>在盘面中定位日主</button>}{!readOnly && entryActions(entry, false, groups)}</div></article>
       </Fragment>;
     };
-    const library = <>
-      <div className="bot-artifacts-surface" hidden={!!sourceTaskId}>
-        <BotArtifactsView artifacts={artifacts} cards={cards} selectedId={artifactId} onSelect={setArtifactId} onTask={id => {
-          artifactTaskReturn.current = document.activeElement as HTMLElement; setSourceTaskId(id);
-          requestAnimationFrame(() => panel.current?.querySelector<HTMLElement>('.bot-work-source-task')?.focus());
-        }} onOpenResource={onOpenResource} onExternalPreview={island ? artifact => void run(() => wb.island.navigate({ view: 'home', artifactId: artifact.id })) : undefined} />
-      </div>
-      {sourceTaskId && <div className="bot-work-source-task" tabIndex={-1} aria-label="来源任务"><BotTaskDetail key={sourceTaskId} taskId={sourceTaskId} cards={cards} back={() => {
-        setSourceTaskId(undefined); requestAnimationFrame(() => artifactTaskReturn.current?.focus({ preventScroll: true }));
-      }} backLabel="返回资料库" embedded reply={reply} copyBusy={copyBusy} /></div>}
-    </>;
+    const library = <div className="bot-artifacts-surface">
+      <BotArtifactsView artifacts={artifacts} cards={cards} selectedId={artifactId} onSelect={setArtifactId}
+        onRemoveArtifact={island ? undefined : removeArtifact} onOpenResource={onOpenResource}
+        onExternalPreview={island ? artifact => void run(() => wb.island.navigate({ view: 'home', artifactId: artifact.id })) : undefined} />
+    </div>;
     const activity = inspectorView?.tab === 'activity' && <BotActivity key={activityStart.key} ref={embeddedActivity ? null : inspectorPanel}
-      active={inspectorView.open} embedded={embeddedActivity} progress={progress} history={data?.history} cards={cards}
-      initialTaskId={activityStart.taskId} historyFirst={activityStart.historyFirst} close={closeInspector} onProfile={floating ? undefined : returnFromActivity}
-      onLocate={embeddedActivity ? locateRecord : undefined} chatLoading={history.loading} locatedTaskId={recordLocation?.taskId}
+      embedded={embeddedActivity} history={data?.history} cards={cards}
+      taskId={activityStart.taskId} close={closeInspector} onBack={returnFromActivity}
       reply={reply} copyBusy={copyBusy} renderEntry={entry => renderEntry(entry, true)} canReference={draft.ready && draft.value.resources.length < 8}
       onReference={archive => {
         if (!draft.value.resources.some(ref => ref.kind === 'chat' && ref.id === archive.id)) draft.edit({ resources: [...draft.value.resources, { kind: 'chat', id: archive.id, label: archive.title }] });
@@ -844,7 +836,23 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
     const avatarColor = botAvatarColors.find(color => color.id === botAvatarChoice(bot.avatar).color)!;
     const messageColors = { '--bot-user-bg': avatarColor.base } as CSSProperties;
     return <section ref={panel} id="workbench-ai-panel" style={messageColors} className={`bot-panel${floating ? ' bot-floating' : ''}${island ? ' bot-island' : ''}`} data-inspector={inspector || undefined} data-task-visible={floating && workPage || undefined} data-work-page={workPage || undefined} data-exchange={page === 'exchange' || undefined} data-collapsed={floating && collapsed} data-reply-visible={replyVisible} data-phase={floating ? motionPhase : undefined} onKeyDown={event => { if (floating && !collapsed && event.key === 'Escape' && !event.defaultPrevented && !menu && !referencesOpen) { event.preventDefault(); collapseInput(); } }} aria-label={`${bot.name}的对话`}>
-      {!floating && !island && <div className="bot-resizer" role="separator" aria-label="调整对话宽度" aria-orientation="vertical" tabIndex={0} aria-valuemin={340} aria-valuemax={560} aria-valuenow={width} onKeyDown={event => { if (['ArrowLeft', 'ArrowRight'].includes(event.key)) { event.preventDefault(); onWidthChange?.(Math.max(340, Math.min(560, width + (event.key === 'ArrowRight' ? 20 : -20)))); } }} onPointerDown={event => { const start = event.clientX; event.currentTarget.setPointerCapture(event.pointerId); const move = (moveEvent: PointerEvent) => onWidthChange?.(Math.max(340, Math.min(560, width + moveEvent.clientX - start))); const stop = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', stop); }; window.addEventListener('pointermove', move); window.addEventListener('pointerup', stop, { once: true }); }} />}
+      {!floating && !island && <div className="bot-resizer" role="separator" aria-label="调整对话宽度" aria-orientation="vertical" tabIndex={0}
+        aria-valuemin={BOT_SPLIT_MIN_WIDTH} aria-valuemax={widthLimit} aria-valuenow={width}
+        onKeyDown={event => {
+          if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+          event.preventDefault();
+          onWidthChange?.(width + (event.key === 'ArrowRight' ? 20 : -20));
+        }}
+        onPointerDown={event => {
+          if (event.button !== 0 || resizeDrag.current) return;
+          resizeDrag.current = { pointerId: event.pointerId, x: event.clientX, width };
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerMove={event => {
+          const start = resizeDrag.current;
+          if (start?.pointerId === event.pointerId) onWidthChange?.(start.width + event.clientX - start.x);
+        }}
+        onLostPointerCapture={event => { if (resizeDrag.current?.pointerId === event.pointerId) resizeDrag.current = null; }} />}
       <div className="bot-conversation-column">
         <div id="bot-reply-surface" className="bot-reply-surface" data-compact={compactReply || undefined} data-attention={compactReply && (actionTasks.some(task => task.status === 'waiting_user') || pendingSiteEntries.size > 0) || undefined} hidden={replyHidden} inert={replyHidden}>
           {page === 'exchange' && exchange ? <header className="bot-exchange-header">
@@ -859,9 +867,15 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
               })}
             </div>
           </header> : workPage ? <header className="bot-panel-header bot-work-header"><button className="bot-text-button bot-work-chat-back" aria-label="返回对话" title="返回对话" onClick={() => changePage('chat')}><ArrowLeft size={16} /><span>返回对话</span></button><strong>定时任务</strong><div className="bot-work-header-context">{floating && <IconButton label="收起答复" onClick={() => { setReplyVisible(false); editor.current?.focus(); }}><X size={16} /></IconButton>}</div></header> : (!floating || currentTask?.status === 'running') && <header className="bot-identity-bar">
-            {!floating && <button className="bot-identity-pill" type="button" ref={badge} title={inspector ? '收起 Bot 侧栏' : '展开 Bot 侧栏'} aria-label={`${bot.name}的 Bot 资料`} aria-controls="bot-inspector" aria-expanded={!!inspector} onClick={() => inspector ? closeInspector() : openInspector('details')}><BotAvatar avatar={bot.avatar} small /><strong>{bot.name}</strong><CaretRight size={14} weight="bold" aria-hidden="true" /></button>}
+            {!floating && !island && <button className="bot-identity-pill" type="button" ref={badge} title={inspector ? '收起 Bot 侧栏' : '展开 Bot 侧栏'} aria-label={`${bot.name}的 Bot 资料`} aria-controls="bot-inspector" aria-expanded={!!inspector} onClick={() => inspector ? closeInspector() : openInspector('details')}><BotAvatar avatar={bot.avatar} small /><strong>{bot.name}</strong><CaretRight size={14} weight="bold" aria-hidden="true" /></button>}
             <div className="bot-header-actions">
-              {island && <div className="bot-history-menu" ref={menuRef}><IconButton label="对话更多操作" aria-expanded={menu} onClick={() => setMenu(!menu)}><DotsThree size={21} /></IconButton>{menu && <div className="bot-more-menu">{collapseItem}</div>}</div>}
+              {island && <div className="bot-history-menu" ref={menuRef}>
+                <IconButton label="对话更多操作" aria-expanded={menu} onClick={() => setMenu(!menu)}><DotsThree size={21} /></IconButton>
+                {menu && <div className="bot-more-menu">
+                  <button type="button" onClick={() => openInspector('details')}>Bot 资料</button>
+                  {collapseItem}
+                </div>}
+              </div>}
               {!floating && !island && <div className="bot-chat-tools" role="group" aria-label="对话快捷操作">
                 <IconButton label={workspaceHidden ? '打开工作台' : '悬浮对话面板'}
                   aria-controls={workspaceHidden ? 'bot-workspace' : undefined}
@@ -884,31 +898,31 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
               {floating && currentTask?.status === 'running' && <IconButton label="停止回复" disabled={busy} onClick={() => void run(() => wb.bot.cancelTask(currentTask.id, currentTask.revision))}><Square size={13} weight="fill" /></IconButton>}
           </div></header>}
           <div className="bot-chat-scroll" ref={scroll} role="region" aria-label={workPage ? '定时任务' : page === 'exchange' ? '协作对话' : '对话内容'} tabIndex={0} onScroll={history.onScroll}>
-            {page === 'exchange' && exchange ? <BotExchangeView botA={exchange.fromBotId} botB={exchange.toBotId} anchorMessageId={exchange.id} cards={cards} /> : page === 'schedules' ? <><button className="bot-text-button" onClick={() => changePage('tasks')}><ArrowLeft size={15} />返回工作列表</button><BotSchedules key={bot.id} botId={bot.id} botName={bot.name} /></> : <>
+            {page === 'exchange' && exchange ? <BotExchangeView botA={exchange.fromBotId} botB={exchange.toBotId} anchorMessageId={exchange.id} cards={cards} /> : page === 'schedules' ? <><BotSchedules key={bot.id} botId={bot.id} botName={bot.name} /></> : <>
               {snapshot?.collapsedAt && <div className="bot-history-line">已收起之前的消息 <span aria-hidden="true">·</span> <button className="bot-text-button" aria-label="查看已收起的消息" disabled={history.loading} onClick={() => void history.revealHistory()}>查看</button></div>}
               {!compactReply && snapshot?.hasEarlier && <button className="bot-text-button bot-history-page" disabled={history.loading} onClick={() => void history.turnPage('older', true)}>查看更早消息</button>}
               {compactReply && floatingPrompt && renderEntry({ ...floatingPrompt, role: 'user' })}{!chat && <p className="bot-empty" role="status">正在读取对话…</p>}{!floating && chat && !snapshot?.lastEntryId && <div className="bot-chat-empty"><BotAvatar avatar={bot.avatar} /><h3>和{bot.name}开始工作</h3><p>{bot.description}。把想做的事告诉我，我们从这里继续。</p><div>{quickPrompts.map(text => <button key={text} disabled={!draft.ready} onClick={() => { draft.edit({ text }); editor.current?.focus(); }}>{text}</button>)}</div></div>}
-              {renderedEntries.map(entry => <div data-chat-entry-id={entry.id} data-located={recordLocation?.kind === 'entry' && recordLocation.id === entry.id || undefined} key={entry.id} tabIndex={-1}>{renderEntry(entry, false, true)}</div>)}
-              {!compactReply && outgoing.map(echo => <div key={echo.id}>{renderEntry({ id: echo.id, role: 'user', content: echo.text, createdAt: echo.createdAt })}</div>)}
+              {renderedEntries.map(entry => <div data-chat-entry-id={entry.id} key={entry.id} tabIndex={-1}>{renderEntry(entry, false, true)}</div>)}
+              {!compactReply && outgoing.map(echo => <div key={echo.id}>{renderEntry({ id: echo.id, role: 'user', content: echo.text, createdAt: echo.createdAt, resourceRefs: echo.resources })}</div>)}
               {!compactReply && snapshot?.hasLater && <button className="bot-text-button bot-history-page" disabled={history.loading} onClick={() => void history.turnPage('newer', true)}>查看较新消息</button>}
-              {extraLiveEntries.map(entry => <div key={entry.id} data-chat-entry-id={entry.id} data-located={recordLocation?.kind === 'entry' && recordLocation.id === entry.id || undefined} tabIndex={-1}>{renderEntry(entry)}</div>)}
+              {extraLiveEntries.map(entry => <div key={entry.id} data-chat-entry-id={entry.id} tabIndex={-1}>{renderEntry(entry)}</div>)}
               {awaitingReply && !renderedEntries.some(entry => entry.streaming) && !extraLiveEntries.some(entry => entry.streaming) && <BotReplyProgress avatar={bot.avatar} onLayout={followChat} />}
               {detachedActions.map(item => chatActions(item))}
               {activeTasks.filter(task => task.status !== 'waiting_user' && !task.dependencyIds.length && !task.messageIds?.length
                 && !(['queued', 'running'].includes(task.status) && task.todoActionEntryIds?.[task.amendedActionId ?? ''])).map(taskNotice)}
-              {waitingActions.map(item => <div key={item.task.id} data-chat-action-id={item.task.id} data-located={recordLocation?.kind === 'action' && recordLocation.id === item.task.id || undefined} tabIndex={-1}>{chatActions(item)}</div>)}
+              {waitingActions.map(item => <div key={item.task.id} data-chat-action-id={item.task.id} tabIndex={-1}>{chatActions(item)}</div>)}
               {waitingNotices.map(taskNotice)}
               {browserApprovals.error && <p className="bot-error" role="alert">{browserApprovals.error}<button onClick={browserApprovals.retry}>重试</button></p>}
             </>}
         </div>
-        {aboveBottom && !compactReply && page === 'chat' && <button className="bot-jump-latest" disabled={history.loading} onClick={() => { setRecordLocation(undefined); scroll.current?.focus({ preventScroll: true }); void history.latest(); }}><ArrowDown size={15} />回到底部</button>}
+        {aboveBottom && !compactReply && page === 'chat' && <button className="bot-jump-latest" disabled={history.loading} onClick={() => { scroll.current?.focus({ preventScroll: true }); void history.latest(); }}><ArrowDown size={15} />回到底部</button>}
         {page === 'exchange' && exchange && <footer className="bot-exchange-footer">
           <button type="button" ref={exchangeBack} className="btn btn-sec bot-exchange-back" onClick={backFromExchange}><ArrowLeft size={16} aria-hidden="true" />返回对话</button>
         </footer>}
       </div>
 
       {floating && inspector !== 'activity' && !collapsed && !hasFloatingReply && <div className="bot-floating-suggestions">{quickPrompts.map(text => <button key={text} disabled={!draft.ready} onClick={() => { draft.edit({ text }); editor.current?.focus(); }}>{text}</button>)}</div>}
-      {floating && page !== 'exchange' && <>
+      {floating && hasEditor && <>
         {!collapsed && motionPhase !== 'opening' && motionPhase !== 'closing' && modelNotice}
         <div className="bot-compose-stack">
           <div className="bot-floating-input-surface" ref={inputSurface}>
@@ -923,11 +937,11 @@ export function BotPanel({ ref, bot, cards, open, mode = 'parallel', onMode, con
       style={{ width: inspectorView.workspaceExitWidth }} inert={!inspectorView.open}>
       {activity && !embeddedActivity ? activity : <BotProfile ref={inspectorPanel} key={initialPage?.value === 'profile' ? initialPage.nonce : undefined} card={bot} profile={data?.bot} config={config} tab={inspectorView.tab === 'library' ? 'library' : 'details'} expanded={inspectorView.open || inspectorView.workspaceExitWidth !== undefined} focusOnOpen={!inspectorView.retained || initialPage?.value === 'profile'} onTab={setInspector} close={closeInspector} onSettings={onOpenSettings} activity={activity}
         onSaved={profile => setData(current => current && { ...current, bot: profile })} onReload={() => setReload(value => value + 1)} library={library}
-        onAddMemory={startMemory} memoryLink={memoryLink?.botId === bot.id ? memoryLink : undefined}
+        onAddMemory={() => startMemory()} onEditMemory={memory ? undefined : startMemory} memoryLink={memoryLink?.botId === bot.id ? memoryLink : undefined}
         onManageInMain={island ? () => void run(() => wb.island.navigate({ view: 'home', botPanel: 'details' })) : undefined}
-        onWorkspace={openWorkspace} onActivity={() => openActivity(currentTask?.relatedWorkId ?? currentTask?.rootTaskId)} />}
+        onWorkspace={openWorkspace} onHistory={data?.history.length ? () => openActivity() : undefined} />}
     </div>}
     {error && <div className="bot-error bot-panel-error" role="alert">{error}<button onClick={() => { setReload(value => value + 1); void draft.refresh(); }}>重新读取</button><IconButton label="收起提示" onClick={() => setError('')}><X size={13} /></IconButton></div>}
-    {referencesOpen && <AiReferencePicker id="bot-reference-picker" mode={referenceMode} modeOptions={bot.seedKey === 'coordinator' ? ['todo', 'copy', 'bazi', 'reading'] : bot.seedKey === 'utilities' ? ['bazi', 'reading'] : referenceMode ? [referenceMode] : []} onModeChange={chooseReferenceMode} unavailable="这个 Bot 没有可选业务对象" options={referenceOptions} selected={draft.value.resources.map(asAiRef).filter((item): item is AiReference => !!item && item.module === referenceMode)} loading={referenceLoading} error={referenceError} notice="选择的资料仅用于本次任务" anchor={composer} trigger={referenceTrigger} onChange={refs => { const retained = draft.value.resources.filter(ref => ref.kind !== referenceMode); const next = refs.map(value => ({ ...asRef(value), label: referenceOptions.find(option => JSON.stringify(option.reference) === JSON.stringify(value))?.title })); if (retained.length + next.length > 8) { setReferenceError('最多选择 8 项参考内容'); return; } draft.edit({ resources: [...retained, ...next] }); }} onRetry={() => setReferenceReload(value => value + 1)} onClose={() => { setReferencesOpen(false); referenceTrigger.current?.focus(); }} />}
+    {referencesOpen && <AiReferencePicker id="bot-reference-picker" mode={referenceMode} modeOptions={bot.seedKey === 'coordinator' ? ['todo', 'copy', 'bazi', 'reading'] : bot.seedKey === 'utilities' ? ['bazi', 'reading'] : referenceMode ? [referenceMode] : []} onModeChange={chooseReferenceMode} unavailable="这个 Bot 没有可选业务对象" options={referenceOptions} selected={draft.value.resources.map(asAiRef).filter((item): item is AiReference => !!item && item.module === referenceMode)} loading={referenceLoading} error={referenceError} notice="所选资料随这条消息发送" anchor={composer} trigger={referenceTrigger} onChange={refs => { const retained = draft.value.resources.filter(ref => ref.kind !== referenceMode); const next = refs.map(value => ({ ...asRef(value), label: referenceOptions.find(option => JSON.stringify(option.reference) === JSON.stringify(value))?.title })); if (retained.length + next.length > 8) { setReferenceError('最多选择 8 项参考内容'); return; } draft.edit({ resources: [...retained, ...next] }); }} onRetry={() => setReferenceReload(value => value + 1)} onClose={() => { setReferencesOpen(false); referenceTrigger.current?.focus(); }} />}
   </section>;
 }

@@ -152,3 +152,23 @@ test('typing during the initial save sends the saved snapshot and preserves newe
     assert.equal(f.store.draft(f.bot.mainChatId).text, draft.value.text);
   } finally { release(); await draft.stop(); await f.close(); }
 });
+
+test('the pending user-message echo keeps the exact references captured at send time', async () => {
+  const f = fixture(), api = f.bridge('main');
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; }), submit = api.submit;
+  api.submit = async input => { await gate; return submit(input); };
+  const draft = new BotDraftController(f.bot.mainChatId, api);
+  const refs = [{ kind: 'todo' as const, id: 'selected-item', label: '完成 ai-hub-huawei 分析' }];
+  try {
+    await draft.start();
+    draft.edit({ text: '延期到今天完成', resources: refs });
+    const sending = draft.submit(f.bot.id, {});
+    try {
+      await delay(20);
+      assert.deepEqual([...draft.outgoing.values()][0]?.resources, refs);
+      draft.edit({ resources: [] });
+      assert.deepEqual([...draft.outgoing.values()][0]?.resources, refs);
+    } finally { release(); await sending; }
+  } finally { await draft.stop(); await f.close(); }
+});

@@ -141,6 +141,8 @@ export interface ChatEntry {
   contextScope?: import('./ai-scope').AiScope;
   pageScope?: import('./ai-scope').AiScope;
   references?: import('./ai-reference').AiReference[];
+  /** Bot resources attached to this user message at send time. */
+  resourceRefs?: import('./bot-contracts').BotResourceRef[];
   /** Server-resolved content captured for this turn, never trusted renderer data. */
   referenceSnapshots?: import('./ai-reference').AiReferenceSnapshot[];
   baziSystem?: 'bazi' | 'ziwei' | 'astro';

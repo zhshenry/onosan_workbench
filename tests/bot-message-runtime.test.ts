@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { SessionManager } from '@earendil-works/pi-coding-agent';
 import { createServer } from 'node:http';
 import { AiStore } from '../electron/ai-store';
 import { BotStore } from '../electron/bot-store';
@@ -473,6 +474,45 @@ test('a memory request queues independently, preserves the draft and compares an
   } finally { release(); await f.close(); }
 });
 
+test('editing through chat updates only the selected memory and refuses stale edits', async () => {
+  const originalText = '周报先写进度。每条风险注明负责人。';
+  const text = '周报先列风险。每条风险注明负责人。';
+  const change = '把周报的先写进度改成先列风险';
+  let otherId: string, toolResults: string[] = [];
+  const f = await fixture(input => {
+    const lastUser = input.messages.findLastIndex((message: any) => message.role === 'user');
+    const results = input.messages.slice(lastUser + 1).filter((message: any) => message.role === 'tool');
+    if (results.length === 2) {
+      toolResults = results.map((item: { content: string }) => item.content);
+      return { content: '已更新周报记忆。' };
+    }
+    assert.ok(input.messages.some((message: any) => message.role === 'system' && message.content.includes(originalText)));
+    return { tool_calls: [{ index: 0, id: 'edit-memory-' + results.length, type: 'function', function: {
+      name: 'remember', arguments: JSON.stringify({ text, scope: 'private', ...(results.length === 0 && { replaceId: otherId }) }),
+    } }] };
+  });
+  try {
+    const { id: botId, mainChatId: chatId } = f.coordinator;
+    const selected = f.store.saveMemory({ id: randomUUID(), botId, scope: 'private', text: originalText, title: '周报顺序', source: '用户编辑', revision: 0 });
+    const other = f.store.saveMemory({ id: randomUUID(), botId, scope: 'private', text: '周报每周五发出。', source: '用户编辑', revision: 0 });
+    otherId = other.id;
+    const request = { botId, chatId, expectedDraftRevision: 0, clientRequestId: randomUUID(), text: change, replyToTaskId: null, resources: [],
+      memoryRequest: { scope: 'private' as const, edit: { id: selected.id, revision: selected.revision } } };
+    const { task, messageId } = await f.host.submit(request, f.surface);
+    await until(() => f.store.task(task.id).status === 'completed');
+    assert.match(toolResults[0], /只能更新选中的记忆/);
+    assert.equal(JSON.parse(toolResults[1]).operation, 'updated');
+    const saved = f.store.memories(botId);
+    assert.equal(saved.length, 2);
+    assert.equal(saved.find(memory => memory.id === selected.id)?.text, text);
+    assert.equal(saved.find(memory => memory.id === selected.id)?.title, '周报顺序');
+    assert.equal(saved.find(memory => memory.id === other.id)?.text, other.text);
+    assert.equal(f.store.task(task.id).memoryReceipts?.[0].id, selected.id);
+    assert.equal(f.store.memorySources(botId, selected.id)[0].messageId, messageId);
+    await assert.rejects(async () => f.host.submit({ ...request, clientRequestId: randomUUID() }, f.surface), { code: 'VERSION_CONFLICT' });
+  } finally { await f.close(); }
+});
+
 test('a named preference uses the Agent tool even when an earlier reply denied memory access', async () => {
   const quote = '以后都叫我林sir';
   const request = `帮我加到你的记忆里面，${quote}`;
@@ -670,5 +710,127 @@ test('switching work keeps the forwarded memory request and its original message
     assert.equal(memory.sources?.[0].messageId, switched.messageId);
     assert.equal(f.store.memorySources(f.coordinator.id, memory.id)[0].quote, quote);
     assert.equal(f.ai.chat(f.coordinator.mainChatId).entries.find(entry => entry.id === switched.messageId)?.content, original);
+  } finally { await f.close(); }
+});
+
+for (const warm of [false, true]) test('selected items and plain follow-ups share the main Agent context' + (warm ? ' after earlier chat' : ' from the first turn'), async () => {
+  const requests: any[] = [];
+  const selectedReply = '已核对选中的建模事项，当前完成期限是十二月十五日。';
+  const followup = '这条改到周五完成';
+  const f = await fixture(input => {
+    requests.push(input);
+    return { content: JSON.stringify(input.messages.findLast((message: any) => message.role === 'user')).includes(followup)
+      ? '继续修改刚才选中的建模事项。' : selectedReply };
+  });
+  try {
+    const bot = f.schedule;
+    const item = f.todo.create({ ...newTask('连续聊天的建模事项'), dateAt: '2026-12-15' });
+    if (warm) {
+      const earlier = f.host.submit(f.input(bot.id, '先聊一下今天的安排'), f.surface);
+      await until(() => f.store.task(earlier.task.id).status === 'completed');
+    }
+    const resources = [{ kind: 'todo' as const, id: item.id, label: item.title }];
+    const input = f.input(bot.id, '查看我选中的这条建模事项');
+    const draft = f.host.saveDraft(bot.mainChatId, input.expectedDraftRevision, { text: input.text, replyToTaskId: null, resources }, f.surface);
+    const selected = f.host.submit({ ...input, resources, expectedDraftRevision: draft.revision }, f.surface);
+    await until(() => f.store.task(selected.task.id).status === 'completed');
+    const mainSession = f.store.link(bot.mainChatId)?.pi_session_path;
+    assert.ok(mainSession);
+    assert.equal(f.store.task(selected.task.id).kind, 'chat');
+    assert.equal(f.store.task(selected.task.id).piSessionPath, mainSession);
+
+    const next = f.host.submit(f.input(bot.id, followup), f.surface);
+    await until(() => f.store.task(next.task.id).status === 'completed');
+    const turns = requests.at(-1).messages.filter((message: any) => ['user', 'assistant'].includes(message.role));
+    const transcript = JSON.stringify(turns);
+    assert.match(transcript, /查看我选中的这条建模事项/);
+    assert.ok(transcript.includes(item.id), 'the earlier selected ID stays attached to its message');
+    assert.ok(transcript.includes(selectedReply));
+    assert.match(transcript, /这条改到周五完成/);
+    assert.equal(f.store.task(next.task.id).piSessionPath, mainSession);
+    assert.equal(next.task.chatId, selected.task.chatId);
+    assert.equal(f.store.link(bot.mainChatId)?.pi_session_path, mainSession);
+    const plain = f.host.submit(f.input(bot.id, '继续核对上面的日期'), f.surface);
+    await until(() => f.store.task(plain.task.id).status === 'completed');
+    const later = requests.at(-1).messages.filter((message: any) => ['user', 'assistant'].includes(message.role));
+    assert.equal(later.filter((message: any) => JSON.stringify(message.content).includes('查看我选中的这条建模事项')).length, 1);
+    assert.equal(later.filter((message: any) => JSON.stringify(message.content).includes(followup)).length, 1);
+  } finally { await f.close(); }
+});
+
+test('an existing main Agent context imports a completed legacy work reply once', async () => {
+  const requests: any[] = [];
+  const legacyQuestion = '旧版选中建模事项后问的那一句';
+  const legacyReply = '旧版留下的建模答复，需要让普通追问接上。';
+  const f = await fixture(input => { requests.push(input); return { content: '继续原对话。' }; });
+  try {
+    const bot = f.schedule;
+    const first = f.host.submit(f.input(bot.id, '已有主聊天的开场'), f.surface);
+    await until(() => f.store.task(first.task.id).status === 'completed');
+    const previousSession = f.store.link(bot.mainChatId)?.pi_session_path;
+    assert.ok(previousSession);
+    const directory = dirname(previousSession);
+    const legacy = SessionManager.create(directory, directory);
+    for (const entry of SessionManager.open(previousSession, directory).getBranch()) {
+      if (entry.type === 'message') legacy.appendMessage(entry.message);
+    }
+    const mainSession = legacy.getSessionFile()!;
+    f.store.bindMainSession(bot.mainChatId, mainSession);
+    const item = f.todo.create(newTask('旧版连续聊天建模事项'));
+    const id = randomUUID(), sourceMessageId = randomUUID(), assistantEntryId = randomUUID();
+    const chat = f.ai.chat(bot.mainChatId);
+    const createdAt = new Date().toISOString();
+    const resources = [{ kind: 'todo' as const, id: item.id, label: item.title }];
+    chat.entries.push({ id: sourceMessageId, role: 'user', content: legacyQuestion, createdAt, resourceRefs: resources },
+      { id: assistantEntryId, role: 'assistant', content: legacyReply, createdAt });
+    f.ai.saveChat(chat);
+    f.store.insertTask({ id, botId: bot.id, chatId: bot.mainChatId, rootTaskId: id, sourceMessageId, assistantEntryId,
+      kind: 'work', status: 'completed', title: legacyQuestion, input: legacyQuestion, resources, context: {},
+      operationIds: [], dependencyIds: [], revision: 0, createdAt, updatedAt: createdAt });
+    for (const text of ['这条到期时间呢？', '继续沿着刚才的内容说']) {
+      const sent = f.host.submit(f.input(bot.id, text), f.surface);
+      await until(() => f.store.task(sent.task.id).status === 'completed');
+      const messages = requests.at(-1).messages.filter((message: any) => ['user', 'assistant'].includes(message.role));
+      assert.equal(messages.filter((message: any) => JSON.stringify(message.content).includes('已有主聊天的开场')).length, 1);
+      assert.equal(messages.filter((message: any) => JSON.stringify(message.content).includes(legacyQuestion)).length, 1);
+      assert.equal(messages.filter((message: any) => JSON.stringify(message.content).includes(legacyReply)).length, 1);
+      assert.ok(JSON.stringify(messages).includes(item.id));
+      assert.equal(f.store.task(sent.task.id).piSessionPath, mainSession);
+    }
+  } finally { await f.close(); }
+});
+
+test('a plain follow-up can read a previously selected item only in that Bot main chat', async () => {
+  let itemId = '';
+  const f = await fixture(input => {
+    const latest = input.messages.findLastIndex((message: any) => message.role === 'user');
+    const current = JSON.stringify(input.messages[latest].content);
+    if (current.includes('先保留这条引用')) return { content: '这条已在当前对话中引用。' };
+    const result = input.messages.slice(latest + 1).find((message: any) => message.role === 'tool');
+    return result ? { content: '已按实际读取结果回复。' } : { tool_calls: [{ index: 0, id: randomUUID(), type: 'function',
+      function: { name: 'read_resource', arguments: JSON.stringify({ kind: 'todo', id: itemId }) } }] };
+  });
+  try {
+    const item = f.todo.create({ ...newTask('主对话连续引用事项'), dateAt: '2026-12-15' });
+    itemId = item.id;
+    const resources = [{ kind: 'todo' as const, id: item.id, label: item.title }];
+    const input = f.input(f.coordinator.id, '先保留这条引用，后面再问');
+    const draft = f.host.saveDraft(input.chatId, input.expectedDraftRevision, { text: input.text, replyToTaskId: null, resources }, f.surface);
+    const first = f.host.submit({ ...input, resources, expectedDraftRevision: draft.revision }, f.surface);
+    await until(() => f.store.task(first.task.id).status === 'completed');
+    const next = f.host.submit(f.input(f.coordinator.id, '这条的完成期限呢？'), f.surface);
+    await until(() => f.store.task(next.task.id).status === 'completed');
+    const replyId = f.store.task(next.task.id).assistantEntryId;
+    const reply = f.ai.chat(input.chatId).entries.find(entry => entry.id === replyId)!;
+    assert.equal(reply.tools?.[0].status, 'complete');
+    assert.match(reply.tools?.[0].output ?? '', /2026-12-15/);
+    const message = f.host.sendMessage(f.coordinator.id, randomUUID(), f.schedule.id, '核对这条事项', 'notification', resources, next.task.id);
+    assert.deepEqual(message.references, resources);
+    const peer = f.host.sendMessage(f.schedule.id, randomUUID(), f.coordinator.id, '只读查询一份没有转交的资料', 'query');
+    await until(() => f.store.tasks().some(task => task.kind === 'message' && task.sourceMessageId === peer.id && task.status === 'completed'));
+    const query = f.store.tasks().find(task => task.kind === 'message' && task.sourceMessageId === peer.id)!;
+    const queryReply = f.ai.chat(query.chatId).entries.find(entry => entry.id === query.assistantEntryId)!;
+    assert.equal(queryReply.tools?.[0].status, 'error');
+    assert.doesNotMatch(queryReply.tools?.[0].output ?? '', /主对话连续引用事项|2026-12-15/);
   } finally { await f.close(); }
 });

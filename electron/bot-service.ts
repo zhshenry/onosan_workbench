@@ -65,8 +65,18 @@ export function botService(host: BotHost, method: string, args: unknown[], rawSu
     case 'answerAction': return host.answerAction(z.string().min(1).max(200).parse(args[0]), revision.parse(args[1]), z.object({ approved: z.boolean().optional(), indices: z.array(z.number().int().nonnegative()).max(20).optional(), text: z.string().max(10000).optional() }).strict().parse(args[2]));
     case 'reconcileAction': return host.reconcileAction(z.string().min(1).max(200).parse(args[0]), revision.parse(args[1]), z.enum(['applied', 'not_applied']).parse(args[2]), z.string().trim().min(1).max(2000).parse(args[3]));
     case 'undoAction': return host.undoAction(z.string().min(1).max(200).parse(args[0]), revision.parse(args[1]));
-    case 'listArtifacts': { const botId = id.parse(args[0]); return store.all<BotArtifact>('bot_artifacts').filter(a => a.producerBotId === botId || store.task(a.rootTaskId).botId === botId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)); }
+    case 'listArtifacts': {
+      const botId = id.parse(args[0]);
+      return store.all<BotArtifact>('bot_artifacts')
+        .filter(artifact => !artifact.libraryRemovedAt && (artifact.producerBotId === botId || store.task(artifact.rootTaskId).botId === botId))
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    }
     case 'openArtifact': return store.get<BotArtifact>('bot_artifacts', id.parse(args[0]));
+    case 'removeArtifactFromLibrary': {
+      mainOnly();
+      if (store.removeArtifactFromLibrary(id.parse(args[0]))) host.changed({ kind: 'artifact' });
+      return;
+    }
     case 'listMemories': mainOnly(); return store.memories(id.parse(args[0])).map(memoryView);
     case 'memorySources': {
       mainOnly();

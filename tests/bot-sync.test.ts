@@ -41,6 +41,32 @@ test('an outbox survives renderer/process loss, recovers the original receipt an
     reopened.acknowledge(draft.chatId, 'main', input.clientRequestId); assert.equal(reopened.pending(draft.chatId, 'main'), null);
   } finally { f.ai.close(); }
 });
+test('sent references remain attached to their own messages after an amendment and reload', () => {
+  const f = fixture();
+  const chatId = f.bot.mainChatId;
+  function send(text: string, resources: BotSubmit['resources'], target?: BotSubmit['target']) {
+    const draft = f.store.saveDraft(chatId, f.store.draft(chatId).revision, { text, replyToTaskId: null, resources });
+    return f.store.submit({ botId: f.bot.id, chatId, clientRequestId: randomUUID(), expectedDraftRevision: draft.revision, text, replyToTaskId: null, resources, target }, () => {});
+  }
+  try {
+    const original: BotSubmit['resources'] = [{ kind: 'todo', id: 'first', label: '完成第一篇博客编写' }];
+    const added: BotSubmit['resources'] = [{ kind: 'todo', id: 'second', label: '提交周报' }];
+    const first = send('看下这条待办', original);
+    const second = send('也看看这条', added, { intent: 'amend', rootTaskId: first.task.id, taskId: first.task.id });
+    const third = send('整理一下结果', []);
+    assert.equal(second.task.id, first.task.id);
+    assert.deepEqual(first.draft.resources, []);
+
+    const reopened = new AiStore(f.directory, { recover: false });
+    try {
+      const { chat } = reopened.syncChat(chatId);
+      assert.deepEqual(chat.entries.map(entry => [entry.id, entry.resourceRefs]), [
+        [first.messageId, original], [second.messageId, added], [third.messageId, undefined],
+      ]);
+    } finally { reopened.close(); }
+  } finally { f.ai.close(); }
+});
+
 test('memory and ordinary sends recover independently from the same conversation outbox', async () => {
   const f = fixture();
   try {
@@ -216,5 +242,51 @@ test('latest and older pages stay bounded, keep stable IDs, and respect the save
       assert.ok('chat' in revealed && revealed.chat.entries.some(entry => entry.id === collapsedAt));
       assert.equal(restarted.open(f.bot.id, { collapsedAt: 'missing-entry' }).collapsedAt, undefined);
     } finally { reopened.close(); sync.stop(); }
+  } finally { f.ai.close(); }
+});
+
+test('latest-user snapshots and entry deltas retain the selected item for floating replies', async () => {
+  const f = fixture();
+  try {
+    const resources = [{ kind: 'todo' as const, id: 'selected-item', label: '完成 ai-hub-huawei 分析' }];
+    const draft = f.store.saveDraft(f.bot.mainChatId, 0, { text: '延期到今天完成', replyToTaskId: null, resources });
+    const receipt = f.store.submit({ botId: f.bot.id, chatId: draft.chatId, text: draft.text, resources, replyToTaskId: null,
+      expectedDraftRevision: draft.revision, clientRequestId: randomUUID() }, () => {});
+    let rendered: BotChatSnapshot | undefined;
+    const sync = new BotChatSynchronizer(draft.chatId, { syncChat: async (id, after, epoch) => f.store.syncChat(id, after, epoch) },
+      value => { rendered = value; }, error => { throw error; });
+    await sync.refresh();
+    assert.deepEqual(rendered?.latestUser?.resourceRefs, resources);
+    const entry = f.ai.chat(draft.chatId).entries.find(entry => entry.id === receipt.messageId)!;
+    const next = [{ kind: 'todo' as const, id: 'later-item', label: '另一条已保存引用' }];
+    sync.receive(f.ai.saveBotEntry(draft.chatId, { ...entry, resourceRefs: next }));
+    assert.deepEqual(rendered?.latestUser?.resourceRefs, next);
+    sync.stop();
+  } finally { f.ai.close(); }
+});
+
+test('startup restores missing references from unamended original submissions and preserves later selections', () => {
+  const f = fixture(), chatId = f.bot.mainChatId;
+  const a = [{ kind: 'todo' as const, id: 'selected-item', label: '完成 ai-hub-huawei 分析' }];
+  const b = [{ kind: 'todo' as const, id: 'later-item', label: '后来选择的另一条事项' }];
+  function send(text: string, resources: BotSubmit['resources'], target?: BotSubmit['target']) {
+    const draft = f.store.saveDraft(chatId, f.store.draft(chatId).revision, { text, replyToTaskId: null, resources });
+    return f.store.submit({ botId: f.bot.id, chatId, text, resources, target, replyToTaskId: null,
+      expectedDraftRevision: draft.revision, clientRequestId: randomUUID() }, () => {});
+  }
+  try {
+    const original = send('延期到今天完成', a);
+    const changed = send('另一个原始请求', a);
+    send('补充新的引用', b, { intent: 'amend', rootTaskId: changed.task.id, taskId: changed.task.id });
+    const chat = f.ai.chat(chatId);
+    for (const entry of chat.entries) if ([original.messageId, changed.messageId].includes(entry.id)) delete entry.resourceRefs;
+    f.ai.saveChat(chat);
+    new BotStore(f.ai, f.directory);
+    const restored = f.ai.chat(chatId);
+    assert.deepEqual(restored.entries.find(entry => entry.id === original.messageId)?.resourceRefs, a);
+    assert.equal(restored.entries.find(entry => entry.id === changed.messageId)?.resourceRefs, undefined);
+    assert.deepEqual(restored.entries.at(-1)?.resourceRefs, b);
+    new BotStore(f.ai, f.directory);
+    assert.deepEqual(f.ai.chat(chatId).entries.find(entry => entry.id === original.messageId)?.resourceRefs, a);
   } finally { f.ai.close(); }
 });

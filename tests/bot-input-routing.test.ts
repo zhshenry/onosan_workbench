@@ -132,7 +132,7 @@ test('two workspace connections receive only their own changed objects and actua
   } finally { first.close(); second.close(); }
 });
 
-test('consecutive corrections keep the same work when a text-only reply finishes between sends', async () => {
+test('after a reply completes, a plain correction starts another turn in the same chat', async () => {
   const f = setup();
   try {
     const original = f.send('整理线下回访材料').task;
@@ -142,8 +142,37 @@ test('consecutive corrections keep the same work when a text-only reply finishes
     assert.equal(f.store.task(original.id).status, 'completed');
     assert.equal(f.store.task(original.id).operationIds.length, 0);
     const second = f.send('下午三点，保留线下面谈备注');
-    assert.equal(second.task.id, original.id);
-    assert.equal(second.task.requirementsRevision, 2);
-    assert.equal(f.store.tasks(f.bot.id).length, 1);
+    assert.notEqual(second.task.id, original.id);
+    assert.equal(second.task.chatId, original.chatId);
+    assert.equal(f.store.task(original.id).requirementsRevision, 1);
+    assert.deepEqual(f.ai.chat(original.chatId).entries.filter(entry => entry.role === 'user').map(entry => entry.content), [
+      '整理线下回访材料', '改到周四', '下午三点，保留线下面谈备注',
+    ]);
+  } finally { await f.host.stop(); f.ai.close(); }
+});
+
+test('a newly selected item does not route an ordinary message back to an earlier work', async () => {
+  const f = setup();
+  try {
+    const chatId = f.bot.mainChatId;
+    const resources: BotSubmit['resources'] = [{ kind: 'todo', id: randomUUID(), label: '选中的事项' }];
+    const send = (text: string) => {
+      const draft = f.store.saveDraft(chatId, f.store.draft(chatId).revision, { text, replyToTaskId: null, resources });
+      return f.host.submit({ botId: f.bot.id, chatId, text, replyToTaskId: null, resources, expectedDraftRevision: draft.revision, clientRequestId: randomUUID() }, surface);
+    };
+
+    const previous = send('一条较早的业务请求');
+    const action = f.host.waitForAction(previous.task.id, previous.task.id + ':todo', 'todo', { plan: { message: '', actions: [] } });
+    const selected = send('改到今天完成');
+    assert.notEqual(selected.task.id, previous.task.id);
+    assert.equal(selected.task.chatId, chatId);
+    assert.equal(selected.task.inputRoute, undefined);
+    assert.deepEqual(selected.task.resources, resources);
+    assert.equal(f.store.action(action.id).status, 'pending');
+    await f.host.answerAction(action.id, action.revision, { approved: false });
+    const retry = send('截止日期改到今天');
+    assert.notEqual(retry.task.id, previous.task.id);
+    assert.equal(retry.task.inputRoute, undefined);
+    assert.equal(f.store.action(action.id).status, 'discarded');
   } finally { await f.host.stop(); f.ai.close(); }
 });

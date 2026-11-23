@@ -4,7 +4,7 @@
 // title down to a readable floor; the group shifts left only when that floor
 // is wider than the centered band.
 export const TOPBAR_CLUSTER_GAP = 12;
-export const TOPBAR_TITLE_FLOOR = 24;
+export const TOPBAR_TITLE_FLOOR = 72;
 
 export interface TopbarCapsuleBox {
   barWidth: number;
@@ -14,7 +14,7 @@ export interface TopbarCapsuleBox {
   /** Unconstrained width of the capsule group, excluding popovers. */
   naturalWidth: number;
   /**
-   * Minimum width that keeps the controls, or a single schedule date, intact.
+   * Minimum width that keeps the controls and a readable single schedule title.
    * Several chips may scroll within the remaining track width.
    */
   readableWidth: number;
@@ -62,13 +62,13 @@ export function applyTopbarCapsulePlacement(bar: HTMLElement): void {
   let readable = 0;
   if (chips.length <= 1) {
     const chip = chips[0];
-    const title = chip?.querySelector<HTMLElement>('.n');
-    const titleWidth = title ? title.getBoundingClientRect().width : 0;
+    const titleWidth = chip?.querySelector<HTMLElement>('.n')?.getBoundingClientRect().width ?? 0;
+    const timeWidth = chip?.querySelector<HTMLElement>('.t')?.getBoundingClientRect().width ?? 0;
     const track = chip?.closest<HTMLElement>('.sched-track');
     // The track can be wider than a max-width-capped chip. That slack collapses
     // before the title does, so it is not part of the readable floor.
     const slack = track && chip ? Math.max(0, track.getBoundingClientRect().width - chip.getBoundingClientRect().width) : 0;
-    const excess = Math.max(0, titleWidth - TOPBAR_TITLE_FLOOR) + slack;
+    const excess = Math.max(0, titleWidth - TOPBAR_TITLE_FLOOR) + timeWidth + slack;
     readable = Math.max(0, natural - excess);
   } else {
     const track = middle.querySelector<HTMLElement>('.sched-track');

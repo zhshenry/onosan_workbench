@@ -124,7 +124,8 @@ test('Installed topbar acceptance preserves normal UI writes, isolates synthetic
   assert.match(source, /win\.webContents\.setZoomFactor/);
   assert.match(source, /win\.setContentSize/);
   assert.match(source, /document\.elementFromPoint/);
-  assert.match(source, /bounds\.right <= track\.right/);
+  assert.match(source, /titleBounds\.right <= Math\.min\(chip\.right, track\.right\)/);
+  assert.match(source, /titleBounds\.right <= time\.left/);
   assert.match(source, /same installed executable relaunch/);
   assert.match(source, /not persisted CRUD or migration coverage/);
   assert.ok(entry.indexOf('birthdayFixture = await runYearDropdownPilot(') < entry.indexOf('topbarDatesFixture = await runTopbarDatesPilot('));
@@ -238,7 +239,7 @@ test('Topbar controls remain disjoint, readable and hittable at the 1024/125% CS
 test('Installed pilot checks controls before real menu clicks and after every rendered synthetic state', async () => {
   const source = await readFile(new URL('../tooling/topbar-dates-pilot.mjs', import.meta.url), 'utf8');
   const open = source.slice(source.indexOf('async function openMenu('), source.indexOf('async function assertLabels('));
-  assert.ok(open.indexOf('await inspectTopbarControls(page, requireAiJob)') < open.indexOf("await page.locator(kind === 'todo' ? '.todopill' : '.smore').click()"));
+  assert.ok(open.indexOf('await inspectTopbarControls(page, requireAiJob)') < open.indexOf("await page.locator(kind === 'todo' ? '.todopill' : '.sched').click()"));
   const synthetic = source.slice(source.indexOf('async function syntheticRows('), source.indexOf('export async function runTopbarDatesPilot('));
   assert.ok(synthetic.indexOf('await assertLabels(page, kind, entries, requireAiJob)') < synthetic.indexOf('return inspectTopbarControls(page, requireAiJob)'));
   assert.match(source, /geometries\[kind\] = \{ \.\.\.await inspectGeometry\(page, kind\), controls \}/);
