@@ -270,9 +270,13 @@ export function BotChatActions({ task, actionIds, cards, copyBusy, open, onOpenT
   </div>;
 }
 
-export function BotTaskDetail({ taskId, cards, back, reply, copyBusy = false, embedded = false, backLabel = '返回' }: { taskId: string; cards: BotCard[]; back(): void; reply(task: BotTask): void; copyBusy?: boolean; embedded?: boolean; backLabel?: string }) {
+export function BotTaskDetail({ taskId, cards, back, reply, copyBusy = false, embedded = false, backLabel = '返回', onOpenChild }: {
+  taskId: string; cards: BotCard[]; back(): void; reply(task: BotTask): void;
+  copyBusy?: boolean; embedded?: boolean; backLabel?: string; onOpenChild?(id: string): void;
+}) {
   const [trail, setTrail] = useState<string[]>([]);
   const currentTaskId = trail.at(-1) ?? taskId;
+  const openChild = onOpenChild ?? ((id: string) => setTrail(value => [...value, id]));
   const goBack = () => trail.length ? setTrail(value => value.slice(0, -1)) : back();
   const [detail, setDetail] = useState<Awaited<ReturnType<BotBridge['getTask']>>>(), [error, setError] = useState(''), [busy, setBusy] = useState(false), [reload, setReload] = useState(0);
   useEffect(() => { setTrail([]); }, [taskId]);
@@ -294,7 +298,7 @@ export function BotTaskDetail({ taskId, cards, back, reply, copyBusy = false, em
     </article>)}</section>}
     {actions.map(action => <ActionCard key={action.id} action={action} refresh={() => setReload(value => value + 1)}
       copyBusy={copyBusy} trace={action === latestAction && actionReply ? <BotExecutionDetails entry={actionReply} collapsed /> : undefined} />)}
-    {!!detail.children.length && <><h3>协作任务</h3>{detail.children.map(child => <BotTaskCard key={child.id} task={child} cards={cards} open={() => setTrail(value => [...value, child.id])} />)}</>}
+    {!!detail.children.length && <><h3>协作任务</h3>{detail.children.map(child => <BotTaskCard key={child.id} task={child} cards={cards} open={() => openChild(child.id)} />)}</>}
     {!!detail.messages.length && <details className="bot-collaboration"><summary>协作记录 · {detail.messages.length}</summary>{detail.messages.map(message => <article key={message.id}><strong>{cards.find(bot => bot.id === message.fromBotId)?.name ?? 'Bot'} → {cards.find(bot => bot.id === message.toBotId)?.name ?? 'Bot'}</strong><small>{new Date(message.createdAt).toLocaleString('zh-CN')}</small><p>{message.content}</p></article>)}</details>}
     {task.result && <section className="bot-work-result">{embedded && <h4>工作结果</h4>}<AiResponse entry={{ id: task.id, role: 'assistant', content: task.result }} /></section>}
     <div className="bot-action-buttons">{['queued', 'running', 'waiting_bot', 'waiting_user', 'waiting_resource', 'interrupted'].includes(task.status) && <button disabled={busy} onClick={() => void run(() => api.cancelTask(task.id, task.revision))}>取消任务</button>}{['failed', 'interrupted', 'waiting_resource'].includes(task.status) && <button className="primary" disabled={busy} onClick={() => void run(() => api.retryTask(task.id, task.revision))}>继续任务</button>}</div>

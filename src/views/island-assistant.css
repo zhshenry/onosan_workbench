@@ -27,7 +27,18 @@ html:has(.island-assistant-app), html:has(.island-assistant-app) body, html:has(
 .island-assistant-message.user > div { flex: 0 1 auto; max-width: 100%; }
 .island-assistant-user { margin: 0; padding: 9px 12px; border: 1px solid var(--island-line); border-radius: var(--r-card); background: var(--todo-acc-soft); line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
 .island-assistant-message .ai-bubble { padding: 0; border: 0; background: transparent; box-shadow: none; }
-.island-assistant-app .ai-response > .ai-bubble { background: var(--todo-subtle); border-color: var(--island-line); color: var(--island-text); box-shadow: none; }
+.island-assistant-app .ai-response > .ai-bubble {
+  --bot-reply-border: var(--island-line);
+  --ink: var(--island-text);
+  --ink-2: var(--island-text);
+  --acc-deep: var(--island-blue);
+  --acc-ring: var(--island-blue);
+  --acc-soft: var(--todo-acc-soft);
+  background: var(--todo-subtle);
+  border-color: var(--bot-reply-border);
+  color: var(--island-text);
+  box-shadow: none;
+}
 .island-assistant-message .ai-markdown { color: var(--island-text); font-size: var(--type-body); line-height: 1.65; }
 .island-assistant-message .ai-markdown > :first-child { margin-top: 0; }
 .island-assistant-message .ai-markdown > :last-child { margin-bottom: 0; }

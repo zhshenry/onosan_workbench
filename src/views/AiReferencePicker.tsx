@@ -5,7 +5,7 @@ import { aiReferenceKey, aiReferenceLimit, type AiReference } from '../../shared
 import { READING_STATUS_LABEL } from '../../shared/reading-contracts';
 import { scheduleStamp } from '../../shared/todo-format';
 import { Segmented } from '../ui/controls';
-import { matchesTodoPickerFilter, TODO_STATUS_LABEL, TodoPickerFilters, todoPickerStatusKey, type TodoKindFilter, type TodoStatusFilter } from './todo-picker-filters';
+import { DEFAULT_TODO_STATUS_FILTER, matchesTodoPickerFilter, TODO_STATUS_LABEL, TodoPickerFilters, todoPickerStatusKey, type TodoKindFilter, type TodoStatusFilter } from './todo-picker-filters';
 
 export type ReferenceMode = AiReference['module'];
 export interface ReferenceOption {
@@ -58,8 +58,8 @@ export function AiReferencePicker({ id, mode, modeOptions, onModeChange, unavail
   const radioName = useId();
   const [query, setQuery] = useState('');
   const [pending, setPending] = useState(selected);
-  const [statusFilter, setStatusFilter] = useState<TodoStatusFilter>('all');
-  const [kindFilter, setKindFilter] = useState<TodoKindFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<TodoStatusFilter>(DEFAULT_TODO_STATUS_FILTER);
+  const [kindFilter, setKindFilter] = useState<TodoKindFilter>(modeOptions ? 'task' : 'all');
   const lightList = mode === 'todo';
   const multi = mode === 'copy' || mode === 'bazi';
   const chosen = multi ? pending : selected;

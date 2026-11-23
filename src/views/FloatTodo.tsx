@@ -13,7 +13,7 @@ import { preferredAiChat, sameAiScope } from '../../shared/ai-scope';
 import { errorText, Select as TodoSelect } from '../ui/controls';
 import { AiResponse } from './AiResponse';
 import { TodoProposalCard } from './TodoProposalCard';
-import { matchesTodoPickerFilter, TODO_STATUS_LABEL, TodoPickerFilters, todoPickerStatusKey, type TodoKindFilter, type TodoStatusFilter } from './todo-picker-filters';
+import { DEFAULT_TODO_STATUS_FILTER, matchesTodoPickerFilter, TODO_STATUS_LABEL, TodoPickerFilters, todoPickerStatusKey, type TodoKindFilter, type TodoStatusFilter } from './todo-picker-filters';
 import { TaskEditor, type TaskEditorApi, type TodoState } from '../../modules/todo/ui/TaskEditor';
 import { TaskLibrary } from '../../modules/todo/ui/TaskLibrary';
 import { TodayBoard, type Mutate } from '../../modules/todo/ui/TodayBoard';
@@ -438,7 +438,7 @@ export function FloatAiChat({ seed, onSeedConsumed, tasks, categories = [], onCo
   const [logOpen, setLogOpen] = useState(false);
   const [linked, setLinked] = useState<Task | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<TodoStatusFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<TodoStatusFilter>(DEFAULT_TODO_STATUS_FILTER);
   const [kindFilter, setKindFilter] = useState<TodoKindFilter>('all');
   const [keptProposalToken, setKeptProposalToken] = useState<string | null>(null);
   const [dismissedProposalToken, setDismissedProposalToken] = useState<string | null>(null);

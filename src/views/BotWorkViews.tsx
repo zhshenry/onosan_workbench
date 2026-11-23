@@ -1,6 +1,7 @@
 import { useId, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, ArrowSquareOut, CheckSquare, DotsThree, FileText, ImageSquare } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowSquareOut, DotsThree, FileText, ImageSquare, Trash } from '@phosphor-icons/react';
 import type { BotArtifact, BotCard, BotResourceRef } from '../../shared/bot-contracts';
+import { errorText } from '../ui/controls';
 import { AiResponse } from './AiResponse';
 
 const workTime = (value: string) => new Date(value).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -34,12 +35,25 @@ function artifactFormat(artifact: BotArtifact): ArtifactFormat | undefined {
   return '其他';
 }
 
-function ArtifactRow({ artifact, image, selected, onOpen, onTask, onOpenResource }: {
+function ArtifactRow({ artifact, image, selected, onOpen, onOpenResource, onRemoveArtifact }: {
   artifact: BotArtifact; image: boolean; selected: boolean; onOpen(artifact: BotArtifact): void;
-  onTask(id: string): void; onOpenResource?(ref: BotResourceRef): void;
+  onOpenResource?(ref: BotResourceRef): void;
+  onRemoveArtifact?(id: string): Promise<void>;
 }) {
   const menuId = useId(), trigger = useRef<HTMLButtonElement>(null), menu = useRef<HTMLDivElement>(null);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false), [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
+  const confirmDelete = async () => {
+    if (!onRemoveArtifact || deleting) return;
+    setDeleteError('');
+    if (!confirming) { setConfirming(true); return; }
+    setDeleting(true);
+    try { await onRemoveArtifact(artifact.id); }
+    catch (cause) { setDeleteError(errorText(cause)); }
+    finally { setDeleting(false); }
+  };
   const linked = artifact.resource.kind !== 'artifact';
   const created = Date.parse(artifact.createdAt);
   const Icon = linked ? ArrowSquareOut : image ? ImageSquare : FileText;
@@ -57,7 +71,10 @@ function ArtifactRow({ artifact, image, selected, onOpen, onTask, onOpenResource
       <DotsThree size={18} weight="bold" aria-hidden="true" />
     </button>
     <div ref={menu} id={menuId} popover="auto" role="menu" aria-label="资料操作" className="bot-delivery-menu"
-      onBeforeToggle={event => setActionsOpen(event.newState === 'open')}
+      onBeforeToggle={event => {
+        setActionsOpen(event.newState === 'open');
+        if (event.newState === 'closed') setConfirming(false);
+      }}
       onToggle={event => {
         if (event.newState !== 'open' || !trigger.current) return;
         const popup = event.currentTarget, anchor = trigger.current.getBoundingClientRect();
@@ -80,18 +97,40 @@ function ArtifactRow({ artifact, image, selected, onOpen, onTask, onOpenResource
         {linked && onOpenResource
           ? <button type="button" role="menuitem" tabIndex={-1} onClick={() => { closeActions(); onOpenResource(artifact.resource); }}><ArrowSquareOut size={16} />打开原件</button>
           : <button type="button" role="menuitem" tabIndex={-1} onClick={() => { closeActions(); onOpen(artifact); }}><FileText size={16} />查看内容</button>}
-        <button type="button" role="menuitem" tabIndex={-1} onClick={() => { closeActions(); onTask(artifact.taskId); }}><CheckSquare size={16} />查看来源任务</button>
+        {onRemoveArtifact && <button type="button" role="menuitem" tabIndex={-1} className="bot-delivery-delete"
+          data-confirming={confirming || deleting} aria-disabled={deleting || undefined} aria-busy={deleting || undefined}
+          title={confirming ? '再点一次从资料库移除，原件和工作记录会保留' : undefined}
+          onBlur={() => setConfirming(false)} onClick={() => void confirmDelete()}>
+          <Trash size={16} aria-hidden="true" />{deleting ? '删除中…' : confirming ? '确认删除' : '删除'}
+        </button>}
+        {deleteError && <p className="bot-delivery-delete-error" role="alert">{deleteError}</p>}
       </>}
     </div>
   </li>;
 }
 
-export function BotArtifactsView({ artifacts, cards, selectedId, onSelect, onTask, onOpenResource, onExternalPreview }: {
+export function BotArtifactsView({ artifacts, cards, selectedId, onSelect, onOpenResource, onExternalPreview, onRemoveArtifact }: {
   artifacts: BotArtifact[]; cards: BotCard[]; selectedId?: string; onSelect(id?: string): void;
-  onTask(id: string): void; onOpenResource?(ref: BotResourceRef): void; onExternalPreview?(artifact: BotArtifact): void;
+  onOpenResource?(ref: BotResourceRef): void; onExternalPreview?(artifact: BotArtifact): void;
+  onRemoveArtifact?(id: string): Promise<void>;
 }) {
   const directory = useRef<HTMLElement>(null), detail = useRef<HTMLElement>(null);
   const [filter, setFilter] = useState<LibraryFilter>('全部');
+  const removeFromDirectory = async (id: string) => {
+    if (!onRemoveArtifact) return;
+    const rows = Array.from(directory.current?.querySelectorAll<HTMLButtonElement>('button[data-artifact-id]') ?? []);
+    const index = rows.findIndex(row => row.dataset.artifactId === id);
+    const currentRow = rows[index]?.closest('.bot-delivery-row');
+    const nextRow = rows[index + 1] ?? rows[index - 1];
+    await onRemoveArtifact(id);
+    if (selectedId === id) onSelect(undefined);
+    requestAnimationFrame(() => {
+      const active = document.activeElement;
+      if (active !== document.body && !currentRow?.contains(active)) return;
+      const target = nextRow?.isConnected ? nextRow : directory.current;
+      target?.focus();
+    });
+  };
   const availableFilters = new Set<LibraryFilter>(['全部']);
   const typedArtifacts = artifacts.flatMap(artifact => {
     const label = artifactFormat(artifact);
@@ -113,20 +152,20 @@ export function BotArtifactsView({ artifacts, cards, selectedId, onSelect, onTas
   const open = (artifact: BotArtifact) => { if (onExternalPreview) onExternalPreview(artifact); else { onSelect(artifact.id); requestAnimationFrame(() => detail.current?.focus()); } };
   const back = () => { onSelect(undefined); requestAnimationFrame(() => directory.current?.querySelector<HTMLButtonElement>(`button[data-artifact-id="${selectedId}"]`)?.focus()); };
   return <div className="bot-work-view bot-artifacts-view" data-detail-open={!!selected}>
-    <section className="bot-work-directory" ref={directory} aria-label={selected ? '交付件目录' : '交付件清单'}>
+    <section className="bot-work-directory" ref={directory} tabIndex={-1} aria-label={selected ? '交付件目录' : '交付件清单'}>
       {selected && <button className="bot-text-button bot-artifact-list-back" onClick={back}><ArrowLeft size={15} />全部交付件</button>}
       {typedArtifacts.length > 0 && <div className="bot-library-filters" role="group" aria-label="资料分类">
         {libraryFilters.filter(value => availableFilters.has(value)).map(value => <button type="button" key={value} aria-pressed={activeFilter === value} onClick={() => { setFilter(value); if (selected) onSelect(undefined); }}>{value}</button>)}
       </div>}
       {Object.entries(groups).map(([period, items]) => items.length > 0 && <section key={period} className="bot-library-group" aria-label={period}>
         <h3>{period}</h3><ul>{items.map(({ artifact, type }) => <ArtifactRow key={artifact.id} artifact={artifact} image={type === '图片'} selected={selectedId === artifact.id}
-          onOpen={open} onTask={onTask} onOpenResource={onOpenResource} />)}</ul>
+          onOpen={open} onOpenResource={onOpenResource} onRemoveArtifact={onRemoveArtifact ? removeFromDirectory : undefined} />)}</ul>
       </section>)}
       {!groups.本周.length && !groups.更早.length && <p className="bot-library-empty">{typedArtifacts.length ? '该分类暂无资料' : '这个 Bot 保存的资料会显示在这里。'}</p>}
     </section>
     {selected && <section className="bot-work-detail bot-delivery-preview" ref={detail} aria-label="交付件预览" tabIndex={-1}>
-      <button className="bot-text-button bot-work-root-back" onClick={back}><ArrowLeft size={15} />返回交付件</button>
-      <header className="bot-delivery-heading"><h3>{selected.artifact.title}</h3><div><p>{owner(selected.artifact)} · {selected.label} · {workTime(selected.artifact.createdAt)}</p><button className="bot-button" onClick={() => onTask(selected.artifact.taskId)}>查看来源任务<ArrowRight size={15} /></button></div></header>
+      <button type="button" className="bot-text-button bot-work-root-back" onClick={back}><ArrowLeft size={15} aria-hidden="true" />返回资料库</button>
+      <header className="bot-delivery-heading"><h3>{selected.artifact.title}</h3><div><p>{owner(selected.artifact)} · {selected.label} · {workTime(selected.artifact.createdAt)}</p></div></header>
       {selected.artifact.resource.kind !== 'artifact' && onOpenResource && <button className="bot-text-button" onClick={() => onOpenResource(selected.artifact.resource)}>打开原件<ArrowSquareOut size={15} /></button>}
       {selected.artifact.content ? <AiResponse entry={{ id: selected.artifact.id, role: 'assistant', content: selected.artifact.content }} /> : <p className="bot-work-muted">{selected.artifact.resource.kind !== 'artifact' ? '此交付件关联工作区原件，打开原件可查看最新内容。' : '此交付件没有保存正文。'}</p>}
     </section>}

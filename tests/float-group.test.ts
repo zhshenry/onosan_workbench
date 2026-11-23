@@ -32,13 +32,15 @@ test('floating picker survives pointerdown, displays real status and cancels wit
   const find = (selector: string) => dom.window.document.querySelector(selector)!;
   try {
     for (const mini of [true, false]) {
-      await act(async () => root.render(createElement(FloatAiChat, { mini, seed: null, onSeedConsumed() {}, tasks: tasks as never })));
+      await act(async () => root.render(createElement(FloatAiChat, { key: String(mini), mini, seed: null, onSeedConsumed() {}, tasks: tasks as never })));
       await click(find('.ai-add-reference'));
       const filters = dom.window.document.querySelector('.todo-picker-filters');
       assert.ok(filters, 'picker exposes status and kind filters');
       const filterButton = (group: string, label: string) => [...dom.window.document.querySelectorAll<HTMLButtonElement>(`[aria-label="${group}"] button`)].find(button => button.textContent === label)!;
+      assert.equal(dom.window.document.querySelectorAll('[role="option"]').length, 3);
+      assert.equal(filterButton('按状态筛选', '已完成').getAttribute('aria-pressed'), 'false');
       await click(filterButton('按状态筛选', '已完成'));
-      assert.equal(dom.window.document.querySelectorAll('[role="option"]').length, 1);
+      assert.equal(dom.window.document.querySelectorAll('[role="option"]').length, 4);
       assert.match(dom.window.document.querySelector('[role="option"]')!.textContent!, /已完成/);
       await click(filterButton('按状态筛选', '全部'));
       await click(filterButton('按类型筛选', '日程'));

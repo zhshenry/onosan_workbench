@@ -110,11 +110,11 @@ export function useBotChatHistory(chatId: string, island: boolean, floating: boo
     remember();
   }, [snapshot, restoreScroll, followContent, visible, floating, layout]);
 
-  const load = async (view: BotChatView, accept?: (value: BotChatSnapshot) => boolean): Promise<boolean> => {
+  const load = async (view: BotChatView): Promise<boolean> => {
     if (loadingRef.current || !sync.current) return false;
     loadingRef.current = true;
     setLoading(true);
-    try { return await sync.current.load(view, accept); }
+    try { return await sync.current.load(view); }
     finally { loadingRef.current = false; setLoading(false); }
   };
   useEffect(() => {
@@ -177,24 +177,5 @@ export function useBotChatHistory(chatId: string, island: boolean, floating: boo
     else { following.current = previous; focusAfterLoad.current = undefined; }
   };
 
-  const findEntry = (entryId: string, signal: AbortSignal, isVisible?: (page: BotChatSnapshot) => boolean) => {
-    const contains = (value: BotChatSnapshot) => !signal.aborted && value.chat.entries.some(entry => entry.id === entryId)
-      && (isVisible?.(value) ?? true);
-    if (snapshot && contains(snapshot)) return Promise.resolve(true);
-    // Index navigation can visit a folded message without changing the saved cutoff.
-    return load({ range: { kind: 'older', entryId } }, contains);
-  };
-  const scrollToEntry = (entryId: string) => {
-    const node = scroll.current;
-    const row = node?.querySelector<HTMLElement>(`[data-chat-entry-id="${CSS.escape(entryId)}"]`);
-    if (!node || !row) return undefined;
-    following.current = false;
-    anchor.current = { id: entryId, offset: Math.max(12, parseFloat(getComputedStyle(node).scrollPaddingTop) || 0) };
-    restoreScroll();
-    setAboveBottom(!!snapshot?.hasLater || node.scrollHeight - node.scrollTop - node.clientHeight > 64);
-    remember();
-    return row;
-  };
-
-  return { snapshot, setSnapshot, sync, scroll, following, aboveBottom, loading, initialView, restoreScroll, followContent, rememberScroll: remember, onScroll, turnPage, latest, collapseHistory, revealHistory, findEntry, scrollToEntry };
+  return { snapshot, setSnapshot, sync, scroll, following, aboveBottom, loading, initialView, restoreScroll, followContent, rememberScroll: remember, onScroll, turnPage, latest, collapseHistory, revealHistory };
 }

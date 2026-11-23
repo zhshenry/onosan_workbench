@@ -24,7 +24,7 @@ test('one schedule chip keeps the center while its title can shrink', () => {
   assert.ok(placed.width >= 480);
 });
 
-test('one schedule chip shifts left only enough to keep its date when the centered band is tight', () => {
+test('one schedule chip shifts left only enough to keep a readable title when the centered band is tight', () => {
   const placed = place({ barWidth: 1190, rightInset: 390, naturalWidth: 715, readableWidth: 480 });
   assert.equal(placed.width, 480);
   assert.ok(placed.nudge > 0);

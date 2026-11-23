@@ -24,7 +24,7 @@ export class BotDraftController {
   private timer?: ReturnType<typeof setTimeout>;
   private unlisten: (() => void)[] = [];
   private pendingSubmit?: BotSubmit;
-  readonly outgoing = new Map<string, { id: string; text: string; createdAt: string; messageId?: string }>();
+  readonly outgoing = new Map<string, { id: string; text: string; createdAt: string; resources: BotSubmit['resources']; messageId?: string }>();
   private active = false;
   private readonly listeners = new Set<() => void>();
   private lifecycle: Promise<unknown> = Promise.resolve();
@@ -105,7 +105,7 @@ export class BotDraftController {
     if (this.sending || this.composing || !this.pendingSubmit && !this.value.text.trim()) return;
     const submission = this.pendingSubmit ?? structuredClone(this.value);
     const requestId = this.pendingSubmit?.clientRequestId ?? crypto.randomUUID();
-    if (!this.outgoing.has(requestId)) this.outgoing.set(requestId, { id: requestId, text: submission.text, createdAt: new Date().toISOString() });
+    if (!this.outgoing.has(requestId)) this.outgoing.set(requestId, { id: requestId, text: submission.text, createdAt: new Date().toISOString(), resources: structuredClone(submission.resources) });
     this.sending = true; this.error = ''; this.notify();
     try {
       if (!this.pendingSubmit) {

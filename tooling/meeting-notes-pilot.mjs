@@ -174,7 +174,9 @@ try {
   await check('return restores the browsed date and global schedule entry opens the same minutes detail', async () => {
     await back(); await page.getByRole('button', { name: '下一天', exact: true }).click();
     const label = await page.getByRole('button', { name: /^(?:选择日程日期|选择日历日期)$/ }).innerText();
-    await page.locator('.schip[title="产品设计评审"]').click(); await noteEditor().waitFor();
+    await page.locator('.schip[title="产品设计评审"]').click();
+    await page.locator('.ipop-sched').getByRole('button', { name: '产品设计评审', exact: true }).click();
+    await noteEditor().waitFor();
     await back(); assert.equal(await page.getByRole('button', { name: /^(?:选择日程日期|选择日历日期)$/ }).innerText(), label);
     await page.getByRole('button', { name: '今天', exact: true }).click(); await openMeeting();
   });

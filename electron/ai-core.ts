@@ -130,6 +130,7 @@ export function mapAiError(error: unknown, signal: AbortSignal): Error {
  */
 export interface PersistentAgentSession {
   cwd: string; directory: string; path?: string;
+  conversation?: { history: (AIConversationTurn & { id: string })[]; currentEntryIds: string[] };
   onSession(path: string): void;
   shouldYield?(): boolean;
   onControl?(control: { redirect(): void } | null): void;
@@ -170,7 +171,23 @@ export async function runAgentLoop(config: { endpoint: string; model: string; pr
     if (!model) throw new Error('无法创建模型会话,请检查服务协议和模型名称');
     if (persistent?.path && !existsSync(persistent.path)) throw new Error('任务的持久会话文件缺失，请恢复后台会话文件后继续；原任务不会自动重建');
     const manager = persistent ? persistent.path ? SessionManager.open(persistent.path, persistent.directory, workspace) : SessionManager.create(workspace, persistent.directory) : SessionManager.inMemory(workspace);
-    if (persistent && !manager.getEntries().some(entry => entry.type === 'message')) {
+    if (persistent?.conversation) {
+      const branch = manager.getBranch();
+      const seen = new Set(branch.flatMap(entry => entry.type === 'custom' && entry.customType === 'workbench-chat-entries'
+        ? (entry.data as { ids: string[] }).ids : []));
+      const unseen = persistent.conversation.history.filter(entry => !seen.has(entry.id));
+      // Match older sessions before their first source-message marker was recorded.
+      const legacy = seen.size ? [] : branch.flatMap(entry => entry.type === 'message' ? [entry.message] : []);
+      const missing = unseen.filter(turn => {
+        const index = legacy.findIndex(message => message.role === turn.role && (typeof message.content === 'string'
+          ? message.content : message.content.flatMap(part => part.type === 'text' ? [part.text] : []).join('')) === turn.content);
+        if (index < 0) return true;
+        legacy.splice(index, 1);
+        return false;
+      });
+      for (const message of historyMessages(missing, config.model)) manager.appendMessage(message);
+      manager.appendCustomEntry('workbench-chat-entries', { ids: [...unseen.map(entry => entry.id), ...persistent.conversation.currentEntryIds] });
+    } else if (persistent && !manager.getEntries().some(entry => entry.type === 'message')) {
       for (const message of historyMessages(history, config.model)) manager.appendMessage(message);
     }
     if (persistent) persistent.onSession(manager.getSessionFile()!);

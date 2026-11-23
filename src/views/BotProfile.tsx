@@ -1,8 +1,8 @@
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type KeyboardEvent, type ReactNode, type Ref } from 'react';
-import { ArrowLeft, ArrowRight, BookOpen, CaretRight, ChatsCircle, Desktop, PencilSimple, Trash, X, FileText } from '@phosphor-icons/react';
-import { BOT_MEMORY_TEXT_LIMIT, BOT_MEMORY_TITLE_LIMIT, BOT_MEMORY_TOPIC_LIMIT, type BotCard, type BotMemory, type BotMemorySource, type BotMemoryView, type BotProfile as Profile } from '../../shared/bot-contracts';
+import { ArrowLeft, ArrowRight, BookOpen, CaretRight, ClockCounterClockwise, Desktop, PencilSimple, Quotes, Trash, X, FileText } from '@phosphor-icons/react';
+import type { BotCard, BotMemory, BotMemorySource, BotMemoryView, BotProfile as Profile } from '../../shared/bot-contracts';
 import type { AiConfig } from '../../shared/workbench-api';
-import { errorText, Segmented, Select } from '../ui/controls';
+import { errorText, Modal, Segmented, Select } from '../ui/controls';
 import { BotAvatar } from './BotAvatar';
 import { BotAvatarPicker } from './BotAvatarPicker';
 import { BotModelPicker } from './BotModelPicker';
@@ -27,20 +27,20 @@ const subscribeEdits = (listener: () => void) => {
   return () => { editListeners.delete(listener); };
 };
 
-export function BotProfile({ ref, card, profile: loadedProfile, config, tab, expanded, focusOnOpen, onTab, close, onSaved, onReload, onWorkspace, onActivity, onSettings, onManageInMain, onAddMemory, memoryLink, library, activity }: {
+export function BotProfile({ ref, card, profile: loadedProfile, config, tab, expanded, focusOnOpen, onTab, close, onSaved, onReload, onWorkspace, onHistory, onSettings, onManageInMain, onAddMemory, onEditMemory, memoryLink, library, activity }: {
   ref: Ref<HTMLElement>; card: BotCard; profile?: Profile; config?: AiConfig; tab: InspectorTab; expanded: boolean; focusOnOpen: boolean;
   onTab(value: InspectorTab): void; close(): void; onSaved(profile: Profile): void; onReload(): void;
-  onWorkspace(): void; onActivity(): void; onSettings(): void; onManageInMain?(): void; onAddMemory(): void; memoryLink?: { id: string }; library: ReactNode; activity?: ReactNode;
+  onWorkspace(): void; onHistory?(): void; onSettings(): void; onManageInMain?(): void; onAddMemory(): void; onEditMemory?(memory: BotMemoryView): void; memoryLink?: { id: string }; library: ReactNode; activity?: ReactNode;
 }) {
   const [section, setSection] = useState<'details' | 'memory'>('details');
   const [picker, setPicker] = useState(false), [error, setError] = useState(''), [busy, setBusy] = useState(false);
   const draft = useSyncExternalStore(subscribeEdits, () => edits.get(card.id));
   const feedbackId = useId();
-  const [memories, setMemories] = useState<BotMemoryView[]>(), [memory, setMemory] = useState<BotMemory>();
+  const [memories, setMemories] = useState<BotMemoryView[]>(), [removingMemory, setRemovingMemory] = useState<BotMemoryView>();
   const [memoryFilter, setMemoryFilter] = useState<(typeof memoryFilters)[number]['value']>('all');
   const [memoryId, setMemoryId] = useState<string>();
   const [memorySources, setMemorySources] = useState<BotMemorySource[]>();
-  const memoryDetailBack = useRef<HTMLButtonElement>(null), memoryAdd = useRef<HTMLButtonElement>(null);
+  const memoryDetailBack = useRef<HTMLButtonElement>(null), memoryAdd = useRef<HTMLButtonElement>(null), memoryEntry = useRef<HTMLButtonElement>(null);
   const inspectorBody = useRef<HTMLDivElement>(null);
   const memoryListScroll = useRef(0);
   const hasActivity = !!activity;
@@ -56,9 +56,9 @@ export function BotProfile({ ref, card, profile: loadedProfile, config, tab, exp
   useEffect(() => {
     if (hasActivity) {
       setPicker(false);
-      if (!memory) setSection('details');
+      if (!removingMemory) setSection('details');
     }
-  }, [hasActivity, memory]);
+  }, [hasActivity, removingMemory]);
   useEffect(() => {
     if (!picker) return;
     const panel = avatarPopover.current;
@@ -183,7 +183,7 @@ export function BotProfile({ ref, card, profile: loadedProfile, config, tab, exp
     }, cause => { if (current) { setMemoryId(undefined); setError(errorText(cause)); } });
     return () => { current = false; };
   }, [card.id, memoryLink]);
-  const editingChild = !!memory;
+  const editingChild = !!removingMemory;
   const selectedMemory = memories?.find(item => item.id === memoryId);
   const filteredMemories = (memories ?? []).filter(item => memoryFilter === 'all' || memoryFilter === item.scope);
   const openMemoryDetail = (id: string) => {
@@ -201,20 +201,20 @@ export function BotProfile({ ref, card, profile: loadedProfile, config, tab, exp
       (row ?? memoryAdd.current)?.focus({ preventScroll: true });
     });
   };
-  const closeMemoryForm = () => {
-    setMemory(undefined);
-    requestAnimationFrame(() => (memoryId ? memoryDetailBack.current : memoryAdd.current)?.focus({ preventScroll: true }));
+  const backToProfile = () => {
+    setSection('details'); setError(''); setMemoryId(undefined); setMemorySources(undefined);
+    requestAnimationFrame(() => memoryEntry.current?.focus({ preventScroll: true }));
   };
-  const saveMemory = async () => {
-    if (!memory) return;
+  const removeMemory = async () => {
+    if (!removingMemory) return;
     await run(async () => {
-      const text = memory.text.trim();
-      if (!text) { if (!memory.revision) return; await api.removeMemory(memory.id, memory.revision); }
-      else await api.updateMemory({ id: memory.id, revision: memory.revision, scope: memory.scope, source: memory.source, title: memory.title, topic: memory.topic, text, botId: memory.scope === 'private' ? card.id : null });
-      setMemories(await api.listMemories(card.id)); setMemorySources(undefined); closeMemoryForm();
-      if (!text) backFromMemory(memory.id);
+      await api.removeMemory(removingMemory.id, removingMemory.revision);
+      setMemories(rows => rows?.filter(item => item.id !== removingMemory.id));
+      setRemovingMemory(undefined);
+      backFromMemory(removingMemory.id);
     });
   };
+  const closeMemoryDelete = () => { setRemovingMemory(undefined); setError(''); };
   useEffect(() => {
     if (!expanded || tab !== 'details' || section !== 'memory' || hasActivity) return;
     let current = true;
@@ -239,11 +239,11 @@ export function BotProfile({ ref, card, profile: loadedProfile, config, tab, exp
       onBlur={event => saveText(field, event.currentTarget.value)} onKeyDown={event => textKeys(field, event)} />;
   };
   return <aside ref={ref} id="bot-inspector" className="bot-inspector bot-profile" aria-label={`${name}的 Bot 资料`} onKeyDown={event => {
-    if (event.key !== 'Escape' || event.defaultPrevented || busy) return;
+    if (event.key !== 'Escape' || event.defaultPrevented || busy || editingChild) return;
     event.preventDefault();
     if (picker) closePicker();
-    else if (!editingChild && selectedMemory && tab === 'details' && section === 'memory') backFromMemory(selectedMemory.id);
-    else if (!editingChild) close();
+    else if (selectedMemory && tab === 'details' && section === 'memory') backFromMemory(selectedMemory.id);
+    else close();
   }}>
     <span className="bot-profile-save-status" role="status">{Object.values(draft?.fields ?? {}).some(edit => edit?.saving) ? '保存中…' : ''}</span>
     <button type="button" disabled={busy} className="ibtn bot-inspector-close" ref={closeButton} aria-label="关闭 Bot 侧栏" onClick={close}><X size={17} /></button>
@@ -263,16 +263,20 @@ export function BotProfile({ ref, card, profile: loadedProfile, config, tab, exp
         {fieldError('avatar')}
       </div>
     </div>}
-    {error && <div role="alert" className="bot-error">{error}</div>}
+    {error && !removingMemory && <div role="alert" className="bot-error">{error}</div>}
     {tab === 'library' && <div className="bot-inspector-library">{library}</div>}
     {activity}
     {tab === 'details' && !hasActivity && section === 'memory' && <header className="bot-memory-header">
-      <button type="button" className="bot-text-button" disabled={editingChild} onClick={() => { setSection('details'); setError(''); setMemoryId(undefined); setMemorySources(undefined); }}><ArrowLeft size={15} />返回详情</button>
-      <h2>记忆</h2>
+      <button ref={selectedMemory ? memoryDetailBack : undefined} type="button" className="bot-text-button"
+        disabled={editingChild || (!!selectedMemory && busy)}
+        onClick={selectedMemory ? () => backFromMemory(selectedMemory.id) : backToProfile}>
+        <ArrowLeft size={15} aria-hidden="true" />{selectedMemory ? '返回记忆列表' : '返回 Bot 资料'}
+      </button>
+      <h2>{selectedMemory ? '记忆详情' : '记忆列表'}</h2>
     </header>}
     <div ref={inspectorBody} className="bot-inspector-body" hidden={tab !== 'details' || hasActivity}>
       {section === 'memory' ? <section aria-label="Bot 记忆">
-        <div hidden={!!selectedMemory || !!memory}>
+        <div hidden={!!selectedMemory}>
           <div className="bot-profile-section-heading">
             <Select className="bot-memory-filter" aria-label="记忆范围筛选" value={memoryFilter} options={memoryFilters}
               onChange={value => setMemoryFilter(value as typeof memoryFilter)} />
@@ -288,35 +292,35 @@ export function BotProfile({ ref, card, profile: loadedProfile, config, tab, exp
             </button></li>)}
           </ul></div>}
         </div>
-        {selectedMemory && !memory && <div className="bot-memory-detail">
-          <button ref={memoryDetailBack} type="button" className="bot-text-button" disabled={busy} onClick={() => backFromMemory(selectedMemory.id)}><ArrowLeft size={15} />返回列表</button>
-          <div className="bot-memory-detail-heading">
-            <h3>{selectedMemory.title}</h3><span className="bot-memory-tag">{selectedMemory.topic}</span>
+        {selectedMemory && <div className="bot-memory-detail" role="region" aria-labelledby={`${feedbackId}-memory-title`}>
+          <div className="bot-memory-detail-toolbar">
+            <div className="bot-memory-detail-heading">
+              <h3 id={`${feedbackId}-memory-title`}>{selectedMemory.title}</h3>
+              <span className="bot-memory-tag">{selectedMemory.topic}</span>
+            </div>
+            {!!selectedMemory.sourceCount && <button type="button" className="bot-button" aria-expanded={memorySources !== undefined}
+              aria-controls={memorySources ? `${feedbackId}-memory-sources` : undefined} disabled={busy} onClick={() => {
+                if (memorySources !== undefined) setMemorySources(undefined);
+                else void run(async () => setMemorySources(await api.memorySources(card.id, selectedMemory.id)));
+              }}><Quotes size={15} aria-hidden="true" />查看原话（{selectedMemory.sourceCount}）</button>}
           </div>
           <p className="bot-memory-text">{selectedMemory.text}</p>
-          <p className="bot-help">{selectedMemory.scope === 'shared' ? '全局' : '当前 Bot'} · {selectedMemory.source || '手动记录'}</p>
-          {!!selectedMemory.sourceCount && <>
-            <button type="button" className="bot-text-button" aria-expanded={memorySources !== undefined} disabled={busy} onClick={() => {
-              if (memorySources !== undefined) setMemorySources(undefined);
-              else void run(async () => setMemorySources(await api.memorySources(card.id, selectedMemory.id)));
-            }}>查看原话（{selectedMemory.sourceCount}）</button>
-            {memorySources && (memorySources.length ? <ul className="bot-memory-sources">{memorySources.map(source => <li key={source.messageId}>{source.quote}</li>)}</ul> : <p className="bot-help">原话已不可用。</p>)}
-          </>}
+          {memorySources && <div id={`${feedbackId}-memory-sources`} className="bot-memory-source-panel">
+            {memorySources.length ? <ul className="bot-memory-sources">{memorySources.map(source => <li key={source.messageId}>{source.quote}</li>)}</ul> : <p className="bot-help">原话已不可用。</p>}
+          </div>}
           <div className="actions">
-            <button type="button" disabled={busy} onClick={() => setMemory({ ...selectedMemory })}><PencilSimple size={16} />编辑</button>
-            <button type="button" className="bot-button-danger" disabled={busy} onClick={() => setMemory({ ...selectedMemory, text: '' })}><Trash size={16} />删除</button>
+            <button type="button" disabled={busy || !onEditMemory} onClick={() => onEditMemory?.(selectedMemory)}><PencilSimple size={16} />编辑</button>
+            <button type="button" className="bot-button-danger" disabled={busy} onClick={() => { setError(''); setRemovingMemory(selectedMemory); }}><Trash size={16} />删除</button>
           </div>
         </div>}
-        {memory ? <form noValidate onSubmit={event => { event.preventDefault(); void saveMemory(); }}>
-        <label>记忆内容<textarea aria-label="记忆内容" autoFocus value={memory.text} maxLength={4000} aria-invalid={memory.text.trim().length > BOT_MEMORY_TEXT_LIMIT || undefined} rows={4} placeholder={memory.revision ? '留空后确认删除这条记忆' : '例如：文章使用简洁、自然的中文'} onChange={event => setMemory({ ...memory, text: event.target.value })} /></label>
-        {memory.text.trim().length > BOT_MEMORY_TEXT_LIMIT && <p className="bot-help" role="status">每条记忆最多 300 字，请缩短或拆开保存。</p>}
-        <div className="bot-memory-fields">
-          <label>标题<input value={memory.title ?? ''} maxLength={BOT_MEMORY_TITLE_LIMIT} placeholder="默认用正文开头" onChange={event => setMemory({ ...memory, title: event.target.value })} /></label>
-          <label>主题<input value={memory.topic ?? ''} maxLength={BOT_MEMORY_TOPIC_LIMIT} placeholder="未分类" onChange={event => setMemory({ ...memory, topic: event.target.value })} /></label>
-        </div>
-        <Select aria-label="记忆范围" value={memory.scope} options={[{ value: 'private', label: '当前 Bot' }, { value: 'shared', label: '全部 Bot' }]} onChange={value => setMemory({ ...memory, scope: value as 'private' | 'shared' })} />
-        <div className="actions"><button type="button" disabled={busy} onClick={closeMemoryForm}>取消</button><button className={!memory.text.trim() && memory.revision ? 'danger' : 'primary'} disabled={busy || !memory.text.trim() && !memory.revision || memory.text.trim().length > BOT_MEMORY_TEXT_LIMIT}>{!memory.text.trim() && memory.revision ? '确认删除' : '保存记忆'}</button></div>
-      </form> : null}
+        {removingMemory && <Modal title="删除记忆" className="confirm" close={closeMemoryDelete} busy={busy}>
+          <p>确定删除{removingMemory.scope === 'shared' ? '全局记忆' : '记忆'}「{removingMemory.title}」？</p>
+          {error && <p className="bot-error" role="alert">{error}</p>}
+          <div className="actions">
+            <button type="button" disabled={busy} autoFocus onClick={closeMemoryDelete}>取消</button>
+            <button type="button" className="danger" disabled={busy} onClick={() => void removeMemory()}>确认删除</button>
+          </div>
+        </Modal>}
 
         {error && !memories && <button className="bot-button" disabled={busy} onClick={openMemory}>重新读取记忆</button>}
       </section> : <>
@@ -337,8 +341,8 @@ export function BotProfile({ ref, card, profile: loadedProfile, config, tab, exp
           </div>
         </> : <button className="bot-text-button" onClick={onReload}>重新读取 Bot 资料</button>}
         <div className="bot-inspector-links">
-          {!onManageInMain && <button onClick={openMemory}><BookOpen />记忆<CaretRight /></button>}
-          <button data-open-activity onClick={onActivity}><ChatsCircle />工作与对话<CaretRight /></button>
+          {!onManageInMain && <button ref={memoryEntry} onClick={openMemory}><BookOpen />记忆<CaretRight /></button>}
+          {onHistory && <button data-open-history onClick={onHistory}><ClockCounterClockwise />历史记录<CaretRight /></button>}
         </div>
       </>}
     </div>

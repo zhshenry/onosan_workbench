@@ -2,24 +2,19 @@ import type { ReactNode } from 'react';
 import { isOverdue } from '../../shared/todo-format';
 
 /** Status and kind are the smallest fixed groups already on a todo. Category names are open-ended. */
-export type TodoStatusFilter = 'all' | 'todo' | 'doing' | 'done' | 'overdue';
+export type TodoPickerStatusKey = 'todo' | 'doing' | 'done' | 'overdue';
+export type TodoStatusFilter = readonly TodoPickerStatusKey[];
 export type TodoKindFilter = 'all' | 'task' | 'meeting';
-export type TodoPickerStatusKey = Exclude<TodoStatusFilter, 'all'>;
 
-export const TODO_STATUS_FILTERS: { id: TodoStatusFilter; label: string }[] = [
-  { id: 'all', label: '全部' },
-  { id: 'todo', label: '待办' },
-  { id: 'doing', label: '进行中' },
-  { id: 'done', label: '已完成' },
-  { id: 'overdue', label: '已逾期' },
-];
+const ALL_TODO_STATUSES: TodoStatusFilter = ['todo', 'doing', 'done', 'overdue'];
+export const DEFAULT_TODO_STATUS_FILTER: TodoStatusFilter = ['todo', 'doing', 'overdue'];
 export const TODO_KIND_FILTERS: { id: TodoKindFilter; label: string }[] = [
   { id: 'all', label: '全部' },
-  { id: 'task', label: '事项' },
+  { id: 'task', label: '待办' },
   { id: 'meeting', label: '日程' },
 ];
 export const TODO_STATUS_LABEL: Record<TodoPickerStatusKey, string> = {
-  done: '已完成', overdue: '已逾期', doing: '进行中', todo: '待办',
+  done: '已完成', overdue: '已逾期', doing: '进行中', todo: '未开始',
 };
 
 export function todoPickerStatusKey(task: { status: string; kind?: 'task' | 'meeting'; dateAt: string | null; endAt?: string | null }): TodoPickerStatusKey {
@@ -31,8 +26,7 @@ export function todoPickerStatusKey(task: { status: string; kind?: 'task' | 'mee
 
 export function matchesTodoPickerFilter(item: { statusKey?: string; kind?: string }, status: TodoStatusFilter, kind: TodoKindFilter): boolean {
   if (kind !== 'all' && item.kind !== kind) return false;
-  if (status !== 'all' && item.statusKey !== status) return false;
-  return true;
+  return status.some(value => value === (item.statusKey ?? 'todo'));
 }
 
 export function TodoPickerFilters({ status, kind, onStatus, onKind }: {
@@ -41,7 +35,12 @@ export function TodoPickerFilters({ status, kind, onStatus, onKind }: {
 }): ReactNode {
   return <div className="todo-picker-filters">
     <div role="group" aria-label="按状态筛选"><span>状态</span>
-      {TODO_STATUS_FILTERS.map(item => <button key={item.id} type="button" aria-pressed={status === item.id} onClick={() => onStatus(item.id)}>{item.label}</button>)}
+      <button type="button" aria-pressed={status.length === ALL_TODO_STATUSES.length} onClick={() => onStatus(ALL_TODO_STATUSES)}>全部</button>
+      {ALL_TODO_STATUSES.map(value => {
+        const pressed = status.includes(value);
+        return <button key={value} type="button" aria-pressed={pressed}
+          onClick={() => onStatus(pressed ? status.filter(item => item !== value) : [...status, value])}>{TODO_STATUS_LABEL[value]}</button>;
+      })}
     </div>
     <div role="group" aria-label="按类型筛选"><span>类型</span>
       {TODO_KIND_FILTERS.map(item => <button key={item.id} type="button" aria-pressed={kind === item.id} onClick={() => onKind(item.id)}>{item.label}</button>)}

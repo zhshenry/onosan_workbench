@@ -96,7 +96,7 @@ export class BotChatSynchronizer {
     if (hasTools !== toolReplyIds.includes(entry.id)) toolReplyIds = hasTools ? [...toolReplyIds, entry.id] : toolReplyIds.filter(id => id !== entry.id);
     this.snapshot = {
       ...snapshot, sequence: update.sequence, liveEntries: live, toolReplyIds,
-      latestUser: snapshot.latestUser?.id === entry.id ? { id: entry.id, content: entry.content, createdAt: entry.createdAt } : snapshot.latestUser,
+      latestUser: snapshot.latestUser?.id === entry.id ? { id: entry.id, content: entry.content, createdAt: entry.createdAt, resourceRefs: entry.resourceRefs } : snapshot.latestUser,
       chat: { ...snapshot.chat, updatedAt: update.updatedAt, entries: window },
     };
   }

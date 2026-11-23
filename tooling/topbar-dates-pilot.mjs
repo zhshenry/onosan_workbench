@@ -51,7 +51,7 @@ export function topbarReadFixtures(today) {
   const previous = `${year - 1}-12-31`;
   const startOfYear = `${year}-01-01`;
   const secondDay = `${year}-01-02`;
-  const longTitle = 'CI renderer-only 合成日期验收 · ' + '较长标题仍应保留完整日期和可点击标题区域 '.repeat(6);
+  const longTitle = 'CI renderer-only 合成日期验收 · ' + '较长名称优先显示，展开可查看完整日期 '.repeat(6);
   let sequence = 0;
   const make = (title, kind, plannedDate, dateAt, endAt = null) => ({
     id: `00000000-0000-4000-8000-${String(++sequence).padStart(12, '0')}`,
@@ -154,12 +154,12 @@ async function inspectTopbarControls(page, requireAiJob = false) {
       return { text: node.textContent.trim(), bounds: rect(node), complete: textRects.length > 0
         && textRects.every(text => text.left >= bounds.left - 1 && text.right <= bounds.right + 1 && text.top >= bounds.top - 1 && text.bottom <= bounds.bottom + 1) };
     };
-    const schedule = element.querySelector('.sched'); const scheduleTrigger = element.querySelector('.smore');
+    const schedule = element.querySelector('button.sched'); const scheduleCaret = schedule.querySelector('.pill-caret');
     const todo = element.querySelector('.todopill'); const aiJob = element.querySelector('.ai-job-btn');
     return {
       viewport: { x: 0, y: 0, width: innerWidth, height: innerHeight }, topbar: rect(element),
-      schedule: rect(schedule), scheduleTrigger: rect(scheduleTrigger), todoTrigger: rect(todo), right: rect(element.querySelector('.tb-right')),
-      hitSchedule: hit(scheduleTrigger), hitTodo: hit(todo),
+      schedule: rect(schedule), scheduleTrigger: rect(scheduleCaret), todoTrigger: rect(todo), right: rect(element.querySelector('.tb-right')),
+      hitSchedule: hit(schedule) && hit(scheduleCaret), hitTodo: hit(todo),
       aiJob: aiJob ? { ...label(aiJob), hit: hit(aiJob) } : null,
       labels: { schedule: label(element.querySelector('.sched-label .lbl')), todo: label(todo.querySelector('.lbl')), count: label(todo.querySelector('.num')) },
     };
@@ -225,7 +225,7 @@ async function dismiss(page) { await page.keyboard.press('Escape'); await page.l
 async function openMenu(page, kind, requireAiJob = false) {
   if (await menu(page, kind).isVisible()) return;
   await inspectTopbarControls(page, requireAiJob);
-  await page.locator(kind === 'todo' ? '.todopill' : '.smore').click();
+  await page.locator(kind === 'todo' ? '.todopill' : '.sched').click();
   await menu(page, kind).waitFor({ state: 'visible' });
 }
 async function assertLabels(page, kind, entries, requireAiJob = false) {
@@ -285,7 +285,7 @@ async function createFixture(page, input) {
   await dialog.getByRole('button', { name: '更多设置：未设置', exact: true }).click();
   await dialog.getByRole('textbox', { name: '备注 / 进展', exact: true }).fill('Synthetic topbar acceptance. Saved through the normal editor.');
   await dialog.getByRole('button', { name: '创建', exact: true }).click(); await dialog.waitFor({ state: 'hidden' });
-  assert.ok(await page.locator(input.kind === 'meeting' ? '.smore' : '.todopill').evaluate(node => node === document.activeElement), 'Saving from the topbar returns focus to its capsule');
+  assert.ok(await page.locator(input.kind === 'meeting' ? '.sched' : '.todopill').evaluate(node => node === document.activeElement), 'Saving from the topbar returns focus to its capsule');
   const matches = (await state(page)).tasks.filter(task => task.title === input.title);
   assert.equal(matches.length, 1, 'Topbar fixture must be created exactly once');
   const task = matches[0];
@@ -377,6 +377,7 @@ export async function runTopbarDatesPilot({ application, page, check, screenshot
     await dismiss(page);
     assert.equal(await page.locator('.schip').filter({ has: page.locator('.n', { hasText: meeting.title }) }).locator('.t').textContent(), scheduleEntries[0].expected);
     await page.locator('.schip').filter({ has: page.locator('.n', { hasText: meeting.title }) }).click();
+    await menu(page, 'schedule').getByRole('button', { name: meeting.title, exact: true }).click();
     await dialog.waitFor({ state: 'visible' }); await dialog.getByRole('button', { name: '关闭', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });
     await openMenu(page, 'todo'); await dismiss(page); await openMenu(page, 'todo');
@@ -440,18 +441,20 @@ export async function runTopbarDatesPilot({ application, page, check, screenshot
           await syntheticRows(application, page, 'schedule', [entry], true); await dismiss(page);
           const capsule = page.locator('.schip').filter({ has: page.locator('.n', { hasText: entry.task.title }) });
           assert.equal(await capsule.locator('.t').textContent(), entry.expected);
-          const visible = await capsule.locator('.t').evaluate(node => {
-            const range = document.createRange(); range.selectNodeContents(node);
-            const bounds = node.getBoundingClientRect(); const track = node.closest('.sched-track').getBoundingClientRect();
-            const button = node.closest('.schip'); const capsule = button.getBoundingClientRect(); const topbar = node.closest('.topbar').getBoundingClientRect();
-            const title = button.querySelector('.n'); const titleBounds = title.getBoundingClientRect();
+          const visible = await capsule.locator('.n').evaluate(title => {
+            const summary = title.closest('.schip');
+            const chip = summary.getBoundingClientRect();
+            const titleBounds = title.getBoundingClientRect();
+            const time = summary.querySelector('.t').getBoundingClientRect();
+            const track = summary.closest('.sched-track').getBoundingClientRect();
+            const topbar = summary.closest('.topbar').getBoundingClientRect();
             const right = document.querySelector('.tb-right').getBoundingClientRect();
             const hit = document.elementFromPoint(titleBounds.x + titleBounds.width / 2, titleBounds.y + titleBounds.height / 2);
-            return node.scrollWidth <= node.clientWidth && bounds.width > 0 && bounds.left >= track.left - 1 && bounds.right <= track.right + 1
-              && capsule.top >= topbar.top - 1 && capsule.bottom <= topbar.bottom + 1 && capsule.right <= right.left + 1
-              && titleBounds.width >= 24 && titleBounds.right <= Math.min(capsule.right, track.right) + 1
-              && button.title === title.textContent && (hit === button || button.contains(hit))
-              && [...range.getClientRects()].filter(rect => rect.width > 0).every(rect => rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1 && rect.top >= bounds.top - 1 && rect.bottom <= bounds.bottom + 1);
+            return titleBounds.width >= 24 && titleBounds.left >= track.left - 1
+              && titleBounds.right <= Math.min(chip.right, track.right) + 1 && titleBounds.right <= time.left + 1
+              && (title.scrollWidth <= title.clientWidth + 1 || time.width <= 1)
+              && chip.top >= topbar.top - 1 && chip.bottom <= topbar.bottom + 1 && chip.right <= right.left + 1
+              && summary.title === title.textContent && summary.contains(hit);
           });
           if (!visible) {
             console.log(`TOPBAR_CAPSULE_BOUNDS ${JSON.stringify(await capsule.evaluate(button => {
@@ -461,7 +464,7 @@ export async function runTopbarDatesPilot({ application, page, check, screenshot
             }))}`);
             await screenshot('failure.png');
           }
-          assert.equal(visible, true, `Capsule must show its complete date/time range at ${width}px`);
+          assert.equal(visible, true, `Capsule must prioritize a readable title at ${width}px`);
         }
       }
     });

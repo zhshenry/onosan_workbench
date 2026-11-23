@@ -415,6 +415,7 @@ input { font: inherit; color: inherit; }
   padding: 0 12px 0 16px;
   gap: 8px;
   min-width: 0;
+  text-align: start;
   border-radius: 999px;
   background: linear-gradient(135deg, var(--glass-hi), var(--glass-lo));
   -webkit-backdrop-filter: var(--glass-filter);
@@ -436,35 +437,25 @@ input { font: inherit; color: inherit; }
   align-items: center;
   flex: none;
   max-width: min(360px, 100%);
-  gap: 7px;
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.62);
+  min-height: var(--compact-action-height);
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: var(--r-ctl);
+  background: transparent;
   white-space: nowrap;
-  transition: transform 0.16s var(--ease);
+  text-align: start;
 }
-.schip:hover { transform: translateY(-1px); }
-.schip .t { flex: none; white-space: pre-line; text-align: left; line-height: 1.2; font-weight: 700; font-size: var(--type-control); color: var(--ink-2); font-variant-numeric: tabular-nums; }
-.schip .n { min-width: 24px; overflow: hidden; text-overflow: ellipsis; font-size: var(--type-control); color: var(--ink-2); }
+.schip .n { min-width: 24px; overflow: hidden; text-overflow: ellipsis; font-size: var(--type-control); font-weight: 600; color: var(--ink); }
+.schip .t { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: pre; text-align: left; line-height: 1.2; font-weight: 500; font-size: var(--type-support); color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .schip.done { opacity: 0.55; }
 .schip.done .n { text-decoration: line-through; }
-.schip.now { background: var(--acc-soft); }
 .schip.now .t, .schip.now .n { color: var(--acc-deep); }
-.schip.now .live { width: 7px; height: 7px; border-radius: 50%; background: var(--acc-deep); align-self: center; }
-.smore {
-  width: 30px;
-  height: 30px;
-  margin-left: auto;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: transparent;
-  color: var(--ink-2);
-  flex: none;
-}
-.smore:hover { background: #fff; color: var(--ink); }
+.schip.now .live { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--acc-deep); align-self: center; }
+:is(.sched, .todopill):hover { background: var(--acc-soft); }
+:is(.sched, .todopill):focus-visible { outline: 2px solid var(--acc-deep); outline-offset: -2px; }
 .todopill { display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 12px 0 16px; border-radius: 999px; white-space: nowrap; }
-.sched[data-open='true'], .todopill[aria-expanded='true'] { background: var(--acc-soft); box-shadow: inset 0 0 0 1px var(--acc-ring); }
+:is(.sched, .todopill)[aria-expanded='true'] { background: var(--acc-soft); box-shadow: inset 0 0 0 1px var(--acc-ring); }
+:is(.sched, .todopill):active { background: var(--acc-ring); }
 .todopill svg { color: var(--icon-tint); }
 .todopill > svg, .todopill .lbl, .todopill .num { flex: none; }
 .todopill .lbl { font-weight: 700; font-size: var(--type-control); }
@@ -1228,7 +1219,7 @@ kbd {
 .ai-reference-filters > .select { flex: 1; min-width: 0; }
 .ai-reference-filters .select-trigger { min-height: 28px; padding: 4px 7px; font-size: var(--type-caption); }
 .ai-reference-filter-menu { z-index: 270; }
-.ai-reference-options { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; gap: 3px; max-height: 300px; overflow: auto; margin-top: 6px; }
+.ai-reference-options { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; gap: 3px; max-height: 300px; overflow: auto; scrollbar-gutter: stable; margin-top: 6px; }
 .ai-reference-option { display: flex; align-items: center; flex: none; gap: 8px; min-width: 0; padding: 7px 6px; border: 1px solid transparent; border-radius: 9px; background: none; cursor: pointer; }
 .ai-reference-option:hover { background: var(--todo-subtle); }
 .ai-reference-option.is-selected { background: var(--acc-soft); }
@@ -1470,7 +1461,7 @@ kbd {
 @media (max-width: 900px) {
   .sched, .todopill { gap: 4px; padding: 0 8px; }
   .sched-label { gap: 4px; }
-  .smore, .pill-caret { width: 20px; }
+  .pill-caret { width: 20px; }
 }
 
 /* ---------- 设置弹窗：左侧分类，右侧内容 ---------- */

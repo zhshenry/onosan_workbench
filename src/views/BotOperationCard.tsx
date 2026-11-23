@@ -33,7 +33,7 @@ export function BotOperationCard({ label, summary, icon, status, tone = 'neutral
         : <div className="bot-operation-target">{target}{!action && badge}</div>}
       {action && <div className="bot-operation-actions">{badge}{action}</div>}
     </header>
-    {hasDetails && <div id={detailId} className="bot-operation-details" hidden={!open}>{children}</div>}
+    {hasDetails && <div id={detailId} className="bot-operation-details" hidden={!open} inert={!open}>{children}</div>}
   </section>;
 }
 

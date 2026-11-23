@@ -8,7 +8,7 @@ import { AiStore } from '../electron/ai-store';
 import { BotStore, legacyBotOwner, nextScheduleAt } from '../electron/bot-store';
 import { BotHost, type BotExecutor } from '../electron/bot-host';
 import { botService } from '../electron/bot-service';
-import type { BotSubmit, BotTask } from '../shared/bot-contracts';
+import type { BotArtifact, BotSubmit, BotTask } from '../shared/bot-contracts';
 
 const main = { id: 'main:1', kind: 'main' as const }, island = { id: 'island:2', kind: 'island' as const };
 function fixture(executor: BotExecutor = { run: async () => ({ reply: '已处理' }), apply: async () => ({ saved: true }) }) {
@@ -46,6 +46,44 @@ function submission(f: ReturnType<typeof fixture>, text = '整理文章', key = 
   return { botId: bot.id, chatId: bot.mainChatId, expectedDraftRevision: draft.revision, clientRequestId: randomUUID(), text, replyToTaskId: null, resources: [] };
 }
 async function until(check: () => boolean) { const deadline = Date.now() + 5000; while (!check()) { if (Date.now() > deadline) throw new Error('状态未到达'); await new Promise(r => setTimeout(r, 10)); } }
+
+
+test('removes only the library listing and keeps the original artifact available after reopening', async () => {
+  const f = fixture();
+  try {
+    const task = f.host.submit(submission(f, '生成资料'), main).task;
+    const id = randomUUID();
+    const artifact: BotArtifact = {
+      id, producerBotId: task.botId, taskId: task.id, rootTaskId: task.rootTaskId, chatId: task.chatId,
+      title: '需要删除的资料', mediaType: 'text/markdown', resource: { kind: 'artifact', id }, content: '保留的原正文', createdAt: task.createdAt,
+    };
+    const keepId = randomUUID();
+    const keep: BotArtifact = { ...artifact, id: keepId, title: '仍在资料库的资料', resource: { kind: 'artifact', id: keepId } };
+    f.store.artifact(artifact, 'removed');
+    f.store.artifact(keep, 'kept');
+    const list = (host: BotHost) => (botService(host, 'listArtifacts', [task.botId], main) as BotArtifact[]).map(item => item.id);
+    assert.deepEqual(new Set(list(f.host)), new Set([id, keepId]));
+    assert.throws(() => botService(f.host, 'removeArtifactFromLibrary', [id], island), { code: 'SURFACE_FORBIDDEN' });
+
+    let notifications = 0;
+    f.host.on('changed', event => { if (event.kind === 'artifact') notifications++; });
+    botService(f.host, 'removeArtifactFromLibrary', [id], main);
+    botService(f.host, 'removeArtifactFromLibrary', [id], main);
+    assert.equal(notifications, 1);
+    assert.deepEqual(list(f.host), [keepId]);
+
+    const reopenedAi = new AiStore(f.dir, { recover: false });
+    try {
+      const reopenedStore = new BotStore(reopenedAi, f.dir);
+      const reopened = new BotHost(reopenedStore, { run: async () => ({ reply: '' }), apply: async () => null });
+      const { libraryRemovedAt, ...original } = botService(reopened, 'openArtifact', [id], main) as BotArtifact;
+      assert.ok(libraryRemovedAt);
+      assert.deepEqual(original, artifact);
+      reopenedStore.artifact(artifact, 'removed');
+      assert.deepEqual(list(reopened), [keepId]);
+    } finally { reopenedAi.close(); }
+  } finally { await f.close(); }
+});
 
 test('upgrade repairs skipped model bindings once and preserves explicit Bot selections', async () => {
   const f = fixture();

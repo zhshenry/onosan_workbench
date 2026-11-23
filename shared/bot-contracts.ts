@@ -79,12 +79,15 @@ export interface BotAction {
 }
 export interface BotArtifact {
   id: string; producerBotId: string; taskId: string; rootTaskId: string; chatId: string; title: string;
-  mediaType: string; resource: BotResourceRef; content?: string; createdAt: string;
+  mediaType: string; resource: BotResourceRef; content?: string; createdAt: string; libraryRemovedAt?: string;
 }
 export const BOT_MEMORY_TEXT_LIMIT = 300;
 export const BOT_MEMORY_TITLE_LIMIT = 32;
 export const BOT_MEMORY_TOPIC_LIMIT = 16;
-export const botMemoryRequestSchema = z.object({ scope: z.enum(['private', 'shared']), clarifies: z.string().uuid().optional() }).strict();
+export const botMemoryRequestSchema = z.object({
+  scope: z.enum(['private', 'shared']), clarifies: z.string().uuid().optional(),
+  edit: z.object({ id: z.string().uuid(), revision: z.number().int().nonnegative() }).strict().optional(),
+}).strict();
 export type BotMemoryRequest = z.infer<typeof botMemoryRequestSchema>;
 export interface BotMemoryReceipt {
   id: string; entryId: string; messageId: string; title: string; text: string; scope: BotMemory['scope'];
@@ -142,7 +145,7 @@ export type BotChatView = z.infer<typeof botChatViewSchema>;
 export interface BotChatSnapshot {
   epoch: string; sequence: number; chat: ChatSession; hasEarlier: boolean; hasLater: boolean;
   lastEntryId?: string; collapsedAt?: string; pageTasks?: BotTask[];
-  liveEntries: ChatEntry[]; latestUser?: Pick<ChatEntry, 'id' | 'content' | 'createdAt'>; toolReplyIds: string[];
+  liveEntries: ChatEntry[]; latestUser?: Pick<ChatEntry, 'id' | 'content' | 'createdAt' | 'resourceRefs'>; toolReplyIds: string[];
 }
 export type BotChatSync = BotChatSnapshot | { epoch: string; sequence: number; updates: BotChatUpdate[] };
 export interface BotOpen extends BotChatSnapshot { bot: BotProfile; history: { chatId: string; title: string; updatedAt: string; reason?: string; canReference: boolean }[]; }
@@ -177,6 +180,7 @@ export interface BotBridge {
   undoAction(operationId: string, revision: number): Promise<BotAction>;
   listArtifacts(botId: string): Promise<BotArtifact[]>;
   openArtifact(id: string): Promise<BotArtifact>;
+  removeArtifactFromLibrary(id: string): Promise<void>;
   listMemories(botId: string): Promise<BotMemoryView[]>;
   memorySources(botId: string, id: string): Promise<BotMemorySource[]>;
   getAutomaticMemory(): Promise<boolean>;
